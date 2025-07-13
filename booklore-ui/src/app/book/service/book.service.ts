@@ -260,6 +260,21 @@ export class BookService {
       });
   }
 
+  downloadAdditionalFile(bookId: number, fileId: number): void {
+    const downloadUrl = `${this.url}/${bookId}/files/${fileId}/download`;
+    this.http.get(downloadUrl, {responseType: 'blob', observe: 'response'})
+      .subscribe({
+        next: (response) => {
+          const contentDisposition = response.headers.get('Content-Disposition');
+          const filename = contentDisposition
+            ? contentDisposition.match(/filename="(.+?)"/)?.[1] || `additional_file_${fileId}`
+            : `additional_file_${fileId}`;
+          this.saveFile(response.body as Blob, filename);
+        },
+        error: (err) => console.error('Error downloading additional file:', err),
+      });
+  }
+
   private saveFile(blob: Blob, filename: string): void {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
