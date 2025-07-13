@@ -6,7 +6,7 @@ import {BookService} from '../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
 import {Tag} from 'primeng/tag';
-import {Book, BookMetadata, BookRecommendation, ReadStatus} from '../../../book/model/book.model';
+import {Book, BookMetadata, BookRecommendation, ReadStatus, FileInfo} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../utilities/service/url-helper.service';
 import {UserService} from '../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
@@ -62,7 +62,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   readMenuItems$!: Observable<MenuItem[]>;
   refreshMenuItems$!: Observable<MenuItem[]>;
   otherItems$!: Observable<MenuItem[]>;
-
+  downloadMenuItems$!: Observable<MenuItem[]>;
   bookInSeries: Book[] = [];
   isExpanded = false;
   showFilePath = false;
@@ -133,6 +133,24 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           command: () => this.read(book.id, 'streaming')
         }
       ])
+    );
+
+    this.downloadMenuItems$ = this.book$.pipe(
+      filter((book): book is Book => book !== null && book.alternativeFormats !== undefined && book.alternativeFormats.length > 0),
+      map((book): MenuItem[] => {
+        const items: MenuItem[] = [];
+        if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+          book.alternativeFormats.forEach(format => {
+            const extension = this.getFileExtension(format.filePath);
+            items.push({
+              label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
+              icon: this.getFileIcon(extension),
+              command: () => this.downloadAdditionalFile(book.id, format.id)
+            });
+          });
+        }
+        return items;
+      })
     );
 
     this.otherItems$ = this.book$.pipe(
@@ -238,6 +256,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   download(bookId: number) {
     this.bookService.downloadFile(bookId);
+  }
+
+  downloadAdditionalFile(bookId: number, fileId: number) {
+    this.bookService.downloadAdditionalFile(bookId, fileId);
   }
 
   quickRefresh(bookId: number) {
@@ -436,8 +458,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return lockedKeys.length > 0 && lockedKeys.every(k => metadata[k] === true);
   }
 
-  getFileSizeInMB(book: Book | null): string {
-    const sizeKb = book?.fileSizeKb;
+  getFileSizeInMB(fileInfo: FileInfo | null | undefined): string {
+    const sizeKb = fileInfo?.fileSizeKb;
     return sizeKb != null ? `${(sizeKb / 1024).toFixed(2)} MB` : '-';
   }
 
@@ -466,6 +488,24 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     const parts = filePath.split('.');
     if (parts.length < 2) return null;
     return parts.pop()?.toUpperCase() || null;
+  }
+
+  getFileIcon(fileType: string | null): string {
+    if (!fileType) return 'pi pi-file';
+    switch (fileType.toLowerCase()) {
+      case 'pdf':
+        return 'pi pi-file-pdf';
+      case 'epub':
+      case 'mobi':
+      case 'azw3':
+        return 'pi pi-book';
+      case 'cbz':
+      case 'cbr':
+      case 'cbx':
+        return 'pi pi-image';
+      default:
+        return 'pi pi-file';
+    }
   }
 
   getFileTypeColorClass(fileType: string | null | undefined): string {
