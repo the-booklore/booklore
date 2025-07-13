@@ -4,6 +4,23 @@ import {BookReview} from '../../book-review-service';
 
 export type BookType = "PDF" | "EPUB" | "CBX";
 
+export enum AdditionalFileType {
+  ALTERNATIVE_FORMAT = 'ALTERNATIVE_FORMAT',
+  SUPPLEMENTARY = 'SUPPLEMENTARY'
+}
+
+export interface AdditionalFile {
+  id: number;
+  bookId: number;
+  fileName: string;
+  filePath: string;
+  fileSubPath?: string;
+  additionalFileType: AdditionalFileType;
+  fileSizeKb?: number;
+  description?: string;
+  addedOn?: string;
+}
+
 export interface Book {
   id: number;
   bookType: BookType;
@@ -25,6 +42,8 @@ export interface Book {
   readStatus?: ReadStatus;
   dateFinished?: string;
   libraryPath?: { id: number };
+  alternativeFormats?: AdditionalFile[];
+  supplementaryFiles?: AdditionalFile[];
 }
 
 export interface EpubProgress {
