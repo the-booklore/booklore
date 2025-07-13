@@ -88,6 +88,26 @@ export class BookService {
     );
   }
 
+  refreshBooks(): void {
+    this.http.get<Book[]>(this.url).pipe(
+      tap(books => {
+        this.bookStateSubject.next({
+          books: books || [],
+          loaded: true,
+          error: null,
+        });
+      }),
+      catchError(error => {
+        this.bookStateSubject.next({
+          books: null,
+          loaded: true,
+          error: error.message,
+        });
+        return of(null);
+      })
+    ).subscribe();
+  }
+
   getBookByIdFromState(bookId: number): Book | undefined {
     const currentState = this.bookStateSubject.value;
     return currentState.books?.find(book => +book.id === +bookId);
@@ -239,6 +259,44 @@ export class BookService {
           severity: 'error',
           summary: 'Delete Failed',
           detail: error?.error?.message || error?.message || 'An error occurred while deleting books.',
+        });
+        return throwError(() => error);
+      })
+    );
+  }
+
+  deleteAdditionalFile(bookId: number, fileId: number): Observable<void> {
+    const deleteUrl = `${this.url}/${bookId}/files/${fileId}`;
+    return this.http.delete<void>(deleteUrl).pipe(
+      tap(() => {
+        const currentState = this.bookStateSubject.value;
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (book.id === bookId) {
+            return {
+              ...book,
+              alternativeFormats: book.alternativeFormats?.filter(file => file.id !== fileId),
+              supplementaryFiles: book.supplementaryFiles?.filter(file => file.id !== fileId)
+            };
+          }
+          return book;
+        });
+
+        this.bookStateSubject.next({
+          ...currentState,
+          books: updatedBooks
+        });
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Deleted',
+          detail: 'Additional file deleted successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting the file.'
         });
         return throwError(() => error);
       })
