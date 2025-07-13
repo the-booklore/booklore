@@ -9,19 +9,22 @@ export enum AdditionalFileType {
   SUPPLEMENTARY = 'SUPPLEMENTARY'
 }
 
-export interface AdditionalFile {
+export interface FileInfo {
+  fileName?: string;
+  filePath?: string;
+  fileSubPath?: string;
+  fileSizeKb?: number;
+}
+
+export interface AdditionalFile extends FileInfo {
   id: number;
   bookId: number;
-  fileName: string;
-  filePath: string;
-  fileSubPath?: string;
   additionalFileType: AdditionalFileType;
-  fileSizeKb?: number;
   description?: string;
   addedOn?: string;
 }
 
-export interface Book {
+export interface Book extends FileInfo {
   id: number;
   bookType: BookType;
   libraryId: number;
@@ -33,10 +36,6 @@ export interface Book {
   pdfProgress?: PdfProgress;
   cbxProgress?: CbxProgress;
   koreaderProgress?: KoReaderProgress;
-  filePath?: string;
-  fileSubPath?: string;
-  fileName?: string;
-  fileSizeKb?: number;
   seriesCount?: number | null;
   metadataMatchScore?: number | null;
   readStatus?: ReadStatus;
