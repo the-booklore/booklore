@@ -228,15 +228,39 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         ];
 
         // Add delete additional files menu if there are any additional files
-        if (book.alternativeFormats && book.alternativeFormats.length > 0) {
-          const deleteFileItems: MenuItem[] = book.alternativeFormats.map(format => {
-            const extension = this.getFileExtension(format.filePath);
-            return {
-              label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-              icon: this.getFileIcon(extension),
-              command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
-            } as MenuItem;
-          });
+        if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
+            (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
+          const deleteFileItems: MenuItem[] = [];
+
+          // Add alternative formats
+          if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+            book.alternativeFormats.forEach(format => {
+              const extension = this.getFileExtension(format.filePath);
+              deleteFileItems.push({
+                label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
+                icon: this.getFileIcon(extension),
+                command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
+              });
+            });
+          }
+
+          // Add separator if both types exist
+          if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
+              book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+            deleteFileItems.push({ separator: true });
+          }
+
+          // Add supplementary files
+          if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+            book.supplementaryFiles.forEach(file => {
+              const extension = this.getFileExtension(file.filePath);
+              deleteFileItems.push({
+                label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
+                icon: this.getFileIcon(extension),
+                command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
+              });
+            });
+          }
 
           items.push({
             label: 'Delete Additional Files',
