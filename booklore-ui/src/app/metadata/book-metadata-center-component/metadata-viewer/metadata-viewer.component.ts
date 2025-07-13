@@ -34,6 +34,7 @@ import {BookReviewsComponent} from '../../../book/components/book-reviews/book-r
 import {BookNotesComponent} from '../../../book/components/book-notes-component/book-notes-component';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
+import {AdditionalFileUploaderComponent} from '../../../book/components/additional-file-uploader/additional-file-uploader.component';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -158,6 +159,22 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => {
         const items: MenuItem[] = [
+          {
+            label: 'Upload File',
+            icon: 'pi pi-upload',
+            command: () => {
+              this.dialogService.open(AdditionalFileUploaderComponent, {
+                header: 'Upload Additional File',
+                modal: true,
+                closable: true,
+                style: {
+                  position: 'absolute',
+                  top: '10%',
+                },
+                data: {book}
+              });
+            },
+          },
           {
             label: 'Delete Book',
             icon: 'pi pi-trash',
