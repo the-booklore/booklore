@@ -419,7 +419,7 @@
               (onClick)="assignShelf(book.id)">
             </p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
-              @if (book!.alternativeFormats && book!.alternativeFormats.length > 0) {
+              @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
                   <p-splitbutton
                     label="Download"

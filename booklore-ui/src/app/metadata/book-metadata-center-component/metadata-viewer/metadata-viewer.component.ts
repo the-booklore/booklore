@@ -138,9 +138,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     );
 
     this.downloadMenuItems$ = this.book$.pipe(
-      filter((book): book is Book => book !== null && book.alternativeFormats !== undefined && book.alternativeFormats.length > 0),
+      filter((book): book is Book => book !== null &&
+        ((book.alternativeFormats !== undefined && book.alternativeFormats.length > 0) ||
+         (book.supplementaryFiles !== undefined && book.supplementaryFiles.length > 0))),
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
+
+        // Add alternative formats
         if (book.alternativeFormats && book.alternativeFormats.length > 0) {
           book.alternativeFormats.forEach(format => {
             const extension = this.getFileExtension(format.filePath);
@@ -151,6 +155,25 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             });
           });
         }
+
+        // Add separator if both types exist
+        if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
+            book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+          items.push({ separator: true });
+        }
+
+        // Add supplementary files
+        if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+          book.supplementaryFiles.forEach(file => {
+            const extension = this.getFileExtension(file.filePath);
+            items.push({
+              label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
+              icon: this.getFileIcon(extension),
+              command: () => this.downloadAdditionalFile(book.id, file.id)
+            });
+          });
+        }
+
         return items;
       })
     );
