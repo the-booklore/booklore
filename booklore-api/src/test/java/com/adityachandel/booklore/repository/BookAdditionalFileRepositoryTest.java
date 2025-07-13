@@ -3,6 +3,7 @@ package com.adityachandel.booklore.repository;
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,7 @@ class BookAdditionalFileRepositoryTest {
         testLibrary = LibraryEntity.builder()
                 .name("Test Library")
                 .icon("book")
+                .scanMode(LibraryScanMode.FILE_AS_BOOK)
                 .watch(false)
                 .build();
         testLibrary = entityManager.persistAndFlush(testLibrary);
