@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryPathRepository;
@@ -72,6 +73,10 @@ public class LibraryService {
         library.setName(request.getName());
         library.setIcon(request.getIcon());
         library.setWatch(request.isWatch());
+        if (request.getScanMode() != null) {
+            library.setScanMode(request.getScanMode());
+        }
+        library.setDefaultBookFormat(request.getDefaultBookFormat());
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -148,6 +153,8 @@ public class LibraryService {
                 )
                 .icon(request.getIcon())
                 .watch(request.isWatch())
+                .scanMode(request.getScanMode() != null ? request.getScanMode() : LibraryScanMode.FILE_AS_BOOK)
+                .defaultBookFormat(request.getDefaultBookFormat())
                 .build();
 
         libraryEntity = libraryRepository.save(libraryEntity);
