@@ -38,4 +38,7 @@ public interface BookAdditionalFileRepository extends JpaRepository<BookAddition
 
     @Query("SELECT COUNT(af) FROM BookAdditionalFileEntity af WHERE af.book.id = :bookId AND af.additionalFileType = :additionalFileType")
     long countByBookIdAndAdditionalFileType(@Param("bookId") Long bookId, @Param("additionalFileType") AdditionalFileType additionalFileType);
+
+    @Query("SELECT af FROM BookAdditionalFileEntity af WHERE af.book.library.id = :libraryId")
+    List<BookAdditionalFileEntity> findByLibraryId(@Param("libraryId") Long libraryId);
 }

@@ -3,11 +3,14 @@ package com.adityachandel.booklore.service.library;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
+import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -37,6 +40,7 @@ public class LibraryProcessingService {
     private final LibraryRepository libraryRepository;
     private final NotificationService notificationService;
     private final BookRepository bookRepository;
+    private final BookAdditionalFileRepository bookAdditionalFileRepository;
     private final FileService fileService;
     private final BookMapper bookMapper;
     private final LibraryFileProcessorRegistry fileProcessorRegistry;
@@ -56,10 +60,15 @@ public class LibraryProcessingService {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, createLogNotification("Started refreshing library: " + libraryEntity.getName()));
         List<LibraryFile> libraryFiles = getLibraryFiles(libraryEntity);
+        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
+        if (!additionalFileIds.isEmpty()) {
+            log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
+            deleteRemovedAdditionalFiles(additionalFileIds);
+        }
         List<Long> bookIds = detectDeletedBookIds(libraryFiles, libraryEntity);
         if (!bookIds.isEmpty()) {
             log.info("Detected {} removed books in library: {}", bookIds.size(), libraryEntity.getName());
-            deleteRemovedBooks(bookIds);
+            processDeletedLibraryFiles(bookIds, libraryFiles);
         }
         restoreDeletedBooks(libraryFiles);
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
@@ -121,6 +130,102 @@ public class LibraryProcessingService {
         return libraryFiles.stream()
                 .filter(file -> !existingFullPaths.contains(file.getFullPath()))
                 .collect(Collectors.toList());
+    }
+
+    public List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
+        // Create a set of current file names for quick lookup
+        Set<String> currentFileNames = libraryFiles.stream()
+                .map(LibraryFile::getFileName)
+                .collect(Collectors.toSet());
+
+        // Get all additional files from the library
+        List<BookAdditionalFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
+
+        // Find additional files that no longer exist in the file system
+        return allAdditionalFiles.stream()
+                .filter(additionalFile -> !currentFileNames.contains(additionalFile.getFileName()))
+                .map(BookAdditionalFileEntity::getId)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    protected void deleteRemovedAdditionalFiles(List<Long> additionalFileIds) {
+        if (additionalFileIds.isEmpty()) {
+            return;
+        }
+
+        List<BookAdditionalFileEntity> additionalFiles = bookAdditionalFileRepository.findAllById(additionalFileIds);
+        bookAdditionalFileRepository.deleteAll(additionalFiles);
+
+        log.info("Deleted {} additional files from database", additionalFileIds.size());
+    }
+
+    @Transactional
+    protected void processDeletedLibraryFiles(List<Long> deletedBookIds, List<LibraryFile> libraryFiles) {
+        if (deletedBookIds.isEmpty()) {
+            return;
+        }
+
+        List<BookEntity> books = bookRepository.findAllById(deletedBookIds);
+        List<Long> booksToDelete = new ArrayList<>();
+
+        for (BookEntity book : books) {
+            if (!tryPromoteAlternativeFormatToBook(book, libraryFiles)) {
+                booksToDelete.add(book.getId());
+            }
+        }
+
+        if (!booksToDelete.isEmpty()) {
+            deleteRemovedBooks(booksToDelete);
+        }
+    }
+
+    protected boolean tryPromoteAlternativeFormatToBook(BookEntity book, List<LibraryFile> libraryFiles) {
+        // Find existing alternative formats for this book
+        List<BookAdditionalFileEntity> existingAlternativeFormats = findExistingAlternativeFormats(book, libraryFiles);
+
+        if (existingAlternativeFormats.isEmpty()) {
+            return false; // No alternative formats to promote
+        }
+
+        // Promote the first alternative format to become the main book
+        BookAdditionalFileEntity promotedFormat = existingAlternativeFormats.getFirst();
+        promoteAlternativeFormatToBook(book, promotedFormat);
+
+        // Remove the promoted format from additional files
+        bookAdditionalFileRepository.delete(promotedFormat);
+
+        log.info("Promoted alternative format {} to main book for book ID {}", promotedFormat.getFileName(), book.getId());
+        return true;
+    }
+
+    private List<BookAdditionalFileEntity> findExistingAlternativeFormats(BookEntity book, List<LibraryFile> libraryFiles) {
+        Set<String> currentFileNames = libraryFiles.stream()
+                .map(LibraryFile::getFileName)
+                .collect(Collectors.toSet());
+
+        if (book.getAdditionalFiles() == null) {
+            return Collections.emptyList();
+        }
+
+        return book.getAdditionalFiles().stream()
+                .filter(additionalFile -> AdditionalFileType.ALTERNATIVE_FORMAT.equals(additionalFile.getAdditionalFileType()))
+                .filter(additionalFile -> currentFileNames.contains(additionalFile.getFileName()))
+                .filter(additionalFile -> BookFileExtension.fromFileName(additionalFile.getFileName()).isPresent())
+                .collect(Collectors.toList());
+    }
+
+    private void promoteAlternativeFormatToBook(BookEntity book, BookAdditionalFileEntity alternativeFormat) {
+        book.setFileName(alternativeFormat.getFileName());
+        book.setFileSubPath(alternativeFormat.getFileSubPath());
+        BookFileExtension.fromFileName(alternativeFormat.getFileName())
+                .ifPresent(ext -> book.setBookType(ext.getType()));
+
+        book.setFileSizeKb(alternativeFormat.getFileSizeKb());
+        book.setCurrentHash(alternativeFormat.getCurrentHash());
+        book.setInitialHash(alternativeFormat.getInitialHash());
+
+        bookRepository.save(book);
     }
 
     @Transactional
