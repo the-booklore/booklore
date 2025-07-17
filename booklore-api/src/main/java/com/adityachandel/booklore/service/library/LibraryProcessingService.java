@@ -49,8 +49,8 @@ public class LibraryProcessingService {
     public void processLibrary(long libraryId) throws IOException {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, createLogNotification("Started processing library: " + libraryEntity.getName()));
-        List<LibraryFile> libraryFiles = getLibraryFiles(libraryEntity);
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
+        List<LibraryFile> libraryFiles = getLibraryFiles(libraryEntity, processor);
         processor.processLibraryFiles(libraryFiles, libraryEntity);
         notificationService.sendMessage(Topic.LOG, createLogNotification("Finished processing library: " + libraryEntity.getName()));
     }
@@ -59,7 +59,8 @@ public class LibraryProcessingService {
     public void rescanLibrary(long libraryId) throws IOException {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, createLogNotification("Started refreshing library: " + libraryEntity.getName()));
-        List<LibraryFile> libraryFiles = getLibraryFiles(libraryEntity);
+        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
+        List<LibraryFile> libraryFiles = getLibraryFiles(libraryEntity, processor);
         List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
@@ -71,7 +72,6 @@ public class LibraryProcessingService {
             processDeletedLibraryFiles(bookIds, libraryFiles);
         }
         restoreDeletedBooks(libraryFiles);
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
         notificationService.sendMessage(Topic.LOG, createLogNotification("Finished refreshing library: " + libraryEntity.getName()));
     }
@@ -264,29 +264,36 @@ public class LibraryProcessingService {
     }
 
 
-    private List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
+    private List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity, LibraryFileProcessor processor) throws IOException {
         List<LibraryFile> allFiles = new ArrayList<>();
         for (LibraryPathEntity pathEntity : libraryEntity.getLibraryPaths()) {
-            allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity));
+            allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity, processor));
         }
         return allFiles;
     }
 
-    private List<LibraryFile> findLibraryFiles(LibraryPathEntity pathEntity, LibraryEntity libraryEntity) throws IOException {
+    private List<LibraryFile> findLibraryFiles(LibraryPathEntity pathEntity, LibraryEntity libraryEntity, LibraryFileProcessor processor) throws IOException {
         Path libraryPath = Path.of(pathEntity.getPath());
+        boolean supportsSupplementaryFiles = processor.supportsSupplementaryFiles();
+
         try (Stream<Path> stream = Files.walk(libraryPath)) {
             return stream.filter(Files::isRegularFile)
                     .map(fullPath -> {
                         String fileName = fullPath.getFileName().toString();
-                        return BookFileExtension.fromFileName(fileName)
-                                .map(ext -> LibraryFile.builder()
-                                        .libraryEntity(libraryEntity)
-                                        .libraryPathEntity(pathEntity)
-                                        .fileSubPath(FileUtils.getRelativeSubPath(pathEntity.getPath(), fullPath))
-                                        .fileName(fileName)
-                                        .bookFileType(ext.getType())
-                                        .build())
-                                .orElse(null);
+                        Optional<BookFileExtension> bookExtension = BookFileExtension.fromFileName(fileName);
+
+                        if (bookExtension.isEmpty() && !supportsSupplementaryFiles) {
+                            // Skip files that are not recognized book files and supplementary files are not supported
+                            return null;
+                        }
+
+                        return LibraryFile.builder()
+                                .libraryEntity(libraryEntity)
+                                .libraryPathEntity(pathEntity)
+                                .fileSubPath(FileUtils.getRelativeSubPath(pathEntity.getPath(), fullPath))
+                                .fileName(fileName)
+                                .bookFileType(bookExtension.map(BookFileExtension::getType).orElse(null))
+                                .build();
                     })
                     .filter(Objects::nonNull)
                     .filter(file -> !file.getFileName().startsWith("."))
