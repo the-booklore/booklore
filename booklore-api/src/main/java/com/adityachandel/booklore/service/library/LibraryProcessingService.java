@@ -111,7 +111,7 @@ public class LibraryProcessingService {
         processor.processLibraryFiles(libraryFiles, libraryEntity);
     }
 
-    public static List<Long> detectDeletedBookIds(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
+    protected static List<Long> detectDeletedBookIds(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<Path> currentFullPaths = libraryFiles.stream()
                 .map(LibraryFile::getFullPath)
                 .collect(Collectors.toSet());
@@ -123,16 +123,25 @@ public class LibraryProcessingService {
                 .collect(Collectors.toList());
     }
 
-    public static List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
+    protected List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<Path> existingFullPaths = libraryEntity.getBookEntities().stream()
                 .map(BookEntity::getFullFilePath)
                 .collect(Collectors.toSet());
+
+        // Also collect paths from additional files using repository method
+        Set<Path> additionalFilePaths = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId()).stream()
+                .map(BookAdditionalFileEntity::getFullFilePath)
+                .collect(Collectors.toSet());
+
+        // Combine both sets of existing paths
+        existingFullPaths.addAll(additionalFilePaths);
+
         return libraryFiles.stream()
                 .filter(file -> !existingFullPaths.contains(file.getFullPath()))
                 .collect(Collectors.toList());
     }
 
-    public List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
+    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         // Create a set of current file names for quick lookup
         Set<String> currentFileNames = libraryFiles.stream()
                 .map(LibraryFile::getFileName)
