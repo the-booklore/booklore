@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -285,7 +286,7 @@ public class LibraryProcessingService {
         Path libraryPath = Path.of(pathEntity.getPath());
         boolean supportsSupplementaryFiles = processor.supportsSupplementaryFiles();
 
-        try (Stream<Path> stream = Files.walk(libraryPath)) {
+        try (Stream<Path> stream = Files.walk(libraryPath, FileVisitOption.FOLLOW_LINKS)) {
             return stream.filter(Files::isRegularFile)
                     .map(fullPath -> {
                         String fileName = fullPath.getFileName().toString();
