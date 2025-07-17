@@ -5,6 +5,9 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 
 import java.util.List;
 
+import com.adityachandel.booklore.model.enums.LibraryScanMode;
+
 public interface LibraryFileProcessor {
+    LibraryScanMode getScanMode();
     void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity);
 }
