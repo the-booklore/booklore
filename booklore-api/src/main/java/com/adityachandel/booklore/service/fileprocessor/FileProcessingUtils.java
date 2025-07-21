@@ -2,8 +2,10 @@ package com.adityachandel.booklore.service.fileprocessor;
 
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
+import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.FileService;
@@ -94,7 +96,7 @@ public class FileProcessingUtils {
     }
 
     @Transactional
-    public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash, BookRepository bookRepository, BookMapper bookMapper) {
+    public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash, BookRepository bookRepository, BookAdditionalFileRepository bookAdditionalFileRepository, BookMapper bookMapper) {
         if (StringUtils.isBlank(hash)) {
             log.warn("Skipping file due to missing hash: {}", libraryFile.getFullPath());
             return Optional.empty();
@@ -110,6 +112,15 @@ public class FileProcessingUtils {
                 book.setLibraryPath(libraryFile.getLibraryPathEntity());
                 book.setFileSubPath(libraryFile.getFileSubPath());
             }
+            return Optional.of(bookMapper.toBook(book));
+        }
+        Optional<BookAdditionalFileEntity> existingAdditionalFile = bookAdditionalFileRepository.findByAltFormatCurrentHash(hash);
+        if (existingAdditionalFile.isPresent()) {
+            BookAdditionalFileEntity additionalFile = existingAdditionalFile.get();
+            BookEntity book = additionalFile.getBook();
+
+            // Additional file might have a different name or path, so there is no need
+            // to update the file name or library path here
             return Optional.of(bookMapper.toBook(book));
         }
 

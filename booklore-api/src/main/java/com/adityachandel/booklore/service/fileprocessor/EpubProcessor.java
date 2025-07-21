@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookCreatorService;
@@ -35,13 +36,14 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     private final BookMetadataRepository bookMetadataRepository;
 
     public EpubProcessor(BookRepository bookRepository,
+                         BookAdditionalFileRepository bookAdditionalFileRepository,
                          BookCreatorService bookCreatorService,
                          BookMapper bookMapper,
                          FileProcessingUtils fileProcessingUtils,
                          BookMetadataRepository bookMetadataRepository,
                          MetadataMatchService metadataMatchService,
                          EpubMetadataExtractor epubMetadataExtractor) {
-        super(bookRepository, bookCreatorService, bookMapper, fileProcessingUtils, bookMetadataRepository, metadataMatchService);
+        super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileProcessingUtils, metadataMatchService);
         this.epubMetadataExtractor = epubMetadataExtractor;
         this.bookMetadataRepository = bookMetadataRepository;
     }
