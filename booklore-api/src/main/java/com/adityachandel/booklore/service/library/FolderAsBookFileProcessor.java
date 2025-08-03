@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @AllArgsConstructor
@@ -58,7 +59,11 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                 filesByDirectory.size(), libraryFiles.size(), libraryEntity.getName());
 
         // Process each directory
-        for (Map.Entry<Path, List<LibraryFile>> entry : filesByDirectory.entrySet()) {
+        var sortedDirectories = filesByDirectory.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .toList();
+        for (Map.Entry<Path, List<LibraryFile>> entry : sortedDirectories) {
             Path directoryPath = entry.getKey();
             List<LibraryFile> filesInDirectory = entry.getValue();
 
