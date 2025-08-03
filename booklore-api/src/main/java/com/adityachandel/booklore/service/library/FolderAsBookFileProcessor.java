@@ -171,18 +171,12 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
 
         LibraryFile bookFile = mainBookFile.get();
-        Optional<BookFileExtension> extension = BookFileExtension.fromFileName(bookFile.getFileName());
-
-        if (extension.isEmpty()) {
-            log.warn("Could not determine file extension for file: {}", bookFile.getFileName());
-            return;
-        }
 
         try {
             log.info("Creating new book from file: {}", bookFile.getFileName());
 
             // Create the main book
-            BookFileProcessor processor = bookFileProcessorRegistry.getProcessorOrThrow(extension.get().getType());
+            BookFileProcessor processor = bookFileProcessorRegistry.getProcessorOrThrow(bookFile.getBookFileType());
             Book book = processor.processFile(bookFile);
 
             if (book != null) {
