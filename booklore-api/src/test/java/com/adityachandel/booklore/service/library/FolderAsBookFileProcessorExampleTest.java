@@ -119,4 +119,58 @@ class FolderAsBookFileProcessorExampleTest {
                 .bookHasSupplementaryFiles("Accounting 101", "Accounting 101.zip")
                 .bookHasNoAdditionalFiles("Anatomy 101");
     }
+
+    @Test
+    void processLibraryFiles_shouldCreateNewBookFromDirectoryWithSameSupplementaryFilesByHash() {
+        // Given
+        String supplementaryFileHash = "hash-accounting-101";
+        libraryTestBuilder
+                .addDefaultLibrary()
+                .addLibraryFile("/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile(
+                        "/101/Accounting",
+                        "Accounting 101.zip",
+                        supplementaryFileHash)
+                .addLibraryFile("/101/Accounting 2nd Edition", "Accounting 101 2nd Edition.pdf")
+                .addLibraryFile(
+                        "/101/Accounting 2nd Edition",
+                        "Accounting 101 2nd Edition.zip",
+                        supplementaryFileHash);
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks("Accounting 101", "Accounting 101 2nd Edition")
+                .bookHasSupplementaryFiles("Accounting 101", "Accounting 101.zip")
+                .bookHasSupplementaryFiles("Accounting 101 2nd Edition", "Accounting 101 2nd Edition.zip");
+    }
+
+    @Test
+    void processLibraryFiles_shouldIgnoreAdditionalFormatWithTheSameHashUsedInOtherBook() {
+        // Given
+        String additionalFormatHash = "hash-accounting-101";
+        libraryTestBuilder
+                .addDefaultLibrary()
+                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
+                .addLibraryFile(
+                        "/101/Accounting",
+                        "Accounting 101.pdf",
+                        additionalFormatHash)
+                .addLibraryFile("/101/Accounting 2nd Edition", "Accounting 101 2nd Edition.epub")
+                .addLibraryFile(
+                        "/101/Accounting 2nd Edition",
+                        "Accounting 101 2nd Edition.pdf",
+                        additionalFormatHash);
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks("Accounting 101", "Accounting 101 2nd Edition")
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.PDF)
+                .bookHasNoAdditionalFiles("Accounting 101 2nd Edition");
+    }
 }

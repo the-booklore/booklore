@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.BookMapperImpl;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -50,6 +51,7 @@ public class LibraryTestBuilder {
 
     // DTO-specific fields
     private final List<LibraryFile> libraryFiles = new ArrayList<>();
+    private final Map<Path, String> libraryFileHashes = new HashMap<>();
     private final Map<Long, BookEntity> bookRepository = new HashMap<>();
     private final Map<String, BookEntity> bookMap = new HashMap<>();
     private final Map<Long, BookAdditionalFileEntity> bookAdditionalFileRepository = new HashMap<>();
@@ -173,6 +175,20 @@ public class LibraryTestBuilder {
         return this;
     }
 
+    public LibraryTestBuilder addLibraryFile(String fileSubPath, String fileName, String hash) {
+        addLibraryFile(fileSubPath, fileName);
+
+        var lastLibraryFiles = libraryFiles.getLast();
+
+        Path filePath = Path.of(lastLibraryFiles.getLibraryPathEntity().getPath(), fileSubPath, fileName);
+        if (libraryFileHashes.containsKey(filePath)) {
+            throw new IllegalArgumentException("File with the same path and name already exists: " + fileSubPath + "/" + fileName);
+        }
+        libraryFileHashes.put(filePath, hash);
+
+        return this;
+    }
+
     public LibraryTestBuilder addLibraryFile(String fileSubPath, String fileName) {
         if (libraries.isEmpty()) {
             throw new IllegalStateException("No library available to add a book. Please add a library first.");
@@ -202,7 +218,11 @@ public class LibraryTestBuilder {
         return extension.map(BookFileExtension::getType).orElse(null);
     }
 
-    private static @NotNull String computeFileHash(Path path) {
+    private @NotNull String computeFileHash(Path path) {
+        if (libraryFileHashes.containsKey(path)) {
+            return libraryFileHashes.get(path);
+        }
+
         MessageDigest digest;
         try {
             digest = MessageDigest.getInstance("MD5");
@@ -258,6 +278,15 @@ public class LibraryTestBuilder {
     private @NotNull BookAdditionalFileEntity saveBookAdditionalFile(BookAdditionalFileEntity additionalFile) {
         if (additionalFile.getId() != null) {
             throw new IllegalArgumentException("ID must be null for new additional files");
+        }
+
+        // Do not allow files with duplicate hashes for alternative formats only
+        if (additionalFile.getAdditionalFileType() == AdditionalFileType.ALTERNATIVE_FORMAT &&
+                bookAdditionalFileRepository.values()
+                        .stream()
+                        .anyMatch(existingFile -> existingFile.getCurrentHash()
+                                .equals(additionalFile.getCurrentHash()))) {
+            throw new IllegalArgumentException("File with the same hash already exists: " + additionalFile.getCurrentHash());
         }
 
         additionalFile.setId((long) bookAdditionalFileRepository.size() + 1);
