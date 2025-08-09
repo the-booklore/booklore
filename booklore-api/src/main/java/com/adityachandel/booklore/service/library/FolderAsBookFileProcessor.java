@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @AllArgsConstructor
@@ -73,26 +73,40 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     }
 
     private void processDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
-        // Check if there's already a book entity in this directory
-        Optional<BookEntity> existingBook = findExistingBookInDirectory(directoryPath, libraryEntity);
+        var bookCreationResult = getOrCreateBookInDirectory(directoryPath, filesInDirectory, libraryEntity);
+        if (bookCreationResult.bookEntity.isEmpty()) {
+            log.warn("No book created for directory: {}", directoryPath);
+            return;
+        }
 
+        processAdditionalFiles(bookCreationResult.bookEntity.get(), bookCreationResult.remainingFiles);
+    }
+
+    private GetOrCreateBookResult getOrCreateBookInDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
+        var existingBook = findExistingBookInDirectory(directoryPath, libraryEntity);
         if (existingBook.isPresent()) {
             log.debug("Found existing book in directory {}: {}", directoryPath, existingBook.get().getFileName());
-            // Book already exists, process remaining files as additional files
-            processAdditionalFilesForExistingBook(existingBook.get(), filesInDirectory);
-        } else {
-            // No book exists in this directory, check parent directories
-            Optional<BookEntity> parentBook = findBookInParentDirectory(directoryPath, libraryEntity);
+            return new GetOrCreateBookResult(existingBook, filesInDirectory);
+        }
 
-            if (parentBook.isPresent()) {
-                log.debug("Found parent book for directory {}: {}", directoryPath, parentBook.get().getFileName());
-                // Parent directory has a book, treat all files as supplementary
-                processSupplementaryFilesForParentBook(parentBook.get(), filesInDirectory);
-            } else {
-                log.debug("No existing book found, creating new book from directory: {}", directoryPath);
-                // No parent book, create a new book from this directory
-                createNewBookFromDirectory(directoryPath, filesInDirectory, libraryEntity);
-            }
+        // No existing book, check parent directories
+        Optional<BookEntity> parentBook = findBookInParentDirectories(directoryPath, libraryEntity);
+        if (parentBook.isPresent()) {
+            log.debug("Found parent book for directory {}: {}", directoryPath, parentBook.get().getFileName());
+            return new GetOrCreateBookResult(parentBook, filesInDirectory);
+        }
+
+        log.debug("No existing book found, creating new book from directory: {}", directoryPath);
+        Optional<CreateBookResult> newBook = createNewBookFromDirectory(directoryPath, filesInDirectory, libraryEntity);
+        if (newBook.isPresent()) {
+            log.info("Created new book: {}", newBook.get().bookEntity.getFileName());
+            var remainingFiles = filesInDirectory.stream()
+                    .filter(file -> !file.equals(newBook.get().libraryFile))
+                    .toList();
+            return new GetOrCreateBookResult(Optional.of(newBook.get().bookEntity), remainingFiles);
+        } else {
+            log.warn("Failed to create book from directory: {}", directoryPath);
+            return new GetOrCreateBookResult(Optional.empty(), filesInDirectory);
         }
     }
 
@@ -112,7 +126,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                 .findFirst();
     }
 
-    private Optional<BookEntity> findBookInParentDirectory(Path directoryPath, LibraryEntity libraryEntity) {
+    private Optional<BookEntity> findBookInParentDirectories(Path directoryPath, LibraryEntity libraryEntity) {
         Path parent = directoryPath.getParent();
         LibraryPathEntity directoryLibraryPathEntity = libraryEntity.getLibraryPaths().stream()
                 .filter(libPath -> directoryPath.startsWith(libPath.getPath()))
@@ -140,34 +154,13 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         return Optional.empty();
     }
 
-    private void processAdditionalFilesForExistingBook(BookEntity existingBook, List<LibraryFile> filesInDirectory) {
-        for (LibraryFile file : filesInDirectory) {
-            // Skip if this is the main book file
-            if (file.getFileName().equals(existingBook.getFileName())) {
-                continue;
-            }
-
-            Optional<BookFileExtension> extension = BookFileExtension.fromFileName(file.getFileName());
-            AdditionalFileType fileType = extension.isPresent() ?
-                    AdditionalFileType.ALTERNATIVE_FORMAT : AdditionalFileType.SUPPLEMENTARY;
-
-            createAdditionalFileIfNotExists(existingBook, file, fileType);
-        }
-    }
-
-    private void processSupplementaryFilesForParentBook(BookEntity parentBook, List<LibraryFile> filesInDirectory) {
-        for (LibraryFile file : filesInDirectory) {
-            createAdditionalFileIfNotExists(parentBook, file, AdditionalFileType.SUPPLEMENTARY);
-        }
-    }
-
-    private void createNewBookFromDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
+    private Optional<CreateBookResult> createNewBookFromDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
         // Find the best candidate for the main book file
         Optional<LibraryFile> mainBookFile = findBestMainBookFile(filesInDirectory, libraryEntity);
 
         if (mainBookFile.isEmpty()) {
             log.debug("No suitable book file found in directory: {}", directoryPath);
-            return;
+            return Optional.empty();
         }
 
         LibraryFile bookFile = mainBookFile.get();
@@ -201,63 +194,52 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                             bookEntity.getFullFilePath(), bookFile.getFullPath());
                 }
 
-                // Process remaining files as additional files
-                processAdditionalFilesForNewBook(bookEntity, filesInDirectory, bookFile);
+                return Optional.of(new CreateBookResult(bookEntity, bookFile));
             } else {
                 log.warn("Book processor returned null for file: {}", bookFile.getFileName());
+
+                notificationService.sendMessage(
+                        com.adityachandel.booklore.model.websocket.Topic.LOG,
+                        com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification(
+                                "Failed to create book from file: " + bookFile.getFileName()
+                        )
+                );
+
+                return Optional.empty();
             }
         } catch (Exception e) {
             log.error("Error processing book file {}: {}", bookFile.getFileName(), e.getMessage(), e);
+
+            notificationService.sendMessage(
+                    com.adityachandel.booklore.model.websocket.Topic.LOG,
+                    com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification(
+                            "Error processing book file: " + bookFile.getFileName() + " - " + e.getMessage()
+                    )
+            );
+
+            return Optional.empty();
         }
     }
 
     private Optional<LibraryFile> findBestMainBookFile(List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
-        List<LibraryFile> bookFiles = filesInDirectory.stream()
-                .filter(file -> BookFileExtension.fromFileName(file.getFileName()).isPresent())
-                .toList();
-
-        if (bookFiles.isEmpty()) {
-            return Optional.empty();
-        }
-
-        // If a library has a default book format preference, try to find a file with that format first
-        if (libraryEntity.getDefaultBookFormat() != null) {
-            Optional<LibraryFile> preferredFormatFile = bookFiles.stream()
-                    .filter(file -> {
-                        Optional<BookFileExtension> extension = BookFileExtension.fromFileName(file.getFileName());
-                        return extension.isPresent() && extension.get().getType() == libraryEntity.getDefaultBookFormat();
-                    })
-                    .findFirst();
-
-            if (preferredFormatFile.isPresent()) {
-                log.debug("Selected book file based on default format {}: {}",
-                        libraryEntity.getDefaultBookFormat(), preferredFormatFile.get().getFileName());
-                return preferredFormatFile;
-            }
-        }
-
-        // Fallback to a default priority order: PDF > EPUB > CBZ > CBR > CB7
-        Optional<LibraryFile> defaultPriorityFile = bookFiles.stream()
-                .min(Comparator.comparingInt(f -> f.getBookFileType().ordinal()));
-
-        defaultPriorityFile.ifPresent(libraryFile ->
-                log.debug("Selected book file based on default priority: {}", libraryFile.getFileName()));
-
-        return defaultPriorityFile;
+        var defaultBookFormat = libraryEntity.getDefaultBookFormat();
+        return filesInDirectory.stream()
+                .filter(f -> f.getBookFileType() != null)
+                .min(Comparator.comparingInt(f -> {
+                    BookFileType bookFileType = f.getBookFileType();
+                    return bookFileType == defaultBookFormat
+                            ? -1 // Prefer the default format
+                            : bookFileType.ordinal();
+                }));
     }
 
-    private void processAdditionalFilesForNewBook(BookEntity bookEntity, List<LibraryFile> filesInDirectory, LibraryFile mainBookFile) {
+    private void processAdditionalFiles(BookEntity existingBook, List<LibraryFile> filesInDirectory) {
         for (LibraryFile file : filesInDirectory) {
-            // Skip the main book file
-            if (file.equals(mainBookFile)) {
-                continue;
-            }
-
             Optional<BookFileExtension> extension = BookFileExtension.fromFileName(file.getFileName());
             AdditionalFileType fileType = extension.isPresent() ?
                     AdditionalFileType.ALTERNATIVE_FORMAT : AdditionalFileType.SUPPLEMENTARY;
 
-            createAdditionalFileIfNotExists(bookEntity, file, fileType);
+            createAdditionalFileIfNotExists(existingBook, file, fileType);
         }
     }
 
@@ -297,4 +279,9 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             log.error("Error creating additional file {}: {}", file.getFileName(), e.getMessage(), e);
         }
     }
+
+    public record GetOrCreateBookResult(Optional<BookEntity> bookEntity, List<LibraryFile> remainingFiles) {}
+
+    public record CreateBookResult(BookEntity bookEntity, LibraryFile libraryFile) {}
+
 }

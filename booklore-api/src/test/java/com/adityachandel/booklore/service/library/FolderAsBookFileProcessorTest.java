@@ -143,7 +143,10 @@ class FolderAsBookFileProcessorTest {
     void processLibraryFiles_shouldProcessExistingBook() {
         // Given
         LibraryEntity libraryEntity = createLibraryEntity();
-        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
+        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory()
+                .stream()
+                .filter(f -> !f.getFileName().equals("book.pdf"))
+                .toList();
 
         BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
 
@@ -282,7 +285,10 @@ class FolderAsBookFileProcessorTest {
     void processLibraryFiles_shouldSkipExistingAdditionalFiles() {
         // Given
         LibraryEntity libraryEntity = createLibraryEntity();
-        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
+        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory()
+                .stream()
+                .filter(f -> !f.getFileName().equals("book.pdf"))
+                .toList();
 
         BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
         BookAdditionalFileEntity existingAdditionalFile = BookAdditionalFileEntity.builder()
