@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -50,15 +51,15 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     @Override
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         // Group files by their directory path
-        Map<String, List<LibraryFile>> filesByDirectory = libraryFiles.stream()
-                .collect(Collectors.groupingBy(LibraryFile::getFileSubPath));
+        Map<Path, List<LibraryFile>> filesByDirectory = libraryFiles.stream()
+                .collect(Collectors.groupingBy(libraryFile -> libraryFile.getFullPath().getParent()));
 
         log.info("Processing {} directories with {} total files for library: {}",
                 filesByDirectory.size(), libraryFiles.size(), libraryEntity.getName());
 
         // Process each directory
-        for (Map.Entry<String, List<LibraryFile>> entry : filesByDirectory.entrySet()) {
-            String directoryPath = entry.getKey();
+        for (Map.Entry<Path, List<LibraryFile>> entry : filesByDirectory.entrySet()) {
+            Path directoryPath = entry.getKey();
             List<LibraryFile> filesInDirectory = entry.getValue();
 
             log.debug("Processing directory: {} with {} files", directoryPath, filesInDirectory.size());
@@ -66,7 +67,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
     }
 
-    private void processDirectory(String directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
+    private void processDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
         // Check if there's already a book entity in this directory
         Optional<BookEntity> existingBook = findExistingBookInDirectory(directoryPath, libraryEntity);
 
@@ -84,36 +85,46 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                 processSupplementaryFilesForParentBook(parentBook.get(), filesInDirectory);
             } else {
                 log.debug("No existing book found, creating new book from directory: {}", directoryPath);
-                // No parent book, create new book from this directory
+                // No parent book, create a new book from this directory
                 createNewBookFromDirectory(directoryPath, filesInDirectory, libraryEntity);
             }
         }
     }
 
-    private Optional<BookEntity> findExistingBookInDirectory(String directoryPath, LibraryEntity libraryEntity) {
+    private Optional<BookEntity> findExistingBookInDirectory(Path directoryPath, LibraryEntity libraryEntity) {
         // Find books in all library paths for this library
         return libraryEntity.getLibraryPaths().stream()
-                .flatMap(libPath -> bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(
-                        libPath.getId(), directoryPath).stream())
-                .filter(book -> book.getFileSubPath().equals(directoryPath))
+                .flatMap(libPath -> {
+                    String filesSearchPath = Path.of(libPath.getPath())
+                            .relativize(directoryPath)
+                            .toString()
+                            .replace("\\", "/");
+                    return bookRepository
+                            .findAllByLibraryPathIdAndFileSubPathStartingWith(libPath.getId(), filesSearchPath)
+                            .stream();
+                })
+                .filter(book -> book.getFullFilePath().getParent().equals(directoryPath))
                 .findFirst();
     }
 
-    private Optional<BookEntity> findBookInParentDirectory(String directoryPath, LibraryEntity libraryEntity) {
-        Path path = Path.of(directoryPath);
-        Path parent = path.getParent();
+    private Optional<BookEntity> findBookInParentDirectory(Path directoryPath, LibraryEntity libraryEntity) {
+        Path parent = directoryPath.getParent();
+        LibraryPathEntity directoryLibraryPathEntity = libraryEntity.getLibraryPaths().stream()
+                .filter(libPath -> directoryPath.startsWith(libPath.getPath()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("No library path found for directory: " + directoryPath));
+        Path directoryLibraryPath = Path.of(directoryLibraryPathEntity.getPath());
 
         while (parent != null) {
-            String parentPath = parent.toString().replace("\\", "/");
-            if (parentPath.equals(".")) {
-                parentPath = "";
-            }
+            final String parentPath = directoryLibraryPath
+                    .relativize(parent)
+                    .toString()
+                    .replace("\\", "/");
 
-            final String finalParentPath = parentPath;
-            Optional<BookEntity> parentBook = libraryEntity.getLibraryPaths().stream()
-                    .flatMap(libPath -> bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(
-                            libPath.getId(), finalParentPath).stream())
-                    .filter(book -> book.getFileSubPath().equals(finalParentPath))
+            Optional<BookEntity> parentBook =
+                    bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(
+                            directoryLibraryPathEntity.getId(), parentPath).stream()
+                    .filter(book -> book.getFileSubPath().equals(parentPath))
                     .findFirst();
             if (parentBook.isPresent()) {
                 return parentBook;
@@ -145,7 +156,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
     }
 
-    private void createNewBookFromDirectory(String directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
+    private void createNewBookFromDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
         // Find the best candidate for the main book file
         Optional<LibraryFile> mainBookFile = findBestMainBookFile(filesInDirectory, libraryEntity);
 
@@ -210,7 +221,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             return Optional.empty();
         }
 
-        // If library has a default book format preference, try to find a file with that format first
+        // If a library has a default book format preference, try to find a file with that format first
         if (libraryEntity.getDefaultBookFormat() != null) {
             Optional<LibraryFile> preferredFormatFile = bookFiles.stream()
                     .filter(file -> {
@@ -226,7 +237,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             }
         }
 
-        // Fallback to default priority order: PDF > EPUB > CBZ > CBR > CB7
+        // Fallback to a default priority order: PDF > EPUB > CBZ > CBR > CB7
         Optional<LibraryFile> defaultPriorityFile = bookFiles.stream()
                 .min(Comparator.comparingInt(f -> f.getBookFileType().ordinal()));
 
@@ -252,7 +263,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     }
 
     private void createAdditionalFileIfNotExists(BookEntity bookEntity, LibraryFile file, AdditionalFileType fileType) {
-        // Check if additional file already exists
+        // Check if an additional file already exists
         Optional<BookAdditionalFileEntity> existingFile = bookAdditionalFileRepository
                 .findByLibraryPath_IdAndFileSubPathAndFileName(
                         file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
