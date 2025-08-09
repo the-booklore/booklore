@@ -272,25 +272,28 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             return;
         }
 
+        // Create a new additional file
+        String hash = FileFingerprint.generateHash(file.getFullPath());
+        BookAdditionalFileEntity additionalFile = BookAdditionalFileEntity.builder()
+                .book(bookEntity)
+                .fileName(file.getFileName())
+                .fileSubPath(file.getFileSubPath())
+                .additionalFileType(fileType)
+                .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
+                .initialHash(hash)
+                .currentHash(hash)
+                .addedOn(java.time.Instant.now())
+                .build();
+
         try {
             log.debug("Creating additional file: {} (type: {})", file.getFileName(), fileType);
-
-            // Create new additional file
-            String hash = FileFingerprint.generateHash(file.getFullPath());
-            BookAdditionalFileEntity additionalFile = BookAdditionalFileEntity.builder()
-                    .book(bookEntity)
-                    .fileName(file.getFileName())
-                    .fileSubPath(file.getFileSubPath())
-                    .additionalFileType(fileType)
-                    .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
-                    .initialHash(hash)
-                    .currentHash(hash)
-                    .addedOn(java.time.Instant.now())
-                    .build();
-
             bookAdditionalFileRepository.save(additionalFile);
+
             log.debug("Successfully created additional file: {}", file.getFileName());
         } catch (Exception e) {
+            // Remove an additional file from the book entity if its creation fails
+            bookEntity.getAdditionalFiles().removeIf(a -> a.equals(additionalFile));
+
             log.error("Error creating additional file {}: {}", file.getFileName(), e.getMessage(), e);
         }
     }
