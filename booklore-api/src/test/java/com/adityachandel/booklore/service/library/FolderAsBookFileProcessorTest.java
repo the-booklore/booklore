@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.model.websocket.LogNotification;
@@ -16,12 +15,15 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,6 +57,36 @@ class FolderAsBookFileProcessorTest {
     @Captor
     private ArgumentCaptor<BookAdditionalFileEntity> additionalFileCaptor;
 
+    private MockedStatic<FileUtils> fileUtilsMock;
+    private MockedStatic<FileFingerprint> fileFingerprintMock;
+
+    @BeforeEach
+    void setUp() {
+        fileUtilsMock = mockStatic(FileUtils.class);
+        fileFingerprintMock = mockStatic(FileFingerprint.class);
+        // Setup common FileUtils mocks for all tests
+        fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
+        fileFingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class)))
+                .then(invocation -> {
+                    MessageDigest digest = MessageDigest.getInstance("MD5");
+                    Path path = invocation.getArgument(0);
+                    byte[] hash = digest.digest(path.toString().getBytes());
+                    StringBuilder hexString = new StringBuilder();
+                    for (byte b : hash) {
+                        String hex = Integer.toHexString(0xff & b);
+                        if (hex.length() == 1) hexString.append('0');
+                        hexString.append(hex);
+                    }
+                    return hexString.toString();
+                });
+    }
+
+    @AfterEach
+    void tearDown() {
+        fileUtilsMock.close();
+        fileFingerprintMock.close();
+    }
+
     @Test
     void getScanMode_shouldReturnFolderAsBook() {
         assertThat(processor.getScanMode()).isEqualTo(LibraryScanMode.FOLDER_AS_BOOK);
@@ -67,253 +99,215 @@ class FolderAsBookFileProcessorTest {
 
     @Test
     void processLibraryFiles_shouldCreateNewBookFromDirectory() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            // Setup FileUtils mocks
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
+        Book createdBook = Book.builder()
+                .id(1L)
+                .fileName("book.pdf")
+                .bookType(BookFileType.PDF)
+                .build();
 
-            Book createdBook = Book.builder()
-                    .id(1L)
-                    .fileName("book.pdf")
-                    .bookType(BookFileType.PDF)
-                    .build();
+        BookEntity bookEntity = createBookEntity(1L, "book.pdf", "books");
 
-            BookEntity bookEntity = createBookEntity(1L, "book.pdf", "books");
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
+                .thenReturn(new ArrayList<>());
+        when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
+                .thenReturn(mockBookFileProcessor);
+        when(mockBookFileProcessor.processFile(any(LibraryFile.class)))
+                .thenReturn(createdBook);
+        when(bookRepository.getReferenceById(createdBook.getId()))
+                .thenReturn(bookEntity);
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
-                    .thenReturn(new ArrayList<>());
-            when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
-                    .thenReturn(mockBookFileProcessor);
-            when(mockBookFileProcessor.processFile(any(LibraryFile.class)))
-                    .thenReturn(createdBook);
-            when(bookRepository.getReferenceById(createdBook.getId()))
-                    .thenReturn(bookEntity);
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+        // Then
+        verify(mockBookFileProcessor).processFile(any(LibraryFile.class));
+        verify(notificationService).sendMessage(Topic.BOOK_ADD, createdBook);
+        verify(notificationService).sendMessage(eq(Topic.LOG), any(LogNotification.class));
+        verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-            // Then
-            verify(mockBookFileProcessor).processFile(any(LibraryFile.class));
-            verify(notificationService).sendMessage(Topic.BOOK_ADD, createdBook);
-            verify(notificationService).sendMessage(eq(Topic.LOG), any(LogNotification.class));
-            verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
-
-            List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-            assertThat(capturedFiles).hasSize(2);
-            assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
-                    .containsExactlyInAnyOrder("book.epub", "cover.jpg");
-            assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
-                    .containsExactly(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
-        }
+        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).hasSize(2);
+        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+                .containsExactlyInAnyOrder("book.epub", "cover.jpg");
+        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
+                .containsExactly(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
     }
 
     @Test
     void processLibraryFiles_shouldProcessExistingBook() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            // Setup FileUtils mocks
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
+        BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
 
-            BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
+                .thenReturn(List.of(existingBook));
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
-                    .thenReturn(List.of(existingBook));
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+        // Then
+        verify(mockBookFileProcessor, never()).processFile(any());
+        verify(notificationService, never()).sendMessage(eq(Topic.BOOK_ADD), any());
+        verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-            // Then
-            verify(mockBookFileProcessor, never()).processFile(any());
-            verify(notificationService, never()).sendMessage(eq(Topic.BOOK_ADD), any());
-            verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
-
-            List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-            assertThat(capturedFiles).hasSize(2);
-            assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
-                    .containsExactlyInAnyOrder("book.epub", "cover.jpg");
-        }
+        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).hasSize(2);
+        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+                .containsExactlyInAnyOrder("book.epub", "cover.jpg");
     }
 
     @Test
     void processLibraryFiles_shouldProcessFilesWithParentBook() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        List<LibraryFile> libraryFiles = List.of(
+                createLibraryFile("file1.txt", "books/chapter1"),
+                createLibraryFile("file2.txt", "books/chapter1")
+        );
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            List<LibraryFile> libraryFiles = List.of(
-                    createLibraryFile("file1.txt", "books/chapter1"),
-                    createLibraryFile("file2.txt", "books/chapter1")
-            );
+        BookEntity parentBook = createBookEntity(1L, "book.pdf", "books");
 
-            BookEntity parentBook = createBookEntity(1L, "book.pdf", "books");
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books/chapter1")))
+                .thenReturn(new ArrayList<>());
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
+                .thenReturn(List.of(parentBook));
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books/chapter1")))
-                    .thenReturn(new ArrayList<>());
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
-                    .thenReturn(List.of(parentBook));
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+        // Then
+        verify(mockBookFileProcessor, never()).processFile(any());
+        verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-            // Then
-            verify(mockBookFileProcessor, never()).processFile(any());
-            verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
-
-            List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-            assertThat(capturedFiles).hasSize(2);
-            assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
-                    .containsOnly(AdditionalFileType.SUPPLEMENTARY);
-        }
+        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).hasSize(2);
+        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
+                .containsOnly(AdditionalFileType.SUPPLEMENTARY);
     }
 
     @Test
     void processLibraryFiles_shouldRespectDefaultBookFormat() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
+        List<LibraryFile> libraryFiles = List.of(
+                createLibraryFile("book.pdf", "books", BookFileType.PDF),
+                createLibraryFile("book.epub", "books", BookFileType.EPUB),
+                createLibraryFile("book.cbz", "books", BookFileType.CBX)
+        );
 
-            List<LibraryFile> libraryFiles = List.of(
-                    createLibraryFile("book.pdf", "books", BookFileType.PDF),
-                    createLibraryFile("book.epub", "books", BookFileType.EPUB),
-                    createLibraryFile("book.cbz", "books", BookFileType.CBX)
-            );
+        Book createdBook = Book.builder()
+                .id(1L)
+                .fileName("book.epub")
+                .bookType(BookFileType.EPUB)
+                .build();
 
-            Book createdBook = Book.builder()
-                    .id(1L)
-                    .fileName("book.epub")
-                    .bookType(BookFileType.EPUB)
-                    .build();
+        BookEntity bookEntity = createBookEntity(1L, "book.epub", "books");
 
-            BookEntity bookEntity = createBookEntity(1L, "book.epub", "books");
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
+                .thenReturn(new ArrayList<>());
+        when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.EPUB))
+                .thenReturn(mockBookFileProcessor);
+        when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.epub"))))
+                .thenReturn(createdBook);
+        when(bookRepository.getReferenceById(createdBook.getId()))
+                .thenReturn(bookEntity);
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
-                    .thenReturn(new ArrayList<>());
-            when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.EPUB))
-                    .thenReturn(mockBookFileProcessor);
-            when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.epub"))))
-                    .thenReturn(createdBook);
-            when(bookRepository.getReferenceById(createdBook.getId()))
-                    .thenReturn(bookEntity);
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+        // Then
+        verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.epub")));
+        verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-            // Then
-            verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.epub")));
-            verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
-
-            List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-            assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
-                    .containsExactlyInAnyOrder("book.pdf", "book.cbz");
-        }
+        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+                .containsExactlyInAnyOrder("book.pdf", "book.cbz");
     }
 
     @Test
     void processLibraryFiles_shouldUseDefaultPriorityWhenNoDefaultFormat() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        libraryEntity.setDefaultBookFormat(null);
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            libraryEntity.setDefaultBookFormat(null);
+        List<LibraryFile> libraryFiles = List.of(
+                createLibraryFile("book.epub", "books", BookFileType.EPUB),
+                createLibraryFile("book.cbz", "books", BookFileType.CBX),
+                createLibraryFile("book.pdf", "books", BookFileType.PDF)
+        );
 
-            List<LibraryFile> libraryFiles = List.of(
-                    createLibraryFile("book.epub", "books", BookFileType.EPUB),
-                    createLibraryFile("book.cbz", "books", BookFileType.CBX),
-                    createLibraryFile("book.pdf", "books", BookFileType.PDF)
-            );
+        Book createdBook = Book.builder()
+                .id(1L)
+                .fileName("book.pdf")
+                .bookType(BookFileType.PDF)
+                .build();
 
-            Book createdBook = Book.builder()
-                    .id(1L)
-                    .fileName("book.pdf")
-                    .bookType(BookFileType.PDF)
-                    .build();
+        BookEntity bookEntity = createBookEntity(1L, "book.pdf", "books");
 
-            BookEntity bookEntity = createBookEntity(1L, "book.pdf", "books");
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
+                .thenReturn(new ArrayList<>());
+        when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
+                .thenReturn(mockBookFileProcessor);
+        when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.pdf"))))
+                .thenReturn(createdBook);
+        when(bookRepository.getReferenceById(createdBook.getId()))
+                .thenReturn(bookEntity);
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), anyString()))
-                    .thenReturn(new ArrayList<>());
-            when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
-                    .thenReturn(mockBookFileProcessor);
-            when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.pdf"))))
-                    .thenReturn(createdBook);
-                when(bookRepository.getReferenceById(createdBook.getId()))
-                        .thenReturn(bookEntity);
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
-
-            // Then
-            verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.pdf")));
-        }
+        // Then
+        verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.pdf")));
     }
 
     @Test
     void processLibraryFiles_shouldSkipExistingAdditionalFiles() {
-        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class);
-             MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
-            fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
-            fingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("mock-hash");
+        // Given
+        LibraryEntity libraryEntity = createLibraryEntity();
+        List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
 
-            // Given
-            LibraryEntity libraryEntity = createLibraryEntity();
-            List<LibraryFile> libraryFiles = createLibraryFilesInSameDirectory();
+        BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
+        BookAdditionalFileEntity existingAdditionalFile = BookAdditionalFileEntity.builder()
+                .id(1L)
+                .book(existingBook)
+                .fileName("book.epub")
+                .fileSubPath("books")
+                .additionalFileType(AdditionalFileType.ALTERNATIVE_FORMAT)
+                .build();
 
-            BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
-            BookAdditionalFileEntity existingAdditionalFile = BookAdditionalFileEntity.builder()
-                    .id(1L)
-                    .book(existingBook)
-                    .fileName("book.epub")
-                    .fileSubPath("books")
-                    .additionalFileType(AdditionalFileType.ALTERNATIVE_FORMAT)
-                    .build();
+        when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
+                .thenReturn(List.of(existingBook));
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), eq("books"), eq("book.epub")))
+                .thenReturn(Optional.of(existingAdditionalFile));
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), eq("books"), eq("cover.jpg")))
+                .thenReturn(Optional.empty());
 
-            when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
-                    .thenReturn(List.of(existingBook));
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), eq("books"), eq("book.epub")))
-                    .thenReturn(Optional.of(existingAdditionalFile));
-            when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), eq("books"), eq("cover.jpg")))
-                    .thenReturn(Optional.empty());
+        // When
+        processor.processLibraryFiles(libraryFiles, libraryEntity);
 
-            // When
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+        // Then
+        verify(bookAdditionalFileRepository, times(1)).save(additionalFileCaptor.capture());
 
-            // Then
-            verify(bookAdditionalFileRepository, times(1)).save(additionalFileCaptor.capture());
-
-            BookAdditionalFileEntity capturedFile = additionalFileCaptor.getValue();
-            assertThat(capturedFile.getFileName()).isEqualTo("cover.jpg");
-        }
+        BookAdditionalFileEntity capturedFile = additionalFileCaptor.getValue();
+        assertThat(capturedFile.getFileName()).isEqualTo("cover.jpg");
     }
 
     @Test
