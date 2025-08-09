@@ -18,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -172,5 +171,91 @@ class FolderAsBookFileProcessorExampleTest {
                 .hasBooks("Accounting 101", "Accounting 101 2nd Edition")
                 .bookHasAdditionalFormats("Accounting 101", BookFileType.PDF)
                 .bookHasNoAdditionalFiles("Accounting 101 2nd Edition");
+    }
+
+    @Test
+    void processLibraryFiles_shouldProcessDeepSubfolders() {
+        var javaSourcesSameHash = "hash-java-sources";
+
+        libraryTestBuilder
+                .addDefaultLibrary()
+                // Basic books
+                .addLibraryFile("/Basic/101/Accounting", "Accounting 101.epub")
+                .addLibraryFile("/Basic/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("/Basic/101/Anatomy", "Anatomy 101.pdf")
+                .addLibraryFile("/Basic/How-To/Repair", "How to Repair.epub")
+                .addLibraryFile("/Basic/How-To/Repair", "How to Repair.pdf")
+                // Software Engineering books
+                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.pdf")
+                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.epub")
+                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.zip", javaSourcesSameHash)
+                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.pdf")
+                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.epub")
+                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.zip", javaSourcesSameHash)
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.pdf")
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.epub")
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "sources.zip")
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.pdf")
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.epub")
+                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "sources.zip")
+                .addLibraryFile("/Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.pdf")
+                .addLibraryFile("/Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.epub")
+                // Comics Marvel
+                .addLibraryFile("/Comics/Marvel/Batman/Volume 1", "Batman v1.cbr")
+                .addLibraryFile("/Comics/Marvel/Batman/Volume 2", "Batman v2.cbr")
+                .addLibraryFile("/Comics/Marvel/Spiderman/Volume 1", "Spiderman v1.cbz")
+                .addLibraryFile("/Comics/Marvel/Spiderman/Volume 2", "Spiderman v2.cbz")
+                // Comics DC
+                .addLibraryFile("/Comics/DC/Superman/Volume 1", "Superman v1.cbr")
+                .addLibraryFile("/Comics/DC/Superman/Volume 1", "Poster.jpg")
+                .addLibraryFile("/Comics/DC/Superman/Volume 2", "Superman v2.cbr")
+                // Manga
+                .addLibraryFile("/Manga/One Piece/Volume 1", "One Piece v1.cbz")
+                .addLibraryFile("/Manga/One Piece/Volume 2", "One Piece v2.cbz")
+                .addLibraryFile("/Manga/Naruto/Volume 1", "Naruto v1.cbr")
+                .addLibraryFile("/Manga/Naruto/Volume 2", "Naruto v2.cbr");
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks(
+                        "Accounting 101", "Anatomy 101", "How to Repair",
+                        "Design Patterns", "Effective Java",
+                        "PyTorch for Machine Learning", "TensorFlow for Machine Learning",
+                        "Flask Web Development",
+                        "Batman v1", "Batman v2",
+                        "Spiderman v1", "Spiderman v2",
+                        "Superman v1", "Superman v2",
+                        "One Piece v1", "One Piece v2",
+                        "Naruto v1", "Naruto v2")
+                // Basic books
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.PDF)
+                .bookHasNoSupplementaryFiles("Anatomy 101")
+                .bookHasAdditionalFormats("How to Repair", BookFileType.PDF)
+                // Software Engineering books
+                .bookHasAdditionalFormats("Design Patterns", BookFileType.PDF)
+                .bookHasSupplementaryFiles("Design Patterns", "Design Patterns.zip")
+                .bookHasAdditionalFormats("Effective Java", BookFileType.PDF)
+                .bookHasSupplementaryFiles("Effective Java", "Effective Java.zip")
+                .bookHasAdditionalFormats("PyTorch for Machine Learning", BookFileType.PDF)
+                .bookHasSupplementaryFiles("PyTorch for Machine Learning", "sources.zip")
+                .bookHasAdditionalFormats("TensorFlow for Machine Learning", BookFileType.PDF)
+                .bookHasSupplementaryFiles("TensorFlow for Machine Learning", "sources.zip")
+                .bookHasAdditionalFormats("Flask Web Development", BookFileType.PDF)
+                // Comics Marvel
+                .bookHasNoAdditionalFiles("Batman v1")
+                .bookHasNoAdditionalFiles("Batman v2")
+                .bookHasNoAdditionalFiles("Spiderman v1")
+                .bookHasNoAdditionalFiles("Spiderman v2")
+                // Comics DC
+                .bookHasSupplementaryFiles("Superman v1", "Poster.jpg")
+                .bookHasNoAdditionalFiles("Superman v2")
+                // Manga
+                .bookHasNoAdditionalFiles("One Piece v1")
+                .bookHasNoAdditionalFiles("One Piece v2")
+                .bookHasNoAdditionalFiles("Naruto v1")
+                .bookHasNoAdditionalFiles("Naruto v2");
     }
 }
