@@ -69,17 +69,27 @@ public class LibraryTestBuilder {
                     return computeFileHash(path);
                 });
 
-        when(bookFileProcessorRegistry.getProcessorOrThrow(any(BookFileType.class)))
+        lenient().when(bookFileProcessorRegistry.getProcessorOrThrow(any(BookFileType.class)))
                 .thenReturn(bookFileProcessorMock);
-        when(bookFileProcessorMock.processFile(any(LibraryFile.class)))
+        lenient().when(bookFileProcessorMock.processFile(any(LibraryFile.class)))
                 .then(invocation -> {
                     LibraryFile libraryFile = invocation.getArgument(0);
                     return processFile(libraryFile);
                 });
-        when(bookRepositoryMock.getReferenceById(anyLong()))
+        lenient().when(bookRepositoryMock.getReferenceById(anyLong()))
                 .thenAnswer(invocation -> {
                     Long bookId = invocation.getArgument(0);
                     return getBookById(bookId);
+                });
+        when(bookRepositoryMock.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), any(String.class)))
+                .thenAnswer(invocation -> {
+                    Long libraryPathId = invocation.getArgument(0);
+                    String fileSubPath = invocation.getArgument(1);
+                    return bookRepository.values()
+                            .stream()
+                            .filter(book -> book.getLibraryPath().getId().equals(libraryPathId) &&
+                                    book.getFileSubPath().startsWith(fileSubPath))
+                            .toList();
                 });
 
         // lenient is used to avoid strict stubbing issues,
@@ -175,6 +185,37 @@ public class LibraryTestBuilder {
         return this;
     }
 
+    public LibraryTestBuilder addBook(String fileSubPath, String fileName) {
+        fileSubPath = removeLeadingSlash(fileSubPath);
+
+        long id = bookRepository.size() + 1L;
+        BookMetadataEntity metadata = BookMetadataEntity.builder()
+                .title(FilenameUtils.removeExtension(fileName))
+                .bookId(id)
+                .build();
+
+        String hash = computeFileHash(Path.of(fileSubPath, fileName));
+        BookEntity bookEntity = BookEntity.builder()
+                .id(id)
+                .fileName(fileName)
+                .fileSubPath(fileSubPath)
+                .bookType(getBookFileType(fileName))
+                .fileSizeKb(1024L)
+                .library(getLibraryEntity())
+                .libraryPath(getLibraryEntity().getLibraryPaths().getLast())
+                .addedOn(java.time.Instant.now())
+                .initialHash(hash)
+                .currentHash(hash)
+                .metadata(metadata)
+                .additionalFiles(new ArrayList<>())
+                .build();
+
+        bookRepository.put(bookEntity.getId(), bookEntity);
+        bookMap.put(metadata.getTitle(), bookEntity);
+
+        return this;
+    }
+
     public LibraryTestBuilder addLibraryFile(String fileSubPath, String fileName, String hash) {
         addLibraryFile(fileSubPath, fileName);
 
@@ -211,11 +252,6 @@ public class LibraryTestBuilder {
         libraryFiles.add(libraryFile);
 
         return this;
-    }
-
-    private static BookFileType getBookFileType(String fileName) {
-        var extension = BookFileExtension.fromFileName(fileName);
-        return extension.map(BookFileExtension::getType).orElse(null);
     }
 
     private @NotNull String computeFileHash(Path path) {
@@ -292,5 +328,14 @@ public class LibraryTestBuilder {
         additionalFile.setId((long) bookAdditionalFileRepository.size() + 1);
         bookAdditionalFileRepository.put(additionalFile.getId(), additionalFile);
         return additionalFile;
+    }
+
+    private static BookFileType getBookFileType(String fileName) {
+        var extension = BookFileExtension.fromFileName(fileName);
+        return extension.map(BookFileExtension::getType).orElse(null);
+    }
+
+    private static String removeLeadingSlash(String path) {
+        return path.startsWith("/") ? path.substring(1) : path;
     }
 }

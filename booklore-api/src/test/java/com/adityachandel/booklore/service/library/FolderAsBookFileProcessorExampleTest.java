@@ -174,6 +174,61 @@ class FolderAsBookFileProcessorExampleTest {
     }
 
     @Test
+    void processLibraryFiles_shouldAddAdditionalFormatsToExistingBook() {
+        // Given
+        libraryTestBuilder
+                .addDefaultLibrary()
+                .addBook("/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("/101/Accounting", "Accounting 101.epub");
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks("Accounting 101")
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.EPUB)
+                .bookHasNoSupplementaryFiles("Accounting 101");
+    }
+
+    @Test
+    void processLibraryFiles_shouldAddSupplementaryFilesToExistingBook() {
+        // Given
+        libraryTestBuilder
+                .addDefaultLibrary()
+                .addBook("/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("/101/Accounting", "sources.zip");
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks("Accounting 101")
+                .bookHasNoAdditionalFormats("Accounting 101")
+                .bookHasSupplementaryFiles("Accounting 101", "sources.zip");
+    }
+
+    @Test
+    void processLibraryFiles_shouldAddAdditionalFilesToExistingBook() {
+        // Given
+        libraryTestBuilder
+                .addDefaultLibrary()
+                .addBook("/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
+                .addLibraryFile("/101/Accounting", "sources.zip");
+
+        // When
+        processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
+
+        // Then
+        assertThat(libraryTestBuilder)
+                .hasBooks("Accounting 101")
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.EPUB)
+                .bookHasSupplementaryFiles("Accounting 101", "sources.zip");
+    }
+
+    @Test
     void processLibraryFiles_shouldProcessDeepSubfolders() {
         var javaSourcesSameHash = "hash-java-sources";
 

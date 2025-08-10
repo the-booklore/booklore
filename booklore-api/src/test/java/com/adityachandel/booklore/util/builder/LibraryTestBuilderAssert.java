@@ -78,6 +78,21 @@ public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderA
         return this;
     }
 
+    public LibraryTestBuilderAssert bookHasNoAdditionalFormats(String bookTitle) {
+        var book = actual.getBookEntity(bookTitle);
+        Assertions.assertThat(book)
+                .describedAs("Book with title '%s' should exist", bookTitle)
+                .isNotNull();
+
+        Assertions.assertThat(book.getAdditionalFiles()
+                    .stream()
+                    .filter(a -> a.getAdditionalFileType() == AdditionalFileType.ALTERNATIVE_FORMAT))
+                .describedAs("Book '%s' should have no additional formats", bookTitle)
+                .isEmpty();
+
+        return this;
+    }
+
     public LibraryTestBuilderAssert bookHasNoSupplementaryFiles(String bookTitle) {
         var book = actual.getBookEntity(bookTitle);
         Assertions.assertThat(book)
