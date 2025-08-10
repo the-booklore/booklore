@@ -4,6 +4,7 @@ import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.service.AdditionalFileService;
+import com.adityachandel.booklore.service.upload.FileUploadService;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ import java.util.List;
 public class AdditionalFileController {
 
     private final AdditionalFileService additionalFileService;
+    private final FileUploadService fileUploadService;
 
     @GetMapping
     @CheckBookAccess(bookIdParam = "bookId")
@@ -45,8 +47,7 @@ public class AdditionalFileController {
             @RequestParam("file") MultipartFile file,
             @RequestParam AdditionalFileType additionalFileType,
             @RequestParam(required = false) String description) throws IOException {
-
-        AdditionalFile additionalFile = additionalFileService.addAdditionalFile(bookId, file, additionalFileType, description);
+        AdditionalFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, additionalFileType, description);
         return ResponseEntity.ok(additionalFile);
     }
 

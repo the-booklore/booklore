@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service;
 
+import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
@@ -7,6 +8,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.service.monitoring.MonitoringService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -37,7 +40,6 @@ import java.util.Optional;
 public class AdditionalFileService {
 
     private final BookAdditionalFileRepository additionalFileRepository;
-    private final BookRepository bookRepository;
     private final AdditionalFileMapper additionalFileMapper;
 
     public List<AdditionalFile> getAdditionalFilesByBookId(Long bookId) {
@@ -48,48 +50,6 @@ public class AdditionalFileService {
     public List<AdditionalFile> getAdditionalFilesByBookIdAndType(Long bookId, AdditionalFileType type) {
         List<BookAdditionalFileEntity> entities = additionalFileRepository.findByBookIdAndAdditionalFileType(bookId, type);
         return additionalFileMapper.toAdditionalFiles(entities);
-    }
-
-    @Transactional
-    public AdditionalFile addAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) throws IOException {
-        Optional<BookEntity> bookOpt = bookRepository.findById(bookId);
-        if (bookOpt.isEmpty()) {
-            throw new IllegalArgumentException("Book not found with id: " + bookId);
-        }
-
-        BookEntity book = bookOpt.get();
-        String originalFileName = file.getOriginalFilename();
-        if (originalFileName == null) {
-            throw new IllegalArgumentException("File must have a name");
-        }
-
-        // Check for duplicates by hash
-        String fileHash = computeFileHash(file);
-        Optional<BookAdditionalFileEntity> existingFile = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
-        if (existingFile.isPresent()) {
-            throw new IllegalArgumentException("File already exists with same content");
-        }
-
-        // Store file in same directory as the book
-        Path targetPath = Paths.get(book.getLibraryPath().getPath(), book.getFileSubPath(), originalFileName);
-        Files.createDirectories(targetPath.getParent());
-        Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-
-        // Create entity
-        BookAdditionalFileEntity entity = BookAdditionalFileEntity.builder()
-                .book(book)
-                .fileName(originalFileName)
-                .fileSubPath(book.getFileSubPath())
-                .additionalFileType(additionalFileType)
-                .fileSizeKb(file.getSize() / 1024)
-                .initialHash(fileHash)
-                .currentHash(fileHash)
-                .description(description)
-                .addedOn(Instant.now())
-                .build();
-
-        entity = additionalFileRepository.save(entity);
-        return additionalFileMapper.toAdditionalFile(entity);
     }
 
     @Transactional
@@ -131,15 +91,5 @@ public class AdditionalFileService {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
                 .body(resource);
-    }
-
-    private String computeFileHash(MultipartFile file) throws IOException {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hashBytes = digest.digest(file.getBytes());
-            return HexFormat.of().formatHex(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
-        }
     }
 }
