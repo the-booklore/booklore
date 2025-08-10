@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 /**
  * Integration test for BookAdditionalFileRepository using TestContainers with MariaDB.
@@ -366,6 +367,131 @@ class BookAdditionalFileRepositoryTest {
         // Then
         assertThat(saved.getAddedOn()).isNotNull();
         assertThat(saved.getAddedOn()).isBetween(beforeSave, afterSave);
+    }
+
+    @Test
+    void shouldEnforceUniqueCurrentHashForAlternativeFormatType() {
+        // Given - First alternative format file with a specific hash
+        String sharedHash = "unique-alt-format-hash-123";
+        BookAdditionalFileEntity firstAltFile = createAdditionalFile("book-v1.epub", AdditionalFileType.ALTERNATIVE_FORMAT);
+        firstAltFile.setCurrentHash(sharedHash);
+        entityManager.persistAndFlush(firstAltFile);
+
+        // When/Then - Attempt to save another alternative format file with the same hash should fail
+        BookAdditionalFileEntity secondAltFile = createAdditionalFile("book-v2.epub", AdditionalFileType.ALTERNATIVE_FORMAT);
+        secondAltFile.setCurrentHash(sharedHash);
+
+        // The unique constraint violation should throw an exception
+        Throwable thrown = catchThrowable(() -> {
+            entityManager.persistAndFlush(secondAltFile);
+        });
+
+        // Verify it's a constraint violation
+        assertThat(thrown).isNotNull();
+
+        // Check for either Hibernate's ConstraintViolationException or the underlying SQL exception
+        // Different JPA providers and configurations may wrap the exception differently
+        boolean isConstraintViolation = false;
+        String exceptionMessage = "";
+
+        Throwable current = thrown;
+        while (current != null) {
+            if (current instanceof org.hibernate.exception.ConstraintViolationException ||
+                current instanceof java.sql.SQLIntegrityConstraintViolationException ||
+                current.getClass().getName().contains("ConstraintViolation")) {
+                isConstraintViolation = true;
+            }
+            // Collect all messages to check for the index name
+            if (current.getMessage() != null) {
+                exceptionMessage += current.getMessage() + " ";
+            }
+            current = current.getCause();
+        }
+
+        // Verify it's a constraint violation
+        assertThat(isConstraintViolation)
+                .describedAs("Expected a constraint violation exception")
+                .isTrue();
+
+        // Verify the exception message contains the specific unique index name
+        assertThat(exceptionMessage)
+                .containsIgnoringCase("idx_book_additional_file_current_hash_alt_format")
+                .describedAs("Should fail due to unique index on alt_format_current_hash");
+    }
+
+    @Test
+    void shouldAllowDuplicateCurrentHashForDifferentTypes() {
+        // Given - A shared hash value
+        String sharedHash = "shared-hash-456";
+
+        // When - Create an alternative format file with this hash
+        BookAdditionalFileEntity altFormatFile = createAdditionalFile("book.epub", AdditionalFileType.ALTERNATIVE_FORMAT);
+        altFormatFile.setCurrentHash(sharedHash);
+        entityManager.persistAndFlush(altFormatFile);
+
+        // And - Create a supplementary file with the same hash
+        BookAdditionalFileEntity supplementaryFile = createAdditionalFile("extras.zip", AdditionalFileType.SUPPLEMENTARY);
+        supplementaryFile.setCurrentHash(sharedHash);
+        BookAdditionalFileEntity savedSupplementary = entityManager.persistAndFlush(supplementaryFile);
+
+        // Then - Both files should exist with the same current_hash
+        assertThat(savedSupplementary).isNotNull();
+        assertThat(savedSupplementary.getCurrentHash()).isEqualTo(sharedHash);
+
+        // Verify both files exist in the database
+        List<BookAdditionalFileEntity> allFiles = additionalFileRepository.findByBookId(testBook.getId());
+        List<BookAdditionalFileEntity> filesWithSharedHash = allFiles.stream()
+                .filter(f -> sharedHash.equals(f.getCurrentHash()))
+                .toList();
+
+        assertThat(filesWithSharedHash).hasSize(2);
+        assertThat(filesWithSharedHash).extracting(BookAdditionalFileEntity::getAdditionalFileType)
+                .containsExactlyInAnyOrder(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
+
+        // Verify that only the alternative format file is findable by the unique index
+        Optional<BookAdditionalFileEntity> foundByAltHash = additionalFileRepository.findByAltFormatCurrentHash(sharedHash);
+        assertThat(foundByAltHash).isPresent();
+        assertThat(foundByAltHash.get().getAdditionalFileType()).isEqualTo(AdditionalFileType.ALTERNATIVE_FORMAT);
+        assertThat(foundByAltHash.get().getFileName()).isEqualTo("book.epub");
+    }
+
+    @Test
+    void shouldAllowDuplicateCurrentHashForSupplementaryFiles() {
+        // Given - Two supplementary files with the same hash (e.g., identical backup copies)
+        String duplicateHash = "duplicate-supplementary-hash-789";
+
+        // When - Create first supplementary file
+        BookAdditionalFileEntity firstSupp = createAdditionalFile("backup1.zip", AdditionalFileType.SUPPLEMENTARY);
+        firstSupp.setCurrentHash(duplicateHash);
+        BookAdditionalFileEntity savedFirst = entityManager.persistAndFlush(firstSupp);
+
+        // And - Create second supplementary file with same hash
+        BookAdditionalFileEntity secondSupp = createAdditionalFile("backup2.zip", AdditionalFileType.SUPPLEMENTARY);
+        secondSupp.setCurrentHash(duplicateHash);
+        BookAdditionalFileEntity savedSecond = entityManager.persistAndFlush(secondSupp);
+
+        // Then - Both files should exist without constraint violation
+        assertThat(savedFirst).isNotNull();
+        assertThat(savedSecond).isNotNull();
+        assertThat(savedFirst.getCurrentHash()).isEqualTo(duplicateHash);
+        assertThat(savedSecond.getCurrentHash()).isEqualTo(duplicateHash);
+
+        // Verify both supplementary files exist in the database
+        List<BookAdditionalFileEntity> supplementaryFiles = additionalFileRepository
+                .findByBookIdAndAdditionalFileType(testBook.getId(), AdditionalFileType.SUPPLEMENTARY);
+
+        List<BookAdditionalFileEntity> filesWithDuplicateHash = supplementaryFiles.stream()
+                .filter(f -> duplicateHash.equals(f.getCurrentHash()))
+                .toList();
+
+        assertThat(filesWithDuplicateHash).hasSize(2);
+        assertThat(filesWithDuplicateHash).extracting(BookAdditionalFileEntity::getFileName)
+                .containsExactlyInAnyOrder("backup1.zip", "backup2.zip");
+
+        // Verify that neither is found by the alt format index (since they're not ALTERNATIVE_FORMAT)
+        Optional<BookAdditionalFileEntity> foundByAltHash = additionalFileRepository.findByAltFormatCurrentHash(duplicateHash);
+        assertThat(foundByAltHash).isEmpty()
+                .describedAs("Supplementary files should not be indexed by alt_format_current_hash");
     }
 
     private BookAdditionalFileEntity createAdditionalFile(String fileName, AdditionalFileType type) {
