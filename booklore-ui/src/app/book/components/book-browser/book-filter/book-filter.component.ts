@@ -1,5 +1,5 @@
-import {Component, EventEmitter, ChangeDetectionStrategy, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, Observable, of, Subject, debounceTime, distinctUntilChanged, takeUntil, shareReplay} from 'rxjs';
+import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {combineLatest, distinctUntilChanged, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {BookService} from '../../../service/book.service';
 import {Library} from '../../../model/library.model';
@@ -152,7 +152,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   private filterChangeSubject = new Subject<Record<string, any> | null>();
 
   @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
-  @Output('filterMode') filterModeChanged = new EventEmitter<'and' | 'or'>();
+  @Output() filterModeChanged = new EventEmitter<'and' | 'or'>();
 
   @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
   @Input() entityType$!: Observable<EntityType> | undefined;
@@ -204,8 +204,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         this.filterStreams = {
           // Temporarily disabled until we can optimize for large libraries
           /*author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
-          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
-          series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name', sortMode),*/
+          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),*/
+          series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name', sortMode),
           publisher: this.getFilterStream((book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []), 'id', 'name', sortMode),
           readStatus: this.getFilterStream((book: Book) => {
             let status = book.readStatus;
@@ -231,7 +231,6 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       });
 
     this.filterChangeSubject.pipe(
-      debounceTime(10),
       takeUntil(this.destroy$)
     ).subscribe(value => this.filterSelected.emit(value));
 
