@@ -94,9 +94,19 @@ public class MetadataRefreshService {
                 checkForInterruption(jobId, task, bookIds.size());
                 int finalCompletedCount = completedCount;
                 txTemplate.execute(status -> {
-                    BookEntity book = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId))
-                            .stream().findFirst()
+                    BookEntity book = bookRepository.findById(bookId)
                             .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+                    
+                    // Initialize lazy collections to prevent detached entity issues
+                    if (book.getMetadata() != null) {
+                        if (book.getMetadata().getAuthors() != null) {
+                            book.getMetadata().getAuthors().size(); // Force load
+                        }
+                        if (book.getMetadata().getCategories() != null) {
+                            book.getMetadata().getCategories().size(); // Force load
+                        }
+                    }
+                    
                     try {
                         checkForInterruption(jobId, task, bookIds.size());
                         if (book.getMetadata().areAllFieldsLocked()) {
@@ -131,7 +141,13 @@ public class MetadataRefreshService {
                         log.error("Metadata update failed for book: {}", book.getFileName(), e);
                         sendTaskNotification(jobId, String.format("Failed to process: %s - %s", book.getMetadata().getTitle(), e.getMessage()), TaskStatus.FAILED);
                     }
-                    bookRepository.saveAndFlush(book);
+                    try {
+                        bookRepository.saveAndFlush(book);
+                    } catch (Exception e) {
+                        log.error("Failed to save book entity for book ID {}: {}", book.getId(), e.getMessage());
+                        status.setRollbackOnly();
+                        throw e;
+                    }
                     return null;
                 });
                 completedCount++;

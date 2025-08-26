@@ -42,6 +42,16 @@ public class SettingPersistenceHelper {
             try {
                 return objectMapper.readValue(json, clazz);
             } catch (JsonProcessingException e) {
+                // Handle migration case: if parsing fails (e.g., missing new fields like iTunes), 
+                // fall back to defaults and persist them
+                if (defaultValue != null && persistDefault) {
+                    try {
+                        saveDefaultSetting(key, objectMapper.writeValueAsString(defaultValue));
+                        return defaultValue;
+                    } catch (JsonProcessingException saveException) {
+                        throw new RuntimeException("Failed to persist default for " + key, saveException);
+                    }
+                }
                 throw new RuntimeException("Failed to parse " + key, e);
             }
         }
@@ -81,16 +91,21 @@ public class SettingPersistenceHelper {
         defaultComicvine.setEnabled(false);
         defaultComicvine.setApiKey(null);
 
+        MetadataProviderSettings.iTunes defaultiTunes = new MetadataProviderSettings.iTunes();
+        defaultiTunes.setEnabled(true);
+        defaultiTunes.setCountry("us");
+
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
+        defaultMetadataProviderSettings.setITunes(defaultiTunes);
 
         return defaultMetadataProviderSettings;
     }
 
-    MetadataRefreshOptions getDefaultMetadataRefreshOptions() {
+    public MetadataRefreshOptions getDefaultMetadataRefreshOptions() {
         MetadataRefreshOptions.FieldProvider titleProviders =
                 new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider subtitleProviders =
@@ -118,7 +133,7 @@ public class SettingPersistenceHelper {
         MetadataRefreshOptions.FieldProvider categoriesProviders =
                 new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider coverProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
+                new MetadataRefreshOptions.FieldProvider(MetadataProvider.iTunes, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
 
         MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
                 titleProviders,

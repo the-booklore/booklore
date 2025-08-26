@@ -50,6 +50,24 @@ export class MetadataProviderSettingsComponent implements OnInit {
     {label: 'amazon.tr', value: 'tr'}
   ];
 
+  iTunesCountries = [
+    {label: 'United States', value: 'us'},
+    {label: 'United Kingdom', value: 'gb'},
+    {label: 'Canada', value: 'ca'},
+    {label: 'Australia', value: 'au'},
+    {label: 'Germany', value: 'de'},
+    {label: 'France', value: 'fr'},
+    {label: 'Italy', value: 'it'},
+    {label: 'Spain', value: 'es'},
+    {label: 'Netherlands', value: 'nl'},
+    {label: 'Japan', value: 'jp'},
+    {label: 'Brazil', value: 'br'},
+    {label: 'India', value: 'in'},
+    {label: 'Mexico', value: 'mx'},
+    {label: 'Sweden', value: 'se'},
+    {label: 'Poland', value: 'pl'}
+  ];
+
   selectedAmazonDomain = 'com';
 
   hardcoverToken: string = '';
@@ -60,6 +78,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
   googleEnabled: boolean = false;
   comicvineEnabled: boolean = false;
   comicvineToken: string = '';
+  iTunesEnabled: boolean = false;
+  selectedITunesCountry: string = 'us';
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -83,6 +103,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.hardcoverEnabled = metadataProviderSettings?.hardcover?.enabled ?? false;
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
         this.comicvineToken = metadataProviderSettings?.comicvine?.apiKey ?? '';
+        this.iTunesEnabled = metadataProviderSettings?.iTunes?.enabled ?? false;
+        this.selectedITunesCountry = metadataProviderSettings?.iTunes?.country ?? 'us';
       });
   }
 
@@ -121,6 +143,11 @@ export class MetadataProviderSettingsComponent implements OnInit {
           hardcover: {
             enabled: this.hardcoverEnabled,
             apiKey: this.hardcoverToken.trim()
+          },
+          
+          iTunes: {
+            enabled: this.iTunesEnabled,
+            country: this.selectedITunesCountry
           }
         }
       }

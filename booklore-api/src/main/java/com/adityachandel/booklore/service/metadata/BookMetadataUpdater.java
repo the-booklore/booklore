@@ -158,21 +158,33 @@ public class BookMetadataUpdater {
     private void updateAuthorsIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear) {
         if (Boolean.TRUE.equals(e.getAuthorsLocked())) {
             // Locked — do nothing
-        } else if (clear.isAuthors()) {
-            if (e.getAuthors() == null) {
-                e.setAuthors(new HashSet<>());
-            } else {
-                e.getAuthors().clear();
-            }
+            return;
+        }
+        
+        // Ensure authors collection is initialized
+        if (e.getAuthors() == null) {
+            e.setAuthors(new HashSet<>());
+        }
+        
+        if (clear.isAuthors()) {
+            e.getAuthors().clear();
         } else if (shouldUpdateField(false, m.getAuthors()) && m.getAuthors() != null) {
-            if (e.getAuthors() == null) {
-                e.setAuthors(new HashSet<>());
+            Set<AuthorEntity> newAuthors = new HashSet<>();
+            for (String authorName : m.getAuthors()) {
+                if (authorName != null && !authorName.isBlank()) {
+                    AuthorEntity author = authorRepository.findByName(authorName)
+                            .orElseGet(() -> {
+                                try {
+                                    return authorRepository.save(AuthorEntity.builder().name(authorName).build());
+                                } catch (Exception ex) {
+                                    // In case of concurrent creation, try to find again
+                                    return authorRepository.findByName(authorName)
+                                            .orElseThrow(() -> new RuntimeException("Failed to create or find author: " + authorName, ex));
+                                }
+                            });
+                    newAuthors.add(author);
+                }
             }
-            Set<AuthorEntity> newAuthors = m.getAuthors().stream()
-                    .filter(a -> a != null && !a.isBlank())
-                    .map(name -> authorRepository.findByName(name)
-                            .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(name).build())))
-                    .collect(Collectors.toSet());
             e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
         }
@@ -182,9 +194,12 @@ public class BookMetadataUpdater {
         if (Boolean.TRUE.equals(e.getCategoriesLocked())) {
             return;
         }
+        
+        // Ensure categories collection is initialized
         if (e.getCategories() == null) {
             e.setCategories(new HashSet<>());
         }
+        
         if (clear.isCategories()) {
             e.getCategories().clear();
         } else if (shouldUpdateField(false, m.getCategories()) && m.getCategories() != null) {
@@ -193,18 +208,36 @@ public class BookMetadataUpdater {
                 for (String name : m.getCategories()) {
                     if (name == null || name.isBlank()) continue;
                     CategoryEntity entity = categoryRepository.findByName(name)
-                            .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(name).build()));
+                            .orElseGet(() -> {
+                                try {
+                                    return categoryRepository.save(CategoryEntity.builder().name(name).build());
+                                } catch (Exception ex) {
+                                    // In case of concurrent creation, try to find again
+                                    return categoryRepository.findByName(name)
+                                            .orElseThrow(() -> new RuntimeException("Failed to create or find category: " + name, ex));
+                                }
+                            });
                     existing.add(entity);
                 }
             } else {
-                Set<CategoryEntity> existing = e.getCategories();
-                existing.clear();
-                Set<CategoryEntity> result = m.getCategories().stream()
-                        .filter(n -> n != null && !n.isBlank())
-                        .map(name -> categoryRepository.findByName(name)
-                                .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(name).build())))
-                        .collect(Collectors.toSet());
-                existing.addAll(result);
+                Set<CategoryEntity> newCategories = new HashSet<>();
+                for (String name : m.getCategories()) {
+                    if (name != null && !name.isBlank()) {
+                        CategoryEntity entity = categoryRepository.findByName(name)
+                                .orElseGet(() -> {
+                                    try {
+                                        return categoryRepository.save(CategoryEntity.builder().name(name).build());
+                                    } catch (Exception ex) {
+                                        // In case of concurrent creation, try to find again
+                                        return categoryRepository.findByName(name)
+                                                .orElseThrow(() -> new RuntimeException("Failed to create or find category: " + name, ex));
+                                    }
+                                });
+                        newCategories.add(entity);
+                    }
+                }
+                e.getCategories().clear();
+                e.getCategories().addAll(newCategories);
             }
         }
     }

@@ -47,6 +47,7 @@ export interface MetadataProviderSettings {
   goodReads: Goodreads;
   hardcover: Hardcover;
   comicvine: Comicvine;
+  iTunes: iTunes;
 }
 
 export interface Amazon {
@@ -71,6 +72,11 @@ export interface Hardcover {
 export interface Comicvine {
   enabled: boolean;
   apiKey: string;
+}
+
+export interface iTunes {
+  enabled: boolean;
+  country: string;
 }
 
 export interface MetadataPersistenceSettings {

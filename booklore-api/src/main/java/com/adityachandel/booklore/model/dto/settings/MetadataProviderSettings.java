@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.dto.settings;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
@@ -9,6 +10,8 @@ public class MetadataProviderSettings {
     private Goodreads goodReads;
     private Hardcover hardcover;
     private Comicvine comicvine;
+    @JsonProperty("iTunes")
+    private iTunes iTunes;
 
     @Data
     public static class Amazon {
@@ -36,5 +39,11 @@ public class MetadataProviderSettings {
     public static class Comicvine {
         private boolean enabled;
         private String apiKey;
+    }
+    
+    @Data
+    public static class iTunes {
+        private boolean enabled;
+        private String country = "us";
     }
 }

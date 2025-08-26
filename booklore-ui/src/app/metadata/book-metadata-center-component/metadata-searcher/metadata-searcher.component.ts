@@ -86,7 +86,14 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
           const providerSettings = settings?.metadataProviderSettings ?? {};
           this.providers = Object.entries(providerSettings)
             .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
-            .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+            .map(([key]) => {
+              // Handle special cases for provider names that don't follow simple capitalization
+              const providerNameMap: {[key: string]: string} = {
+                'iTunes': 'iTunes',
+                'goodReads': 'GoodReads'
+              };
+              return providerNameMap[key] || key.charAt(0).toUpperCase() + key.slice(1);
+            });
 
           this.resetFormFromBook(book!);
 

@@ -1,5 +1,5 @@
 import {
-  Component, EventEmitter, inject, Input, OnChanges, Output, SimpleChanges
+  Component, EventEmitter, inject, Input, OnChanges, OnInit, Output, SimpleChanges
 } from '@angular/core';
 import {Select, SelectChangeEvent} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
@@ -13,6 +13,8 @@ import {
   MetadataRefreshOptions
 } from '../../model/request/metadata-refresh-options.model';
 import {Tooltip} from 'primeng/tooltip';
+import {AppSettingsService} from '../../../core/service/app-settings.service';
+import {filter, take} from 'rxjs/operators';
 
 @Component({
   selector: 'app-metadata-advanced-fetch-options',
@@ -21,7 +23,7 @@ import {Tooltip} from 'primeng/tooltip';
   styleUrl: './metadata-advanced-fetch-options.component.scss',
   standalone: true
 })
-export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
+export class MetadataAdvancedFetchOptionsComponent implements OnChanges, OnInit {
 
   @Output() metadataOptionsSubmitted = new EventEmitter<MetadataRefreshOptions>();
   @Input() currentMetadataOptions!: MetadataRefreshOptions;
@@ -32,7 +34,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'seriesName', 'seriesNumber', 'seriesTotal', 'isbn13', 'isbn10',
     'language', 'categories', 'cover'
   ];
-  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine'];
+  providers: string[] = [];
 
   refreshCovers: boolean = false;
   mergeCategories: boolean = false;
@@ -46,6 +48,28 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   fieldOptions: FieldOptions = this.initializeFieldOptions();
 
   private messageService = inject(MessageService);
+  private appSettingsService = inject(AppSettingsService);
+
+  ngOnInit(): void {
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => settings != null),
+        take(1)
+      )
+      .subscribe(settings => {
+        const providerSettings = settings?.metadataProviderSettings ?? {};
+        this.providers = Object.entries(providerSettings)
+          .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
+          .map(([key]) => {
+            // Handle special cases for provider names that don't follow simple capitalization
+            const providerNameMap: {[key: string]: string} = {
+              'iTunes': 'iTunes',
+              'goodReads': 'GoodReads'
+            };
+            return providerNameMap[key] || key.charAt(0).toUpperCase() + key.slice(1);
+          });
+      });
+  }
 
   private initializeFieldOptions(): FieldOptions {
     return this.fields.reduce((acc, field) => {
