@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.jsoup.Jsoup;
 import org.jsoup.Connection;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
@@ -88,11 +88,11 @@ public class DoubanBookParser implements BookParser {
         List<BookMetadata> searchResults = new ArrayList<>();
         try {
             Document doc = fetchDocument(queryUrl);
-            
+
             // Extract JSON data from window.__DATA__
             String htmlContent = doc.html();
             String jsonData = null;
-            
+
             // Use regex to find the JSON object in window.__DATA__
             Pattern pattern = Pattern.compile("window\\.__DATA__\\s*=\\s*(\\{.*\\});", Pattern.DOTALL);
             Matcher matcher = pattern.matcher(htmlContent);
@@ -100,14 +100,14 @@ public class DoubanBookParser implements BookParser {
                 jsonData = matcher.group(1);
                 log.debug("Successfully extracted JSON data, length: {}", jsonData.length());
             }
-            
+
             if (jsonData == null) {
                 log.warn("No JSON data found in Douban search response");
                 return null;
             }
-            
+
             log.debug("Extracted JSON data: {}", jsonData);
-            
+
             // Parse JSON data
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode rootNode;
@@ -119,32 +119,32 @@ public class DoubanBookParser implements BookParser {
                 return null;
             }
             JsonNode itemsNode = rootNode.get("items");
-            
+
             log.debug("Items node: {}", itemsNode != null ? itemsNode.toString() : "null");
-            
+
             if (itemsNode == null || !itemsNode.isArray()) {
                 log.warn("No items found in Douban search response or items is not an array");
                 return null;
             }
-            
+
             if (itemsNode.size() == 0) {
                 log.info("No books found for the search query");
                 return null;
             }
-            
+
             for (JsonNode item : itemsNode) {
                 try {
                     String title = item.get("title").asText();
                     String url = item.get("url").asText();
                     String coverUrl = item.get("cover_url").asText();
                     String doubanId = extractDoubanIdFromUrl(url);
-                    
+
                     // Extract abstract information
                     String abstractText = item.get("abstract").asText();
                     Set<String> authors = Set.of();
                     String publisher = null;
                     String pubDate = null;
-                    
+
                     if (abstractText != null && !abstractText.isEmpty()) {
                         // Parse abstract: "author0 / author1 / author 2 / ... / publisher / date (YYYY-MM or YYYY-MM-DD) / price"
                         String[] parts = abstractText.split(" / ");
@@ -167,14 +167,14 @@ public class DoubanBookParser implements BookParser {
                             }
                         }
                     }
-                    
+
                     // Extract rating information
                     JsonNode ratingNode = item.get("rating");
                     Double rating = null;
                     if (ratingNode != null && ratingNode.has("value")) {
                         rating = ratingNode.get("value").asDouble();
                     }
-                    
+
                     if (doubanId != null && !title.isEmpty()) {
                         BookMetadata metadata = BookMetadata.builder()
                                 .provider(MetadataProvider.Douban)
@@ -185,7 +185,7 @@ public class DoubanBookParser implements BookParser {
                                 .doubanRating(rating)
                                 .authors(authors)
                                 .build();
-                        
+
                         // Try to parse publication date
                         if (pubDate != null) {
                             try {
@@ -194,7 +194,7 @@ public class DoubanBookParser implements BookParser {
                                 log.debug("Could not parse publication date: {}", pubDate);
                             }
                         }
-                        
+
                         searchResults.add(metadata);
                         log.debug("Found book: {} with ID: {} and cover: {}", title, doubanId, coverUrl);
                     }
@@ -203,7 +203,7 @@ public class DoubanBookParser implements BookParser {
                     continue;
                 }
             }
-            
+
         } catch (Exception e) {
             log.warn("Failed to get Douban search results: {}", e.getMessage(), e);
         }

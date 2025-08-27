@@ -33,12 +33,13 @@ public class MetadataProviderSettings {
         private boolean enabled;
         private String apiKey;
     }
+
     @Data
     public static class Comicvine {
         private boolean enabled;
         private String apiKey;
     }
-    
+
     @Data
     public static class Douban {
         private boolean enabled;
