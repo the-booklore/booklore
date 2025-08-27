@@ -46,7 +46,33 @@ public class DoubanBookParser implements BookParser {
         if (searchResults == null || searchResults.isEmpty()) {
             return null;
         }
-        return searchResults.get(0);
+        BookMetadata topResult = searchResults.get(0);
+
+        // If Douban reviews are enabled, fetch detailed metadata including reviews
+        if (topResult.getDoubanId() != null && areDoubanReviewsEnabled()) {
+            BookMetadata detailedMetadata = getBookMetadata(topResult.getDoubanId());
+            if (detailedMetadata != null) {
+                // Merge detailed metadata with search result, preserving search result data where detailed is missing
+                if (detailedMetadata.getThumbnailUrl() == null && topResult.getThumbnailUrl() != null) {
+                    detailedMetadata.setThumbnailUrl(topResult.getThumbnailUrl());
+                }
+                if (detailedMetadata.getAuthors() == null || detailedMetadata.getAuthors().isEmpty()) {
+                    detailedMetadata.setAuthors(topResult.getAuthors());
+                }
+                if (detailedMetadata.getPublisher() == null && topResult.getPublisher() != null) {
+                    detailedMetadata.setPublisher(topResult.getPublisher());
+                }
+                if (detailedMetadata.getPublishedDate() == null && topResult.getPublishedDate() != null) {
+                    detailedMetadata.setPublishedDate(topResult.getPublishedDate());
+                }
+                if (detailedMetadata.getDoubanRating() == null && topResult.getDoubanRating() != null) {
+                    detailedMetadata.setDoubanRating(topResult.getDoubanRating());
+                }
+                return detailedMetadata;
+            }
+        }
+
+        return topResult;
     }
 
     @Override
@@ -520,10 +546,23 @@ public class DoubanBookParser implements BookParser {
 
     private List<BookReview> getReviews(Document doc, int maxReviews) {
         List<BookReview> reviews = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
 
         try {
             Elements reviewElements = doc.select("#comments .comment-item");
+            log.debug("Douban: Found {} review elements with selector '#comments .comment-item'", reviewElements.size());
+
+            if (reviewElements.isEmpty()) {
+                // Try alternative selectors that Douban might be using
+                reviewElements = doc.select(".comment-item");
+                log.debug("Douban: Trying alternative selector '.comment-item', found {} elements", reviewElements.size());
+
+                if (reviewElements.isEmpty()) {
+                    reviewElements = doc.select("[class*=comment]");
+                    log.debug("Douban: Trying broad selector '[class*=comment]', found {} elements", reviewElements.size());
+                }
+            }
+
             int count = 0;
 
             for (Element reviewElement : reviewElements) {
@@ -576,6 +615,7 @@ public class DoubanBookParser implements BookParser {
         } catch (Exception e) {
             log.warn("Failed to parse reviews: {}", e.getMessage());
         }
+        log.info("Douban: Extracted {} reviews from page", reviews.size());
         return reviews;
     }
 
@@ -736,6 +776,14 @@ public class DoubanBookParser implements BookParser {
         }
 
         return null;
+    }
+
+    private boolean areDoubanReviewsEnabled() {
+        return appSettingService.getAppSettings()
+                .getMetadataPublicReviewsSettings()
+                .getProviders()
+                .stream()
+                .anyMatch(cfg -> cfg.getProvider() == MetadataProvider.Douban && cfg.isEnabled());
     }
 
     private String cleanDescriptionHtml(String html) {
