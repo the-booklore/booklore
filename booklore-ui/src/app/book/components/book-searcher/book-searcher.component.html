@@ -7,7 +7,7 @@
       pInputText
       [(ngModel)]="searchQuery"
       (input)="onSearchInputChange()"
-      placeholder="Search books by title or author..."
+      placeholder="Title, Author, Series, Genre, or ISBN..."
       class="w-full pr-10"
     />
     @if (searchQuery) {
@@ -21,29 +21,6 @@
       </p-button>
     }
   </p-iconfield>
-
-  <!--<div class="sm:hidden flex items-center">
-    <p-button
-      icon="pi pi-search"
-      (click)="toggleSearchInputDropdown()"
-      [rounded]="true">
-    </p-button>
-  </div>
-
-  &lt;!&ndash; Dropdown input for small screens &ndash;&gt;
-  @if (isSearchDropdownOpen) {
-    <div class="absolute z-10 shadow-md rounded-md mt-2 w-56 sm:hidden">
-      <input
-        type="text"
-        pInputText
-        [(ngModel)]="searchQuery"
-        (input)="onSearchInputChange()"
-        (blur)="closeSearchDropdown()"
-        placeholder="Search books..."
-        class="w-full"
-      />
-    </div>
-  }-->
 
   <!-- Search results below small screen search input -->
   @if (books.length > 0 || searchQuery) {

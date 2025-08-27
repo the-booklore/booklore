@@ -59,6 +59,7 @@ public class BookService {
     private final AuthenticationService authenticationService;
     private final BookQueryService bookQueryService;
     private final UserProgressService userProgressService;
+    private final BookDownloadService bookDownloadService;
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
@@ -312,12 +313,12 @@ public class BookService {
             userBookProgress.setCbxProgress(request.getCbxProgress().getPage());
             userBookProgress.setCbxProgressPercent(request.getCbxProgress().getPercentage());
         }
-        
+
         // Update dateFinished if provided
         if (request.getDateFinished() != null) {
             userBookProgress.setDateFinished(request.getDateFinished());
         }
-        
+
         userBookProgressRepository.save(userBookProgress);
     }
 
@@ -453,18 +454,7 @@ public class BookService {
     }
 
     public ResponseEntity<Resource> downloadBook(Long bookId) {
-        try {
-            BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-
-            Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
-            Resource resource = new UrlResource(file.toUri());
-            return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
-                    .body(resource);
-        } catch (Exception e) {
-            throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
-        }
+        return bookDownloadService.downloadBook(bookId);
     }
 
     public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {

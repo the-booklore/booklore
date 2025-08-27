@@ -36,6 +36,7 @@ public class SecurityConfig {
 
     private final CustomOpdsUserDetailsService customOpdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final KoboAuthFilter koboAuthFilter;
     private final AppProperties appProperties;
 
     private static final String[] SWAGGER_ENDPOINTS = {
@@ -46,6 +47,7 @@ public class SecurityConfig {
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
             "/ws/**",
+            "/kobo/**",
             "/api/v1/auth/**",
             "/api/v1/public-settings",
             "/api/v1/setup/**",
@@ -104,6 +106,18 @@ public class SecurityConfig {
 
     @Bean
     @Order(3)
+    public SecurityFilterChain koboSecurityChain(HttpSecurity http, KoboAuthFilter koboAuthFilter) throws Exception {
+        http
+                .securityMatcher("/api/kobo/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
+                .addFilterBefore(koboAuthFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(4)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
         if (appProperties.getSwagger().isEnabled()) {

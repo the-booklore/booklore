@@ -29,6 +29,7 @@ public class BookLoreUser {
         private boolean canEditMetadata;
         private boolean canManipulateLibrary;
         private boolean canSyncKoReader;
+        private boolean canSyncKobo;
         private boolean canEmailBook;
         private boolean canDeleteBook;
     }

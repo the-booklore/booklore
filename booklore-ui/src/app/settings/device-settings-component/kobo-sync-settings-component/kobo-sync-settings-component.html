@@ -1,0 +1,106 @@
+<p-confirmDialog></p-confirmDialog>
+
+<p class="text-lg flex items-center gap-2 px-4 pt-4 pb-2">
+  Kobo Integration Token:
+  <i class="pi pi-info-circle text-sky-600"
+     pTooltip="Click to view Kobo setup documentation"
+     tooltipPosition="right"
+     (click)="openKoboDocumentation()"
+     style="cursor: pointer;">
+  </i>
+</p>
+
+@if (hasKoboTokenPermission) {
+  <form #koboForm="ngForm" class="px-4 py-2">
+    <div class="flex flex-col px-4 py-4 space-y-4">
+      <div class="flex flex-col gap-1 max-w-[33rem]">
+        <label for="koboToken">Kobo Sync Token</label>
+        <div class="flex items-center gap-2">
+          <input
+            pInputText
+            id="koboToken"
+            [(ngModel)]="koboToken"
+            [type]="showToken ? 'text' : 'password'"
+            readonly
+            fluid
+            name="koboToken"
+          />
+          <p-button
+            icon="pi pi-copy"
+            outlined="true"
+            severity="info"
+            (onClick)="copyText(koboToken)">
+          </p-button>
+          <p-button
+            [icon]="showToken ? 'pi pi-eye-slash' : 'pi pi-eye'"
+            outlined="true"
+            severity="info"
+            (onClick)="toggleShowToken()">
+          </p-button>
+        </div>
+      </div>
+
+      <p-button
+        icon="pi pi-refresh"
+        outlined="true"
+        severity="warn"
+        label="Regenerate Token"
+        (onClick)="confirmRegenerateToken()"
+        [disabled]="!credentialsSaved">
+      </p-button>
+    </div>
+  </form>
+
+  @if (isAdmin) {
+    <div class="px-4 py-4">
+      <p class="text-lg mb-4">Kobo Settings (Admin Only):</p>
+      <div class="flex flex-col px-4 py-4 space-y-6 max-w-[75rem]">
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <p-toggle-switch
+              id="convertToKepub"
+              [(ngModel)]="koboSettings.convertToKepub"
+              (ngModelChange)="onToggleChange()">
+            </p-toggle-switch>
+            <label for="convertToKepub" class="font-medium">Convert to KEPUB</label>
+          </div>
+          <p class="text-zinc-400 text-sm">
+            <strong>Pros:</strong> KEPUB format enables enhanced Kobo features like better typography, reading stats, and faster page turns.
+            <br>
+            <strong>Cons:</strong> Conversion takes extra processing time and may occasionally fail for complex layouts.
+            Books over the size limit below will skip conversion automatically.
+          </p>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <div class="flex items-center gap-6">
+            <label for="conversionLimit" class="font-medium">Conversion Size Limit: {{ koboSettings.conversionLimitInMb }} MB</label>
+          </div>
+          <p-slider
+            class="max-w-64"
+            id="conversionLimit"
+            [(ngModel)]="koboSettings.conversionLimitInMb"
+            [min]="1"
+            [max]="250"
+            [step]="1"
+            (ngModelChange)="onSliderChange()">
+          </p-slider>
+          <p class="text-zinc-400 text-sm">
+            Large files (100MB+) can cause conversion timeouts and server strain. Lower limits ensure faster syncing but may skip conversion of larger books.
+            <br>
+            <strong>Recommended:</strong> 50-100MB for most libraries. Very large books will sync as regular EPUB regardless of this setting.
+          </p>
+        </div>
+      </div>
+    </div>
+  }
+} @else {
+  <div class="px-4 py-4 m-4 rounded-lg bg-red-700/30 border border-red-600 text-red-200 flex items-center gap-2 max-w-lg">
+    <i class="pi pi-lock text-red-400 text-xl"></i>
+    <span>
+      Access to Kobo sync is restricted.
+      <br>
+      Please contact your administrator to request permission.
+    </span>
+  </div>
+}

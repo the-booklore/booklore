@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookCreatorService;
@@ -35,13 +36,14 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
     private final BookMetadataRepository bookMetadataRepository;
 
     public PdfProcessor(BookRepository bookRepository,
+                        BookAdditionalFileRepository bookAdditionalFileRepository,
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileProcessingUtils fileProcessingUtils,
                         BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService,
                         PdfMetadataExtractor pdfMetadataExtractor) {
-        super(bookRepository, bookCreatorService, bookMapper, fileProcessingUtils, bookMetadataRepository, metadataMatchService);
+        super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileProcessingUtils, metadataMatchService);
         this.pdfMetadataExtractor = pdfMetadataExtractor;
         this.bookMetadataRepository = bookMetadataRepository;
     }

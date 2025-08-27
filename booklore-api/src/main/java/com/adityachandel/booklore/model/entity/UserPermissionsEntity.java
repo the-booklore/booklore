@@ -41,6 +41,9 @@ public class UserPermissionsEntity {
     @Column(name = "permission_sync_koreader", nullable = false)
     private boolean permissionSyncKoreader = false;
 
+    @Column(name = "permission_sync_kobo", nullable = false)
+    private boolean permissionSyncKobo = false;
+
     @Column(name = "permission_admin", nullable = false)
     private boolean permissionAdmin;
 }

@@ -4,6 +4,7 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookCreatorService;
@@ -31,12 +32,13 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private final BookMetadataRepository bookMetadataRepository;
 
     public CbxProcessor(BookRepository bookRepository,
+                        BookAdditionalFileRepository bookAdditionalFileRepository,
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileProcessingUtils fileProcessingUtils,
                         BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService) {
-        super(bookRepository, bookCreatorService, bookMapper, fileProcessingUtils, bookMetadataRepository, metadataMatchService);
+        super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileProcessingUtils, metadataMatchService);
         this.bookMetadataRepository = bookMetadataRepository;
     }
 

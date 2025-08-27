@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum AppSettingKey {
-    QUICK_BOOK_MATCH("quick_book_match", true, false),
     OIDC_PROVIDER_DETAILS("oidc_provider_details", true, true),
+
+    QUICK_BOOK_MATCH("quick_book_match", true, false),
     OIDC_AUTO_PROVISION_DETAILS("oidc_auto_provision_details", true, false),
     SIDEBAR_LIBRARY_SORTING("sidebar_library_sorting", true, false),
     SIDEBAR_SHELF_SORTING("sidebar_shelf_sorting", true, false),
@@ -13,6 +14,7 @@ public enum AppSettingKey {
     METADATA_MATCH_WEIGHTS("metadata_match_weights", true, false),
     METADATA_PERSISTENCE_SETTINGS("metadata_persistence_settings", true, false),
     METADATA_PUBLIC_REVIEWS_SETTINGS("metadata_public_reviews_settings", true, false),
+    KOBO_SETTINGS("kobo_settings", true, false),
 
     AUTO_BOOK_SEARCH("auto_book_search", false, false),
     COVER_IMAGE_RESOLUTION("cover_image_resolution", false, false),

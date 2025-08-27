@@ -8,5 +8,6 @@ public enum PermissionType {
     EMAIL_BOOK,
     DELETE_BOOK,
     SYNC_KOREADER,
+    SYNC_KOBO,
     ADMIN
 }

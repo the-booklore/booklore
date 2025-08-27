@@ -106,6 +106,7 @@ export interface User {
     canEditMetadata: boolean;
     canManipulateLibrary: boolean;
     canSyncKoReader: boolean;
+    canSyncKobo: boolean;
   };
   userSettings: UserSettings;
   provisioningMethod?: 'LOCAL' | 'OIDC' | 'REMOTE';

@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.dto.Shelf;
 import com.adityachandel.booklore.model.dto.request.ShelfCreateRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
+import com.adityachandel.booklore.model.enums.ShelfType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.repository.UserRepository;
@@ -18,6 +19,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @AllArgsConstructor
 @Service
@@ -62,8 +64,18 @@ public class ShelfService {
     }
 
     public void deleteShelf(Long shelfId) {
-        findShelfByIdOrThrow(shelfId);
+        ShelfEntity shelfEntity = findShelfByIdOrThrow(shelfId);
+        if (shelfEntity.getName().equalsIgnoreCase(ShelfType.KOBO.getName())) {
+            throw ApiError.SHELF_CANNOT_BE_DELETED.createException(ShelfType.KOBO.getName());
+        }
         shelfRepository.deleteById(shelfId);
+    }
+
+    public Shelf getUserKoboShelf() {
+        Long userId = getAuthenticatedUserId();
+        ShelfEntity koboShelf = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
+                .orElseThrow(() -> ApiError.SHELF_NOT_FOUND.createException(ShelfType.KOBO.getName()));
+        return shelfMapper.toShelf(koboShelf);
     }
 
     public List<Book> getShelfBooks(Long shelfId) {
@@ -86,5 +98,9 @@ public class ShelfService {
     private ShelfEntity findShelfByIdOrThrow(Long shelfId) {
         return shelfRepository.findById(shelfId)
                 .orElseThrow(() -> ApiError.SHELF_NOT_FOUND.createException(shelfId));
+    }
+
+    public Optional<ShelfEntity> getShelf(Long id, String name) {
+        return shelfRepository.findByUserIdAndName(id, name);
     }
 }

@@ -138,6 +138,12 @@ export class AppMenuComponent implements OnInit {
         const shelves = state.shelves ?? [];
         const sortedShelves = this.sortArray(shelves, this.shelfSortField, this.shelfSortOrder);
 
+        const koboShelfIndex = sortedShelves.findIndex(shelf => shelf.name === 'Kobo');
+        let koboShelf = null;
+        if (koboShelfIndex !== -1) {
+          koboShelf = sortedShelves.splice(koboShelfIndex, 1)[0];
+        }
+
         const shelfItems = sortedShelves.map((shelf) => ({
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
@@ -155,13 +161,25 @@ export class AppMenuComponent implements OnInit {
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
 
+        const items = [unshelvedItem];
+        if (koboShelf) {
+          items.push({
+            label: koboShelf.name,
+            type: 'Shelf',
+            icon: 'pi pi-' + koboShelf.icon,
+            routerLink: [`/shelf/${koboShelf.id}/books`],
+            bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
+          });
+        }
+        items.push(...shelfItems);
+
         return [
           {
             type: 'shelf',
             label: 'Shelves',
             hasDropDown: true,
             hasCreate: false,
-            items: [unshelvedItem, ...shelfItems],
+            items,
           },
         ];
       })

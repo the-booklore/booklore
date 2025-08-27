@@ -200,4 +200,11 @@ public class SettingPersistenceHelper {
                 ))
                 .build();
     }
+
+    public KoboSettings getDefaultKoboSettings() {
+        return KoboSettings.builder()
+                .convertToKepub(false)
+                .conversionLimitInMb(100)
+                .build();
+    }
 }

@@ -37,6 +37,37 @@
                   </div>
                 }
 
+                <label class="self-center">Scan Mode</label>
+                <div class="flex items-center gap-2">
+                  <p-select
+                    [(ngModel)]="scanMode"
+                    [options]="scanModeOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select scan mode"
+                    class="w-full" />
+                  <i
+                    class="pi pi-info-circle text-sky-600 cursor-pointer"
+                    pTooltip="File as Book: Each file is a separate book. Folder as Book: Each folder contains one book in multiple formats."
+                    tooltipPosition="right"></i>
+                </div>
+
+                <label class="self-center">Default Format</label>
+                <div class="flex items-center gap-2">
+                  <p-select
+                    [(ngModel)]="defaultBookFormat"
+                    [options]="bookFormatOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Select default format"
+                    class="w-full"
+                    [disabled]="scanMode !== 'FOLDER_AS_BOOK'" />
+                  <i
+                    class="pi pi-info-circle text-sky-600 cursor-pointer"
+                    pTooltip="When a folder contains multiple book formats, this format will be used as the primary book file. Only applicable in 'Folder as Book' mode."
+                    tooltipPosition="right"></i>
+                </div>
+
                 <label class="self-center">Monitor Folders</label>
                 <div class="flex items-center gap-2">
                   <p-toggleswitch [(ngModel)]="watch" />

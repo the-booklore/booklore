@@ -48,7 +48,8 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
     private static final List<String> WHITELISTED_PATHS = List.of(
             "/api/v1/opds/",
             "/api/v1/auth/refresh",
-            "/api/v1/setup/"
+            "/api/v1/setup/",
+            "/api/kobo/"
     );
 
 
