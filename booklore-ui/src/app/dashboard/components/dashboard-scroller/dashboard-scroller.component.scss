@@ -129,9 +129,9 @@
   &::after {
     content: '';
     position: absolute;
-    bottom: -12px;
-    left: 15%;
-    right: 15%;
+    bottom: -8px;
+    left: 10%;
+    right: 10%;
     height: 5px;
     background: linear-gradient(
         90deg,
@@ -147,35 +147,11 @@
 }
 
 @media (max-width: 767px) {
-  .dashboard-scroller-container {
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    border-radius: 16px;
-  }
-
-  .dashboard-scroller-title {
-    font-size: 1.75rem;
-    margin-bottom: 1rem;
-
-    &::after {
-      width: 50px;
-      height: 3px;
-    }
-  }
 
   .dashboard-scroller-card {
-    height: 230px;
-    width: 135px;
-    flex-basis: 135px;
-  }
-
-  .dashboard-scroller-infinite {
-    gap: 1.5rem;
-    padding: 0.75rem 0.25rem 1.5rem 0.25rem;
-
-    &::-webkit-scrollbar {
-      height: 8px;
-    }
+    height: 184px;
+    width: 108px;
+    flex-basis: 108px;
   }
 
   .dashboard-scroller-no-books {

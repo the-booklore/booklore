@@ -23,6 +23,7 @@
         <th style="width: 80px;">Email Books</th>
         <th style="width: 80px;">Delete Books</th>
         <th style="width: 80px;">KOReader Sync</th>
+        <th style="width: 80px;">Kobo Sync</th>
         <th style="width: 120px;">Edit</th>
         <th style="width: 80px;">Change Password</th>
         <th style="width: 80px;">Delete</th>
@@ -31,11 +32,13 @@
 
     <ng-template pTemplate="body" let-user>
       <tr>
-        <td>
+        <td class="min-w-16">
           {{ (user.provisioningMethod || 'LOCAL') | lowercase | titlecase }}
         </td>
-        <td>{{ user.username }}</td>
-        <td>
+        <td class="min-w-16 max-w-32">
+          {{ user.username }}
+        </td>
+        <td class="min-w-36 max-w-72">
           @if (user.isEditing) {
             <input type="text" [(ngModel)]="user.name" class="p-inputtext w-full"/>
           }
@@ -133,6 +136,14 @@
           }
         </td>
         <td class="text-center">
+          @if (user.isEditing) {
+            <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo"></p-checkbox>
+          }
+          @if (!user.isEditing) {
+            <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" disabled></p-checkbox>
+          }
+        </td>
+        <td class="flex text-center gap-2">
           <ng-container>
             @if (!user.isEditing) {
               <p-button icon="pi pi-pencil" outlined="true" severity="info" (onClick)="toggleEdit(user)"></p-button>

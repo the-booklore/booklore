@@ -18,6 +18,7 @@ public class UserCreateRequest {
     private boolean permissionEmailBook;
     private boolean permissionDeleteBook;
     private boolean permissionSyncKoreader;
+    private boolean permissionSyncKobo;
     private boolean permissionAdmin;
 
     private Set<Long> selectedLibraries;

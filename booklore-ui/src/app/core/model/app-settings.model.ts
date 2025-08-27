@@ -90,6 +90,11 @@ export interface PublicReviewSettings {
   providers: ReviewProviderConfig[];
 }
 
+export interface KoboSettings {
+  convertToKepub: boolean;
+  conversionLimitInMb: number;
+}
+
 export interface AppSettings {
   autoBookSearch: boolean;
   similarBookRecommendation: boolean;
@@ -107,6 +112,7 @@ export interface AppSettings {
   metadataMatchWeights: MetadataMatchWeights;
   metadataPersistenceSettings: MetadataPersistenceSettings;
   metadataPublicReviewsSettings: PublicReviewSettings;
+  koboSettings: KoboSettings;
   metadataDownloadOnBookdrop: boolean;
 }
 
@@ -126,5 +132,6 @@ export enum AppSettingKey {
   METADATA_MATCH_WEIGHTS = 'METADATA_MATCH_WEIGHTS',
   METADATA_PERSISTENCE_SETTINGS = 'METADATA_PERSISTENCE_SETTINGS',
   METADATA_DOWNLOAD_ON_BOOKDROP = 'METADATA_DOWNLOAD_ON_BOOKDROP',
-  METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS'
+  METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS',
+  KOBO_SETTINGS = 'KOBO_SETTINGS'
 }

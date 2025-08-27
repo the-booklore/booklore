@@ -51,6 +51,7 @@ export class CreateUserDialogComponent implements OnInit {
       permissionEmailBook: [false],
       permissionDeleteBook: [false],
       permissionSyncKoreader: [false],
+      permissionSyncKobo: [false],
       permissionAdmin: [false],
     });
   }

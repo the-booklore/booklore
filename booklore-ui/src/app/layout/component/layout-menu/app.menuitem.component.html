@@ -51,7 +51,7 @@
       }
       <span>
         @if (item.type === 'Library' || item.type === 'Shelf' || item.type === 'magicShelfItem') {
-          @if ((item.type !== 'Library' || (admin || canManipulateLibrary)) && item.label !== 'Unshelved') {
+          @if ((item.type !== 'Library' || (admin || canManipulateLibrary)) && item.label !== 'Unshelved' && item.label !== 'Kobo') {
             <p-button
               (click)="entitymenu.toggle($event)"
               (mouseover)="hovered = true"
@@ -68,7 +68,7 @@
           <p-menu #entitymenu [model]="item.menu" [popup]="true" appendTo="body"></p-menu>
         }
 
-        @if (item.type === 'Library' && (!admin && !canManipulateLibrary) || item.type === 'All Books' || item.label === 'Unshelved') {
+        @if (item.type === 'Library' && (!admin && !canManipulateLibrary) || item.type === 'All Books' || item.label === 'Unshelved' || item.label === 'Kobo') {
           <p class="text-[var(--primary-color)] pr-3">
             {{ (item.bookCount$ | async)?.toString() || '0' }}
           </p>

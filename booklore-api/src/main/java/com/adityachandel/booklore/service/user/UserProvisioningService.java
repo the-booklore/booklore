@@ -54,6 +54,7 @@ public class UserProvisioningService {
         perms.setPermissionEmailBook(true);
         perms.setPermissionDeleteBook(true);
         perms.setPermissionSyncKoreader(true);
+        perms.setPermissionSyncKobo(true);
 
         user.setPermissions(perms);
         createUser(user);
@@ -83,6 +84,7 @@ public class UserProvisioningService {
         permissions.setPermissionEmailBook(request.isPermissionEmailBook());
         permissions.setPermissionDeleteBook(request.isPermissionDeleteBook());
         permissions.setPermissionSyncKoreader(request.isPermissionSyncKoreader());
+        permissions.setPermissionSyncKobo(request.isPermissionSyncKobo());
         permissions.setPermissionAdmin(request.isPermissionAdmin());
         user.setPermissions(permissions);
 
@@ -114,6 +116,7 @@ public class UserProvisioningService {
             perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
             perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
             perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
+            perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
         }
         user.setPermissions(perms);
 
@@ -161,15 +164,17 @@ public class UserProvisioningService {
             permissions.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
             permissions.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
             permissions.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
-            permissions.setPermissionDeleteBook(defaultPermissions.contains("permissionSyncKoreader"));
+            permissions.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
+            permissions.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
         } else {
-            permissions.setPermissionUpload(true);
-            permissions.setPermissionDownload(true);
-            permissions.setPermissionEditMetadata(true);
+            permissions.setPermissionUpload(false);
+            permissions.setPermissionDownload(false);
+            permissions.setPermissionEditMetadata(false);
             permissions.setPermissionManipulateLibrary(false);
-            permissions.setPermissionEmailBook(true);
-            permissions.setPermissionDeleteBook(true);
-            permissions.setPermissionSyncKoreader(true);
+            permissions.setPermissionEmailBook(false);
+            permissions.setPermissionDeleteBook(false);
+            permissions.setPermissionSyncKoreader(false);
+            permissions.setPermissionSyncKobo(false);
         }
 
         permissions.setPermissionAdmin(isAdmin);

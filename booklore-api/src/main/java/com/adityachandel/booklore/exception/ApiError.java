@@ -50,7 +50,8 @@ public enum ApiError {
     FILE_DELETION_DISABLED(HttpStatus.BAD_REQUEST, "File deletion is disabled"),
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "%s"),
     CONFLICT(HttpStatus.CONFLICT, "%s"),
-    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File not found: %s");
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File not found: %s"),
+    SHELF_CANNOT_BE_DELETED(HttpStatus.FORBIDDEN, "'%s' shelf can't be deleted" ),;
 
     private final HttpStatus status;
     private final String message;

@@ -101,17 +101,19 @@ services:
       - DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore   # Only modify this if you're familiar with JDBC and your database setup
       - DATABASE_USERNAME=booklore                          # Must match MYSQL_USER defined in the mariadb container
       - DATABASE_PASSWORD=your_secure_password              # Use a strong password; must match MYSQL_PASSWORD defined in the mariadb container 
+      - BOOKLORE_PORT=6060                                  # Port BookLore listens on inside the container; must match container port below
       - SWAGGER_ENABLED=false                               # Enable or disable Swagger UI (API docs). Set to 'true' to allow access; 'false' to block access (recommended for production).
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "6060:6060"
+      - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
+                    # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
+                    # Example: To expose on host port 8080, set BOOKLORE_PORT=8080 and use "8080:8080". 
     volumes:
-      - /your/local/path/to/booklore/data:/app/data       # Internal app data (settings, metadata, cache)
-      - /your/local/path/to/booklore/books1:/books1       # Book library folder — point to one of your collections
-      - /your/local/path/to/booklore/books2:/books2       # Another book library — you can mount multiple library folders this way
-      - /your/local/path/to/booklore/bookdrop:/bookdrop   # Bookdrop folder — drop new files here for automatic import into libraries
+      - /your/local/path/to/booklore/data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
+      - /your/local/path/to/booklore/books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
+      - /your/local/path/to/booklore/bookdrop:/bookdrop   # BookDrop folder. Files placed here are automatically detected and prepared for import.
     restart: unless-stopped
 
   mariadb:
@@ -136,7 +138,6 @@ services:
 ```
 Note: You can find the latest BookLore image tag `BOOKLORE_IMAGE_TAG` (e.g. v.0.x.x) from the Releases section:
 📦 [Latest Image Tag – GitHub Releases](https://github.com/adityachandelgit/BookLore/releases)
-
 
 ### 3️⃣ Start the Containers
 

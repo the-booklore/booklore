@@ -50,6 +50,11 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanSyncKoReader();
     }
 
+    public boolean canSyncKobo() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanSyncKobo();
+    }
+
     public boolean canEditMetadata() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanEditMetadata();

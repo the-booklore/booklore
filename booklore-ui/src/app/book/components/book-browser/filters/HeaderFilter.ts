@@ -1,7 +1,7 @@
 import {BookFilter} from './BookFilter';
 import {BookState} from '../../../model/state/book-state.model';
-import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {Observable, of} from 'rxjs';
+import {map, debounceTime, distinctUntilChanged, switchMap} from 'rxjs/operators';
 
 export class HeaderFilter implements BookFilter {
 
@@ -13,21 +13,35 @@ export class HeaderFilter implements BookFilter {
       str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
     return this.searchTerm$.pipe(
-      map(term => {
-        const normalizedTerm = normalize(term || '');
-        if (normalizedTerm && normalizedTerm.trim() !== '') {
-          const filteredBooks = bookState.books?.filter(book => {
-            const title = book.metadata?.title || '';
-            const series = book.metadata?.seriesName || '';
-            const authors = book.metadata?.authors || [];
-            const matchesTitle = normalize(title).includes(normalizedTerm);
-            const matchesSeries = normalize(series).includes(normalizedTerm);
-            const matchesAuthor = authors.some(author => normalize(author).includes(normalizedTerm));
-            return matchesTitle || matchesSeries || matchesAuthor;
-          }) || null;
-          return {...bookState, books: filteredBooks};
+      distinctUntilChanged(),
+      switchMap(term => {
+        const normalizedTerm = normalize(term || '').trim();
+        if (!normalizedTerm) {
+          return of(bookState);
         }
-        return bookState;
+        return of(normalizedTerm).pipe(
+          debounceTime(500),
+          map(nTerm => {
+            const filteredBooks = bookState.books?.filter(book => {
+              const title = book.metadata?.title || '';
+              const series = book.metadata?.seriesName || '';
+              const authors = book.metadata?.authors || [];
+              const categories = book.metadata?.categories || [];
+              const isbn = book.metadata?.isbn10 || '';
+              const isbn13 = book.metadata?.isbn13 || '';
+
+              const matchesTitle = normalize(title).includes(nTerm);
+              const matchesSeries = normalize(series).includes(nTerm);
+              const matchesAuthor = authors.some(author => normalize(author).includes(nTerm));
+              const matchesCategory = categories.some(category => normalize(category).includes(nTerm));
+              const matchesIsbn = normalize(isbn).includes(nTerm) || normalize(isbn13).includes(nTerm);
+
+              return matchesTitle || matchesSeries || matchesAuthor || matchesCategory || matchesIsbn;
+            }) || null;
+
+            return {...bookState, books: filteredBooks};
+          })
+        );
       })
     );
   }

@@ -191,21 +191,6 @@ export class BookService {
     this.updateLastReadTime(book.id);
   }
 
-  searchBooks(query: string): Book[] {
-    if (query.length < 2) {
-      return [];
-    }
-    const normalize = (str: string): string => str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    const normalizedQuery = normalize(query);
-    const state = this.bookStateSubject.value;
-    return (state.books || []).filter(book => {
-      const title = book.metadata?.title;
-      const authors = book.metadata?.authors || [];
-      return (title && normalize(title).includes(normalizedQuery)) ||
-        authors.some(author => normalize(author).includes(normalizedQuery));
-    });
-  }
-
   getFileContent(bookId: number): Observable<Blob> {
     return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
   }
@@ -331,7 +316,7 @@ export class BookService {
         if (currentState.books) {
           const updatedBooks = currentState.books.map(book => {
             if (book.id === bookId) {
-              return { ...book, dateFinished: dateFinished || undefined };
+              return {...book, dateFinished: dateFinished || undefined};
             }
             return book;
           });

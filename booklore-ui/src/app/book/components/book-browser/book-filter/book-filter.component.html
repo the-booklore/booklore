@@ -14,7 +14,7 @@
 
   <div class="flex-1 overflow-y-auto pb-4 pr-1" style="overscroll-behavior: contain;">
     <p-accordion [value]="expandedPanels">
-      @for (filterType of filterTypes; track filterType; let i = $index) {
+      @for (filterType of filterTypes; track trackByFilterType(i, filterType); let i = $index) {
         <p-accordion-panel [value]="i">
           <p-accordion-header>
             <span class="inline-flex items-center gap-1">
@@ -32,7 +32,7 @@
               <div
                 class="max-h-[27.5rem] overflow-y-auto overscroll-contain pr-1"
                 style="overscroll-behavior: contain;">
-                @for (filter of filters; track filter) {
+                @for (filter of filters; track trackByFilter(j, filter); let j = $index) {
                   <div
                     class="cursor-pointer transition-colors duration-200 ease-in-out pb-1 flex items-center gap-2"
                     [ngClass]="{

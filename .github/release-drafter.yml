@@ -1,5 +1,17 @@
-name-template: 'v$NEXT_PATCH_VERSION 🌟'
-tag-template: 'v$NEXT_PATCH_VERSION'
+name-template: 'Release v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+version-resolver:
+  major:
+    labels:
+      - 'major'
+  minor:
+    labels:
+      - 'minor'
+  patch:
+    labels:
+      - 'patch'
+  default: patch
 
 categories:
   - title: '🚀 New Features'
@@ -8,6 +20,9 @@ categories:
   - title: '✨ Enhancements'
     labels:
       - 'enhancement'
+  - title: '🎨 UI Tweaks'
+    labels:
+      - 'ui-tweaks'
   - title: '🐛 Bug Fixes'
     labels:
       - 'bug'
@@ -42,13 +57,13 @@ exclude-labels:
 change-template: '- $TITLE (#$NUMBER) by @$AUTHOR'
 
 template: |
-  ## 🌟 What's New in v$NEXT_PATCH_VERSION
+  ## 🌟 What's New in v$RESOLVED_VERSION
 
   $CHANGES
 
   ### 🐳 Docker Images
 
-  - **Docker Hub:** `booklore/booklore:v$NEXT_PATCH_VERSION`
-  - **GitHub Container Registry:** `ghcr.io/booklore-app/booklore:v$NEXT_PATCH_VERSION`
+  - **Docker Hub:** `booklore/booklore:v$RESOLVED_VERSION`
+  - **GitHub Container Registry:** `ghcr.io/booklore-app/booklore:v$RESOLVED_VERSION`
 
-  **Full Changelog**: https://github.com/booklore-app/booklore/compare/$PREVIOUS_TAG...v$NEXT_PATCH_VERSION
+  **Full Changelog**: https://github.com/booklore-app/booklore/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

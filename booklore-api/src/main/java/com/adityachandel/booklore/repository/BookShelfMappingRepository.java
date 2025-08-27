@@ -10,6 +10,4 @@ import java.util.Set;
 
 @Repository
 public interface BookShelfMappingRepository extends JpaRepository<BookShelfMapping, BookShelfKey> {
-
-    List<BookShelfMapping> findAllByBookIdIn(Set<Long> bookId);
 }
