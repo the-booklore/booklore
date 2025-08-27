@@ -1,6 +1,6 @@
-import {Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, Observable, of, Subject, takeUntil} from 'rxjs';
-import {distinctUntilChanged, map} from 'rxjs/operators';
+import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
+import {combineLatest, distinctUntilChanged, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
+import {map} from 'rxjs/operators';
 import {BookService} from '../../../service/book.service';
 import {Library} from '../../../model/library.model';
 import {Shelf} from '../../../model/shelf.model';
@@ -133,6 +133,7 @@ function getReadStatusName(status?: ReadStatus | null): string {
   selector: 'app-book-filter',
   templateUrl: './book-filter.component.html',
   styleUrls: ['./book-filter.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
     Accordion,
@@ -148,6 +149,8 @@ function getReadStatusName(status?: ReadStatus | null): string {
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {
+  private filterChangeSubject = new Subject<Record<string, any> | null>();
+
   @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
   @Output() filterModeChanged = new EventEmitter<'and' | 'or'>();
 
@@ -199,8 +202,9 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(([sortMode]) => {
         this.filterStreams = {
-          author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
-          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
+          // Temporarily disabled until we can optimize for large libraries
+          /*author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
+          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),*/
           series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name', sortMode),
           publisher: this.getFilterStream((book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []), 'id', 'name', sortMode),
           readStatus: this.getFilterStream((book: Book) => {
@@ -225,6 +229,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         this.filterTypes = Object.keys(this.filterStreams);
         this.setExpandedPanels();
       });
+
+    this.filterChangeSubject.pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(value => this.filterSelected.emit(value));
 
     if (this.resetFilter$) {
       this.resetFilter$.pipe(takeUntil(this.destroy$)).subscribe(() => this.clearActiveFilter());
@@ -270,7 +278,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
             a.value[nameKey].toString().localeCompare(b.value[nameKey].toString())
           );
         });
-      })
+      }),
+      shareReplay({bufferSize: 1, refCount: true})
     );
   }
 
@@ -281,6 +290,9 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   set selectedFilterMode(mode: 'and' | 'or') {
     this._selectedFilterMode = mode;
     this.filterModeChanged.emit(mode);
+    this.filterChangeSubject.next(
+      Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
+    );
   }
 
   private filterBooksByEntityType(books: Book[], entity: any, entityType: EntityType): Book[] {
@@ -320,11 +332,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       this.activeFilters[filterType].push(value);
     }
 
-    if (Object.keys(this.activeFilters).length === 0) {
-      this.filterSelected.emit(null);
-    } else {
-      this.filterSelected.emit({...this.activeFilters});
-    }
+    this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);
   }
 
   setFilters(filters: Record<string, any>) {
@@ -337,12 +345,12 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         this.activeFilters[key] = [value];
       }
     }
-    this.filterSelected.emit({...this.activeFilters});
+    this.filterChangeSubject.next({...this.activeFilters});
   }
 
   clearActiveFilter() {
     this.activeFilters = {};
-    this.filterSelected.emit(null);
+    this.filterChangeSubject.next(null);
   }
 
   setExpandedPanels(): void {
@@ -354,6 +362,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   onFiltersChanged(): void {
     this.setExpandedPanels();
+  }
+
+  trackByFilterType(_: number, type: string): string {
+    return type;
+  }
+
+  trackByFilter(_: number, filter: Filter<any>): any {
+    return filter.value.id ?? filter.value;
   }
 
   ngOnDestroy(): void {

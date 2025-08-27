@@ -6,14 +6,12 @@ import com.adityachandel.booklore.model.dto.kobo.KoboAuthentication;
 import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.dto.kobo.KoboResources;
 import com.adityachandel.booklore.model.dto.kobo.KoboTestResponse;
-import com.adityachandel.booklore.service.BookService;
-import com.adityachandel.booklore.service.KoboEntitlementService;
-import com.adityachandel.booklore.service.KoboReadingStateService;
-import com.adityachandel.booklore.service.ShelfService;
+import com.adityachandel.booklore.service.*;
 import com.adityachandel.booklore.service.kobo.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -23,6 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +43,7 @@ public class KoboController {
     private final KoboLibrarySyncService koboLibrarySyncService;
     private final KoboThumbnailService koboThumbnailService;
     private final ShelfService shelfService;
+    private final BookDownloadService bookDownloadService;
 
     @ModelAttribute
     public void captureToken(@PathVariable("token") String token) {
@@ -129,11 +131,11 @@ public class KoboController {
     }
 
     @GetMapping("/v1/books/{bookId}/download")
-    public ResponseEntity<?> downloadBook(@PathVariable String bookId) {
+    public void downloadBook(@PathVariable String bookId, HttpServletResponse response) throws IOException {
         if (StringUtils.isNumeric(bookId)) {
-            return bookService.downloadBook(Long.parseLong(bookId));
+            bookDownloadService.downloadKoboBook(Long.parseLong(bookId), response);
         } else {
-            return koboServerProxy.proxyCurrentRequest(null, false);
+            koboServerProxy.proxyCurrentRequest(null, false);
         }
     }
 

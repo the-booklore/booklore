@@ -3,6 +3,7 @@ package com.adityachandel.booklore.util.kobo;
 import com.adityachandel.booklore.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -11,6 +12,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Slf4j
 public class KoboUrlBuilder {
 
+    @Value("${server.port}")
+    private int serverPort;
+
     public UriComponentsBuilder baseBuilder() {
         HttpServletRequest request = RequestUtils.getCurrentRequest();
 
@@ -18,10 +22,9 @@ public class KoboUrlBuilder {
                 .fromCurrentContextPath()
                 .replacePath("")
                 .replaceQuery(null)
-                .port(-1); // drop default port
+                .port(-1);
 
         String host = builder.build().getHost();
-        String scheme = builder.build().getScheme();
 
         if (host == null) host = "";
 
@@ -34,6 +37,7 @@ public class KoboUrlBuilder {
             }
             log.info("Applied X-Forwarded-Port: {}", port);
         } catch (NumberFormatException e) {
+            builder.port(serverPort);
             log.warn("Invalid X-Forwarded-Port header: {}", xfPort);
         }
 

@@ -30,4 +30,5 @@ public class AppSettings {
     private MetadataMatchWeights metadataMatchWeights;
     private MetadataPersistenceSettings metadataPersistenceSettings;
     private MetadataPublicReviewsSettings metadataPublicReviewsSettings;
+    private KoboSettings koboSettings;
 }

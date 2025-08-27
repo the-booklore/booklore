@@ -15,6 +15,7 @@ app:
 
 server:
   forward-headers-strategy: native
+  port: 8080
 
 spring:
   servlet:

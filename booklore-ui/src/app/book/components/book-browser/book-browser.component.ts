@@ -1,4 +1,4 @@
-import {AfterViewInit, ChangeDetectorRef, Component, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, inject, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {LibraryService} from '../../service/library.service';
@@ -46,6 +46,7 @@ import {BookMenuService} from '../../service/book-menu.service';
 import {MagicShelf, MagicShelfService} from '../../../magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../book-rule-evaluator.service';
 import {GroupRule} from '../../../magic-shelf-component/magic-shelf-component';
+import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -87,18 +88,19 @@ const SORT_DIRECTION = {
   providers: [SeriesCollapseFilter],
   animations: [
     trigger('slideInOut', [
-      state('void', style({ transform: 'translateY(100%)' })),
-      state('*', style({ transform: 'translateY(0)' })),
-      transition(':enter', [ animate('0.1s ease-in') ]),
-      transition(':leave', [ animate('0.1s ease-out') ])
+      state('void', style({transform: 'translateY(100%)'})),
+      state('*', style({transform: 'translateY(0)'})),
+      transition(':enter', [animate('0.1s ease-in')]),
+      transition(':leave', [animate('0.1s ease-out')])
     ])
   ]
 })
-export class BookBrowserComponent implements OnInit, AfterViewInit {
+export class BookBrowserComponent implements OnInit {
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
   protected filterSortPreferenceService = inject(FilterSortPreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
+  protected sidebarFilterTogglePrefService = inject(SidebarFilterTogglePrefService);
   private activatedRoute = inject(ActivatedRoute);
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
@@ -108,7 +110,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private bookMenuService = inject(BookMenuService);
   private sortService = inject(SortService);
   private router = inject(Router);
-  private changeDetectorRef = inject(ChangeDetectorRef);
   private libraryShelfMenuService = inject(LibraryShelfMenuService);
   protected seriesCollapseFilter = inject(SeriesCollapseFilter);
   protected confirmationService = inject(ConfirmationService);
@@ -148,14 +149,30 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private headerFilter = new HeaderFilter(this.searchTerm$);
   protected bookSorter = new BookSorter(selectedSort => this.applySortOption(selectedSort));
 
-  @ViewChild(BookTableComponent) bookTableComponent!: BookTableComponent;
-  @ViewChild(BookFilterComponent) bookFilterComponent!: BookFilterComponent;
+  @ViewChild(BookTableComponent)
+  bookTableComponent!: BookTableComponent;
+  @ViewChild(BookFilterComponent, { static: false })
+  bookFilterComponent!: BookFilterComponent;
 
-  get currentCardSize() { return this.coverScalePreferenceService.currentCardSize; }
-  get gridColumnMinWidth(): string { return this.coverScalePreferenceService.gridColumnMinWidth; }
-  get viewIcon(): string { return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table'; }
-  get hasSidebarFilters(): boolean { return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0; }
-  get isFilterActive(): boolean { return this.selectedFilter.value !== null; }
+  get currentCardSize() {
+    return this.coverScalePreferenceService.currentCardSize;
+  }
+
+  get gridColumnMinWidth(): string {
+    return this.coverScalePreferenceService.gridColumnMinWidth;
+  }
+
+  get viewIcon(): string {
+    return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table';
+  }
+
+  get hasSidebarFilters(): boolean {
+    return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0;
+  }
+
+  get isFilterActive(): boolean {
+    return this.selectedFilter.value !== null;
+  }
 
   ngOnInit(): void {
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
@@ -197,23 +214,22 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       () => this.multiBookEditMetadata()
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
-  }
 
-  ngAfterViewInit(): void {
-    combineLatest({
-      paramMap: this.activatedRoute.queryParamMap,
-      user: this.userService.userState$.pipe(
-        filter(userState => !!userState?.user && userState.loaded),
-        take(1)
-      )
-    }).subscribe(({paramMap, user}) => {
+    // --- NEW: Subscribe to query params + user changes for reactive updates ---
+    combineLatest([
+      this.activatedRoute.paramMap,
+      this.activatedRoute.queryParamMap,
+      this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
+    ]).subscribe(([paramMap, queryParamMap, user]) => {
 
-      const viewParam = paramMap.get(QUERY_PARAMS.VIEW);
-      const sortParam = paramMap.get(QUERY_PARAMS.SORT);
-      const directionParam = paramMap.get(QUERY_PARAMS.DIRECTION);
-      const filterParams = paramMap.get(QUERY_PARAMS.FILTER);
-      const sidebarParam = paramMap.get(QUERY_PARAMS.SIDEBAR);
-      this.showFilter = sidebarParam === null ? true : sidebarParam === 'true';
+      const viewParam = queryParamMap.get(QUERY_PARAMS.VIEW);
+      const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
+      const directionParam = queryParamMap.get(QUERY_PARAMS.DIRECTION);
+      const filterParams = queryParamMap.get(QUERY_PARAMS.FILTER);
+
+      this.sidebarFilterTogglePrefService.showFilter$.subscribe(value => {
+        this.showFilter = value;
+      });
 
       const parsedFilters: Record<string, string[]> = {};
 
@@ -229,8 +245,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         });
 
         this.selectedFilter.next(parsedFilters);
-        this.bookFilterComponent.setFilters?.(parsedFilters);
-        this.bookFilterComponent.onFiltersChanged?.();
+        if(this.bookFilterComponent) {
+          this.bookFilterComponent.setFilters?.(parsedFilters);
+          this.bookFilterComponent.onFiltersChanged?.();
+        }
 
         const firstFilter = filterParams.split(',')[0];
         const [key, ...values] = firstFilter.split(':');
@@ -255,7 +273,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.filterSortPreferenceService.initValue(user.user?.userSettings?.filterSortingMode);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
-
 
       const override = this.entityViewPreferences?.overrides?.find(o =>
         o.entityType?.toUpperCase() === currentEntityTypeStr &&
@@ -289,7 +306,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         direction: SortDirection.DESCENDING
       };
 
-      const fromParam = paramMap.get(QUERY_PARAMS.FROM);
+      const fromParam = queryParamMap.get(QUERY_PARAMS.FROM);
       this.currentViewMode = fromParam === 'toggle'
         ? (viewParam === VIEW_MODES.TABLE || viewParam === VIEW_MODES.GRID
           ? viewParam
@@ -306,8 +323,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const queryParams: any = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
         [QUERY_PARAMS.SORT]: this.bookSorter.selectedSort.field,
-        [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING,
-        [QUERY_PARAMS.SIDEBAR]: this.showFilter.toString()
+        [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING
       };
 
       if (Object.keys(parsedFilters).length > 0) {
@@ -316,34 +332,37 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
       const currentParams = this.activatedRoute.snapshot.queryParams;
       const changed = Object.keys(queryParams).some(k => currentParams[k] !== queryParams[k]);
-
       if (changed) {
+        const mergedParams = {...currentParams, ...queryParams};
         this.router.navigate([], {
-          queryParams,
+          queryParams: mergedParams,
           replaceUrl: true
         });
       }
-
-      this.changeDetectorRef.detectChanges();
-    });
-
-    this.bookFilterComponent.filterSelected.subscribe((filters: Record<string, any> | null) => {
-      if (this.settingFiltersFromUrl) return;
-
-      this.selectedFilter.next(filters);
-      this.rawFilterParamFromUrl = null;
-
-      const hasSidebarFilters = !!filters && Object.keys(filters).length > 0;
-      this.currentFilterLabel = hasSidebarFilters ? 'All Books (Filtered)' : 'All Books';
-    });
-
-    this.bookFilterComponent.filterModeChanged.subscribe((mode: 'and' | 'or') => {
-      this.selectedFilterMode.next(mode);
     });
 
     this.searchTerm$.subscribe(term => {
       this.hasSearchTerm = !!term && term.trim().length > 0;
     });
+  }
+
+  onFilterSelected(filters: Record<string, any> | null): void {
+    if (this.settingFiltersFromUrl) return;
+
+    this.selectedFilter.next(filters);
+    this.rawFilterParamFromUrl = null;
+
+    const hasSidebarFilters = !!filters && Object.keys(filters).length > 0;
+    this.currentFilterLabel = hasSidebarFilters ? 'All Books (Filtered)' : 'All Books';
+  }
+
+  onFilterModeChanged(mode: 'and' | 'or'): void {
+    this.selectedFilterMode.next(mode);
+  }
+
+  toggleSidebar(): void {
+    this.showFilter = !this.showFilter;
+    this.sidebarFilterTogglePrefService.selectedShowFilter = this.showFilter;
   }
 
   updateScale(): void {
@@ -474,18 +493,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.selectedFilter.next(null);
     }
     this.clearSearch();
-  }
-
-  toggleFilterSidebar() {
-    this.showFilter = !this.showFilter;
-    const currentParams = this.activatedRoute.snapshot.queryParams;
-    this.router.navigate([], {
-      queryParams: {
-        ...currentParams,
-        [QUERY_PARAMS.SIDEBAR]: this.showFilter.toString()
-      },
-      replaceUrl: true
-    });
   }
 
   toggleTableGrid(): void {

@@ -96,11 +96,12 @@
 }
 
 .search-input {
-  width: 100%;
+  min-width: 22rem;
   padding-left: 30px;
   height: 2.5rem;
   line-height: 2.5rem;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .mobile-filter-mask {

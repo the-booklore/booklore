@@ -1,12 +1,15 @@
 package com.adityachandel.booklore.service;
 
 import com.adityachandel.booklore.model.dto.kobo.*;
+import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.KoboBookFormat;
 import com.adityachandel.booklore.model.enums.KoboReadStatus;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.kobo.KoboUrlBuilder;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ public class KoboEntitlementService {
 
     private final KoboUrlBuilder koboUrlBuilder;
     private final BookQueryService bookQueryService;
+    private final AppSettingService appSettingService;
 
     public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token, boolean removed) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
@@ -146,6 +150,12 @@ public class KoboEntitlementService {
 
         String downloadUrl = koboUrlBuilder.downloadUrl(token, book.getId());
 
+        KoboBookFormat bookFormat = KoboBookFormat.EPUB3;
+        KoboSettings koboSettings = appSettingService.getAppSettings().getKoboSettings();
+        if (koboSettings != null && koboSettings.isConvertToKepub()) {
+            bookFormat = KoboBookFormat.KEPUB;
+        }
+
         return KoboBookMetadata.builder()
                 .crossRevisionId(String.valueOf(book.getId()))
                 .revisionId(String.valueOf(book.getId()))
@@ -170,7 +180,7 @@ public class KoboEntitlementService {
                 .downloadUrls(List.of(
                         KoboBookMetadata.DownloadUrl.builder()
                                 .url(downloadUrl)
-                                .format("EPUB3")
+                                .format(bookFormat.toString())
                                 .size(book.getFileSizeKb() * 1024)
                                 .build()
                 ))

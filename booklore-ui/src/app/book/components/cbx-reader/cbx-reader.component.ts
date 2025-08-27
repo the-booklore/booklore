@@ -1,5 +1,4 @@
 import {Component, HostListener, inject, OnInit} from '@angular/core';
-
 import {ActivatedRoute} from '@angular/router';
 import {CbxReaderService} from '../../service/cbx-reader.service';
 import {BookService} from '../../service/book.service';
@@ -30,6 +29,8 @@ export class CbxReaderComponent implements OnInit {
 
   pageSpread: CbxPageSpread | PdfPageSpread = CbxPageSpread.ODD;
   pageViewMode: CbxPageViewMode | PdfPageViewMode = CbxPageViewMode.SINGLE_PAGE;
+
+  backgroundColor: 'black' | 'gray' | 'white' = 'gray';
 
   private touchStartX = 0;
   private touchEndX = 0;
@@ -109,6 +110,29 @@ export class CbxReaderComponent implements OnInit {
 
   get isTwoPageView(): boolean {
     return this.pageViewMode === CbxPageViewMode.TWO_PAGE || this.pageViewMode === PdfPageViewMode.TWO_PAGE;
+  }
+
+  get backgroundColorIcon(): string {
+    switch (this.backgroundColor) {
+      case 'black': return '⚫';
+      case 'gray': return '🔘';
+      case 'white': return '⚪';
+      default: return '🔘';
+    }
+  }
+
+  toggleBackground(): void {
+    switch (this.backgroundColor) {
+      case 'black':
+        this.backgroundColor = 'gray';
+        break;
+      case 'gray':
+        this.backgroundColor = 'white';
+        break;
+      case 'white':
+        this.backgroundColor = 'black';
+        break;
+    }
   }
 
   toggleView() {
@@ -222,7 +246,10 @@ export class CbxReaderComponent implements OnInit {
   get imageUrls(): string[] {
     if (!this.pages.length) return [];
 
-    const urls = [this.getPageImageUrl(this.currentPage)];
+    const urls: string[] = [];
+
+    urls.push(this.getPageImageUrl(this.currentPage));
+
     if (this.isTwoPageView && this.currentPage + 1 < this.pages.length) {
       urls.push(this.getPageImageUrl(this.currentPage + 1));
     }
@@ -233,17 +260,17 @@ export class CbxReaderComponent implements OnInit {
   private updateViewerSetting(): void {
     const bookSetting: BookSetting = this.bookType === "CBX"
       ? {
-          cbxSettings: {
-            pageSpread: this.pageSpread as CbxPageSpread,
-            pageViewMode: this.pageViewMode as CbxPageViewMode,
-          }
+        cbxSettings: {
+          pageSpread: this.pageSpread as CbxPageSpread,
+          pageViewMode: this.pageViewMode as CbxPageViewMode,
         }
+      }
       : {
-          newPdfSettings: {
-            pageSpread: this.pageSpread as PdfPageSpread,
-            pageViewMode: this.pageViewMode as PdfPageViewMode,
-          }
-        };
+        newPdfSettings: {
+          pageSpread: this.pageSpread as PdfPageSpread,
+          pageViewMode: this.pageViewMode as PdfPageViewMode,
+        }
+      };
     this.bookService.updateViewerSetting(bookSetting, this.bookId).subscribe();
   }
 
@@ -252,13 +279,14 @@ export class CbxReaderComponent implements OnInit {
       ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10
       : 0;
 
-    if(this.bookType === 'CBX') {
+    if (this.bookType === 'CBX') {
       this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
     }
-    if(this.bookType === 'PDF') {
+    if (this.bookType === 'PDF') {
       this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
     }
   }
+
   goToPage(page: number): void {
     if (page < 1 || page > this.pages.length) return;
 

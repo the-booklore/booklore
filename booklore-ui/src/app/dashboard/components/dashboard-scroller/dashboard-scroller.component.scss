@@ -129,9 +129,9 @@
   &::after {
     content: '';
     position: absolute;
-    bottom: -12px;
-    left: 15%;
-    right: 15%;
+    bottom: -8px;
+    left: 10%;
+    right: 10%;
     height: 5px;
     background: linear-gradient(
         90deg,
@@ -149,8 +149,8 @@
 @media (max-width: 767px) {
 
   .dashboard-scroller-card {
-    height: 184px;   /* 80% of 230px */
-    width: 108px;    /* 80% of 135px */
+    height: 184px;
+    width: 108px;
     flex-basis: 108px;
   }
 

@@ -3,6 +3,7 @@ package com.adityachandel.booklore;
 import com.adityachandel.booklore.config.security.AuthenticationService;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.repository.*;
+import com.adityachandel.booklore.service.BookDownloadService;
 import com.adityachandel.booklore.service.BookQueryService;
 import com.adityachandel.booklore.service.BookService;
 import com.adityachandel.booklore.service.UserProgressService;
@@ -46,6 +47,7 @@ class BookServiceDeleteTests {
         AuthenticationService authenticationService = Mockito.mock(AuthenticationService.class);
         BookQueryService bookQueryService = Mockito.mock(BookQueryService.class);
         UserProgressService userProgressService = Mockito.mock(UserProgressService.class);
+        BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
 
         bookService = new BookService(
                 bookRepository,
@@ -60,7 +62,8 @@ class BookServiceDeleteTests {
                 userBookProgressRepository,
                 authenticationService,
                 bookQueryService,
-                userProgressService
+                userProgressService,
+                bookDownloadService
         );
     }
 

@@ -8,15 +8,20 @@ import {InputText} from 'primeng/inputtext';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {UserService} from '../../user-management/user.service';
 import {Subject} from 'rxjs';
-import {filter, takeUntil} from 'rxjs/operators';
+import {debounceTime, filter, take, takeUntil} from 'rxjs/operators';
 import {Tooltip} from 'primeng/tooltip';
+import {ToggleSwitch} from 'primeng/toggleswitch';
+import {Slider} from 'primeng/slider';
+import {AppSettingsService} from '../../../core/service/app-settings.service';
+import {SettingsHelperService} from '../../../core/service/settings-helper.service';
+import {AppSettingKey, KoboSettings} from '../../../core/model/app-settings.model';
 
 @Component({
   selector: 'app-kobo-sync-setting-component',
   standalone: true,
   templateUrl: './kobo-sync-settings-component.html',
   styleUrl: './kobo-sync-settings-component.scss',
-  imports: [FormsModule, Button, InputText, ConfirmDialog, Tooltip],
+  imports: [FormsModule, Button, InputText, ConfirmDialog, Tooltip, ToggleSwitch, Slider],
   providers: [MessageService, ConfirmationService]
 })
 export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
@@ -25,32 +30,75 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   private confirmationService = inject(ConfirmationService);
   private clipboard = inject(Clipboard);
   protected userService = inject(UserService);
+  protected appSettingsService = inject(AppSettingsService);
+  protected settingsHelperService = inject(SettingsHelperService);
 
   private readonly destroy$ = new Subject<void>();
-  hasPermission = false;
+  private readonly sliderChange$ = new Subject<void>();
 
+  hasKoboTokenPermission = false;
+  isAdmin = false;
   koboToken = '';
   credentialsSaved = false;
   showToken = false;
 
+  koboSettings: KoboSettings = {
+    convertToKepub: false,
+    conversionLimitInMb: 100
+  };
+
   ngOnInit() {
+    this.setupSliderDebouncing();
+    this.setupUserStateSubscription();
+  }
+
+  private setupSliderDebouncing() {
+    this.sliderChange$.pipe(
+      debounceTime(500),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.saveSettings();
+    });
+  }
+
+  private setupUserStateSubscription() {
     this.userService.userState$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
-      this.hasPermission = (userState.user?.permissions.canSyncKobo || userState.user?.permissions.admin) ?? false;
-      if (this.hasPermission) {
-        this.koboService.getUser().subscribe({
-          next: (settings: KoboSyncSettings) => {
-            this.koboToken = settings.token;
-            this.credentialsSaved = !!settings.token;
-          },
-          error: () => {
-            this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load Kobo settings'});
-          }
-        });
+      this.hasKoboTokenPermission = (userState.user?.permissions.canSyncKobo) ?? false;
+      this.isAdmin = userState.user?.permissions.admin ?? false;
+      if (this.hasKoboTokenPermission) {
+        this.loadKoboToken();
+      }
+      if (this.isAdmin) {
+        this.loadKoboSettings();
       }
     });
+  }
+
+  private loadKoboToken() {
+    this.koboService.getUser().subscribe({
+      next: (settings: KoboSyncSettings) => {
+        this.koboToken = settings.token;
+        this.credentialsSaved = !!settings.token;
+      },
+      error: () => {
+        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load Kobo settings'});
+      }
+    });
+  }
+
+  private loadKoboSettings() {
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => settings != null),
+        take(1),
+      )
+      .subscribe(settings => {
+        this.koboSettings.convertToKepub = settings?.koboSettings?.convertToKepub ?? true;
+        this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
+      });
   }
 
   copyText(text: string) {
@@ -82,6 +130,34 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to regenerate token'});
       }
     });
+  }
+
+  onToggleChange() {
+    this.saveSettings();
+  }
+
+  onSliderChange() {
+    this.sliderChange$.next();
+  }
+
+  saveSettings() {
+    this.settingsHelperService.saveSetting(AppSettingKey.KOBO_SETTINGS, this.koboSettings)
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Settings Saved',
+            detail: 'Kobo settings updated successfully'
+          });
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Save Failed',
+            detail: 'Failed to save Kobo settings'
+          });
+        }
+      });
   }
 
   openKoboDocumentation(): void {
