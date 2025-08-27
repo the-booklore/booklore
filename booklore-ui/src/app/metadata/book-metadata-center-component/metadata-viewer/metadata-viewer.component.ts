@@ -6,7 +6,7 @@ import {BookService} from '../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
 import {Tag} from 'primeng/tag';
-import {Book, BookMetadata, BookRecommendation, ReadStatus, FileInfo} from '../../../book/model/book.model';
+import {Book, BookMetadata, BookRecommendation, FileInfo, ReadStatus} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../utilities/service/url-helper.service';
 import {UserService} from '../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
@@ -33,15 +33,17 @@ import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {BookReviewsComponent} from '../../../book/components/book-reviews/book-reviews.component';
 import {BookNotesComponent} from '../../../book/components/book-notes-component/book-notes-component';
 import {ProgressSpinner} from 'primeng/progressspinner';
+
 import {TieredMenu} from 'primeng/tieredmenu';
 import {AdditionalFileUploaderComponent} from '../../../book/components/additional-file-uploader/additional-file-uploader.component';
+import {Image} from 'primeng/image';
 
 @Component({
   selector: 'app-metadata-viewer',
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, Tag, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu]
+  imports: [Button, AsyncPipe, Rating, FormsModule, Tag, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -140,7 +142,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.downloadMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null &&
         ((book.alternativeFormats !== undefined && book.alternativeFormats.length > 0) ||
-         (book.supplementaryFiles !== undefined && book.supplementaryFiles.length > 0))),
+          (book.supplementaryFiles !== undefined && book.supplementaryFiles.length > 0))),
       map((book): MenuItem[] => {
         const items: MenuItem[] = [];
 
@@ -158,8 +160,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
         // Add separator if both types exist
         if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
-            book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-          items.push({ separator: true });
+          book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+          items.push({separator: true});
         }
 
         // Add supplementary files
@@ -229,7 +231,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
         // Add delete additional files menu if there are any additional files
         if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
-            (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
+          (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
           const deleteFileItems: MenuItem[] = [];
 
           // Add alternative formats
@@ -246,8 +248,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
           // Add separator if both types exist
           if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
-              book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-            deleteFileItems.push({ separator: true });
+            book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+            deleteFileItems.push({separator: true});
           }
 
           // Add supplementary files

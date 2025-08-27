@@ -216,14 +216,8 @@ public class BookMetadataUpdater {
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-
-        try {
-            String path = fileService.createThumbnail(bookId, m.getThumbnailUrl());
-            e.setThumbnail(path);
-            e.setCoverUpdatedOn(Instant.now());
-        } catch (IOException ex) {
-            log.warn("Thumbnail generation failed for book {}: {}", bookId, ex.getMessage());
-        }
+        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        e.setCoverUpdatedOn(Instant.now());
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {

@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.service.library;
 
-import com.adityachandel.booklore.config.security.AuthenticationService;
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
@@ -20,16 +20,14 @@ import com.adityachandel.booklore.repository.LibraryPathRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.util.SecurityContextVirtualThread;
-import com.adityachandel.booklore.service.fileprocessor.FileProcessingUtils;
 import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.util.FileService;
+import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +51,7 @@ public class LibraryService {
     private final BookMapper bookMapper;
     private final LibraryMapper libraryMapper;
     private final NotificationService notificationService;
-    private final FileProcessingUtils fileProcessingUtils;
+    private final FileService fileService;
     private final MonitoringService monitoringService;
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
@@ -227,7 +225,7 @@ public class LibraryService {
             monitoringService.unregisterLibrary(id);
         });
         Set<Long> bookIds = library.getBookEntities().stream().map(BookEntity::getId).collect(Collectors.toSet());
-        fileProcessingUtils.deleteBookCovers(bookIds);
+        fileService.deleteBookCovers(bookIds);
         libraryRepository.deleteById(id);
         log.info("Library deleted successfully: {}", id);
     }
