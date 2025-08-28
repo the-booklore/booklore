@@ -7,17 +7,14 @@ import com.adityachandel.booklore.model.dto.request.BookdropSelectionRequest;
 import com.adityachandel.booklore.model.dto.response.BookdropFinalizeResult;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import lombok.AllArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/bookdrop")
+@RequestMapping("/api/v1/bookdrop")
 public class BookdropFileController {
 
     private final BookDropService bookDropService;
@@ -42,16 +39,5 @@ public class BookdropFileController {
     public ResponseEntity<BookdropFinalizeResult> finalizeImport(@RequestBody BookdropFinalizeRequest request) {
         BookdropFinalizeResult result = bookDropService.finalizeImport(request);
         return ResponseEntity.ok(result);
-    }
-
-    @GetMapping("/{bookdropId}/cover")
-    public ResponseEntity<Resource> getBookdropCover(@PathVariable long bookdropId) {
-        Resource file = bookDropService.getBookdropCover(bookdropId);
-        return (file != null)
-                ? ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=cover.jpg")
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(file)
-                : ResponseEntity.noContent().build();
     }
 }

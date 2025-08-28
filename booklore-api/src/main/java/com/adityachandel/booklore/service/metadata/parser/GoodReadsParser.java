@@ -37,7 +37,7 @@ public class GoodReadsParser implements BookParser {
 
     private static final String BASE_SEARCH_URL = "https://www.goodreads.com/search?q=";
     private static final String BASE_BOOK_URL = "https://www.goodreads.com/book/show/";
-    private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
+    private static final int COUNT_DETAILED_METADATA_TO_GET = 5;
     private final AppSettingService appSettingService;
 
     @Override

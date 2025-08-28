@@ -1,6 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {of, Subject, Subscription} from 'rxjs';
-import {catchError, debounceTime, distinctUntilChanged, switchMap} from 'rxjs/operators';
+import {BehaviorSubject, of, Subject, Subscription} from 'rxjs';
+import {catchError, switchMap} from 'rxjs/operators';
 import {Book} from '../../model/book.model';
 import {FormsModule} from '@angular/forms';
 import {InputTextModule} from 'primeng/inputtext';
@@ -12,6 +12,7 @@ import {UrlHelperService} from '../../../utilities/service/url-helper.service';
 import {Router} from '@angular/router';
 import {IconField} from 'primeng/iconfield';
 import {InputIcon} from 'primeng/inputicon';
+import {HeaderFilter} from '../book-browser/filters/HeaderFilter';
 
 @Component({
   selector: 'app-book-searcher',
@@ -31,41 +32,29 @@ import {InputIcon} from 'primeng/inputicon';
 export class BookSearcherComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
   books: Book[] = [];
-  #searchSubject = new Subject<string>();
+  #searchSubject = new BehaviorSubject<string>('');
   #subscription!: Subscription;
 
   private bookService = inject(BookService);
   private router = inject(Router);
   protected urlHelper = inject(UrlHelperService);
-
-  isSearchDropdownOpen = false;
-
-  toggleSearchInputDropdown() {
-    this.isSearchDropdownOpen = !this.isSearchDropdownOpen;
-  }
-
-  closeSearchDropdown() {
-    this.isSearchDropdownOpen = false;
-  }
+  private headerFilter = new HeaderFilter(this.#searchSubject.asObservable());
 
   ngOnInit(): void {
     this.initializeSearch();
   }
 
   initializeSearch(): void {
-    this.#subscription = this.#searchSubject.pipe(
-      debounceTime(350),
-      distinctUntilChanged(),
-      switchMap((query) => {
-        const result = this.bookService.searchBooks(query);
-        return of(result);
-      }),
+    this.#subscription = this.bookService.bookState$.pipe(
+      switchMap(bookState => this.headerFilter.filter(bookState)),
       catchError((error) => {
         console.error('Error while searching books:', error);
-        return of([]);
+        return of({books: [], loaded: true, error: null});
       })
     ).subscribe({
-      next: (result: Book[]) => this.books = result,
+      next: (filteredState) => {
+        this.books = this.searchQuery.trim() ? (filteredState.books || []) : [];
+      },
       error: (error) => console.error('Subscription error:', error)
     });
   }
