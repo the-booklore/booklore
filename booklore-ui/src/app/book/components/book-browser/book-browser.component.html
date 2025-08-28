@@ -44,7 +44,8 @@
               <i
                 class="pi pi-filter-slash"
                 pTooltip="Clear applied filters"
-                tooltipPosition="top">
+                tooltipPosition="top"
+                style="color: orange;">
               </i>
             </a>
           }
@@ -83,7 +84,6 @@
               </p-popover>
             </div>
           }
-
           <div>
             <a
               class="topbar-items topbar-item"
@@ -117,6 +117,15 @@
                     {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
                   </div>
                 </div>
+                <!--<div class="flex flex-col gap-2">
+                  <label class="font-medium text-sm">Show Sidebar Filters:</label>
+                  <div class="flex gap-4 justify-start">
+                    <p-toggle-switch
+                      [(ngModel)]="sidebarFilterTogglePrefService.selectedShowFilter"
+                      (onChange)="sidebarFilterTogglePrefService.selectedShowFilter = $event.checked">
+                    </p-toggle-switch>
+                  </div>
+                </div>-->
                 <div class="flex flex-col gap-2">
                   <label class="font-medium text-sm">Sidebar Filter Sort:</label>
                   <div class="flex gap-4 justify-start">
@@ -173,12 +182,12 @@
             <i class="pi pi-search"></i>
           </button>
 
-          <p-popover #searchDropdown [dismissable]="true" appendTo="body" [style]="{ width: '18rem' }">
+          <p-popover #searchDropdown [dismissable]="true" appendTo="body" [style]="{ width: '24rem' }">
             <div class="relative w-full">
               <input
                 type="text"
                 pInputText
-                placeholder="Title, Series or Author..."
+                placeholder="Title, Author, Series, Genre, or ISBN..."
                 [(ngModel)]="bookTitle"
                 (ngModelChange)="onSearchTermChange($event)"
                 class="w-full"
@@ -200,7 +209,7 @@
           <input
             type="text"
             pInputText
-            placeholder="Title, Series or Author..."
+            placeholder="Title, Author, Series, Genre, or ISBN..."
             [(ngModel)]="bookTitle"
             (ngModelChange)="onSearchTermChange($event)"
             class="search-input"
@@ -217,15 +226,13 @@
           }
         </div>
 
-        <p-button
-          class="pr-2"
-          icon="pi pi-chevron-right"
-          [outlined]="true"
-          [rounded]="true"
-          (click)="toggleFilterSidebar()"
-          pTooltip="Toggle filter sidebar"
-          tooltipPosition="top"
-        />
+        <a class="topbar-items topbar-item" (click)="toggleSidebar()">
+          <i
+            [ngClass]="showFilter ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'"
+            pTooltip="Toggle sidebar filters"
+            tooltipPosition="top">
+          </i>
+        </a>
       </div>
     </div>
 
@@ -396,19 +403,23 @@
     }
   </div>
 
+
   @if (this.showFilter) {
     <div
       class="mobile-filter-mask"
       (click)="this.showFilter = false">
     </div>
+    <app-book-filter
+      [showFilter]="showFilter"
+      class="filter-overlay-container z-50 flex-shrink-0"
+      [ngClass]="{ 'active': showFilter, 'ml-4': showFilter }"
+      [entity$]="entity$"
+      [entityType$]="entityType$"
+      [resetFilter$]="resetFilterSubject"
+      (filterSelected)="onFilterSelected($event)"
+      (filterModeChanged)="onFilterModeChanged($event)">
+    </app-book-filter>
   }
 
-  <app-book-filter
-    [showFilter]="showFilter"
-    class="filter-overlay-container z-50 flex-shrink-0"
-    [ngClass]="{ 'active': showFilter, 'ml-4': showFilter }"
-    [entity$]="entity$"
-    [entityType$]="entityType$"
-    [resetFilter$]="resetFilterSubject">
-  </app-book-filter>
+
 </div>

@@ -58,7 +58,7 @@ export interface Page<T> {
 
 @Injectable({providedIn: 'root'})
 export class BookdropFileTaskService {
-  private readonly url = `${API_CONFIG.BASE_URL}/api/bookdrop`;
+  private readonly url = `${API_CONFIG.BASE_URL}/api/v1/bookdrop`;
   private http = inject(HttpClient);
 
   getPendingFiles(page: number = 0, size: number = 50): Observable<Page<BookdropFile>> {
