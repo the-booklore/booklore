@@ -423,7 +423,7 @@ export class BookdropFileReviewComponent implements OnInit {
       const rawMetadata = fileUi.metadataForm.value;
       const metadata = {...rawMetadata};
 
-      if (metadata.thumbnailUrl?.includes('/api/bookdrop/')) {
+      if (metadata.thumbnailUrl?.includes('/api/v1/media/bookdrop')) {
         delete metadata.thumbnailUrl;
       }
 

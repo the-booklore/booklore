@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class AmazonBookParser implements BookParser {
 
-    private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
+    private static final int COUNT_DETAILED_METADATA_TO_GET = 5;
     private static final String BASE_BOOK_URL = "https://www.amazon.com/dp/";
     private final AppSettingService appSettingService;
 
