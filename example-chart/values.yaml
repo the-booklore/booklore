@@ -116,9 +116,9 @@ persistence:
   booksVolume:
     size: 10Gi
 
-volumes: []
+extraVolumes: []
 
-volumeMounts: []
+extraVolumeMounts: []
 
 nodeSelector: {}
 
