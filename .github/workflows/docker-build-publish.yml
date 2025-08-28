@@ -39,6 +39,20 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # Set up Java for backend tests
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # Run backend tests with testcontainers
+      - name: Run Backend Tests
+        working-directory: ./booklore-api
+        run: |
+          echo "Running backend tests with testcontainers..."
+          ./gradlew test
+
       - name: Get Latest Master Version
         id: get_version
         run: |
