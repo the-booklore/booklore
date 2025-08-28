@@ -99,10 +99,10 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "booklore.fullname" $ }}-data
+            claimName: {{ include "booklore.fullname" . }}-data
         - name: books
           persistentVolumeClaim:
-            claimName: {{ include "booklore.fullname" $ }}-books
+            claimName: {{ include "booklore.fullname" . }}-books
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 2 }}
         {{- end }}
