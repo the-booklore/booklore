@@ -60,7 +60,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     this.form = this.formBuilder.group({
       provider: null,
       title: [''],
-      author: ['']
+      author: [''],
+      isbn: ['']
     });
   }
 
@@ -105,7 +106,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     this.form.patchValue({
       provider: this.providers,
       title: book.metadata?.title ?? '',
-      author: book.metadata?.authors?.[0] ?? ''
+      author: book.metadata?.authors?.[0] ?? '',
+      isbn: book.metadata?.isbn10 ?? book.metadata?.isbn13 ?? ''
     });
   }
 
@@ -118,7 +120,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   get isSearchEnabled(): boolean {
     const providerSelected = !!this.form.get('provider')?.value;
     const title = this.form.get('title')?.value;
-    return providerSelected && title;
+    const isbn = this.form.get('isbn')?.value;
+    return providerSelected && (title || isbn);
   }
 
   onSubmit(): void {
@@ -131,7 +134,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
         bookId: this.bookId,
         providers: providerKeys,
         title: this.form.get('title')?.value,
-        author: this.form.get('author')?.value
+        author: this.form.get('author')?.value,
+        isbn: this.form.get('isbn')?.value
       };
 
       this.loading = true;
