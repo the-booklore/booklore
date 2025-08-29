@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.config.security.filter;
 
-import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.config.security.JwtUtils;
+import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.config.security.userdetails.UserAuthenticationDetails;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
@@ -9,7 +9,6 @@ import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
-import com.adityachandel.booklore.model.entity.UserPermissionsEntity;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.user.UserProvisioningService;
@@ -21,15 +20,12 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
