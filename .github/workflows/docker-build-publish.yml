@@ -48,28 +48,23 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # Run backend tests with testcontainers
+      # Run backend tests
       - name: Run Backend Tests
         id: backend_tests
         working-directory: ./booklore-api
-        run: |
-          echo "Running backend tests with testcontainers..."
-          ./gradlew test
+        run: ./gradlew test
         continue-on-error: true
 
-      # Publish test results
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
-          files: |
-            booklore-api/build/test-results/**/*.xml
+          files: booklore-api/build/test-results/**/*.xml
           check_name: Backend Test Results
           comment_title: Backend Test Results
           report_individual_runs: true
           report_suite_logs: 'any'
 
-      # Upload test reports as artifacts
       - name: Upload Test Reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -80,80 +75,91 @@ jobs:
             booklore-api/build/test-results/
           retention-days: 30
 
-      # Fail the workflow if tests failed
       - name: Check Test Results
         if: steps.backend_tests.outcome == 'failure'
         run: |
-          echo "❌ Backend tests failed! Check the test results above."
+          echo "Backend tests failed!"
           exit 1
 
-      - name: Get Latest Master Version
-        id: get_version
-        run: |
-          latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
-          latest_tag=${latest_tag:-"v0.0.0"}
-          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
-          echo "Latest master tag: $latest_tag"
-
+      # ----------------------------
+      # Versioning Logic
+      # ----------------------------
       - name: Determine Version Bump (Only for Master)
         if: github.ref == 'refs/heads/master'
         id: determine_bump
         run: |
-          # Try to parse the PR number from the merge commit message
-          pr_number=$(git log -1 --pretty=%B \
-            | grep -oE 'Merge pull request #[0-9]+' \
-            | grep -oE '[0-9]+') || true
-          # Fallback to latest merged PR if parsing didn’t work
+          echo "Determining version bump from PR labels..."
+
+          # Get PR number from merge commit
+          pr_number=$(git log -1 --pretty=%B | grep -oE 'Merge pull request #[0-9]+' | grep -oE '[0-9]+') || true
           if [ -z "$pr_number" ]; then
-            pr_number=$(gh pr list --state merged --base master --limit 1 \
-              --json number --jq '.[0].number')
+            pr_number=$(gh pr list --state merged --base master --limit 1 --json number --jq '.[0].number')
           fi
           echo "PR number: $pr_number"
 
           labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' || echo "")
+          echo "PR labels: $labels"
+
+          # Determine bump type
           if echo "$labels" | grep -q 'major'; then
             bump="major"
           elif echo "$labels" | grep -q 'minor'; then
             bump="minor"
           elif echo "$labels" | grep -q 'patch'; then
             bump="patch"
-          fi
-
-          if [ -z "$bump" ]; then
+          else
+            # fallback: check commit message
             last_commit_msg=$(git log -1 --pretty=%B)
             if echo "$last_commit_msg" | grep -iq '#major'; then
               bump="major"
-              gh pr edit "$pr_number" --add-label "major" || echo "Could not add major label"
             elif echo "$last_commit_msg" | grep -iq '#minor'; then
               bump="minor"
-              gh pr edit "$pr_number" --add-label "minor" || echo "Could not add minor label"
             elif echo "$last_commit_msg" | grep -iq '#patch'; then
               bump="patch"
-              gh pr edit "$pr_number" --add-label "patch" || echo "Could not add patch label"
             else
               bump="patch"
-              gh pr edit "$pr_number" --add-label "patch" || echo "Could not add patch label"
             fi
           fi
-
-          echo "bump=$bump" >> $GITHUB_ENV
           echo "Version bump type: $bump"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+          # Get latest tag
+          latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
+          latest_tag=${latest_tag:-"v0.0.0"}
+          echo "Latest tag: $latest_tag"
+
+          # Split version
+          IFS='.' read -r major minor patch <<< "${latest_tag#v}"
+
+          case "$bump" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+
+          new_tag="v${major}.${minor}.${patch}"
+          echo "new_tag=$new_tag" >> $GITHUB_ENV
+          echo "Next version: $new_tag"
+
+      # ----------------------------
+      # Draft release with correct version
+      # ----------------------------
       - name: Update Release Draft (Only for Master)
         if: github.ref == 'refs/heads/master'
         uses: release-drafter/release-drafter@v6
-        id: release_drafter
+        with:
+          name-template: 'Release ${{ env.new_tag }}'
+          tag-template: '${{ env.new_tag }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get Release Version
-        if: github.ref == 'refs/heads/master'
-        run: |
-          new_tag="${{ steps.release_drafter.outputs.tag_name }}"
-          echo "new_tag=$new_tag" >> $GITHUB_ENV
-          echo "New version: $new_tag"
 
       - name: Generate Image Tag
         id: set_image_tag
@@ -199,13 +205,11 @@ jobs:
           git tag ${{ env.new_tag }}
           git push origin ${{ env.new_tag }}
 
-
       - name: Publish Draft Release (Only for Master)
         if: github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release edit ${{ env.new_tag }} --draft=false
+        run: gh release edit ${{ env.new_tag }} --draft=false
 
       - name: Notify Discord of New Release
         if: github.ref == 'refs/heads/master'
@@ -221,19 +225,15 @@ jobs:
             echo "DISCORD_WEBHOOK_URL not set, skipping Discord notification."
             exit 0
           fi
-          echo "Preparing Discord notification for release $NEW_TAG"
-
           release_json=$(gh release view "$NEW_TAG" --json name,body,url)
           release_name=$(jq -r '.name' <<< "$release_json")
           release_body=$(jq -r '.body' <<< "$release_json")
-          release_url=$(jq -r '.url'  <<< "$release_json")
-
+          release_url=$(jq -r '.url' <<< "$release_json")
           clean_body=$(echo "$release_body" | tr -d '\r')
           max_length=1800
           if [ ${#clean_body} -gt $max_length ]; then
             clean_body="${clean_body:0:$((max_length-12))}… [truncated]"
           fi
-
           payload=$(jq -n \
             --arg title "New Release: $release_name" \
             --arg url   "$release_url" \
@@ -247,9 +247,4 @@ jobs:
                 color: 3066993
               }]
             }')
-
-          echo "=== Discord payload ==="
-          echo "$payload"
-          echo "======================="
-
           curl -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
