@@ -1,4 +1,4 @@
-name-template: 'Release v$RESOLVED_VERSION'
+name-template: 'Release $RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
 
 version-resolver:
@@ -57,13 +57,13 @@ exclude-labels:
 change-template: '- $TITLE (#$NUMBER) by @$AUTHOR'
 
 template: |
-  ## 🌟 What's New in v$RESOLVED_VERSION
+  ## 🌟 What's New in $RESOLVED_VERSION
 
   $CHANGES
 
   ### 🐳 Docker Images
 
-  - **Docker Hub:** `booklore/booklore:v$RESOLVED_VERSION`
-  - **GitHub Container Registry:** `ghcr.io/booklore-app/booklore:v$RESOLVED_VERSION`
+  - **Docker Hub:** `booklore/booklore:$RESOLVED_VERSION`
+  - **GitHub Container Registry:** `ghcr.io/booklore-app/booklore:$RESOLVED_VERSION`
 
-  **Full Changelog**: https://github.com/booklore-app/booklore/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+  **Full Changelog**: https://github.com/booklore-app/booklore/compare/$PREVIOUS_TAG...$RESOLVED_VERSION
