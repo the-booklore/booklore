@@ -99,7 +99,17 @@ jobs:
         if: github.ref == 'refs/heads/master'
         id: determine_bump
         run: |
-          pr_number=$(gh pr list --state merged --base master --limit 1 --json number --jq '.[0].number')
+          # Try to parse the PR number from the merge commit message
+          pr_number=$(git log -1 --pretty=%B \
+            | grep -oE 'Merge pull request #[0-9]+' \
+            | grep -oE '[0-9]+') || true
+          # Fallback to latest merged PR if parsing didn’t work
+          if [ -z "$pr_number" ]; then
+            pr_number=$(gh pr list --state merged --base master --limit 1 \
+              --json number --jq '.[0].number')
+          fi
+          echo "PR number: $pr_number"
+
           labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' || echo "")
           if echo "$labels" | grep -q 'major'; then
             bump="major"
