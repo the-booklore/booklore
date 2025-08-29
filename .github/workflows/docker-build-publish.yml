@@ -167,8 +167,8 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg APP_VERSION=${{ env.image_tag }} \
-            --tag ${{ secrets.DOCKER_USERNAME }}/booklore:${{ env.image_tag }} \
-            --tag ghcr.io/${{ github.actor }}/booklore:${{ env.image_tag }} \
+            --tag booklore/booklore:${{ env.image_tag }} \
+            --tag ghcr.io/booklore-app/booklore:${{ env.image_tag }} \
             --push .
 
       - name: Push Latest Tag (Only for Master)
@@ -177,8 +177,8 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg APP_VERSION=${{ env.new_tag }} \
-            --tag ${{ secrets.DOCKER_USERNAME }}/booklore:latest \
-            --tag ghcr.io/${{ github.actor }}/booklore:latest \
+            --tag booklore/booklore:latest \
+            --tag ghcr.io/booklore-app/booklore:latest \
             --push .
 
       - name: Create Git Tag (Only for Master)
