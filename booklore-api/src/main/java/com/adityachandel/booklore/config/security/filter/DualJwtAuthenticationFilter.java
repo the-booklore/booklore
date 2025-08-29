@@ -55,7 +55,6 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/kobo/"
     );
 
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         String token = extractToken(request);
@@ -95,8 +94,7 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
         Long userId = jwtUtils.extractUserId(token);
         BookLoreUserEntity entity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
         BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
-        List<GrantedAuthority> authorities = getAuthorities(entity.getPermissions());
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, null);
         authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
     }
@@ -141,9 +139,7 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
                     });
 
             BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
-            List<GrantedAuthority> authorities = getAuthorities(entity.getPermissions());
-
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, authorities);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null, null);
             authentication.setDetails(new UserAuthenticationDetails(request, user.getId()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -156,23 +152,5 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
     private String extractToken(HttpServletRequest request) {
         String bearer = request.getHeader("Authorization");
         return (bearer != null && bearer.startsWith("Bearer ")) ? bearer.substring(7) : null;
-    }
-
-    private List<GrantedAuthority> getAuthorities(UserPermissionsEntity permissions) {
-        List<GrantedAuthority> authorities = new ArrayList<>();
-        if (permissions != null) {
-            addAuthorityIfPermissionGranted(authorities, "ROLE_UPLOAD", permissions.isPermissionUpload());
-            addAuthorityIfPermissionGranted(authorities, "ROLE_DOWNLOAD", permissions.isPermissionDownload());
-            addAuthorityIfPermissionGranted(authorities, "ROLE_EDIT_METADATA", permissions.isPermissionEditMetadata());
-            addAuthorityIfPermissionGranted(authorities, "ROLE_MANIPULATE_LIBRARY", permissions.isPermissionManipulateLibrary());
-            addAuthorityIfPermissionGranted(authorities, "ROLE_ADMIN", permissions.isPermissionAdmin());
-        }
-        return authorities;
-    }
-
-    private void addAuthorityIfPermissionGranted(List<GrantedAuthority> authorities, String role, boolean permissionGranted) {
-        if (permissionGranted) {
-            authorities.add(new SimpleGrantedAuthority(role));
-        }
     }
 }
