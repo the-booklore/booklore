@@ -18,7 +18,6 @@ import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -243,9 +242,7 @@ public class LibraryProcessingService {
         List<BookEntity> books = bookRepository.findAllById(bookIds);
         for (BookEntity book : books) {
             try {
-                if (book.getMetadata() != null && StringUtils.isNotBlank(book.getMetadata().getThumbnail())) {
-                    deleteDirectoryRecursively(Path.of(fileService.getThumbnailPath(book.getId())));
-                }
+                deleteDirectoryRecursively(Path.of(fileService.getImagesFolder(book.getId())));
                 Path backupDir = Path.of(fileService.getBookMetadataBackupPath(book.getId()));
                 if (Files.exists(backupDir)) {
                     deleteDirectoryRecursively(backupDir);

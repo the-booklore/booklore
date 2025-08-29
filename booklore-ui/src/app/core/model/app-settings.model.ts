@@ -106,7 +106,6 @@ export interface AppSettings {
   autoBookSearch: boolean;
   similarBookRecommendation: boolean;
   metadataRefreshOptions: MetadataRefreshOptions;
-  coverResolution: string;
   uploadPattern: string;
   opdsServerEnabled: boolean;
   remoteAuthEnabled: boolean;

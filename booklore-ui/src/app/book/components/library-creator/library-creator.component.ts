@@ -12,7 +12,7 @@ import {InputText} from 'primeng/inputtext';
 import {Library, LibraryScanMode, BookFileType} from '../../model/library.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
-import { IconPickerService } from '../../../utilities/services/icon-picker.service';
+import {IconPickerService} from '../../../utilities/services/icon-picker.service';
 import {Select} from 'primeng/select';
 
 @Component({
@@ -36,8 +36,8 @@ export class LibraryCreatorComponent implements OnInit {
   defaultBookFormat: BookFileType | undefined = undefined;
 
   readonly scanModeOptions = [
-    {label: 'Each file is a separate book', value: 'FILE_AS_BOOK'},
-    {label: 'Each folder is a book', value: 'FOLDER_AS_BOOK'}
+    {label: 'Each file is a book', value: 'FILE_AS_BOOK'},
+    {label: 'Each folder is a book with extras', value: 'FOLDER_AS_BOOK'}
   ];
 
   readonly bookFormatOptions = [
@@ -47,13 +47,13 @@ export class LibraryCreatorComponent implements OnInit {
     {label: 'CBX/CBZ/CBR', value: 'CBX'}
   ];
 
-  private dialogService       = inject(DialogService);
-  private dynamicDialogRef    = inject(DynamicDialogRef);
+  private dialogService = inject(DialogService);
+  private dynamicDialogRef = inject(DynamicDialogRef);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
-  private libraryService      = inject(LibraryService);
-  private messageService      = inject(MessageService);
-  private router              = inject(Router);
-  private iconPicker          = inject(IconPickerService);
+  private libraryService = inject(LibraryService);
+  private messageService = inject(MessageService);
+  private router = inject(Router);
+  private iconPicker = inject(IconPickerService);
 
   ngOnInit(): void {
     const data = this.dynamicDialogConfig?.data;

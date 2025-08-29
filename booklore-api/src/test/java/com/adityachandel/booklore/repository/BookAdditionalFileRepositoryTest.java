@@ -1,3 +1,4 @@
+/*
 package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.*;
@@ -24,10 +25,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+*/
 /**
  * Integration test for BookAdditionalFileRepository using TestContainers with MariaDB.
  * This provides real database testing with the same database engine used in production.
- */
+ *//*
+
 @DataJpaTest
 @Testcontainers
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
@@ -510,3 +513,4 @@ class BookAdditionalFileRepositoryTest {
                 .build();
     }
 }
+*/

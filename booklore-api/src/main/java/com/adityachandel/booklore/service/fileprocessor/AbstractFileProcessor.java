@@ -5,12 +5,11 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookCreatorService;
 import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
-import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.FileService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +24,16 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
     protected final BookAdditionalFileRepository bookAdditionalFileRepository;
     protected final BookCreatorService bookCreatorService;
     protected final BookMapper bookMapper;
-    protected final FileProcessingUtils fileProcessingUtils;
     protected final MetadataMatchService metadataMatchService;
+    protected final FileService fileService;
 
-    protected AbstractFileProcessor(BookRepository bookRepository, BookAdditionalFileRepository bookAdditionalFileRepository, BookCreatorService bookCreatorService, BookMapper bookMapper, FileProcessingUtils fileProcessingUtils, MetadataMatchService metadataMatchService) {
+    protected AbstractFileProcessor(BookRepository bookRepository, BookAdditionalFileRepository bookAdditionalFileRepository, BookCreatorService bookCreatorService, BookMapper bookMapper, FileService fileService, MetadataMatchService metadataMatchService) {
         this.bookRepository = bookRepository;
         this.bookAdditionalFileRepository = bookAdditionalFileRepository;
         this.bookCreatorService = bookCreatorService;
         this.bookMapper = bookMapper;
-        this.fileProcessingUtils = fileProcessingUtils;
         this.metadataMatchService = metadataMatchService;
+        this.fileService = fileService;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -43,8 +42,7 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
         Path path = libraryFile.getFullPath();
         String fileName = path.getFileName().toString();
         String hash = FileFingerprint.generateHash(path);
-
-        Optional<Book> duplicate = fileProcessingUtils.checkForDuplicateAndUpdateMetadataIfNeeded(libraryFile, hash, bookRepository, bookAdditionalFileRepository, bookMapper);
+        Optional<Book> duplicate = fileService.checkForDuplicateAndUpdateMetadataIfNeeded(libraryFile, hash, bookRepository, bookAdditionalFileRepository, bookMapper);
         if (duplicate.isPresent()) {
             return handleDuplicate(duplicate.get(), libraryFile);
         }
