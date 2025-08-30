@@ -1,14 +1,22 @@
 package com.adityachandel.booklore.service.opds;
 
-import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
+import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
+import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
+import com.adityachandel.booklore.model.dto.*;
+import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
+import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.BookQueryService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -16,11 +24,13 @@ import java.util.List;
 public class OpdsService {
 
     private final BookQueryService bookQueryService;
+    private final AuthenticationService authenticationService;
+    private final UserRepository userRepository;
+    private final BookLoreUserTransformer bookLoreUserTransformer;
 
     public String generateCatalogFeed(HttpServletRequest request) {
-        var books = bookQueryService.getAllFullBookEntities();
-        var feedVersion = extractVersionFromAcceptHeader(request);
-
+        List<Book> books = getAllowedBooks(null);
+        String feedVersion = extractVersionFromAcceptHeader(request);
         return switch (feedVersion) {
             case "2.0" -> generateOpdsV2Feed(books);
             default -> generateOpdsV1Feed(books);
@@ -28,18 +38,47 @@ public class OpdsService {
     }
 
     public String generateSearchResults(HttpServletRequest request, String queryParam) {
-        List<BookEntity> books = List.of();
-        if (queryParam != null) {
-            books = bookQueryService.getBooksContainingMetadata(queryParam);
-        } else {
-            books = bookQueryService.getAllFullBookEntities();
-        }
-        var feedVersion = extractVersionFromAcceptHeader(request);
-
+        List<Book> books = getAllowedBooks(queryParam);
+        String feedVersion = extractVersionFromAcceptHeader(request);
         return switch (feedVersion) {
             case "2.0" -> generateOpdsV2Feed(books);
             default -> generateOpdsV1Feed(books);
         };
+    }
+
+    private List<Book> getAllowedBooks(String queryParam) {
+        OpdsUserDetails opdsUserDetails = authenticationService.getOpdsUser();
+        OpdsUser opdsUser = opdsUserDetails.getOpdsUser();
+
+        if (opdsUser != null) {
+            return (queryParam != null)
+                    ? bookQueryService.searchBooksByMetadata(queryParam)
+                    : bookQueryService.getAllBooks(true);
+        }
+
+        OpdsUserV2 opdsUserV2 = opdsUserDetails.getOpdsUserV2();
+        BookLoreUserEntity entity = userRepository.findById(opdsUserV2.getUserId())
+                .orElseThrow(() -> new AccessDeniedException("User not found"));
+
+        if (!entity.getPermissions().isPermissionAccessOpds() && !entity.getPermissions().isPermissionAdmin()) {
+            throw new AccessDeniedException("You are not allowed to access this resource");
+        }
+
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+        boolean isAdmin = user.getPermissions().isAdmin();
+        Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toSet());
+
+        if (isAdmin) {
+            return (queryParam != null)
+                    ? bookQueryService.searchBooksByMetadata(queryParam)
+                    : bookQueryService.getAllBooks(true);
+        } else {
+            return (queryParam != null)
+                    ? bookQueryService.searchBooksByMetadataInLibraries(queryParam, libraryIds)
+                    : bookQueryService.getAllBooksByLibraryIds(libraryIds, true);
+        }
     }
 
     public String generateSearchDescription(HttpServletRequest request) {
@@ -70,7 +109,7 @@ public class OpdsService {
                 """;
     }
 
-    private String generateOpdsV1Feed(List<BookEntity> books) {
+    private String generateOpdsV1Feed(List<Book> books) {
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
                 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/">
@@ -86,7 +125,7 @@ public class OpdsService {
         return feed.toString();
     }
 
-    private void appendBookEntryV1(StringBuilder feed, BookEntity book) {
+    private void appendBookEntryV1(StringBuilder feed, Book book) {
         feed.append("""
                 <entry>
                   <title>%s</title>
@@ -98,13 +137,13 @@ public class OpdsService {
                 <author>
                   <name>%s</name>
                 </author>
-                """.formatted(escapeXml(author.getName()))));
+                """.formatted(escapeXml(author))));
 
         appendOptionalTags(feed, book);
         feed.append("  </entry>");
     }
 
-    private void appendOptionalTags(StringBuilder feed, BookEntity book) {
+    private void appendOptionalTags(StringBuilder feed, Book book) {
         if (book.getMetadata().getPublisher() != null) {
             feed.append("<dc:publisher>").append(escapeXml(book.getMetadata().getPublisher())).append("</dc:publisher>");
         }
@@ -115,7 +154,7 @@ public class OpdsService {
 
         if (book.getMetadata().getCategories() != null) {
             book.getMetadata().getCategories().forEach(category ->
-                    feed.append("<dc:subject>").append(escapeXml(category.getName())).append("</dc:subject>")
+                    feed.append("<dc:subject>").append(escapeXml(category)).append("</dc:subject>")
             );
         }
 
@@ -144,11 +183,11 @@ public class OpdsService {
         }
     }
 
-    private String generateOpdsV2Feed(List<BookEntity> books) {
+    private String generateOpdsV2Feed(List<Book> books) {
         // Placeholder for OPDS v2.0 feed implementation (similar structure as v1)
         return "OPDS v2.0 Feed is under construction";
     }
-    
+
     private String generateOpdsV2SearchDescription() {
         // Placeholder for OPDS v2.0 feed implementation (similar structure as v1)
         return "OPDS v2.0 Feed is under construction";
@@ -159,7 +198,10 @@ public class OpdsService {
         return DateTimeFormatter.ISO_INSTANT.format(java.time.Instant.now());
     }
 
-    private String fileMimeType(BookEntity book) {
+    private String fileMimeType(Book book) {
+        if (book == null || book.getBookType() == null) {
+            return "octet-stream";
+        }
         return switch (book.getBookType()) {
             case PDF -> "pdf";
             case EPUB -> "epub+zip";

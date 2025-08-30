@@ -40,7 +40,8 @@ export class AuthenticationSettingsComponent implements OnInit {
     {label: 'Email Book', value: 'permissionEmailBook', selected: false},
     {label: 'Delete Book', value: 'permissionDeleteBook', selected: false},
     {label: 'KOReader Sync', value: 'permissionSyncKoreader', selected: false},
-    {label: 'Kobo Sync', value: 'permissionSyncKobo', selected: false}
+    {label: 'Kobo Sync', value: 'permissionSyncKobo', selected: false},
+    {label: 'Access OPDS', value: 'permissionAccessOpds', selected: false}
   ];
 
   internalAuthEnabled = true;

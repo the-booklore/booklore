@@ -1,13 +1,17 @@
 package com.adityachandel.booklore.model.dto;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
+import lombok.*;
 
-@Data
-public class OpdsUser {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class OpdsUserV2 {
     private Long id;
+    private Long userId;
     private String username;
     @JsonIgnore
-    private String password;
+    private String passwordHash;
 }

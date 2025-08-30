@@ -5,7 +5,7 @@ import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
 import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
-import com.adityachandel.booklore.config.security.service.CustomOpdsUserDetailsService;
+import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,7 +37,7 @@ import jakarta.servlet.http.HttpServletResponse;
 @Configuration
 public class SecurityConfig {
 
-    private final CustomOpdsUserDetailsService customOpdsUserDetailsService;
+    private final OpdsUserDetailsService opdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final AppProperties appProperties;
 
@@ -157,7 +157,7 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(customOpdsUserDetailsService);
+        provider.setUserDetailsService(opdsUserDetailsService);
         provider.setPasswordEncoder(passwordEncoder());
         return provider;
     }

@@ -8,6 +8,17 @@
       style="cursor: pointer;">
     </i>
   </p>
+
+  <div class="px-4 mb-4">
+    <div class="border-l-8 border border-red-500 text-red-400 p-3 rounded-md flex items-center gap-2">
+      <i class="pi pi-exclamation-triangle mt-1"></i>
+      <p class="text-sm">
+        <b class="text-red-500">Deprecated:</b> OPDS (v1) support will be removed in a future release.
+        Please migrate to <b>OPDS v2</b> for continued support and improvements.
+      </p>
+    </div>
+  </div>
+
   <div class="flex flex-col space-y-6 p-4 m-4 custom-border">
 
     <div class="flex items-center gap-4">
@@ -53,7 +64,7 @@
           </p-button>
         </div>
         <div class="mt-3">
-          <p-table [value]="users" [responsiveLayout]="'scroll'">
+          <p-table [value]="users">
             <ng-template pTemplate="header">
               <tr>
                 <th>Username</th>
