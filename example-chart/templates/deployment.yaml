@@ -5,9 +5,6 @@ metadata:
   labels:
     {{- include "booklore.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
-  {{- end }}
   selector:
     matchLabels:
       {{- include "booklore.selectorLabels" . | nindent 6 }}
@@ -74,7 +71,11 @@ spec:
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Release.Name }}-mariadb-password
+                  {{- if .Values.mariadb.auth.existingSecret }}
+                  name: {{ .Values.mariadb.auth.existingSecret }}
+                  {{- else }}
+                  name: {{ .Release.Name }}-mariadb
+                  {{- end }}
                   key: mariadb-password
           {{- with .Values.livenessProbe }}
           livenessProbe:
@@ -89,23 +90,41 @@ spec:
             {{- toYaml . | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if .Values.persistence.dataVolume.enabled }}
             - name: data
               mountPath: /app/data
+            {{- end }}
+            {{- if .Values.persistence.booksVolume.enabled }}
             - name: books
               mountPath: /books
+            {{- end }}
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 2 }}
             {{- end }}
+      {{- if (or .Values.persistence.dataVolume.enabled .Values.persistence.booksVolume.enabled .Values.extraVolumes) }}
       volumes:
+        {{- if .Values.persistence.dataVolume.enabled }}
         - name: data
           persistentVolumeClaim:
-            claimName: {{ include "booklore.fullname" . }}-data
+            claimName: {{ if .Values.persistence.dataVolume.existingClaim }}
+              {{ .Values.persistence.dataVolume.existingClaim }}
+            {{ else }}
+              {{ include "booklore.fullname" . }}-data
+            {{ end }}
+        {{- end }}
+        {{- if .Values.persistence.booksVolume.enabled }}
         - name: books
           persistentVolumeClaim:
-            claimName: {{ include "booklore.fullname" . }}-books
+            claimName: {{ if .Values.persistence.booksVolume.existingClaim }}
+              {{ .Values.persistence.booksVolume.existingClaim }}
+            {{ else }}
+              {{ include "booklore.fullname" . }}-books
+            {{ end }}
+        {{- end }}
         {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 2 }}
         {{- end }}
+      {{- end -}}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

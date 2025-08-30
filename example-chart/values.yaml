@@ -9,10 +9,6 @@ mariadb:
   auth:
     database: booklore
     username: booklore-user
-    existingSecret: booklore-mariadb-password
-
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 1
 
 # This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
@@ -102,19 +98,17 @@ readinessProbe:
   tcpSocket:
     port: http
 
-# This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
+# If you want to bring your own persistence (such as a hostPath),
+# disable these and do so in extraVolumes/extraVolumeMounts
 persistence:
   dataVolume:
+    enabled: true
     size: 100Mi
+    existingClaim: ""
   booksVolume:
+    enabled: true
     size: 10Gi
+    existingClaim: ""
 
 extraVolumes: []
 
