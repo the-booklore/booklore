@@ -1,3 +1,4 @@
+{{- if (and .Values.persistence.dataVolume.enabled (not .Values.persistence.dataVolume.existingClaim)) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -12,7 +13,9 @@ spec:
   resources:
     requests:
       storage: {{ .Values.persistence.dataVolume.size }}
+{{- end }}
 ---
+{{- if (and .Values.persistence.booksVolume.enabled (not .Values.persistence.booksVolume.existingClaim)) }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -27,3 +30,4 @@ spec:
   resources:
     requests:
       storage: {{ .Values.persistence.booksVolume.size }}
+{{- end }}
