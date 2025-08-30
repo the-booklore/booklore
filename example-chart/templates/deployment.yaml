@@ -89,6 +89,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- if (or .Values.persistence.dataVolume.enabled .Values.persistence.booksVolume.enabled .Values.extraVolumeMounts) }}
           volumeMounts:
             {{- if .Values.persistence.dataVolume.enabled }}
             - name: data
@@ -101,6 +102,7 @@ spec:
             {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 2 }}
             {{- end }}
+          {{- end }}
       {{- if (or .Values.persistence.dataVolume.enabled .Values.persistence.booksVolume.enabled .Values.extraVolumes) }}
       volumes:
         {{- if .Values.persistence.dataVolume.enabled }}
