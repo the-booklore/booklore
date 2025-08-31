@@ -100,7 +100,7 @@ spec:
               mountPath: /books
             {{- end }}
             {{- with .Values.extraVolumeMounts }}
-            {{- toYaml . | nindent 2 }}
+            {{- toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
       {{- if (or .Values.persistence.dataVolume.enabled .Values.persistence.booksVolume.enabled .Values.extraVolumes) }}
@@ -109,22 +109,22 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.dataVolume.existingClaim }}
-              {{ .Values.persistence.dataVolume.existingClaim }}
+              {{- .Values.persistence.dataVolume.existingClaim }}
             {{ else }}
-              {{ include "booklore.fullname" . }}-data
-            {{ end }}
+              {{- include "booklore.fullname" . }}-data
+            {{- end }}
         {{- end }}
         {{- if .Values.persistence.booksVolume.enabled }}
         - name: books
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.booksVolume.existingClaim }}
-              {{ .Values.persistence.booksVolume.existingClaim }}
+              {{- .Values.persistence.booksVolume.existingClaim }}
             {{ else }}
-              {{ include "booklore.fullname" . }}-books
-            {{ end }}
+              {{- include "booklore.fullname" . }}-books
+            {{- end }}
         {{- end }}
         {{- with .Values.extraVolumes }}
-        {{- toYaml . | nindent 2 }}
+        {{- toYaml . | nindent 8 }}
         {{- end }}
       {{- end -}}
       {{- with .Values.nodeSelector }}
