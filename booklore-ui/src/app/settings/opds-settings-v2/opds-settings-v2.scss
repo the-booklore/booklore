@@ -56,7 +56,6 @@
   }
 
   .p-datatable-tbody > tr {
-    border-bottom: 1px solid var(--p-surface-border);
     transition: background-color 0.2s;
 
     &:hover {
@@ -112,7 +111,7 @@
   color: var(--p-text-muted-color);
 
   .pi {
-    font-size: 3rem;
+    font-size: 2rem;
     margin-bottom: 1rem;
     color: var(--p-surface-400);
   }
@@ -130,7 +129,6 @@
 
 .user-dialog {
   .p-dialog-header {
-    border-bottom: 1px solid var(--p-surface-border);
   }
 
   .p-dialog-content {
@@ -138,7 +136,6 @@
   }
 
   .p-dialog-footer {
-    border-top: 1px solid var(--p-surface-border);
     padding: 1rem 1.5rem;
   }
 }
@@ -186,7 +183,6 @@
 .settings-header {
   margin-top: 1rem;
   margin-bottom: 2rem;
-  border-bottom: 1px solid var(--p-surface-border);
 }
 
 .settings-title {
@@ -218,11 +214,10 @@
 
 .endpoint-section {
   background: var(--p-content-background);
-  border: 1px solid var(--p-surface-border);
   border-radius: 8px;
 
   @media (min-width: 768px) {
-    padding: 1rem;
+    padding: 0 1rem 0 1rem;
   }
 }
 
