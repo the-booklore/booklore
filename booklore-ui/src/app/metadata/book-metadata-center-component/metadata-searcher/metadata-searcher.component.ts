@@ -187,8 +187,9 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       return `<a href="https://books.google.com/books?id=${metadata.googleId}" target="_blank">Google</a>`;
     } else if (metadata.hardcoverId) {
       return `<a href="https://hardcover.app/books/${metadata.hardcoverId}" target="_blank">Hardcover</a>`;
-    }
-    else if (metadata.comicvineId) {
+    } else if (metadata['doubanId']) {
+      return `<a href="https://book.douban.com/subject/${metadata['doubanId']}" target="_blank">Douban</a>`;
+    } else if (metadata.comicvineId) {
       if( metadata.comicvineId.startsWith('4000')) {
         const name = metadata.seriesName ? metadata.seriesName.replace(/ /g, '-').toLowerCase() + "-" + metadata.seriesNumber : '';
         return `<a href="https://comicvine.gamespot.com/${name}/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
