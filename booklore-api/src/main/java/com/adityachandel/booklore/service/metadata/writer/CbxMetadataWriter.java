@@ -84,7 +84,11 @@ public class CbxMetadataWriter implements MetadataWriter {
                     removeElement(root, "Tags");
                 });
 
-                Transformer transformer = TransformerFactory.newInstance().newTransformer();
+                Transformer transformer = TransformerFactory transformerFactory = TransformerFactory.newInstance();
+                transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                transformerFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_STYLESHEET, "");
+                Transformer transformer = transformerFactory.newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -171,7 +175,7 @@ public class CbxMetadataWriter implements MetadataWriter {
     private String formatFloat(Float val) {
         if (val == null) return null;
         if (val % 1 == 0) return Integer.toString(val.intValue());
-        return String.format(java.util.Locale.US, "%s", val);
+        return val.toString();
     }
 
     @Override
