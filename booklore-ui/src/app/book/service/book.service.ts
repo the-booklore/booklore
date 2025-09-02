@@ -316,7 +316,7 @@ export class BookService {
         const currentState = this.bookStateSubject.value;
         const updatedBooks = (currentState.books || []).map(book => {
           if (book.id === bookId) {
-            const updatedBook = { ...book };
+            const updatedBook = {...book};
             if (fileType === AdditionalFileType.ALTERNATIVE_FORMAT) {
               updatedBook.alternativeFormats = [...(book.alternativeFormats || []), newFile];
             } else {
@@ -538,7 +538,17 @@ export class BookService {
   }
 
   getUploadCoverUrl(bookId: number): string {
-    return this.url + '/' + bookId + "/metadata/cover"
+    return this.url + '/' + bookId + "/metadata/cover/upload"
+  }
+
+  uploadCoverFromUrl(bookId: number, url: string): Observable<BookMetadata> {
+    return this.http
+      .post<BookMetadata>(`${this.url}/${bookId}/metadata/cover/from-url`, {url})
+      .pipe(
+        tap(updatedMetadata =>
+          this.handleBookMetadataUpdate(bookId, updatedMetadata)
+        )
+      );
   }
 
   getBookRecommendations(bookId: number, limit: number = 20): Observable<BookRecommendation[]> {
@@ -688,4 +698,5 @@ export class BookService {
   getBackupMetadata(bookId: number) {
     return this.http.get<any>(`${this.url}/${bookId}/metadata/restore`);
   }
+
 }

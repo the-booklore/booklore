@@ -605,12 +605,5 @@ export class MetadataEditorComponent implements OnInit {
         position: 'absolute'
       },
     });
-
-    ref.onClose.subscribe(result => {
-      if (result) {
-        this.metadataForm.get('thumbnailUrl')?.setValue(result);
-        this.onSave();
-      }
-    });
   }
 }

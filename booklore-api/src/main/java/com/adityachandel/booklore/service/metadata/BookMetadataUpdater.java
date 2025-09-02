@@ -59,6 +59,7 @@ public class BookMetadataUpdater {
 
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
+        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
@@ -102,13 +103,13 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if (writeToFile) {
+        if ((writeToFile && hasValueChanges) || thumbnailRequiresUpdate) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = setThumbnail ? newMetadata.getThumbnailUrl() : null;
 
-                    if (StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl)) {
-                        log.warn("Blocked local/private thumbnail URL: {}", thumbnailUrl);
+                    if ((StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl) || Boolean.TRUE.equals(metadata.getCoverLocked()))) {
+                        log.debug("Blocked local/private thumbnail URL: {}", thumbnailUrl);
                         thumbnailUrl = null;
                     }
 
@@ -116,8 +117,6 @@ public class BookMetadataUpdater {
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, false, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setCurrentHash(newHash);
-                    log.info("Metadata written for book ID {}", bookId);
-
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }

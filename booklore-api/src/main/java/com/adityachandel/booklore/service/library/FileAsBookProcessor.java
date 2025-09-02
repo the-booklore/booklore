@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import lombok.AllArgsConstructor;
@@ -25,7 +26,7 @@ import com.adityachandel.booklore.model.enums.LibraryScanMode;
 @Slf4j
 public class FileAsBookProcessor implements LibraryFileProcessor {
 
-    private final NotificationService notificationService;
+    private final BookEventBroadcaster bookEventBroadcaster;
     private final BookFileProcessorRegistry processorRegistry;
 
     @Override
@@ -40,8 +41,7 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
             log.info("Processing file: {}", libraryFile.getFileName());
             Book book = processLibraryFile(libraryFile);
             if (book != null) {
-                notificationService.sendMessage(Topic.BOOK_ADD, book);
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Book added: " + book.getFileName()));
+                bookEventBroadcaster.broadcastBookAddEvent(book);
                 log.info("Processed file: {}", libraryFile.getFileName());
             }
         }
