@@ -1,4 +1,4 @@
-import {Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output, ViewChild} from '@angular/core';
+import {Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output} from '@angular/core';
 import {InputText} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
 import {Divider} from 'primeng/divider';
@@ -13,8 +13,7 @@ import {HttpResponse} from '@angular/common/http';
 import {BookService} from '../../../book/service/book.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {Tooltip} from 'primeng/tooltip';
-import {Editor} from 'primeng/editor';
-import {debounceTime} from 'rxjs/operators';
+import {filter, take} from 'rxjs/operators';
 import {MetadataRestoreDialogComponent} from '../../../book/components/book-browser/metadata-restore-dialog-component/metadata-restore-dialog-component';
 import {DialogService} from 'primeng/dynamicdialog';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
@@ -51,8 +50,6 @@ import {LazyLoadImageModule} from 'ng-lazyload-image';
 })
 export class MetadataEditorComponent implements OnInit {
 
-  @ViewChild(Editor) quillEditor!: Editor;
-
   @Input() book$!: Observable<Book | null>;
   @Output() nextBookClicked = new EventEmitter<void>();
   @Output() previousBookClicked = new EventEmitter<void>();
@@ -72,7 +69,6 @@ export class MetadataEditorComponent implements OnInit {
   currentBookId!: number;
   isUploading = false;
   isLoading = false;
-  htmlTextarea = '';
   isSaving = false;
 
   refreshingBookIds = new Set<number>();
@@ -80,22 +76,23 @@ export class MetadataEditorComponent implements OnInit {
 
   originalMetadata!: BookMetadata;
 
-  // Handle blur event for AutoComplete to add custom values
-  onAutoCompleteBlur(fieldName: string, event: any) {
-    const inputValue = event.target.value?.trim();
-    if (inputValue) {
-      const currentValue = this.metadataForm.get(fieldName)?.value || [];
-      const values = Array.isArray(currentValue) ? currentValue :
-        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
+  allAuthors!: string[];
+  allCategories!: string[];
+  filteredCategories: string[] = [];
+  filteredAuthors: string[] = [];
 
-      // Add the new value if it's not already in the array
-      if (!values.includes(inputValue)) {
-        values.push(inputValue);
-        this.metadataForm.get(fieldName)?.setValue(values);
-      }
-      // Clear the input
-      event.target.value = '';
-    }
+  filterCategories(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredCategories = this.allCategories.filter(cat =>
+      cat.toLowerCase().includes(query)
+    );
+  }
+
+  filterAuthors(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredAuthors = this.allAuthors.filter(cat =>
+      cat.toLowerCase().includes(query)
+    );
   }
 
   constructor() {
@@ -164,30 +161,31 @@ export class MetadataEditorComponent implements OnInit {
       .subscribe(book => {
         const metadata = book?.metadata;
         if (!metadata) return;
-
         this.currentBookId = metadata.bookId;
-
         if (this.refreshingBookIds.has(book.id)) {
           this.refreshingBookIds.delete(book.id);
           this.isAutoFetching = false;
         }
-
         this.originalMetadata = structuredClone(metadata);
-
-        if (this.quillEditor?.quill) {
-          this.quillEditor.quill.root.innerHTML = metadata.description;
-          this.quillDisabled();
-        }
-
         this.populateFormFromMetadata(metadata);
       });
 
-    this.metadataForm.get('description')?.valueChanges
-      .pipe(debounceTime(100), takeUntilDestroyed(this.destroyRef))
-      .subscribe(value => {
-        if (this.htmlTextarea !== value) {
-          this.htmlTextarea = value;
-        }
+    this.bookService.bookState$
+      .pipe(
+        filter(bookState => bookState.loaded),
+        take(1)
+      )
+      .subscribe(bookState => {
+        const authors = new Set<string>();
+        const categories = new Set<string>();
+
+        (bookState.books ?? []).forEach(book => {
+          book.metadata?.authors?.forEach(author => authors.add(author));
+          book.metadata?.categories?.forEach(category => categories.add(category));
+        });
+
+        this.allAuthors = Array.from(authors);
+        this.allCategories = Array.from(categories);
       });
   }
 
@@ -285,6 +283,28 @@ export class MetadataEditorComponent implements OnInit {
       const formControl = this.metadataForm.get(control);
       if (formControl) {
         isLocked ? formControl.disable() : formControl.enable();
+      }
+    }
+  }
+
+  onAutoCompleteSelect(fieldName: string, event: any) {
+    const values = this.metadataForm.get(fieldName)?.value || [];
+    if (!values.includes(event.value)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+    }
+    (event.originalEvent.target as HTMLInputElement).value = '';
+  }
+
+  onAutoCompleteKeyUp(fieldName: string, event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const input = event.target as HTMLInputElement;
+      const value = input.value?.trim();
+      if (value) {
+        const values = this.metadataForm.get(fieldName)?.value || [];
+        if (!values.includes(value)) {
+          this.metadataForm.get(fieldName)?.setValue([...values, value]);
+        }
+        input.value = '';
       }
     }
   }

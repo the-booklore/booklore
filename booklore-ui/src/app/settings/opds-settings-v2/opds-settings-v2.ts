@@ -10,10 +10,13 @@ import {FormsModule} from '@angular/forms';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {OpdsUserV2, OpdsUserV2CreateRequest, OpdsV2Service} from './opds-v2.service';
-import {catchError, filter, takeUntil, tap} from 'rxjs/operators';
+import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
-import {of, Subject} from 'rxjs';
+import {of, pipe, Subject} from 'rxjs';
 import {Password} from 'primeng/password';
+import {ToggleSwitch} from 'primeng/toggleswitch';
+import {AppSettingsService} from '../../core/service/app-settings.service';
+import {AppSettingKey} from '../../core/model/app-settings.model';
 
 @Component({
   selector: 'app-opds-settings-v2',
@@ -26,7 +29,8 @@ import {Password} from 'primeng/password';
     FormsModule,
     ConfirmDialog,
     TableModule,
-    Password
+    Password,
+    ToggleSwitch
   ],
   providers: [ConfirmationService],
   templateUrl: './opds-settings-v2.html',
@@ -35,11 +39,13 @@ import {Password} from 'primeng/password';
 export class OpdsSettingsV2 implements OnInit, OnDestroy {
 
   opdsEndpoint = `${API_CONFIG.BASE_URL}/api/v2/opds/catalog`;
+  opdsEnabled = false;
 
   private opdsService = inject(OpdsV2Service);
   private confirmationService = inject(ConfirmationService);
   private messageService = inject(MessageService);
   private userService = inject(UserService);
+  private appSettingsService = inject(AppSettingsService);
 
   users: OpdsUserV2[] = [];
   loading = false;
@@ -61,8 +67,24 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
         this.hasPermission = !!(state.user?.permissions.canAccessOpds || state.user?.permissions.admin);
       }),
       filter(() => this.hasPermission),
-      tap(() => this.loadUsers())
+      tap(() => this.loadAppSettings())
     ).subscribe();
+  }
+
+  private loadAppSettings(): void {
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter((settings): settings is NonNullable<typeof settings> => settings != null),
+        take(1)
+      )
+      .subscribe(settings => {
+        this.opdsEnabled = settings.opdsServerEnabled ?? false;
+        if (this.opdsEnabled) {
+          this.loadUsers();
+        } else {
+          this.loading = false;
+        }
+      });
   }
 
   private loadUsers(): void {
@@ -132,6 +154,29 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
   copyEndpoint(): void {
     navigator.clipboard.writeText(this.opdsEndpoint).then(() => {
       this.showMessage('success', 'Copied', 'OPDS endpoint copied to clipboard');
+    });
+  }
+
+  toggleOpdsServer(): void {
+    this.saveSetting(AppSettingKey.OPDS_SERVER_ENABLED, this.opdsEnabled);
+    if (this.opdsEnabled) {
+      this.loadUsers();
+    } else {
+      this.users = [];
+    }
+  }
+
+  private saveSetting(key: string, value: unknown): void {
+    this.appSettingsService.saveSettings([{key, newValue: value}]).subscribe({
+      next: () => {
+        const successMessage = (value === true)
+          ? 'OPDS Server Enabled.'
+          : 'OPDS Server Disabled.';
+        this.showMessage('success', 'Settings Saved', successMessage);
+      },
+      error: () => {
+        this.showMessage('error', 'Error', 'There was an error saving the settings.');
+      }
     });
   }
 

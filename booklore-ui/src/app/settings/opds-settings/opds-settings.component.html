@@ -2,16 +2,10 @@
   <div class="settings-header">
     <h2 class="settings-title">
       <i class="pi pi-server"></i>
-      OPDS Settings (v1)
+      OPDS Settings v1 (Legacy)
     </h2>
     <p class="settings-description">
       Legacy OPDS server settings for managing your book collection access.
-      <i
-        class="pi pi-info-circle text-sky-600 ml-1"
-        pTooltip="OPDS allows your book collection to be accessed by compatible reading apps through your private server."
-        tooltipPosition="right"
-        style="cursor: pointer;">
-      </i>
     </p>
 
     <div class="deprecation-notice">
@@ -19,7 +13,7 @@
       <div>
         <p class="notice-title">Deprecated:</p>
         <p class="notice-text">
-          OPDS (v1) support will be removed in a future release.
+          OPDS v1 support will be removed in a future release.
           Please migrate to <strong>OPDS v2</strong> for continued support and improvements.
         </p>
       </div>
@@ -27,56 +21,79 @@
   </div>
 
   <div class="settings-content">
-    <div class="server-section">
-      <h3 class="section-title">
-        <i class="pi pi-power-off"></i>
-        Server Control
-      </h3>
-      <div class="server-control">
-        <label class="control-label">OPDS Server Enabled:</label>
-        <p-toggleswitch
-          [(ngModel)]="opdsEnabled"
-          (onChange)="toggleOpdsServer()">
-        </p-toggleswitch>
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-power-off"></i>
+          Server Control
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">OPDS Server Enabled</label>
+              <p-toggleswitch
+                [(ngModel)]="opdsEnabled"
+                (onChange)="toggleOpdsServer()">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              Enable or disable the OPDS server to control access to your book collection through reading apps.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
     @if (opdsEnabled) {
-      <div class="endpoint-section">
-        <h3 class="section-title">
-          <i class="pi pi-link"></i>
-          OPDS Endpoint
-        </h3>
-        <div class="endpoint-form">
-          <div class="endpoint-field">
-            <input
-              id="endpoint-url"
-              fluid
-              class="endpoint-input"
-              type="text"
-              pInputText
-              [value]="opdsEndpoint"
-              readonly/>
-            <p-button
-              icon="pi pi-copy"
-              label="Copy"
-              severity="info"
-              outlined
-              size="small"
-              (onClick)="copyOpdsEndpoint()">
-            </p-button>
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-link"></i>
+            OPDS Endpoint
+          </h3>
+        </div>
+
+        <div class="settings-card">
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Endpoint URL</label>
+                <div class="input-group">
+                  <input
+                    id="endpoint-url"
+                    class="endpoint-input"
+                    type="text"
+                    pInputText
+                    [value]="opdsEndpoint"
+                    readonly/>
+                  <p-button
+                    icon="pi pi-copy"
+                    severity="info"
+                    outlined
+                    size="small"
+                    (onClick)="copyOpdsEndpoint()">
+                  </p-button>
+                </div>
+              </div>
+              <p class="setting-description">
+                <i class="pi pi-info-circle"></i>
+                Use this URL to connect your reading apps to your OPDS catalog.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="users-section">
+      <div class="preferences-section">
         <div class="section-header">
-          <div class="section-title-group">
-            <h3 class="section-title">
-              <i class="pi pi-users"></i>
-              OPDS Users
-            </h3>
-          </div>
+          <h3 class="section-title">
+            <i class="pi pi-users"></i>
+            OPDS Users
+          </h3>
         </div>
 
         <div class="table-card">
