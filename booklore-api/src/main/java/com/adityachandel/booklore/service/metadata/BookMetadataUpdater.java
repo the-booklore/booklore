@@ -127,7 +127,7 @@ public class BookMetadataUpdater {
                             resultingFile = cbzFile;
                         }
                         bookEntity.setFileSizeKb(resultingFile.length() / 1024);
-                        log.info("!!! Converted CBR → CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
+                        log.info("Converted CBR to CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
                         newHash = FileFingerprint.generateHash(resultingFile.toPath());
                     } else {
                         newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
