@@ -33,6 +33,8 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 
 @Slf4j
 @Component
@@ -53,8 +55,9 @@ public class CbxMetadataWriter implements MetadataWriter {
             String nameLower = file.getName().toLowerCase();
             boolean isCbz = nameLower.endsWith(".cbz");
             boolean isCbr = nameLower.endsWith(".cbr");
+            boolean isCb7 = nameLower.endsWith(".cb7");
 
-            if (!isCbz && !isCbr) {
+            if (!isCbz && !isCbr && !isCb7) {
                 log.warn("Unsupported file type for CBX writer: {}", file.getName());
                 return;
             }
@@ -66,6 +69,28 @@ public class CbxMetadataWriter implements MetadataWriter {
                     ZipEntry existing = findComicInfoEntry(zipFile);
                     if (existing != null) {
                         try (InputStream is = zipFile.getInputStream(existing)) {
+                            doc = buildSecureDocument(is);
+                        }
+                    } else {
+                        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+                        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+                        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+                        factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+                        DocumentBuilder builder = factory.newDocumentBuilder();
+                        doc = builder.newDocument();
+                        doc.appendChild(doc.createElement("ComicInfo"));
+                    }
+                }
+            } else if (isCb7) {
+                try (SevenZFile sevenZ = new SevenZFile(file)) {
+                    SevenZArchiveEntry existing = null;
+                    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+                        if (e != null && !e.isDirectory() && "ComicInfo.xml".equalsIgnoreCase(e.getName())) {
+                            existing = e; break;
+                        }
+                    }
+                    if (existing != null) {
+                        try (InputStream is = sevenZ.getInputStream(existing)) {
                             doc = buildSecureDocument(is);
                         }
                     } else {
@@ -161,6 +186,43 @@ public class CbxMetadataWriter implements MetadataWriter {
                     zos.closeEntry();
                 }
                 Files.move(temp, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                writeSucceeded = true;
+                return;
+            }
+
+            // === CB7 path (convert to CBZ with updated ComicInfo.xml) ===
+            if (isCb7) {
+                Path tempZip = Files.createTempFile("cbx_edit", ".cbz");
+                try (SevenZFile sevenZ = new SevenZFile(file);
+                     ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZip))) {
+                    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+                        if (e.isDirectory()) continue;
+                        String entryName = e.getName();
+                        if ("ComicInfo.xml".equalsIgnoreCase(entryName)) {
+                            // skip old; we'll add updated one below
+                            continue;
+                        }
+                        zos.putNextEntry(new ZipEntry(entryName));
+                        try (InputStream is = sevenZ.getInputStream(e)) {
+                            if (is != null) {
+                                is.transferTo(zos);
+                            }
+                        }
+                        zos.closeEntry();
+                    }
+                    // Add updated ComicInfo.xml
+                    zos.putNextEntry(new ZipEntry("ComicInfo.xml"));
+                    zos.write(xmlBytes);
+                    zos.closeEntry();
+                }
+                Path target = file.toPath().resolveSibling(file.getName().substring(0, file.getName().lastIndexOf('.')) + ".cbz");
+                Files.move(tempZip, target, StandardCopyOption.REPLACE_EXISTING);
+                try {
+                    // Remove original CB7 after conversion
+                    log.info("Removing original CB7 file: {}", file.getAbsolutePath());
+                    Files.deleteIfExists(file.toPath());
+                } catch (Exception ignored) {}
+                // Update entity to reflect conversion so caller can persist
                 writeSucceeded = true;
                 return;
             }

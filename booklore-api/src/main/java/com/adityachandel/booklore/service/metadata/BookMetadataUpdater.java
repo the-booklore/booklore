@@ -117,17 +117,18 @@ public class BookMetadataUpdater {
                     
                     String newHash = "";
 
-                    // Special handling: If original file was .cbr and now .cbz exists, update to .cbz
+                    // Special handling: If original file was .cbr or .cb7 and now .cbz exists, update to .cbz
                     File resultingFile = file;
                     if (!file.exists()) {
-                        String cbzName = file.getName().replaceFirst("(?i)\\.cbr$", ".cbz");
+                        // Replace last extension .cbr or .cb7 (case-insensitive) with .cbz
+                        String cbzName = file.getName().replaceFirst("(?i)\\.(cbr|cb7)$", ".cbz");
                         File cbzFile = new File(file.getParentFile(), cbzName);
                         if (cbzFile.exists()) {
                             bookEntity.setFileName(cbzName);
                             resultingFile = cbzFile;
                         }
                         bookEntity.setFileSizeKb(resultingFile.length() / 1024);
-                        log.info("Converted CBR to CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
+                        log.info("Converted to CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
                         newHash = FileFingerprint.generateHash(resultingFile.toPath());
                     } else {
                         newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
