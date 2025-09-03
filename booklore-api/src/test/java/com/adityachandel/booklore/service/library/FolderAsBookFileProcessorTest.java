@@ -6,12 +6,11 @@ import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
-import com.adityachandel.booklore.model.websocket.LogNotification;
-import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.service.event.BookEventBroadcaster;
+import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.FileFingerprint;
-import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
@@ -43,7 +42,10 @@ class FolderAsBookFileProcessorTest {
     private BookAdditionalFileRepository bookAdditionalFileRepository;
 
     @Mock
-    private NotificationService notificationService;
+    private BookEventBroadcaster bookEventBroadcaster;
+
+    @Mock
+    private AdminEventBroadcaster adminEventBroadcaster;
 
     @Mock
     private BookFileProcessorRegistry bookFileProcessorRegistry;
@@ -127,8 +129,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor).processFile(any(LibraryFile.class));
-        verify(notificationService).sendMessage(Topic.BOOK_ADD, createdBook);
-        verify(notificationService).sendMessage(eq(Topic.LOG), any(LogNotification.class));
+        verify(bookEventBroadcaster).broadcastBookAddEvent(createdBook);
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
         List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
@@ -160,7 +162,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor, never()).processFile(any());
-        verify(notificationService, never()).sendMessage(eq(Topic.BOOK_ADD), any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
         List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
@@ -192,6 +195,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor, never()).processFile(any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
         List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
@@ -236,6 +241,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.epub")));
+        verify(bookEventBroadcaster).broadcastBookAddEvent(createdBook);
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
         List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
@@ -279,6 +286,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor).processFile(argThat(file -> file.getFileName().equals("book.pdf")));
+        verify(bookEventBroadcaster).broadcastBookAddEvent(createdBook);
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
     }
 
     @Test
@@ -310,6 +319,8 @@ class FolderAsBookFileProcessorTest {
         processor.processLibraryFiles(libraryFiles, libraryEntity);
 
         // Then
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(1)).save(additionalFileCaptor.capture());
 
         BookAdditionalFileEntity capturedFile = additionalFileCaptor.getValue();
@@ -333,7 +344,8 @@ class FolderAsBookFileProcessorTest {
 
         // Then
         verify(mockBookFileProcessor, never()).processFile(any());
-        verify(notificationService, never()).sendMessage(eq(Topic.BOOK_ADD), any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
+        verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, never()).save(any());
     }
 
@@ -356,8 +368,9 @@ class FolderAsBookFileProcessorTest {
         processor.processLibraryFiles(libraryFiles, libraryEntity);
 
         // Then
-        verify(notificationService, never()).sendMessage(eq(Topic.BOOK_ADD), any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
         verify(bookAdditionalFileRepository, never()).save(any());
+        verify(adminEventBroadcaster).broadcastAdminEvent(anyString());
     }
 
     // Helper methods

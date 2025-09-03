@@ -5,9 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.websocket.LogNotification;
-import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import org.junit.jupiter.api.AfterEach;
@@ -19,14 +17,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class FileAsBookProcessorTest {
 
     @Mock
-    private NotificationService notificationService;
+    private BookEventBroadcaster bookEventBroadcaster;
 
     @Mock
     private BookFileProcessorRegistry processorRegistry;
@@ -102,9 +99,8 @@ class FileAsBookProcessorTest {
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
         
         // Then
-        verify(notificationService, times(2)).sendMessage(eq(Topic.BOOK_ADD), bookCaptor.capture());
-        verify(notificationService, times(2)).sendMessage(eq(Topic.LOG), any(LogNotification.class));
-        
+        verify(bookEventBroadcaster, times(2)).broadcastBookAddEvent(bookCaptor.capture());
+
         List<Book> capturedBooks = bookCaptor.getAllValues();
         assertThat(capturedBooks).hasSize(2);
         assertThat(capturedBooks).containsExactly(book1, book2);
@@ -150,8 +146,7 @@ class FileAsBookProcessorTest {
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
         
         // Then
-        verify(notificationService, times(1)).sendMessage(eq(Topic.BOOK_ADD), eq(book));
-        verify(notificationService, times(1)).sendMessage(eq(Topic.LOG), any(LogNotification.class));
+        verify(bookEventBroadcaster, times(1)).broadcastBookAddEvent(book);
         verify(processorRegistry, times(1)).getProcessorOrThrow(any());
     }
 
@@ -165,7 +160,7 @@ class FileAsBookProcessorTest {
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
         
         // Then
-        verify(notificationService, never()).sendMessage(any(Topic.class), any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
         verify(processorRegistry, never()).getProcessorOrThrow(any());
     }
 
@@ -275,7 +270,7 @@ class FileAsBookProcessorTest {
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
         
         // Then
-        verify(notificationService, never()).sendMessage(any(Topic.class), any());
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
     }
 
     @Test
@@ -356,7 +351,6 @@ class FileAsBookProcessorTest {
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
         
         // Then
-        verify(notificationService, times(4)).sendMessage(eq(Topic.BOOK_ADD), any(Book.class));
-        verify(notificationService, times(4)).sendMessage(eq(Topic.LOG), any(LogNotification.class));
+        verify(bookEventBroadcaster, times(4)).broadcastBookAddEvent(any(Book.class));
     }
 }

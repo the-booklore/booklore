@@ -13,7 +13,8 @@ import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.FileFingerprint;
-import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
+import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
@@ -35,7 +36,8 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
 
     private final BookRepository bookRepository;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
-    private final NotificationService notificationService;
+    private final BookEventBroadcaster bookEventBroadcaster;
+    private final AdminEventBroadcaster adminEventBroadcaster;
     private final BookFileProcessorRegistry bookFileProcessorRegistry;
 
     @Override
@@ -142,9 +144,9 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
 
             Optional<BookEntity> parentBook =
                     bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(
-                            directoryLibraryPathEntity.getId(), parentPath).stream()
-                    .filter(book -> book.getFileSubPath().equals(parentPath))
-                    .findFirst();
+                                    directoryLibraryPathEntity.getId(), parentPath).stream()
+                            .filter(book -> book.getFileSubPath().equals(parentPath))
+                            .findFirst();
             if (parentBook.isPresent()) {
                 return parentBook;
             }
@@ -173,17 +175,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             Book book = processor.processFile(bookFile);
 
             if (book != null) {
-                // Send notifications
-                notificationService.sendMessage(
-                        com.adityachandel.booklore.model.websocket.Topic.BOOK_ADD,
-                        book
-                );
-                notificationService.sendMessage(
-                        com.adityachandel.booklore.model.websocket.Topic.LOG,
-                        com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification(
-                                "Book added: " + book.getFileName()
-                        )
-                );
+                bookEventBroadcaster.broadcastBookAddEvent(book);
 
                 // Find the created book entity
                 BookEntity bookEntity = bookRepository.getReferenceById(book.getId());
@@ -197,26 +189,12 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                 return Optional.of(new CreateBookResult(bookEntity, bookFile));
             } else {
                 log.warn("Book processor returned null for file: {}", bookFile.getFileName());
-
-                notificationService.sendMessage(
-                        com.adityachandel.booklore.model.websocket.Topic.LOG,
-                        com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification(
-                                "Failed to create book from file: " + bookFile.getFileName()
-                        )
-                );
-
+                adminEventBroadcaster.broadcastAdminEvent("Failed to create book from file: " + bookFile.getFileName());
                 return Optional.empty();
             }
         } catch (Exception e) {
             log.error("Error processing book file {}: {}", bookFile.getFileName(), e.getMessage(), e);
-
-            notificationService.sendMessage(
-                    com.adityachandel.booklore.model.websocket.Topic.LOG,
-                    com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification(
-                            "Error processing book file: " + bookFile.getFileName() + " - " + e.getMessage()
-                    )
-            );
-
+            adminEventBroadcaster.broadcastAdminEvent("Error processing book file: " + bookFile.getFileName() + " - " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -280,8 +258,10 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
     }
 
-    public record GetOrCreateBookResult(Optional<BookEntity> bookEntity, List<LibraryFile> remainingFiles) {}
+    public record GetOrCreateBookResult(Optional<BookEntity> bookEntity, List<LibraryFile> remainingFiles) {
+    }
 
-    public record CreateBookResult(BookEntity bookEntity, LibraryFile libraryFile) {}
+    public record CreateBookResult(BookEntity bookEntity, LibraryFile libraryFile) {
+    }
 
 }

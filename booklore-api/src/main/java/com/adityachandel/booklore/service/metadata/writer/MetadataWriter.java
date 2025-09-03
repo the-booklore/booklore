@@ -15,5 +15,8 @@ public interface MetadataWriter {
     default void replaceCoverImageFromUpload(BookEntity bookEntity, MultipartFile file) {
     }
 
+    default void replaceCoverImageFromUrl(BookEntity bookEntity, String url) {
+    }
+
     BookFileType getSupportedBookType();
 }

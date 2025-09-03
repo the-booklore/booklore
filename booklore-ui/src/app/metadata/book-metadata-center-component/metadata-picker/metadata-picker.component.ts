@@ -11,9 +11,11 @@ import {Tooltip} from 'primeng/tooltip';
 import {UrlHelperService} from '../../../utilities/service/url-helper.service';
 import {BookService} from '../../../book/service/book.service';
 import {Textarea} from 'primeng/textarea';
-import {filter, map} from 'rxjs/operators';
+import {filter, map, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AutoComplete} from 'primeng/autocomplete';
+import {Image} from 'primeng/image';
+import {LazyLoadImageModule} from 'ng-lazyload-image';
 
 @Component({
   selector: 'app-metadata-picker',
@@ -31,7 +33,9 @@ import {AutoComplete} from 'primeng/autocomplete';
     Tooltip,
     AsyncPipe,
     Textarea,
-    AutoComplete
+    AutoComplete,
+    Image,
+    LazyLoadImageModule
   ]
 })
 export class MetadataPickerComponent implements OnInit {
@@ -77,21 +81,21 @@ export class MetadataPickerComponent implements OnInit {
   @Input() book$!: Observable<Book | null>;
   @Output() goBack = new EventEmitter<boolean>();
 
-  // Handle blur event for AutoComplete to add custom values
-  onAutoCompleteBlur(fieldName: string, event: any) {
-    const inputValue = event.target.value?.trim();
-    if (inputValue) {
-      const currentValue = this.metadataForm.get(fieldName)?.value || [];
-      const values = Array.isArray(currentValue) ? currentValue :
-                     typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
+  allAuthors!: string[];
+  allCategories!: string[];
+  filteredCategories: string[] = [];
+  filteredAuthors: string[] = [];
 
-      // Add the new value if it's not already in the array
-      if (!values.includes(inputValue)) {
-        values.push(inputValue);
-        this.metadataForm.get(fieldName)?.setValue(values);
-      }
-      // Clear the input
-      event.target.value = '';
+  getFiltered(controlName: string): string[] {
+    return controlName === 'authors' ? this.filteredAuthors : this.filteredCategories;
+  }
+
+  filterItems(event: { query: string }, controlName: string) {
+    const query = event.query.toLowerCase();
+    if (controlName === 'authors') {
+      this.filteredAuthors = this.allAuthors.filter(a => a.toLowerCase().includes(query));
+    } else if (controlName === 'categories') {
+      this.filteredCategories = this.allCategories.filter(c => c.toLowerCase().includes(query));
     }
   }
 
@@ -167,6 +171,25 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   ngOnInit(): void {
+
+    this.bookService.bookState$
+      .pipe(
+        filter(bookState => bookState.loaded),
+        take(1)
+      )
+      .subscribe(bookState => {
+        const authors = new Set<string>();
+        const categories = new Set<string>();
+
+        (bookState.books ?? []).forEach(book => {
+          book.metadata?.authors?.forEach(author => authors.add(author));
+          book.metadata?.categories?.forEach(category => categories.add(category));
+        });
+
+        this.allAuthors = Array.from(authors);
+        this.allCategories = Array.from(categories);
+      });
+
     this.book$
       .pipe(
         filter((book): book is Book => !!book && !!book.metadata),
@@ -183,7 +206,7 @@ export class MetadataPickerComponent implements OnInit {
 
       if (metadata) {
         this.originalMetadata = metadata;
-        this.originalMetadata.thumbnailUrl = this.urlHelper.getCoverUrl(metadata.bookId, metadata.coverUpdatedOn);
+        this.originalMetadata.thumbnailUrl = this.urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn);
         this.currentBookId = metadata.bookId;
         this.metadataForm.patchValue({
           title: metadata.title || null,
@@ -269,6 +292,28 @@ export class MetadataPickerComponent implements OnInit {
         if (metadata.seriesTotalLocked) this.metadataForm.get('seriesTotal')?.disable();
       }
     });
+  }
+
+  onAutoCompleteSelect(fieldName: string, event: any) {
+    const values = this.metadataForm.get(fieldName)?.value || [];
+    if (!values.includes(event.value)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+    }
+    (event.originalEvent.target as HTMLInputElement).value = '';
+  }
+
+  onAutoCompleteKeyUp(fieldName: string, event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      const input = event.target as HTMLInputElement;
+      const value = input.value?.trim();
+      if (value) {
+        const values = this.metadataForm.get(fieldName)?.value || [];
+        if (!values.includes(value)) {
+          this.metadataForm.get(fieldName)?.setValue([...values, value]);
+        }
+        input.value = '';
+      }
+    }
   }
 
   onSave(): void {

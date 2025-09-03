@@ -1,11 +1,7 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Observable} from 'rxjs';
-
-import {Divider} from 'primeng/divider';
-import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
-import {Tooltip} from 'primeng/tooltip';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {MessageService} from 'primeng/api';
 
@@ -19,10 +15,7 @@ import {InputText} from 'primeng/inputtext';
   selector: 'app-global-preferences',
   standalone: true,
   imports: [
-    Divider,
-    Select,
     Button,
-    Tooltip,
     ToggleSwitch,
     FormsModule,
     InputText
@@ -31,14 +24,6 @@ import {InputText} from 'primeng/inputtext';
   styleUrl: './global-preferences.component.scss'
 })
 export class GlobalPreferencesComponent implements OnInit {
-  readonly resolutionOptions = [
-    {label: '250x350', value: '250x350'},
-    {label: '375x525', value: '375x525'},
-    {label: '500x700', value: '500x700'},
-    {label: '625x875', value: '625x875'}
-  ];
-
-  selectedResolution = '250x350';
 
   toggles = {
     autoBookSearch: false,
@@ -58,9 +43,6 @@ export class GlobalPreferencesComponent implements OnInit {
       filter(settings => !!settings),
       take(1)
     ).subscribe(settings => {
-      if (settings?.coverResolution) {
-        this.selectedResolution = settings.coverResolution;
-      }
       if (settings?.cbxCacheSizeInMb) {
         this.cbxCacheValue = settings.cbxCacheSizeInMb;
       }
@@ -70,10 +52,6 @@ export class GlobalPreferencesComponent implements OnInit {
       this.toggles.autoBookSearch = settings.autoBookSearch ?? false;
       this.toggles.similarBookRecommendation = settings.similarBookRecommendation ?? false;
     });
-  }
-
-  onResolutionChange(): void {
-    this.saveSetting(AppSettingKey.COVER_IMAGE_RESOLUTION, this.selectedResolution);
   }
 
   onToggleChange(settingKey: keyof typeof this.toggles, checked: boolean): void {

@@ -2,14 +2,16 @@ package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.entity.CategoryEntity;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.BooleanUtils.isTrue;
 
 @Slf4j
 public class MetadataChangeDetector {
@@ -60,6 +62,69 @@ public class MetadataChangeDetector {
         return false;
     }
 
+    public static boolean hasValueChanges(BookMetadata newMeta, BookMetadataEntity existingMeta, MetadataClearFlags clear) {
+        List<String> diffs = new ArrayList<>();
+        compareValue(diffs, "title", clear.isTitle(), newMeta.getTitle(), existingMeta.getTitle(), () -> !isTrue(existingMeta.getTitleLocked()));
+        compareValue(diffs, "subtitle", clear.isSubtitle(), newMeta.getSubtitle(), existingMeta.getSubtitle(), () -> !isTrue(existingMeta.getSubtitleLocked()));
+        compareValue(diffs, "publisher", clear.isPublisher(), newMeta.getPublisher(), existingMeta.getPublisher(), () -> !isTrue(existingMeta.getPublisherLocked()));
+        compareValue(diffs, "publishedDate", clear.isPublishedDate(), newMeta.getPublishedDate(), existingMeta.getPublishedDate(), () -> !isTrue(existingMeta.getPublishedDateLocked()));
+        compareValue(diffs, "description", clear.isDescription(), newMeta.getDescription(), existingMeta.getDescription(), () -> !isTrue(existingMeta.getDescriptionLocked()));
+        compareValue(diffs, "seriesName", clear.isSeriesName(), newMeta.getSeriesName(), existingMeta.getSeriesName(), () -> !isTrue(existingMeta.getSeriesNameLocked()));
+        compareValue(diffs, "seriesNumber", clear.isSeriesNumber(), newMeta.getSeriesNumber(), existingMeta.getSeriesNumber(), () -> !isTrue(existingMeta.getSeriesNumberLocked()));
+        compareValue(diffs, "seriesTotal", clear.isSeriesTotal(), newMeta.getSeriesTotal(), existingMeta.getSeriesTotal(), () -> !isTrue(existingMeta.getSeriesTotalLocked()));
+        compareValue(diffs, "isbn13", clear.isIsbn13(), newMeta.getIsbn13(), existingMeta.getIsbn13(), () -> !isTrue(existingMeta.getIsbn13Locked()));
+        compareValue(diffs, "isbn10", clear.isIsbn10(), newMeta.getIsbn10(), existingMeta.getIsbn10(), () -> !isTrue(existingMeta.getIsbn10Locked()));
+        compareValue(diffs, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()));
+        compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
+        compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
+        compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
+        compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
+        compareValue(diffs, "pageCount", clear.isPageCount(), newMeta.getPageCount(), existingMeta.getPageCount(), () -> !isTrue(existingMeta.getPageCountLocked()));
+        compareValue(diffs, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()));
+        compareValue(diffs, "personalRating", clear.isPersonalRating(), newMeta.getPersonalRating(), existingMeta.getPersonalRating(), () -> !isTrue(existingMeta.getPersonalRatingLocked()));
+        compareValue(diffs, "amazonRating", clear.isAmazonRating(), newMeta.getAmazonRating(), existingMeta.getAmazonRating(), () -> !isTrue(existingMeta.getAmazonRatingLocked()));
+        compareValue(diffs, "amazonReviewCount", clear.isAmazonReviewCount(), newMeta.getAmazonReviewCount(), existingMeta.getAmazonReviewCount(), () -> !isTrue(existingMeta.getAmazonReviewCountLocked()));
+        compareValue(diffs, "goodreadsRating", clear.isGoodreadsRating(), newMeta.getGoodreadsRating(), existingMeta.getGoodreadsRating(), () -> !isTrue(existingMeta.getGoodreadsRatingLocked()));
+        compareValue(diffs, "goodreadsReviewCount", clear.isGoodreadsReviewCount(), newMeta.getGoodreadsReviewCount(), existingMeta.getGoodreadsReviewCount(), () -> !isTrue(existingMeta.getGoodreadsReviewCountLocked()));
+        compareValue(diffs, "hardcoverRating", clear.isHardcoverRating(), newMeta.getHardcoverRating(), existingMeta.getHardcoverRating(), () -> !isTrue(existingMeta.getHardcoverRatingLocked()));
+        compareValue(diffs, "hardcoverReviewCount", clear.isHardcoverReviewCount(), newMeta.getHardcoverReviewCount(), existingMeta.getHardcoverReviewCount(), () -> !isTrue(existingMeta.getHardcoverReviewCountLocked()));
+        compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));
+        compareValue(diffs, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()));
+        return !diffs.isEmpty();
+    }
+
+    public static boolean hasLockChanges(BookMetadata newMeta, BookMetadataEntity existingMeta) {
+        if (differsLock(newMeta.getTitleLocked(), existingMeta.getTitleLocked())) return true;
+        if (differsLock(newMeta.getSubtitleLocked(), existingMeta.getSubtitleLocked())) return true;
+        if (differsLock(newMeta.getPublisherLocked(), existingMeta.getPublisherLocked())) return true;
+        if (differsLock(newMeta.getPublishedDateLocked(), existingMeta.getPublishedDateLocked())) return true;
+        if (differsLock(newMeta.getDescriptionLocked(), existingMeta.getDescriptionLocked())) return true;
+        if (differsLock(newMeta.getSeriesNameLocked(), existingMeta.getSeriesNameLocked())) return true;
+        if (differsLock(newMeta.getSeriesNumberLocked(), existingMeta.getSeriesNumberLocked())) return true;
+        if (differsLock(newMeta.getSeriesTotalLocked(), existingMeta.getSeriesTotalLocked())) return true;
+        if (differsLock(newMeta.getIsbn13Locked(), existingMeta.getIsbn13Locked())) return true;
+        if (differsLock(newMeta.getIsbn10Locked(), existingMeta.getIsbn10Locked())) return true;
+        if (differsLock(newMeta.getAsinLocked(), existingMeta.getAsinLocked())) return true;
+        if (differsLock(newMeta.getGoodreadsIdLocked(), existingMeta.getGoodreadsIdLocked())) return true;
+        if (differsLock(newMeta.getComicvineIdLocked(), existingMeta.getComicvineIdLocked())) return true;
+        if (differsLock(newMeta.getHardcoverIdLocked(), existingMeta.getHardcoverIdLocked())) return true;
+        if (differsLock(newMeta.getGoogleIdLocked(), existingMeta.getGoogleIdLocked())) return true;
+        if (differsLock(newMeta.getPageCountLocked(), existingMeta.getPageCountLocked())) return true;
+        if (differsLock(newMeta.getLanguageLocked(), existingMeta.getLanguageLocked())) return true;
+        if (differsLock(newMeta.getPersonalRatingLocked(), existingMeta.getPersonalRatingLocked())) return true;
+        if (differsLock(newMeta.getAmazonRatingLocked(), existingMeta.getAmazonRatingLocked())) return true;
+        if (differsLock(newMeta.getAmazonReviewCountLocked(), existingMeta.getAmazonReviewCountLocked())) return true;
+        if (differsLock(newMeta.getGoodreadsRatingLocked(), existingMeta.getGoodreadsRatingLocked())) return true;
+        if (differsLock(newMeta.getGoodreadsReviewCountLocked(), existingMeta.getGoodreadsReviewCountLocked())) return true;
+        if (differsLock(newMeta.getHardcoverRatingLocked(), existingMeta.getHardcoverRatingLocked())) return true;
+        if (differsLock(newMeta.getHardcoverReviewCountLocked(), existingMeta.getHardcoverReviewCountLocked())) return true;
+        if (differsLock(newMeta.getCoverLocked(), existingMeta.getCoverLocked())) return true;
+        if (differsLock(newMeta.getAuthorsLocked(), existingMeta.getAuthorsLocked())) return true;
+        if (differsLock(newMeta.getCategoriesLocked(), existingMeta.getCategoriesLocked())) return true;
+        if (differsLock(newMeta.getReviewsLocked(), existingMeta.getReviewsLocked())) return true;
+        return false;
+    }
+
     private static void compare(List<String> diffs, String field, boolean shouldClear, Object newVal, Object oldVal, Supplier<Boolean> isUnlocked, Boolean newLock, Boolean oldLock) {
         boolean valueChanged = differs(shouldClear, newVal, oldVal, isUnlocked);
         boolean lockChanged = differsLock(newLock, oldLock);
@@ -70,6 +135,17 @@ public class MetadataChangeDetector {
             if (valueChanged) sb.append(" value: [").append(safe(oldVal)).append("] → [").append(safe(newVal)).append("]");
             if (lockChanged) sb.append(" lock: [").append(isTrue(oldLock)).append("] → [").append(isTrue(newLock)).append("]");
             diffs.add(sb.toString());
+        }
+    }
+
+    private static <T> void compareValue(List<String> diffs,
+                                         String field,
+                                         boolean shouldClear,
+                                         T newVal,
+                                         T oldVal,
+                                         Supplier<Boolean> isUnlocked) {
+        if (differs(shouldClear, newVal, oldVal, isUnlocked)) {
+            diffs.add(field + " changed");
         }
     }
 
@@ -109,21 +185,19 @@ public class MetadataChangeDetector {
     }
 
     private static Set<String> toNameSet(Set<?> entities) {
-        if (entities == null) return null;
+        if (entities == null) {
+            return Collections.emptySet();
+        }
         return entities.stream()
-                .map(e -> {
-                    try {
-                        return (String) e.getClass().getMethod("getName").invoke(e);
-                    } catch (Exception ex) {
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .map(String::strip)
-                .collect(Collectors.toSet());
-    }
-
-    private static boolean isTrue(Boolean value) {
-        return Boolean.TRUE.equals(value);
+            .map(e -> {
+                if (e instanceof AuthorEntity author) {
+                    return author.getName();
+                }
+                if (e instanceof CategoryEntity category) {
+                    return category.getName();
+                }
+                return e.toString();
+            })
+            .collect(Collectors.toSet());
     }
 }

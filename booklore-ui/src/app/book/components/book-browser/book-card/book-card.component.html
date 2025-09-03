@@ -11,7 +11,7 @@
         'loaded': isImageLoaded
       }">
       <img
-        [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
+        [src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)"
         class="book-cover"
         [class.loaded]="isImageLoaded"
         alt="Cover of {{ book.metadata?.title }}"

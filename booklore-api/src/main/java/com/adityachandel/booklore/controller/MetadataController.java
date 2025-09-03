@@ -1,30 +1,27 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.config.security.AuthenticationService;
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.dto.EpubMetadata;
+import com.adityachandel.booklore.model.dto.CoverImage;
 import com.adityachandel.booklore.model.dto.request.*;
-import com.adityachandel.booklore.model.dto.settings.MetadataMatchWeights;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.quartz.JobSchedulerService;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.metadata.BookMetadataService;
-import com.adityachandel.booklore.service.metadata.BookMetadataUpdater;
-import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.service.metadata.*;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -37,6 +34,7 @@ public class MetadataController {
     private final AuthenticationService authenticationService;
     private final BookMetadataMapper bookMetadataMapper;
     private final MetadataMatchService metadataMatchService;
+    private final DuckDuckGoCoverService duckDuckGoCoverService;
     private final BookRepository bookRepository;
 
     @PostMapping("/{bookId}/metadata/prospective")
@@ -71,12 +69,20 @@ public class MetadataController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{bookId}/metadata/cover")
+    @PostMapping("/{bookId}/metadata/cover/upload")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> uploadCover(@PathVariable Long bookId, @RequestParam("file") MultipartFile file) {
-        BookMetadata updatedMetadata = bookMetadataService.handleCoverUpload(bookId, file);
-        return ResponseEntity.ok(updatedMetadata);
+    public ResponseEntity<BookMetadata> uploadCoverFromFile(@PathVariable Long bookId, @RequestParam("file") MultipartFile file) {
+        BookMetadata updated = bookMetadataService.updateCoverImageFromFile(bookId, file);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{bookId}/metadata/cover/from-url")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public ResponseEntity<BookMetadata> uploadCoverFromUrl(@PathVariable Long bookId, @RequestBody Map<String, String> body) {
+        BookMetadata updated = bookMetadataService.updateCoverImageFromUrl(bookId, body.get("url"));
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/metadata/toggle-all-lock")
@@ -126,5 +132,10 @@ public class MetadataController {
     public ResponseEntity<BookMetadata> restoreMetadata(@PathVariable Long bookId) throws IOException {
         BookMetadata restoredMetadata = bookMetadataService.restoreMetadataFromBackup(bookId);
         return ResponseEntity.ok(restoredMetadata);
+    }
+
+    @PostMapping("/{bookId}/metadata/covers")
+    public ResponseEntity<List<CoverImage>> getImages(@RequestBody CoverFetchRequest request) {
+        return ResponseEntity.ok(duckDuckGoCoverService.getCovers(request));
     }
 }

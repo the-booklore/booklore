@@ -32,6 +32,7 @@ public class BookLoreUserTransformer {
         permissions.setCanEmailBook(userEntity.getPermissions().isPermissionEmailBook());
         permissions.setCanDeleteBook(userEntity.getPermissions().isPermissionDeleteBook());
         permissions.setCanManipulateLibrary(userEntity.getPermissions().isPermissionManipulateLibrary());
+        permissions.setCanAccessOpds(userEntity.getPermissions().isPermissionAccessOpds());
         permissions.setCanSyncKoReader(userEntity.getPermissions().isPermissionSyncKoreader());
         permissions.setCanSyncKobo(userEntity.getPermissions().isPermissionSyncKobo());
 
@@ -73,7 +74,7 @@ public class BookLoreUserTransformer {
                     }
                 }
             } catch (IllegalArgumentException e) {
-                log.warn("Unknown setting key encountered: {}", key);
+                log.debug("Unknown setting key encountered: {}", key);
             } catch (Exception e) {
                 log.error("Failed to deserialize setting '{}': {}", key, e.getMessage(), e);
             }

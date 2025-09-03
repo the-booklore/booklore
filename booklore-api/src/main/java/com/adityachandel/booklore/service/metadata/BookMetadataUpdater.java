@@ -4,7 +4,10 @@ import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.AuthorRepository;
 import com.adityachandel.booklore.repository.CategoryRepository;
@@ -18,18 +21,18 @@ import com.adityachandel.booklore.util.MetadataChangeDetector;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URL;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -56,6 +59,7 @@ public class BookMetadataUpdater {
 
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
+        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
@@ -99,13 +103,13 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if (writeToFile) {
+        if ((writeToFile && hasValueChanges) || thumbnailRequiresUpdate) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = setThumbnail ? newMetadata.getThumbnailUrl() : null;
 
-                    if (StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl)) {
-                        log.warn("Blocked local/private thumbnail URL: {}", thumbnailUrl);
+                    if ((StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl) || Boolean.TRUE.equals(metadata.getCoverLocked()))) {
+                        log.debug("Blocked local/private thumbnail URL: {}", thumbnailUrl);
                         thumbnailUrl = null;
                     }
 
@@ -113,8 +117,6 @@ public class BookMetadataUpdater {
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, false, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setCurrentHash(newHash);
-                    log.info("Metadata written for book ID {}", bookId);
-
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }
@@ -216,14 +218,8 @@ public class BookMetadataUpdater {
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-
-        try {
-            String path = fileService.createThumbnail(bookId, m.getThumbnailUrl());
-            e.setThumbnail(path);
-            e.setCoverUpdatedOn(Instant.now());
-        } catch (IOException ex) {
-            log.warn("Thumbnail generation failed for book {}: {}", bookId, ex.getMessage());
-        }
+        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        e.setCoverUpdatedOn(Instant.now());
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {

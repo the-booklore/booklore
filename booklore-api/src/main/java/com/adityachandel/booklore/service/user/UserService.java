@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.service.user;
 
-import com.adityachandel.booklore.config.security.AuthenticationService;
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
@@ -53,6 +53,7 @@ public class UserService {
             user.getPermissions().setPermissionManipulateLibrary(updateRequest.getPermissions().isCanManipulateLibrary());
             user.getPermissions().setPermissionEmailBook(updateRequest.getPermissions().isCanEmailBook());
             user.getPermissions().setPermissionDeleteBook(updateRequest.getPermissions().isCanDeleteBook());
+            user.getPermissions().setPermissionAccessOpds(updateRequest.getPermissions().isCanAccessOpds());
             user.getPermissions().setPermissionSyncKoreader(updateRequest.getPermissions().isCanSyncKoReader());
             user.getPermissions().setPermissionSyncKobo(updateRequest.getPermissions().isCanSyncKobo());
         }
@@ -161,6 +162,13 @@ public class UserService {
         }
 
         userRepository.save(user);
+    }
+
+    public List<BookLoreUser> getUsersWithLibraryAccess(Long libraryId) {
+        return userRepository.findAllByLibraries_Id(libraryId)
+                .stream()
+                .map(bookLoreUserTransformer::toDTO)
+                .collect(Collectors.toList());
     }
 
     private boolean meetsMinimumPasswordRequirements(String password) {

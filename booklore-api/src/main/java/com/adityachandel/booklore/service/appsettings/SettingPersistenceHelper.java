@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -81,11 +80,15 @@ public class SettingPersistenceHelper {
         defaultComicvine.setEnabled(false);
         defaultComicvine.setApiKey(null);
 
+        MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
+        defaultDouban.setEnabled(false);
+
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
+        defaultMetadataProviderSettings.setDouban(defaultDouban);
 
         return defaultMetadataProviderSettings;
     }
@@ -171,6 +174,8 @@ public class SettingPersistenceHelper {
                 .goodreadsReviewCount(2)
                 .hardcoverRating(2)
                 .hardcoverReviewCount(1)
+                .doubanRating(3)
+                .doubanReviewCount(2)
                 .coverImage(5)
                 .build();
     }
@@ -194,6 +199,11 @@ public class SettingPersistenceHelper {
                                 .build(),
                         MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
                                 .provider(MetadataProvider.GoodReads)
+                                .enabled(false)
+                                .maxReviews(5)
+                                .build(),
+                        MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
+                                .provider(MetadataProvider.Douban)
                                 .enabled(false)
                                 .maxReviews(5)
                                 .build()

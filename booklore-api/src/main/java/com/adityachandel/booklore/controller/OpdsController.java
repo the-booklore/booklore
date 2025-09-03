@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/opds")
+@RequestMapping({"/api/v1/opds", "/api/v2/opds"})
 @RequiredArgsConstructor
 public class OpdsController {
 
@@ -50,9 +50,9 @@ public class OpdsController {
         return bookService.downloadBook(bookId);
     }
 
-    @GetMapping("/{bookId}/cover.jpg")
+    @GetMapping("/{bookId}/cover")
     public ResponseEntity<Resource> getBookCover(@PathVariable long bookId) {
-        Resource coverImage = bookService.getBookCover(bookId);
+        Resource coverImage = bookService.getBookThumbnail(bookId);
         String contentType = "image/jpeg";
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(contentType))

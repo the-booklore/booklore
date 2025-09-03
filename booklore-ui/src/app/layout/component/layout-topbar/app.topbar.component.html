@@ -32,13 +32,18 @@
         @if (userService.userState$ | async; as userState) {
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+              <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
+                <i class="pi pi-inbox text-surface-100"></i>
+              </a>
+            }
+          </li>
+          <li>
+            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
                 <i class="pi pi-plus-circle text-surface-100"></i>
               </a>
             }
           </li>
-        }
-        @if (userService.userState$ | async; as userState) {
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
@@ -155,6 +160,15 @@
                 >
                   <i class="pi pi-upload text-surface-100"></i>
                   Upload Book
+                </button>
+              </li>
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="navigateToBookdrop(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-inbox text-surface-100"></i>
+                  Bookdrop
                 </button>
               </li>
             }
