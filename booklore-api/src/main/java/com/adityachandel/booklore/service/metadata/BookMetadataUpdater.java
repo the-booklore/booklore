@@ -114,7 +114,25 @@ public class BookMetadataUpdater {
 
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, false, clearFlags);
-                    String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    
+                    String newHash = "";
+
+                    // Special handling: If original file was .cbr and now .cbz exists, update to .cbz
+                    File resultingFile = file;
+                    if (!file.exists()) {
+                        String cbzName = file.getName().replaceFirst("(?i)\\.cbr$", ".cbz");
+                        File cbzFile = new File(file.getParentFile(), cbzName);
+                        if (cbzFile.exists()) {
+                            bookEntity.setFileName(cbzName);
+                            resultingFile = cbzFile;
+                        }
+                        bookEntity.setFileSizeKb(resultingFile.length() / 1024);
+                        log.info("!!! Converted CBR → CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
+                        newHash = FileFingerprint.generateHash(resultingFile.toPath());
+                    } else {
+                        newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    }
+                    
                     bookEntity.setCurrentHash(newHash);
                     log.info("Metadata written for book ID {}", bookId);
 

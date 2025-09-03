@@ -238,8 +238,12 @@ public class CbxMetadataWriter implements MetadataWriter {
             }
             Path target = file.toPath().resolveSibling(file.getName().substring(0, file.getName().lastIndexOf('.')) + ".cbz");
             Files.move(tempZip, target, StandardCopyOption.REPLACE_EXISTING);
-            // Optionally remove original CBR (previous behavior requested this)
-            try { Files.deleteIfExists(file.toPath()); } catch (Exception ignore) {}
+            
+            try { 
+                // Remove original CBR after conversion
+                log.info("Removing original CBR file: {}", file.getAbsolutePath());
+                Files.deleteIfExists(file.toPath());
+            } catch (Exception ignored) { /* if field/name differs, adjust in entity */ }
         } catch (Exception e) {
             log.warn("Failed to write metadata for {}: {}", file.getName(), e.getMessage(), e);
         }
