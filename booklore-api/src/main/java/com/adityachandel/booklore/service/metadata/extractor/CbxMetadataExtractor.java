@@ -1,8 +1,11 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.github.junrar.Archive;
+import com.github.junrar.rarfile.FileHeader;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
@@ -14,6 +17,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Collections;
 import javax.imageio.ImageIO;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -31,23 +38,51 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
   @Override
   public BookMetadata extractMetadata(File file) {
     String baseName = FilenameUtils.getBaseName(file.getName());
-    if (!file.getName().toLowerCase().endsWith(".cbz")) {
+    String lowerName = file.getName().toLowerCase();
+
+    // Non-archive (fallback)
+    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr")) {
       return BookMetadata.builder().title(baseName).build();
     }
 
-    try (ZipFile zipFile = new ZipFile(file)) {
-      ZipEntry entry = findComicInfoEntry(zipFile);
-      if (entry == null) {
+    // CBZ path (ZIP)
+    if (lowerName.endsWith(".cbz")) {
+      try (ZipFile zipFile = new ZipFile(file)) {
+        ZipEntry entry = findComicInfoEntry(zipFile);
+        if (entry == null) {
+          return BookMetadata.builder().title(baseName).build();
+        }
+        try (InputStream is = zipFile.getInputStream(entry)) {
+          Document document = buildSecureDocument(is);
+          return mapDocumentToMetadata(document, baseName);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to extract metadata from CBZ", e);
         return BookMetadata.builder().title(baseName).build();
       }
+    }
 
-      try (InputStream is = zipFile.getInputStream(entry)) {
+    // CBR path (RAR)
+    Archive archive = null;
+    try {
+      archive = new Archive(file);
+      FileHeader header = findComicInfoHeader(archive);
+      if (header == null) {
+        return BookMetadata.builder().title(baseName).build();
+      }
+      byte[] xmlBytes = readRarEntryBytes(archive, header);
+      if (xmlBytes == null) {
+        return BookMetadata.builder().title(baseName).build();
+      }
+      try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
         Document document = buildSecureDocument(is);
         return mapDocumentToMetadata(document, baseName);
       }
     } catch (Exception e) {
-      log.warn("Failed to extract metadata from CBZ", e);
+      log.warn("Failed to extract metadata from CBR", e);
       return BookMetadata.builder().title(baseName).build();
+      } finally {
+      try { if (archive != null) archive.close(); } catch (Exception ignore) {}
     }
   }
 
@@ -196,19 +231,78 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
 
   @Override
   public byte[] extractCover(File file) {
-    if (!file.getName().toLowerCase().endsWith(".cbz")) {
+    String lowerName = file.getName().toLowerCase();
+
+    // Non-archive fallback
+    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr")) {
       return generatePlaceholderCover(250, 350);
     }
 
-    try (ZipFile zipFile = new ZipFile(file)) {
-      ZipEntry coverEntry = findFrontCoverEntry(zipFile);
-      if (coverEntry != null) {
-        try (InputStream is = zipFile.getInputStream(coverEntry)) {
-          return is.readAllBytes();
+    // CBZ path
+    if (lowerName.endsWith(".cbz")) {
+      try (ZipFile zipFile = new ZipFile(file)) {
+        ZipEntry coverEntry = findFrontCoverEntry(zipFile);
+        if (coverEntry != null) {
+          try (InputStream is = zipFile.getInputStream(coverEntry)) {
+            return is.readAllBytes();
+          }
+        } else {
+          // Fallback: first image after sorting alphabetically
+          ZipEntry firstImage = findFirstAlphabeticalImageEntry(zipFile);
+          if (firstImage != null) {
+            try (InputStream is2 = zipFile.getInputStream(firstImage)) {
+              return is2.readAllBytes();
+            }
+          }
+        }
+      } catch (Exception e) {
+        log.warn("Failed to extract cover image from CBZ", e);
+        return generatePlaceholderCover(250, 350);
+      }
+    }
+
+    // CBR path
+    Archive archive = null;
+    try {
+      archive = new Archive(file);
+
+      // Try via ComicInfo.xml first
+      FileHeader comicInfo = findComicInfoHeader(archive);
+      if (comicInfo != null) {
+        byte[] xmlBytes = readRarEntryBytes(archive, comicInfo);
+        if (xmlBytes != null) {
+          try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+            Document document = buildSecureDocument(is);
+            String imageName = findFrontCoverImageName(document);
+            if (imageName != null) {
+              FileHeader byName = findRarHeaderByName(archive, imageName);
+              if (byName != null) {
+                return readRarEntryBytes(archive, byName);
+              }
+              try {
+                int index = Integer.parseInt(imageName);
+                FileHeader byIndex = findRarImageHeaderByIndex(archive, index);
+                if (byIndex != null) {
+                  return readRarEntryBytes(archive, byIndex);
+                }
+              } catch (NumberFormatException ignore) {
+                // ignore and continue fallback
+              }
+            }
+          }
         }
       }
+
+      // Fallback: first image in alphabetical order
+      FileHeader firstImage = findFirstAlphabeticalImageHeader(archive);
+      if (firstImage != null) {
+        return readRarEntryBytes(archive, firstImage);
+      }
     } catch (Exception e) {
-      log.warn("Failed to extract cover image from CBZ", e);
+      log.warn("Failed to extract cover image from CBR", e);
+      return generatePlaceholderCover(250, 350);
+    } finally {
+      try { if (archive != null) archive.close(); } catch (Exception ignore) {}
     }
 
     return generatePlaceholderCover(250, 350);
@@ -239,15 +333,8 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         log.warn("Failed to parse ComicInfo.xml for cover", e);
       }
     }
-
-    Enumeration<? extends ZipEntry> entries = zipFile.entries();
-    while (entries.hasMoreElements()) {
-      ZipEntry entry = entries.nextElement();
-      if (!entry.isDirectory() && isImageEntry(entry.getName())) {
-        return entry;
-      }
-    }
-    return null;
+    ZipEntry firstImage = findFirstAlphabeticalImageEntry(zipFile);
+    return firstImage;
   }
 
   private ZipEntry findImageEntryByIndex(ZipFile zipFile, int index) {
@@ -329,4 +416,112 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       return null;
     }
   }
+
+
+  // ==== RAR (.cbr) helpers ====
+  private FileHeader findComicInfoHeader(Archive archive) {
+    if (archive == null) return null;
+    for (FileHeader fh : archive.getFileHeaders()) {
+      String name = fh.getFileName();
+      if (name == null) continue;
+      String base = baseName(name);
+      if ("comicinfo.xml".equalsIgnoreCase(base)) {
+        return fh;
+      }
+    }
+    return null;
+  }
+
+  private FileHeader findRarHeaderByName(Archive archive, String imageName) {
+    if (archive == null || imageName == null) return null;
+    for (FileHeader fh : archive.getFileHeaders()) {
+      String name = fh.getFileName();
+      if (name == null) continue;
+      if (name.equalsIgnoreCase(imageName)) return fh;
+      // also try base-name match to be lenient
+      if (baseName(name).equalsIgnoreCase(baseName(imageName))) return fh;
+    }
+    return null;
+  }
+
+  private FileHeader findRarImageHeaderByIndex(Archive archive, int index) {
+    int count = 0;
+    for (FileHeader fh : archive.getFileHeaders()) {
+      if (!fh.isDirectory() && isImageEntry(fh.getFileName())) {
+        if (count == index) return fh;
+        count++;
+      }
+    }
+    return null;
+  }
+
+  private FileHeader findFirstImageHeader(Archive archive) {
+    for (FileHeader fh : archive.getFileHeaders()) {
+      if (!fh.isDirectory() && isImageEntry(fh.getFileName())) {
+        return fh;
+      }
+    }
+    return null;
+  }
+
+  private byte[] readRarEntryBytes(Archive archive, FileHeader header) {
+    try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      archive.extractFile(header, baos);
+      return baos.toByteArray();
+    } catch (Exception e) {
+      log.warn("Failed to read RAR entry bytes for {}", header != null ? header.getFileName() : "<null>", e);
+      return null;
+    }
+  }
+
+  private String baseName(String path) {
+    if (path == null) return null;
+    int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+    return slash >= 0 ? path.substring(slash + 1) : path;
+  }  
+
+  private FileHeader findFirstAlphabeticalImageHeader(Archive archive) {
+    if (archive == null) return null;
+    List<FileHeader> images = new ArrayList<>();
+    for (FileHeader fh : archive.getFileHeaders()) {
+      if (fh == null || fh.isDirectory()) continue;
+      String name = fh.getFileName();
+      if (name == null) continue;
+      if (isImageEntry(name)) {
+        images.add(fh);
+      }
+    }
+    if (images.isEmpty()) return null;
+    Collections.sort(images, new Comparator<FileHeader>() {
+      @Override
+      public int compare(FileHeader a, FileHeader b) {
+        String na = a.getFileName() == null ? "" : a.getFileName();
+        String nb = b.getFileName() == null ? "" : b.getFileName();
+        return na.compareToIgnoreCase(nb);
+      }
+    });
+    return images.get(0);
+  }
+
+  private ZipEntry findFirstAlphabeticalImageEntry(ZipFile zipFile) {
+    List<ZipEntry> images = new ArrayList<>();
+    Enumeration<? extends ZipEntry> entries = zipFile.entries();
+    while (entries.hasMoreElements()) {
+      ZipEntry e = entries.nextElement();
+      if (!e.isDirectory() && isImageEntry(e.getName())) {
+        images.add(e);
+      }
+    }
+    if (images.isEmpty()) return null;
+    images.sort(new Comparator<ZipEntry>() {
+      @Override
+      public int compare(ZipEntry a, ZipEntry b) {
+        String na = a.getName() == null ? "" : a.getName();
+        String nb = b.getName() == null ? "" : b.getName();
+        return na.compareToIgnoreCase(nb);
+      }
+    });
+    return images.get(0);
+  }
+  
 }
