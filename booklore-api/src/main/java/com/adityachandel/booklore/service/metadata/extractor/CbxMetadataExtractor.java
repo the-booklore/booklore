@@ -21,6 +21,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Collections;
+import java.util.stream.Collectors;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import javax.imageio.ImageIO;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -41,7 +44,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     String lowerName = file.getName().toLowerCase();
 
     // Non-archive (fallback)
-    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr")) {
+    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr") && !lowerName.endsWith(".cb7")) {
       return BookMetadata.builder().title(baseName).build();
     }
 
@@ -58,6 +61,27 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         }
       } catch (Exception e) {
         log.warn("Failed to extract metadata from CBZ", e);
+        return BookMetadata.builder().title(baseName).build();
+      }
+    }
+
+    // CB7 path (7z)
+    if (lowerName.endsWith(".cb7")) {
+      try (SevenZFile sevenZ = new SevenZFile(file)) {
+        SevenZArchiveEntry entry = findSevenZComicInfoEntry(sevenZ);
+        if (entry == null) {
+          return BookMetadata.builder().title(baseName).build();
+        }
+        byte[] xmlBytes = readSevenZEntryBytes(sevenZ, entry);
+        if (xmlBytes == null) {
+          return BookMetadata.builder().title(baseName).build();
+        }
+        try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+          Document document = buildSecureDocument(is);
+          return mapDocumentToMetadata(document, baseName);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to extract metadata from CB7", e);
         return BookMetadata.builder().title(baseName).build();
       }
     }
@@ -186,7 +210,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return Arrays.stream(value.split("[,;]"))
       .map(String::trim)
       .filter(s -> !s.isEmpty())
-      .collect(Collectors.toSet())
+      .collect(Collectors.toSet());
   }
 
   private Integer parseInteger(String value) {
@@ -234,7 +258,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     String lowerName = file.getName().toLowerCase();
 
     // Non-archive fallback
-    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr")) {
+    if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr") && !lowerName.endsWith(".cb7")) {
       return generatePlaceholderCover(250, 350);
     }
 
@@ -257,6 +281,47 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         }
       } catch (Exception e) {
         log.warn("Failed to extract cover image from CBZ", e);
+        return generatePlaceholderCover(250, 350);
+      }
+    }
+
+    // CB7 path
+    if (lowerName.endsWith(".cb7")) {
+      try (SevenZFile sevenZ = new SevenZFile(file)) {
+        // Try via ComicInfo.xml first
+        SevenZArchiveEntry ci = findSevenZComicInfoEntry(sevenZ);
+        if (ci != null) {
+          byte[] xmlBytes = readSevenZEntryBytes(sevenZ, ci);
+          if (xmlBytes != null) {
+            try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+              Document document = buildSecureDocument(is);
+              String imageName = findFrontCoverImageName(document);
+              if (imageName != null) {
+                SevenZArchiveEntry byName = findSevenZEntryByName(sevenZ, imageName);
+                if (byName != null) {
+                  return readSevenZEntryBytes(sevenZ, byName);
+                }
+                try {
+                  int index = Integer.parseInt(imageName);
+                  SevenZArchiveEntry byIndex = findSevenZImageEntryByIndex(sevenZ, index);
+                  if (byIndex != null) {
+                    return readSevenZEntryBytes(sevenZ, byIndex);
+                  }
+                } catch (NumberFormatException ignore) {
+                  // continue to fallback
+                }
+              }
+            }
+          }
+        }
+
+        // Fallback: first image alphabetically
+        SevenZArchiveEntry first = findFirstAlphabeticalSevenZImageEntry(sevenZ);
+        if (first != null) {
+          return readSevenZEntryBytes(sevenZ, first);
+        }
+      } catch (Exception e) {
+        log.warn("Failed to extract cover image from CB7", e);
         return generatePlaceholderCover(250, 350);
       }
     }
@@ -516,4 +581,63 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return images.get(0);
   }
   
+  // ==== 7z (.cb7) helpers ====
+  private SevenZArchiveEntry findSevenZComicInfoEntry(SevenZFile sevenZ) throws IOException {
+    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+      if (e == null || e.isDirectory()) continue;
+      String name = e.getName();
+      if (name != null && name.equalsIgnoreCase("ComicInfo.xml")) {
+        return e;
+      }
+    }
+    return null;
+  }
+
+  private SevenZArchiveEntry findSevenZEntryByName(SevenZFile sevenZ, String imageName) throws IOException {
+    if (imageName == null) return null;
+    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+      if (e == null || e.isDirectory()) continue;
+      String name = e.getName();
+      if (name == null) continue;
+      if (name.equalsIgnoreCase(imageName)) return e;
+      // also allow base-name match
+      if (baseName(name).equalsIgnoreCase(baseName(imageName))) return e;
+    }
+    return null;
+  }
+
+  private SevenZArchiveEntry findSevenZImageEntryByIndex(SevenZFile sevenZ, int index) throws IOException {
+    int count = 0;
+    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+      if (!e.isDirectory() && isImageEntry(e.getName())) {
+        if (count == index) return e;
+        count++;
+      }
+    }
+    return null;
+  }
+
+  private SevenZArchiveEntry findFirstAlphabeticalSevenZImageEntry(SevenZFile sevenZ) throws IOException {
+    List<SevenZArchiveEntry> images = new ArrayList<>();
+    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+      if (!e.isDirectory() && isImageEntry(e.getName())) {
+        images.add(e);
+      }
+    }
+    if (images.isEmpty()) return null;
+    images.sort(Comparator.comparing(
+        entry -> entry.getName() == null ? "" : entry.getName(),
+        String.CASE_INSENSITIVE_ORDER
+    ));
+    return images.get(0);
+  }
+
+  private byte[] readSevenZEntryBytes(SevenZFile sevenZ, SevenZArchiveEntry entry) throws IOException {
+    try (InputStream is = sevenZ.getInputStream(entry);
+         ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+      if (is == null) return null;
+      is.transferTo(baos);
+      return baos.toByteArray();
+    }
+  }
 }
