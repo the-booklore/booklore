@@ -513,14 +513,10 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       }
     }
     if (images.isEmpty()) return null;
-    images.sort(new Comparator<ZipEntry>() {
-      @Override
-      public int compare(ZipEntry a, ZipEntry b) {
-        String na = a.getName() == null ? "" : a.getName();
-        String nb = b.getName() == null ? "" : b.getName();
-        return na.compareToIgnoreCase(nb);
-      }
-    });
+    images.sort(Comparator.comparing(
+        entry -> entry.getName() == null ? "" : entry.getName(),
+        String.CASE_INSENSITIVE_ORDER
+    ));
     return images.get(0);
   }
   
