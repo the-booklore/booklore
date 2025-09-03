@@ -40,6 +40,15 @@ public class CbxMetadataWriter implements MetadataWriter {
 
     @Override
     public void writeMetadataToFile(File file, BookMetadataEntity metadata, String thumbnailUrl, boolean restoreMode, MetadataClearFlags clearFlags) {
+        Path backup = null;
+        boolean writeSucceeded = false;
+        try {
+            // Create a backup next to the source file (temp name, safe to delete later)
+            backup = Files.createTempFile(file.getParentFile().toPath(), "cbx_backup_", ".bak");
+            Files.copy(file.toPath(), backup, StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception ex) {
+            log.warn("Unable to create backup for {}: {}", file.getAbsolutePath(), ex.getMessage(), ex);
+        }
         try {
             String nameLower = file.getName().toLowerCase();
             boolean isCbz = nameLower.endsWith(".cbz");
@@ -152,6 +161,7 @@ public class CbxMetadataWriter implements MetadataWriter {
                     zos.closeEntry();
                 }
                 Files.move(temp, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                writeSucceeded = true;
                 return;
             }
 
@@ -199,6 +209,7 @@ public class CbxMetadataWriter implements MetadataWriter {
                     Process p = pb.start();
                     int code = p.waitFor();
                     if (code == 0) {
+                        writeSucceeded = true;
                         // success; original CBR replaced/updated
                         return;
                     } else {
@@ -244,8 +255,26 @@ public class CbxMetadataWriter implements MetadataWriter {
                 log.info("Removing original CBR file: {}", file.getAbsolutePath());
                 Files.deleteIfExists(file.toPath());
             } catch (Exception ignored) { /* if field/name differs, adjust in entity */ }
+            writeSucceeded = true;
         } catch (Exception e) {
+            // Attempt to restore the original file from backup
+            try {
+                if (backup != null) {
+                    Files.copy(backup, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    log.info("Restored original file from backup after failure: {}", file.getAbsolutePath());
+                }
+            } catch (Exception restoreEx) {
+                log.warn("Failed to restore original file from backup: {} -> {}", backup, file.getAbsolutePath(), restoreEx);
+            }
             log.warn("Failed to write metadata for {}: {}", file.getName(), e.getMessage(), e);
+        } finally {
+            if (writeSucceeded && backup != null) {
+                try {
+                    Files.deleteIfExists(backup);
+                } catch (Exception ignore) {
+                    // best-effort cleanup
+                }
+            }
         }
     }
 
