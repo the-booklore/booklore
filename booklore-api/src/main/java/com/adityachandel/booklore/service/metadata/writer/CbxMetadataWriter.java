@@ -170,11 +170,12 @@ public class CbxMetadataWriter implements MetadataWriter {
             String rarBin = System.getenv().getOrDefault("BOOKLORE_RAR_BIN", "rar");
             boolean rarAvailable;
             try {
-                Process check = new ProcessBuilder(rarBin).redirectErrorStream(true).start();
-                check.destroy();
-                rarAvailable = true;
+                Process check = new ProcessBuilder(rarBin, "--help").redirectErrorStream(true).start();
+                int exitCode = check.waitFor();
+                rarAvailable = (exitCode == 0);
             } catch (Exception ex) {
                 rarAvailable = false;
+                log.warn("RAR binary check failed: {}", ex.getMessage());
             }
 
             if (rarAvailable) {
