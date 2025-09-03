@@ -39,7 +39,6 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final DefaultSettingInitializer defaultSettingInitializer;
-    private final OpdsUserRepository opdsUserRepository;
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

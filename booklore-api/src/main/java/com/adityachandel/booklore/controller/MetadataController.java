@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/books")
@@ -68,12 +69,20 @@ public class MetadataController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{bookId}/metadata/cover")
+    @PostMapping("/{bookId}/metadata/cover/upload")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> uploadCover(@PathVariable Long bookId, @RequestParam("file") MultipartFile file) {
-        BookMetadata updatedMetadata = bookMetadataService.handleCoverUpload(bookId, file);
-        return ResponseEntity.ok(updatedMetadata);
+    public ResponseEntity<BookMetadata> uploadCoverFromFile(@PathVariable Long bookId, @RequestParam("file") MultipartFile file) {
+        BookMetadata updated = bookMetadataService.updateCoverImageFromFile(bookId, file);
+        return ResponseEntity.ok(updated);
+    }
+
+    @PostMapping("/{bookId}/metadata/cover/from-url")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public ResponseEntity<BookMetadata> uploadCoverFromUrl(@PathVariable Long bookId, @RequestBody Map<String, String> body) {
+        BookMetadata updated = bookMetadataService.updateCoverImageFromUrl(bookId, body.get("url"));
+        return ResponseEntity.ok(updated);
     }
 
     @PutMapping("/metadata/toggle-all-lock")

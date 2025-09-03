@@ -28,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -35,6 +36,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -47,20 +49,47 @@ public class PdfMetadataWriter implements MetadataWriter {
             return;
         }
 
+        Path filePath = file.toPath();
+        Path backupPath = null;
+        boolean backupCreated = false;
         File tempFile = null;
+
+        try {
+            String prefix = "pdfBackup-" + UUID.randomUUID() + "-";
+            backupPath = Files.createTempFile(prefix, ".pdf");
+            Files.copy(filePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+            backupCreated = true;
+        } catch (IOException e) {
+            log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
+        }
 
         try (PDDocument pdf = Loader.loadPDF(file)) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, restoreMode, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");
             pdf.save(tempFile);
-            Files.move(tempFile.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.move(tempFile.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
             log.info("Successfully embedded metadata into PDF: {}", file.getName());
-        } catch (IOException e) {
-            log.warn("Failed to write metadata to PDF {}", file.getName(), e);
+        } catch (Exception e) {
+            log.warn("Failed to write metadata to PDF {}: {}", file.getName(), e.getMessage(), e);
+            if (backupCreated) {
+                try {
+                    Files.copy(backupPath, filePath, StandardCopyOption.REPLACE_EXISTING);
+                    log.info("Restored PDF {} from temp backup after failure", file.getName());
+                } catch (IOException ex) {
+                    log.error("Failed to restore PDF temp backup for {}: {}", file.getName(), ex.getMessage(), ex);
+                }
+            }
         } finally {
             if (tempFile != null && tempFile.exists()) {
                 tempFile.delete();
+            }
+            if (backupCreated) {
+                try {
+                    Files.deleteIfExists(backupPath);
+                } catch (IOException e) {
+                    log.warn("Could not delete PDF temp backup for {}: {}", file.getName(), e.getMessage());
+                }
             }
         }
     }

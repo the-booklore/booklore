@@ -43,12 +43,12 @@ public class BookFilePersistenceService {
 
         boolean pathChanged = !Objects.equals(newSubPath, book.getFileSubPath()) || !Objects.equals(newLibraryPath.getId(), book.getLibraryPath().getId());
 
-        if (pathChanged) {
+        if (pathChanged || Boolean.TRUE.equals(book.getDeleted())) {
             book.setLibraryPath(newLibraryPath);
             book.setFileSubPath(newSubPath);
-            book.setDeleted(false);
+            book.setDeleted(Boolean.FALSE);
             bookRepository.save(book);
-            log.info("[FILE_CREATE] Updated path for existing book with hash '{}': '{}'", currentHash, path);
+            log.info("[FILE_CREATE] Updated path / undeleted existing book with hash '{}': '{}'", currentHash, path);
         } else {
             log.info("[FILE_CREATE] Book with hash '{}' already exists at same path. Skipping update.", currentHash);
         }
