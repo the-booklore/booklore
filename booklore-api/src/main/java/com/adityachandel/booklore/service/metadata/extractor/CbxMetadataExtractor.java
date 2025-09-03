@@ -186,7 +186,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return Arrays.stream(value.split("[,;]"))
       .map(String::trim)
       .filter(s -> !s.isEmpty())
-      .collect(HashSet::new, Set::add, Set::addAll);
+      .collect(Collectors.toSet())
   }
 
   private Integer parseInteger(String value) {

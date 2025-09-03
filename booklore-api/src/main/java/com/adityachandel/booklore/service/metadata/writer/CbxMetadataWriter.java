@@ -202,10 +202,19 @@ public class CbxMetadataWriter implements MetadataWriter {
                     Path comicInfo = tempDir.resolve("ComicInfo.xml");
                     Files.write(comicInfo, xmlBytes);
 
-                    // Rebuild RAR archive in-place (replace original file)
-                    ProcessBuilder pb = new ProcessBuilder(
-                        rarBin, "a", "-idq", "-ep1", "-ma5", file.getAbsolutePath(), "."
-                    );
+                // Rebuild RAR archive in-place (replace original file)
+                Path targetRar = file.toPath().toAbsolutePath().normalize();
+                if (!isSafePath(targetRar)) {
+                    throw new IllegalArgumentException("Unsafe archive path detected: " + targetRar);
+                }
+                String rarExec = isSafeExecutable(rarBin) ? rarBin : null;
+                if (rarExec == null) {
+                    log.warn("RAR executable path '{}' failed validation; falling back to PATH lookup for 'rar'", rarBin);
+                    rarExec = "rar"; // rely on PATH; still passed as an arg to ProcessBuilder (no shell)
+                }
+                ProcessBuilder pb = new ProcessBuilder(
+                    rarExec, "a", "-idq", "-ep1", "-ma5", targetRar.toString(), "."
+                );
                     pb.directory(tempDir.toFile());
                     Process p = pb.start();
                     int code = p.waitFor();
@@ -346,6 +355,25 @@ public class CbxMetadataWriter implements MetadataWriter {
         if (val == null) return null;
         if (val % 1 == 0) return Integer.toString(val.intValue());
         return val.toString();
+    }
+
+    /**
+     * Returns true if the provided path string contains no control characters or common shell metacharacters.
+     */
+    private boolean isSafePath(Path path) {
+        if (path == null) return false;
+        String s = path.toString();
+        // Disallow NULs, newlines, carriage returns, and typical shell metacharacters
+        return !s.matches(".*[\0\r\n].*") && !s.matches(".*[|&;<>()$`\\\\].*");
+    }
+
+    /**
+     * Returns true if the provided executable reference is a simple name or sanitized absolute/relative path.
+     */
+    private boolean isSafeExecutable(String exec) {
+        if (exec == null || exec.isBlank()) return false;
+        // allow word chars, dot, slash, backslash, dash and underscore (no spaces or shell metas)
+        return exec.matches("^[\\w./\\\\-]+$");
     }
 
     @Override
