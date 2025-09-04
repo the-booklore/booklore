@@ -5,7 +5,7 @@ import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
-import {Book} from '../../book/model/book.model';
+import {Book, ReadStatus} from '../../book/model/book.model';
 
 interface ReadingStatusStats {
   status: string;
@@ -173,20 +173,22 @@ export class ReadStatusChartService implements OnDestroy {
     return this.convertMapToStats(statusMap, books.length);
   }
 
-  private buildStatusMap(books: Book[]): Map<string, number> {
-    const statusMap = new Map<string, number>();
+  private buildStatusMap(books: Book[]): Map<ReadStatus, number> {
+    const statusMap = new Map<ReadStatus, number>();
 
     for (const book of books) {
-      const status = book.readStatus;
-      if (status && status !== 'UNSET') {
-        statusMap.set(status, (statusMap.get(status) || 0) + 1);
-      }
+      const rawStatus = book.readStatus;
+      const status: ReadStatus = Object.values(ReadStatus).includes(rawStatus as ReadStatus)
+        ? (rawStatus as ReadStatus)
+        : ReadStatus.UNSET;
+
+      statusMap.set(status, (statusMap.get(status) || 0) + 1);
     }
 
     return statusMap;
   }
 
-  private convertMapToStats(statusMap: Map<string, number>, totalBooks: number): ReadingStatusStats[] {
+  private convertMapToStats(statusMap: Map<ReadStatus, number>, totalBooks: number): ReadingStatusStats[] {
     return Array.from(statusMap.entries())
       .map(([status, count]) => ({
         status: this.formatReadStatus(status),
@@ -196,20 +198,21 @@ export class ReadStatusChartService implements OnDestroy {
       .sort((a, b) => b.count - a.count);
   }
 
-  private formatReadStatus(status: string): string {
+  private formatReadStatus(status: ReadStatus | null | undefined): string {
     const STATUS_MAPPING: Record<string, string> = {
-      'UNREAD': 'Unread',
-      'READING': 'Currently Reading',
-      'RE_READING': 'Re-reading',
-      'READ': 'Read',
-      'PARTIALLY_READ': 'Partially Read',
-      'PAUSED': 'Paused',
-      'WONT_READ': "Won't Read",
-      'ABANDONED': 'Abandoned',
-      'UNSET': 'No Status'
-    } as const;
+      [ReadStatus.UNREAD]: 'Unread',
+      [ReadStatus.READING]: 'Currently Reading',
+      [ReadStatus.RE_READING]: 'Re-reading',
+      [ReadStatus.READ]: 'Read',
+      [ReadStatus.PARTIALLY_READ]: 'Partially Read',
+      [ReadStatus.PAUSED]: 'Paused',
+      [ReadStatus.WONT_READ]: "Won't Read",
+      [ReadStatus.ABANDONED]: 'Abandoned',
+      [ReadStatus.UNSET]: 'No Status'
+    };
 
-    return STATUS_MAPPING[status] || status;
+    if (!status) return 'No Status';
+    return STATUS_MAPPING[status] ?? 'No Status';
   }
 
   private generateLegendLabels(chart: any) {

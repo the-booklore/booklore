@@ -264,7 +264,7 @@ export class AuthorPopularityChartService implements OnDestroy {
           stats.totalPages += book.metadata.pageCount;
         }
 
-        const readStatus = book.readStatus || ReadStatus.UNSET;
+        const readStatus = book.readStatus ?? ReadStatus.UNSET;
         stats.readStatusCounts[readStatus]++;
 
         const ratings = [];
