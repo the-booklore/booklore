@@ -60,6 +60,9 @@ dependencies {
     implementation 'com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0'
     implementation 'io.documentnode:epub4j-core:4.2.2'
 
+    // --- UNRAR Support ---
+    implementation 'com.github.junrar:junrar:7.5.5'
+
     // --- JSON & Web Scraping ---
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.19.2'
     implementation 'org.jsoup:jsoup:1.21.1'
