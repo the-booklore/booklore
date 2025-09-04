@@ -248,7 +248,10 @@ export class ReadingCompletionChartService implements OnDestroy {
         }
 
         const stats = categoryMap.get(category)!;
-        const readStatus = book.readStatus || ReadStatus.UNSET;
+        const rawStatus = book.readStatus;
+        const readStatus: ReadStatus = Object.values(ReadStatus).includes(rawStatus as ReadStatus)
+          ? (rawStatus as ReadStatus)
+          : ReadStatus.UNSET;
         stats.readStatusCounts[readStatus]++;
       });
     });
