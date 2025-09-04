@@ -1,0 +1,251 @@
+<div class="stats-container">
+  <div class="header-card">
+
+    <div class="filter-section">
+      <div class="library-filter">
+        <div class="select-row">
+          <label for="library-dropdown">Library Statistics</label>
+          <p-select
+            id="library-dropdown"
+            [options]="libraryOptions"
+            [(ngModel)]="selectedLibrary"
+            optionLabel="name"
+            size="small"
+            placeholder="Select a library"
+            (onChange)="onLibraryChange()"
+            appendTo="body"
+            [style]="{'min-width': '200px'}"
+            class="library-dropdown">
+          </p-select>
+        </div>
+
+        <div class="library-totals" role="status" aria-live="polite">
+          <div class="total-item total-books" title="Total books">
+            <i class="pi pi-book"></i>
+            <span class="total-label">Books</span>
+            <span class="total-value">{{ totalBooks$ | async }}</span>
+          </div>
+
+          <div class="total-item total-authors" title="Total authors">
+            <i class="pi pi-users"></i>
+            <span class="total-label">Authors</span>
+            <span class="total-value">{{ totalAuthors$ | async }}</span>
+          </div>
+
+          <div class="total-item total-series" title="Total series">
+            <i class="pi pi-bookmark"></i>
+            <span class="total-label">Series</span>
+            <span class="total-value">{{ totalSeries$ | async }}</span>
+          </div>
+
+          <div class="total-item total-publishers" title="Total publishers">
+            <i class="pi pi-building"></i>
+            <span class="total-label">Publishers</span>
+            <span class="total-value">{{ totalPublishers$ | async }}</span>
+          </div>
+
+          <div class="total-item total-size" title="Total size">
+            <i class="pi pi-file"></i>
+            <span class="total-label">Library Size</span>
+            <span class="total-value">{{ totalSize$ | async }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  @if (!isLoading && hasData) {
+    <div class="charts-grid">
+      <div class="chart-section small">
+        <h3>Reading Status</h3>
+        <div class="chart-wrapper status-chart">
+          <canvas baseChart
+                  [data]="(readStatusChartService.statusChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="readStatusChartService.statusChartOptions"
+                  [type]="readStatusChartService.statusChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section small">
+        <h3>Book Formats</h3>
+        <div class="chart-wrapper book-type-chart">
+          <canvas baseChart
+                  [data]="(bookTypeChartService.bookTypeChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="bookTypeChartService.bookTypeChartOptions"
+                  [type]="bookTypeChartService.bookTypeChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section small">
+        <h3>Language Distribution</h3>
+        <div class="chart-wrapper language-chart">
+          <canvas baseChart
+                  [data]="(languageDistributionChartService.languageChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="languageDistributionChartService.languageChartOptions"
+                  [type]="languageDistributionChartService.languageChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section medium">
+        <h3>Book Metadata Score</h3>
+        <div class="chart-wrapper quality-chart">
+          <canvas baseChart
+                  [data]="(bookQualityScoreChartService.qualityChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="bookQualityScoreChartService.qualityChartOptions"
+                  [type]="bookQualityScoreChartService.qualityChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Top 25 Authors (with Reading Breakdown)</h3>
+        <div class="chart-wrapper author-chart">
+          <canvas baseChart
+                  [data]="(authorPopularityChartService.authorChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="authorPopularityChartService.authorChartOptions"
+                  [type]="authorPopularityChartService.authorChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Top 25 Largest Books by File Size</h3>
+        <div class="chart-wrapper book-size-chart">
+          <canvas baseChart
+                  [data]="(bookSizeChartService.bookSizeChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="bookSizeChartService.bookSizeChartOptions"
+                  [type]="bookSizeChartService.bookSizeChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Monthly Reading Patterns</h3>
+        <div class="chart-wrapper monthly-patterns-chart">
+          <canvas baseChart
+                  [data]="(monthlyReadingPatternsChartService.monthlyPatternsChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="monthlyReadingPatternsChartService.monthlyPatternsChartOptions"
+                  [type]="monthlyReadingPatternsChartService.monthlyPatternsChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Top 25 Categories (with Reading Breakdown)</h3>
+        <div class="chart-wrapper completion-chart">
+          <canvas baseChart
+                  [data]="(readingCompletionChartService.completionChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="readingCompletionChartService.completionChartOptions"
+                  [type]="readingCompletionChartService.completionChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section medium">
+        <h3>Reading Progress</h3>
+        <div class="chart-wrapper progress-chart">
+          <canvas baseChart
+                  [data]="(readingProgressChartService.progressChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="readingProgressChartService.progressChartOptions"
+                  [type]="readingProgressChartService.progressChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section medium">
+        <h3>External Rating Distribution</h3>
+        <div class="chart-wrapper rating-chart">
+          <canvas baseChart
+                  [data]="(bookRatingChartService.ratingChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="bookRatingChartService.ratingChartOptions"
+                  [type]="bookRatingChartService.ratingChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section medium">
+        <h3>Personal Rating Distribution</h3>
+        <div class="chart-wrapper personal-rating-chart">
+          <canvas baseChart
+                  [data]="(personalRatingChartService.personalRatingChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="personalRatingChartService.personalRatingChartOptions"
+                  [type]="personalRatingChartService.personalRatingChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section medium">
+        <h3>Page Count Distribution</h3>
+        <div class="chart-wrapper page-count-chart">
+          <canvas baseChart
+                  [data]="(pageCountChartService.pageCountChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="pageCountChartService.pageCountChartOptions"
+                  [type]="pageCountChartService.pageCountChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Reading Velocity Timeline</h3>
+        <div class="chart-wrapper velocity-timeline-chart">
+          <canvas baseChart
+                  [data]="(readingVelocityTimelineChartService.velocityTimelineChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="readingVelocityTimelineChartService.velocityTimelineChartOptions"
+                  [type]="readingVelocityTimelineChartService.velocityTimelineChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section large">
+        <h3>Top 15 Series by Book Count</h3>
+        <div class="chart-wrapper top-series-chart">
+          <canvas baseChart
+                  [data]="(topSeriesChartService.seriesChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="topSeriesChartService.seriesChartOptions"
+                  [type]="topSeriesChartService.seriesChartType">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section full-width">
+        <h3>Publication Year Timeline</h3>
+        <div class="chart-wrapper year-chart">
+          <canvas baseChart
+                  [data]="(publicationYearChartService.yearChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="publicationYearChartService.yearChartOptions"
+                  [type]="publicationYearChartService.yearChartType"
+                  [plugins]="[ChartDataLabels]">
+          </canvas>
+        </div>
+      </div>
+
+      <div class="chart-section full-width">
+        <h3>Books Finished Timeline (Last 10 Years)</h3>
+        <div class="chart-wrapper finished-books-timeline-chart">
+          <canvas baseChart
+                  [data]="(finishedBooksTimelineChartService.finishedBooksChartData$ | async) ?? {labels: [], datasets: []}"
+                  [options]="finishedBooksTimelineChartService.finishedBooksChartOptions"
+                  [type]="finishedBooksTimelineChartService.finishedBooksChartType"
+                  [plugins]="[ChartDataLabels]">
+          </canvas>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="loading-message">
+      Loading statistics...
+    </div>
+  }
+
+  @if (!isLoading && !hasData) {
+    <div class="no-data-message">
+      No data available.
+      <small>Make sure your library contains books with metadata.</small>
+    </div>
+  }
+</div>
