@@ -11,8 +11,10 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.BulkMetadataUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.request.ToggleAllLockRequest;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.Lock;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.model.websocket.Topic;
@@ -151,9 +153,13 @@ public class BookMetadataService {
     public BookMetadata handleCoverUpload(Long bookId, MultipartFile file) {
         fileService.createThumbnailFromFile(bookId, file);
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
-        boolean saveToOriginalFile = appSettingService.getAppSettings().getMetadataPersistenceSettings().isSaveToOriginalFile();
-        if (saveToOriginalFile) {
+        // bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+        // boolean saveToOriginalFile = appSettingService.getAppSettings().getMetadataPersistenceSettings().isSaveToOriginalFile();
+        // if (saveToOriginalFile) {
+        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
+        boolean saveToOriginalFile = settings.isSaveToOriginalFile();
+        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
+        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {        
             metadataWriterFactory.getWriter(bookEntity.getBookType())
                     .ifPresent(writer -> writer.replaceCoverImageFromUpload(bookEntity, file));
         }

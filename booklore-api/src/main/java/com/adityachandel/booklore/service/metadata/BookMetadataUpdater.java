@@ -73,11 +73,12 @@ public class BookMetadataUpdater {
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean writeToFile = settings.isSaveToOriginalFile();
+        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         boolean backupEnabled = settings.isBackupMetadata();
         boolean backupCover = settings.isBackupCover();
         BookFileType bookType = bookEntity.getBookType();
 
-        if (writeToFile && backupEnabled) {
+        if (writeToFile && backupEnabled && (bookType != BookFileType.CBX || convertCbrCb7ToCbz)) {
             try {
                 MetadataBackupRestore service = metadataBackupRestoreFactory.getService(bookType);
                 if (service != null) {
@@ -103,7 +104,10 @@ public class BookMetadataUpdater {
         }
 
         if (writeToFile) {
-            metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
+             if (bookType == BookFileType.CBX && !convertCbrCb7ToCbz) {
+                log.info("CBX metadata writing disabled for book ID {}", bookId);
+            } else {
+                metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = setThumbnail ? newMetadata.getThumbnailUrl() : null;
 
@@ -141,6 +145,7 @@ public class BookMetadataUpdater {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }
             });
+          }
         }
     }
 
