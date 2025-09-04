@@ -109,6 +109,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     return null;
   }
 
+  get displayTitle(): string | undefined {
+    return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
+    // return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata.seriesName : this.book.metadata?.title;
+  }
+
   onImageLoad(): void {
     this.isImageLoaded = true;
   }
