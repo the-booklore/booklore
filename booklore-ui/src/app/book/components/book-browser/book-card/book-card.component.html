@@ -25,13 +25,17 @@
       </div>
     }
 
-    @if (book.seriesCount != null && book.seriesCount! > 1) {
+    @if (book.seriesCount && book.seriesCount! >= 1) {
       <div class="series-items-count-overlay">
         {{ book.seriesCount }}
       </div>
     }
 
-    <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
+    @if (book.seriesCount && book.seriesCount! >= 1) {
+      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
+    } @else {
+      <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
+    }
 
     <p-button [hidden]="readButtonHidden" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
 

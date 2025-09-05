@@ -467,6 +467,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  openSeriesInfo(): void {
+    const seriesName = this.book?.metadata?.seriesName;
+    if (this.isSeriesCollapsed && seriesName) {
+      this.router.navigate(['/series', seriesName]);
+    } else {
+      this.openBookInfo(this.book);
+    }
+  }
+
   openBookInfo(book: Book): void {
     if (this.metadataCenterViewMode === 'route') {
       this.router.navigate(['/book', book.id], {

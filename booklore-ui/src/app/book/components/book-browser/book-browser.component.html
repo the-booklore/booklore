@@ -281,6 +281,7 @@
                           [index]="i"
                           [book]="book"
                           [isCheckboxEnabled]="true"
+                          [readButtonHidden]="book.seriesCount ? true : false"
                           [onBookSelect]="handleBookSelect.bind(this)"
                           [isSeriesCollapsed]="seriesCollapseFilter.isSeriesCollapsed"
                           (checkboxClick)="onCheckboxClicked($event)"
