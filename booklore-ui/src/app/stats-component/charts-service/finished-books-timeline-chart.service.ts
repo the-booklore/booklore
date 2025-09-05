@@ -15,8 +15,8 @@ interface FinishedBooksStats {
 }
 
 const CHART_COLORS = {
-  primary: '#4ECDC4',
-  primaryBackground: 'rgba(78, 205, 196, 0.1)',
+  primary: '#EF476F',
+  primaryBackground: 'rgba(239, 71, 111, 0.1)',
   border: '#ffffff'
 } as const;
 
@@ -97,8 +97,9 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
           },
           maxRotation: 45,
           callback: function (value, index, values) {
-            // Show every 6th label to avoid crowding
-            return index % 6 === 0 ? this.getLabelForValue(value as number) : '';
+            const totalLabels = values.length;
+            const skipInterval = totalLabels > 24 ? Math.ceil(totalLabels / 12) : totalLabels > 12 ? 2 : 1;
+            return index % skipInterval === 0 ? this.getLabelForValue(value as number) : '';
           }
         },
         grid: {color: 'rgba(255, 255, 255, 0.1)'},
@@ -171,7 +172,6 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
 
   private updateChartData(stats: FinishedBooksStats[]): void {
     try {
-      // Convert yearMonth to readable format for labels
       const labels = stats.map(s => {
         const [year, month] = s.yearMonth.split('-');
         const monthName = new Date(parseInt(year), parseInt(month) - 1).toLocaleString('default', { month: 'short' });
@@ -212,10 +212,6 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
     );
   }
 
-  public updateFromStats(stats: FinishedBooksStats[]): void {
-    this.updateChartData(stats);
-  }
-
   private isValidBookState(state: any): boolean {
     return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
   }
@@ -228,16 +224,12 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
 
   private processFinishedBooksStats(books: Book[]): FinishedBooksStats[] {
     const yearMonthMap = new Map<string, number>();
-    const currentDate = new Date();
-    const tenYearsAgo = new Date(currentDate.getFullYear() - 10, 0, 1);
 
     books.forEach(book => {
       if (book.dateFinished) {
         const finishedDate = new Date(book.dateFinished);
-        if (finishedDate >= tenYearsAgo && finishedDate <= currentDate) {
-          const yearMonth = `${finishedDate.getFullYear()}-${(finishedDate.getMonth() + 1).toString().padStart(2, '0')}`;
-          yearMonthMap.set(yearMonth, (yearMonthMap.get(yearMonth) || 0) + 1);
-        }
+        const yearMonth = `${finishedDate.getFullYear()}-${(finishedDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        yearMonthMap.set(yearMonth, (yearMonthMap.get(yearMonth) || 0) + 1);
       }
     });
 
