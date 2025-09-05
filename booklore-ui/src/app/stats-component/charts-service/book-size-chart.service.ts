@@ -17,8 +17,8 @@ interface BookSizeStats {
 const BOOK_TYPE_COLORS = {
   'PDF': '#e74c3c',
   'EPUB': '#3498db',
-  'CBZ': '#2ecc71',
-  'CBX': '#f1c40f',
+  'CBZ': '#27a153',
+  'CBX': '#d4b50f',
   'CBR': '#e67e22',
   'CB7': '#9b59b6'
 } as const;
