@@ -530,6 +530,10 @@
       height: 400px;
     }
 
+    &.reading-heatmap-chart {
+      height: 300px;
+    }
+
     &.reading-profile-radar-chart,
     &.reading-dna-chart,
     &.reading-habits-chart {
@@ -889,7 +893,11 @@
       height: 280px;
     }
 
-    &.reading-profile-radar-chart,
+    &.reading-heatmap-chart {
+      height: 250px;
+    }
+
+    .reading-profile-radar-chart,
     &.reading-dna-chart,
     &.reading-habits-chart {
       height: 350px;
@@ -972,6 +980,10 @@
     &.author-series-chart,
     &.top-series-chart {
       height: 250px;
+    }
+
+    &.reading-heatmap-chart {
+      height: 300px;
     }
 
     .reading-profile-radar-chart,

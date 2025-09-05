@@ -1,6 +1,7 @@
 import {Component, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {BaseChartDirective} from 'ng2-charts';
 import {Chart, registerables, Tooltip} from 'chart.js';
+import 'chartjs-chart-matrix';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {catchError, map, of, startWith, Subject, takeUntil} from 'rxjs';
@@ -23,12 +24,13 @@ import {BookSizeChartService} from './charts-service/book-size-chart.service';
 import {ReadingVelocityTimelineChartService} from './charts-service/reading-velocity-timeline-chart.service';
 import {MonthlyReadingPatternsChartService} from './charts-service/monthly-reading-patterns-chart.service';
 import {TopSeriesChartService} from './charts-service/top-series-chart.service';
-import {FinishedBooksTimelineChartService} from './charts-service/finished-books-timeline-chart.service';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {ReadingDNAChartService} from './charts-service/reading-dna-chart.service';
 import {ReadingHabitsChartService} from './charts-service/reading-habits-chart.service';
 import {ChartConfigService, ChartConfig} from './charts-service/chart-config.service';
 import {Button} from 'primeng/button';
+import {ReadingHeatmapChartService} from './charts-service/reading-heatmap-chart.service';
+import {MatrixController, MatrixElement} from 'chartjs-chart-matrix';
 
 @Component({
   selector: 'app-stats-component',
@@ -65,10 +67,10 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly readingVelocityTimelineChartService = inject(ReadingVelocityTimelineChartService);
   protected readonly monthlyReadingPatternsChartService = inject(MonthlyReadingPatternsChartService);
   protected readonly topSeriesChartService = inject(TopSeriesChartService);
-  protected readonly finishedBooksTimelineChartService = inject(FinishedBooksTimelineChartService);
   protected readonly readingDNAChartService = inject(ReadingDNAChartService);
   protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
+  protected readonly readingHeatmapChartService = inject(ReadingHeatmapChartService);
   private readonly destroy$ = new Subject<void>();
 
   public isLoading = true;
@@ -94,7 +96,8 @@ export class StatsComponent implements OnInit, OnDestroy {
   public readonly totalSize$ = this.librariesSummaryService.getFormattedSize().pipe(catchError(() => of('0 KB')));
 
   ngOnInit(): void {
-    Chart.register(...registerables, Tooltip, ChartDataLabels);
+    Chart.register(...registerables, Tooltip, ChartDataLabels, MatrixController, MatrixElement);
+    // Register matrix chart - it's automatically registered when imported
     Chart.defaults.plugins.legend.labels.font = {
       family: "'Inter', sans-serif",
       size: 11.5,

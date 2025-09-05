@@ -184,7 +184,6 @@
                 </canvas>
               </div>
             }
-
             @case ('bookFormats') {
               <h3>Book Formats</h3>
               <div class="chart-wrapper book-type-chart">
@@ -195,7 +194,6 @@
                 </canvas>
               </div>
             }
-
             @case ('languageDistribution') {
               <h3>Language Distribution</h3>
               <div class="chart-wrapper language-chart">
@@ -206,7 +204,6 @@
                 </canvas>
               </div>
             }
-
             @case ('bookMetadataScore') {
               <h3>Book Metadata Score</h3>
               <div class="chart-wrapper quality-chart">
@@ -217,7 +214,6 @@
                 </canvas>
               </div>
             }
-
             @case ('topAuthors') {
               <h3>Top 25 Authors (with Reading Breakdown)</h3>
               <div class="chart-wrapper author-chart">
@@ -228,7 +224,6 @@
                 </canvas>
               </div>
             }
-
             @case ('topCategories') {
               <h3>Top 25 Categories (with Reading Breakdown)</h3>
               <div class="chart-wrapper completion-chart">
@@ -239,7 +234,6 @@
                 </canvas>
               </div>
             }
-
             @case ('topBooksBySize') {
               <h3>Top 20 Largest Books by File Size</h3>
               <div class="chart-wrapper book-size-chart">
@@ -250,7 +244,6 @@
                 </canvas>
               </div>
             }
-
             @case ('monthlyReadingPatterns') {
               <h3>Monthly Reading Patterns</h3>
               <div class="chart-wrapper monthly-patterns-chart">
@@ -261,7 +254,6 @@
                 </canvas>
               </div>
             }
-
             @case ('readingProgress') {
               <h3>Reading Progress</h3>
               <div class="chart-wrapper progress-chart">
@@ -272,7 +264,6 @@
                 </canvas>
               </div>
             }
-
             @case ('externalRating') {
               <h3>External Rating Distribution</h3>
               <div class="chart-wrapper rating-chart">
@@ -283,7 +274,6 @@
                 </canvas>
               </div>
             }
-
             @case ('personalRating') {
               <h3>Personal Rating Distribution</h3>
               <div class="chart-wrapper personal-rating-chart">
@@ -294,7 +284,6 @@
                 </canvas>
               </div>
             }
-
             @case ('pageCount') {
               <h3>Page Count Distribution</h3>
               <div class="chart-wrapper page-count-chart">
@@ -305,7 +294,6 @@
                 </canvas>
               </div>
             }
-
             @case ('readingVelocityTimeline') {
               <h3>Reading Velocity Timeline</h3>
               <div class="chart-wrapper velocity-timeline-chart">
@@ -316,7 +304,6 @@
                 </canvas>
               </div>
             }
-
             @case ('topSeries') {
               <h3>Top 20 Series by Book Count</h3>
               <div class="chart-wrapper top-series-chart">
@@ -327,7 +314,6 @@
                 </canvas>
               </div>
             }
-
             @case ('publicationYear') {
               <h3>Publication Year Timeline</h3>
               <div class="chart-wrapper year-chart">
@@ -339,19 +325,6 @@
                 </canvas>
               </div>
             }
-
-            @case ('finishedBooksTimeline') {
-              <h3>Books Finished Timeline (Per Month)</h3>
-              <div class="chart-wrapper finished-books-timeline-chart">
-                <canvas baseChart
-                        [data]="(finishedBooksTimelineChartService.finishedBooksChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="finishedBooksTimelineChartService.finishedBooksChartOptions"
-                        [type]="finishedBooksTimelineChartService.finishedBooksChartType"
-                        [plugins]="[ChartDataLabels]">
-                </canvas>
-              </div>
-            }
-
             @case ('readingDNA') {
               <h3>Your Reading DNA Profile</h3>
               <div class="chart-description">
@@ -384,7 +357,6 @@
                 }
               </div>
             }
-
             @case ('readingHabits') {
               <h3>Reading Habits Analysis</h3>
               <div class="chart-description">
@@ -415,6 +387,16 @@
                     }
                   </div>
                 }
+              </div>
+            }
+            @case ('readingHeatmap') {
+              <h3>Books Finished per Month</h3>
+              <div class="chart-wrapper reading-heatmap-chart">
+                <canvas baseChart
+                        [data]="(readingHeatmapChartService.heatmapChartData$ | async) ?? {labels: [], datasets: []}"
+                        [options]="readingHeatmapChartService.heatmapChartOptions"
+                        [type]="readingHeatmapChartService.heatmapChartType">
+                </canvas>
               </div>
             }
           }
