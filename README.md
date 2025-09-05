@@ -112,7 +112,7 @@ services:
     ports:
       - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
                     # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
-                    # Example: To expose on host port 8080, set BOOKLORE_PORT=8080 and use "8080:8080". 
+                    # Example: To expose on host port 7070, set BOOKLORE_PORT=7070 and use "7070:7070". 
     volumes:
       - /your/local/path/to/booklore/data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
       - /your/local/path/to/booklore/books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.

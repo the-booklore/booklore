@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.service.watcher;
 
 import com.adityachandel.booklore.exception.ApiError;
-import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.List;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -29,12 +28,16 @@ import java.util.concurrent.*;
 @AllArgsConstructor
 public class LibraryFileEventProcessor {
 
+    private static final long DEBOUNCE_MS = 500L;
+
     private final BlockingQueue<FileEvent> eventQueue = new LinkedBlockingQueue<>();
-    private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final LibraryRepository libraryRepository;
     private final BookFileTransactionalHandler bookFileTransactionalHandler;
     private final BookFilePersistenceService bookFilePersistenceService;
     private final NotificationService notificationService;
+
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    private final ConcurrentMap<Path, ScheduledFuture<?>> pendingDeletes = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init() {
@@ -54,17 +57,41 @@ public class LibraryFileEventProcessor {
     }
 
     public void processFile(WatchEvent.Kind<?> eventKind, long libraryId, String libraryPath, String filePath) {
-        eventQueue.offer(new FileEvent(eventKind, libraryId, libraryPath, filePath));
+        Path path = Paths.get(filePath).toAbsolutePath().normalize();
+
+        if (eventKind == StandardWatchEventKinds.ENTRY_DELETE) {
+            // Schedule DELETE after debounce
+            ScheduledFuture<?> existing = pendingDeletes.put(path, scheduler.schedule(() -> {
+                eventQueue.offer(new FileEvent(eventKind, libraryId, libraryPath, filePath));
+                pendingDeletes.remove(path);
+            }, DEBOUNCE_MS, TimeUnit.MILLISECONDS));
+
+            if (existing != null) existing.cancel(false);
+        } else if (eventKind == StandardWatchEventKinds.ENTRY_CREATE) {
+            // If a DELETE is pending for this path, cancel both DELETE and CREATE
+            ScheduledFuture<?> pendingDelete = pendingDeletes.remove(path);
+            if (pendingDelete != null) {
+                pendingDelete.cancel(false);
+                log.info("[DEBOUNCE] CREATE ignored because pending DELETE exists for '{}'", path);
+                return;
+            }
+            // Otherwise process CREATE immediately
+            eventQueue.offer(new FileEvent(eventKind, libraryId, libraryPath, filePath));
+        } else {
+            // Other events
+            eventQueue.offer(new FileEvent(eventKind, libraryId, libraryPath, filePath));
+        }
     }
 
     private void handleEvent(FileEvent event) {
-        Path path = Paths.get(event.filePath());
+        Path path = Paths.get(event.filePath()).toAbsolutePath().normalize();
         String fileName = path.getFileName().toString();
         log.info("[PROCESS] '{}' event for '{}'", event.eventKind().name(), fileName);
 
-        LibraryEntity library = libraryRepository.findById(event.libraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(event.libraryId()));
+        LibraryEntity library = libraryRepository.findById(event.libraryId())
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(event.libraryId()));
 
-        if (library.getLibraryPaths().stream().noneMatch(lp -> path.toString().startsWith(lp.getPath()))) {
+        if (library.getLibraryPaths().stream().noneMatch(lp -> path.startsWith(lp.getPath()))) {
             log.warn("[SKIP] Path outside of library: '{}'", path);
             return;
         }
@@ -102,7 +129,7 @@ public class LibraryFileEventProcessor {
             String libPath = bookFilePersistenceService.findMatchingLibraryPath(library, path);
             LibraryPathEntity libPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(library, libPath);
 
-            Path relPath = Paths.get(libPathEntity.getPath()).relativize(path.toAbsolutePath().normalize());
+            Path relPath = Paths.get(libPathEntity.getPath()).relativize(path);
             String fileName = relPath.getFileName().toString();
             String fileSubPath = Optional.ofNullable(relPath.getParent()).map(Path::toString).orElse("");
 
@@ -110,7 +137,8 @@ public class LibraryFileEventProcessor {
                     .ifPresentOrElse(book -> {
                         book.setDeleted(true);
                         bookFilePersistenceService.save(book);
-                        notificationService.sendMessageToPermissions(Topic.BOOKS_REMOVE, Set.of(book.getId()), Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY));
+                        notificationService.sendMessageToPermissions(Topic.BOOKS_REMOVE, Set.of(book.getId()),
+                                Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY));
                         log.info("[MARKED_DELETED] Book '{}' marked as deleted", fileName);
                     }, () -> log.warn("[NOT_FOUND] Book for deleted path '{}' not found", path));
 
@@ -161,8 +189,8 @@ public class LibraryFileEventProcessor {
 
     @PreDestroy
     public void shutdown() {
-        worker.shutdownNow();
-        log.info("LibraryFileEventProcessor worker shutdown.");
+        scheduler.shutdownNow();
+        log.info("Shutting down LibraryFileEventProcessor...");
     }
 
     public record FileEvent(WatchEvent.Kind<?> eventKind, long libraryId, String libraryPath, String filePath) {

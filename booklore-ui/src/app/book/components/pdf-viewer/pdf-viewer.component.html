@@ -7,7 +7,9 @@
 @if (!isLoading) {
   <ngx-extended-pdf-viewer
     [src]="bookData"
-    [handTool]="handTool"
+    [textLayer]="true"
+    [showHandToolButton]="true"
+    [handTool]="false"
     [height]="'auto'"
     [page]="page"
     [rotation]="rotation"

@@ -19,7 +19,6 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   isLoading = true;
   totalPages: number = 0;
 
-  handTool = true;
   rotation: 0 | 90 | 180 | 270 = 0;
 
   page!: number;

@@ -17,9 +17,12 @@ import {provideOAuthClient} from 'angular-oauth2-oidc';
 import {APP_INITIALIZER, provideAppInitializer} from '@angular/core';
 import {initializeAuthFactory} from './app/auth-initializer';
 import {StartupService} from './app/core/service/startup.service';
+import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideCharts(withDefaultRegisterables(), ChartDataLabels),
     {
       provide: APP_INITIALIZER,
       useFactory: websocketInitializer,

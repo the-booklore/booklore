@@ -100,7 +100,18 @@
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
             <div class="w-full px-4">
-              <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" (onBlur)="onAutoCompleteBlur(field.controlName, $event)" styleClass="w-full"></p-autoComplete>
+              <p-autoComplete
+                class="w-full"
+                formControlName="{{field.controlName}}"
+                [multiple]="true"
+                [dropdown]="false"
+                [forceSelection]="false"
+                [showClear]="true"
+                [suggestions]="getFiltered(field.controlName)"
+                (completeMethod)="filterItems($event, field.controlName)"
+                (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
+                (onSelect)="onAutoCompleteSelect(field.controlName, $event)">
+              </p-autoComplete>
             </div>
             <p-button
               [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"

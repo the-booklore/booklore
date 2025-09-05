@@ -28,8 +28,15 @@
   <div class="flex items-center w-full gap-4">
     <app-book-searcher class="md:block flex-grow"></app-book-searcher>
     <ul class="topbar-items hidden md:flex items-center gap-3 ml-auto pl-4">
-      <div class="flex gap-6">
+      <div class="flex gap-4">
         @if (userService.userState$ | async; as userState) {
+          <li>
+            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+              <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
+                <i class="pi pi-inbox text-surface-100"></i>
+              </a>
+            }
+          </li>
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
@@ -37,8 +44,6 @@
               </a>
             }
           </li>
-        }
-        @if (userService.userState$ | async; as userState) {
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
@@ -47,6 +52,11 @@
             }
           </li>
         }
+        <li>
+          <a class="topbar-item" (click)="navigateToStats()" pTooltip="Stats" tooltipPosition="bottom">
+            <i class="pi pi-chart-bar text-surface-100"></i>
+          </a>
+        </li>
         <li>
           <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
             <i class="pi pi-cog text-surface-100"></i>
@@ -57,7 +67,7 @@
       <p-divider layout="vertical"/>
 
 
-      <div class="flex gap-6">
+      <div class="flex gap-4">
         <li class="relative">
           <button
             type="button"
@@ -105,7 +115,7 @@
         </li>
       </div>
       <p-divider layout="vertical"/>
-      <div class="flex gap-6">
+      <div class="flex gap-4">
         <li>
           <a class="topbar-item"
              href="https://booklore-app.github.io/booklore-docs/docs/getting-started/"
@@ -155,6 +165,15 @@
                 >
                   <i class="pi pi-upload text-surface-100"></i>
                   Upload Book
+                </button>
+              </li>
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="navigateToBookdrop(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-inbox text-surface-100"></i>
+                  Bookdrop
                 </button>
               </li>
             }
