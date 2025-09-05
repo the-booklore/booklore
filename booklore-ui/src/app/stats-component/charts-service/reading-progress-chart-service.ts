@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -118,24 +118,29 @@ export class ReadingProgressChartService implements OnDestroy {
     this.progressChartDataSubject.asObservable();
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing reading progress stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateReadingProgressStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getReadingProgressStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing reading progress stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: ReadingProgressStats[]): void {
@@ -157,24 +162,16 @@ export class ReadingProgressChartService implements OnDestroy {
     }
   }
 
-  public getReadingProgressStats(): Observable<ReadingProgressStats[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateReadingProgressStats(): ReadingProgressStats[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.processReadingProgressStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting reading progress stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.processReadingProgressStats(filteredBooks);
   }
 
   public updateFromStats(stats: ReadingProgressStats[]): void {

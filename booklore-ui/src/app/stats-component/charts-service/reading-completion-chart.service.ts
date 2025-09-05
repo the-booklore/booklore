@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {catchError, map, takeUntil} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {catchError, filter, first, map, switchMap, takeUntil} from 'rxjs/operators';
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
@@ -150,24 +150,29 @@ export class ReadingCompletionChartService implements OnDestroy {
   private lastCalculatedStats: CompletionStats[] = [];
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing completion stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateCompletionStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getCompletionStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing completion stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: CompletionStats[]): void {
@@ -199,24 +204,16 @@ export class ReadingCompletionChartService implements OnDestroy {
     }
   }
 
-  public getCompletionStats(): Observable<CompletionStats[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateCompletionStats(): CompletionStats[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, selectedLibraryId);
-        return this.processCompletionStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting completion stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, selectedLibraryId);
+    return this.processCompletionStats(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {

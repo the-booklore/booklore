@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
@@ -152,24 +152,29 @@ export class AuthorPopularityChartService implements OnDestroy {
   private lastCalculatedStats: AuthorStats[] = [];
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing author stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateAuthorStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getAuthorStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing author stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: AuthorStats[]): void {
@@ -201,24 +206,16 @@ export class AuthorPopularityChartService implements OnDestroy {
     }
   }
 
-  public getAuthorStats(): Observable<AuthorStats[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateAuthorStats(): AuthorStats[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, selectedLibraryId);
-        return this.processAuthorStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting author stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, selectedLibraryId);
+    return this.processAuthorStats(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {

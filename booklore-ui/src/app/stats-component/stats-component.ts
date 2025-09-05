@@ -4,6 +4,7 @@ import {Chart, registerables, Tooltip} from 'chart.js';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {catchError, map, of, startWith, Subject, takeUntil} from 'rxjs';
+import {CdkDragDrop, DragDropModule} from '@angular/cdk/drag-drop';
 import {LibraryFilterService, LibraryOption} from './charts-service/library-filter.service';
 import {LibrariesSummaryService} from './charts-service/libraries-summary.service';
 import {Select} from 'primeng/select';
@@ -26,6 +27,8 @@ import {FinishedBooksTimelineChartService} from './charts-service/finished-books
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {ReadingDNAChartService} from './charts-service/reading-dna-chart.service';
 import {ReadingHabitsChartService} from './charts-service/reading-habits-chart.service';
+import {ChartConfigService, ChartConfig} from './charts-service/chart-config.service';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-stats-component',
@@ -34,7 +37,9 @@ import {ReadingHabitsChartService} from './charts-service/reading-habits-chart.s
     CommonModule,
     FormsModule,
     BaseChartDirective,
-    Select
+    Select,
+    DragDropModule,
+    Button
   ],
   templateUrl: './stats-component.html',
   styleUrls: ['./stats-component.scss']
@@ -63,6 +68,7 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly finishedBooksTimelineChartService = inject(FinishedBooksTimelineChartService);
   protected readonly readingDNAChartService = inject(ReadingDNAChartService);
   protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
+  protected readonly chartConfigService = inject(ChartConfigService);
   private readonly destroy$ = new Subject<void>();
 
   public isLoading = true;
@@ -70,6 +76,8 @@ export class StatsComponent implements OnInit, OnDestroy {
   public hasError = false;
   public libraryOptions: LibraryOption[] = [];
   public selectedLibrary: LibraryOption | null = null;
+  public showConfigPanel = false;
+  public chartsConfig: ChartConfig[] = [];
 
   booksSummary$ = this.librariesSummaryService.getBooksSummary().pipe(
     catchError(error => {
@@ -92,6 +100,7 @@ export class StatsComponent implements OnInit, OnDestroy {
       size: 11.5,
     };
     this.loadLibraryOptions();
+    this.loadChartConfig();
   }
 
   ngOnDestroy(): void {
@@ -145,6 +154,60 @@ export class StatsComponent implements OnInit, OnDestroy {
       this.selectedLibrary = options[0];
       this.libraryFilterService.setSelectedLibrary(this.selectedLibrary.id);
     }
+  }
+
+  private loadChartConfig(): void {
+    this.chartConfigService.chartsConfig$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(config => {
+        this.chartsConfig = config;
+      });
+  }
+
+  public toggleConfigPanel(): void {
+    this.showConfigPanel = !this.showConfigPanel;
+  }
+
+  public closeConfigPanel(): void {
+    this.showConfigPanel = false;
+  }
+
+  public toggleChart(chartId: string): void {
+    this.chartConfigService.toggleChart(chartId);
+  }
+
+  public isChartEnabled(chartId: string): boolean {
+    return this.chartConfigService.isChartEnabled(chartId);
+  }
+
+  public enableAllCharts(): void {
+    this.chartConfigService.enableAllCharts();
+  }
+
+  public disableAllCharts(): void {
+    this.chartConfigService.disableAllCharts();
+  }
+
+  public getChartsByCategory(category: string): ChartConfig[] {
+    return this.chartsConfig.filter(chart => chart.category === category);
+  }
+
+  public getEnabledChartsSorted(): ChartConfig[] {
+    return this.chartConfigService.getEnabledChartsSorted();
+  }
+
+  public onChartReorder(event: CdkDragDrop<ChartConfig[]>): void {
+    if (event.previousIndex !== event.currentIndex) {
+      this.chartConfigService.reorderCharts(event.previousIndex, event.currentIndex);
+    }
+  }
+
+  public resetChartOrder(): void {
+    this.chartConfigService.resetOrder();
+  }
+
+  public resetChartPositions(): void {
+    this.chartConfigService.resetPositions();
   }
 
   trackByTrait(index: number, insight: any): string {

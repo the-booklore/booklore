@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject, of} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject, of} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -149,24 +149,29 @@ export class ReadingDNAChartService implements OnDestroy {
   private lastCalculatedInsights: PersonalityInsight[] = [];
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing reading DNA data:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const profile = this.calculateReadingDNAData();
+        this.updateChartData(profile);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getReadingDNAData()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing reading DNA data:', error);
-          return of(null);
-        })
-      )
-      .subscribe((profile) => this.updateChartData(profile));
   }
 
   private updateChartData(profile: ReadingDNAProfile | null): void {
@@ -223,24 +228,16 @@ export class ReadingDNAChartService implements OnDestroy {
     }
   }
 
-  public getReadingDNAData(): Observable<ReadingDNAProfile | null> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return null;
-        }
+  private calculateReadingDNAData(): ReadingDNAProfile | null {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.analyzeReadingDNA(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting reading DNA data:', error);
-        return of(null);
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return null;
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.analyzeReadingDNA(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {

@@ -16,6 +16,10 @@ export class LibraryFilterService {
 
   selectedLibrary$ = this.selectedLibrarySubject.asObservable();
 
+  getCurrentSelectedLibrary(): number | null {
+    return this.selectedLibrarySubject.value;
+  }
+
   setSelectedLibrary(libraryId: number | null): void {
     this.selectedLibrarySubject.next(libraryId);
   }

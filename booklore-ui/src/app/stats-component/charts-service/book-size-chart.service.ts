@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -124,24 +124,29 @@ export class BookSizeChartService implements OnDestroy {
   public readonly bookSizeChartData$: Observable<BookSizeChartData> = this.bookSizeChartDataSubject.asObservable();
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing book size stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateBookSizeStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getBookSizeStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing book size stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: BookSizeStats[]): void {
@@ -166,24 +171,16 @@ export class BookSizeChartService implements OnDestroy {
     }
   }
 
-  public getBookSizeStats(): Observable<BookSizeStats[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateBookSizeStats(): BookSizeStats[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.processBookSizeStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting book size stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.processBookSizeStats(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {
@@ -201,7 +198,6 @@ export class BookSizeChartService implements OnDestroy {
       return [];
     }
 
-    // Filter books that have file size data and convert to MB
     const booksWithSize = books
       .filter(book => book.fileSizeKb && book.fileSizeKb > 0)
       .map(book => ({
@@ -211,7 +207,7 @@ export class BookSizeChartService implements OnDestroy {
         pageCount: book.metadata?.pageCount || undefined
       }))
       .sort((a, b) => b.sizeMB - a.sizeMB)
-      .slice(0, 25); // Top 25 largest books
+      .slice(0, 20);
 
     return booksWithSize;
   }

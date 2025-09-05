@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -98,24 +98,29 @@ export class BookQualityScoreChartService implements OnDestroy {
   public readonly qualityChartData$: Observable<QualityChartData> = this.qualityChartDataSubject.asObservable();
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing quality score stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateQualityScoreStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getQualityScoreStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing quality score stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: QualityScoreStats[]): void {
@@ -142,24 +147,16 @@ export class BookQualityScoreChartService implements OnDestroy {
     return stats.map(stat => QUALITY_COLORS[stat.category as keyof typeof QUALITY_COLORS] || '#34495e');
   }
 
-  public getQualityScoreStats(): Observable<QualityScoreStats[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateQualityScoreStats(): QualityScoreStats[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.processQualityScoreStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting quality score stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.processQualityScoreStats(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {

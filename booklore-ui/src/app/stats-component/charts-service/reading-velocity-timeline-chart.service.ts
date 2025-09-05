@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -169,24 +169,29 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
   public readonly velocityTimelineChartData$: Observable<VelocityTimelineChartData> = this.velocityTimelineChartDataSubject.asObservable();
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing velocity timeline stats:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const stats = this.calculateVelocityTimelineStats();
+        this.updateChartData(stats);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getVelocityTimelineStats()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing velocity timeline stats:', error);
-          return [];
-        })
-      )
-      .subscribe((stats) => this.updateChartData(stats));
   }
 
   private updateChartData(stats: VelocityTimelineData[]): void {
@@ -244,24 +249,16 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
     }
   }
 
-  public getVelocityTimelineStats(): Observable<VelocityTimelineData[]> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return [];
-        }
+  private calculateVelocityTimelineStats(): VelocityTimelineData[] {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.processVelocityTimelineStats(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting velocity timeline stats:', error);
-        return [];
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return [];
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.processVelocityTimelineStats(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {

@@ -1,6 +1,6 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
-import {BehaviorSubject, combineLatest, Observable, Subject, of} from 'rxjs';
-import {map, takeUntil, catchError} from 'rxjs/operators';
+import {BehaviorSubject, EMPTY, Observable, Subject, of} from 'rxjs';
+import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
@@ -149,24 +149,29 @@ export class ReadingHabitsChartService implements OnDestroy {
   private lastCalculatedInsights: HabitInsight[] = [];
 
   constructor() {
-    this.initializeChartDataSubscription();
+    this.bookService.bookState$
+      .pipe(
+        filter(state => state.loaded),
+        first(),
+        switchMap(() =>
+          this.libraryFilterService.selectedLibrary$.pipe(
+            takeUntil(this.destroy$)
+          )
+        ),
+        catchError((error) => {
+          console.error('Error processing reading habits data:', error);
+          return EMPTY;
+        })
+      )
+      .subscribe(() => {
+        const profile = this.calculateReadingHabitsData();
+        this.updateChartData(profile);
+      });
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  private initializeChartDataSubscription(): void {
-    this.getReadingHabitsData()
-      .pipe(
-        takeUntil(this.destroy$),
-        catchError((error) => {
-          console.error('Error processing reading habits data:', error);
-          return of(null);
-        })
-      )
-      .subscribe((profile) => this.updateChartData(profile));
   }
 
   private updateChartData(profile: ReadingHabitsProfile | null): void {
@@ -223,24 +228,16 @@ export class ReadingHabitsChartService implements OnDestroy {
     }
   }
 
-  public getReadingHabitsData(): Observable<ReadingHabitsProfile | null> {
-    return combineLatest([
-      this.bookService.bookState$,
-      this.libraryFilterService.selectedLibrary$
-    ]).pipe(
-      map(([state, selectedLibraryId]) => {
-        if (!this.isValidBookState(state)) {
-          return null;
-        }
+  private calculateReadingHabitsData(): ReadingHabitsProfile | null {
+    const currentState = this.bookService.getCurrentBookState();
+    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
-        const filteredBooks = this.filterBooksByLibrary(state.books!, String(selectedLibraryId));
-        return this.analyzeReadingHabits(filteredBooks);
-      }),
-      catchError((error) => {
-        console.error('Error getting reading habits data:', error);
-        return of(null);
-      })
-    );
+    if (!this.isValidBookState(currentState)) {
+      return null;
+    }
+
+    const filteredBooks = this.filterBooksByLibrary(currentState.books!, String(selectedLibraryId));
+    return this.analyzeReadingHabits(filteredBooks);
   }
 
   private isValidBookState(state: any): boolean {
@@ -612,4 +609,3 @@ export class ReadingHabitsChartService implements OnDestroy {
     return this.lastCalculatedInsights;
   }
 }
-
