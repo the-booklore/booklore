@@ -89,6 +89,18 @@ export class BookSizeChartService implements OnDestroy {
       legend: {
         display: false
       },
+      datalabels: {
+        display: true,
+        color: '#ffffff',
+        font: {
+          size: 10,
+          family: "'Inter', sans-serif",
+          weight: 'bold'
+        },
+        align: 'center',
+        offset: 8,
+        formatter: (value: number) => `${Math.round(value)} MB`
+      },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.9)',
         titleColor: '#ffffff',

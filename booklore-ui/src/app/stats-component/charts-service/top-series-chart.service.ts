@@ -109,6 +109,7 @@ export class TopSeriesChartService implements OnDestroy {
         color: '#ffffff',
         font: {
           size: 10,
+          family: "'Inter', sans-serif",
           weight: 'bold'
         },
         align: 'center',
