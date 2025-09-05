@@ -24,6 +24,8 @@ import {MonthlyReadingPatternsChartService} from './charts-service/monthly-readi
 import {TopSeriesChartService} from './charts-service/top-series-chart.service';
 import {FinishedBooksTimelineChartService} from './charts-service/finished-books-timeline-chart.service';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
+import {ReadingDNAChartService} from './charts-service/reading-dna-chart.service';
+import {ReadingHabitsChartService} from './charts-service/reading-habits-chart.service';
 
 @Component({
   selector: 'app-stats-component',
@@ -59,6 +61,8 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly monthlyReadingPatternsChartService = inject(MonthlyReadingPatternsChartService);
   protected readonly topSeriesChartService = inject(TopSeriesChartService);
   protected readonly finishedBooksTimelineChartService = inject(FinishedBooksTimelineChartService);
+  protected readonly readingDNAChartService = inject(ReadingDNAChartService);
+  protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   private readonly destroy$ = new Subject<void>();
 
   public isLoading = true;
@@ -141,6 +145,14 @@ export class StatsComponent implements OnInit, OnDestroy {
       this.selectedLibrary = options[0];
       this.libraryFilterService.setSelectedLibrary(this.selectedLibrary.id);
     }
+  }
+
+  trackByTrait(index: number, insight: any): string {
+    return insight.trait;
+  }
+
+  trackByHabit(index: number, habit: any): string {
+    return habit.habit;
   }
 
   protected readonly ChartDataLabels = ChartDataLabels;

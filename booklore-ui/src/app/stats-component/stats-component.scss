@@ -206,8 +206,10 @@
     height: 320px;
   }
 
-  &.reading-intelligence-chart {
-    height: 500px;
+  &.reading-profile-radar-chart,
+  &.reading-dna-chart,
+  &.reading-habits-chart {
+    height: 450px;
   }
 }
 
@@ -350,8 +352,35 @@
       height: 280px;
     }
 
-    &.reading-intelligence-chart {
-      height: 400px;
+    &.reading-profile-radar-chart,
+    &.reading-dna-chart,
+    &.reading-habits-chart {
+      height: 350px;
+    }
+  }
+
+  .dna-insights,
+  .intelligence-insights {
+    .insights-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .insight-card {
+      padding: 10px;
+
+      .insight-header {
+        .trait-name {
+          font-size: 0.9rem;
+        }
+
+        .trait-score {
+          font-size: 0.85rem;
+        }
+      }
+
+      .insight-description {
+        font-size: 0.8rem;
+      }
     }
   }
 }
@@ -408,8 +437,164 @@
       height: 250px;
     }
 
-    &.reading-intelligence-chart {
-      height: 350px;
+    &.reading-profile-radar-chart,
+    &.reading-dna-chart,
+    &.reading-habits-chart {
+      height: 300px;
+    }
+  }
+}
+
+.dna-insights {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+
+  .insight-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+
+      .trait-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .trait-name {
+        color: #ffffff;
+        font-weight: 500;
+        font-size: 0.95rem;
+        flex: 1;
+      }
+
+      .trait-score {
+        /*color: var(--primary-color, #4fc3f7);*/
+        color: #ffffff;
+        font-weight: 800;
+        font-size: 0.9rem;
+      }
+    }
+
+    .insight-bar {
+      background: rgba(255, 255, 255, 0.1);
+      height: 4px;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      .insight-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.8s ease;
+        opacity: 0.8;
+      }
+    }
+
+    .insight-description {
+      color: var(--text-color-secondary, #cccccc);
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin: 0;
+      font-style: italic;
+    }
+  }
+}
+
+.intelligence-insights {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 212, 170, 0.2);
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 12px;
+  }
+
+  .insight-card {
+    background: rgba(0, 212, 170, 0.05);
+    border: 1px solid rgba(0, 212, 170, 0.15);
+    border-radius: 6px;
+    padding: 12px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(0, 212, 170, 0.08);
+      border-color: rgba(0, 212, 170, 0.25);
+      box-shadow: 0 4px 12px rgba(0, 212, 170, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .insight-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+
+      .trait-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+      }
+
+      .trait-name {
+        color: #ffffff;
+        font-weight: 500;
+        font-size: 0.95rem;
+        flex: 1;
+      }
+
+      .trait-score {
+        color: #00d4aa;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+    }
+
+    .insight-bar {
+      background: rgba(0, 212, 170, 0.15);
+      height: 4px;
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      .insight-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.8s ease;
+        opacity: 0.9;
+      }
+    }
+
+    .insight-description {
+      color: var(--text-color-secondary, #cccccc);
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin: 0;
+      font-style: italic;
     }
   }
 }
