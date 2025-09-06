@@ -27,7 +27,7 @@ spring:
   application:
     name: booklore-api
   datasource:
-    url: ${DATABASE_URL:jdbc:mariadb://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true}
+    url: ${DATABASE_URL:jdbc:${DATABASE_ENGINE:mariadb}://${DATABASE_HOST:${DB_HOST:mariadb}}:${DATABASE_PORT:3306}/${DATABASE_NAME:booklore}?createDatabaseIfNotExist=true}
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:${MYSQL_ROOT_PASSWORD}}
     hikari:
@@ -49,7 +49,7 @@ spring:
           order_updates: true
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations: classpath:db/migration/{vendor},classpath:db/migration/common
 
 springdoc:
   swagger-ui:

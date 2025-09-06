@@ -40,7 +40,9 @@ dependencies {
 
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.4'
+    implementation 'org.postgresql:postgresql:42.7.7'
     implementation 'org.flywaydb:flyway-mysql:11.11.0'
+    implementation 'org.flywaydb:flyway-database-postgresql:11.12.0'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.2.0'
 
     // --- Security & Authentication ---
