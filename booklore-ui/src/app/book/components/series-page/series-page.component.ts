@@ -56,11 +56,6 @@ export class SeriesPageComponent {
   tab: string = "view";
   isExpanded = false;
 
-  // ngOnInit(): void {
-  //    if (this.quillEditor?.quill) {
-  //         this.quillEditor.quill.root.innerHTML = metadata!.description;
-  //       }
-  // }
 
   seriesParam$: Observable<string> = this.route.paramMap.pipe(
     map((params) => params.get("seriesName") || ""),
