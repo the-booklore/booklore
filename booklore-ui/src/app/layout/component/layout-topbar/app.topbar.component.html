@@ -181,6 +181,15 @@
           <li>
             <button
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              (click)="navigateToStats(); mobileMenu.hide()"
+            >
+              <i class="pi pi-chart-bar text-surface-100"></i>
+              Charts
+            </button>
+          </li>
+          <li>
+            <button
+              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
               (click)="navigateToSettings(); mobileMenu.hide()"
             >
               <i class="pi pi-cog text-surface-100"></i>

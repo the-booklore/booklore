@@ -4,25 +4,28 @@
       <div class="library-filter">
         <div class="select-row">
           <label for="library-dropdown">Library Statistics</label>
-          <p-select
-            id="library-dropdown"
-            [options]="libraryOptions"
-            [(ngModel)]="selectedLibrary"
-            optionLabel="name"
-            size="small"
-            placeholder="Select a library"
-            (onChange)="onLibraryChange()"
-            appendTo="body"
-            [style]="{'min-width': '200px'}"
-            class="library-dropdown">
-          </p-select>
+          <div class="flex w-full gap-2 align-items-center">
+            <p-select
+              fluid
+              id="library-dropdown"
+              [options]="libraryOptions"
+              [(ngModel)]="selectedLibrary"
+              optionLabel="name"
+              size="small"
+              placeholder="Select a library"
+              (onChange)="onLibraryChange()"
+              appendTo="body"
+              [style]="{'min-width': '200px'}"
+              class="library-dropdown">
+            </p-select>
 
-          <p-button
-            outlined
-            size="small"
-            (onClick)="toggleConfigPanel()"
-            icon="pi pi-cog">
-          </p-button>
+            <p-button
+              outlined
+              size="small"
+              (onClick)="toggleConfigPanel()"
+              icon="pi pi-cog">
+            </p-button>
+          </div>
         </div>
 
         <div class="library-totals" role="status" aria-live="polite">
