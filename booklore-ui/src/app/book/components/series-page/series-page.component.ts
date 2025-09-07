@@ -214,12 +214,6 @@ export class SeriesPageComponent {
     switch (normalized) {
       case "UNREAD":
         return "bg-gray-500";
-      // case "PAUSED":
-      //   return "bg-zinc-600";
-      // case "READING":
-      //   return "bg-blue-600";
-      // case "RE_READING":
-      //   return "bg-indigo-600";
       case "READ":
         return "bg-green-600";
       case "PARTIALLY_READ":
