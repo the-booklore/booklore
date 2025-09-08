@@ -408,7 +408,7 @@
   @if (this.showFilter) {
     <div
       class="mobile-filter-mask"
-      (click)="this.showFilter = false">
+      (click)="toggleSidebar()">
     </div>
     <app-book-filter
       [showFilter]="showFilter"

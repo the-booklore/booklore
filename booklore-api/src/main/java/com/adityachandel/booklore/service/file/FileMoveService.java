@@ -15,7 +15,7 @@ import com.adityachandel.booklore.service.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.library.LibraryService;
-import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class FileMoveService {
     private final BookMapper bookMapper;
     private final NotificationService notificationService;
     private final LibraryService libraryService;
-    private final MonitoringService monitoringService;
+    private final MonitoringProtectionService monitoringProtectionService;
     private final AppSettingService appSettingService;
 
     public void moveFiles(FileMoveRequest request) {
@@ -49,29 +49,22 @@ public class FileMoveService {
 
         Set<Long> libraryIds = new HashSet<>();
         List<Book> updatedBooks = new ArrayList<>();
-        boolean didPause = pauseMonitoringIfNeeded();
 
-        try {
+        monitoringProtectionService.executeWithProtection(() -> {
             for (BookEntity book : books) {
                 processBookMove(book, defaultPattern, updatedBooks, libraryIds);
             }
 
             log.info("Completed file move for {} books.", books.size());
             sendUpdateNotifications(updatedBooks);
+        }, "file move operations");
+        
+        // Trigger library rescan immediately after file operations complete
+        if (!libraryIds.isEmpty()) {
             rescanLibraries(libraryIds);
-
-        } finally {
-            resumeMonitoringWithDelay(didPause);
         }
     }
 
-    private boolean pauseMonitoringIfNeeded() {
-        if (!monitoringService.isPaused()) {
-            monitoringService.pauseMonitoring();
-            return true;
-        }
-        return false;
-    }
 
     private void processBookMove(BookEntity book, String defaultPattern, List<Book> updatedBooks, Set<Long> libraryIds) {
         if (book.getMetadata() == null) return;
@@ -195,22 +188,7 @@ public class FileMoveService {
         }
     }
 
-    private void resumeMonitoringWithDelay(boolean didPause) {
-        if (didPause && !monitoringService.isPaused()) {
-            log.info("Monitoring already resumed by another thread.");
-        } else if (didPause) {
-            Thread.startVirtualThread(() -> {
-                try {
-                    Thread.sleep(5_000);
-                    monitoringService.resumeMonitoring();
-                    log.info("Monitoring resumed after 5s delay");
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted while delaying resume of monitoring");
-                }
-            });
-        }
-    }
+
 
     public String generatePathFromPattern(BookEntity book, String pattern) {
         return PathPatternResolver.resolvePattern(book, pattern);

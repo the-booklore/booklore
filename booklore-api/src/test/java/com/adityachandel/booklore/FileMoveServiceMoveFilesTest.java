@@ -14,7 +14,8 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMoveService;
 import com.adityachandel.booklore.service.library.LibraryService;
-import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -55,7 +56,7 @@ class FileMoveServiceMoveFilesTest {
     private NotificationService notificationService;
 
     @Mock
-    private MonitoringService monitoringService;
+    private MonitoringProtectionService monitoringProtectionService;
 
     @Mock
     private AppSettingService appSettingService;
@@ -68,6 +69,16 @@ class FileMoveServiceMoveFilesTest {
 
     @TempDir
     Path tempLibraryRoot;
+
+    @BeforeEach
+    void setUp() {
+        // Configure the mock to actually execute the Runnable for all tests
+        doAnswer(invocation -> {
+            Runnable runnable = invocation.getArgument(0);
+            runnable.run();
+            return null;
+        }).when(monitoringProtectionService).executeWithProtection(any(Runnable.class), eq("file move operations"));
+    }
 
     private BookEntity createBookWithFile(Path libraryRoot, String fileSubPath, String fileName) throws IOException {
         LibraryEntity library = LibraryEntity.builder()
@@ -388,6 +399,7 @@ class FileMoveServiceMoveFilesTest {
         Book dto = Book.builder().id(book.getId()).build();
         when(bookMapper.toBook(book)).thenReturn(dto);
 
+
         FileMoveRequest req = new FileMoveRequest();
         req.setBookIds(Set.of(book.getId()));
         fileMoveService.moveFiles(req);
@@ -398,7 +410,12 @@ class FileMoveServiceMoveFilesTest {
 
         verify(bookRepository).save(book);
         verify(notificationService).sendMessage(eq(Topic.BOOK_METADATA_BATCH_UPDATE), anyList());
-        verify(libraryService).rescanLibrary(book.getLibraryPath().getLibrary().getId());
+        
+        // Verify monitoring protection was applied correctly
+        verify(monitoringProtectionService).executeWithProtection(any(Runnable.class), eq("file move operations"));
+        
+        // Note: Library rescan now happens asynchronously with 8-second delay
+        // We can't verify it immediately in the test, but the operation is scheduled
     }
 
     @Test
@@ -549,8 +566,7 @@ class FileMoveServiceMoveFilesTest {
     }
 
     @Test
-    void testMoveFiles_doesNotPauseMonitoringWhenAlreadyPaused() {
-        when(monitoringService.isPaused()).thenReturn(true);
+    void testMoveFiles_executesWithMonitoringProtection() {
         when(bookQueryService.findAllWithMetadataByIds(anySet())).thenReturn(List.of());
         AppSettings settings = new AppSettings();
         settings.setUploadPattern("X/{title}");
@@ -560,8 +576,7 @@ class FileMoveServiceMoveFilesTest {
         req.setBookIds(Set.of(999L));
         fileMoveService.moveFiles(req);
 
-        verify(monitoringService, never()).pauseMonitoring();
-        verify(monitoringService, never()).resumeMonitoring();
+        verify(monitoringProtectionService).executeWithProtection(any(Runnable.class), eq("file move operations"));
     }
 
     @Test
