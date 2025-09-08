@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
@@ -252,6 +253,22 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       return null;
     }
   }
+
+  public BookMetadata extractFromComicInfoXml(File xmlFile) {
+      try (InputStream is = new FileInputStream(xmlFile)) {
+          Document document = buildSecureDocument(is);
+          String fallbackTitle = xmlFile.getParentFile() != null
+                  ? xmlFile.getParentFile().getName()
+                  : xmlFile.getName();
+          return mapDocumentToMetadata(document, fallbackTitle);
+      } catch (Exception e) {
+          log.warn("Failed to parse ComicInfo.xml: {}", e.getMessage());
+          String fallbackTitle = xmlFile.getParentFile() != null
+                  ? xmlFile.getParentFile().getName()
+                  : xmlFile.getName();
+          return BookMetadata.builder().title(fallbackTitle).build();
+      }
+  }  
 
   @Override
   public byte[] extractCover(File file) {
