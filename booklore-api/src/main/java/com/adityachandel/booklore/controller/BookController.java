@@ -36,6 +36,7 @@ public class BookController {
 
     private final BookService bookService;
     private final BookRecommendationService bookRecommendationService;
+    private final BookMetadataService bookMetadataService;
 
     @GetMapping
     public ResponseEntity<List<Book>> getBooks(@RequestParam(required = false, defaultValue = "false") boolean withDescription) {
