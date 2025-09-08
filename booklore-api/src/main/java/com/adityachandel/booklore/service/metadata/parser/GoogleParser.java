@@ -88,7 +88,7 @@ public class GoogleParser implements BookParser {
                     .build()
                     .toUri();
 
-            log.info("Google Books API URLx: {}", uri);
+            log.info("Google Books API URL: {}", uri);
 
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()

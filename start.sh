@@ -15,4 +15,4 @@ mv "$TMP_CONF" /etc/nginx/nginx.conf
 nginx -g 'daemon off;' &
 
 # Start Spring Boot in foreground
-exec java -jar /app/app.jar
+su-exec ${USER_ID:-0}:${GROUP_ID:-0} java -jar /app/app.jar

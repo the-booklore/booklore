@@ -22,6 +22,7 @@ import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
 import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
@@ -49,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification;
@@ -154,18 +156,25 @@ public class BookMetadataService {
     }
 
     @Transactional
-    public BookMetadata handleCoverUpload(Long bookId, MultipartFile file) {
+    public BookMetadata updateCoverImageFromFile(Long bookId, MultipartFile file) {
         fileService.createThumbnailFromFile(bookId, file);
+        return updateCover(bookId, (writer, book) -> writer.replaceCoverImageFromUpload(book, file));
+    }
+
+    @Transactional
+    public BookMetadata updateCoverImageFromUrl(Long bookId, String url) {
+        fileService.createThumbnailFromUrl(bookId, url);
+        return updateCover(bookId, (writer, book) -> writer.replaceCoverImageFromUrl(book, url));
+    }
+
+    private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        // bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
-        // boolean saveToOriginalFile = appSettingService.getAppSettings().getMetadataPersistenceSettings().isSaveToOriginalFile();
-        // if (saveToOriginalFile) {
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean saveToOriginalFile = settings.isSaveToOriginalFile();
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {        
             metadataWriterFactory.getWriter(bookEntity.getBookType())
-                    .ifPresent(writer -> writer.replaceCoverImageFromUpload(bookEntity, file));
+                    .ifPresent(writer -> writerAction.accept(writer, bookEntity));
         }
         return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
     }
@@ -282,3 +291,4 @@ public class BookMetadataService {
         }
     }
 }
+

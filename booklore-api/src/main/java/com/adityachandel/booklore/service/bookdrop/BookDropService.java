@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.bookdrop;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookdropFileMapper;
+import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.BookdropFile;
@@ -26,7 +27,7 @@ import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
-import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
 import com.adityachandel.booklore.util.FileUtils;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,7 +63,7 @@ public class BookDropService {
     private final BookdropFileRepository bookdropFileRepository;
     private final LibraryRepository libraryRepository;
     private final BookRepository bookRepository;
-    private final MonitoringService monitoringService;
+    private final MonitoringProtectionService monitoringProtectionService;
     private final BookdropMonitoringService bookdropMonitoringService;
     private final NotificationService notificationService;
     private final MetadataRefreshService metadataRefreshService;
@@ -88,112 +89,103 @@ public class BookDropService {
     }
 
     public BookdropFinalizeResult finalizeImport(BookdropFinalizeRequest request) {
-        boolean monitoringWasActive = !monitoringService.isPaused();
-        if (monitoringWasActive) monitoringService.pauseMonitoring();
-        bookdropMonitoringService.pauseMonitoring();
+        return monitoringProtectionService.executeWithProtection(() -> {
+            try {
+                bookdropMonitoringService.pauseMonitoring();
 
-        BookdropFinalizeResult results = BookdropFinalizeResult.builder()
-                .processedAt(Instant.now())
-                .build();
-        Long defaultLibraryId = request.getDefaultLibraryId();
-        Long defaultPathId = request.getDefaultPathId();
+                BookdropFinalizeResult results = BookdropFinalizeResult.builder()
+                        .processedAt(Instant.now())
+                        .build();
+                Long defaultLibraryId = request.getDefaultLibraryId();
+                Long defaultPathId = request.getDefaultPathId();
 
-        Map<Long, BookdropFinalizeRequest.BookdropFinalizeFile> metadataById = Optional.ofNullable(request.getFiles())
-                .orElse(List.of())
-                .stream()
-                .collect(Collectors.toMap(BookdropFinalizeRequest.BookdropFinalizeFile::getFileId, Function.identity()));
+                Map<Long, BookdropFinalizeRequest.BookdropFinalizeFile> metadataById = Optional.ofNullable(request.getFiles())
+                        .orElse(List.of())
+                        .stream()
+                        .collect(Collectors.toMap(BookdropFinalizeRequest.BookdropFinalizeFile::getFileId, Function.identity()));
 
-        final int CHUNK_SIZE = 100;
-        AtomicInteger failedCount = new AtomicInteger();
-        AtomicInteger totalFilesProcessed = new AtomicInteger();
+                final int CHUNK_SIZE = 100;
+                AtomicInteger failedCount = new AtomicInteger();
+                AtomicInteger totalFilesProcessed = new AtomicInteger();
 
-        log.info("Starting finalizeImport: selectAll={}, provided file count={}, defaultLibraryId={}, defaultPathId={}",
-                request.getSelectAll(), metadataById.size(), defaultLibraryId, defaultPathId);
+                log.info("Starting finalizeImport: selectAll={}, provided file count={}, defaultLibraryId={}, defaultPathId={}",
+                        request.getSelectAll(), metadataById.size(), defaultLibraryId, defaultPathId);
 
-        if (Boolean.TRUE.equals(request.getSelectAll())) {
-            List<Long> excludedIds = Optional.ofNullable(request.getExcludedIds()).orElse(List.of());
+                if (Boolean.TRUE.equals(request.getSelectAll())) {
+                    List<Long> excludedIds = Optional.ofNullable(request.getExcludedIds()).orElse(List.of());
 
-            List<Long> allIds = bookdropFileRepository.findAllExcludingIdsFlat(excludedIds);
-            log.info("SelectAll: Total files to finalize (after exclusions): {}, Excluded IDs: {}", allIds.size(), excludedIds);
+                    List<Long> allIds = bookdropFileRepository.findAllExcludingIdsFlat(excludedIds);
+                    log.info("SelectAll: Total files to finalize (after exclusions): {}, Excluded IDs: {}", allIds.size(), excludedIds);
 
-            for (int i = 0; i < allIds.size(); i += CHUNK_SIZE) {
-                int end = Math.min(i + CHUNK_SIZE, allIds.size());
-                List<Long> chunk = allIds.subList(i, end);
+                    for (int i = 0; i < allIds.size(); i += CHUNK_SIZE) {
+                        int end = Math.min(i + CHUNK_SIZE, allIds.size());
+                        List<Long> chunk = allIds.subList(i, end);
 
-                log.info("Processing chunk {}/{} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) allIds.size() / CHUNK_SIZE), chunk.size(), chunk);
+                        log.info("Processing chunk {}/{} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) allIds.size() / CHUNK_SIZE), chunk.size(), chunk);
 
-                List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunk);
-                Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream().collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
+                        List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunk);
+                        Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream().collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
 
-                for (Long id : chunk) {
-                    BookdropFileEntity file = fileMap.get(id);
-                    if (file == null) {
-                        log.warn("File ID {} missing in DB during finalizeImport chunk processing", id);
-                        failedCount.incrementAndGet();
-                        totalFilesProcessed.incrementAndGet();
-                        continue;
+                        for (Long id : chunk) {
+                            BookdropFileEntity file = fileMap.get(id);
+                            if (file == null) {
+                                log.warn("File ID {} missing in DB during finalizeImport chunk processing", id);
+                                failedCount.incrementAndGet();
+                                totalFilesProcessed.incrementAndGet();
+                                continue;
+                            }
+                            processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
+                            totalFilesProcessed.incrementAndGet();
+                        }
                     }
-                    processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
-                    totalFilesProcessed.incrementAndGet();
-                }
-            }
-        } else {
-            List<Long> ids = Optional.ofNullable(request.getFiles())
-                    .orElse(List.of())
-                    .stream()
-                    .map(BookdropFinalizeRequest.BookdropFinalizeFile::getFileId)
-                    .toList();
+                } else {
+                    List<Long> ids = Optional.ofNullable(request.getFiles())
+                            .orElse(List.of())
+                            .stream()
+                            .map(BookdropFinalizeRequest.BookdropFinalizeFile::getFileId)
+                            .toList();
 
-            log.info("Processing {} manually selected files in chunks of {}. File IDs: {}", ids.size(), CHUNK_SIZE, ids);
+                    log.info("Processing {} manually selected files in chunks of {}. File IDs: {}", ids.size(), CHUNK_SIZE, ids);
 
-            for (int i = 0; i < ids.size(); i += CHUNK_SIZE) {
-                int end = Math.min(i + CHUNK_SIZE, ids.size());
-                List<Long> chunkIds = ids.subList(i, end);
-                List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunkIds);
+                    for (int i = 0; i < ids.size(); i += CHUNK_SIZE) {
+                        int end = Math.min(i + CHUNK_SIZE, ids.size());
+                        List<Long> chunkIds = ids.subList(i, end);
+                        List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunkIds);
 
-                log.info("Processing chunk {} of {} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) ids.size() / CHUNK_SIZE), chunkFiles.size(), chunkIds);
+                        log.info("Processing chunk {} of {} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) ids.size() / CHUNK_SIZE), chunkFiles.size(), chunkIds);
 
-                Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream()
-                        .collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
+                        Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream()
+                                .collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
 
-                for (Long id : chunkIds) {
-                    BookdropFileEntity file = fileMap.get(id);
-                    if (file == null) {
-                        log.error("File ID {} not found in DB during finalizeImport chunk processing", id);
-                        failedCount.incrementAndGet();
-                        totalFilesProcessed.incrementAndGet();
-                        continue;
+                        for (Long id : chunkIds) {
+                            BookdropFileEntity file = fileMap.get(id);
+                            if (file == null) {
+                                log.error("File ID {} not found in DB during finalizeImport chunk processing", id);
+                                failedCount.incrementAndGet();
+                                totalFilesProcessed.incrementAndGet();
+                                continue;
+                            }
+                            processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
+                            totalFilesProcessed.incrementAndGet();
+                        }
                     }
-                    processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
-                    totalFilesProcessed.incrementAndGet();
                 }
+
+                results.setTotalFiles(totalFilesProcessed.get());
+                results.setFailed(failedCount.get());
+                results.setSuccessfullyImported(totalFilesProcessed.get() - failedCount.get());
+
+                log.info("Finalization complete. Success: {}, Failed: {}, Total processed: {}",
+                        results.getSuccessfullyImported(),
+                        results.getFailed(),
+                        results.getTotalFiles());
+
+                return results;
+
+            } finally {
+                bookdropMonitoringService.resumeMonitoring();
             }
-        }
-
-        results.setTotalFiles(totalFilesProcessed.get());
-        results.setFailed(failedCount.get());
-        results.setSuccessfullyImported(totalFilesProcessed.get() - failedCount.get());
-
-        log.info("Finalization complete. Success: {}, Failed: {}, Total processed: {}",
-                results.getSuccessfullyImported(),
-                results.getFailed(),
-                results.getTotalFiles());
-
-        if (monitoringWasActive) {
-            Thread.startVirtualThread(() -> {
-                try {
-                    Thread.sleep(5000);
-                    monitoringService.resumeMonitoring();
-                    bookdropMonitoringService.resumeMonitoring();
-                    log.info("Monitoring resumed after 5s delay following finalizeImport");
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    log.warn("Interrupted while delaying resume of monitoring after finalizeImport");
-                }
-            });
-        }
-
-        return results;
+        }, "bookdrop finalize import");
     }
 
     private void processFile(
@@ -285,51 +277,53 @@ public class BookDropService {
             return failureResult(targetFile.getName(), "File already exists in the library '" + library.getName() + "'");
         }
 
-        try {
-            Files.createDirectories(target.getParent());
-            Files.move(source, target);
-
-            log.info("Moved file id={}, name={} from '{}' to '{}'", bookdropFile.getId(), bookdropFile.getFileName(), source, target);
-
-            Book processedBook = processFile(targetFile.getName(), library, path, targetFile,
-                    BookFileExtension.fromFileName(bookdropFile.getFileName())
-                            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"))
-                            .getType());
-
-            BookEntity bookEntity = bookRepository.findById(processedBook.getId())
-                    .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
-
-            notificationService.sendMessage(Topic.BOOK_ADD, processedBook);
-            metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false);
-            bookdropFileRepository.deleteById(bookdropFile.getId());
-            bookdropNotificationService.sendBookdropFileSummaryNotification();
-
-            File cachedCover = Paths.get(appProperties.getPathConfig(), "bookdrop_temp", bookdropFile.getId() + ".jpg").toFile();
-            if (cachedCover.exists()) {
-                boolean deleted = cachedCover.delete();
-                log.debug("Deleted cached cover image for bookdropId={}: {}", bookdropFile.getId(), deleted);
-            }
-
-            log.info("File import completed: id={}, name={}, library={}, path={}", bookdropFile.getId(), targetFile.getName(), library.getName(), path.getPath());
-
-            return BookdropFileResult.builder()
-                    .fileName(targetFile.getName())
-                    .message("File successfully imported into the '" + library.getName() + "' library from the Bookdrop folder")
-                    .success(true)
-                    .build();
-
-        } catch (Exception e) {
-            log.error("Failed to move file id={}, name={} from '{}' to '{}': {}", bookdropFile.getId(), bookdropFile.getFileName(), source, target, e.getMessage(), e);
+        return monitoringProtectionService.executeWithProtection(() -> {
             try {
-                if (Files.exists(target)) {
-                    Files.deleteIfExists(target);
-                    log.info("Cleaned up partially created target file: {}", target);
+                Files.createDirectories(target.getParent());
+                Files.move(source, target);
+
+                log.info("Moved file id={}, name={} from '{}' to '{}'", bookdropFile.getId(), bookdropFile.getFileName(), source, target);
+
+                FileProcessResult fileProcessResult = processFile(targetFile.getName(), library, path, targetFile,
+                        BookFileExtension.fromFileName(bookdropFile.getFileName())
+                                .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"))
+                                .getType());
+
+                BookEntity bookEntity = bookRepository.findById(fileProcessResult.getBook().getId())
+                        .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
+
+                notificationService.sendMessage(Topic.BOOK_ADD, fileProcessResult.getStatus());
+                metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false);
+                bookdropFileRepository.deleteById(bookdropFile.getId());
+                bookdropNotificationService.sendBookdropFileSummaryNotification();
+
+                File cachedCover = Paths.get(appProperties.getPathConfig(), "bookdrop_temp", bookdropFile.getId() + ".jpg").toFile();
+                if (cachedCover.exists()) {
+                    boolean deleted = cachedCover.delete();
+                    log.debug("Deleted cached cover image for bookdropId={}: {}", bookdropFile.getId(), deleted);
                 }
-            } catch (Exception cleanupException) {
-                log.warn("Failed to cleanup target file after move error: {}", target, cleanupException);
+
+                log.info("File import completed: id={}, name={}, library={}, path={}", bookdropFile.getId(), targetFile.getName(), library.getName(), path.getPath());
+
+                return BookdropFileResult.builder()
+                        .fileName(targetFile.getName())
+                        .message("File successfully imported into the '" + library.getName() + "' library from the Bookdrop folder")
+                        .success(true)
+                        .build();
+
+            } catch (Exception e) {
+                log.error("Failed to move file id={}, name={} from '{}' to '{}': {}", bookdropFile.getId(), bookdropFile.getFileName(), source, target, e.getMessage(), e);
+                try {
+                    if (Files.exists(target)) {
+                        Files.deleteIfExists(target);
+                        log.info("Cleaned up partially created target file: {}", target);
+                    }
+                } catch (Exception cleanupException) {
+                    log.warn("Failed to cleanup target file after move error: {}", target, cleanupException);
+                }
+                return failureResult(bookdropFile.getFileName(), "Failed to move file: " + e.getMessage());
             }
-            return failureResult(bookdropFile.getFileName(), "Failed to move file: " + e.getMessage());
-        }
+        }, "bookdrop file move");
     }
 
     private BookdropFileResult failureResult(String fileName, String message) {
@@ -340,7 +334,7 @@ public class BookDropService {
                 .build();
     }
 
-    private Book processFile(String fileName, LibraryEntity library, LibraryPathEntity path, File file, BookFileType type) {
+    private FileProcessResult processFile(String fileName, LibraryEntity library, LibraryPathEntity path, File file, BookFileType type) {
         LibraryFile libraryFile = LibraryFile.builder()
                 .libraryEntity(library)
                 .libraryPathEntity(path)
@@ -435,4 +429,5 @@ public class BookDropService {
             return null;
         }
     }
+
 }

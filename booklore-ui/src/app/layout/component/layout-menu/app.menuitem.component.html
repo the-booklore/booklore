@@ -31,49 +31,61 @@
   }
 
   <div>
-    <div class="flex flex-row items-center justify-between hover:bg-surface-800 rounded-md">
+    <div
+      class="flex flex-row items-center justify-between hover:bg-surface-800 rounded-md cursor-pointer"
+      (click)="triggerLink()"
+    >
       @if ((item.routerLink && !item.items)) {
         <a
+          #link
           (click)="itemClick($event)"
-          [ngClass]="item.class"
-          [routerLink]="item.routerLink" routerLinkActive="active-route"
+          [ngClass]="item.class + ' flex items-center gap-2 w-full'"
+          [routerLink]="item.routerLink"
+          routerLinkActive="active-route"
           [routerLinkActiveOptions]="item.routerLinkActiveOptions || { paths: 'exact', queryParams: 'ignored', matrixParams: 'ignored', fragment: 'ignored' }"
-          [fragment]="item.fragment" [queryParamsHandling]="item.queryParamsHandling"
+          [fragment]="item.fragment"
+          [queryParamsHandling]="item.queryParamsHandling"
           [preserveFragment]="item.preserveFragment"
-          [skipLocationChange]="item.skipLocationChange" [replaceUrl]="item.replaceUrl" [state]="item.state"
+          [skipLocationChange]="item.skipLocationChange"
+          [replaceUrl]="item.replaceUrl"
+          [state]="item.state"
           [queryParams]="item.queryParams"
-          [attr.target]="item.target" tabindex="0" pRipple>
+          [attr.target]="item.target"
+          tabindex="0"
+          pRipple
+        >
           <i [ngClass]="item.icon" class="layout-menuitem-icon"></i>
           <span class="layout-menuitem-text w-full truncate">
-            {{ item.label }}
-          </span>
+        {{ item.label }}
+      </span>
         </a>
       }
+
       <span>
-        @if (item.type === 'Library' || item.type === 'Shelf' || item.type === 'magicShelfItem') {
-          @if ((item.type !== 'Library' || (admin || canManipulateLibrary)) && item.label !== 'Unshelved' && item.label !== 'Kobo') {
-            <p-button
-              (click)="entitymenu.toggle($event)"
-              (mouseover)="hovered = true"
-              (mouseleave)="hovered = false"
-              [text]="true"
-              [outlined]="false"
-              [rounded]="true"
-              [label]="hovered ? '' : (item.bookCount$ | async)?.toString() || ''"
-              [icon]="hovered ? 'pi pi-ellipsis-v' : ''"
-              [style.height]="'30px'"
-              [style.display]="'flex'">
-            </p-button>
-          }
-          <p-menu #entitymenu [model]="item.menu" [popup]="true" appendTo="body"></p-menu>
-        }
+    @if (item.type === 'Library' || item.type === 'Shelf' || item.type === 'magicShelfItem') {
+      @if ((item.type !== 'Library' || (admin || canManipulateLibrary)) && item.label !== 'Unshelved' && item.label !== 'Kobo') {
+        <p-button
+          (click)="entitymenu.toggle($event); $event.stopPropagation()"
+          (mouseover)="hovered = true"
+          (mouseleave)="hovered = false"
+          [text]="true"
+          [outlined]="false"
+          [rounded]="true"
+          [label]="hovered ? '' : (item.bookCount$ | async)?.toString() || ''"
+          [icon]="hovered ? 'pi pi-ellipsis-v' : ''"
+          [style.height]="'30px'"
+          [style.display]="'flex'"
+        ></p-button>
+      }
+      <p-menu #entitymenu [model]="item.menu" [popup]="true" appendTo="body"></p-menu>
+    }
 
         @if (item.type === 'Library' && (!admin && !canManipulateLibrary) || item.type === 'All Books' || item.label === 'Unshelved' || item.label === 'Kobo') {
           <p class="text-[var(--primary-color)] pr-3">
-            {{ (item.bookCount$ | async)?.toString() || '0' }}
-          </p>
+        {{ (item.bookCount$ | async)?.toString() || '0' }}
+      </p>
         }
-      </span>
+  </span>
     </div>
 
     <div [@children]="isExpanded(key) ? 'expanded' : 'collapsed'" style="overflow: hidden;">

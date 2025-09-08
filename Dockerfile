@@ -27,7 +27,7 @@ RUN gradle clean build -x test
 # Stage 3: Final image
 FROM eclipse-temurin:21-jre-alpine
 
-RUN apk update && apk add nginx gettext
+RUN apk update && apk add nginx gettext su-exec
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html

@@ -1,4 +1,6 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
+import {Toast} from 'primeng/toast';
+import {MessageService} from 'primeng/api';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
 import {BookCoverService, CoverFetchRequest, CoverImage} from '../../shared/services/book-cover.service';
 import {finalize} from 'rxjs/operators';
@@ -28,14 +30,13 @@ export class CoverSearchComponent implements OnInit {
   coverImages: CoverImage[] = [];
   loading = false;
   hasSearched = false;
-  showPreview = false;
-  previewImageUrl = '';
 
   private fb = inject(FormBuilder);
   private bookCoverService = inject(BookCoverService);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   protected dynamicDialogRef = inject(DynamicDialogRef);
   protected bookService = inject(BookService);
+  private messageService = inject(MessageService);
 
   constructor() {
     this.searchForm = this.fb.group({
@@ -87,26 +88,24 @@ export class CoverSearchComponent implements OnInit {
   }
 
   selectAndSave(image: CoverImage) {
-    this.dynamicDialogRef.close(image.url);
-  }
-
-  previewImage(imageUrl: string) {
-    this.previewImageUrl = imageUrl;
-    this.showPreview = true;
-    document.body.style.overflow = 'hidden';
-  }
-
-  closePreview() {
-    this.showPreview = false;
-    this.previewImageUrl = '';
-    document.body.style.overflow = 'auto';
-  }
-
-  onImageError(event: Event) {
-    const target = event.target as HTMLImageElement;
-    if (target) {
-      target.style.display = 'none';
-    }
+    this.bookService.uploadCoverFromUrl(this.bookId, image.url)
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Cover Updated',
+            detail: 'Cover image updated successfully.'
+          });
+          this.dynamicDialogRef.close();
+        },
+        error: err => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Cover Update Failed',
+            detail: err?.message || 'Failed to update cover image.'
+          });
+        }
+      });
   }
 
   onClear() {

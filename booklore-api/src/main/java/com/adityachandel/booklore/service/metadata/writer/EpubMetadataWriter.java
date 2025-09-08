@@ -31,7 +31,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -44,6 +44,13 @@ public class EpubMetadataWriter implements MetadataWriter {
 
     @Override
     public void writeMetadataToFile(File epubFile, BookMetadataEntity metadata, String thumbnailUrl, boolean restoreMode, MetadataClearFlags clear) {
+        File backupFile = new File(epubFile.getParentFile(), epubFile.getName() + ".bak");
+        try {
+            Files.copy(epubFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            log.warn("Failed to create backup of EPUB {}: {}", epubFile.getName(), ex.getMessage());
+            return;
+        }
         Path tempDir;
         try {
             tempDir = Files.createTempDirectory("epub_edit_" + UUID.randomUUID());
@@ -155,7 +162,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                     hasChanges[0] = true;
                 }
             }
-            
+
             if (hasChanges[0]) {
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -172,9 +179,24 @@ public class EpubMetadataWriter implements MetadataWriter {
             } else {
                 log.info("No changes detected. Skipping EPUB write for: {}", epubFile.getName());
             }
-
         } catch (Exception e) {
             log.warn("Failed to write metadata to EPUB file {}: {}", epubFile.getName(), e.getMessage(), e);
+            if (backupFile.exists()) {
+                try {
+                    Files.copy(backupFile.toPath(), epubFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    log.info("Restored EPUB from backup: {}", epubFile.getName());
+                } catch (IOException io) {
+                    log.error("Failed to restore EPUB from backup for {}: {}", epubFile.getName(), io.getMessage(), io);
+                }
+            }
+        } finally {
+            if (backupFile.exists()) {
+                try {
+                    Files.delete(backupFile.toPath());
+                } catch (IOException ex) {
+                    log.warn("Failed to delete backup for {}: {}", epubFile.getName(), ex.getMessage());
+                }
+            }
         }
     }
 
@@ -264,6 +286,53 @@ public class EpubMetadataWriter implements MetadataWriter {
 
         } catch (Exception e) {
             log.warn("Failed to update EPUB with uploaded cover image: {}", e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void replaceCoverImageFromUrl(BookEntity bookEntity, String url) {
+        if (url == null || url.isBlank()) {
+            log.warn("Cover update via URL failed: empty or null URL.");
+            return;
+        }
+        try {
+            File epubFile = new File(bookEntity.getFullFilePath().toUri());
+            Path tempDir = Files.createTempDirectory("epub_cover_url_" + UUID.randomUUID());
+            new ZipFile(epubFile).extractAll(tempDir.toString());
+
+            File opfFile = findOpfFile(tempDir.toFile());
+            if (opfFile == null) {
+                log.warn("OPF file not found in EPUB: {}", epubFile.getName());
+                return;
+            }
+
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+            Document opfDoc = builder.parse(opfFile);
+
+            byte[] coverData = loadImage(url);
+            if (coverData == null) {
+                log.warn("Failed to load image from URL: {}", url);
+                return;
+            }
+
+            applyCoverImageToEpub(tempDir, opfDoc, coverData);
+
+            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.transform(new DOMSource(opfDoc), new StreamResult(opfFile));
+
+            File tempEpub = new File(epubFile.getParentFile(), epubFile.getName() + ".tmp");
+            addFolderContentsToZip(new ZipFile(tempEpub), tempDir.toFile(), tempDir.toFile());
+
+            if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
+            if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
+
+            log.info("Cover image updated in EPUB via URL: {}", epubFile.getName());
+        } catch (Exception e) {
+            log.warn("Failed to update EPUB with cover from URL: {}", e.getMessage(), e);
         }
     }
 
@@ -467,3 +536,4 @@ public class EpubMetadataWriter implements MetadataWriter {
         return null;
     }
 }
+

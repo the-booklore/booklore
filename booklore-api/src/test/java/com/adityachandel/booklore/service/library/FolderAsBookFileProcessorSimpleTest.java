@@ -4,6 +4,8 @@ import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
+import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import org.junit.jupiter.api.Test;
 
@@ -16,11 +18,12 @@ class FolderAsBookFileProcessorSimpleTest {
     void getScanMode_shouldReturnFolderAsBook() {
         BookRepository bookRepository = mock(BookRepository.class);
         BookAdditionalFileRepository bookAdditionalFileRepository = mock(BookAdditionalFileRepository.class);
-        NotificationService notificationService = mock(NotificationService.class);
+        AdminEventBroadcaster adminEventBroadcaster = mock(AdminEventBroadcaster.class);
+        BookEventBroadcaster bookEventBroadcaster = mock(BookEventBroadcaster.class);
         BookFileProcessorRegistry bookFileProcessorRegistry = mock(BookFileProcessorRegistry.class);
 
         FolderAsBookFileProcessor processor = new FolderAsBookFileProcessor(
-                bookRepository, bookAdditionalFileRepository, notificationService, bookFileProcessorRegistry);
+                bookRepository, bookAdditionalFileRepository, bookEventBroadcaster, adminEventBroadcaster, bookFileProcessorRegistry);
 
         assertThat(processor.getScanMode()).isEqualTo(LibraryScanMode.FOLDER_AS_BOOK);
     }
@@ -29,11 +32,12 @@ class FolderAsBookFileProcessorSimpleTest {
     void supportsSupplementaryFiles_shouldReturnTrue() {
         BookRepository bookRepository = mock(BookRepository.class);
         BookAdditionalFileRepository bookAdditionalFileRepository = mock(BookAdditionalFileRepository.class);
-        NotificationService notificationService = mock(NotificationService.class);
+        AdminEventBroadcaster adminEventBroadcaster = mock(AdminEventBroadcaster.class);
+        BookEventBroadcaster bookEventBroadcaster = mock(BookEventBroadcaster.class);
         BookFileProcessorRegistry bookFileProcessorRegistry = mock(BookFileProcessorRegistry.class);
 
         FolderAsBookFileProcessor processor = new FolderAsBookFileProcessor(
-                bookRepository, bookAdditionalFileRepository, notificationService, bookFileProcessorRegistry);
+                bookRepository, bookAdditionalFileRepository, bookEventBroadcaster, adminEventBroadcaster, bookFileProcessorRegistry);
 
         assertThat(processor.supportsSupplementaryFiles()).isTrue();
     }

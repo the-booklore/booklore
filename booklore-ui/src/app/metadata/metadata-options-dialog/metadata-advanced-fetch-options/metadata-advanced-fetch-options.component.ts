@@ -32,7 +32,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'seriesName', 'seriesNumber', 'seriesTotal', 'isbn13', 'isbn10',
     'language', 'categories', 'cover'
   ];
-  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine'];
+  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban'];
 
   refreshCovers: boolean = false;
   mergeCategories: boolean = false;

@@ -1,33 +1,48 @@
-name: booklore
 services:
   booklore:
-    image: booklore/booklore:${BOOKLORE_IMAGE_TAG}
-    container_name: booklore_server
-    env_file:
-      - .env
+    # Official Docker Hub image:
+    image: booklore/booklore:latest
+    # Or the GHCR image:
+    # image: ghcr.io/booklore-app/booklore:latest
+    container_name: booklore
     environment:
-      - DATABASE_URL=jdbc:mariadb://mariadb:3306/${MYSQL_DATABASE}
-      - DATABASE_USERNAME=${MYSQL_USER}
-      - DATABASE_PASSWORD=${MYSQL_PASSWORD}
+      - USER_ID=0  # Modify this if the volume's ownership is not root
+      - GROUP_ID=0 # Modify this if the volume's ownership is not root
+      - TZ=Etc/UTC
+      - DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore   # Only modify this if you're familiar with JDBC and your database setup
+      - DATABASE_USERNAME=booklore                          # Must match MYSQL_USER defined in the mariadb container
+      - DATABASE_PASSWORD=your_secure_password              # Use a strong password; must match MYSQL_PASSWORD defined in the mariadb container 
+      - BOOKLORE_PORT=6060                                  # Port BookLore listens on inside the container; must match container port below
+      - SWAGGER_ENABLED=false                               # Enable or disable Swagger UI (API docs). Set to 'true' to allow access; 'false' to block access (recommended for production).
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "6060:6060"
+      - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
+      # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
+      # Example: To expose on host port 7070, set BOOKLORE_PORT=7070 and use "7070:7070".
     volumes:
-      - ${BOOKLORE_DATA_PATH}:/app/data
-      - ${BOOKLORE_BOOKS_PATH}:/books
+      - ./data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
+      - ./books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
+      - ./bookdrop:/bookdrop   # BookDrop folder. Files placed here are automatically detected and prepared for import.
+    restart: unless-stopped
 
   mariadb:
-    image: lscr.io/linuxserver/mariadb:11.4
-    container_name: booklore_mariadb
-    env_file:
-      - .env
+    image: lscr.io/linuxserver/mariadb:11.4.5
+    container_name: mariadb
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - MYSQL_ROOT_PASSWORD=super_secure_password  # Use a strong password for the database's root user, should be different from MYSQL_PASSWORD
+      - MYSQL_DATABASE=booklore
+      - MYSQL_USER=booklore                        # Must match DATABASE_USERNAME defined in the booklore container
+      - MYSQL_PASSWORD=your_secure_password        # Use a strong password; must match DATABASE_PASSWORD defined in the booklore container
     volumes:
-      - ${MARIADB_CONFIG_PATH}:/config
+      - ./config:/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
-      interval: 10s
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10

@@ -22,14 +22,15 @@ export class BookRuleEvaluatorService {
     const normalize = (val: any): any => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
-      const date = new Date(val);
-      if (!isNaN(date.getTime())) return date;
-      if (typeof val === 'string') return val.toLowerCase();
+      if (typeof val === 'string') {
+        const date = new Date(val);
+        if (!isNaN(date.getTime())) return date;
+        return val.toLowerCase();
+      }
       return val;
     };
 
     const value = normalize(rawValue);
-
     const ruleVal = normalize(rule.value);
     const ruleStart = normalize(rule.valueStart);
     const ruleEnd = normalize(rule.valueEnd);
