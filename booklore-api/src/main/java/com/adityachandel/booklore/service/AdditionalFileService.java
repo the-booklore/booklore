@@ -8,7 +8,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +41,7 @@ public class AdditionalFileService {
 
     private final BookAdditionalFileRepository additionalFileRepository;
     private final AdditionalFileMapper additionalFileMapper;
+    private final MonitoringProtectionService monitoringProtectionService;
 
     public List<AdditionalFile> getAdditionalFilesByBookId(Long bookId) {
         List<BookAdditionalFileEntity> entities = additionalFileRepository.findByBookId(bookId);
@@ -60,16 +61,21 @@ public class AdditionalFileService {
         }
 
         BookAdditionalFileEntity file = fileOpt.get();
+        
+        monitoringProtectionService.executeWithProtection(() -> {
+            try {
+                // Delete physical file
+                Files.deleteIfExists(file.getFullFilePath());
+                log.info("Deleted additional file: {}", file.getFullFilePath());
 
-        // Delete physical file
-        try {
-            Files.deleteIfExists(file.getFullFilePath());
-        } catch (IOException e) {
-            log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
-        }
-
-        // Delete database record
-        additionalFileRepository.delete(file);
+                // Delete database record
+                additionalFileRepository.delete(file);
+            } catch (IOException e) {
+                log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
+                // Still delete the database record even if file deletion fails
+                additionalFileRepository.delete(file);
+            }
+        }, "additional file deletion");
     }
 
     public ResponseEntity<Resource> downloadAdditionalFile(Long fileId) throws IOException {
@@ -92,4 +98,5 @@ public class AdditionalFileService {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
                 .body(resource);
     }
+
 }

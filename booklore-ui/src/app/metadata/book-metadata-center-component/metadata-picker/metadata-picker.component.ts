@@ -265,31 +265,40 @@ export class MetadataPickerComponent implements OnInit {
           coverLocked: metadata.coverLocked || false,
         });
 
-        if (metadata.titleLocked) this.metadataForm.get('title')?.disable();
-        if (metadata.subtitleLocked) this.metadataForm.get('subtitle')?.disable();
-        if (metadata.authorsLocked) this.metadataForm.get('authors')?.disable();
-        if (metadata.categoriesLocked) this.metadataForm.get('categories')?.disable();
-        if (metadata.publisherLocked) this.metadataForm.get('publisher')?.disable();
-        if (metadata.publishedDateLocked) this.metadataForm.get('publishedDate')?.disable();
-        if (metadata.languageLocked) this.metadataForm.get('language')?.disable();
-        if (metadata.isbn10Locked) this.metadataForm.get('isbn10')?.disable();
-        if (metadata.isbn13Locked) this.metadataForm.get('isbn13')?.disable();
-        if (metadata.asinLocked) this.metadataForm.get('asin')?.disable();
-        if (metadata.personalRatingLocked) this.metadataForm.get('personalRating')?.disable();
-        if (metadata.amazonReviewCountLocked) this.metadataForm.get('amazonReviewCount')?.disable();
-        if (metadata.amazonRatingLocked) this.metadataForm.get('amazonRating')?.disable();
-        if (metadata.googleIdLocked) this.metadataForm.get('googleIdCount')?.disable();
-        if (metadata.goodreadsReviewCountLocked) this.metadataForm.get('goodreadsReviewCount')?.disable();
-        if (metadata.goodreadsRatingLocked) this.metadataForm.get('goodreadsRating')?.disable();
-        if (metadata.hardcoverIdLocked) this.metadataForm.get('hardcoverId')?.disable();
-        if (metadata.hardcoverReviewCountLocked) this.metadataForm.get('hardcoverReviewCount')?.disable();
-        if (metadata.hardcoverRatingLocked) this.metadataForm.get('hardcoverRating')?.disable();
-        if (metadata.googleIdLocked) this.metadataForm.get('googleId')?.disable();
-        if (metadata.pageCountLocked) this.metadataForm.get('pageCount')?.disable();
-        if (metadata.descriptionLocked) this.metadataForm.get('description')?.disable();
-        if (metadata.seriesNameLocked) this.metadataForm.get('seriesName')?.disable();
-        if (metadata.seriesNumberLocked) this.metadataForm.get('seriesNumber')?.disable();
-        if (metadata.seriesTotalLocked) this.metadataForm.get('seriesTotal')?.disable();
+        // Always enable all fields before applying locked state
+        Object.keys(this.metadataForm.controls).forEach((key) => {
+          if (!key.endsWith('Locked')) {
+            this.metadataForm.get(key)?.enable({emitEvent: false});
+          }
+        });
+
+        if (metadata.titleLocked) this.metadataForm.get('title')?.disable({emitEvent: false});
+        if (metadata.subtitleLocked) this.metadataForm.get('subtitle')?.disable({emitEvent: false});
+        if (metadata.authorsLocked) this.metadataForm.get('authors')?.disable({emitEvent: false});
+        if (metadata.categoriesLocked) this.metadataForm.get('categories')?.disable({emitEvent: false});
+        if (metadata.publisherLocked) this.metadataForm.get('publisher')?.disable({emitEvent: false});
+        if (metadata.publishedDateLocked) this.metadataForm.get('publishedDate')?.disable({emitEvent: false});
+        if (metadata.languageLocked) this.metadataForm.get('language')?.disable({emitEvent: false});
+        if (metadata.isbn10Locked) this.metadataForm.get('isbn10')?.disable({emitEvent: false});
+        if (metadata.isbn13Locked) this.metadataForm.get('isbn13')?.disable({emitEvent: false});
+        if (metadata.asinLocked) this.metadataForm.get('asin')?.disable({emitEvent: false});
+        if (metadata.personalRatingLocked) this.metadataForm.get('personalRating')?.disable({emitEvent: false});
+        if (metadata.amazonReviewCountLocked) this.metadataForm.get('amazonReviewCount')?.disable({emitEvent: false});
+        if (metadata.amazonRatingLocked) this.metadataForm.get('amazonRating')?.disable({emitEvent: false});
+        if (metadata.googleIdLocked) this.metadataForm.get('googleIdCount')?.disable({emitEvent: false});
+        if (metadata.comicvineIdLocked) this.metadataForm.get('comicvineId')?.disable({emitEvent: false});
+        if (metadata.goodreadsIdLocked) this.metadataForm.get('goodreadsId')?.disable({emitEvent: false});
+        if (metadata.goodreadsReviewCountLocked) this.metadataForm.get('goodreadsReviewCount')?.disable({emitEvent: false});
+        if (metadata.goodreadsRatingLocked) this.metadataForm.get('goodreadsRating')?.disable({emitEvent: false});
+        if (metadata.hardcoverIdLocked) this.metadataForm.get('hardcoverId')?.disable({emitEvent: false});
+        if (metadata.hardcoverReviewCountLocked) this.metadataForm.get('hardcoverReviewCount')?.disable({emitEvent: false});
+        if (metadata.hardcoverRatingLocked) this.metadataForm.get('hardcoverRating')?.disable({emitEvent: false});
+        if (metadata.googleIdLocked) this.metadataForm.get('googleId')?.disable({emitEvent: false});
+        if (metadata.pageCountLocked) this.metadataForm.get('pageCount')?.disable({emitEvent: false});
+        if (metadata.descriptionLocked) this.metadataForm.get('description')?.disable({emitEvent: false});
+        if (metadata.seriesNameLocked) this.metadataForm.get('seriesName')?.disable({emitEvent: false});
+        if (metadata.seriesNumberLocked) this.metadataForm.get('seriesNumber')?.disable({emitEvent: false});
+        if (metadata.seriesTotalLocked) this.metadataForm.get('seriesTotal')?.disable({emitEvent: false});
       }
     });
   }

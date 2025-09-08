@@ -68,6 +68,9 @@ Kick off your BookLore journey with our official documentation and helpful video
 📘 [BookLore Documentation: Getting Started](https://booklore-app.github.io/booklore-docs/docs/getting-started/)  
 Our up-to-date docs walk you through installation, setup, configuration, and key features, everything you need to get up and running smoothly.
 
+> 💡 **Want to improve the documentation?**  
+> You can update the docs at [booklore-app/booklore-docs](https://github.com/booklore-app/booklore-docs) and create a pull request to contribute your changes!
+
 🎥 [BookLore Tutorials: YouTube](https://www.youtube.com/watch?v=UMrn_fIeFRo&list=PLi0fq0zaM7lqY7dX0R66jQtKW64z4_Tdz)  
 These older videos provide useful walkthroughs and visual guidance, but note that some content may be outdated compared to the current docs.
 
@@ -98,8 +101,8 @@ services:
     # image: ghcr.io/booklore-app/booklore:latest
     container_name: booklore
     environment:
-      - PUID=1000
-      - PGID=1000
+      - USER_ID=0  # Modify this if the volume's ownership is not root
+      - GROUP_ID=0 # Modify this if the volume's ownership is not root
       - TZ=Etc/UTC
       - DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore   # Only modify this if you're familiar with JDBC and your database setup
       - DATABASE_USERNAME=booklore                          # Must match MYSQL_USER defined in the mariadb container

@@ -93,73 +93,28 @@ export class MetadataReviewDialogComponent implements OnInit {
     return this.proposals[this.currentIndex] ?? null;
   }
 
-  onReject(): void {
-    const currentProposal = this.currentProposal;
-    if (!currentProposal) return;
-
-    this.metadataTaskService.updateProposalStatus(currentProposal.taskId, currentProposal.proposalId, 'REJECTED').subscribe({
-      next: () => {
-        if (this.isLast) {
-          this.metadataTaskService.deleteTask(currentProposal.taskId).subscribe(() => {
-            this.progressService.clearTask(currentProposal.taskId);
-            this.dialogRef.close();
-          });
-        } else {
-          this.next();
-        }
-      },
-      error: () => {
-        if (this.isLast) {
-          this.dialogRef.close();
-        } else {
-          this.next();
-        }
-      }
-    });
-  }
-
   onSave(updatedFields: Partial<FetchedProposal>): void {
     const currentProposal = this.currentProposal;
     if (!currentProposal) return;
-
     this.pickerComponent.onSave();
-
     this.metadataTaskService.updateProposalStatus(currentProposal.taskId, currentProposal.proposalId, 'ACCEPTED').subscribe({
       next: () => {
         if (this.isLast) {
           this.metadataTaskService.deleteTask(currentProposal.taskId).subscribe(() => {
             this.progressService.clearTask(currentProposal.taskId);
-            this.dialogRef.close();
           });
-        } else {
-          this.next();
-        }
-      },
-      error: () => {
-        if (this.isLast) {
-          this.dialogRef.close();
-        } else {
-          this.next();
         }
       }
     });
   }
 
-  next(): void {
+  onNext(): void {
     const nextIndex = this.currentIndex + 1;
     if (nextIndex >= this.proposals.length) {
       this.dialogRef.close();
     } else {
       this.currentIndex = nextIndex;
       this.currentIndexSubject.next(nextIndex);
-    }
-  }
-
-  previous(): void {
-    const prevIndex = this.currentIndex - 1;
-    if (prevIndex >= 0) {
-      this.currentIndex = prevIndex;
-      this.currentIndexSubject.next(prevIndex);
     }
   }
 

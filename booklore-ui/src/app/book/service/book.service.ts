@@ -67,6 +67,10 @@ export class BookService {
     })
   );
 
+  getCurrentBookState(): BookState {
+    return this.bookStateSubject.value;
+  }
+
   private fetchBooks(): Observable<Book[]> {
     return this.http.get<Book[]>(this.url).pipe(
       tap(books => {

@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.upload;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
+import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
@@ -14,6 +15,7 @@ import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -64,10 +66,10 @@ public class FileUploadService {
     private final AdditionalFileMapper additionalFileMapper;
     private final MonitoringService monitoringService;
 
-    @Value("${PUID:0}")
+    @Value("${PUID:${USER_ID:0}}")
     private String userId;
 
-    @Value("${GUID:0}")
+    @Value("${PGID:${GROUP_ID:0}}")
     private String groupId;
 
     public Book uploadFile(MultipartFile file, long libraryId, long pathId) throws IOException {
@@ -82,7 +84,7 @@ public class FileUploadService {
                 .orElseThrow(() -> ApiError.INVALID_LIBRARY_PATH.createException(libraryId));
 
         Path tempPath = Files.createTempFile("upload-", Objects.requireNonNull(file.getOriginalFilename()));
-        Book book;
+        FileProcessResult result;
 
         boolean wePaused = false;
         if (!monitoringService.isPaused()) {
@@ -113,10 +115,12 @@ public class FileUploadService {
 
             log.info("File uploaded to final location: {}", finalPath);
 
-            book = processFile(finalFile.getName(), libraryEntity, libraryPathEntity, finalFile, fileExt.getType());
-            notificationService.sendMessage(Topic.BOOK_ADD, book);
+            result = processFile(finalFile.getName(), libraryEntity, libraryPathEntity, finalFile, fileExt.getType());
+            if (result != null && result.getStatus() != FileProcessStatus.DUPLICATE) {
+                notificationService.sendMessage(Topic.BOOK_ADD, result.getBook());
+            }
 
-            return book;
+            return result.getBook();
 
         } catch (IOException e) {
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
@@ -281,7 +285,7 @@ public class FileUploadService {
         }
     }
 
-    private Book processFile(String fileName, LibraryEntity libraryEntity, LibraryPathEntity libraryPathEntity, File storageFile, BookFileType type) {
+    private FileProcessResult processFile(String fileName, LibraryEntity libraryEntity, LibraryPathEntity libraryPathEntity, File storageFile, BookFileType type) {
         String subPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), storageFile.toPath());
 
         LibraryFile libraryFile = LibraryFile.builder()

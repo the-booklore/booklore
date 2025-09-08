@@ -1,4 +1,4 @@
-import {Component, HostBinding, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, ElementRef, HostBinding, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {NavigationEnd, Router, RouterLink, RouterLinkActive} from '@angular/router';
 import {animate, state, style, transition, trigger} from '@angular/animations';
 import {Subscription} from 'rxjs';
@@ -41,38 +41,30 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   @Input() index!: number;
   @Input() @HostBinding('class.layout-root-menuitem') root!: boolean;
   @Input() parentKey!: string;
+  @ViewChild('linkRef') linkRef!: ElementRef<HTMLAnchorElement>;
 
   hovered = false;
   active = false;
   key: string = "";
-
   canManipulateLibrary: boolean = false;
   admin: boolean = false;
-
+  expandedItems = new Set<string>();
   menuSourceSubscription: Subscription;
   menuResetSubscription: Subscription;
 
-  expandedItems = new Set<string>();
-
-  toggleExpand(key: string) {
-    if (this.expandedItems.has(key)) {
-      this.expandedItems.delete(key);
-    } else {
-      this.expandedItems.add(key);
-    }
-  }
-
-  isExpanded(key: string): boolean {
-    return this.expandedItems.has(key);
-  }
-
-  constructor(public router: Router, private menuService: MenuService, private userService: UserService, private dialogLauncher: DialogLauncherService) {
+  constructor(
+    public router: Router,
+    private menuService: MenuService,
+    private userService: UserService,
+    private dialogLauncher: DialogLauncherService
+  ) {
     this.userService.userState$.subscribe(userState => {
       if (userState?.user) {
         this.canManipulateLibrary = userState.user.permissions.canManipulateLibrary;
         this.admin = userState.user.permissions.admin;
       }
     });
+
     this.menuSourceSubscription = this.menuService.menuSource$.subscribe(value => {
       Promise.resolve(null).then(() => {
         if (value.routeEvent) {
@@ -105,6 +97,27 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngOnDestroy() {
+    if (this.menuSourceSubscription) {
+      this.menuSourceSubscription.unsubscribe();
+    }
+    if (this.menuResetSubscription) {
+      this.menuResetSubscription.unsubscribe();
+    }
+  }
+
+  toggleExpand(key: string) {
+    if (this.expandedItems.has(key)) {
+      this.expandedItems.delete(key);
+    } else {
+      this.expandedItems.add(key);
+    }
+  }
+
+  isExpanded(key: string): boolean {
+    return this.expandedItems.has(key);
+  }
+
   updateActiveStateFromRoute() {
     const activeRoute = this.router.isActive(this.item.routerLink[0], {
       paths: 'exact',
@@ -131,20 +144,6 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     this.menuService.onMenuStateChange({key: this.key});
   }
 
-  @HostBinding('class.active-menuitem')
-  get activeClass() {
-    return this.active && !this.root;
-  }
-
-  ngOnDestroy() {
-    if (this.menuSourceSubscription) {
-      this.menuSourceSubscription.unsubscribe();
-    }
-    if (this.menuResetSubscription) {
-      this.menuResetSubscription.unsubscribe();
-    }
-  }
-
   openDialog(item: any) {
     if (item.type === 'library' && this.canManipulateLibrary) {
       this.dialogLauncher.openLibraryCreatorDialog();
@@ -152,5 +151,16 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     if (item.type === 'magicShelf') {
       this.dialogLauncher.openMagicShelfDialog();
     }
+  }
+
+  triggerLink() {
+    if (this.item.routerLink && !this.item.items && this.linkRef) {
+      this.linkRef.nativeElement.click();
+    }
+  }
+
+  @HostBinding('class.active-menuitem')
+  get activeClass() {
+    return this.active && !this.root;
   }
 }
