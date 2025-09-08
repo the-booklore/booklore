@@ -8,7 +8,6 @@ import {EntityType} from '../book-browser.component';
 import {Book, ReadStatus} from '../../../model/book.model';
 import {Accordion, AccordionContent, AccordionHeader, AccordionPanel} from 'primeng/accordion';
 import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
-import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -141,7 +140,6 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AccordionHeader,
     AccordionContent,
     NgClass,
-    Badge,
     AsyncPipe,
     TitleCasePipe,
     FormsModule,
