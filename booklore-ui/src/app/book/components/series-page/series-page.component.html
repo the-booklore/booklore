@@ -10,7 +10,7 @@
     <p-tabpanels class="tabpanels-responsive overflow-auto">
       <p-tabpanel value="view">
 
-
+        @if (books[0]; as firstBook) {
         <div class="flex flex-col justify-between flex-grow">
           <div class="space-y-4 ">
 
@@ -25,7 +25,7 @@
                 </div>
 
                 <p class="text-lg">
-                  @for (author of books[0]?.metadata?.authors; track $index; let isLast = $last) {
+                  @for (author of firstBook.metadata?.authors; track $index; let isLast = $last) {
                   <a class="hover:underline dark:text-blue-400 cursor-pointer" (click)="goToAuthorBooks(author)">
                     {{ author }}
                   </a>
@@ -37,10 +37,10 @@
                 <!-- </div> -->
               </div>
 
-              @if (books[0]?.metadata?.categories?.length) {
+              @if (firstBook.metadata?.categories?.length) {
               <div class="overflow-x-auto scrollbar-hide max-w-7xl pt-2 md:pt-0">
                 <div class="flex gap-2 w-max max-w-[1150px]">
-                  @for (category of books[0].metadata!.categories; track category) {
+                  @for (category of firstBook.metadata?.categories; track category) {
                   <a (click)="goToCategory(category)" class="shrink-0 no-underline cursor-pointer">
                     <p-tag [value]="category"></p-tag>
                   </a>
@@ -53,10 +53,9 @@
                   class="grid md:grid-cols-5 p-3 gap-y-2.5 text-sm pt-2 md:pt-4 pb-2 text-gray-300 md:min-w-[60rem] md:max-w-[100rem]">
                   <p>
                     <span class="font-bold">Publisher: </span>
-                    @if (books[0]?.metadata?.publisher) {
-                    <span class="underline hover:opacity-80 cursor-pointer"
-                      (click)="goToPublisher(books[0]?.metadata?.publisher!)">
-                      {{books[0]?.metadata?.publisher}}
+                    @if (firstBook.metadata?.publisher; as publisher) {
+                    <span class="underline hover:opacity-80 cursor-pointer" (click)="goToPublisher(publisher)">
+                      {{publisher}}
                     </span>
                     } @else {
                     <span>-</span>
@@ -64,7 +63,7 @@
                   </p>
                   <p><strong>Years:</strong> {{ (yearsRange$ | async) || '-' }}</p>
                   <p><strong>Number of books:</strong> {{ books.length || 0}}</p>
-                  <p><strong>Language:</strong> {{ books[0]?.metadata?.language || "-"}}</p>
+                  <p><strong>Language:</strong> {{ firstBook.metadata?.language || "-"}}</p>
                   <p><strong>Read Status: </strong>
                     @let s = seriesReadStatus$ | async;
                     <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white"
@@ -106,7 +105,7 @@
 
           </div>
         </div>
-
+        }
 
       </p-tabpanel>
     </p-tabpanels>

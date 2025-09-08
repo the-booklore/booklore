@@ -9,7 +9,6 @@ import { Book, ReadStatus } from "../../model/book.model";
 import { BookService } from "../../service/book.service";
 import { BookCardComponent } from "../book-browser/book-card/book-card.component";
 import { CoverScalePreferenceService } from "../book-browser/cover-scale-preference.service";
-import { Editor } from "primeng/editor";
 import { Tab, TabList, TabPanel, TabPanels, Tabs } from "primeng/tabs";
 import { Tag } from "primeng/tag";
 import { VirtualScrollerModule } from "@iharbeck/ngx-virtual-scroller";
@@ -25,7 +24,6 @@ import { Router } from "@angular/router";
   imports: [
     AsyncPipe,
     Button,
-    Editor,
     FormsModule,
     NgIf,
     NgFor,
@@ -44,7 +42,6 @@ import { Router } from "@angular/router";
   ],
 })
 export class SeriesPageComponent {
-  @ViewChild(Editor) quillEditor!: Editor;
 
   private route = inject(ActivatedRoute);
   private bookService = inject(BookService);
