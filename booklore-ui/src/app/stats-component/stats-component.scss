@@ -7,7 +7,7 @@
 }
 
 .header-card {
-  background: var(--surface-card, rgba(255, 255, 255, 0.05));
+  background: var(--card-background);
   border-radius: 8px;
   padding: 25px;
   margin-bottom: 30px;
@@ -196,10 +196,10 @@
       color: var(--text-color, #ffffff);
       padding: 10px 16px;
       border-radius: 6px;
-      font-size: 0.9rem;
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
+      font-weight: 500;
       align-items: center;
       gap: 8px;
       flex: 1;
@@ -422,7 +422,7 @@
 }
 
 .chart-section {
-  background: var(--surface-card, rgba(255, 255, 255, 0.05));
+  background: var(--card-background);
   border-radius: 8px;
   padding: 15px;
   backdrop-filter: blur(10px);

@@ -114,14 +114,15 @@
     }
 
     .config-panel-colors {
-      > div {
+      // Only apply flex to color picker rows, not background-center-wrapper
+      > div:not(.background-center-wrapper) {
         justify-content: flex-start;
         padding-top: .5rem;
         display: flex;
         gap: .5rem;
         flex-wrap: wrap;
 
-        button {
+        button:not([pbutton]):not(.p-button) {
           border: none;
           width: 1.25rem;
           height: 1.25rem;

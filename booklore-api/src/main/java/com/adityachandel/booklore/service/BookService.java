@@ -476,6 +476,16 @@ public class BookService {
         }
     }
 
+    public Resource getBackgroundImage() {
+        try {
+            BookLoreUser user = authenticationService.getAuthenticatedUser();
+            return fileService.getBackgroundResource(user.getId());
+        } catch (Exception e) {
+            log.error("Failed to get background image: {}", e.getMessage(), e);
+            return fileService.getBackgroundResource(null);
+        }
+    }
+
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         return bookDownloadService.downloadBook(bookId);
     }
@@ -502,7 +512,7 @@ public class BookService {
                     if (Files.exists(fullFilePath)) {
                         Files.delete(fullFilePath);
                         log.info("Deleted book file: {}", fullFilePath);
-                        
+
                         Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
                                 .map(LibraryPathEntity::getPath)
                                 .map(Paths::get)

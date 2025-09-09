@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, OnDestroy} from '@angular/core';
+import {Component, computed, inject, OnDestroy, OnInit} from '@angular/core';
 import {RxStompService} from './shared/websocket/rx-stomp.service';
 import {BookService} from './book/service/book.service';
 import {NotificationEventService} from './shared/websocket/notification-event.service';
@@ -37,6 +37,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private taskEventService = inject(TaskEventService);
   private duplicateFileService = inject(DuplicateFileService);
   private appConfigService = inject(AppConfigService); // Keep it here to ensure the service is initialized
+  private readonly configService = inject(AppConfigService);
 
   ngOnInit(): void {
     this.authInit.initialized$.subscribe(ready => {
@@ -101,4 +102,25 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
+
+  readonly backgroundStyle = computed(() => {
+    const state = this.configService.appState();
+    const backgroundImage = state.backgroundImage;
+    if (!backgroundImage) {
+      return 'none';
+    }
+
+    return `url('${backgroundImage}')`;
+  });
+
+  readonly blurStyle = computed(() => {
+    const state = this.configService.appState();
+    const blur = state.backgroundBlur ?? AppConfigService.DEFAULT_BACKGROUND_BLUR;
+    return `blur(${blur}px)`;
+  });
+
+  readonly showBackground = computed(() => {
+    const state = this.configService.appState();
+    return state.showBackground ?? true;
+  });
 }

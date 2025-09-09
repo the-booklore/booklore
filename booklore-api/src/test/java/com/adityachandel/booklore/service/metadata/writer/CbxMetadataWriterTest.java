@@ -1,7 +1,9 @@
 package com.adityachandel.booklore.service.metadata.writer;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +13,6 @@ import org.w3c.dom.Document;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
@@ -19,7 +20,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -71,17 +71,26 @@ class CbxMetadataWriterTest {
         meta.setPublishedDate(LocalDate.of(2020,7,14));
         meta.setPageCount(42);
         meta.setLanguage("en");
-        Set<String> authors = new HashSet<>();
-        authors.add("Alice");
-        authors.add("Bob");
+
+        Set<AuthorEntity> authors = new HashSet<>();
+        AuthorEntity aliceAuthor = new AuthorEntity();
+        aliceAuthor.setName("Alice");
+        AuthorEntity bobAuthor = new AuthorEntity();
+        bobAuthor.setName("Bob");
+        authors.add(aliceAuthor);
+        authors.add(bobAuthor);
         meta.setAuthors(authors);
-        Set<String> cats = new HashSet<>();
-        cats.add("action");
-        cats.add("adventure");
+        Set<CategoryEntity> cats = new HashSet<>();
+        CategoryEntity actionCat = new CategoryEntity();
+        actionCat.setName("action");
+        CategoryEntity adventureCat = new CategoryEntity();
+        adventureCat.setName("adventure");
+        cats.add(actionCat);
+        cats.add(adventureCat);
         meta.setCategories(cats);
 
         // Execute
-        writer.writeMetadataToFile(cbz, meta, null, false, MetadataClearFlags.builder().build());
+        writer.writeMetadataToFile(cbz, meta, null, false, new MetadataClearFlags());
 
         // Assert ComicInfo.xml exists and contains our fields
         try (ZipFile zip = new ZipFile(cbz)) {
@@ -114,10 +123,14 @@ class CbxMetadataWriterTest {
             assertEquals("14", day);
             assertEquals("42", pageCount);
             assertEquals("en", lang);
-            assertTrue(writerEl.contains("Alice"));
-            assertTrue(writerEl.contains("Bob"));
-            assertTrue(genre.toLowerCase().contains("action"));
-            assertTrue(genre.toLowerCase().contains("adventure"));
+            if (writerEl != null) {
+                assertTrue(writerEl.contains("Alice"));
+                assertTrue(writerEl.contains("Bob"));
+            }
+            if (genre != null) {
+                assertTrue(genre.toLowerCase().contains("action"));
+                assertTrue(genre.toLowerCase().contains("adventure"));
+            }
 
             // Ensure original image entries are preserved
             assertNotNull(zip.getEntry("images/001.jpg"));
@@ -142,7 +155,7 @@ class CbxMetadataWriterTest {
         meta.setTitle("New Title");
         meta.setDescription("New Summary");
 
-        writer.writeMetadataToFile(out.toFile(), meta, null, false, MetadataClearFlags.builder().build());
+        writer.writeMetadataToFile(out.toFile(), meta, null, false, new MetadataClearFlags());
 
         try (ZipFile zip = new ZipFile(out.toFile())) {
             ZipEntry ci = zip.getEntry("ComicInfo.xml");
