@@ -34,13 +34,14 @@
                 style="overscroll-behavior: contain;">
                 @for (filter of filters; track trackByFilter(j, filter); let j = $index) {
                   <div
-                    class="cursor-pointer transition-colors duration-200 ease-in-out pb-1 flex items-center gap-2"
+                    class="filter-row cursor-pointer transition-colors duration-200 ease-in-out pb-1 flex flex-row items-center justify-between gap-2"
                     [ngClass]="{
                       'text-[var(--primary-color)]': activeFilters[filterType]?.includes(filter.value?.id || filter.value)
                     }"
                     (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
-                    <p-badge [value]="filter.bookCount"></p-badge>
                     {{ filter.value.name || filter.value }}
+                    <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
+                    <!-- <p class="text-[var(--primary-color)]"> {{ filter.bookCount }}</p> -->
                   </div>
                 }
               </div>
