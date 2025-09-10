@@ -35,6 +35,10 @@ class OpdsServiceTest {
     @Mock
     private BookLoreUserTransformer bookLoreUserTransformer;
     @Mock
+    private com.adityachandel.booklore.service.library.LibraryService libraryService;
+    @Mock
+    private com.adityachandel.booklore.repository.ShelfRepository shelfRepository;
+    @Mock
     private HttpServletRequest request;
 
     @InjectMocks
@@ -85,7 +89,7 @@ class OpdsServiceTest {
     }
 
     @Test
-    void generateCatalogFeed_opdsV2Admin_callsGetAllBooks_and_returnsV2Placeholder() {
+    void generateCatalogFeed_opdsV2Admin_callsGetAllBooks_and_returnsV2Json() {
         OpdsUserDetails details = mock(OpdsUserDetails.class);
         when(authenticationService.getOpdsUser()).thenReturn(details);
         when(details.getOpdsUser()).thenReturn(null);
@@ -108,19 +112,21 @@ class OpdsServiceTest {
 
         // Accept header drives v2 selection; do not stub request.getRequestURI() (unused here)
         when(request.getHeader("Accept")).thenReturn("application/opds+json;version=2.0");
-        // stub the backend call exercised by getAllowedBooks for admin + no query
-        when(bookQueryService.getAllBooks(true)).thenReturn(List.of());
+        // stub the backend call exercised by getAllowedBooksPage for admin + no query
+        when(bookQueryService.getAllBooksPage(true, 1, 50)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of()));
 
         String feed = service.generateCatalogFeed(request);
 
-        assertEquals("OPDS v2.0 Feed is under construction", feed);
+        assertNotNull(feed);
+        assertTrue(feed.trim().startsWith("{"));
+        assertTrue(feed.contains("\"publications\""));
         verify(userRepository).findById(9L);
-        verify(bookQueryService).getAllBooks(true);
+        verify(bookQueryService).getAllBooksPage(true, 1, 50);
     }
 
 
     @Test
-    void generateSearchResults_opdsV2_callsSearch_and_returnsV2Placeholder() {
+    void generateSearchResults_opdsV2_callsSearch_and_returnsV2Json() {
         // Setup v2 user (admin) so getAllowedBooks will call searchBooksByMetadata(query)
         OpdsUserDetails details = mock(OpdsUserDetails.class);
         when(authenticationService.getOpdsUser()).thenReturn(details);
@@ -143,14 +149,16 @@ class OpdsServiceTest {
         // Accept header drives v2 selection; do not stub request.getRequestURI()
         when(request.getHeader("Accept")).thenReturn("application/opds+json;version=2.0");
 
-        // getAllowedBooks will invoke searchBooksByMetadata for admin + query
-        when(bookQueryService.searchBooksByMetadata("query")).thenReturn(List.of(mock(Book.class)));
+        // getAllowedBooksPage will invoke searchBooksByMetadataPage for admin + query
+        when(bookQueryService.searchBooksByMetadataPage("query", 1, 50)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(mock(Book.class))));
 
         String feed = service.generateSearchResults(request, "query");
 
-        assertEquals("OPDS v2.0 Feed is under construction", feed);
+        assertNotNull(feed);
+        assertTrue(feed.trim().startsWith("{"));
+        assertTrue(feed.contains("\"publications\""));
         verify(userRepository).findById(9L);
-        verify(bookQueryService).searchBooksByMetadata("query");
+        verify(bookQueryService).searchBooksByMetadataPage("query", 1, 50);
     }
 
     @Test
@@ -208,9 +216,79 @@ class OpdsServiceTest {
     }
 
     @Test
-    void generateSearchDescription_opdsV2_returnsV2Placeholder() {
+    void generateSearchDescription_opdsV2_returnsOpenSearchXml() {
         when(request.getHeader("Accept")).thenReturn("application/opds+json;version=2.0");
         String desc = service.generateSearchDescription(request);
-        assertEquals("OPDS v2.0 Feed is under construction", desc);
+        assertNotNull(desc);
+        assertTrue(desc.contains("<OpenSearchDescription"));
+        assertTrue(desc.contains("application/opds+json"));
+    }
+
+    @Test
+    void generateOpdsV2LibrariesNavigation_admin_listsAllLibraries() {
+        OpdsUserDetails details = mock(OpdsUserDetails.class);
+        when(authenticationService.getOpdsUser()).thenReturn(details);
+        when(details.getOpdsUserV2()).thenReturn(mock(OpdsUserV2.class));
+        when(details.getOpdsUserV2().getUserId()).thenReturn(1L);
+
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser dto = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(perms.isAdmin()).thenReturn(true);
+        when(dto.getPermissions()).thenReturn(perms);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(dto);
+
+        Library lib1 = Library.builder().id(10L).name("AllLib1").build();
+        Library lib2 = Library.builder().id(11L).name("AllLib2").build();
+        when(libraryService.getAllLibraries()).thenReturn(List.of(lib1, lib2));
+
+        String json = service.generateOpdsV2LibrariesNavigation(request);
+
+        assertNotNull(json);
+        assertTrue(json.contains("AllLib1"));
+        assertTrue(json.contains("AllLib2"));
+        assertTrue(json.contains("/api/v2/opds/catalog?libraryId=10"));
+        assertTrue(json.contains("/api/v2/opds/catalog?libraryId=11"));
+    }
+
+    @Test
+    void generateOpdsV2LibrariesNavigation_nonAdmin_listsAssignedLibraries() {
+        OpdsUserDetails details = mock(OpdsUserDetails.class);
+        when(authenticationService.getOpdsUser()).thenReturn(details);
+        when(details.getOpdsUserV2()).thenReturn(mock(OpdsUserV2.class));
+        when(details.getOpdsUserV2().getUserId()).thenReturn(2L);
+
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser dto = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(perms.isAdmin()).thenReturn(false);
+        when(dto.getPermissions()).thenReturn(perms);
+
+        Library assigned = Library.builder().id(20L).name("AssignedLib").build();
+        when(dto.getAssignedLibraries()).thenReturn(List.of(assigned));
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(dto);
+
+        String json = service.generateOpdsV2LibrariesNavigation(request);
+
+        assertNotNull(json);
+        assertTrue(json.contains("AssignedLib"));
+        assertTrue(json.contains("/api/v2/opds/catalog?libraryId=20"));
+    }
+
+    @Test
+    void generateOpdsV2LibrariesNavigation_withoutV2User_hasNoLibraryItems() {
+        OpdsUserDetails details = mock(OpdsUserDetails.class);
+        when(authenticationService.getOpdsUser()).thenReturn(details);
+        when(details.getOpdsUserV2()).thenReturn(null); // no OPDS v2 principal
+
+        String json = service.generateOpdsV2LibrariesNavigation(request);
+
+        assertNotNull(json);
+        assertTrue(json.contains("\"title\":\"Libraries\""));
+        assertFalse(json.contains("/api/v2/opds/catalog?libraryId="));
     }
 }

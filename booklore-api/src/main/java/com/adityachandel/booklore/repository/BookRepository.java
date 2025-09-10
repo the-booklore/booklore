@@ -2,6 +2,8 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookEntity;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -38,6 +40,10 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     List<BookEntity> findAllWithMetadata();
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query(value = "SELECT b FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false)")
+    Page<BookEntity> findAllWithMetadata(Pageable pageable);
+
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByIds(@Param("bookIds") Set<Long> bookIds);
 
@@ -50,8 +56,17 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     List<BookEntity> findAllWithMetadataByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query(value = "SELECT b FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
+    Page<BookEntity> findAllWithMetadataByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId);
+
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query(value = "SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)",
+           countQuery = "SELECT COUNT(DISTINCT b.id) FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
+    Page<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE b.fileSizeKb IS NULL AND (b.deleted IS NULL OR b.deleted = false)")
@@ -82,6 +97,30 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     List<BookEntity> searchByMetadata(@Param("text") String text);
 
+    @Query(value = """
+                SELECT DISTINCT b FROM BookEntity b
+                LEFT JOIN b.metadata m
+                LEFT JOIN m.authors a
+                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
+                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                )
+            """,
+            countQuery = """
+                SELECT COUNT(DISTINCT b.id) FROM BookEntity b
+                LEFT JOIN b.metadata m
+                LEFT JOIN m.authors a
+                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
+                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                )
+            """)
+    Page<BookEntity> searchByMetadata(@Param("text") String text, Pageable pageable);
+
     @Query("""
         SELECT DISTINCT b FROM BookEntity b
         LEFT JOIN FETCH b.metadata m
@@ -98,8 +137,36 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
         """)
     List<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds);
 
+    @Query(value = """
+        SELECT DISTINCT b FROM BookEntity b
+        LEFT JOIN b.metadata m
+        LEFT JOIN m.authors a
+        WHERE (b.deleted IS NULL OR b.deleted = false)
+          AND b.library.id IN :libraryIds
+          AND (
+              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+          )
+        """,
+        countQuery = """
+        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
+        LEFT JOIN b.metadata m
+        LEFT JOIN m.authors a
+        WHERE (b.deleted IS NULL OR b.deleted = false)
+          AND b.library.id IN :libraryIds
+          AND (
+              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+          )
+        """)
+    Page<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM BookEntity b WHERE b.deletedAt IS NOT NULL AND b.deletedAt < :cutoff")
     int deleteAllByDeletedAtBefore(Instant cutoff);
+
+    
 }
