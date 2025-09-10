@@ -673,7 +673,15 @@ export class BookBrowserComponent implements OnInit {
     const forceExpandSeries = this.shouldForceExpandSeries();
     return this.headerFilter.filter(bookState).pipe(
       switchMap(filtered => this.sideBarFilter.filter(filtered)),
-      switchMap(filtered => this.seriesCollapseFilter.filter(filtered, forceExpandSeries))
+      switchMap(filtered => this.seriesCollapseFilter.filter(filtered, forceExpandSeries)),
+      map(filtered =>
+        (filtered.loaded && !filtered.error)
+          ? ({
+              ...filtered,
+              books: this.sortService.applySort(filtered.books || [], this.bookSorter.selectedSort!)
+            })
+          : filtered
+      )
     );
   }
 
