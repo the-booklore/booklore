@@ -8,7 +8,8 @@ import {SortDirection, SortOption} from "../model/sort.model";
 export class SortService {
 
   private readonly fieldExtractors: Record<string, (book: Book) => any> = {
-    title: (book) => book.metadata?.title?.toLowerCase() || null,
+    title: (book) => (book.seriesCount ? (book.metadata?.seriesName?.toLowerCase() || null) : null)
+      ?? (book.metadata?.title?.toLowerCase() || null),
     titleSeries: (book) => {
       const title = book.metadata?.title?.toLowerCase() || '';
       const series = book.metadata?.seriesName?.toLowerCase();

@@ -1,6 +1,10 @@
 .no-books-text {
   font-size: 1rem;
+  font-weight: 500;
   color: var(--text-color);
+  background: var(--card-background);
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
 }
 
 .no-books-container {

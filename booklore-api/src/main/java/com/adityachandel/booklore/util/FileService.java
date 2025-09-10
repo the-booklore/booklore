@@ -14,6 +14,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,6 +46,7 @@ public class FileService {
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
+    private static final String BACKGROUNDS_DIR     = "backgrounds";
     private static final String THUMBNAIL_FILENAME  = "thumbnail.jpg";
     private static final String COVER_FILENAME      = "cover.jpg";
     private static final String JPEG_MIME_TYPE      = "image/jpeg";
@@ -53,37 +57,80 @@ public class FileService {
     private static final String IMAGE_FORMAT        = "JPEG";
     // @formatter:on
 
-    public void createThumbnailFromFile(long bookId, MultipartFile file) {
-        try {
-            validateCoverFile(file);
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
-            if (originalImage == null) {
-                throw ApiError.IMAGE_NOT_FOUND.createException();
-            }
-            boolean success = saveCoverImages(originalImage, bookId);
-            if (!success) {
-                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
-            }
-            log.info("Cover images created and saved for book ID: {}", bookId);
-        } catch (Exception e) {
-            log.error("An error occurred while creating the thumbnail: {}", e.getMessage(), e);
-            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+    // ========================================
+    // PATH UTILITIES
+    // ========================================
+
+    public String getImagesFolder(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId)).toString();
+    }
+
+    public String getThumbnailFile(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), THUMBNAIL_FILENAME).toString();
+    }
+
+    public String getCoverFile(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), IMAGES_DIR, String.valueOf(bookId), COVER_FILENAME).toString();
+    }
+
+    public String getBackgroundsFolder(Long userId) {
+        if (userId != null) {
+            return Paths.get(appProperties.getPathConfig(), BACKGROUNDS_DIR, "user-" + userId).toString();
+        }
+        return Paths.get(appProperties.getPathConfig(), BACKGROUNDS_DIR).toString();
+    }
+
+    public String getBackgroundsFolder() {
+        return getBackgroundsFolder(null);
+    }
+
+    public String getBackgroundUrl(String filename, Long userId) {
+        if (userId != null) {
+            return Paths.get("/", BACKGROUNDS_DIR, "user-" + userId, filename).toString().replace("\\", "/");
+        }
+        return Paths.get("/", BACKGROUNDS_DIR, filename).toString().replace("\\", "/");
+    }
+
+    public String getMetadataBackupPath() {
+        return Paths.get(appProperties.getPathConfig(), "metadata_backup").toString();
+    }
+
+    public String getBookMetadataBackupPath(long bookId) {
+        return Paths.get(appProperties.getPathConfig(), "metadata_backup", String.valueOf(bookId)).toString();
+    }
+
+    public String getCbxCachePath() {
+        return Paths.get(appProperties.getPathConfig(), "cbx_cache").toString();
+    }
+
+    public String getPdfCachePath() {
+        return Paths.get(appProperties.getPathConfig(), "pdf_cache").toString();
+    }
+
+    public String getTempBookdropCoverImagePath(long bookdropFileId) {
+        return Paths.get(appProperties.getPathConfig(), "bookdrop_temp", bookdropFileId + ".jpg").toString();
+    }
+
+    // ========================================
+    // VALIDATION
+    // ========================================
+
+    private void validateCoverFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw new IllegalArgumentException("Uploaded file is empty");
+        }
+        String contentType = file.getContentType();
+        if (!(JPEG_MIME_TYPE.equalsIgnoreCase(contentType) || PNG_MIME_TYPE.equalsIgnoreCase(contentType))) {
+            throw new IllegalArgumentException("Only JPEG and PNG files are allowed");
+        }
+        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
+            throw new IllegalArgumentException("File size must not exceed 5 MB");
         }
     }
 
-    public boolean saveCoverImages(BufferedImage coverImage, long bookId) throws IOException {
-        String folderPath = getImagesFolder(bookId);
-        File folder = new File(folderPath);
-        if (!folder.exists() && !folder.mkdirs()) {
-            throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
-        }
-        File originalFile = new File(folder, COVER_FILENAME);
-        boolean originalSaved = ImageIO.write(coverImage, IMAGE_FORMAT, originalFile);
-        BufferedImage thumb = resizeImage(coverImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
-        File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
-        boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
-        return originalSaved && thumbnailSaved;
-    }
+    // ========================================
+    // IMAGE OPERATIONS
+    // ========================================
 
     public BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
         Image tmp = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
@@ -103,6 +150,70 @@ public class FileService {
         }
         ImageIO.write(originalImage, IMAGE_FORMAT, outputFile);
         log.info("Image saved successfully to: {}", filePath);
+    }
+
+    public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
+        try {
+            URL url = new URL(imageUrl);
+            BufferedImage image = ImageIO.read(url);
+            if (image == null) {
+                throw new IOException("Unable to read image from URL: " + imageUrl);
+            }
+            return image;
+        } catch (Exception e) {
+            log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
+            throw new IOException("Failed to download image from URL: " + imageUrl, e);
+        }
+    }
+
+    // ========================================
+    // COVER OPERATIONS
+    // ========================================
+
+    public void createThumbnailFromFile(long bookId, MultipartFile file) {
+        try {
+            validateCoverFile(file);
+            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            if (originalImage == null) {
+                throw ApiError.IMAGE_NOT_FOUND.createException();
+            }
+            boolean success = saveCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            }
+            log.info("Cover images created and saved for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating the thumbnail: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    public void createThumbnailFromUrl(long bookId, String imageUrl) {
+        try {
+            BufferedImage originalImage = downloadImageFromUrl(imageUrl);
+            boolean success = saveCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            }
+            log.info("Cover images created and saved from URL for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
+    public boolean saveCoverImages(BufferedImage coverImage, long bookId) throws IOException {
+        String folderPath = getImagesFolder(bookId);
+        File folder = new File(folderPath);
+        if (!folder.exists() && !folder.mkdirs()) {
+            throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
+        }
+        File originalFile = new File(folder, COVER_FILENAME);
+        boolean originalSaved = ImageIO.write(coverImage, IMAGE_FORMAT, originalFile);
+        BufferedImage thumb = resizeImage(coverImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+        File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
+        boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+        return originalSaved && thumbnailSaved;
     }
 
     public void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {
@@ -132,6 +243,92 @@ public class FileService {
         }
         log.info("Deleted {} book covers", bookIds.size());
     }
+
+    // ========================================
+    // BACKGROUND OPERATIONS
+    // ========================================
+
+    public void saveBackgroundImage(BufferedImage image, String filename, Long userId) throws IOException {
+        String backgroundsFolder = getBackgroundsFolder(userId);
+        File folder = new File(backgroundsFolder);
+        if (!folder.exists() && !folder.mkdirs()) {
+            throw new IOException("Failed to create backgrounds directory: " + folder.getAbsolutePath());
+        }
+
+        File outputFile = new File(folder, filename);
+        boolean saved = ImageIO.write(image, IMAGE_FORMAT, outputFile);
+        if (!saved) {
+            throw new IOException("Failed to save background image: " + filename);
+        }
+
+        log.info("Background image saved successfully for user {}: {}", userId, filename);
+    }
+
+    public void deleteBackgroundFile(String filename, Long userId) {
+        try {
+            String backgroundsFolder = getBackgroundsFolder(userId);
+            File file = new File(backgroundsFolder, filename);
+            if (file.exists() && file.isFile()) {
+                boolean deleted = file.delete();
+                if (deleted) {
+                    if (userId != null) {
+                        deleteEmptyUserBackgroundFolder(userId);
+                    }
+                } else {
+                    log.warn("Failed to delete background file for user {}: {}", userId, filename);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error deleting background file {} for user {}: {}", filename, userId, e.getMessage());
+        }
+    }
+
+    private void deleteEmptyUserBackgroundFolder(Long userId) {
+        try {
+            String userBackgroundsFolder = getBackgroundsFolder(userId);
+            File folder = new File(userBackgroundsFolder);
+
+            if (folder.exists() && folder.isDirectory()) {
+                File[] files = folder.listFiles();
+                if (files != null && files.length == 0) {
+                    boolean deleted = folder.delete();
+                    if (deleted) {
+                        log.info("Deleted empty background folder for user: {}", userId);
+                    } else {
+                        log.warn("Failed to delete empty background folder for user: {}", userId);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Error checking/deleting empty background folder for user {}: {}", userId, e.getMessage());
+        }
+    }
+
+    public Resource getBackgroundResource(Long userId) {
+        String[] possibleFiles = {"1.jpg", "1.jpeg", "1.png"};
+
+        if (userId != null) {
+            String userBackgroundsFolder = getBackgroundsFolder(userId);
+            for (String filename : possibleFiles) {
+                File customFile = new File(userBackgroundsFolder, filename);
+                if (customFile.exists() && customFile.isFile()) {
+                    return new FileSystemResource(customFile);
+                }
+            }
+        }
+        String globalBackgroundsFolder = getBackgroundsFolder();
+        for (String filename : possibleFiles) {
+            File customFile = new File(globalBackgroundsFolder, filename);
+            if (customFile.exists() && customFile.isFile()) {
+                return new FileSystemResource(customFile);
+            }
+        }
+        return new ClassPathResource("static/images/background.jpg");
+    }
+
+    // ========================================
+    // UTILITY METHODS
+    // ========================================
 
     @Transactional
     public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash, BookRepository bookRepository, BookAdditionalFileRepository bookAdditionalFileRepository, BookMapper bookMapper) {
@@ -167,79 +364,5 @@ public class FileService {
 
     public static String truncate(String input, int maxLength) {
         return input == null ? null : (input.length() <= maxLength ? input : input.substring(0, maxLength));
-    }
-
-    private void validateCoverFile(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("Uploaded file is empty");
-        }
-        String contentType = file.getContentType();
-        if (!(JPEG_MIME_TYPE.equalsIgnoreCase(contentType) || PNG_MIME_TYPE.equalsIgnoreCase(contentType))) {
-            throw new IllegalArgumentException("Only JPEG and PNG files are allowed");
-        }
-        if (file.getSize() > MAX_FILE_SIZE_BYTES) {
-            throw new IllegalArgumentException("File size must not exceed 5 MB");
-        }
-    }
-
-
-    public String getImagesFolder(long bookId) {
-        return appProperties.getPathConfig() + "/" + IMAGES_DIR + "/" + bookId + "/";
-    }
-
-    public String getThumbnailFile(long bookId) {
-        return appProperties.getPathConfig() + "/" + IMAGES_DIR + "/" + bookId + "/" + THUMBNAIL_FILENAME;
-    }
-
-    public String getCoverFile(long bookId) {
-        return appProperties.getPathConfig() + "/" + IMAGES_DIR + "/" + bookId + "/" + COVER_FILENAME;
-    }
-
-    public String getMetadataBackupPath() {
-        return appProperties.getPathConfig() + "/metadata_backup/";
-    }
-
-    public String getBookMetadataBackupPath(long bookId) {
-        return appProperties.getPathConfig() + "/metadata_backup/" + bookId + "/";
-    }
-
-    public String getCbxCachePath() {
-        return appProperties.getPathConfig() + "/cbx_cache";
-    }
-
-    public String getPdfCachePath() {
-        return appProperties.getPathConfig() + "/pdf_cache";
-    }
-
-    public String getTempBookdropCoverImagePath(long bookdropFileId) {
-        return Paths.get(appProperties.getPathConfig(), "bookdrop_temp", bookdropFileId + ".jpg").toString();
-    }
-
-    public void createThumbnailFromUrl(long bookId, String imageUrl) {
-        try {
-            BufferedImage originalImage = downloadImageFromUrl(imageUrl);
-            boolean success = saveCoverImages(originalImage, bookId);
-            if (!success) {
-                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
-            }
-            log.info("Cover images created and saved from URL for book ID: {}", bookId);
-        } catch (Exception e) {
-            log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
-            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
-        }
-    }
-
-    private BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
-        try {
-            URL url = new URL(imageUrl);
-            BufferedImage image = ImageIO.read(url);
-            if (image == null) {
-                throw new IOException("Unable to read image from URL: " + imageUrl);
-            }
-            return image;
-        } catch (Exception e) {
-            log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
-            throw new IOException("Failed to download image from URL: " + imageUrl, e);
-        }
     }
 }

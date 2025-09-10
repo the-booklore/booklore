@@ -90,6 +90,8 @@ Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 ### 2️⃣ Create docker-compose.yml
 
+> ⚠️ If you intend to run the container as a non-root user, you must manually create all of your `/your/local/path/to/booklore` directories with read and write permissions for your intended user **before first run**.
+
 Create a `docker-compose.yml` file with content:
 
 ```yaml
