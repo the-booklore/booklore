@@ -65,6 +65,14 @@ public class OpdsController {
                 .body(feed);
     }
 
+    @GetMapping(value = "/recent", produces = {"application/opds+json"})
+    public ResponseEntity<String> recent(HttpServletRequest request) {
+        String feed = opdsService.generateRecentFeed(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/opds+json;profile=acquisition"))
+                .body(feed);
+    }
+
     @GetMapping(value = "/search.opds", produces = "application/opensearchdescription+xml")
     public ResponseEntity<String> searchDescription(HttpServletRequest request) {
         String feed = opdsService.generateSearchDescription(request);

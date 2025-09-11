@@ -82,6 +82,40 @@ public class OpdsService {
         };
     }
 
+    public String generateRecentFeed(HttpServletRequest request) {
+        int page = parseIntParam(request, "page", 1);
+        int size = parseIntParam(request, "size", 50);
+
+        // Determine context: legacy OPDS user vs OPDS v2 user
+        OpdsUserDetails details = authenticationService.getOpdsUser();
+        OpdsUser opdsUser = details.getOpdsUser();
+
+        var qp = new java.util.LinkedHashMap<String, String>();
+        qp.put("page", String.valueOf(page));
+        qp.put("size", String.valueOf(size));
+
+        if (opdsUser != null) {
+            var result = bookQueryService.getRecentBooksPage(true, page, size);
+            return generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/recent", qp, page, size);
+        }
+
+        OpdsUserV2 v2 = details.getOpdsUserV2();
+        BookLoreUserEntity entity = userRepository.findById(v2.getUserId())
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException("User not found"));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+        boolean isAdmin = user.getPermissions().isAdmin();
+        if (isAdmin) {
+            var result = bookQueryService.getRecentBooksPage(true, page, size);
+            return generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/recent", qp, page, size);
+        }
+
+        java.util.Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        var result = bookQueryService.getRecentBooksByLibraryIdsPage(libraryIds, true, page, size);
+        return generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/recent", qp, page, size);
+    }
+
     public String generateOpdsV2Navigation(HttpServletRequest request) {
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -119,6 +153,11 @@ public class OpdsService {
             navigation.add(new java.util.LinkedHashMap<>(java.util.Map.of(
                     "title", "All Books",
                     "href", rootPath + "/catalog",
+                    "type", "application/opds+json;profile=acquisition"
+            )));
+            navigation.add(new java.util.LinkedHashMap<>(java.util.Map.of(
+                    "title", "Recently Added",
+                    "href", rootPath + "/recent",
                     "type", "application/opds+json;profile=acquisition"
             )));
             navigation.add(new java.util.LinkedHashMap<>(java.util.Map.of(

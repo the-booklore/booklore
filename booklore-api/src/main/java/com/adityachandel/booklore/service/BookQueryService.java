@@ -52,6 +52,21 @@ public class BookQueryService {
         return new PageImpl<>(mapped, pageable, books.getTotalElements());
     }
 
+    public Page<Book> getRecentBooksPage(boolean includeDescription, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
+        Page<BookEntity> books = bookRepository.findAllWithMetadata(pageable);
+        List<Book> mapped = books.getContent().stream()
+                .map(book -> {
+                    Book dto = bookMapperV2.toDTO(book);
+                    if (!includeDescription && dto.getMetadata() != null) {
+                        dto.getMetadata().setDescription(null);
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+    }
+
     public List<Book> getAllBooksByLibraryIds(Set<Long> libraryIds, boolean includeDescription) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds);
         return books.stream()
@@ -67,6 +82,21 @@ public class BookQueryService {
 
     public Page<Book> getAllBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
+        Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
+        List<Book> mapped = books.getContent().stream()
+                .map(book -> {
+                    Book dto = bookMapperV2.toDTO(book);
+                    if (!includeDescription && dto.getMetadata() != null) {
+                        dto.getMetadata().setDescription(null);
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+    }
+
+    public Page<Book> getRecentBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
         Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
         List<Book> mapped = books.getContent().stream()
                 .map(book -> {
