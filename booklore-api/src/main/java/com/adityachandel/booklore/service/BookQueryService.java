@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Set;
@@ -167,6 +168,23 @@ public class BookQueryService {
 
     public void saveAll(List<BookEntity> books) {
         bookRepository.saveAll(books);
+    }
+
+    public Page<Book> findByMagicShelf(String filterJson, Set<Long> allowedLibraryIds, Long userId, int page, int size, boolean includeDescription) {
+        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
+        Specification<BookEntity> spec = com.adityachandel.booklore.service.opds.MagicShelfSpecificationBuilder
+                .build(filterJson, allowedLibraryIds, userId);
+        Page<BookEntity> entities = bookRepository.findAll(spec, pageable);
+        List<Book> mapped = entities.getContent().stream()
+                .map(book -> {
+                    Book dto = bookMapperV2.toDTO(book);
+                    if (!includeDescription && dto.getMetadata() != null) {
+                        dto.getMetadata().setDescription(null);
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+        return new PageImpl<>(mapped, pageable, entities.getTotalElements());
     }
 
     // Removed OPDS Magic Shelves support

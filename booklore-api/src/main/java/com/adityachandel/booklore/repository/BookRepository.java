@@ -5,6 +5,7 @@ import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
@@ -168,5 +169,7 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("DELETE FROM BookEntity b WHERE b.deletedAt IS NOT NULL AND b.deletedAt < :cutoff")
     int deleteAllByDeletedAtBefore(Instant cutoff);
 
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "metadata.authors", "metadata.categories"})
+    Page<BookEntity> findAll(Specification<BookEntity> spec, Pageable pageable);
     
 }

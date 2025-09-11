@@ -65,6 +65,14 @@ public class OpdsController {
                 .body(feed);
     }
 
+    @GetMapping(value = "/magic-shelves", produces = {"application/opds+json"})
+    public ResponseEntity<String> magicShelves(HttpServletRequest request) {
+        String nav = opdsService.generateOpdsV2MagicShelvesNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/opds+json;profile=navigation"))
+                .body(nav);
+    }
+
     @GetMapping(value = "/recent", produces = {"application/opds+json"})
     public ResponseEntity<String> recent(HttpServletRequest request) {
         String feed = opdsService.generateRecentFeed(request);
@@ -106,7 +114,7 @@ public class OpdsController {
 
     private MediaType selectContentType(HttpServletRequest request) {
         // Force OPDS 2 JSON when using v2-only filters
-        if (request.getParameter("shelfId") != null || request.getParameter("libraryId") != null) {
+        if (request.getParameter("shelfId") != null || request.getParameter("libraryId") != null || request.getParameter("magicShelfId") != null) {
             return MediaType.parseMediaType("application/opds+json;profile=acquisition");
         }
         String accept = request.getHeader("Accept");

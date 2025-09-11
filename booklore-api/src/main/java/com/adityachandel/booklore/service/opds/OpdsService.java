@@ -6,6 +6,7 @@ import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.repository.MagicShelfRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.service.library.LibraryService;
 import com.adityachandel.booklore.service.BookQueryService;
@@ -34,21 +35,24 @@ public class OpdsService {
     private final BookLoreUserTransformer bookLoreUserTransformer;
     private final ShelfRepository shelfRepository;
     private final LibraryService libraryService;
+    private final MagicShelfRepository magicShelfRepository;
     
 
     public String generateCatalogFeed(HttpServletRequest request) {
         Long libraryId = parseLongParam(request, "libraryId", null);
         Long shelfId = parseLongParam(request, "shelfId", null);
-        String forceV2 = (libraryId != null || shelfId != null) ? "2.0" : null;
+        Long magicShelfId = parseLongParam(request, "magicShelfId", null);
+        String forceV2 = (libraryId != null || shelfId != null || magicShelfId != null) ? "2.0" : null;
         String feedVersion = forceV2 != null ? forceV2 : extractVersionFromAcceptHeader(request);
         return switch (feedVersion) {
             case "2.0" -> {
                 int page = parseIntParam(request, "page", 1);
                 int size = parseIntParam(request, "size", 50);
-                var result = getAllowedBooksPage(null, libraryId, shelfId, page, size);
+                var result = getAllowedBooksPage(null, libraryId, shelfId, magicShelfId, page, size);
                 var qp = new java.util.LinkedHashMap<String,String>();
                 if (libraryId != null) qp.put("libraryId", String.valueOf(libraryId));
                 if (shelfId != null) qp.put("shelfId", String.valueOf(shelfId));
+                if (magicShelfId != null) qp.put("magicShelfId", String.valueOf(magicShelfId));
                 yield generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/catalog", qp, page, size);
             }
             default -> {
@@ -61,18 +65,21 @@ public class OpdsService {
     public String generateSearchResults(HttpServletRequest request, String queryParam) {
         Long libraryId = parseLongParam(request, "libraryId", null);
         Long shelfId = parseLongParam(request, "shelfId", null);
-        String forceV2 = (libraryId != null || shelfId != null) ? "2.0" : null;
+        Long magicShelfId = parseLongParam(request, "magicShelfId", null);
+        String forceV2 = (libraryId != null || shelfId != null || magicShelfId != null) ? "2.0" : null;
         String feedVersion = forceV2 != null ? forceV2 : extractVersionFromAcceptHeader(request);
         return switch (feedVersion) {
             case "2.0" -> {
                 int page = parseIntParam(request, "page", 1);
                 int size = parseIntParam(request, "size", 50);
                 String q = request.getParameter("q");
-                var result = getAllowedBooksPage(q, libraryId, shelfId, page, size);
+                // If a magic shelf is specified, ignore free-text query and apply only shelf filter
+                var result = getAllowedBooksPage(magicShelfId != null ? null : q, libraryId, shelfId, magicShelfId, page, size);
                 var qp = new java.util.LinkedHashMap<String,String>();
                 if (q != null && !q.isBlank()) qp.put("q", q);
                 if (libraryId != null) qp.put("libraryId", String.valueOf(libraryId));
                 if (shelfId != null) qp.put("shelfId", String.valueOf(shelfId));
+                if (magicShelfId != null) qp.put("magicShelfId", String.valueOf(magicShelfId));
                 yield generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/search", qp, page, size);
             }
             default -> {
@@ -170,6 +177,11 @@ public class OpdsService {
                     "href", rootPath + "/shelves",
                     "type", "application/opds+json;profile=navigation"
             )));
+            navigation.add(new java.util.LinkedHashMap<>(java.util.Map.of(
+                    "title", "Magic Shelves",
+                    "href", rootPath + "/magic-shelves",
+                    "type", "application/opds+json;profile=navigation"
+            )));            
             
 
             // Enrich with libraries and shelves for OPDS v2 users
@@ -306,6 +318,48 @@ public class OpdsService {
         } catch (Exception e) {
             log.error("Failed generating OPDS v2 shelves navigation", e);
             throw new RuntimeException("Failed generating OPDS v2 shelves navigation", e);
+        }
+    }
+
+    public String generateOpdsV2MagicShelvesNavigation(HttpServletRequest request) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+            String rootPath = "/api/v2/opds";
+            String selfPath = rootPath + "/magic-shelves";
+            var root = new java.util.LinkedHashMap<String, Object>();
+
+            var meta = new java.util.LinkedHashMap<String, Object>();
+            meta.put("title", "Magic Shelves");
+            root.put("metadata", meta);
+
+            var links = new java.util.ArrayList<java.util.Map<String, Object>>();
+            links.add(java.util.Map.of("rel", "self", "href", selfPath, "type", "application/opds+json;profile=navigation"));
+            links.add(java.util.Map.of("rel", "start", "href", rootPath, "type", "application/opds+json;profile=navigation"));
+            links.add(java.util.Map.of("rel", "search", "href", rootPath + "/search.opds", "type", "application/opensearchdescription+xml"));
+            root.put("links", links);
+
+            var navigation = new java.util.ArrayList<java.util.Map<String, Object>>();
+            OpdsUserDetails details = authenticationService.getOpdsUser();
+            if (details != null && details.getOpdsUserV2() != null) {
+                Long userId = details.getOpdsUserV2().getUserId();
+                var shelves = magicShelfRepository.findAllByUserId(userId);
+                if (shelves != null) {
+                    for (var shelf : shelves) {
+                        navigation.add(new java.util.LinkedHashMap<>(java.util.Map.of(
+                                "title", shelf.getName(),
+                                "href", buildHref(rootPath + "/catalog", java.util.Map.of("magicShelfId", String.valueOf(shelf.getId()))),
+                                "type", "application/opds+json;profile=acquisition"
+                        )));
+                    }
+                }
+            }
+            root.put("navigation", navigation);
+            return mapper.writeValueAsString(root);
+        } catch (Exception e) {
+            log.error("Failed generating OPDS v2 magic shelves navigation", e);
+            throw new RuntimeException("Failed generating OPDS v2 magic shelves navigation", e);
         }
     }
 
@@ -673,11 +727,15 @@ public class OpdsService {
         }
     }
 
-    private org.springframework.data.domain.Page<Book> getAllowedBooksPage(String queryParam, Long libraryId, Long shelfId, int page, int size) {
+    private org.springframework.data.domain.Page<Book> getAllowedBooksPage(String queryParam, Long libraryId, Long shelfId, Long magicShelfId, int page, int size) {
         OpdsUserDetails opdsUserDetails = authenticationService.getOpdsUser();
         OpdsUser opdsUser = opdsUserDetails.getOpdsUser();
 
         if (opdsUser != null) {
+            if (magicShelfId != null) {
+                // Magic shelves are only supported for OPDS v2 users
+                throw new AccessDeniedException("Magic shelves not available for legacy OPDS users");
+            }
             if (shelfId != null) {
                 return bookQueryService.getAllBooksByShelfPage(shelfId, true, page, size);
             }
@@ -703,6 +761,16 @@ public class OpdsService {
         java.util.Set<Long> libraryIds = user.getAssignedLibraries().stream()
                 .map(Library::getId)
                 .collect(java.util.stream.Collectors.toSet());
+
+        if (magicShelfId != null) {
+            var shelf = magicShelfRepository.findById(magicShelfId)
+                    .orElseThrow(() -> new AccessDeniedException("Magic shelf not found"));
+            if (!isAdmin && !shelf.getUserId().equals(user.getId())) {
+                throw new AccessDeniedException("You are not allowed to access this magic shelf");
+            }
+            java.util.Set<Long> allowedLibIds = isAdmin ? null : libraryIds;
+            return bookQueryService.findByMagicShelf(shelf.getFilterJson(), allowedLibIds, user.getId(), page, size, true);
+        }
 
         if (shelfId != null) {
             var shelf = shelfRepository.findById(shelfId).orElseThrow(() -> new AccessDeniedException("Shelf not found"));
