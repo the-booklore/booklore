@@ -81,6 +81,7 @@ export interface Douban {
 }
 
 export interface MetadataPersistenceSettings {
+  moveFilesToLibraryPattern: boolean;
   saveToOriginalFile: boolean;
   convertCbrCb7ToCbz: boolean;
   backupMetadata: boolean;

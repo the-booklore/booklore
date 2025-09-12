@@ -93,8 +93,7 @@ public class BookdropMonitoringService {
             try {
                 watchKey = bookdrop.register(watchService,
                         StandardWatchEventKinds.ENTRY_CREATE,
-                        StandardWatchEventKinds.ENTRY_DELETE,
-                        StandardWatchEventKinds.ENTRY_MODIFY);
+                        StandardWatchEventKinds.ENTRY_DELETE);
                 paused = false;
                 log.info("Bookdrop monitoring resumed.");
             } catch (IOException e) {

@@ -237,8 +237,8 @@ export class AppTopBarComponent implements OnDestroy {
 
   get iconColor(): string {
     if (this.progressHighlight) return 'yellow';
-    if (this.showPulse) return 'red';
-    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles) return 'orange';
+    if (this.showPulse) return 'orange';
+    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles) return 'yellowgreen';
     return 'inherit';
   }
 

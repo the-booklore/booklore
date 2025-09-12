@@ -90,7 +90,7 @@ class FileMoveServiceTest {
                 .isIn(
                         "/Good Omens - Neil Gaiman, Terry Pratchett (1990).mobi",
                         "/Good Omens - Terry Pratchett, Neil Gaiman (1990).mobi"
-                ); // Set order is non-deterministic
+                );
     }
 
     @Test
@@ -162,7 +162,7 @@ class FileMoveServiceTest {
 
         BookEntity book = BookEntity.builder()
                 .metadata(metadata)
-                .fileName("") // explicitly empty
+                .fileName("")
                 .build();
 
         String result = fileMoveService.generatePathFromPattern(book, "/{title}");
