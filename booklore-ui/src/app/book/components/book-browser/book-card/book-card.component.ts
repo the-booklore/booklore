@@ -696,21 +696,38 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this.lastMouseEvent = event;
   }
 
-  toggleSelection(event: CheckboxChangeEvent): void {
-    if (this.isCheckboxEnabled) {
-      this.isSelected = event.checked;
+  onCardClick(event: MouseEvent): void {
+    if (!event.ctrlKey) {
+      return;
+    }
+
+    this.toggleCardSelection(!this.isSelected)
+  }
+
+  toggleCardSelection(selected: boolean):void {
+      if (!this.isCheckboxEnabled) {
+        return;
+      }
+
+      this.isSelected = selected;
       const shiftKey = this.lastMouseEvent?.shiftKey ?? false;
+
       this.checkboxClick.emit({
         index: this.index,
         bookId: this.book.id,
-        selected: event.checked,
+        selected: selected,
         shiftKey: shiftKey,
       });
+
       if (this.onBookSelect) {
-        this.onBookSelect(this.book.id, event.checked);
+        this.onBookSelect(this.book.id, selected);
       }
+
       this.lastMouseEvent = null;
-    }
+  }
+
+  toggleSelection(event: CheckboxChangeEvent): void {
+    this.toggleCardSelection(event.checked);
   }
 
   ngOnDestroy(): void {
