@@ -22,6 +22,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     Optional<BookEntity> findByCurrentHash(String currentHash);
 
+    Optional<BookEntity> findByCurrentHashAndDeletedTrue(String currentHash);
+
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     Set<Long> findBookIdsByLibraryId(@Param("libraryId") long libraryId);
 
@@ -46,6 +48,10 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByIds(@Param("bookIds") Set<Long> bookIds);
+
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
+    List<BookEntity> findWithMetadataByIdsWithPagination(@Param("bookIds") Set<Long> bookIds, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")

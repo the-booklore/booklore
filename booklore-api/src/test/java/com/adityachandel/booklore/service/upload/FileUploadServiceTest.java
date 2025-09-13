@@ -3,32 +3,29 @@ package com.adityachandel.booklore.service.upload;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.exception.ApiError;
-import com.adityachandel.booklore.mapper.AdditionalFileMapperImpl;
-import com.adityachandel.booklore.model.FileProcessResult;
-import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.mapper.AdditionalFileMapper;
+import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
+import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.FileProcessStatus;
-import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
-import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
-import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
-import com.adityachandel.booklore.service.monitoring.MonitoringService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -39,7 +36,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FileUploadServiceTest {
@@ -54,17 +51,15 @@ class FileUploadServiceTest {
     @Mock
     BookAdditionalFileRepository bookAdditionalFileRepository;
     @Mock
-    BookFileProcessorRegistry processorRegistry;
-    @Mock
-    NotificationService notificationService;
-    @Mock
     AppSettingService appSettingService;
     @Mock
     PdfMetadataExtractor pdfMetadataExtractor;
     @Mock
     EpubMetadataExtractor epubMetadataExtractor;
     @Mock
-    MonitoringService monitoringService;
+    FileMovingHelper fileMovingHelper;
+    @Mock
+    AdditionalFileMapper additionalFileMapper;
 
     AppProperties appProperties;
     FileUploadService service;
@@ -80,17 +75,11 @@ class FileUploadServiceTest {
         settings.setUploadPattern("{currentFilename}");
         when(appSettingService.getAppSettings()).thenReturn(settings);
 
-        var additionalFilesMapper = new AdditionalFileMapperImpl();
-
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                processorRegistry, notificationService,
                 appSettingService, appProperties, pdfMetadataExtractor,
-                epubMetadataExtractor, additionalFilesMapper, monitoringService
+                epubMetadataExtractor, additionalFileMapper, fileMovingHelper
         );
-
-        ReflectionTestUtils.setField(service, "userId", "0");
-        ReflectionTestUtils.setField(service, "groupId", "0");
     }
 
     @Test
@@ -185,6 +174,7 @@ class FileUploadServiceTest {
         path.setPath(tempDir.toString());
         lib.setLibraryPaths(List.of(path));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(lib));
+        when(fileMovingHelper.getFileNamingPattern(lib)).thenReturn("{currentFilename}");
 
         assertThatExceptionOfType(APIException.class)
                 .isThrownBy(() -> service.uploadFile(file, 1L, 1L))
@@ -206,22 +196,76 @@ class FileUploadServiceTest {
         path.setPath(tempDir.toString());
         lib.setLibraryPaths(List.of(path));
         when(libraryRepository.findById(7L)).thenReturn(Optional.of(lib));
+        when(fileMovingHelper.getFileNamingPattern(lib)).thenReturn("{currentFilename}");
 
-        BookFileProcessor proc = mock(BookFileProcessor.class);
-        FileProcessResult fileProcessResult = FileProcessResult.builder()
-                .book(Book.builder().build())
-                .status(FileProcessStatus.NEW)
-                .build();
+        service.uploadFile(file, 7L, 2L);
 
-        when(processorRegistry.getProcessorOrThrow(BookFileType.CBX)).thenReturn(proc);
-        when(proc.processFile(any())).thenReturn(fileProcessResult);
-
-        Book result = service.uploadFile(file, 7L, 2L);
-
-        assertThat(result).isSameAs(fileProcessResult.getBook());
         Path moved = tempDir.resolve("book.cbz");
         assertThat(Files.exists(moved)).isTrue();
-        verify(notificationService).sendMessage(eq(Topic.BOOK_ADD), same(fileProcessResult.getBook()));
         verifyNoInteractions(pdfMetadataExtractor, epubMetadataExtractor);
+    }
+
+    @Test
+    void uploadAdditionalFile_successful_and_saves_entity() throws Exception {
+        long bookId = 5L;
+        MockMultipartFile file = new MockMultipartFile("file", "add.pdf", "application/pdf", "payload".getBytes());
+
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        libPath.setId(1L);
+        libPath.setPath(tempDir.toString());
+        BookEntity book = new BookEntity();
+        book.setId(bookId);
+        book.setLibraryPath(libPath);
+        book.setFileSubPath(".");
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
+            fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("hash-123");
+
+            when(bookAdditionalFileRepository.findByAltFormatCurrentHash("hash-123")).thenReturn(Optional.empty());
+
+            when(bookAdditionalFileRepository.save(any(BookAdditionalFileEntity.class))).thenAnswer(inv -> {
+                BookAdditionalFileEntity e = inv.getArgument(0);
+                e.setId(99L);
+                return e;
+            });
+
+            AdditionalFile dto = mock(AdditionalFile.class);
+            when(additionalFileMapper.toAdditionalFile(any(BookAdditionalFileEntity.class))).thenReturn(dto);
+
+            AdditionalFile result = service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+
+            assertThat(result).isEqualTo(dto);
+            verify(bookAdditionalFileRepository).save(any(BookAdditionalFileEntity.class));
+            verify(additionalFileMapper).toAdditionalFile(any(BookAdditionalFileEntity.class));
+        }
+    }
+
+    @Test
+    void uploadAdditionalFile_duplicate_alternative_format_throws() {
+        long bookId = 6L;
+        MockMultipartFile file = new MockMultipartFile("file", "alt.pdf", "application/pdf", "payload".getBytes());
+
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        libPath.setId(2L);
+        libPath.setPath(tempDir.toString());
+        BookEntity book = new BookEntity();
+        book.setId(bookId);
+        book.setLibraryPath(libPath);
+        book.setFileSubPath(".");
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
+            fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("dup-hash");
+
+            BookAdditionalFileEntity existing = new BookAdditionalFileEntity();
+            existing.setId(1L);
+            when(bookAdditionalFileRepository.findByAltFormatCurrentHash("dup-hash")).thenReturn(Optional.of(existing));
+
+            assertThatExceptionOfType(IllegalArgumentException.class)
+                    .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, null));
+        }
     }
 }

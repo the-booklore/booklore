@@ -186,6 +186,7 @@ public class SettingPersistenceHelper {
                 .convertCbrCb7ToCbz(false)
                 .backupMetadata(false)
                 .backupCover(false)
+                .moveFilesToLibraryPattern(false)
                 .build();
     }
 

@@ -7,6 +7,13 @@
   </div>
 
   <div class="settings-card">
+    <div class="warning-notice">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>Network Storage Notice:</strong> These features are designed for local file systems and have not been tested with network storage (NAS/cloud). Functionality cannot be guaranteed on network file systems.
+      </div>
+    </div>
+
     <div class="setting-item">
       <div class="setting-info">
         <div class="setting-label-row">
@@ -23,7 +30,7 @@
       </div>
     </div>
 
-    <div class="setting-item">
+    <div class="setting-item setting-item-indented">
       <div class="setting-info">
         <div class="setting-label-row">
           <label class="setting-label">Convert CBR/CB7 to CBZ</label>
@@ -40,7 +47,7 @@
       </div>
     </div>
 
-    <div class="setting-item">
+    <div class="setting-item setting-item-indented">
       <div class="setting-info">
         <div class="setting-label-row">
           <label class="setting-label">Backup Metadata</label>
@@ -57,7 +64,7 @@
       </div>
     </div>
 
-    <div class="setting-item">
+    <div class="setting-item setting-item-indented">
       <div class="setting-info">
         <div class="setting-label-row">
           <label class="setting-label">Backup Cover</label>
@@ -70,6 +77,22 @@
         <p class="setting-description">
           <i class="pi pi-info-circle"></i>
           Save a copy of the existing embedded cover image before it is replaced.
+        </p>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Auto-Move Files on Metadata Update</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          </p-toggleswitch>
+        </div>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          Automatically move and rename files according to their library's naming pattern when metadata is updated, either through manual editing or auto-fetch operations.
         </p>
       </div>
     </div>

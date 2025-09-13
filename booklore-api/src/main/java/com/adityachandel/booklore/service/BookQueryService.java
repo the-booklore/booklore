@@ -5,6 +5,8 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Page;
@@ -112,6 +114,11 @@ public class BookQueryService {
 
     public List<BookEntity> findAllWithMetadataByIds(Set<Long> bookIds) {
         return bookRepository.findAllWithMetadataByIds(bookIds);
+    }
+
+    public List<BookEntity> findWithMetadataByIdsWithPagination(Set<Long> bookIds, int offset, int limit) {
+        Pageable pageable = PageRequest.of(offset / limit, limit);
+        return bookRepository.findWithMetadataByIdsWithPagination(bookIds, pageable);
     }
 
     public List<BookEntity> getAllFullBookEntities() {

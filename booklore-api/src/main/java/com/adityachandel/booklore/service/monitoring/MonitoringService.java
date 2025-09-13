@@ -29,13 +29,10 @@ public class MonitoringService {
     private final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 
     private final Set<Path> monitoredPaths = ConcurrentHashMap.newKeySet();
+    private final Map<Path, WatchKey> registeredWatchKeys = new ConcurrentHashMap<>();
     private final Map<Path, Long> pathToLibraryIdMap = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> libraryWatchStatusMap = new ConcurrentHashMap<>();
-    private final Map<Path, WatchKey> registeredWatchKeys = new ConcurrentHashMap<>();
     private final Map<Long, List<Path>> libraryIdToPaths = new ConcurrentHashMap<>();
-
-    private int pauseCount = 0;
-    private final Object pauseLock = new Object();
 
     public MonitoringService(LibraryFileEventProcessor libraryFileEventProcessor, WatchService watchService, MonitoringTask monitoringTask) {
         this.libraryFileEventProcessor = libraryFileEventProcessor;
@@ -58,60 +55,6 @@ public class MonitoringService {
         } catch (IOException e) {
             log.error("Failed to close WatchService", e);
         }
-    }
-
-    public synchronized void pauseMonitoring() {
-        pauseCount++;
-        if (pauseCount == 1) {
-            int count = 0;
-            for (Path path : new HashSet<>(monitoredPaths)) {
-                unregisterPath(path, false);
-                count++;
-            }
-            log.info("Monitoring paused ({} paths unregistered, pauseCount={})", count, pauseCount);
-        } else {
-            log.info("Monitoring pause requested (pauseCount={})", pauseCount);
-        }
-    }
-
-    public synchronized void resumeMonitoring() {
-        if (pauseCount == 0) {
-            log.warn("resumeMonitoring() called but monitoring is not paused");
-            return;
-        }
-
-        pauseCount--;
-        if (pauseCount == 0) {
-            libraryIdToPaths.forEach((libraryId, rootPaths) -> {
-                for (Path rootPath : rootPaths) {
-                    if (Files.exists(rootPath)) {
-                        try (Stream<Path> stream = Files.walk(rootPath)) {
-                            stream.filter(Files::isDirectory).forEach(path -> {
-                                if (Files.exists(path)) {
-                                    registerPath(path, libraryId);
-                                }
-                            });
-                        } catch (IOException e) {
-                            log.warn("Failed to walk path during resume: {}", rootPath, e);
-                        }
-                    } else {
-                        log.debug("Skipping registration of non-existent path during resume: {}", rootPath);
-                    }
-                }
-            });
-
-            synchronized (pauseLock) {
-                pauseLock.notifyAll();
-            }
-
-            log.info("Monitoring resumed");
-        } else {
-            log.info("Monitoring resume requested (pauseCount={}), monitoring still paused", pauseCount);
-        }
-    }
-
-    public synchronized boolean isPaused() {
-        return pauseCount > 0;
     }
 
     public void registerLibraries(List<Library> libraries) {
@@ -159,19 +102,7 @@ public class MonitoringService {
 
         libraryWatchStatusMap.put(libraryId, false);
         libraryIdToPaths.remove(libraryId);
-        log.info("Unregistered library {} from monitoring", libraryId);
-    }
-
-    public void unregisterLibraries(Set<Long> libraryIds) {
-        libraryIds.forEach(this::unregisterLibrary);
-    }
-
-    public boolean isLibraryWatched(Long libraryId) {
-        return libraryWatchStatusMap.getOrDefault(libraryId, false);
-    }
-
-    public boolean isRelevantBookFile(Path path) {
-        return BookFileExtension.fromFileName(path.getFileName().toString()).isPresent();
+        log.debug("Unregistered library {} from monitoring", libraryId);
     }
 
     public synchronized boolean registerPath(Path path, Long libraryId) {
@@ -201,8 +132,18 @@ public class MonitoringService {
             if (key != null) key.cancel();
             pathToLibraryIdMap.remove(path);
             if (logUnregister) {
-                log.info("Unregistered path: {}", path);
+                log.debug("Unregistered path: {}", path);
             }
+        }
+    }
+
+    private void unregisterSubPaths(Path deletedPath) {
+        Set<Path> toRemove = monitoredPaths.stream()
+                .filter(p -> p.startsWith(deletedPath))
+                .collect(Collectors.toSet());
+
+        for (Path path : toRemove) {
+            unregisterPath(path);
         }
     }
 
@@ -220,26 +161,8 @@ public class MonitoringService {
         boolean isRelevantFile = isRelevantBookFile(fullPath);
         if (!(isDir || isRelevantFile)) return;
 
-        if (isDir && kind == StandardWatchEventKinds.ENTRY_CREATE) {
-            Long parentLibraryId = pathToLibraryIdMap.get(event.getWatchedFolder());
-            if (parentLibraryId != null) {
-                try (Stream<Path> stream = Files.walk(fullPath)) {
-                    stream.filter(Files::isDirectory).forEach(path -> registerPath(path, parentLibraryId));
-                } catch (IOException e) {
-                    log.warn("Failed to register nested paths: {}", fullPath, e);
-                }
-            }
-        }
-
-        if (isDir && kind == StandardWatchEventKinds.ENTRY_DELETE) {
-            unregisterSubPaths(fullPath);
-        }
-
-        if (!eventQueue.offer(event)) {
-            log.warn("Event queue full, dropping: {}", fullPath);
-        } else {
-            log.debug("Queued: {} [{}]", fullPath, kind.name());
-        }
+        handleDirectoryEvents(event, fullPath, kind, isDir);
+        queueEvent(event, fullPath, kind);
     }
 
     @EventListener
@@ -258,15 +181,8 @@ public class MonitoringService {
         singleThreadExecutor.submit(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    synchronized (pauseLock) {
-                        while (isPaused()) {
-                            pauseLock.wait();
-                        }
-                    }
-
                     FileChangeEvent event = eventQueue.take();
                     processFileChangeEvent(event);
-
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -284,9 +200,7 @@ public class MonitoringService {
 
         if (libraryId != null) {
             try {
-                libraryFileEventProcessor.processFile(
-                        event.getEventKind(), libraryId, watchedFolder.toString(), filePath.toString()
-                );
+                libraryFileEventProcessor.processFile(event.getEventKind(), libraryId, watchedFolder.toString(), filePath.toString());
             } catch (InvalidDataAccessApiUsageException e) {
                 log.debug("InvalidDataAccessApiUsageException for libraryId={}", libraryId);
             }
@@ -295,13 +209,36 @@ public class MonitoringService {
         }
     }
 
-    private void unregisterSubPaths(Path deletedPath) {
-        Set<Path> toRemove = monitoredPaths.stream()
-                .filter(p -> p.startsWith(deletedPath))
-                .collect(Collectors.toSet());
-
-        for (Path path : toRemove) {
-            unregisterPath(path);
+    private void handleDirectoryEvents(FileChangeEvent event, Path fullPath, WatchEvent.Kind<?> kind, boolean isDir) {
+        if (isDir && kind == StandardWatchEventKinds.ENTRY_CREATE) {
+            Long parentLibraryId = pathToLibraryIdMap.get(event.getWatchedFolder());
+            if (parentLibraryId != null) {
+                try (Stream<Path> stream = Files.walk(fullPath)) {
+                    stream.filter(Files::isDirectory).forEach(path -> registerPath(path, parentLibraryId));
+                } catch (IOException e) {
+                    log.warn("Failed to register nested paths: {}", fullPath, e);
+                }
+            }
         }
+
+        if (isDir && kind == StandardWatchEventKinds.ENTRY_DELETE) {
+            unregisterSubPaths(fullPath);
+        }
+    }
+
+    private void queueEvent(FileChangeEvent event, Path fullPath, WatchEvent.Kind<?> kind) {
+        if (!eventQueue.offer(event)) {
+            log.warn("Event queue full, dropping: {}", fullPath);
+        } else {
+            log.debug("Queued: {} [{}]", fullPath, kind.name());
+        }
+    }
+
+    public boolean isRelevantBookFile(Path path) {
+        return BookFileExtension.fromFileName(path.getFileName().toString()).isPresent();
+    }
+
+    public boolean isPathMonitored(Path path) {
+        return monitoredPaths.contains(path.toAbsolutePath().normalize());
     }
 }

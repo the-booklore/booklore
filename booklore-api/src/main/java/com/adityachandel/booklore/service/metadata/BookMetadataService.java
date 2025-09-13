@@ -169,10 +169,11 @@ public class BookMetadataService {
 
     private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean saveToOriginalFile = settings.isSaveToOriginalFile();
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
-        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {        
+        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
             metadataWriterFactory.getWriter(bookEntity.getBookType())
                     .ifPresent(writer -> writerAction.accept(writer, bookEntity));
         }

@@ -147,7 +147,9 @@ export class BookBrowserComponent implements OnInit {
 
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
   private headerFilter = new HeaderFilter(this.searchTerm$);
-  protected bookSorter = new BookSorter(selectedSort => this.applySortOption(selectedSort));
+  protected bookSorter = new BookSorter(
+    selectedSort => this.onManualSortChange(selectedSort)
+  );
 
   @ViewChild(BookTableComponent)
   bookTableComponent!: BookTableComponent;
@@ -215,7 +217,6 @@ export class BookBrowserComponent implements OnInit {
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
 
-    // --- NEW: Subscribe to query params + user changes for reactive updates ---
     combineLatest([
       this.activatedRoute.paramMap,
       this.activatedRoute.queryParamMap,
@@ -290,16 +291,17 @@ export class BookBrowserComponent implements OnInit {
         ? SortDirection.DESCENDING
         : SortDirection.ASCENDING;
 
-      const matchedSort = this.bookSorter.sortOptions.find(opt => opt.field === userSortKey) || this.bookSorter.sortOptions.find(opt => opt.field === sortParam);
+      const effectiveSortKey = sortParam || userSortKey;
+      const effectiveSortDir = directionParam
+        ? (directionParam.toLowerCase() === SORT_DIRECTION.DESCENDING ? SortDirection.DESCENDING : SortDirection.ASCENDING)
+        : userSortDir;
+
+      const matchedSort = this.bookSorter.sortOptions.find(opt => opt.field === effectiveSortKey);
 
       this.bookSorter.selectedSort = matchedSort ? {
         label: matchedSort.label,
         field: matchedSort.field,
-        direction: userSortDir ?? (
-          directionParam?.toUpperCase() === SORT_DIRECTION.DESCENDING
-            ? SortDirection.DESCENDING
-            : SortDirection.ASCENDING
-        )
+        direction: effectiveSortDir
       } : {
         label: 'Added On',
         field: 'addedOn',
@@ -451,6 +453,22 @@ export class BookBrowserComponent implements OnInit {
 
   onSeriesCollapseCheckboxChange(value: boolean): void {
     this.seriesCollapseFilter.setCollapsed(value);
+  }
+
+  onManualSortChange(sortOption: SortOption): void {
+    this.applySortOption(sortOption);
+
+    const currentParams = this.activatedRoute.snapshot.queryParams;
+    const newParams = {
+      ...currentParams,
+      sort: sortOption.field,
+      direction: sortOption.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING
+    };
+
+    this.router.navigate([], {
+      queryParams: newParams,
+      replaceUrl: true
+    });
   }
 
   applySortOption(sortOption: SortOption): void {

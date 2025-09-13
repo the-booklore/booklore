@@ -15,7 +15,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.repository.*;
-import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
@@ -59,7 +59,7 @@ public class BookService {
     private final BookQueryService bookQueryService;
     private final UserProgressService userProgressService;
     private final BookDownloadService bookDownloadService;
-    private final MonitoringProtectionService monitoringProtectionService;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
@@ -468,8 +468,7 @@ public class BookService {
             if (Files.exists(coverPath)) {
                 return new UrlResource(coverPath.toUri());
             } else {
-                Path defaultCover = Paths.get("static/images/missing-cover.jpg");
-                return new UrlResource(defaultCover.toUri());
+                return new ClassPathResource("static/images/missing-cover.jpg");
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to load book cover for bookId=" + bookId, e);
@@ -504,35 +503,33 @@ public class BookService {
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
+        for (BookEntity book : books) {
+            Path fullFilePath = book.getFullFilePath();
+            try {
+                if (Files.exists(fullFilePath)) {
+                    monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
+                    Files.delete(fullFilePath);
+                    log.info("Deleted book file: {}", fullFilePath);
 
-        return monitoringProtectionService.executeWithProtection(() -> {
-            for (BookEntity book : books) {
-                Path fullFilePath = book.getFullFilePath();
-                try {
-                    if (Files.exists(fullFilePath)) {
-                        Files.delete(fullFilePath);
-                        log.info("Deleted book file: {}", fullFilePath);
+                    Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
+                            .map(LibraryPathEntity::getPath)
+                            .map(Paths::get)
+                            .map(Path::normalize)
+                            .collect(Collectors.toSet());
 
-                        Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
-                                .map(LibraryPathEntity::getPath)
-                                .map(Paths::get)
-                                .map(Path::normalize)
-                                .collect(Collectors.toSet());
-
-                        deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
-                    }
-                } catch (IOException e) {
-                    log.warn("Failed to delete book file: {}", fullFilePath, e);
-                    failedFileDeletions.add(book.getId());
+                    deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
                 }
+            } catch (IOException e) {
+                log.warn("Failed to delete book file: {}", fullFilePath, e);
+                failedFileDeletions.add(book.getId());
             }
+        }
 
-            bookRepository.deleteAll(books);
-            BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
-            return failedFileDeletions.isEmpty()
-                    ? ResponseEntity.ok(response)
-                    : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
-        }, "book deletion");
+        bookRepository.deleteAll(books);
+        BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
+        return failedFileDeletions.isEmpty()
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {

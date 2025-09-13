@@ -1,6 +1,5 @@
 import {SortDirection, SortOption} from '../../../model/sort.model';
 
-
 export class BookSorter {
   selectedSort: SortOption | undefined = undefined;
 
@@ -46,17 +45,6 @@ export class BookSorter {
 
     this.updateSortOptions();
     this.applySortOption(this.selectedSort);
-
-    /*this.router.navigate([], {
-      queryParams: {
-        sort: this.selectedSort.field,
-        direction: this.selectedSort.direction === SortDirection.ASCENDING
-          ? SORT_DIRECTION.ASCENDING
-          : SORT_DIRECTION.DESCENDING
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true
-    });*/
   }
 
   updateSortOptions() {

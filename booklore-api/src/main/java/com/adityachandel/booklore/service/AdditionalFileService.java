@@ -1,15 +1,11 @@
 package com.adityachandel.booklore.service;
 
-import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
-import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -19,19 +15,11 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
-import java.util.HexFormat;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -41,7 +29,7 @@ public class AdditionalFileService {
 
     private final BookAdditionalFileRepository additionalFileRepository;
     private final AdditionalFileMapper additionalFileMapper;
-    private final MonitoringProtectionService monitoringProtectionService;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
     public List<AdditionalFile> getAdditionalFilesByBookId(Long bookId) {
         List<BookAdditionalFileEntity> entities = additionalFileRepository.findByBookId(bookId);
@@ -61,21 +49,18 @@ public class AdditionalFileService {
         }
 
         BookAdditionalFileEntity file = fileOpt.get();
-        
-        monitoringProtectionService.executeWithProtection(() -> {
-            try {
-                // Delete physical file
-                Files.deleteIfExists(file.getFullFilePath());
-                log.info("Deleted additional file: {}", file.getFullFilePath());
 
-                // Delete database record
-                additionalFileRepository.delete(file);
-            } catch (IOException e) {
-                log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
-                // Still delete the database record even if file deletion fails
-                additionalFileRepository.delete(file);
-            }
-        }, "additional file deletion");
+        try {
+            monitoringRegistrationService.unregisterSpecificPath(file.getFullFilePath().getParent());
+
+            Files.deleteIfExists(file.getFullFilePath());
+            log.info("Deleted additional file: {}", file.getFullFilePath());
+
+            additionalFileRepository.delete(file);
+        } catch (IOException e) {
+            log.warn("Failed to delete physical file: {}", file.getFullFilePath(), e);
+            additionalFileRepository.delete(file);
+        }
     }
 
     public ResponseEntity<Resource> downloadAdditionalFile(Long fileId) throws IOException {
@@ -98,5 +83,4 @@ public class AdditionalFileService {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
                 .body(resource);
     }
-
 }

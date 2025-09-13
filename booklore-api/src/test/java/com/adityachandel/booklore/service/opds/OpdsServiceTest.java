@@ -149,6 +149,9 @@ class OpdsServiceTest {
         // Accept header drives v2 selection; do not stub request.getRequestURI()
         when(request.getHeader("Accept")).thenReturn("application/opds+json;version=2.0");
 
+        // Stub the request parameter "q" that generateSearchResults reads
+        when(request.getParameter("q")).thenReturn("query");
+
         // getAllowedBooksPage will invoke searchBooksByMetadataPage for admin + query
         when(bookQueryService.searchBooksByMetadataPage("query", 1, 50)).thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(mock(Book.class))));
 
