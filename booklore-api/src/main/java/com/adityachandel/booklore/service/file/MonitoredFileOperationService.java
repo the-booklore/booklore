@@ -70,7 +70,7 @@ public class MonitoredFileOperationService {
             if (!sourceDir.equals(targetDir) && Files.exists(targetDir) && monitoringRegistrationService.isPathMonitored(targetDir)) {
                 monitoringRegistrationService.unregisterSpecificPath(targetDir);
                 unregisteredPaths.add(targetDir);
-                log.info("Temporarily unregistered target directory to prevent monitoring conflicts: {}", targetDir);
+                log.debug("Temporarily unregistered target directory to prevent monitoring conflicts: {}", targetDir);
             }
 
             log.debug("Protected {} directory paths from monitoring during file operation", unregisteredPaths.size());

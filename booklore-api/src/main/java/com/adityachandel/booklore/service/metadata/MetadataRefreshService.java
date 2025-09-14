@@ -404,7 +404,7 @@ public class MetadataRefreshService {
     protected void setOtherUnspecifiedMetadata(Map<MetadataProvider, BookMetadata> metadataMap, BookMetadata metadataCombined, MetadataProvider provider) {
         if (metadataMap.containsKey(provider)) {
             BookMetadata metadata = metadataMap.get(provider);
-            metadataCombined.setSubtitle(metadata.getSubtitle() != null ? metadata.getSubtitle() : metadata.getTitle());
+            metadataCombined.setSubtitle(metadata.getSubtitle() != null ? metadata.getSubtitle() : metadataCombined.getSubtitle());
             metadataCombined.setPublisher(metadata.getPublisher() != null ? metadata.getPublisher() : metadataCombined.getPublisher());
             metadataCombined.setPublishedDate(metadata.getPublishedDate() != null ? metadata.getPublishedDate() : metadataCombined.getPublishedDate());
             metadataCombined.setIsbn10(metadata.getIsbn10() != null ? metadata.getIsbn10() : metadataCombined.getIsbn10());
