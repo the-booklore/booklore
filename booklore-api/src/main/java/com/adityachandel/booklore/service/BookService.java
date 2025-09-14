@@ -297,29 +297,68 @@ public class BookService {
 
     @Transactional
     public void updateReadProgress(ReadProgressRequest request) {
-        BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+        BookEntity book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        UserBookProgressEntity userBookProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), book.getId()).orElse(new UserBookProgressEntity());
-        userBookProgress.setUser(userRepository.findById(user.getId()).orElseThrow(() -> new UsernameNotFoundException("User not found")));
-        userBookProgress.setBook(book);
-        userBookProgress.setLastReadTime(Instant.now());
-        if (book.getBookType() == BookFileType.EPUB && request.getEpubProgress() != null) {
-            userBookProgress.setEpubProgress(request.getEpubProgress().getCfi());
-            userBookProgress.setEpubProgressPercent(request.getEpubProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.PDF && request.getPdfProgress() != null) {
-            userBookProgress.setPdfProgress(request.getPdfProgress().getPage());
-            userBookProgress.setPdfProgressPercent(request.getPdfProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.CBX && request.getCbxProgress() != null) {
-            userBookProgress.setCbxProgress(request.getCbxProgress().getPage());
-            userBookProgress.setCbxProgressPercent(request.getCbxProgress().getPercentage());
+
+        UserBookProgressEntity progress = userBookProgressRepository
+                .findByUserIdAndBookId(user.getId(), book.getId())
+                .orElseGet(UserBookProgressEntity::new);
+
+        BookLoreUserEntity userEntity = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        progress.setUser(userEntity);
+
+        progress.setBook(book);
+        progress.setLastReadTime(Instant.now());
+
+        Float percentage = null;
+        switch (book.getBookType()) {
+            case EPUB -> {
+                if (request.getEpubProgress() != null) {
+                    progress.setEpubProgress(request.getEpubProgress().getCfi());
+                    percentage = request.getEpubProgress().getPercentage();
+                }
+            }
+            case PDF -> {
+                if (request.getPdfProgress() != null) {
+                    progress.setPdfProgress(request.getPdfProgress().getPage());
+                    percentage = request.getPdfProgress().getPercentage();
+                }
+            }
+            case CBX -> {
+                if (request.getCbxProgress() != null) {
+                    progress.setCbxProgress(request.getCbxProgress().getPage());
+                    percentage = request.getCbxProgress().getPercentage();
+                }
+            }
         }
 
-        // Update dateFinished if provided
+        if (percentage != null) {
+            progress.setReadStatus(getStatus(percentage));
+            setProgressPercent(progress, book.getBookType(), percentage);
+        }
+
         if (request.getDateFinished() != null) {
-            userBookProgress.setDateFinished(request.getDateFinished());
+            progress.setDateFinished(request.getDateFinished());
         }
 
-        userBookProgressRepository.save(userBookProgress);
+        userBookProgressRepository.save(progress);
+    }
+
+    private void setProgressPercent(UserBookProgressEntity progress, BookFileType type, Float percentage) {
+        switch (type) {
+            case EPUB -> progress.setEpubProgressPercent(percentage);
+            case PDF -> progress.setPdfProgressPercent(percentage);
+            case CBX -> progress.setCbxProgressPercent(percentage);
+        }
+    }
+
+    private ReadStatus getStatus(Float percentage) {
+        if (percentage >= 99.5f) return ReadStatus.READ;
+        if (percentage > 0.5f) return ReadStatus.READING;
+        return ReadStatus.UNREAD;
     }
 
     @Transactional

@@ -38,6 +38,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   public locationsReady = false;
   public approxProgress = 0;
   public exactProgress = 0;
+  public progressPercentage = 0;
 
   private book: any;
   private rendition: any;
@@ -309,22 +310,39 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       const currentIndex = location.start.index;
       const totalSpineItems = this.book.spine.items.length;
       let percentage: number;
-      if (this.locationsReady) {
+
+      if (this.locationsReady && this.book.locations.total > 0) {
         percentage = this.book.locations.percentageFromCfi(cfi);
         this.exactProgress = Math.round(percentage * 1000) / 10;
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
       } else {
         if (totalSpineItems > 0) {
-          percentage = currentIndex / totalSpineItems;
+          percentage = (currentIndex + 1) / totalSpineItems;
         } else {
           percentage = 0;
         }
         this.approxProgress = Math.round(percentage * 1000) / 10;
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
+
       this.currentChapter = getChapter(this.book, location)?.label;
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
     });
-    this.book.ready.then(() => this.book.locations.generate(10000)).then(() => {
+
+    this.book.ready.then(() => {
+      return this.book.locations.generate(1600);
+    }).then(() => {
       this.locationsReady = true;
+      // Recalculate progress with new locations
+      if (this.rendition.currentLocation()) {
+        const location = this.rendition.currentLocation();
+        const cfi = location.end.cfi;
+        const percentage = this.book.locations.percentageFromCfi(cfi);
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
+      }
+    }).catch(() => {
+      // If location generation fails, keep using spine-based calculation
+      this.locationsReady = false;
     });
   }
 
