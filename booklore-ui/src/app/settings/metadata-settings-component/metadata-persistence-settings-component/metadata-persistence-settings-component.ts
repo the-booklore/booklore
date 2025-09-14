@@ -21,6 +21,7 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
   metadataPersistence: MetadataPersistenceSettings = {
     saveToOriginalFile: false,
     convertCbrCb7ToCbz: false,
+    moveFilesToLibraryPattern: false,
     backupMetadata: true,
     backupCover: true
   };

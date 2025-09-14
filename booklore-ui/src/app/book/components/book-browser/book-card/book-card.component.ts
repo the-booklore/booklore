@@ -25,6 +25,7 @@ import {BookMetadataCenterComponent} from '../../../../metadata/book-metadata-ce
 import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../shared/constants/reset-progress-type';
+import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 
 @Component({
   selector: 'app-book-card',
@@ -66,6 +67,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private userPermissions: any;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
+  protected readStatusHelper = inject(ReadStatusHelper);
 
   ngOnInit(): void {
     this.userService.userState$
@@ -696,25 +698,58 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this.lastMouseEvent = event;
   }
 
-  toggleSelection(event: CheckboxChangeEvent): void {
-    if (this.isCheckboxEnabled) {
-      this.isSelected = event.checked;
+  onCardClick(event: MouseEvent): void {
+    if (!event.ctrlKey) {
+      return;
+    }
+
+    this.toggleCardSelection(!this.isSelected)
+  }
+
+  toggleCardSelection(selected: boolean):void {
+      if (!this.isCheckboxEnabled) {
+        return;
+      }
+
+      this.isSelected = selected;
       const shiftKey = this.lastMouseEvent?.shiftKey ?? false;
+
       this.checkboxClick.emit({
         index: this.index,
         bookId: this.book.id,
-        selected: event.checked,
+        selected: selected,
         shiftKey: shiftKey,
       });
+
       if (this.onBookSelect) {
-        this.onBookSelect(this.book.id, event.checked);
+        this.onBookSelect(this.book.id, selected);
       }
+
       this.lastMouseEvent = null;
-    }
+  }
+
+  toggleSelection(event: CheckboxChangeEvent): void {
+    this.toggleCardSelection(event.checked);
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  getReadStatusIcon(): string {
+    return this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
+  }
+
+  getReadStatusClass(): string {
+    return this.readStatusHelper.getReadStatusClass(this.book.readStatus);
+  }
+
+  getReadStatusTooltip(): string {
+    return this.readStatusHelper.getReadStatusTooltip(this.book.readStatus);
+  }
+
+  shouldShowStatusIcon(): boolean {
+    return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
   }
 }

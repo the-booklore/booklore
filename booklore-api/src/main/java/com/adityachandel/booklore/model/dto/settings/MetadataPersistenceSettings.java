@@ -14,4 +14,5 @@ public class MetadataPersistenceSettings {
     private boolean convertCbrCb7ToCbz;
     private boolean backupMetadata;
     private boolean backupCover;
+    private boolean moveFilesToLibraryPattern;
 }

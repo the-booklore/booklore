@@ -105,13 +105,14 @@
 
 .select-checkbox {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 8px;
+  right: 8px;
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
   z-index: 2;
 }
+
 .select-checkbox .p-checkbox {
   vertical-align: top;
 }
@@ -172,6 +173,42 @@
   font-weight: 600;
   text-align: center;
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+}
+
+.read-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-left: 0.5rem;
+}
+
+.status-read {
+  color: #22c55e;
+}
+
+.status-reading {
+  color: #3b82f6;
+}
+
+.status-re-reading {
+  color: #06b6d4;
+}
+
+.status-partially-read {
+  color: #f59e0b;
+}
+
+.status-paused {
+  color: #eab308;
+}
+
+.status-abandoned {
+  color: #ef4444;
+}
+
+.status-wont-read {
+  color: #ec4899;
 }
 
 ::ng-deep .progress-incomplete .p-progressbar-value {

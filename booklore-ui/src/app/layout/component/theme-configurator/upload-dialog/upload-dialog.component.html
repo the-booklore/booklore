@@ -16,7 +16,7 @@
       accept=".jpg,.jpeg,.png,image/jpeg,image/png"
       (change)="onFileSelected($event)"
       style="display: none;">
-    <small class="file-note">Only JPG and PNG files are supported</small>
+    <small class="file-note">Supported formats: JPEG, PNG • Maximum file size: 5 MB</small>
     @if (uploadFile) {
       <small class="selected-file">{{ uploadFile.name }}</small>
     }
@@ -35,7 +35,7 @@
       placeholder="Paste image URL here"
       class="url-input"
       pInputText>
-    <small class="url-note">Only JPG and PNG URLs are supported</small>
+    <small class="url-note">Supported formats: JPEG, PNG • Maximum file size: 5 MB</small>
   </div>
 
   @if (uploadError) {

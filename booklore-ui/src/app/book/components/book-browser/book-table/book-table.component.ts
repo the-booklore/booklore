@@ -1,10 +1,10 @@
 import {Component, EventEmitter, inject, Input, OnChanges, OnDestroy, OnInit, Output} from '@angular/core';
 import {TableModule} from 'primeng/table';
-import {DatePipe} from '@angular/common';
+import {DatePipe, NgClass} from '@angular/common';
 import {Rating} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
 import {TooltipModule} from "primeng/tooltip";
-import {Book, BookMetadata} from '../../../model/book.model';
+import {Book, BookMetadata, ReadStatus} from '../../../model/book.model';
 import {SortOption} from '../../../model/sort.model';
 import {UrlHelperService} from '../../../../utilities/service/url-helper.service';
 import {Button} from 'primeng/button';
@@ -16,6 +16,7 @@ import {UserService} from '../../../../settings/user-management/user.service';
 import {BookMetadataCenterComponent} from '../../../../metadata/book-metadata-center-component/book-metadata-center.component';
 import {DialogService} from 'primeng/dynamicdialog';
 import {take, takeUntil} from 'rxjs/operators';
+import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 
 @Component({
   selector: 'app-book-table',
@@ -26,7 +27,8 @@ import {take, takeUntil} from 'rxjs/operators';
     Rating,
     FormsModule,
     Button,
-    TooltipModule
+    TooltipModule,
+    NgClass
   ],
   styleUrls: ['./book-table.component.scss'],
   providers: [DatePipe]
@@ -47,11 +49,13 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   private dialogService = inject(DialogService);
   private router = inject(Router);
   private datePipe = inject(DatePipe);
+  private readStatusHelper = inject(ReadStatusHelper);
 
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
 
   readonly allColumns = [
+    {field: 'readStatus', header: '📖'},
     {field: 'title', header: 'Title'},
     {field: 'authors', header: 'Authors'},
     {field: 'publisher', header: 'Publisher'},
@@ -189,8 +193,27 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${mb.toFixed(2)} MB`;
   }
 
+  getReadStatusIcon(readStatus: ReadStatus | undefined): string {
+    return this.readStatusHelper.getReadStatusIcon(readStatus);
+  }
+
+  getReadStatusClass(readStatus: ReadStatus | undefined): string {
+    return this.readStatusHelper.getReadStatusClass(readStatus);
+  }
+
+  getReadStatusTooltip(readStatus: ReadStatus | undefined): string {
+    return this.readStatusHelper.getReadStatusTooltip(readStatus);
+  }
+
+  shouldShowStatusIcon(readStatus: ReadStatus | undefined): boolean {
+    return this.readStatusHelper.shouldShowStatusIcon(readStatus);
+  }
+
   getCellValue(metadata: BookMetadata, book: Book, field: string): string | number {
     switch (field) {
+      case 'readStatus':
+        return this.readStatusHelper.getReadStatusTooltip(book?.readStatus);
+
       case 'title':
         return metadata.title ?? '';
 

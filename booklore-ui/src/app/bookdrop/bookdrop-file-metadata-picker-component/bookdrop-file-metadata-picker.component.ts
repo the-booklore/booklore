@@ -42,6 +42,7 @@ export class BookdropFileMetadataPickerComponent {
 
   metadataFieldsTop = [
     {label: 'Title', controlName: 'title', fetchedKey: 'title'},
+    {label: 'Subtitle', controlName: 'subtitle', fetchedKey: 'subtitle'},
     {label: 'Publisher', controlName: 'publisher', fetchedKey: 'publisher'},
     {label: 'Published', controlName: 'publishedDate', fetchedKey: 'publishedDate'}
   ];

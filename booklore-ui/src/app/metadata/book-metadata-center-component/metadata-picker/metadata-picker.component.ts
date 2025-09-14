@@ -42,6 +42,7 @@ export class MetadataPickerComponent implements OnInit {
 
   metadataFieldsTop = [
     {label: 'Title', controlName: 'title', lockedKey: 'titleLocked', fetchedKey: 'title'},
+    {label: 'Subtitle', controlName: 'subtitle', lockedKey: 'subtitleLocked', fetchedKey: 'subtitle'},
     {label: 'Publisher', controlName: 'publisher', lockedKey: 'publisherLocked', fetchedKey: 'publisher'},
     {label: 'Published', controlName: 'publishedDate', lockedKey: 'publishedDateLocked', fetchedKey: 'publishedDate'}
   ];

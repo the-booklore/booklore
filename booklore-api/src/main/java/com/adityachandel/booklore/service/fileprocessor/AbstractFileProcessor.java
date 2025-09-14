@@ -104,6 +104,7 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
 
                     if (!sameLibraryPath) {
                         entity.setLibraryPath(libraryFile.getLibraryPathEntity());
+                        entity.setLibrary(libraryFile.getLibraryEntity());
                         updated = true;
                     }
 

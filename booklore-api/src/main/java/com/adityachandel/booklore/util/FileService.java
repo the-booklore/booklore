@@ -208,11 +208,22 @@ public class FileService {
         if (!folder.exists() && !folder.mkdirs()) {
             throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
         }
+        BufferedImage rgbImage = new BufferedImage(
+                coverImage.getWidth(),
+                coverImage.getHeight(),
+                BufferedImage.TYPE_INT_RGB
+        );
+        Graphics2D g = rgbImage.createGraphics();
+        g.drawImage(coverImage, 0, 0, Color.WHITE, null);
+        g.dispose();
+
         File originalFile = new File(folder, COVER_FILENAME);
-        boolean originalSaved = ImageIO.write(coverImage, IMAGE_FORMAT, originalFile);
-        BufferedImage thumb = resizeImage(coverImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+        boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
+
+        BufferedImage thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
         File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
         boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+
         return originalSaved && thumbnailSaved;
     }
 
@@ -336,6 +347,27 @@ public class FileService {
             log.warn("Skipping file due to missing hash: {}", libraryFile.getFullPath());
             return Optional.empty();
         }
+
+        // First check for soft-deleted books with the same hash
+        Optional<BookEntity> softDeletedBook = bookRepository.findByCurrentHashAndDeletedTrue(hash);
+        if (softDeletedBook.isPresent()) {
+            BookEntity book = softDeletedBook.get();
+            log.info("Found soft-deleted book with same hash, undeleting: bookId={} file='{}'",
+                    book.getId(), libraryFile.getFileName());
+
+            // Undelete the book
+            book.setDeleted(false);
+            book.setDeletedAt(null);
+
+            // Update file information
+            book.setFileName(libraryFile.getFileName());
+            book.setFileSubPath(libraryFile.getFileSubPath());
+            book.setLibraryPath(libraryFile.getLibraryPathEntity());
+            book.setLibrary(libraryFile.getLibraryEntity());
+
+            return Optional.of(bookMapper.toBook(book));
+        }
+
         Optional<BookEntity> existingByHash = bookRepository.findByCurrentHash(hash);
         if (existingByHash.isPresent()) {
             BookEntity book = existingByHash.get();

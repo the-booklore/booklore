@@ -69,7 +69,7 @@
               <div class="flex flex-col items-center md:items-start gap-1">
                 <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap text-center md:text-left">
                   <h2 class="text-2xl md:text-3xl font-extrabold leading-tight">
-                    {{ book?.metadata!.title }}
+                    {{ book?.metadata?.title }}@if (book?.metadata?.subtitle) {: {{ book.metadata?.subtitle }}}
                   </h2>
                   <i
                     class="pi align-middle"
@@ -548,7 +548,7 @@
                      [horizontal]="true">
                   @for (book of recommendedBooks; track book.book.id) {
                     <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="book.book" ></app-book-card-lite-component>
+                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
                     </div>
                   }
                 </div>

@@ -32,3 +32,4 @@ public interface BookdropFileRepository extends JpaRepository<BookdropFileEntity
     @Query("SELECT f.id FROM BookdropFileEntity f WHERE f.id NOT IN :excludedIds")
     List<Long> findAllExcludingIdsFlat(@Param("excludedIds") List<Long> excludedIds);
 }
+

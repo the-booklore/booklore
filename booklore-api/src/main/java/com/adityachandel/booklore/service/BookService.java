@@ -15,7 +15,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.repository.*;
-import com.adityachandel.booklore.service.monitoring.MonitoringProtectionService;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
@@ -59,7 +59,7 @@ public class BookService {
     private final BookQueryService bookQueryService;
     private final UserProgressService userProgressService;
     private final BookDownloadService bookDownloadService;
-    private final MonitoringProtectionService monitoringProtectionService;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
@@ -297,29 +297,68 @@ public class BookService {
 
     @Transactional
     public void updateReadProgress(ReadProgressRequest request) {
-        BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+        BookEntity book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        UserBookProgressEntity userBookProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), book.getId()).orElse(new UserBookProgressEntity());
-        userBookProgress.setUser(userRepository.findById(user.getId()).orElseThrow(() -> new UsernameNotFoundException("User not found")));
-        userBookProgress.setBook(book);
-        userBookProgress.setLastReadTime(Instant.now());
-        if (book.getBookType() == BookFileType.EPUB && request.getEpubProgress() != null) {
-            userBookProgress.setEpubProgress(request.getEpubProgress().getCfi());
-            userBookProgress.setEpubProgressPercent(request.getEpubProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.PDF && request.getPdfProgress() != null) {
-            userBookProgress.setPdfProgress(request.getPdfProgress().getPage());
-            userBookProgress.setPdfProgressPercent(request.getPdfProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.CBX && request.getCbxProgress() != null) {
-            userBookProgress.setCbxProgress(request.getCbxProgress().getPage());
-            userBookProgress.setCbxProgressPercent(request.getCbxProgress().getPercentage());
+
+        UserBookProgressEntity progress = userBookProgressRepository
+                .findByUserIdAndBookId(user.getId(), book.getId())
+                .orElseGet(UserBookProgressEntity::new);
+
+        BookLoreUserEntity userEntity = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        progress.setUser(userEntity);
+
+        progress.setBook(book);
+        progress.setLastReadTime(Instant.now());
+
+        Float percentage = null;
+        switch (book.getBookType()) {
+            case EPUB -> {
+                if (request.getEpubProgress() != null) {
+                    progress.setEpubProgress(request.getEpubProgress().getCfi());
+                    percentage = request.getEpubProgress().getPercentage();
+                }
+            }
+            case PDF -> {
+                if (request.getPdfProgress() != null) {
+                    progress.setPdfProgress(request.getPdfProgress().getPage());
+                    percentage = request.getPdfProgress().getPercentage();
+                }
+            }
+            case CBX -> {
+                if (request.getCbxProgress() != null) {
+                    progress.setCbxProgress(request.getCbxProgress().getPage());
+                    percentage = request.getCbxProgress().getPercentage();
+                }
+            }
         }
 
-        // Update dateFinished if provided
+        if (percentage != null) {
+            progress.setReadStatus(getStatus(percentage));
+            setProgressPercent(progress, book.getBookType(), percentage);
+        }
+
         if (request.getDateFinished() != null) {
-            userBookProgress.setDateFinished(request.getDateFinished());
+            progress.setDateFinished(request.getDateFinished());
         }
 
-        userBookProgressRepository.save(userBookProgress);
+        userBookProgressRepository.save(progress);
+    }
+
+    private void setProgressPercent(UserBookProgressEntity progress, BookFileType type, Float percentage) {
+        switch (type) {
+            case EPUB -> progress.setEpubProgressPercent(percentage);
+            case PDF -> progress.setPdfProgressPercent(percentage);
+            case CBX -> progress.setCbxProgressPercent(percentage);
+        }
+    }
+
+    private ReadStatus getStatus(Float percentage) {
+        if (percentage >= 99.5f) return ReadStatus.READ;
+        if (percentage > 0.5f) return ReadStatus.READING;
+        return ReadStatus.UNREAD;
     }
 
     @Transactional
@@ -468,8 +507,7 @@ public class BookService {
             if (Files.exists(coverPath)) {
                 return new UrlResource(coverPath.toUri());
             } else {
-                Path defaultCover = Paths.get("static/images/missing-cover.jpg");
-                return new UrlResource(defaultCover.toUri());
+                return new ClassPathResource("static/images/missing-cover.jpg");
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to load book cover for bookId=" + bookId, e);
@@ -504,35 +542,33 @@ public class BookService {
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
+        for (BookEntity book : books) {
+            Path fullFilePath = book.getFullFilePath();
+            try {
+                if (Files.exists(fullFilePath)) {
+                    monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
+                    Files.delete(fullFilePath);
+                    log.info("Deleted book file: {}", fullFilePath);
 
-        return monitoringProtectionService.executeWithProtection(() -> {
-            for (BookEntity book : books) {
-                Path fullFilePath = book.getFullFilePath();
-                try {
-                    if (Files.exists(fullFilePath)) {
-                        Files.delete(fullFilePath);
-                        log.info("Deleted book file: {}", fullFilePath);
+                    Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
+                            .map(LibraryPathEntity::getPath)
+                            .map(Paths::get)
+                            .map(Path::normalize)
+                            .collect(Collectors.toSet());
 
-                        Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
-                                .map(LibraryPathEntity::getPath)
-                                .map(Paths::get)
-                                .map(Path::normalize)
-                                .collect(Collectors.toSet());
-
-                        deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
-                    }
-                } catch (IOException e) {
-                    log.warn("Failed to delete book file: {}", fullFilePath, e);
-                    failedFileDeletions.add(book.getId());
+                    deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
                 }
+            } catch (IOException e) {
+                log.warn("Failed to delete book file: {}", fullFilePath, e);
+                failedFileDeletions.add(book.getId());
             }
+        }
 
-            bookRepository.deleteAll(books);
-            BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
-            return failedFileDeletions.isEmpty()
-                    ? ResponseEntity.ok(response)
-                    : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
-        }, "book deletion");
+        bookRepository.deleteAll(books);
+        BookDeletionResponse response = new BookDeletionResponse(ids, failedFileDeletions);
+        return failedFileDeletions.isEmpty()
+                ? ResponseEntity.ok(response)
+                : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {

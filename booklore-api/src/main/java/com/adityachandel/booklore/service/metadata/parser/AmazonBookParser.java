@@ -250,17 +250,23 @@ public class AmazonBookParser implements BookParser {
     private String getTitle(Document doc) {
         Element titleElement = doc.getElementById("productTitle");
         if (titleElement != null) {
-            return titleElement.text();
+            String fullTitle = titleElement.text();
+            return fullTitle.split(":", 2)[0].trim();
         }
         log.warn("Failed to parse title: Element not found.");
         return null;
     }
 
     private String getSubtitle(Document doc) {
-        Element subtitleElement = doc.getElementById("productSubtitle");
-        if (subtitleElement != null) {
-            return subtitleElement.text();
+        Element titleElement = doc.getElementById("productTitle");
+        if (titleElement != null) {
+            String fullTitle = titleElement.text();
+            String[] parts = fullTitle.split(":", 2);
+            if (parts.length > 1) {
+                return parts[1].trim();
+            }
         }
+
         log.warn("Failed to parse subtitle: Element not found.");
         return null;
     }
