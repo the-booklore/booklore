@@ -25,6 +25,7 @@ import {BookMetadataCenterComponent} from '../../../../metadata/book-metadata-ce
 import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../shared/constants/reset-progress-type';
+import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 
 @Component({
   selector: 'app-book-card',
@@ -66,6 +67,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private userPermissions: any;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
+  protected readStatusHelper = inject(ReadStatusHelper);
 
   ngOnInit(): void {
     this.userService.userState$
@@ -716,5 +718,21 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  getReadStatusIcon(): string {
+    return this.readStatusHelper.getReadStatusIcon(this.book.readStatus);
+  }
+
+  getReadStatusClass(): string {
+    return this.readStatusHelper.getReadStatusClass(this.book.readStatus);
+  }
+
+  getReadStatusTooltip(): string {
+    return this.readStatusHelper.getReadStatusTooltip(this.book.readStatus);
+  }
+
+  shouldShowStatusIcon(): boolean {
+    return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
   }
 }

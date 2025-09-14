@@ -14,6 +14,7 @@ export class TableColumnPreferenceService {
   readonly preferences$ = this.preferencesSubject.asObservable();
 
   private readonly allAvailableColumns = [
+    {field: 'readStatus', header: 'Read'},
     {field: 'title', header: 'Title'},
     {field: 'authors', header: 'Authors'},
     {field: 'publisher', header: 'Publisher'},

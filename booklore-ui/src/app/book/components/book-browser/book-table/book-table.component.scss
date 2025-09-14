@@ -1,1 +1,38 @@
+.read-status-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: bold;
+  width: 20px;
+  height: 20px;
+  margin: 0 auto;
+}
 
+.status-read {
+  color: #22c55e;
+}
+
+.status-reading {
+  color: #3b82f6;
+}
+
+.status-re-reading {
+  color: #06b6d4;
+}
+
+.status-partially-read {
+  color: #f59e0b;
+}
+
+.status-paused {
+  color: #eab308;
+}
+
+.status-abandoned {
+  color: #ef4444;
+}
+
+.status-wont-read {
+  color: #ec4899;
+}

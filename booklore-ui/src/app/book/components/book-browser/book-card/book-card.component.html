@@ -71,10 +71,17 @@
 
   <div [hidden]="bottomBarHidden">
     <div class="book-title-container flex items-center">
+      @if (shouldShowStatusIcon()) {
+        <div class="read-status-indicator"
+             [ngClass]="getReadStatusClass()"
+             [pTooltip]="'Status: ' + getReadStatusTooltip()"
+             tooltipPosition="bottom">
+          <i [class]="getReadStatusIcon()"></i>
+        </div>
+      }
       <h4 class="book-title m-0 pl-2"
           tooltipPosition="bottom"
-          tooltipStyleClass="text-xs text-center"
-          [pTooltip]="displayTitle">
+          [pTooltip]="'Title: ' + displayTitle">
         {{ displayTitle }}
       </h4>
       <p-tieredmenu #menu [model]="items" [popup]="true" appendTo="body"></p-tieredmenu>
