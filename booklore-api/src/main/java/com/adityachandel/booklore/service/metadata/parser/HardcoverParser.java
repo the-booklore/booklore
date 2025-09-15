@@ -96,8 +96,17 @@ public class HardcoverParser implements BookParser {
                     metadata.setCategories(doc.getGenres());
 
                     if (doc.getIsbns() != null) {
-                        metadata.setIsbn10(doc.getIsbns().stream().filter(isbn -> isbn.length() == 10).findFirst().orElse(null));
-                        metadata.setIsbn13(doc.getIsbns().stream().filter(isbn -> isbn.length() == 13).findFirst().orElse(null));
+                        String inputIsbn = fetchMetadataRequest.getIsbn();
+                        if (inputIsbn != null && inputIsbn.length() == 10 && doc.getIsbns().contains(inputIsbn)) {
+                            metadata.setIsbn10(inputIsbn);
+                        } else {
+                            metadata.setIsbn10(doc.getIsbns().stream().filter(isbn -> isbn.length() == 10).findFirst().orElse(null));
+                        }
+                        if (inputIsbn != null && inputIsbn.length() == 13 && doc.getIsbns().contains(inputIsbn)) {
+                            metadata.setIsbn13(inputIsbn);
+                        } else {
+                            metadata.setIsbn13(doc.getIsbns().stream().filter(isbn -> isbn.length() == 13).findFirst().orElse(null));
+                        }
                     }
 
                     metadata.setThumbnailUrl(doc.getImage() != null ? doc.getImage().getUrl() : null);
