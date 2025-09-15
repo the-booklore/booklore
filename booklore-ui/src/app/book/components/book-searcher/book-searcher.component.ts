@@ -53,7 +53,10 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
       })
     ).subscribe({
       next: (filteredState) => {
-        this.books = this.searchQuery.trim() ? (filteredState.books || []) : [];
+        const term = this.searchQuery.trim();
+        this.books = term.length >= 2
+          ? (filteredState.books || []).slice(0, 50)
+          : [];
       },
       error: (error) => console.error('Subscription error:', error)
     });

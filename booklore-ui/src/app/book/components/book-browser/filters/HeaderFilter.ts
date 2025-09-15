@@ -16,7 +16,7 @@ export class HeaderFilter implements BookFilter {
       distinctUntilChanged(),
       switchMap(term => {
         const normalizedTerm = normalize(term || '').trim();
-        if (!normalizedTerm) {
+        if (normalizedTerm.length < 2) {
           return of(bookState);
         }
         return of(normalizedTerm).pipe(
