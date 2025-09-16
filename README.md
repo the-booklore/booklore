@@ -118,6 +118,8 @@ services:
       - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
                     # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
                     # Example: To expose on host port 7070, set BOOKLORE_PORT=7070 and use "7070:7070". 
+    network:
+      booklore
     volumes:
       - /your/local/path/to/booklore/data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
       - /your/local/path/to/booklore/books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
@@ -135,6 +137,10 @@ services:
       - MYSQL_DATABASE=booklore
       - MYSQL_USER=booklore                        # Must match DATABASE_USERNAME defined in the booklore container
       - MYSQL_PASSWORD=your_secure_password        # Use a strong password; must match DATABASE_PASSWORD defined in the booklore container
+    ports:
+      - "3306:3306"
+    network:
+      booklore
     volumes:
       - /your/local/path/to/mariadb/config:/config
     restart: unless-stopped
