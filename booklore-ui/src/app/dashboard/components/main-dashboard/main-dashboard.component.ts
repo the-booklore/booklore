@@ -9,7 +9,7 @@ import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
 import {BookService} from '../../../book/service/book.service';
 import {BookState} from '../../../book/model/state/book-state.model';
-import {Book} from '../../../book/model/book.model';
+import {Book, ReadStatus} from '../../../book/model/book.model';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 
@@ -47,7 +47,7 @@ export class MainDashboardComponent implements OnInit {
 
     this.lastReadBooks$ = this.bookService.bookState$.pipe(
       map((state: BookState) => (
-        (state.books || []).filter(book => book.lastReadTime)
+        (state.books || []).filter(book => book.lastReadTime && (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED))
           .sort((a, b) => {
             const aTime = new Date(a.lastReadTime!).getTime();
             const bTime = new Date(b.lastReadTime!).getTime();
