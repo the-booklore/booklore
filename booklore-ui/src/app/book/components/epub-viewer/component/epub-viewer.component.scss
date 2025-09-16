@@ -55,7 +55,6 @@
   flex-direction: column;
   height: 100dvh;
   overflow: hidden;
-  background-color: #171717;
 }
 
 #epubContainer {
@@ -164,9 +163,4 @@
 
 ::ng-deep .p-divider.p-divider-horizontal {
   margin: 0.25rem 0 0.5rem 0 !important;
-}
-
-::ng-deep .p-drawer-left,
-::ng-deep .p-drawer-right {
-  background-color: #171717 !important;
 }

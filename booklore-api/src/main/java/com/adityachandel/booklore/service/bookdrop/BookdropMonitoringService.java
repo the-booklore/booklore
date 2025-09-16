@@ -49,8 +49,7 @@ public class BookdropMonitoringService {
         this.watchService = FileSystems.getDefault().newWatchService();
         this.watchKey = bookdrop.register(watchService,
                 StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_DELETE,
-                StandardWatchEventKinds.ENTRY_MODIFY);
+                StandardWatchEventKinds.ENTRY_DELETE);
         this.running = true;
         this.paused = false;
         this.watchThread = new Thread(this::processEvents, "BookdropFolderWatcher");

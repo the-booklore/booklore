@@ -72,7 +72,7 @@ public class LibraryFileEventProcessor {
             ScheduledFuture<?> pendingDelete = pendingDeletes.remove(path);
             if (pendingDelete != null) {
                 pendingDelete.cancel(false);
-                log.info("[DEBOUNCE] CREATE ignored because pending DELETE exists for '{}'", path);
+                log.debug("[DEBOUNCE] CREATE ignored because pending DELETE exists for '{}'", path);
                 return;
             }
             // Otherwise process CREATE immediately
