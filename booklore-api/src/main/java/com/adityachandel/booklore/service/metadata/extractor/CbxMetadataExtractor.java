@@ -126,6 +126,13 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
   private Document buildSecureDocument(InputStream is) throws Exception {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    try {
+      factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+      factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+      factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+    } catch (Exception ex) {
+      log.debug("XML factory secure feature not supported: {}", ex.getMessage());
+    }
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
     factory.setExpandEntityReferences(false);
@@ -282,17 +289,23 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     // CBZ path
     if (lowerName.endsWith(".cbz")) {
       try (ZipFile zipFile = new ZipFile(file)) {
+        // Try front cover via ComicInfo
         ZipEntry coverEntry = findFrontCoverEntry(zipFile);
         if (coverEntry != null) {
           try (InputStream is = zipFile.getInputStream(coverEntry)) {
-            return is.readAllBytes();
+            byte[] bytes = is.readAllBytes();
+            if (canDecode(bytes)) return bytes;
           }
-        } else {
-          // Fallback: first image after sorting alphabetically
-          ZipEntry firstImage = findFirstAlphabeticalImageEntry(zipFile);
-          if (firstImage != null) {
-            try (InputStream is2 = zipFile.getInputStream(firstImage)) {
-              return is2.readAllBytes();
+        }
+        // Fallback: iterate images alphabetically until a decodable one is found
+        ZipEntry firstImage = findFirstAlphabeticalImageEntry(zipFile);
+        if (firstImage != null) {
+          // Build a sorted list and iterate for decodable formats
+          java.util.List<ZipEntry> images = listZipImageEntries(zipFile);
+          for (ZipEntry e : images) {
+            try (InputStream is = zipFile.getInputStream(e)) {
+              byte[] bytes = is.readAllBytes();
+              if (canDecode(bytes)) return bytes;
             }
           }
         }
@@ -316,13 +329,22 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
               if (imageName != null) {
                 SevenZArchiveEntry byName = findSevenZEntryByName(sevenZ, imageName);
                 if (byName != null) {
-                  return readSevenZEntryBytes(sevenZ, byName);
+                  byte[] bytes = readSevenZEntryBytes(sevenZ, byName);
+                  if (canDecode(bytes)) return bytes;
                 }
                 try {
                   int index = Integer.parseInt(imageName);
                   SevenZArchiveEntry byIndex = findSevenZImageEntryByIndex(sevenZ, index);
                   if (byIndex != null) {
-                    return readSevenZEntryBytes(sevenZ, byIndex);
+                    byte[] bytes = readSevenZEntryBytes(sevenZ, byIndex);
+                    if (canDecode(bytes)) return bytes;
+                  }
+                  if (index > 0) {
+                    SevenZArchiveEntry offByOne = findSevenZImageEntryByIndex(sevenZ, index - 1);
+                    if (offByOne != null) {
+                      byte[] bytes = readSevenZEntryBytes(sevenZ, offByOne);
+                      if (canDecode(bytes)) return bytes;
+                    }
                   }
                 } catch (NumberFormatException ignore) {
                   // continue to fallback
@@ -332,10 +354,14 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
           }
         }
 
-        // Fallback: first image alphabetically
+        // Fallback: iterate images alphabetically until a decodable one is found
         SevenZArchiveEntry first = findFirstAlphabeticalSevenZImageEntry(sevenZ);
         if (first != null) {
-          return readSevenZEntryBytes(sevenZ, first);
+          java.util.List<SevenZArchiveEntry> images = listSevenZImageEntries(sevenZ);
+          for (SevenZArchiveEntry e : images) {
+            byte[] bytes = readSevenZEntryBytes(sevenZ, e);
+            if (canDecode(bytes)) return bytes;
+          }
         }
       } catch (Exception e) {
         log.warn("Failed to extract cover image from CB7", e);
@@ -359,13 +385,22 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             if (imageName != null) {
               FileHeader byName = findRarHeaderByName(archive, imageName);
               if (byName != null) {
-                return readRarEntryBytes(archive, byName);
+                byte[] bytes = readRarEntryBytes(archive, byName);
+                if (canDecode(bytes)) return bytes;
               }
               try {
                 int index = Integer.parseInt(imageName);
                 FileHeader byIndex = findRarImageHeaderByIndex(archive, index);
                 if (byIndex != null) {
-                  return readRarEntryBytes(archive, byIndex);
+                  byte[] bytes = readRarEntryBytes(archive, byIndex);
+                  if (canDecode(bytes)) return bytes;
+                }
+                if (index > 0) {
+                  FileHeader offByOne = findRarImageHeaderByIndex(archive, index - 1);
+                  if (offByOne != null) {
+                    byte[] bytes = readRarEntryBytes(archive, offByOne);
+                    if (canDecode(bytes)) return bytes;
+                  }
                 }
               } catch (NumberFormatException ignore) {
                 // ignore and continue fallback
@@ -375,10 +410,14 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         }
       }
 
-      // Fallback: first image in alphabetical order
+      // Fallback: iterate images alphabetically until a decodable one is found
       FileHeader firstImage = findFirstAlphabeticalImageHeader(archive);
       if (firstImage != null) {
-        return readRarEntryBytes(archive, firstImage);
+        java.util.List<FileHeader> images = listRarImageHeaders(archive);
+        for (FileHeader fh : images) {
+          byte[] bytes = readRarEntryBytes(archive, fh);
+          if (canDecode(bytes)) return bytes;
+        }
       }
     } catch (Exception e) {
       log.warn("Failed to extract cover image from CBR", e);
@@ -388,6 +427,16 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
 
     return generatePlaceholderCover(250, 350);
+  }
+
+  private boolean canDecode(byte[] bytes) {
+    if (bytes == null || bytes.length == 0) return false;
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+      BufferedImage img = ImageIO.read(bais);
+      return img != null;
+    } catch (IOException e) {
+      return false;
+    }
   }
 
   private ZipEntry findFrontCoverEntry(ZipFile zipFile) {
@@ -401,11 +450,26 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
           if (byName != null) {
             return byName;
           }
+          // also try base-name match for archives with directories or odd encodings
+          String imageBase = baseName(imageName);
+          java.util.Enumeration<? extends ZipEntry> it = zipFile.entries();
+          while (it.hasMoreElements()) {
+            ZipEntry e = it.nextElement();
+            if (!e.isDirectory() && isImageEntry(e.getName())) {
+              if (baseName(e.getName()).equalsIgnoreCase(imageBase)) {
+                return e;
+              }
+            }
+          }
           try {
             int index = Integer.parseInt(imageName);
             ZipEntry byIndex = findImageEntryByIndex(zipFile, index);
             if (byIndex != null) {
               return byIndex;
+            }
+            if (index > 0) {
+              ZipEntry offByOne = findImageEntryByIndex(zipFile, index - 1);
+              if (offByOne != null) return offByOne;
             }
           } catch (NumberFormatException ignore) {
             // ignore
@@ -415,8 +479,10 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
         log.warn("Failed to parse ComicInfo.xml for cover", e);
       }
     }
-    ZipEntry firstImage = findFirstAlphabeticalImageEntry(zipFile);
-    return firstImage;
+    // Heuristic filenames before generic fallback
+    ZipEntry heuristic = findHeuristicCover(zipFile);
+    if (heuristic != null) return heuristic;
+    return findFirstAlphabeticalImageEntry(zipFile);
   }
 
   private ZipEntry findImageEntryByIndex(ZipFile zipFile, int index) {
@@ -457,6 +523,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
   }
 
   private boolean isImageEntry(String name) {
+    if (!isContentEntry(name)) return false;
     String lower = name.toLowerCase();
     return (
       lower.endsWith(".jpg") ||
@@ -466,6 +533,16 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       lower.endsWith(".bmp") ||
       lower.endsWith(".webp")
     );
+  }
+
+  private boolean isContentEntry(String name) {
+    if (name == null) return false;
+    String norm = name.replace('\\', '/');
+    if (norm.startsWith("__MACOSX/") || norm.contains("/__MACOSX/")) return false;
+    String base = baseName(norm);
+    if (base.startsWith(".")) return false;
+    if (base.equalsIgnoreCase(".ds_store")) return false;
+    return true;
   }
 
   private byte[] generatePlaceholderCover(int width, int height) {
@@ -574,10 +651,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       }
     }
     if (images.isEmpty()) return null;
-    images.sort(Comparator.comparing(
-        fh -> fh.getFileName() == null ? "" : fh.getFileName(),
-        String.CASE_INSENSITIVE_ORDER
-    ));
+    images.sort((a, b) -> naturalCompare(a.getFileName(), b.getFileName()));
     return images.get(0);
   }
 
@@ -591,10 +665,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       }
     }
     if (images.isEmpty()) return null;
-    images.sort(Comparator.comparing(
-        entry -> entry.getName() == null ? "" : entry.getName(),
-        String.CASE_INSENSITIVE_ORDER
-    ));
+    images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
     return images.get(0);
   }
   
@@ -642,10 +713,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       }
     }
     if (images.isEmpty()) return null;
-    images.sort(Comparator.comparing(
-        entry -> entry.getName() == null ? "" : entry.getName(),
-        String.CASE_INSENSITIVE_ORDER
-    ));
+    images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
     return images.get(0);
   }
 
@@ -656,5 +724,77 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       is.transferTo(baos);
       return baos.toByteArray();
     }
+  }
+
+  private java.util.List<ZipEntry> listZipImageEntries(ZipFile zipFile) {
+    java.util.List<ZipEntry> images = new java.util.ArrayList<>();
+    java.util.Enumeration<? extends ZipEntry> en = zipFile.entries();
+    while (en.hasMoreElements()) {
+      ZipEntry e = en.nextElement();
+      if (!e.isDirectory() && isImageEntry(e.getName())) images.add(e);
+    }
+    images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
+    // Heuristic preferred names first
+    images.sort((a, b) -> Boolean.compare(!likelyCoverName(baseName(a.getName())), !likelyCoverName(baseName(b.getName()))));
+    return images;
+  }
+
+  private java.util.List<SevenZArchiveEntry> listSevenZImageEntries(SevenZFile sevenZ) throws IOException {
+    java.util.List<SevenZArchiveEntry> images = new java.util.ArrayList<>();
+    for (SevenZArchiveEntry e : sevenZ.getEntries()) {
+      if (!e.isDirectory() && isImageEntry(e.getName())) images.add(e);
+    }
+    images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
+    images.sort((a, b) -> Boolean.compare(!likelyCoverName(baseName(a.getName())), !likelyCoverName(baseName(b.getName()))));
+    return images;
+  }
+
+  private java.util.List<FileHeader> listRarImageHeaders(Archive archive) {
+    java.util.List<FileHeader> images = new java.util.ArrayList<>();
+    for (FileHeader fh : archive.getFileHeaders()) {
+      if (fh != null && !fh.isDirectory() && isImageEntry(fh.getFileName())) images.add(fh);
+    }
+    images.sort((a, b) -> naturalCompare(a.getFileName(), b.getFileName()));
+    images.sort((a, b) -> Boolean.compare(!likelyCoverName(baseName(a.getFileName())), !likelyCoverName(baseName(b.getFileName()))));
+    return images;
+  }
+
+  private boolean likelyCoverName(String base) {
+    if (base == null) return false;
+    String n = base.toLowerCase();
+    return n.startsWith("cover") || n.equals("folder") || n.startsWith("front");
+  }
+
+  private int naturalCompare(String a, String b) {
+    if (a == null) return b == null ? 0 : -1;
+    if (b == null) return 1;
+    String s1 = a.toLowerCase();
+    String s2 = b.toLowerCase();
+    int i = 0, j = 0, n1 = s1.length(), n2 = s2.length();
+    while (i < n1 && j < n2) {
+      char c1 = s1.charAt(i);
+      char c2 = s2.charAt(j);
+      if (Character.isDigit(c1) && Character.isDigit(c2)) {
+        int i1 = i; while (i1 < n1 && Character.isDigit(s1.charAt(i1))) i1++;
+        int j1 = j; while (j1 < n2 && Character.isDigit(s2.charAt(j1))) j1++;
+        String num1 = s1.substring(i, i1).replaceFirst("^0+", "");
+        String num2 = s2.substring(j, j1).replaceFirst("^0+", "");
+        int cmp = Integer.compare(num1.isEmpty() ? 0 : Integer.parseInt(num1), num2.isEmpty() ? 0 : Integer.parseInt(num2));
+        if (cmp != 0) return cmp;
+        i = i1; j = j1;
+      } else {
+        if (c1 != c2) return Character.compare(c1, c2);
+        i++; j++;
+      }
+    }
+    return Integer.compare(n1 - i, n2 - j);
+  }
+
+  private ZipEntry findHeuristicCover(ZipFile zipFile) {
+    java.util.List<ZipEntry> images = listZipImageEntries(zipFile);
+    for (ZipEntry e : images) {
+      if (likelyCoverName(baseName(e.getName()))) return e;
+    }
+    return null;
   }
 }
