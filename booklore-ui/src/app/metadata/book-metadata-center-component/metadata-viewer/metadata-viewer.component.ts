@@ -543,7 +543,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   goToSeries(seriesName: string): void {
-    this.router.navigate(['/series', seriesName]);
+    const encodedSeriesName = encodeURIComponent(seriesName);
+    this.router.navigate(['/series', encodedSeriesName]);
   }
 
   goToPublisher(publisher: string): void {

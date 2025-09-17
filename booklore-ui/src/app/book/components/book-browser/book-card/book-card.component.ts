@@ -472,7 +472,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   openSeriesInfo(): void {
     const seriesName = this.book?.metadata?.seriesName;
     if (this.isSeriesCollapsed && seriesName) {
-      this.router.navigate(['/series', seriesName]);
+      const encodedSeriesName = encodeURIComponent(seriesName);
+      this.router.navigate(['/series', encodedSeriesName]);
     } else {
       this.openBookInfo(this.book);
     }
