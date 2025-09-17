@@ -23,6 +23,7 @@ import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,8 @@ class BookDropServiceTest {
 
     @Mock
     private BookdropFileRepository bookdropFileRepository;
+    @Mock
+    private MonitoringRegistrationService monitoringRegistrationService;
     @Mock
     private LibraryRepository libraryRepository;
     @Mock

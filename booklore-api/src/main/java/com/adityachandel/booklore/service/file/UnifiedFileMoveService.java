@@ -39,33 +39,44 @@ public class UnifiedFileMoveService {
         }
 
         Path currentFilePath = bookEntity.getFullFilePath();
-        if (!Files.exists(currentFilePath)) {
-            log.warn("File does not exist for book ID {}: {}. Skipping file move.", bookEntity.getId(), currentFilePath);
-            return;
-        }
+        Path expectedFilePath = fileMovingHelper.generateNewFilePath(bookEntity, pattern);
 
         // Check if current path differs from expected pattern
-        Path expectedFilePath = fileMovingHelper.generateNewFilePath(bookEntity, pattern);
         if (currentFilePath.equals(expectedFilePath)) {
             log.debug("File for book ID {} is already in the correct location according to library pattern. No move needed.", bookEntity.getId());
             return;
         }
 
-        log.info("File for book ID {} needs to be moved from {} to {} to match library pattern", bookEntity.getId(), currentFilePath, expectedFilePath);
+        log.info("File for book ID {} needs to be moved from {} to {} to match library pattern",
+                bookEntity.getId(), currentFilePath, expectedFilePath);
 
-        // For single file moves, use targeted path protection
-        monitoredFileOperationService.executeWithMonitoringSuspended(currentFilePath, expectedFilePath, bookEntity.getLibraryPath().getLibrary().getId(), () -> {
-            try {
-                boolean moved = fileMovingHelper.moveBookFileIfNeeded(bookEntity, pattern);
-                if (moved) {
-                    log.info("Successfully moved file for book ID {} from {} to {} to match library pattern", bookEntity.getId(), currentFilePath, bookEntity.getFullFilePath());
-                }
-                return moved;
-            } catch (IOException e) {
-                log.error("Failed to move file for book ID {}: {}", bookEntity.getId(), e.getMessage(), e);
-                throw new RuntimeException("File move failed", e);
-            }
-        });
+        Long libraryId = bookEntity.getLibraryPath().getLibrary().getId();
+        Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath())
+                .toAbsolutePath().normalize();
+
+        // unregister the entire library to suppress all watch events during the move
+        monitoringRegistrationService.unregisterLibrary(libraryId);
+
+        try {
+            monitoredFileOperationService.executeWithMonitoringSuspended(
+                    currentFilePath, expectedFilePath, libraryId, () -> {
+                        try {
+                            boolean moved = fileMovingHelper.moveBookFileIfNeeded(bookEntity, pattern);
+                            if (moved) {
+                                log.info("Successfully moved file for book ID {} from {} to {}",
+                                        bookEntity.getId(), currentFilePath, bookEntity.getFullFilePath());
+                            }
+                            return moved;
+                        } catch (IOException e) {
+                            log.error("Failed to move file for book ID {}: {}", bookEntity.getId(), e.getMessage(), e);
+                            throw new RuntimeException("File move failed", e);
+                        }
+                    }
+            );
+        } finally {
+            // re-register all folders under the library after the move
+            monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
+        }
     }
 
     /**
@@ -178,7 +189,7 @@ public class UnifiedFileMoveService {
      */
     public interface BatchMoveCallback {
         void onBookMoved(BookEntity book);
+
         void onBookMoveFailed(BookEntity book, Exception error);
     }
 }
-
