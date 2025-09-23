@@ -142,6 +142,12 @@ public class BookService {
         UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId).orElse(new UserBookProgressEntity());
 
         Book book = bookMapper.toBook(bookEntity);
+        if (book.getShelves() != null) {
+            book.setShelves(book.getShelves().stream()
+                    .filter(shelf -> user.getId().equals(shelf.getUserId()))
+                    .collect(Collectors.toSet()));
+        }
+
         book.setLastReadTime(userProgress.getLastReadTime());
 
         if (bookEntity.getBookType() == BookFileType.PDF) {
