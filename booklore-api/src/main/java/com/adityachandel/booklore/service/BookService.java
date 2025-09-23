@@ -103,7 +103,8 @@ public class BookService {
                 user.getAssignedLibraries().stream()
                         .map(Library::getId)
                         .collect(Collectors.toSet()),
-                includeDescription
+                includeDescription,
+                user.getId()
         );
 
         Map<Long, UserBookProgressEntity> progressMap =

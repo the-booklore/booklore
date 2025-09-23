@@ -11,8 +11,6 @@ import org.springframework.stereotype.Service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
@@ -28,88 +26,36 @@ public class BookQueryService {
 
     public List<Book> getAllBooks(boolean includeDescription) {
         List<BookEntity> books = bookRepository.findAllWithMetadata();
-        return books.stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return mapBooksToDto(books, includeDescription, null);
     }
 
     public Page<Book> getAllBooksPage(boolean includeDescription, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
         Page<BookEntity> books = bookRepository.findAllWithMetadata(pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+        return createPageFromBooks(books, pageable, includeDescription, null);
     }
 
     public Page<Book> getRecentBooksPage(boolean includeDescription, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
         Page<BookEntity> books = bookRepository.findAllWithMetadata(pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+        return createPageFromBooks(books, pageable, includeDescription, null);
     }
 
-    public List<Book> getAllBooksByLibraryIds(Set<Long> libraryIds, boolean includeDescription) {
+    public List<Book> getAllBooksByLibraryIds(Set<Long> libraryIds, boolean includeDescription, Long userId) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds);
-        return books.stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return mapBooksToDto(books, includeDescription, userId);
     }
 
-    public Page<Book> getAllBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size) {
+    public Page<Book> getAllBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size, Long userId) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
         Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+        return createPageFromBooks(books, pageable, includeDescription, userId);
     }
 
-    public Page<Book> getRecentBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size) {
+    public Page<Book> getRecentBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size, Long userId) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
         Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+        return createPageFromBooks(books, pageable, includeDescription, userId);
     }
 
     public List<BookEntity> findAllWithMetadataByIds(Set<Long> bookIds) {
@@ -160,21 +106,37 @@ public class BookQueryService {
     public Page<Book> getAllBooksByShelfPage(Long shelfId, boolean includeDescription, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
         Page<BookEntity> books = bookRepository.findAllWithMetadataByShelfId(shelfId, pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(book -> {
-                    Book dto = bookMapperV2.toDTO(book);
-                    if (!includeDescription && dto.getMetadata() != null) {
-                        dto.getMetadata().setDescription(null);
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+        return createPageFromBooks(books, pageable, includeDescription, null);
     }
 
     public void saveAll(List<BookEntity> books) {
         bookRepository.saveAll(books);
     }
 
-    // Removed OPDS Magic Shelves support
+    private List<Book> mapBooksToDto(List<BookEntity> books, boolean includeDescription, Long userId) {
+        return books.stream()
+                .map(book -> mapBookToDto(book, includeDescription, userId))
+                .collect(Collectors.toList());
+    }
+
+    private Book mapBookToDto(BookEntity bookEntity, boolean includeDescription, Long userId) {
+        Book dto = bookMapperV2.toDTO(bookEntity);
+
+        if (!includeDescription && dto.getMetadata() != null) {
+            dto.getMetadata().setDescription(null);
+        }
+
+        if (dto.getShelves() != null && userId != null) {
+            dto.setShelves(dto.getShelves().stream()
+                    .filter(shelf -> userId.equals(shelf.getUserId()))
+                    .collect(Collectors.toSet()));
+        }
+
+        return dto;
+    }
+
+    private Page<Book> createPageFromBooks(Page<BookEntity> books, Pageable pageable, boolean includeDescription, Long userId) {
+        List<Book> mapped = mapBooksToDto(books.getContent(), includeDescription, userId);
+        return new PageImpl<>(mapped, pageable, books.getTotalElements());
+    }
 }

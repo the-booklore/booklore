@@ -12,4 +12,5 @@ public class Shelf {
     private String name;
     private String icon;
     private Sort sort;
+    private Long userId;
 }
