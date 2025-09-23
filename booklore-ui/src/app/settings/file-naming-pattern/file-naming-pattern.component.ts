@@ -20,14 +20,15 @@ import {Divider} from 'primeng/divider';
 })
 export class FileNamingPatternComponent implements OnInit {
   readonly exampleMetadata: Record<string, string> = {
-    title: 'The Fellowship of the Ring',
-    authors: 'J.R.R. Tolkien',
-    year: '1954',
-    series: 'The Lord of the Rings',
+    title: "Harry Potter and the Sorcerer's Stone",
+    subtitle: 'The Boy Who Lived',
+    authors: 'J.K. Rowling',
+    year: '1997',
+    series: 'Harry Potter',
     seriesIndex: '01',
     language: 'en',
-    publisher: 'Allen & Unwin',
-    isbn: '9780618574940',
+    publisher: 'Bloomsbury',
+    isbn: '9780747532699',
   };
 
   defaultPattern = '';

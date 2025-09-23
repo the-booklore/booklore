@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 class PathPatternResolverTest {
 
-    private BookEntity createBook(String title, List<String> authors, LocalDate date,
+    private BookEntity createBook(String title, String subtitle, List<String> authors, LocalDate date,
                                   String series, Float seriesNum, String lang,
                                   String publisher, String isbn13, String isbn10,
                                   String fileName) {
@@ -28,6 +28,7 @@ class PathPatternResolverTest {
         when(book.getFileName()).thenReturn(fileName);
 
         when(metadata.getTitle()).thenReturn(title);
+        when(metadata.getSubtitle()).thenReturn(subtitle);
 
         if (authors == null) {
             when(metadata.getAuthors()).thenReturn(null);
@@ -49,6 +50,14 @@ class PathPatternResolverTest {
         when(metadata.getIsbn10()).thenReturn(isbn10);
 
         return book;
+    }
+
+    // Helper method for backward compatibility
+    private BookEntity createBook(String title, List<String> authors, LocalDate date,
+                                  String series, Float seriesNum, String lang,
+                                  String publisher, String isbn13, String isbn10,
+                                  String fileName) {
+        return createBook(title, null, authors, date, series, seriesNum, lang, publisher, isbn13, isbn10, fileName);
     }
 
     @Test void emptyPattern_returnsOnlyExtension() {
@@ -209,5 +218,59 @@ class PathPatternResolverTest {
         var book = createBook("X", List.of("Y"), null, null, null, null, null, null, null, "book.mobi");
         String pattern = "{title}.{extension}";
         assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("X.mobi");
+    }
+
+    @Test void subtitleInPattern_replacedCorrectly() {
+        var book = createBook("Main Title", "The Subtitle", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title} - {subtitle}")).isEqualTo("Main Title - The Subtitle.epub");
+    }
+
+    @Test void subtitleEmpty_replacedWithEmpty() {
+        var book = createBook("Title", "", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title} - {subtitle}")).isEqualTo("Title - .epub");
+    }
+
+    @Test void subtitleNull_replacedWithEmpty() {
+        var book = createBook("Title", null, List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title} - {subtitle}")).isEqualTo("Title - .epub");
+    }
+
+    @Test void subtitleInOptionalBlock_withValue_blockIncluded() {
+        var book = createBook("Title", "Subtitle", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title}< - {subtitle}>")).isEqualTo("Title - Subtitle.epub");
+    }
+
+    @Test void subtitleInOptionalBlock_withoutValue_blockRemoved() {
+        var book = createBook("Title", null, List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title}< - {subtitle}>")).isEqualTo("Title.epub");
+    }
+
+    @Test void subtitleWithIllegalChars_sanitized() {
+        var book = createBook("Title", "Sub:title<>|*?", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        String result = PathPatternResolver.resolvePattern(book, "{title} - {subtitle}");
+        assertThat(result).doesNotContain(":", "<", ">", "|", "*", "?")
+                .contains("Title").contains("Subtitle");
+    }
+
+    @Test void subtitleWithWhitespace_trimmedAndSanitized() {
+        var book = createBook("Title", "   Sub  title  ", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{title} - {subtitle}")).isEqualTo("Title - Sub title.epub");
+    }
+
+    @Test void complexPatternWithSubtitle_allPlaceholdersPresent() {
+        var book = createBook("Main Title", "The Great Subtitle", List.of("Author One"), LocalDate.of(2010, 5, 5),
+                "Series", 1f, "English", "Publisher", "ISBN13", "ISBN10", "complex.epub");
+        String pattern = "<{series}/>{title}< - {subtitle}> - {authors} - {year}";
+        assertThat(PathPatternResolver.resolvePattern(book, pattern))
+                .isEqualTo("Series/Main Title - The Great Subtitle - Author One - 2010.epub");
+    }
+
+    @Test void optionalBlockWithTitleAndSubtitle_partialValues() {
+        var book1 = createBook("Title", "Subtitle", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        var book2 = createBook("Title", null, List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
+        String pattern = "<{title} - {subtitle}>";
+
+        assertThat(PathPatternResolver.resolvePattern(book1, pattern)).isEqualTo("Title - Subtitle.epub");
+        assertThat(PathPatternResolver.resolvePattern(book2, pattern)).isEqualTo("file.epub");
     }
 }
