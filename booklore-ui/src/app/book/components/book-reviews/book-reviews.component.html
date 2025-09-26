@@ -6,14 +6,32 @@
         <span class="text-gray-400">Getting latest reviews...</span>
       </div>
     } @else if (reviews?.length === 0) {
-      <div class="text-center p-8 text-gray-400">
-        <i class="pi pi-comments text-4xl mb-4 block"></i>
-        <p class="text-gray-200">No reviews available for this book</p>
+      <div class="text-center p-8 text-gray-400 empty-state">
+        <div class="empty-state-icon">
+          @if (hasPermission && !reviewsLocked && reviewDownloadEnabled) {
+            <p-button
+              outlined
+              rounded
+              icon="pi pi-download"
+              severity="primary"
+              (click)="fetchNewReviews()"
+              pTooltip="Fetch Reviews"
+              tooltipPosition="top"
+              class="action-btn floating-btn">
+            </p-button>
+          }
+        </div>
+        <p class="text-gray-200 empty-state-title">No reviews available for this book</p>
         @if (!reviewDownloadEnabled) {
-          <p class="text-sm text-amber-400 mt-2">
+          <p class="text-sm text-amber-400 mt-2 empty-state-subtitle">
             Book review downloads are currently disabled. Enable this in Metadata Settings to fetch reviews.
           </p>
+        } @else if (hasPermission && !reviewsLocked) {
+          <p class="text-sm text-gray-400 mt-2 empty-state-subtitle">
+            Click "Fetch Reviews" to download reviews from configured providers
+          </p>
         }
+        <div class="empty-state-decoration"></div>
       </div>
     } @else {
       <div class="reviews-scroll-container">

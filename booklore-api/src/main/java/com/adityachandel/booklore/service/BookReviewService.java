@@ -37,25 +37,40 @@ public class BookReviewService {
     private final AuthenticationService authenticationService;
 
     public List<BookReview> getByBookId(Long bookId) {
-        List<BookReview> reviews = bookReviewRepository.findByBookMetadataBookId(bookId).stream()
-                .map(mapper::toDto)
-                .collect(Collectors.toList());
-
-        if (!appSettingService.getAppSettings().getMetadataPublicReviewsSettings().isDownloadEnabled() || !reviews.isEmpty()) {
-            return reviews;
-        }
-
-        BookLoreUser user = authenticationService.getAuthenticatedUser();
-        if (!(user.getPermissions().isAdmin() || user.getPermissions().isCanManipulateLibrary())) {
-            return reviews;
-        }
-
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        bookReviewUpdateService.addReviewsToBook(fetchBookReviews(bookEntity), bookEntity.getMetadata());
-        bookRepository.save(bookEntity);
-        return bookReviewRepository.findByBookMetadataBookId(bookId).stream()
+
+        List<BookReview> existingReviews = bookReviewRepository.findByBookMetadataBookId(bookId).stream()
                 .map(mapper::toDto)
                 .collect(Collectors.toList());
+
+        MetadataPublicReviewsSettings reviewSettings = appSettingService.getAppSettings().getMetadataPublicReviewsSettings();
+
+        // Return existing reviews if download is disabled or reviews already exist
+        if (!reviewSettings.isDownloadEnabled() || !existingReviews.isEmpty()) {
+            return existingReviews;
+        }
+
+        // Check user permissions for auto-download
+        BookLoreUser currentUser = authenticationService.getAuthenticatedUser();
+        boolean hasPermission = currentUser.getPermissions().isAdmin() || currentUser.getPermissions().isCanManipulateLibrary();
+
+        if (!hasPermission || !reviewSettings.isAutoDownloadEnabled()) {
+            return existingReviews;
+        }
+
+        try {
+            List<BookReview> fetchedReviews = fetchBookReviews(bookEntity);
+            if (!fetchedReviews.isEmpty()) {
+                bookReviewUpdateService.addReviewsToBook(fetchedReviews, bookEntity.getMetadata());
+                bookRepository.save(bookEntity);
+                return bookReviewRepository.findByBookMetadataBookId(bookId).stream()
+                        .map(mapper::toDto)
+                        .collect(Collectors.toList());
+            }
+        } catch (Exception ignored) {
+        }
+
+        return existingReviews;
     }
 
     public List<BookReview> fetchBookReviews(BookEntity bookEntity) {
@@ -95,7 +110,7 @@ public class BookReviewService {
         bookRepository.save(bookEntity);
 
         bookReviewRepository.deleteByBookMetadataBookId(bookId);
-        
+
         List<BookReview> freshReviews = fetchBookReviews(bookEntity);
         bookReviewUpdateService.addReviewsToBook(freshReviews, bookEntity.getMetadata());
         bookRepository.save(bookEntity);

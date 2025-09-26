@@ -94,6 +94,7 @@ export interface ReviewProviderConfig {
 
 export interface PublicReviewSettings {
   downloadEnabled: boolean;
+  autoDownloadEnabled: boolean;
   providers: ReviewProviderConfig[];
 }
 

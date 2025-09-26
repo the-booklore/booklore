@@ -10,12 +10,28 @@
       </div>
       <p class="setting-description">
         <i class="pi pi-info-circle"></i>
-        Automatically download user reviews from enabled platforms (Amazon, Goodreads, Hardcover) when fetching book metadata. Reviews will be stored with your books for offline access.
+        Enable downloading user reviews from configured platforms (Amazon, Goodreads, Hardcover). Reviews will be stored with your books for offline access.
       </p>
     </div>
   </div>
 
   @if (publicReviewSettings.downloadEnabled) {
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Auto Download on Book Open</label>
+          <p-toggleswitch
+            [(ngModel)]="publicReviewSettings.autoDownloadEnabled"
+            (onChange)="onAutoDownloadToggle($event.checked)">
+          </p-toggleswitch>
+        </div>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          Automatically fetch reviews when you open a book's details page. When disabled, reviews will only be downloaded manually or during metadata refresh, reducing background network activity and improving performance.
+        </p>
+      </div>
+    </div>
+
     <div class="review-sources-section">
       <div class="sources-header">
         <h4 class="subsection-title">Review Sources</h4>

@@ -191,6 +191,7 @@ public class SettingPersistenceHelper {
     public MetadataPublicReviewsSettings getDefaultMetadataPublicReviewsSettings() {
         return MetadataPublicReviewsSettings.builder()
                 .downloadEnabled(true)
+                .autoDownloadEnabled(false)
                 .providers(Set.of(
                         MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
                                 .provider(MetadataProvider.Amazon)
