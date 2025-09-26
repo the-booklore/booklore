@@ -5,6 +5,10 @@ import {API_CONFIG} from '../../config/api-config';
 
 export interface FileMoveRequest {
   bookIds: number[];
+  moves: {
+    bookId: number;
+    targetLibraryId: number | null;
+  }[];
 }
 
 @Injectable({

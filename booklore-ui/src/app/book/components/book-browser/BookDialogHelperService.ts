@@ -73,7 +73,7 @@ export class BookDialogHelperService {
     });
   }
 
-  openMultibookMetadataEditerDialog(bookIds: Set<number>): DynamicDialogRef {
+  openMultibookMetadataEditorDialog(bookIds: Set<number>): DynamicDialogRef {
     return this.dialogService.open(MultiBookMetadataEditorComponent, {
       header: 'Bulk Edit Metadata',
       showHeader: false,
@@ -96,12 +96,16 @@ export class BookDialogHelperService {
     return this.dialogService.open(FileMoverComponent, {
       header: `Organize Book Files (${count} book${count !== 1 ? 's' : ''})`,
       showHeader: true,
+      maximizable: true,
       modal: true,
       closable: true,
       closeOnEscape: false,
       dismissableMask: false,
       style: {
-        width: '90vw'
+        width: '85vw',
+        height: '80vh',
+        maxHeight: '95vh',
+        maxWidth: '97.5vw'
       },
       data: {
         bookIds: selectedBooks

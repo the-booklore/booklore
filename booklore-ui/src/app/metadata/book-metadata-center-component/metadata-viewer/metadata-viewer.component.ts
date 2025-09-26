@@ -37,6 +37,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {AdditionalFileUploaderComponent} from '../../../book/components/additional-file-uploader/additional-file-uploader.component';
 import {Image} from 'primeng/image';
+import {BookDialogHelperService} from '../../../book/components/book-browser/BookDialogHelperService';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -58,6 +59,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
+
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
@@ -112,7 +115,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => [
         {
-          label: 'Granular Refresh',
+          label: 'Advanced Fetch',
           icon: 'pi pi-database',
           command: () => {
             this.dialogService.open(MetadataFetchOptionsComponent, {
@@ -198,6 +201,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 },
                 data: {book}
               });
+            },
+          },
+          {
+            label: 'Organize Files',
+            icon: 'pi pi-arrows-h',
+            command: () => {
+              this.openFileMoverDialog(book.id);
             },
           },
           {
@@ -801,6 +811,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   cancelDateFinishedEdit(): void {
     this.isEditingDateFinished = false;
     this.editDateFinished = null;
+  }
+
+  openFileMoverDialog(bookId: number): void {
+    this.bookDialogHelperService.openFileMoverDialog(new Set([bookId]));
   }
 
   protected readonly ResetProgressTypes = ResetProgressTypes;

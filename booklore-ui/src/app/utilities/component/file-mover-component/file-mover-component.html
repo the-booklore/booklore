@@ -1,4 +1,4 @@
-<div class="p-fluid px-4 py-2 rounded-xl flex flex-col h-[800px]">
+<div class="p-fluid px-4 py-2 rounded-xl flex flex-col h-full">
 
   <div class="px-4 mx-2 mb-4 py-3 rounded-lg border border-[var(--border-color)] transition-all">
     <p class="text-[var(--primary-color)] font-semibold mb-1">
@@ -6,16 +6,16 @@
     </p>
     <div class="text-sm text-gray-300 space-y-3">
       <p>
-        Your files will be automatically renamed and organized based on your library's naming rules.
-        Check the preview below to see how your files will look, then click <span class="font-semibold text-green-400">Move Files</span> to organize them.
+        Your files will be automatically renamed, organized, and can be moved between libraries based on your preferences.
+        Check the preview below to see how your files will look, select target libraries if needed, then click <span class="font-semibold text-green-400">Move Files</span> to organize them.
       </p>
       <p>
         <i class="pi pi-lightbulb text-blue-400 mr-1"></i>
-        <span class="text-blue-300">Want to change how files are named? Go to <strong>Settings → File Naming Pattern</strong></span>
+        <span class="text-blue-300">Want to change how files are named? Go to <strong>Settings → File Naming Pattern</strong>. Each library can have its own naming pattern!</span>
       </p>
       <p class="text-yellow-500 font-medium flex items-center gap-2">
         <i class="pi pi-exclamation-triangle text-yellow-400"></i>
-        This will actually move and rename files on your computer, make sure you're happy with the preview first!
+        This will actually move and rename files on your computer across different library folders. Make sure you're happy with the preview first!
       </p>
     </div>
   </div>
@@ -52,6 +52,23 @@
     </div>
   </div>
 
+  <div class="flex gap-4 mb-4 px-2 items-center">
+    <div class="flex items-center gap-3">
+      <label class="text-sm font-medium text-gray-300">Set all files to:</label>
+      <p-select
+        [options]="availableLibraries"
+        [(ngModel)]="defaultTargetLibraryId"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select default library"
+        (onChange)="onDefaultLibraryChange()"
+        class="min-w-[200px]"
+        size="small"
+        appendTo="body"
+      ></p-select>
+    </div>
+  </div>
+
   <div class="flex-grow overflow-y-auto">
     <p-table
       [value]="filePreviews"
@@ -62,6 +79,7 @@
         <tr>
           <th>ID</th>
           <th>Current Path</th>
+          <th>Target Library</th>
           <th></th>
           <th>New Path</th>
         </tr>
@@ -71,13 +89,27 @@
           <td class="text-center">{{ preview.bookId }}</td>
           <td class="w-auto">
             <p>
-              <span class="text-gray-400 select-none">{{ preview.libraryPathPrefix }}/</span><span class="text-gray-200">{{ preview.relativeOriginalPath }}</span>
+              <span class="text-gray-400 select-none">{{ preview.currentLibraryName }}/</span><span class="text-gray-200">{{ preview.relativeOriginalPath }}</span>
             </p>
+          </td>
+          <td class="w-auto">
+            <p-select
+              [options]="availableLibraries"
+              [(ngModel)]="preview.targetLibraryId"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select Library"
+              (onChange)="onLibraryChange(preview)"
+              [disabled]="preview.isMoved"
+              class="w-full"
+              appendTo="body"
+              size="small"
+            ></p-select>
           </td>
           <td class="w-auto text-[var(--primary-color)] text-center">→</td>
           <td class="w-auto">
             <p>
-              <span class="text-gray-400 select-none">{{ preview.libraryPathPrefix }}/</span><span class="text-gray-200">{{ preview.relativeNewPath }}</span>
+              <span class="text-gray-400 select-none">{{ preview.targetLibraryName }}/</span><span class="text-gray-200">{{ preview.relativeNewPath }}</span>
             </p>
           </td>
           <td class="w-auto text-center">

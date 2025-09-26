@@ -26,6 +26,7 @@ import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
+import {BookDialogHelperService} from '../BookDialogHelperService';
 
 @Component({
   selector: 'app-book-card',
@@ -63,6 +64,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private router = inject(Router);
   protected urlHelper = inject(UrlHelperService);
   private confirmationService = inject(ConfirmationService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
 
   private userPermissions: any;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
@@ -370,6 +372,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         label: 'More Actions',
         icon: 'pi pi-ellipsis-h',
         items: [
+          {
+            label: 'Organize File',
+            icon: 'pi pi-arrows-h',
+            command: () => {
+              this.bookDialogHelperService.openFileMoverDialog(new Set([this.book.id]));
+            }
+          },
           {
             label: 'Read Status',
             icon: 'pi pi-book',

@@ -456,7 +456,7 @@
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
               @if (refreshMenuItems$ | async; as refreshItems) {
                 <p-splitbutton
-                  [label]="isAutoFetching ? 'Fetching...' : 'Auto Fetch'"
+                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch Metadata'"
                   [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                   [outlined]="true"
                   [model]="refreshItems"
@@ -470,7 +470,7 @@
             }
             @if (userState.user!.permissions.canDeleteBook || userState.user!.permissions.admin) {
               @if (otherItems$ | async; as otherItems) {
-                <p-button icon="pi pi-ellipsis-v" outlined severity="danger" (click)="entitymenu.toggle($event)"></p-button>
+                <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
             }
