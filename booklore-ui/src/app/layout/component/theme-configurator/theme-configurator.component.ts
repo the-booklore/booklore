@@ -1,11 +1,12 @@
 import {CommonModule} from '@angular/common';
 import {Component, computed, effect, inject} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {$t} from '@primeng/themes';
-import Aura from '@primeng/themes/aura';
 import {ButtonModule} from 'primeng/button';
 import {RadioButtonModule} from 'primeng/radiobutton';
 import {ToggleSwitchModule} from 'primeng/toggleswitch';
+
+import Aura from '../theme-palette-extend';
+
 import {AppConfigService} from '../../../core/service/app-config.service';
 import {FaviconService} from './favicon-service';
 
@@ -53,7 +54,17 @@ export class ThemeConfiguratorComponent {
 
   readonly primaryColors = computed<Palette[]>(() => {
     const presetPalette = (Aura.primitive ?? {}) as Record<string, ColorPalette>;
-    const colors = ['emerald', 'green', 'lime', 'orange', 'amber', 'yellow', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'];
+    const colors = [
+      'emerald', 'green', 'lime', 'orange', 'amber', 'yellow',
+      'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet',
+      'purple', 'fuchsia', 'pink', 'rose', 'red',
+      'coral', 'blush', 'coralFizz', 'melonFrost',
+      'apricotBreeze', 'bronze', 'butter', 'cream',
+      'citrusMint', 'sage', 'sagePearl', 'mintCandy',
+      'skyCandy', 'powder', 'periwinkleCream',
+      'lavenderDream', 'cottonCandy',
+      'dusty'
+    ];
     return [{name: 'noir', palette: {}}].concat(
       colors.map(name => ({
         name,
