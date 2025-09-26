@@ -69,7 +69,9 @@
               <div class="flex flex-col items-center md:items-start gap-1">
                 <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap text-center md:text-left">
                   <h2 class="text-2xl md:text-3xl font-extrabold leading-tight">
-                    {{ book?.metadata?.title }}@if (book?.metadata?.subtitle) {: {{ book.metadata?.subtitle }}}
+                    {{ book?.metadata?.title }}@if (book?.metadata?.subtitle) {
+                    : {{ book.metadata?.subtitle }}
+                  }
                   </h2>
                   <i
                     class="pi align-middle"
@@ -230,6 +232,12 @@
           <div class="px-1 md:px-0">
             <div class="grid md:grid-cols-4 gap-y-2.5 text-sm pt-2 md:pt-4 pb-2 text-gray-300 md:min-w-[60rem] md:max-w-[100rem]">
               <p class="whitespace-nowrap max-w-[250px] overflow-hidden text-ellipsis">
+                <span class="font-bold">Library: </span>
+                @if (book?.libraryName) {
+                  <span>{{ book.libraryName }}</span>
+                }
+              </p>
+              <p class="whitespace-nowrap max-w-[250px] overflow-hidden text-ellipsis">
                 <span class="font-bold">Publisher: </span>
                 @if (book?.metadata?.publisher) {
                   <span class="underline hover:opacity-80 cursor-pointer" (click)="goToPublisher(book?.metadata?.publisher!)">
@@ -241,7 +249,6 @@
               </p>
               <p><strong>Published:</strong> {{ book?.metadata!.publishedDate || '-' }}</p>
               <p><strong>Language:</strong> {{ book?.metadata!.language || '-' }}</p>
-              <p><strong>File Size:</strong> {{ getFileSizeInMB(book) }}</p>
               <p class="whitespace-nowrap flex items-center gap-2">
                 <span class="font-bold">File Type:</span>
                 <span
@@ -378,6 +385,7 @@
                 </div>
               }
               <p><strong>Page Count:</strong> {{ book?.metadata!.pageCount || '-' }}</p>
+              <p><strong>File Size:</strong> {{ getFileSizeInMB(book) }}</p>
             </div>
 
             <div class="flex items-center gap-2">

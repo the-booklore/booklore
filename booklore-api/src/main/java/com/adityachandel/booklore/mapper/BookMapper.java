@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public interface BookMapper {
 
     @Mapping(source = "library.id", target = "libraryId")
+    @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
@@ -30,20 +31,13 @@ public interface BookMapper {
     Book toBook(BookEntity bookEntity);
 
     @Mapping(source = "library.id", target = "libraryId")
+    @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
     @Mapping(source = "additionalFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "additionalFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
-
-    @Mapping(source = "library.id", target = "libraryId")
-    @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
-    @Mapping(target = "metadata", ignore = true)
-    @Mapping(target = "shelves", ignore = true)
-    @Mapping(target = "alternativeFormats", ignore = true)
-    @Mapping(target = "supplementaryFiles", ignore = true)
-    Book toBookWithoutMetadataAndShelves(BookEntity bookEntity);
 
     default Set<String> mapAuthors(Set<AuthorEntity> authors) {
         if (authors == null) return null;

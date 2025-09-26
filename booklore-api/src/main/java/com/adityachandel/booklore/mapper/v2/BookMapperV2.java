@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public interface BookMapperV2 {
 
     @Mapping(source = "library.id", target = "libraryId")
+    @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(target = "metadata", qualifiedByName = "mapMetadata")
     Book toDTO(BookEntity bookEntity);
