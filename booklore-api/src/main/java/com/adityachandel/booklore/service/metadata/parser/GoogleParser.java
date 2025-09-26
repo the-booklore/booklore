@@ -41,12 +41,9 @@ public class GoogleParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        // 1. If ISBN exists, prioritize it
         if (fetchMetadataRequest.getIsbn() != null && !fetchMetadataRequest.getIsbn().isBlank()) {
-            return getMetadataListByIsbn(fetchMetadataRequest.getIsbn());
+            return getMetadataListByIsbn(ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn()));
         }
-
-        // 2. Otherwise fallback to existing title/author search
         String searchTerm = getSearchTerm(book, fetchMetadataRequest);
         return searchTerm != null ? getMetadataListByTerm(searchTerm) : List.of();
     }
