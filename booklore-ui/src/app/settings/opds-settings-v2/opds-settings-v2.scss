@@ -132,13 +132,14 @@
     .setting-label {
       margin-bottom: 0;
       flex-shrink: 0;
-      min-width: 180px;
+      min-width: 150px;
     }
 
     .input-group {
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      flex: 1;
 
       @media (max-width: 768px) {
         flex-direction: column;
@@ -180,6 +181,18 @@
 .endpoint-input {
   width: 100%;
   min-width: 25rem;
+}
+
+.endpoint-divider {
+  height: 1px;
+  background: var(--p-content-border-color);
+  margin: 1.5rem 0;
+}
+
+.setting-description {
+  .pi-exclamation-triangle {
+    color: var(--p-orange-500);
+  }
 }
 
 .table-card {

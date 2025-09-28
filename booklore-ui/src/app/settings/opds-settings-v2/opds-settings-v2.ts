@@ -39,6 +39,8 @@ import {AppSettingKey} from '../../core/model/app-settings.model';
 export class OpdsSettingsV2 implements OnInit, OnDestroy {
 
   opdsEndpoint = `${API_CONFIG.BASE_URL}/api/v2/opds/catalog`;
+  opdsV1Endpoint = `${API_CONFIG.BASE_URL}/api/v2/opds/catalog`;
+  opdsV2Endpoint = `${API_CONFIG.BASE_URL}/api/v2/opds`;
   opdsEnabled = false;
 
   private opdsService = inject(OpdsV2Service);
@@ -154,6 +156,18 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
   copyEndpoint(): void {
     navigator.clipboard.writeText(this.opdsEndpoint).then(() => {
       this.showMessage('success', 'Copied', 'OPDS endpoint copied to clipboard');
+    });
+  }
+
+  copyV1Endpoint(): void {
+    navigator.clipboard.writeText(this.opdsV1Endpoint).then(() => {
+      this.showMessage('success', 'Copied', 'OPDS v1 endpoint copied to clipboard');
+    });
+  }
+
+  copyV2Endpoint(): void {
+    navigator.clipboard.writeText(this.opdsV2Endpoint).then(() => {
+      this.showMessage('success', 'Copied', 'OPDS v2 endpoint copied to clipboard');
     });
   }
 
