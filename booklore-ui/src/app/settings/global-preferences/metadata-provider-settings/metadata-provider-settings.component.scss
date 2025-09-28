@@ -102,6 +102,21 @@
     font-size: 0.875rem;
   }
 
+  .config-label-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .config-label {
+      margin: 0;
+    }
+
+    .external-link-icon {
+      color: #0ea5e9 !important;
+      font-size: 0.875rem !important;
+    }
+  }
+
   .config-description {
     display: flex;
     align-items: flex-start;
@@ -118,11 +133,6 @@
     }
   }
 
-  .config-input {
-    width: 100%;
-    max-width: 24rem;
-  }
-
   .config-select {
     width: 100%;
     max-width: 13rem;
@@ -134,4 +144,3 @@
   justify-content: flex-start;
   padding-top: 1rem;
 }
-
