@@ -11,7 +11,10 @@
           </p-tab>
           @if (userState.user.permissions.admin) {
             <p-tab [value]="SettingsTab.MetadataSettings">
-              <i class="pi pi-sliders-h"></i> Metadata
+              <i class="pi pi-sliders-h"></i> Metadata 1
+            </p-tab>
+            <p-tab [value]="SettingsTab.LibraryMetadataSettings">
+              <i class="pi pi-database"></i> Metadata 2
             </p-tab>
             <p-tab [value]="SettingsTab.ApplicationSettings">
               <i class="pi pi-cog"></i> Application
@@ -46,6 +49,9 @@
           @if (userState.user.permissions.admin) {
             <p-tabpanel [value]="SettingsTab.MetadataSettings">
               <app-metadata-settings-component></app-metadata-settings-component>
+            </p-tabpanel>
+            <p-tabpanel [value]="SettingsTab.LibraryMetadataSettings">
+              <app-library-metadata-settings-component></app-library-metadata-settings-component>
             </p-tabpanel>
             <p-tabpanel [value]="SettingsTab.ApplicationSettings">
               <app-global-preferences></app-global-preferences>

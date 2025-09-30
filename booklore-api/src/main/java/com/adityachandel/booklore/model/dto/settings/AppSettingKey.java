@@ -7,6 +7,7 @@ public enum AppSettingKey {
     OIDC_PROVIDER_DETAILS("oidc_provider_details", true, true),
 
     QUICK_BOOK_MATCH("quick_book_match", true, false),
+    LIBRARY_METADATA_REFRESH_OPTIONS("library_metadata_refresh_options", true, false),
     OIDC_AUTO_PROVISION_DETAILS("oidc_auto_provision_details", true, false),
     SIDEBAR_LIBRARY_SORTING("sidebar_library_sorting", true, false),
     SIDEBAR_SHELF_SORTING("sidebar_shelf_sorting", true, false),

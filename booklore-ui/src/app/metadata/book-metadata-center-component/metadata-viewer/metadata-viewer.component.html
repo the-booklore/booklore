@@ -464,7 +464,7 @@
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
               @if (refreshMenuItems$ | async; as refreshItems) {
                 <p-splitbutton
-                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch Metadata'"
+                  [label]="isAutoFetching ? 'Fetching...' : 'Auto Fetch'"
                   [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                   [outlined]="true"
                   [model]="refreshItems"

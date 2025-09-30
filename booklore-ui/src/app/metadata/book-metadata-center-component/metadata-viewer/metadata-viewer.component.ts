@@ -115,8 +115,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => [
         {
-          label: 'Advanced Fetch',
-          icon: 'pi pi-database',
+          label: 'Custom Fetch',
+          icon: 'pi pi-sync',
           command: () => {
             this.dialogService.open(MetadataFetchOptionsComponent, {
               header: 'Metadata Refresh Options',
@@ -393,7 +393,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   quickRefresh(bookId: number) {
     this.isAutoFetching = true;
     const request: MetadataRefreshRequest = {
-      quick: true,
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
     };

@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.AppSettingsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,10 +37,20 @@ public class SettingPersistenceHelper {
     }
 
     public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, Class<T> clazz, T defaultValue, boolean persistDefault) {
+        return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
+            json -> objectMapper.readValue(json, clazz));
+    }
+
+    public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, TypeReference<T> typeReference, T defaultValue, boolean persistDefault) {
+        return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
+            json -> objectMapper.readValue(json, typeReference));
+    }
+
+    private <T> T getJsonSettingInternal(Map<String, String> settingsMap, AppSettingKey key, T defaultValue, boolean persistDefault, JsonDeserializer<T> deserializer) {
         String json = settingsMap.get(key.toString());
         if (json != null && !json.isBlank()) {
             try {
-                return objectMapper.readValue(json, clazz);
+                return deserializer.deserialize(json);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Failed to parse " + key, e);
             }
@@ -52,6 +63,11 @@ public class SettingPersistenceHelper {
             }
         }
         return defaultValue;
+    }
+
+    @FunctionalInterface
+    private interface JsonDeserializer<T> {
+        T deserialize(String json) throws JsonProcessingException;
     }
 
     public String serializeSettingValue(AppSettingKey key, Object val) throws JsonProcessingException {
@@ -141,6 +157,7 @@ public class SettingPersistenceHelper {
         );
 
         return new MetadataRefreshOptions(
+                null,
                 MetadataProvider.GoodReads,
                 MetadataProvider.Amazon,
                 MetadataProvider.Google,

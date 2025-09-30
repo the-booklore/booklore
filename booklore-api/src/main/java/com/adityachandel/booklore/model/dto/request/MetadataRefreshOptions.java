@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MetadataRefreshOptions {
+    private Long libraryId;
     @NotNull(message = "Default Provider cannot be null")
     private MetadataProvider allP1;
     private MetadataProvider allP2;

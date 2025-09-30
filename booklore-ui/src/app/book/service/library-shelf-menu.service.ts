@@ -3,6 +3,7 @@ import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from './library.service';
 import {ShelfService} from './shelf.service';
+import {BookService} from './book.service';
 import {Library} from '../model/library.model';
 import {Shelf} from '../model/shelf.model';
 import {DialogService} from 'primeng/dynamicdialog';
@@ -22,6 +23,7 @@ export class LibraryShelfMenuService {
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
   private shelfService = inject(ShelfService);
+  private bookService = inject(BookService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
   private magicShelfService = inject(MagicShelfService);
@@ -116,8 +118,8 @@ export class LibraryShelfMenuService {
             }
           },
           {
-            label: 'Refresh Books Metadata',
-            icon: 'pi pi-database',
+            label: 'Custom Fetch Metadata',
+            icon: 'pi pi-sync',
             command: () => {
               this.dialogService.open(MetadataFetchOptionsComponent, {
                 header: 'Metadata Refresh Options',
@@ -128,6 +130,16 @@ export class LibraryShelfMenuService {
                   metadataRefreshType: MetadataRefreshType.LIBRARY
                 }
               })
+            }
+          },
+          {
+            label: 'Auto Fetch Metadata',
+            icon: 'pi pi-bolt',
+            command: () => {
+              this.bookService.autoRefreshMetadata({
+                refreshType: MetadataRefreshType.LIBRARY,
+                libraryId: entity?.id || undefined
+              }).subscribe();
             }
           }
         ]

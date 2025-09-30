@@ -40,7 +40,7 @@ export class MultiBookMetadataFetchComponent implements OnInit, OnDestroy {
     this.appSettingsService.appSettings$
       .pipe(takeUntil(this.destroy$))
       .subscribe(settings => {
-        this.currentMetadataOptions = settings!.metadataRefreshOptions;
+        this.currentMetadataOptions = settings!.defaultMetadataRefreshOptions;
       });
   }
 

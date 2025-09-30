@@ -47,6 +47,8 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
 
   private messageService = inject(MessageService);
 
+  private justSubmitted = false;
+
   private initializeFieldOptions(): FieldOptions {
     return this.fields.reduce((acc, field) => {
       acc[field] = {p1: null, p2: null, p3: null, p4: null};
@@ -55,7 +57,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['currentMetadataOptions'] && this.currentMetadataOptions) {
+    if (changes['currentMetadataOptions'] && this.currentMetadataOptions && !this.justSubmitted) {
       this.refreshCovers = this.currentMetadataOptions.refreshCovers || false;
       this.mergeCategories = this.currentMetadataOptions.mergeCategories || false;
       this.reviewBeforeApply = this.currentMetadataOptions.reviewBeforeApply || false;
@@ -89,7 +91,10 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     );
 
     if (allFieldsHaveProvider) {
+      this.justSubmitted = true;
+
       const metadataRefreshOptions: MetadataRefreshOptions = {
+        libraryId: null,
         allP1: this.allP1.value,
         allP2: this.allP2.value,
         allP3: this.allP3.value,
@@ -99,7 +104,12 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
         reviewBeforeApply: this.reviewBeforeApply,
         fieldOptions: this.fieldOptions
       };
+
       this.metadataOptionsSubmitted.emit(metadataRefreshOptions);
+
+      setTimeout(() => {
+        this.justSubmitted = false;
+      }, 1000);
     } else {
       this.messageService.add({
         severity: 'error',
@@ -111,6 +121,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   }
 
   reset() {
+    this.justSubmitted = false;
     this.allP1.value = null;
     this.allP2.value = null;
     this.allP3.value = null;

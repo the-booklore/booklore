@@ -155,7 +155,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     const hasNoAlternativeFormats = !this.book.alternativeFormats || this.book.alternativeFormats.length === 0;
     const hasNoSupplementaryFiles = !this.book.supplementaryFiles || this.book.supplementaryFiles.length === 0;
     return (this.hasDownloadPermission() || this.hasDeleteBookPermission()) &&
-           hasNoAlternativeFormats && hasNoSupplementaryFiles;
+      hasNoAlternativeFormats && hasNoSupplementaryFiles;
   }
 
   private initMenu() {
@@ -196,7 +196,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     if (this.hasDownloadPermission()) {
       const hasAdditionalFiles = (this.book.alternativeFormats && this.book.alternativeFormats.length > 0) ||
-                                 (this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
+        (this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
 
       if (hasAdditionalFiles) {
         const downloadItems = this.getDownloadMenuItems();
@@ -226,7 +226,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     if (this.hasDeleteBookPermission()) {
       const hasAdditionalFiles = (this.book.alternativeFormats && this.book.alternativeFormats.length > 0) ||
-                                 (this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
+        (this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
 
       if (hasAdditionalFiles) {
         const deleteItems = this.getDeleteMenuItems();
@@ -335,7 +335,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             icon: 'pi pi-bolt',
             command: () => {
               const metadataRefreshRequest: MetadataRefreshRequest = {
-                quick: true,
                 refreshType: MetadataRefreshType.BOOKS,
                 bookIds: [this.book.id],
               };
@@ -343,8 +342,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             },
           },
           {
-            label: 'Advanced Fetch',
-            icon: 'pi pi-database',
+            label: 'Custom Fetch',
+            icon: 'pi pi-sync',
             command: () => {
               this.dialogService.open(MetadataFetchOptionsComponent, {
                 header: 'Metadata Refresh Options',
@@ -518,7 +517,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     // Add separator if there are additional files
     if (this.hasAdditionalFiles()) {
-      items.push({ separator: true });
+      items.push({separator: true});
     }
 
     // Add alternative formats
@@ -535,8 +534,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     // Add separator if both alternative formats and supplementary files exist
     if (this.book.alternativeFormats && this.book.alternativeFormats.length > 0 &&
-        this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0) {
-      items.push({ separator: true });
+      this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0) {
+      items.push({separator: true});
     }
 
     // Add supplementary files
@@ -578,7 +577,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     // Add separator if there are additional files
     if (this.hasAdditionalFiles()) {
-      items.push({ separator: true });
+      items.push({separator: true});
     }
 
     // Add alternative formats
@@ -595,8 +594,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     // Add separator if both alternative formats and supplementary files exist
     if (this.book.alternativeFormats && this.book.alternativeFormats.length > 0 &&
-        this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0) {
-      items.push({ separator: true });
+      this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0) {
+      items.push({separator: true});
     }
 
     // Add supplementary files
@@ -616,7 +615,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   private hasAdditionalFiles(): boolean {
     return !!(this.book.alternativeFormats && this.book.alternativeFormats.length > 0) ||
-           !!(this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
+      !!(this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
   }
 
   private downloadAdditionalFile(bookId: number, fileId: number): void {
@@ -716,26 +715,26 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this.toggleCardSelection(!this.isSelected)
   }
 
-  toggleCardSelection(selected: boolean):void {
-      if (!this.isCheckboxEnabled) {
-        return;
-      }
+  toggleCardSelection(selected: boolean): void {
+    if (!this.isCheckboxEnabled) {
+      return;
+    }
 
-      this.isSelected = selected;
-      const shiftKey = this.lastMouseEvent?.shiftKey ?? false;
+    this.isSelected = selected;
+    const shiftKey = this.lastMouseEvent?.shiftKey ?? false;
 
-      this.checkboxClick.emit({
-        index: this.index,
-        bookId: this.book.id,
-        selected: selected,
-        shiftKey: shiftKey,
-      });
+    this.checkboxClick.emit({
+      index: this.index,
+      bookId: this.book.id,
+      selected: selected,
+      shiftKey: shiftKey,
+    });
 
-      if (this.onBookSelect) {
-        this.onBookSelect(this.book.id, selected);
-      }
+    if (this.onBookSelect) {
+      this.onBookSelect(this.book.id, selected);
+    }
 
-      this.lastMouseEvent = null;
+    this.lastMouseEvent = null;
   }
 
   toggleSelection(event: CheckboxChangeEvent): void {

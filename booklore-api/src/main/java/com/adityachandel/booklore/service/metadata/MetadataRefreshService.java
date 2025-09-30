@@ -17,7 +17,6 @@ import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.MetadataFetchJobRepository;
-import com.adityachandel.booklore.repository.MetadataFetchProposalRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
@@ -27,8 +26,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
@@ -46,7 +43,6 @@ public class MetadataRefreshService {
 
     private final LibraryRepository libraryRepository;
     private final MetadataFetchJobRepository metadataFetchJobRepository;
-    private final MetadataFetchProposalRepository metadataFetchProposalRepository;
     private final BookMapper bookMapper;
     private final BookMetadataUpdater bookMetadataUpdater;
     private final NotificationService notificationService;
@@ -59,15 +55,23 @@ public class MetadataRefreshService {
 
     public void refreshMetadata(MetadataRefreshRequest request, Long userId, String jobId) {
         try {
-            if (Boolean.TRUE.equals(request.getQuick())) {
-                AppSettings appSettings = appSettingService.getAppSettings();
-                request.setRefreshOptions(appSettings.getMetadataRefreshOptions());
-            }
+            AppSettings appSettings = appSettingService.getAppSettings();
 
-            List<MetadataProvider> providers = prepareProviders(request);
+            final boolean isLibraryRefresh = request.getRefreshType() == MetadataRefreshRequest.RefreshType.LIBRARY;
+            final MetadataRefreshOptions requestRefreshOptions = request.getRefreshOptions();
+
+            final boolean useRequestOptions = requestRefreshOptions != null;
+            final MetadataRefreshOptions libraryRefreshOptions = !useRequestOptions && isLibraryRefresh ? resolveMetadataRefreshOptions(request.getLibraryId(), appSettings) : null;
+            final List<MetadataProvider> fixedProviders = useRequestOptions ?
+                    prepareProviders(requestRefreshOptions) :
+                    (isLibraryRefresh ? prepareProviders(libraryRefreshOptions) : null);
+
             Set<Long> bookIds = getBookEntities(request);
 
-            boolean isReviewMode = Boolean.TRUE.equals(request.getRefreshOptions().getReviewBeforeApply());
+            MetadataRefreshOptions reviewModeOptions = requestRefreshOptions != null ?
+                    requestRefreshOptions :
+                    (libraryRefreshOptions != null ? libraryRefreshOptions : appSettings.getDefaultMetadataRefreshOptions());
+            boolean isReviewMode = Boolean.TRUE.equals(reviewModeOptions.getReviewBeforeApply());
             MetadataFetchJobEntity task;
 
             if (isReviewMode) {
@@ -101,6 +105,21 @@ public class MetadataRefreshService {
                             sendTaskNotification(jobId, "Skipped locked book: " + book.getMetadata().getTitle(), TaskStatus.IN_PROGRESS);
                             return null;
                         }
+
+                        MetadataRefreshOptions refreshOptions;
+                        List<MetadataProvider> providers;
+
+                        if (useRequestOptions) {
+                            refreshOptions = requestRefreshOptions;
+                            providers = fixedProviders;
+                        } else if (isLibraryRefresh) {
+                            refreshOptions = libraryRefreshOptions;
+                            providers = fixedProviders;
+                        } else {
+                            refreshOptions = resolveMetadataRefreshOptions(book.getLibrary().getId(), appSettings);
+                            providers = prepareProviders(refreshOptions);
+                        }
+
                         reportProgressIfNeeded(task, jobId, finalCompletedCount, bookIds.size(), book);
                         Map<MetadataProvider, BookMetadata> metadataMap = fetchMetadataForBook(providers, book);
                         if (providers.contains(GoodReads)) {
@@ -112,11 +131,13 @@ public class MetadataRefreshService {
                                 return null;
                             }
                         }
-                        BookMetadata fetched = buildFetchMetadata(book.getId(), request, metadataMap);
-                        if (isReviewMode) {
+                        BookMetadata fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+
+                        boolean bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
+                        if (bookReviewMode) {
                             saveProposal(task, book.getId(), fetched);
                         } else {
-                            updateBookMetadata(book, fetched, request.getRefreshOptions().isRefreshCovers(), request.getRefreshOptions().isMergeCategories());
+                            updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories());
                             sendTaskProgressNotification(jobId, finalCompletedCount + 1, bookIds.size(), "Metadata updated: " + book.getMetadata().getTitle());
                         }
                     } catch (Exception e) {
@@ -152,6 +173,20 @@ public class MetadataRefreshService {
             sendTaskNotification(jobId, "Fatal error during metadata refresh: " + fatal.getMessage(), TaskStatus.FAILED);
             throw fatal;
         }
+    }
+
+    MetadataRefreshOptions resolveMetadataRefreshOptions(Long libraryId, AppSettings appSettings) {
+        MetadataRefreshOptions defaultOptions = appSettings.getDefaultMetadataRefreshOptions();
+        List<MetadataRefreshOptions> libraryOptions = appSettings.getLibraryMetadataRefreshOptions();
+
+        if (libraryId != null && libraryOptions != null) {
+            return libraryOptions.stream()
+                    .filter(options -> libraryId.equals(options.getLibraryId()))
+                    .findFirst()
+                    .orElse(defaultOptions);
+        }
+
+        return defaultOptions;
     }
 
     public Map<MetadataProvider, BookMetadata> fetchMetadataForBook(List<MetadataProvider> providers, Book book) {
@@ -296,13 +331,13 @@ public class MetadataRefreshService {
         }
     }
 
-    public List<MetadataProvider> prepareProviders(MetadataRefreshRequest request) {
-        Set<MetadataProvider> allProviders = new HashSet<>(getAllProvidersUsingIndividualFields(request));
+    public List<MetadataProvider> prepareProviders(MetadataRefreshOptions refreshOptions) {
+        Set<MetadataProvider> allProviders = new HashSet<>(getAllProvidersUsingIndividualFields(refreshOptions));
         return new ArrayList<>(allProviders);
     }
 
-    protected Set<MetadataProvider> getAllProvidersUsingIndividualFields(MetadataRefreshRequest request) {
-        MetadataRefreshOptions.FieldOptions fieldOptions = request.getRefreshOptions().getFieldOptions();
+    protected Set<MetadataProvider> getAllProvidersUsingIndividualFields(MetadataRefreshOptions refreshOptions) {
+        MetadataRefreshOptions.FieldOptions fieldOptions = refreshOptions.getFieldOptions();
         Set<MetadataProvider> uniqueProviders = new HashSet<>();
 
         if (fieldOptions != null) {
@@ -349,9 +384,9 @@ public class MetadataRefreshService {
                 .build();
     }
 
-    public BookMetadata buildFetchMetadata(Long bookId, MetadataRefreshRequest request, Map<MetadataProvider, BookMetadata> metadataMap) {
+    public BookMetadata buildFetchMetadata(Long bookId, MetadataRefreshOptions refreshOptions, Map<MetadataProvider, BookMetadata> metadataMap) {
         BookMetadata metadata = BookMetadata.builder().bookId(bookId).build();
-        MetadataRefreshOptions.FieldOptions fieldOptions = request.getRefreshOptions().getFieldOptions();
+        MetadataRefreshOptions.FieldOptions fieldOptions = refreshOptions.getFieldOptions();
 
         metadata.setTitle(resolveFieldAsString(metadataMap, fieldOptions.getTitle(), BookMetadata::getTitle));
         metadata.setDescription(resolveFieldAsString(metadataMap, fieldOptions.getDescription(), BookMetadata::getDescription));
@@ -378,24 +413,24 @@ public class MetadataRefreshService {
             metadata.setComicvineId(metadataMap.get(Comicvine).getComicvineId());
         }
 
-        if (request.getRefreshOptions().isMergeCategories()) {
+        if (refreshOptions.isMergeCategories()) {
             metadata.setCategories(getAllCategories(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
         } else {
             metadata.setCategories(resolveFieldAsList(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
         }
         metadata.setThumbnailUrl(resolveFieldAsString(metadataMap, fieldOptions.getCover(), BookMetadata::getThumbnailUrl));
 
-        if (request.getRefreshOptions().getAllP4() != null) {
-            setOtherUnspecifiedMetadata(metadataMap, metadata, request.getRefreshOptions().getAllP4());
+        if (refreshOptions.getAllP4() != null) {
+            setOtherUnspecifiedMetadata(metadataMap, metadata, refreshOptions.getAllP4());
         }
-        if (request.getRefreshOptions().getAllP3() != null) {
-            setOtherUnspecifiedMetadata(metadataMap, metadata, request.getRefreshOptions().getAllP3());
+        if (refreshOptions.getAllP3() != null) {
+            setOtherUnspecifiedMetadata(metadataMap, metadata, refreshOptions.getAllP3());
         }
-        if (request.getRefreshOptions().getAllP2() != null) {
-            setOtherUnspecifiedMetadata(metadataMap, metadata, request.getRefreshOptions().getAllP2());
+        if (refreshOptions.getAllP2() != null) {
+            setOtherUnspecifiedMetadata(metadataMap, metadata, refreshOptions.getAllP2());
         }
-        if (request.getRefreshOptions().getAllP1() != null) {
-            setOtherUnspecifiedMetadata(metadataMap, metadata, request.getRefreshOptions().getAllP1());
+        if (refreshOptions.getAllP1() != null) {
+            setOtherUnspecifiedMetadata(metadataMap, metadata, refreshOptions.getAllP1());
         }
 
         return metadata;
