@@ -62,7 +62,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       this.mergeCategories = this.currentMetadataOptions.mergeCategories || false;
       this.reviewBeforeApply = this.currentMetadataOptions.reviewBeforeApply || false;
 
-      const backendFieldOptions = this.currentMetadataOptions.fieldOptions as FieldOptions || {};
+      const backendFieldOptions = this.deepCloneFieldOptions(this.currentMetadataOptions.fieldOptions as FieldOptions || {});
       for (const field of this.fields) {
         if (!backendFieldOptions[field]) {
           backendFieldOptions[field] = {p1: null, p2: null, p3: null, p4: null};
@@ -72,11 +72,24 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       }
       this.fieldOptions = backendFieldOptions;
 
-      this.allP1.value = this.currentMetadataOptions.allP1 || null;
-      this.allP2.value = this.currentMetadataOptions.allP2 || null;
-      this.allP3.value = this.currentMetadataOptions.allP3 || null;
-      this.allP4.value = this.currentMetadataOptions.allP4 || null;
+      this.allP1 = {placeholder: 'Set All', value: this.currentMetadataOptions.allP1 || null};
+      this.allP2 = {placeholder: 'Set All', value: this.currentMetadataOptions.allP2 || null};
+      this.allP3 = {placeholder: 'Set All', value: this.currentMetadataOptions.allP3 || null};
+      this.allP4 = {placeholder: 'Set All', value: this.currentMetadataOptions.allP4 || null};
     }
+  }
+
+  private deepCloneFieldOptions(fieldOptions: FieldOptions): FieldOptions {
+    const cloned = {} as FieldOptions;
+    for (const field of this.fields) {
+      cloned[field] = {
+        p1: fieldOptions[field]?.p1 || null,
+        p2: fieldOptions[field]?.p2 || null,
+        p3: fieldOptions[field]?.p3 || null,
+        p4: fieldOptions[field]?.p4 || null
+      };
+    }
+    return cloned;
   }
 
   syncProvider(event: SelectChangeEvent, providerType: keyof FieldProvider) {
