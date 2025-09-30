@@ -23,11 +23,11 @@ export class MetadataProgressService implements OnDestroy {
   constructor() {
     const sub = this.userService.userState$
       .pipe(
-        filter(user => !!user),
+        filter(userState => !!userState?.user),
         take(1)
       )
-      .subscribe(user => {
-        if (!this.hasMetadataPermissions(user)) {
+      .subscribe(userState => {
+        if (!this.hasMetadataPermissions(userState.user)) {
           return;
         }
         const activeTasksSub = this.metadataTaskService.getActiveTasks().subscribe({
@@ -67,7 +67,7 @@ export class MetadataProgressService implements OnDestroy {
   }
 
   private hasMetadataPermissions(user: any): boolean {
-    return user?.permissions?.admin || user?.permissions?.canEditMetadata;
+    return !!(user?.permissions?.admin || user?.permissions?.canEditMetadata);
   }
 
   private initializeActiveTasks(tasks: MetadataBatchProgressNotification[]): void {

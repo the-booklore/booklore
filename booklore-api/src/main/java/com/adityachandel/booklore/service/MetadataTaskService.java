@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.dto.response.MetadataTaskDetailsResponse
 import com.adityachandel.booklore.model.entity.MetadataFetchJobEntity;
 import com.adityachandel.booklore.model.entity.MetadataFetchProposalEntity;
 import com.adityachandel.booklore.model.enums.FetchedMetadataProposalStatus;
+import com.adityachandel.booklore.model.enums.MetadataFetchTaskStatus;
 import com.adityachandel.booklore.repository.MetadataFetchJobRepository;
 import com.adityachandel.booklore.repository.MetadataFetchProposalRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,25 +31,27 @@ public class MetadataTaskService {
 
     public Optional<MetadataTaskDetailsResponse> getTaskWithProposals(String taskId) {
         return metadataFetchTaskRepository.findById(taskId)
-                .map(task -> {
-                    List<FetchedProposal> proposals = task.getProposals().stream()
-                            .filter(p -> p.getStatus() == FetchedMetadataProposalStatus.FETCHED)
-                            .map(fetchedProposalMapper::toDto)
-                            .toList();
+                .map(this::buildTaskDetailsResponse);
+    }
 
-                    MetadataFetchTask taskDto = MetadataFetchTask.builder()
-                            .id(task.getTaskId())
-                            .status(task.getStatus())
-                            .completed(task.getCompletedBooks())
-                            .totalBooks(task.getTotalBooksCount())
-                            .startedAt(task.getStartedAt())
-                            .completedAt(task.getCompletedAt())
-                            .initiatedBy(task.getUserId())
-                            .proposals(proposals)
-                            .build();
+    private MetadataTaskDetailsResponse buildTaskDetailsResponse(MetadataFetchJobEntity task) {
+        List<FetchedProposal> proposals = task.getProposals().stream()
+                .filter(p -> p.getStatus() == FetchedMetadataProposalStatus.FETCHED)
+                .map(fetchedProposalMapper::toDto)
+                .toList();
 
-                    return new MetadataTaskDetailsResponse(taskDto);
-                });
+        MetadataFetchTask taskDto = MetadataFetchTask.builder()
+                .id(task.getTaskId())
+                .status(task.getStatus())
+                .completed(task.getCompletedBooks())
+                .totalBooks(task.getTotalBooksCount())
+                .startedAt(task.getStartedAt())
+                .completedAt(task.getCompletedAt())
+                .initiatedBy(task.getUserId())
+                .proposals(proposals)
+                .build();
+
+        return new MetadataTaskDetailsResponse(taskDto);
     }
 
     @Transactional
@@ -87,16 +90,17 @@ public class MetadataTaskService {
     }
 
     public List<MetadataBatchProgressNotification> getActiveTasks() {
-        List<MetadataFetchJobEntity> tasks = metadataFetchTaskRepository.findAllWithProposals(); // Ensure this uses a fetch join
+        List<MetadataFetchJobEntity> tasks = metadataFetchTaskRepository.findAllWithProposals();
 
         return tasks.stream()
+                .filter(task -> task.getStatus() == MetadataFetchTaskStatus.COMPLETED || task.getStatus() == MetadataFetchTaskStatus.ERROR)
                 .map(task -> {
                     List<MetadataFetchProposalEntity> proposals = task.getProposals();
                     List<MetadataFetchProposalEntity> remaining = proposals.stream()
                             .filter(p -> p.getStatus() != FetchedMetadataProposalStatus.REJECTED)
                             .toList();
 
-                    int total = remaining.size();
+                    int total;
                     long acceptedCount = remaining.stream()
                             .filter(p -> p.getStatus() == FetchedMetadataProposalStatus.ACCEPTED)
                             .count();
@@ -104,14 +108,28 @@ public class MetadataTaskService {
                             .filter(p -> p.getStatus() == FetchedMetadataProposalStatus.FETCHED)
                             .count();
 
-                    String message = String.format("Metadata review pending for %d of %d books", fetchedCount, total);
+                    String message;
+                    String status;
+                    int completedCount = task.getCompletedBooks() != null ? task.getCompletedBooks() : 0;
+
+                    if (task.getStatus() == MetadataFetchTaskStatus.ERROR) {
+                        total = task.getTotalBooksCount() != null ? task.getTotalBooksCount() : remaining.size();
+                        message = String.format("Metadata fetch failed, processed %d of %d books.", completedCount, total);
+                        status = "ERROR";
+                    } else {
+                        total = remaining.size();
+                        message = String.format("Metadata fetch completed! %d books need review.", fetchedCount);
+                        status = "COMPLETED";
+                        completedCount = (int) acceptedCount;
+                    }
 
                     return new MetadataBatchProgressNotification(
                             task.getTaskId(),
-                            (int) acceptedCount,
+                            completedCount,
                             total,
                             message,
-                            "COMPLETED"
+                            status,
+                            true
                     );
                 })
                 .filter(n -> n.getTotal() > 0)

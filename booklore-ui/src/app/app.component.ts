@@ -1,8 +1,8 @@
-import {Component, computed, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {RxStompService} from './shared/websocket/rx-stomp.service';
 import {BookService} from './book/service/book.service';
 import {NotificationEventService} from './shared/websocket/notification-event.service';
-import {parseLogNotification, parseTaskMessage} from './shared/websocket/model/log-notification.model';
+import {parseLogNotification} from './shared/websocket/model/log-notification.model';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {Toast} from 'primeng/toast';
 import {RouterOutlet} from '@angular/router';
@@ -11,7 +11,6 @@ import {AppConfigService} from './core/service/app-config.service';
 import {MetadataBatchProgressNotification} from './core/model/metadata-batch-progress.model';
 import {MetadataProgressService} from './core/service/metadata-progress-service';
 import {BookdropFileNotification, BookdropFileService} from './bookdrop/bookdrop-file.service';
-import {TaskEventService} from './shared/websocket/task-event.service';
 import {DuplicateFileNotification} from './shared/websocket/model/duplicate-file-notification.model';
 import {DuplicateFileService} from './shared/websocket/duplicate-file.service';
 import {Subscription} from 'rxjs';
@@ -34,7 +33,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private notificationEventService = inject(NotificationEventService);
   private metadataProgressService = inject(MetadataProgressService);
   private bookdropFileService = inject(BookdropFileService);
-  private taskEventService = inject(TaskEventService);
   private duplicateFileService = inject(DuplicateFileService);
   private appConfigService = inject(AppConfigService); // Keep it here to ensure the service is initialized
 
@@ -79,11 +77,6 @@ export class AppComponent implements OnInit, OnDestroy {
         const logNotification = parseLogNotification(msg.body);
         this.notificationEventService.handleNewNotification(logNotification);
       })
-    );
-    this.subscriptions.push(
-      this.rxStompService.watch('/user/queue/task').subscribe(msg =>
-        this.taskEventService.handleTaskMessage(parseTaskMessage(msg.body))
-      )
     );
     this.subscriptions.push(
       this.rxStompService.watch('/user/queue/duplicate-file').subscribe(msg =>

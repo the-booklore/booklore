@@ -4,7 +4,6 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.dto.TaskMessage;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
@@ -32,7 +31,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -243,7 +243,6 @@ class MetadataRefreshServiceTest {
 
         metadataRefreshService.refreshMetadata(request, 1L, "job-1");
 
-        verify(notificationService, atLeastOnce()).sendMessage(eq(Topic.TASK), any(TaskMessage.class));
         verify(bookRepository).findAllWithMetadataByIds(Set.of(1L));
     }
 
@@ -281,7 +280,6 @@ class MetadataRefreshServiceTest {
         metadataRefreshService.refreshMetadata(request, 1L, "job-1");
 
         verify(bookRepository).findAllWithMetadataByIds(Set.of(1L));
-        verify(notificationService, atLeastOnce()).sendMessage(eq(Topic.TASK), any(TaskMessage.class));
     }
 
     @Test
@@ -329,9 +327,6 @@ class MetadataRefreshServiceTest {
         setupBookRepositoryMocks();
 
         metadataRefreshService.refreshMetadata(request, 1L, "job-1");
-
-        verify(notificationService).sendMessage(eq(Topic.TASK), argThat(msg ->
-            ((TaskMessage) msg).getMessage().contains("Skipped locked book")));
     }
 
     @Test
