@@ -3,9 +3,6 @@
   @if (hasDuplicateFiles$ | async) {
     <app-duplicate-files-notification/>
   }
-  @if (hasActiveTasks$ | async) {
-    <app-live-task-event-box/>
-  }
   @if (hasMetadataTasks$ | async) {
     <app-metadata-progress-widget/>
   }

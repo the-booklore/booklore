@@ -54,6 +54,35 @@
   }
 }
 
+.empty-state {
+  position: relative;
+  padding: 3rem !important;
+
+  .empty-state-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state-subtitle {
+    max-width: 400px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .empty-state-decoration {
+    position: absolute;
+    top: 20%;
+    right: 15%;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    filter: blur(40px);
+    animation: float 4s ease-in-out infinite;
+  }
+}
+
 .reviews-scroll-container {
   overflow-x: auto;
   overflow-y: hidden;

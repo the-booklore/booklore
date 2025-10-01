@@ -26,6 +26,7 @@ import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -44,9 +45,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -69,6 +72,7 @@ public class BookDropService {
     private final BookdropFileMapper mapper;
     private final ObjectMapper objectMapper;
     private final FileMovingHelper fileMovingHelper;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
     private static final int CHUNK_SIZE = 100;
 
@@ -206,27 +210,86 @@ public class BookDropService {
                                    BookdropFinalizeResult results,
                                    AtomicInteger failedCount,
                                    AtomicInteger totalFilesProcessed) {
-        for (int i = 0; i < ids.size(); i += CHUNK_SIZE) {
-            int end = Math.min(i + CHUNK_SIZE, ids.size());
-            List<Long> chunk = ids.subList(i, end);
 
-            log.info("Processing chunk {}/{} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) ids.size() / CHUNK_SIZE), chunk.size(), chunk);
+        // Collect all libraries that will be affected by moves
+        Set<Long> affectedLibraries = collectAffectedLibraries(ids, metadataById, defaultLibraryId, defaultPathId);
 
-            List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunk);
-            Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream().collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
+        // Unregister monitoring for all affected libraries
+        unregisterAffectedLibraries(affectedLibraries);
 
-            for (Long id : chunk) {
-                BookdropFileEntity file = fileMap.get(id);
-                if (file == null) {
-                    log.warn("File ID {} missing in DB during finalizeImport chunk processing", id);
-                    failedCount.incrementAndGet();
+        try {
+            for (int i = 0; i < ids.size(); i += CHUNK_SIZE) {
+                int end = Math.min(i + CHUNK_SIZE, ids.size());
+                List<Long> chunk = ids.subList(i, end);
+
+                log.info("Processing chunk {}/{} ({} files): IDs={}", (i / CHUNK_SIZE + 1), (int) Math.ceil((double) ids.size() / CHUNK_SIZE), chunk.size(), chunk);
+
+                List<BookdropFileEntity> chunkFiles = bookdropFileRepository.findAllById(chunk);
+                Map<Long, BookdropFileEntity> fileMap = chunkFiles.stream().collect(Collectors.toMap(BookdropFileEntity::getId, Function.identity()));
+
+                for (Long id : chunk) {
+                    BookdropFileEntity file = fileMap.get(id);
+                    if (file == null) {
+                        log.warn("File ID {} missing in DB during finalizeImport chunk processing", id);
+                        failedCount.incrementAndGet();
+                        totalFilesProcessed.incrementAndGet();
+                        continue;
+                    }
+                    processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
                     totalFilesProcessed.incrementAndGet();
-                    continue;
                 }
-                processFile(file, metadataById.get(id), defaultLibraryId, defaultPathId, results, failedCount);
-                totalFilesProcessed.incrementAndGet();
+            }
+        } finally {
+            // Re-register monitoring for all affected libraries
+            reregisterAffectedLibraries(affectedLibraries);
+        }
+    }
+
+    private Set<Long> collectAffectedLibraries(List<Long> ids,
+                                               Map<Long, BookdropFinalizeRequest.BookdropFinalizeFile> metadataById,
+                                               Long defaultLibraryId,
+                                               Long defaultPathId) {
+        Set<Long> affectedLibraries = new HashSet<>();
+
+        List<BookdropFileEntity> files = bookdropFileRepository.findAllById(ids);
+
+        for (BookdropFileEntity fileEntity : files) {
+            try {
+                FileProcessingContext context = prepareFileProcessingContext(fileEntity, metadataById.get(fileEntity.getId()), defaultLibraryId, defaultPathId);
+                affectedLibraries.add(context.libraryId());
+            } catch (Exception e) {
+                log.warn("Failed to determine library for file {}: {}", fileEntity.getId(), e.getMessage());
             }
         }
+
+        log.info("Collected {} unique libraries for monitoring unregistration: {}", affectedLibraries.size(), affectedLibraries);
+        return affectedLibraries;
+    }
+
+    private void unregisterAffectedLibraries(Set<Long> libraryIds) {
+        for (Long libraryId : libraryIds) {
+            monitoringRegistrationService.unregisterLibrary(libraryId);
+            log.debug("Unregistered library {} from monitoring", libraryId);
+        }
+        log.info("Unregistered {} libraries from monitoring", libraryIds.size());
+    }
+
+    private void reregisterAffectedLibraries(Set<Long> libraryIds) {
+        for (Long libraryId : libraryIds) {
+            try {
+                LibraryEntity library = libraryRepository.findById(libraryId).orElse(null);
+                if (library != null) {
+                    for (LibraryPathEntity libPath : library.getLibraryPaths()) {
+                        Path libraryRoot = Path.of(libPath.getPath());
+                        monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
+                        log.debug("Re-registered library {} path {} for monitoring", libraryId, libraryRoot);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Failed to re-register library {} for monitoring: {}", libraryId, e.getMessage());
+            }
+        }
+        log.info("Re-registered {} libraries for monitoring", libraryIds.size());
     }
 
     private void updateFinalResults(BookdropFinalizeResult results, AtomicInteger totalFilesProcessed, AtomicInteger failedCount) {
@@ -302,7 +365,7 @@ public class BookDropService {
                 .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
 
         LibraryPathEntity path = library.getLibraryPaths().stream()
-                .filter(p -> p.getId() == pathId)
+                .filter(p -> p.getId().equals(pathId))
                 .findFirst()
                 .orElseThrow(() -> ApiError.INVALID_LIBRARY_PATH.createException(libraryId));
 
@@ -328,8 +391,7 @@ public class BookDropService {
         return performFileMove(bookdropFile, source, target, library, path, metadata);
     }
 
-    private BookdropFileResult performFileMove(BookdropFileEntity bookdropFile, Path source, Path target,
-                                               LibraryEntity library, LibraryPathEntity path, BookMetadata metadata) {
+    private BookdropFileResult performFileMove(BookdropFileEntity bookdropFile, Path source, Path target, LibraryEntity library, LibraryPathEntity path, BookMetadata metadata) {
         Path tempPath = null;
         try {
             tempPath = Files.createTempFile("bookdrop-finalize-", bookdropFile.getFileName());
@@ -488,3 +550,4 @@ public class BookDropService {
     private record FileProcessingContext(Long libraryId, Long pathId, BookMetadata metadata) {
     }
 }
+

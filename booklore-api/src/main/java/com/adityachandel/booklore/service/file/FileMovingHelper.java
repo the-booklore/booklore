@@ -4,7 +4,9 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.repository.LibraryPathRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.AllArgsConstructor;
@@ -30,6 +32,7 @@ public class FileMovingHelper {
 
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
     private final AppSettingService appSettingService;
+    private final LibraryPathRepository libraryPathRepository;
 
     /**
      * Generates the new file path based on the library's file naming pattern
@@ -177,6 +180,53 @@ public class FileMovingHelper {
         }
     }
 
+    /**
+     * Moves a book file to a different library with the target library's naming pattern
+     */
+    public boolean moveBookFileToLibrary(BookEntity book, LibraryEntity targetLibrary) throws IOException {
+        if (!hasRequiredPathComponents(book)) {
+            log.error("Missing required path components for book id {}. Cannot move to different library.", book.getId());
+            return false;
+        }
+
+        Path oldFilePath = book.getFullFilePath();
+        String pattern = getFileNamingPattern(targetLibrary);
+
+        // Generate new file path in target library
+        Path newFilePath = generateNewFilePathForLibrary(book, targetLibrary, pattern);
+
+        if (oldFilePath.equals(newFilePath)) {
+            log.debug("Source and destination paths are identical for book id {}. Skipping cross-library move.", book.getId());
+            return false;
+        }
+
+        moveBookFileAndUpdatePathsForLibrary(book, oldFilePath, newFilePath, targetLibrary);
+        return true;
+    }
+
+    /**
+     * Generates the new file path for a book in a different library
+     */
+    public Path generateNewFilePathForLibrary(BookEntity book, LibraryEntity targetLibrary, String pattern) {
+        String newRelativePathStr = PathPatternResolver.resolvePattern(book, pattern);
+        if (newRelativePathStr.startsWith("/") || newRelativePathStr.startsWith("\\")) {
+            newRelativePathStr = newRelativePathStr.substring(1);
+        }
+
+        Path targetLibraryRoot = getLibraryRootPath(targetLibrary);
+        return targetLibraryRoot.resolve(newRelativePathStr).normalize();
+    }
+
+    /**
+     * Gets the root path for a library (uses the first library path)
+     */
+    private Path getLibraryRootPath(LibraryEntity library) {
+        if (library.getLibraryPaths() == null || library.getLibraryPaths().isEmpty()) {
+            throw new RuntimeException("Library " + library.getName() + " has no paths configured");
+        }
+        return Paths.get(library.getLibraryPaths().getFirst().getPath()).toAbsolutePath().normalize();
+    }
+
     private void moveBookFileAndUpdatePaths(BookEntity book, Path oldFilePath, Path newFilePath) throws IOException {
         moveFile(oldFilePath, newFilePath);
         updateBookPaths(book, newFilePath);
@@ -188,6 +238,65 @@ public class FileMovingHelper {
         } catch (IOException e) {
             log.warn("Failed to clean up empty directories after moving book ID {}: {}", book.getId(), e.getMessage());
         }
+    }
+
+    private void moveBookFileAndUpdatePathsForLibrary(BookEntity book, Path oldFilePath, Path newFilePath, LibraryEntity targetLibrary) throws IOException {
+        moveFile(oldFilePath, newFilePath);
+        updateBookPathsForLibrary(book, newFilePath, targetLibrary);
+
+        // Clean up empty directories in source library
+        // IMPORTANT: We need to collect ALL library roots to avoid deleting any library root directory
+        try {
+            Set<Path> allLibraryRoots = getAllLibraryRoots();
+            deleteEmptyParentDirsUpToLibraryFolders(oldFilePath.getParent(), allLibraryRoots);
+        } catch (IOException e) {
+            log.warn("Failed to clean up empty directories after moving book ID {}: {}", book.getId(), e.getMessage());
+        }
+    }
+
+    /**
+     * Gets all library root paths from all libraries to ensure we never delete any library root
+     */
+    private Set<Path> getAllLibraryRoots() {
+        Set<Path> allRoots = new HashSet<>();
+        try {
+            // Get all libraries and collect their root paths
+            libraryPathRepository.findAll().forEach(libraryPath -> {
+                try {
+                    Path rootPath = Paths.get(libraryPath.getPath()).toAbsolutePath().normalize();
+                    allRoots.add(rootPath);
+                    log.debug("Added library root to protection list: {}", rootPath);
+                } catch (Exception e) {
+                    log.warn("Failed to process library path {}: {}", libraryPath.getPath(), e.getMessage());
+                }
+            });
+        } catch (Exception e) {
+            log.error("Failed to collect all library roots: {}", e.getMessage());
+        }
+        return allRoots;
+    }
+
+    private void updateBookPathsForLibrary(BookEntity book, Path newFilePath, LibraryEntity targetLibrary) {
+        String newFileName = newFilePath.getFileName().toString();
+        Path targetLibraryRoot = getLibraryRootPath(targetLibrary);
+        Path newRelativeSubPath = targetLibraryRoot.relativize(newFilePath.getParent());
+        String newFileSubPath = newRelativeSubPath.toString().replace('\\', '/');
+
+        // Find or create the appropriate LibraryPathEntity for the target library
+        String targetLibraryPath = targetLibrary.getLibraryPaths().getFirst().getPath();
+        LibraryPathEntity targetLibraryPathEntity = libraryPathRepository
+                .findByLibraryIdAndPath(targetLibrary.getId(), targetLibraryPath)
+                .orElseThrow(() -> new RuntimeException("LibraryPath not found for library " + targetLibrary.getId() + " and path " + targetLibraryPath));
+
+        // Update only the path-related fields, avoid touching library entity relationships
+        // that might trigger cascade operations
+        book.setLibraryPath(targetLibraryPathEntity);  // This should update library_path_id
+        book.setFileSubPath(newFileSubPath);
+        book.setFileName(newFileName);
+
+        // DO NOT set book.setLibrary(targetLibrary) to avoid cascade issues
+        log.debug("Updated book {} path references: libraryPathId={}, newPath={}",
+                 book.getId(), targetLibraryPathEntity.getId(), newFilePath);
     }
 
     private void moveAdditionalFile(BookEntity book, BookAdditionalFileEntity additionalFile, String pattern, Map<String, Integer> fileNameCounter) throws IOException {

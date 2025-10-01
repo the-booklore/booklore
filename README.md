@@ -1,11 +1,12 @@
 # BookLore
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/adityachandelgit/BookLore)
-![License](https://img.shields.io/github/license/adityachandelgit/BookLore)
-![Issues](https://img.shields.io/github/issues/adityachandelgit/BookLore)
+
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/adityachandelgit/BookLore?color=green)
+![License](https://img.shields.io/github/license/adityachandelgit/BookLore?color=orange)
 ![Stars](https://img.shields.io/github/stars/adityachandelgit/BookLore?style=social)
-[![Join us on Discord](https://img.shields.io/badge/Chat-Discord-blue?logo=discord&style=flat)](https://discord.gg/Ee5hd458Uz)
-[![Open Collective backers and sponsors](https://img.shields.io/opencollective/all/booklore?label=Open%20Collective&logo=opencollective&color=blue)](https://opencollective.com/booklore)
-[![Venmo](https://img.shields.io/badge/Venmo-Donate-blue?logo=venmo)](https://venmo.com/AdityaChandel)
+![Docker Pulls](https://img.shields.io/docker/pulls/booklore/booklore?color=2496ED)
+[![Join us on Discord](https://img.shields.io/badge/Chat-Discord-5865F2?logo=discord&style=flat)](https://discord.gg/Ee5hd458Uz)
+[![Open Collective backers and sponsors](https://img.shields.io/opencollective/all/booklore?label=Open%20Collective&logo=opencollective&color=7FADF2)](https://opencollective.com/booklore)
+[![Venmo](https://img.shields.io/badge/Venmo-Donate-008CFF?logo=venmo)](https://venmo.com/AdityaChandel)
 
 > 🚨 **Important Announcement:**  
 > Docker images have moved to new repositories:

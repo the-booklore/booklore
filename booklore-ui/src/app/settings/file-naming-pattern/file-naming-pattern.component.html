@@ -130,6 +130,7 @@
               <h4 class="subsection-title">Available Placeholders</h4>
               <ul>
                 <li><code class="placeholder-code">{{ '{title}' }}</code> – Book title</li>
+                <li><code class="placeholder-code">{{ '{subtitle}' }}</code> – Book subtitle</li>
                 <li><code class="placeholder-code">{{ '{authors}' }}</code> – Author(s)</li>
                 <li><code class="placeholder-code">{{ '{year}' }}</code> – Full year (e.g. 2025)</li>
                 <li><code class="placeholder-code">{{ '{series}' }}</code> – Series name</li>
@@ -180,6 +181,7 @@
             <h4 class="subsection-title">Examples with Full Metadata</h4>
             <div class="metadata-sample">
               <span>title: <code>Harry Potter and the Sorcerer's Stone</code></span>
+              <span>subtitle: <code>The Boy Who Lived</code></span>
               <span>authors: <code>J.K. Rowling</code></span>
               <span>series: <code>Harry Potter</code></span>
               <span>seriesIndex: <code>01</code></span>
@@ -217,6 +219,11 @@
                 <p class="example-pattern"><strong>Reuse original filename in path:</strong> <code>{{ '{authors}/{series}/{currentFilename}' }}</code></p>
                 <p class="example-output"><strong>Output:</strong> <code>J.K. Rowling/Harry Potter/harry1_original.epub</code></p>
               </div>
+
+              <div class="example-item">
+                <p class="example-pattern"><strong>Title + Subtitle:</strong> <code>{{ '{title}: {subtitle}' }}</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>Harry Potter and the Sorcerer's Stone: The Boy Who Lived.epub</code></p>
+              </div>
             </div>
           </div>
 
@@ -226,6 +233,7 @@
             <h4 class="subsection-title">Examples with Missing Optional Fields</h4>
             <div class="metadata-sample">
               <span>title: <code>Project Hail Mary</code></span>
+              <span>subtitle: <code>(not provided)</code></span>
               <span>authors: <code>Andy Weir</code></span>
               <span>year: <code>2021</code></span>
               <span>series: <code>(not provided)</code></span>
@@ -257,6 +265,11 @@
               <div class="example-item">
                 <p class="example-pattern"><strong>Use original filename with year suffix:</strong> <code>{{ '{authors}/{year}__{currentFilename}' }}</code></p>
                 <p class="example-output"><strong>Output:</strong> <code>Andy Weir/2021__project_hail_mary_final.epub</code></p>
+              </div>
+
+              <div class="example-item">
+                <p class="example-pattern"><strong>Title + Subtitle fallback:</strong> <code>{{ '{title}<: {subtitle}>' }}</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>Project Hail Mary.epub</code></p>
               </div>
             </div>
           </div>

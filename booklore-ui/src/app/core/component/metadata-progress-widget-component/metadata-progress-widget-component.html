@@ -4,12 +4,29 @@
       <div class="task-card p-4">
 
         <div class="flex items-center justify-between mb-2">
-          <p class="text-sm font-semibold text-[var(--primary-color)]">Metadata Fetch Task</p>
-          <p-tag
-            [value]="getStatusLabel(task.value.status)"
-            [severity]="getTagSeverity(task.value.status)"
-            class="text-xs"
-          ></p-tag>
+          <div class="flex items-center gap-2">
+            <p class="text-sm font-semibold text-[var(--primary-color)]">Metadata Fetch Task</p>
+          </div>
+          <div class="flex items-center gap-1">
+            @if (task.value.review) {
+              <p-tag
+                value="Review"
+                severity="warn"
+                class="text-xs">
+              </p-tag>
+            } @else {
+              <p-tag
+                value="Auto"
+                severity="success"
+                class="text-xs">
+              </p-tag>
+            }
+            <p-tag
+              [value]="getStatusLabel(task.value.status)"
+              [severity]="getTagSeverity(task.value.status)"
+              class="text-xs"
+            ></p-tag>
+          </div>
         </div>
 
         <div class="task-message text-gray-200">
@@ -29,27 +46,43 @@
 
         @if (task.value.status === 'COMPLETED' || task.value.status === 'ERROR') {
           <div class="action-buttons mt-4 flex justify-end gap-2">
-            <p-button
-              label="Review"
-              severity="info"
-              icon="pi pi-search"
-              size="small"
-              outlined
-              (click)="reviewTask(task.key)">
-            </p-button>
+            @if (task.value.review) {
+              <p-button
+                label="Review"
+                severity="info"
+                icon="pi pi-search"
+                size="small"
+                outlined
+                (click)="reviewTask(task.key)">
+              </p-button>
+            }
 
             <p-button
-              label="Discard"
+              [label]="task.value.review ? 'Discard' : 'Dismiss'"
               icon="pi pi-times"
-              severity="danger"
+              [severity]="task.value.review ? 'danger' : 'secondary'"
               size="small"
-              pTooltip="Deletes the fetched metadata"
-              tooltipPosition="top"
+              [pTooltip]="task.value.review ? 'Preserve current metadata, discard new fetched metadata' : ''"
+              [tooltipPosition]="task.value.review ? 'top' : undefined"
               outlined
               (click)="clearTask(task.key)">
             </p-button>
           </div>
+        } @else if (task.value.status === 'IN_PROGRESS') {
+          <div class="action-buttons mt-4 flex justify-end gap-2">
+            <p-button
+              label="Cancel"
+              icon="pi pi-stop"
+              severity="danger"
+              size="small"
+              pTooltip="Cancel this task"
+              tooltipPosition="top"
+              outlined
+              (click)="cancelTask(task.key)">
+            </p-button>
+          </div>
         }
+
       </div>
 
       @if (idx < Object.keys(activeTasks).length - 1) {

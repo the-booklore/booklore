@@ -48,6 +48,8 @@ import {MagicShelf, MagicShelfService} from '../../../magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../book-rule-evaluator.service';
 import {GroupRule} from '../../../magic-shelf-component/magic-shelf-component';
 import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
+import {MetadataRefreshRequest} from '../../../metadata/model/request/metadata-refresh-request.model';
+import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -156,7 +158,7 @@ export class BookBrowserComponent implements OnInit {
 
   @ViewChild(BookTableComponent)
   bookTableComponent!: BookTableComponent;
-  @ViewChild(BookFilterComponent, { static: false })
+  @ViewChild(BookFilterComponent, {static: false})
   bookFilterComponent!: BookFilterComponent;
 
   get currentCardSize() {
@@ -220,9 +222,10 @@ export class BookBrowserComponent implements OnInit {
     });
 
     this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
-      () => this.updateMetadata(),
+      () => this.autoFetchMetadata(),
+      () => this.fetchMetadata(),
       () => this.bulkEditMetadata(),
-      () => this.multiBookEditMetadata()
+      () => this.multiBookEditMetadata(),
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
 
@@ -255,7 +258,7 @@ export class BookBrowserComponent implements OnInit {
         });
 
         this.selectedFilter.next(parsedFilters);
-        if(this.bookFilterComponent) {
+        if (this.bookFilterComponent) {
           this.bookFilterComponent.setFilters?.(parsedFilters);
           this.bookFilterComponent.onFiltersChanged?.();
         }
@@ -558,7 +561,15 @@ export class BookBrowserComponent implements OnInit {
     this.dynamicDialogRef = this.dialogHelperService.openLockUnlockMetadataDialog(this.selectedBooks);
   }
 
-  updateMetadata(): void {
+  autoFetchMetadata(): void {
+    const metadataRefreshRequest: MetadataRefreshRequest = {
+      refreshType: MetadataRefreshType.BOOKS,
+      bookIds: Array.from(this.selectedBooks),
+    };
+    this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
+  }
+
+  fetchMetadata(): void {
     this.dialogHelperService.openMetadataRefreshDialog(this.selectedBooks);
   }
 
@@ -567,7 +578,7 @@ export class BookBrowserComponent implements OnInit {
   }
 
   multiBookEditMetadata(): void {
-    this.dialogHelperService.openMultibookMetadataEditerDialog(this.selectedBooks);
+    this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
   }
 
   moveFiles() {
@@ -704,9 +715,9 @@ export class BookBrowserComponent implements OnInit {
       map(filtered =>
         (filtered.loaded && !filtered.error)
           ? ({
-              ...filtered,
-              books: this.sortService.applySort(filtered.books || [], this.bookSorter.selectedSort!)
-            })
+            ...filtered,
+            books: this.sortService.applySort(filtered.books || [], this.bookSorter.selectedSort!)
+          })
           : filtered
       )
     );

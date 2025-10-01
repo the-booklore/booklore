@@ -2,7 +2,7 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {PageTitleService} from "../utilities/service/page-title.service";
 import {UserService} from './user-management/user.service';
-import { AsyncPipe } from '@angular/common';
+import {AsyncPipe} from '@angular/common';
 import {EmailComponent} from './email/email.component';
 import {GlobalPreferencesComponent} from './global-preferences/global-preferences.component';
 import {ActivatedRoute, Router} from '@angular/router';
@@ -12,10 +12,10 @@ import {AuthenticationSettingsComponent} from '../core/security/oauth2-managemen
 import {ViewPreferencesParentComponent} from './view-preferences-parent/view-preferences-parent.component';
 import {ReaderPreferences} from './reader-preferences/reader-preferences.component';
 import {MetadataSettingsComponent} from './metadata-settings-component/metadata-settings-component';
-import {OpdsSettingsComponent} from './opds-settings/opds-settings.component';
 import {DeviceSettingsComponent} from './device-settings-component/device-settings-component';
 import {FileNamingPatternComponent} from './file-naming-pattern/file-naming-pattern.component';
 import {OpdsSettingsV2} from './opds-settings-v2/opds-settings-v2';
+import {LibraryMetadataSettingsComponent} from './library-metadata-settings-component/library-metadata-settings.component';
 
 export enum SettingsTab {
   ReaderSettings = 'reader',
@@ -25,10 +25,10 @@ export enum SettingsTab {
   EmailSettings = 'email',
   NamingPattern = 'naming-pattern',
   MetadataSettings = 'metadata',
+  LibraryMetadataSettings = 'metadata-library',
   ApplicationSettings = 'application',
   AuthenticationSettings = 'authentication',
-  OpdsV2 = 'opds-v2',
-  Opds = 'opds'
+  OpdsV2 = 'opds'
 }
 
 @Component({
@@ -47,10 +47,10 @@ export enum SettingsTab {
     ViewPreferencesParentComponent,
     ReaderPreferences,
     MetadataSettingsComponent,
-    OpdsSettingsComponent,
     DeviceSettingsComponent,
     FileNamingPatternComponent,
-    OpdsSettingsV2
+    OpdsSettingsV2,
+    LibraryMetadataSettingsComponent
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
@@ -79,7 +79,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
     this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { tab: value },
+      queryParams: {tab: value},
       queryParamsHandling: 'merge'
     });
   }
@@ -95,7 +95,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this._activeTab = SettingsTab.ReaderSettings;
         this.router.navigate([], {
           relativeTo: this.route,
-          queryParams: { tab: this._activeTab },
+          queryParams: {tab: this._activeTab},
           queryParamsHandling: 'merge',
           replaceUrl: true
         });

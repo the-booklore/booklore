@@ -38,6 +38,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {AdditionalFileUploaderComponent} from '../../../book/components/additional-file-uploader/additional-file-uploader.component';
 import {Image} from 'primeng/image';
+import {BookDialogHelperService} from '../../../book/components/book-browser/BookDialogHelperService';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -61,6 +62,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
+
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
@@ -115,8 +118,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => [
         {
-          label: 'Granular Refresh',
-          icon: 'pi pi-database',
+          label: 'Custom Fetch',
+          icon: 'pi pi-sync',
           command: () => {
             this.dialogService.open(MetadataFetchOptionsComponent, {
               header: 'Metadata Refresh Options',
@@ -201,6 +204,13 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 },
                 data: {book}
               });
+            },
+          },
+          {
+            label: 'Organize Files',
+            icon: 'pi pi-arrows-h',
+            command: () => {
+              this.openFileMoverDialog(book.id);
             },
           },
           {
@@ -388,7 +398,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   quickRefresh(bookId: number) {
     this.isAutoFetching = true;
     const request: MetadataRefreshRequest = {
-      quick: true,
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
     };
@@ -548,7 +557,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   goToSeries(seriesName: string): void {
-    this.router.navigate(['/series', seriesName]);
+    const encodedSeriesName = encodeURIComponent(seriesName);
+    this.router.navigate(['/series', encodedSeriesName]);
   }
 
   goToPublisher(publisher: string): void {
@@ -805,6 +815,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   cancelDateFinishedEdit(): void {
     this.isEditingDateFinished = false;
     this.editDateFinished = null;
+  }
+
+  openFileMoverDialog(bookId: number): void {
+    this.bookDialogHelperService.openFileMoverDialog(new Set([bookId]));
   }
 
   protected readonly ResetProgressTypes = ResetProgressTypes;

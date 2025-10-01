@@ -127,6 +127,13 @@ export class SeriesPageComponent {
       const allRead = statuses.every((s) => s === ReadStatus.READ);
       if (allRead) return ReadStatus.READ;
 
+      // If any book is currently being read, surface series status as READING
+      const isAnyReading = statuses.some(
+        (s) => s === ReadStatus.READING || s === ReadStatus.RE_READING || s === ReadStatus.PAUSED
+      );
+      if (isAnyReading) return ReadStatus.READING;
+
+      // If some are read and some are unread, surface as PARTIALLY_READ
       const someRead = statuses.some((s) => s === ReadStatus.READ);
       if (someRead) return ReadStatus.PARTIALLY_READ;
 
@@ -134,6 +141,15 @@ export class SeriesPageComponent {
       if (allUnread) return ReadStatus.UNREAD;
 
       return ReadStatus.PARTIALLY_READ;
+    })
+  );
+
+  // Progress like "12/20" (read/total)
+  seriesReadProgress$: Observable<string> = this.filteredBooks$.pipe(
+    map((books) => {
+      const total = books?.length ?? 0;
+      const readCount = (books || []).filter((b) => b.readStatus === ReadStatus.READ).length;
+      return `${readCount}/${total}`;
     })
   );
 
@@ -193,10 +209,16 @@ export class SeriesPageComponent {
     switch (v) {
       case ReadStatus.UNREAD:
         return 'UNREAD';
+      case ReadStatus.READING:
+        return 'READING';
+      case ReadStatus.RE_READING:
+        return 'RE-READING';
       case ReadStatus.READ:
         return 'READ';
       case ReadStatus.PARTIALLY_READ:
         return 'PARTIALLY READ';
+      case ReadStatus.PAUSED:
+        return 'PAUSED';
       case ReadStatus.ABANDONED:
         return 'ABANDONED';
       case ReadStatus.WONT_READ:
@@ -211,10 +233,17 @@ export class SeriesPageComponent {
     switch (normalized) {
       case "UNREAD":
         return "bg-gray-500";
+      case "READING":
+        return "bg-blue-600";
       case "READ":
         return "bg-green-600";
       case "PARTIALLY_READ":
         return "bg-yellow-600";
+      case "PAUSED":
+        return "bg-slate-600";
+      case "RE-READING":
+      case "RE_READING":
+        return "bg-purple-600";
       case "ABANDONED":
         return "bg-red-600";
       case "WONT_READ":

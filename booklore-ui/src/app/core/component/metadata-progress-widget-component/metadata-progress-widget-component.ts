@@ -7,15 +7,13 @@ import {ButtonModule} from 'primeng/button';
 import {Divider} from 'primeng/divider';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogService} from 'primeng/dynamicdialog';
+import {MessageService} from 'primeng/api';
 
-import {
-  MetadataBatchProgressNotification,
-  MetadataBatchStatus,
-  MetadataBatchStatusLabels
-} from '../../model/metadata-batch-progress.model';
+import {MetadataBatchProgressNotification, MetadataBatchStatus, MetadataBatchStatusLabels} from '../../model/metadata-batch-progress.model';
 import {MetadataProgressService} from '../../service/metadata-progress-service';
 import {MetadataReviewDialogComponent} from '../../../metadata/metadata-review-dialog-component/metadata-review-dialog-component';
 import {MetadataTaskService} from '../../../book/service/metadata-task';
+import {TaskService} from '../../../shared/services/task.service';
 import {Tag} from 'primeng/tag';
 
 @Component({
@@ -32,6 +30,8 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
   private dialogService = inject(DialogService);
   private metadataProgressService = inject(MetadataProgressService);
   private metadataTaskService = inject(MetadataTaskService);
+  private taskService = inject(TaskService);
+  private messageService = inject(MessageService);
 
   private lastUpdateMap = new Map<string, number>();
   private timeoutHandles = new Map<string, any>();
@@ -87,7 +87,9 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
   }
 
   getProgressPercent(task: MetadataBatchProgressNotification): number {
-    return task.total > 0 ? Math.round((task.completed / task.total) * 100) : 0;
+    if (task.total <= 0) return 0;
+    if (task.status === 'COMPLETED') return 100;
+    return Math.round((task.completed / task.total) * 100);
   }
 
   clearTask(taskId: string): void {
@@ -107,6 +109,36 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
       data: {taskId},
       closable: false,
       modal: true
+    });
+  }
+
+  cancelTask(taskId: string): void {
+    this.taskService.cancelTask(taskId).subscribe({
+      next: () => {
+        const task = this.activeTasks[taskId];
+        if (task) {
+          this.activeTasks[taskId] = {
+            ...task,
+            status: MetadataBatchStatus.ERROR,
+            message: 'Task cancelled by user'
+          };
+          this.activeTasks = {...this.activeTasks};
+        }
+
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Cancellation Scheduled',
+          detail: 'Task cancellation has been successfully scheduled'
+        });
+      },
+      error: (error) => {
+        console.error('Failed to cancel task:', error);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Cancel Failed',
+          detail: 'Failed to cancel the task. Please try again.'
+        });
+      }
     });
   }
 

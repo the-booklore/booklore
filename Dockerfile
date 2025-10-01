@@ -4,7 +4,11 @@ FROM node:22-alpine AS angular-build
 WORKDIR /angular-app
 
 COPY ./booklore-ui/package.json ./booklore-ui/package-lock.json ./
-RUN npm install --force
+RUN npm config set registry http://registry.npmjs.org/ \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm install --force
 COPY ./booklore-ui /angular-app/
 
 RUN npm run build --configuration=production

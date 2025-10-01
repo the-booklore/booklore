@@ -1,5 +1,4 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {MetadataAdvancedFetchOptionsComponent} from '../../metadata/metadata-options-dialog/metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
 import {MetadataProviderSettingsComponent} from '../global-preferences/metadata-provider-settings/metadata-provider-settings.component';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {MetadataRefreshOptions} from '../../metadata/model/request/metadata-refresh-options.model';
@@ -12,12 +11,12 @@ import {MetadataMatchWeightsComponent} from '../global-preferences/metadata-matc
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {MetadataPersistenceSettingsComponent} from './metadata-persistence-settings-component/metadata-persistence-settings-component';
 import {PublicReviewsSettingsComponent} from './public-reviews-settings-component/public-reviews-settings-component';
+import {LibraryMetadataSettingsComponent} from '../library-metadata-settings-component/library-metadata-settings.component';
 
 @Component({
   selector: 'app-metadata-settings-component',
   standalone: true,
   imports: [
-    MetadataAdvancedFetchOptionsComponent,
     MetadataProviderSettingsComponent,
     ReactiveFormsModule,
     FormsModule,
@@ -67,8 +66,8 @@ export class MetadataSettingsComponent implements OnInit {
   }
 
   private initializeSettings(settings: AppSettings): void {
-    if (settings.metadataRefreshOptions) {
-      this.currentMetadataOptions = settings.metadataRefreshOptions;
+    if (settings.defaultMetadataRefreshOptions) {
+      this.currentMetadataOptions = settings.defaultMetadataRefreshOptions;
     }
 
     this.metadataDownloadOnBookdrop = settings.metadataDownloadOnBookdrop ?? true;

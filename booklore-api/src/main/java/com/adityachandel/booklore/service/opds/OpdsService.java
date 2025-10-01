@@ -112,7 +112,7 @@ public class OpdsService {
         java.util.Set<Long> libraryIds = user.getAssignedLibraries().stream()
                 .map(Library::getId)
                 .collect(java.util.stream.Collectors.toSet());
-        var result = bookQueryService.getRecentBooksByLibraryIdsPage(libraryIds, true, page, size);
+        var result = bookQueryService.getRecentBooksByLibraryIdsPage(libraryIds, true, page, size, v2.getUserId());
         return generateOpdsV2Feed(result.getContent(), result.getTotalElements(), "/api/v2/opds/recent", qp, page, size);
     }
 
@@ -340,7 +340,7 @@ public class OpdsService {
         } else {
             return (queryParam != null)
                     ? bookQueryService.searchBooksByMetadataInLibraries(queryParam, libraryIds)
-                    : bookQueryService.getAllBooksByLibraryIds(libraryIds, true);
+                    : bookQueryService.getAllBooksByLibraryIds(libraryIds, true, opdsUserV2.getUserId());
         }
     }
 
@@ -682,7 +682,7 @@ public class OpdsService {
                 return bookQueryService.getAllBooksByShelfPage(shelfId, true, page, size);
             }
             if (libraryId != null) {
-                return bookQueryService.getAllBooksByLibraryIdsPage(java.util.Set.of(libraryId), true, page, size);
+                return bookQueryService.getAllBooksByLibraryIdsPage(java.util.Set.of(libraryId), true, page, size, null);
             }
             if (queryParam != null && !queryParam.isBlank()) {
                 return bookQueryService.searchBooksByMetadataPage(queryParam, page, size);
@@ -718,7 +718,7 @@ public class OpdsService {
             }
             return (queryParam != null && !queryParam.isBlank())
                     ? bookQueryService.searchBooksByMetadataInLibrariesPage(queryParam, java.util.Set.of(libraryId), page, size)
-                    : bookQueryService.getAllBooksByLibraryIdsPage(java.util.Set.of(libraryId), true, page, size);
+                    : bookQueryService.getAllBooksByLibraryIdsPage(java.util.Set.of(libraryId), true, page, size, opdsUserV2.getUserId());
         }
 
         if (isAdmin) {
@@ -729,7 +729,7 @@ public class OpdsService {
 
         return (queryParam != null && !queryParam.isBlank())
                 ? bookQueryService.searchBooksByMetadataInLibrariesPage(queryParam, libraryIds, page, size)
-                : bookQueryService.getAllBooksByLibraryIdsPage(libraryIds, true, page, size);
+                : bookQueryService.getAllBooksByLibraryIdsPage(libraryIds, true, page, size, opdsUserV2.getUserId());
     }
 
 }

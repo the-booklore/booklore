@@ -69,6 +69,9 @@
                     <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white"
                       [ngClass]="getStatusSeverityClass(s || 'UNREAD')">
                       {{ getStatusLabel(s) }}
+                      @if (s === 'PARTIALLY_READ') {
+                      ({{ seriesReadProgress$ | async }})
+                    }
                     </span>
                   </p>
                 </div>

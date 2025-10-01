@@ -17,6 +17,7 @@ public class Book {
     private Long id;
     private BookFileType bookType;
     private Long libraryId;
+    private String libraryName;
     private String fileName;
     private String filePath;
     private String fileSubPath;

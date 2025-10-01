@@ -192,12 +192,12 @@ class OpdsServiceTest {
 
         when(request.getHeader("Accept")).thenReturn(null); // v1 default; feed version not relevant for allowed-books logic
         when(request.getRequestURI()).thenReturn("/opds/catalog");
-        when(bookQueryService.getAllBooksByLibraryIds(Set.of(7L), true)).thenReturn(List.of());
+        when(bookQueryService.getAllBooksByLibraryIds(Set.of(7L), true, 21L)).thenReturn(List.of());
 
         String feed = service.generateCatalogFeed(request);
 
         assertNotNull(feed);
-        verify(bookQueryService).getAllBooksByLibraryIds(Set.of(7L), true);
+        verify(bookQueryService).getAllBooksByLibraryIds(Set.of(7L), true, 21L);
         verify(userRepository).findById(21L);
     }
 

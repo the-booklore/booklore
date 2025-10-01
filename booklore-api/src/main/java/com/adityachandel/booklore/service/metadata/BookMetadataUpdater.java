@@ -77,21 +77,7 @@ public class BookMetadataUpdater {
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean writeToFile = settings.isSaveToOriginalFile();
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
-        boolean backupEnabled = settings.isBackupMetadata();
-        boolean backupCover = settings.isBackupCover();
         BookFileType bookType = bookEntity.getBookType();
-
-        if (writeToFile && backupEnabled && (bookType != BookFileType.CBX || convertCbrCb7ToCbz)) {
-            try {
-                MetadataBackupRestore service = metadataBackupRestoreFactory.getService(bookType);
-                if (service != null) {
-                    boolean coverBackup = bookType == BookFileType.EPUB && backupCover;
-                    service.backupEmbeddedMetadataIfNotExists(bookEntity, coverBackup);
-                }
-            } catch (Exception e) {
-                log.warn("Metadata backup failed for book ID {}: {}", bookId, e.getMessage());
-            }
-        }
 
         updateBasicFields(newMetadata, metadata, clearFlags);
         updateAuthorsIfNeeded(newMetadata, metadata, clearFlags);

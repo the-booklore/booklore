@@ -22,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -83,29 +84,30 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L, 2L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         List<BookEntity> batchBooks = List.of(bookEntity1, bookEntity2);
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(batchBooks);
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 100, 100))
-                .thenReturn(List.of());
 
+        when(bookRepository.save(bookEntity1)).thenReturn(bookEntity1);
+        when(bookRepository.save(bookEntity2)).thenReturn(bookEntity2);
         when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
         when(bookMapper.toBook(bookEntity2)).thenReturn(book2);
 
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             callback.onBookMoved(bookEntity1);
             callback.onBookMoved(bookEntity2);
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), any());
+        }).when(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), eq(Map.of()), any());
 
         // When
         fileMoveService.moveFiles(request);
 
         // Then
         verify(bookQueryService).findWithMetadataByIdsWithPagination(bookIds, 0, 100);
-        verify(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), any());
+        verify(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), eq(Map.of()), any());
         verify(bookRepository).save(bookEntity1);
         verify(bookRepository).save(bookEntity2);
         verify(notificationService).sendMessage(eq(Topic.BOOK_METADATA_BATCH_UPDATE), eq(List.of(book1, book2)));
@@ -119,38 +121,48 @@ class FileMoveServiceTest {
                 .collect(Collectors.toSet());
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
+
+        // Create subset for first batch (first 100 items)
+        Set<Long> firstBatchIds = IntStream.rangeClosed(1, 100)
+                .mapToObj(i -> (long) i)
+                .collect(Collectors.toSet());
+
+        // Create subset for second batch (remaining 50 items)
+        Set<Long> secondBatchIds = IntStream.rangeClosed(101, 150)
+                .mapToObj(i -> (long) i)
+                .collect(Collectors.toSet());
 
         // First batch
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
+        when(bookQueryService.findWithMetadataByIdsWithPagination(firstBatchIds, 0, 100))
                 .thenReturn(List.of(bookEntity1));
         // Second batch
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 100, 100))
+        when(bookQueryService.findWithMetadataByIdsWithPagination(secondBatchIds, 100, 100))
                 .thenReturn(List.of(bookEntity2));
-        // Third batch - empty
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 200, 100))
-                .thenReturn(List.of());
 
         when(book1.getId()).thenReturn(1L);
         when(book2.getId()).thenReturn(2L);
+        when(bookRepository.save(bookEntity1)).thenReturn(bookEntity1);
+        when(bookRepository.save(bookEntity2)).thenReturn(bookEntity2);
         when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
         when(bookMapper.toBook(bookEntity2)).thenReturn(book2);
 
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             List<BookEntity> books = invocation.getArgument(0);
             for (BookEntity book : books) {
                 callback.onBookMoved(book);
             }
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), any());
+        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), eq(Map.of()), any());
 
         // When
         fileMoveService.moveFiles(request);
 
         // Then
-        verify(bookQueryService).findWithMetadataByIdsWithPagination(bookIds, 0, 100);
-        verify(bookQueryService).findWithMetadataByIdsWithPagination(bookIds, 100, 100);
-        verify(unifiedFileMoveService, times(2)).moveBatchBookFiles(any(), any());
+        verify(bookQueryService).findWithMetadataByIdsWithPagination(firstBatchIds, 0, 100);
+        verify(bookQueryService).findWithMetadataByIdsWithPagination(secondBatchIds, 100, 100);
+        verify(unifiedFileMoveService, times(2)).moveBatchBookFiles(any(), eq(Map.of()), any());
         verify(bookRepository).save(bookEntity1);
         verify(bookRepository).save(bookEntity2);
         verify(notificationService).sendMessage(eq(Topic.BOOK_METADATA_BATCH_UPDATE), eq(List.of(book1, book2)));
@@ -162,6 +174,7 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L, 2L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(List.of());
@@ -171,7 +184,7 @@ class FileMoveServiceTest {
 
         // Then
         verify(bookQueryService).findWithMetadataByIdsWithPagination(bookIds, 0, 100);
-        verify(unifiedFileMoveService, never()).moveBatchBookFiles(any(), any());
+        verify(unifiedFileMoveService, never()).moveBatchBookFiles(any(), any(), any());
         verify(bookRepository, never()).save(any());
         verify(notificationService, never()).sendMessage(any(), any());
     }
@@ -182,20 +195,22 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L, 2L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         List<BookEntity> batchBooks = List.of(bookEntity1, bookEntity2);
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(batchBooks);
 
+        when(bookRepository.save(bookEntity1)).thenReturn(bookEntity1);
+        when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
+
         RuntimeException moveException = new RuntimeException("File move failed");
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             callback.onBookMoved(bookEntity1);
             callback.onBookMoveFailed(bookEntity2, moveException);
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), any());
-
-        when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
+        }).when(unifiedFileMoveService).moveBatchBookFiles(eq(batchBooks), eq(Map.of()), any());
 
         // When & Then
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
@@ -214,13 +229,14 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of();
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         // When
         fileMoveService.moveFiles(request);
 
         // Then: service should not call pagination when bookIds is empty
         verify(bookQueryService, never()).findWithMetadataByIdsWithPagination(anySet(), anyInt(), anyInt());
-        verify(unifiedFileMoveService, never()).moveBatchBookFiles(any(), any());
+        verify(unifiedFileMoveService, never()).moveBatchBookFiles(any(), any(), any());
         verify(notificationService, never()).sendMessage(any(), any());
     }
 
@@ -230,27 +246,27 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(List.of(bookEntity1));
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 100, 100))
-                .thenReturn(List.of());
 
         when(book1.getId()).thenReturn(1L);
+        when(bookRepository.save(bookEntity1)).thenReturn(bookEntity1);
         when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
 
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             callback.onBookMoved(bookEntity1);
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), any());
+        }).when(unifiedFileMoveService).moveBatchBookFiles(eq(List.of(bookEntity1)), eq(Map.of()), any());
 
         // When
         fileMoveService.moveFiles(request);
 
         // Then
         verify(bookQueryService).findWithMetadataByIdsWithPagination(bookIds, 0, 100);
-        verify(unifiedFileMoveService).moveBatchBookFiles(eq(List.of(bookEntity1)), any());
+        verify(unifiedFileMoveService).moveBatchBookFiles(eq(List.of(bookEntity1)), eq(Map.of()), any());
         verify(bookRepository).save(bookEntity1);
         verify(notificationService).sendMessage(eq(Topic.BOOK_METADATA_BATCH_UPDATE), eq(List.of(book1)));
     }
@@ -306,21 +322,22 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L, 2L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(List.of(bookEntity1, bookEntity2));
-        when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 100, 100))
-                .thenReturn(List.of());
 
+        when(bookRepository.save(bookEntity1)).thenReturn(bookEntity1);
+        when(bookRepository.save(bookEntity2)).thenReturn(bookEntity2);
         when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
         when(bookMapper.toBook(bookEntity2)).thenReturn(book2);
 
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             callback.onBookMoved(bookEntity1);
             callback.onBookMoved(bookEntity2);
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), any());
+        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), eq(Map.of()), any());
 
         // When
         fileMoveService.moveFiles(request);
@@ -341,16 +358,17 @@ class FileMoveServiceTest {
         Set<Long> bookIds = Set.of(1L, 2L);
         FileMoveRequest request = new FileMoveRequest();
         request.setBookIds(bookIds);
+        request.setMoves(List.of());
 
         when(bookQueryService.findWithMetadataByIdsWithPagination(bookIds, 0, 100))
                 .thenReturn(List.of(bookEntity1, bookEntity2));
 
         RuntimeException moveException = new RuntimeException("All moves failed");
         doAnswer(invocation -> {
-            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(1);
+            UnifiedFileMoveService.BatchMoveCallback callback = invocation.getArgument(2);
             callback.onBookMoveFailed(bookEntity1, moveException);
             return null;
-        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), any());
+        }).when(unifiedFileMoveService).moveBatchBookFiles(any(), eq(Map.of()), any());
 
         // When & Then
         assertThrows(RuntimeException.class, () -> {

@@ -1,0 +1,89 @@
+<div class="main-container enclosing-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-database"></i>
+      Library Metadata Configuration
+    </h2>
+    <p class="settings-description">
+      Configure metadata fetch behavior for your libraries. Set global defaults and create library-specific overrides to control how book metadata is retrieved from different providers.
+    </p>
+  </div>
+
+  <div class="settings-content">
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-globe"></i>
+          Default Metadata Settings
+        </h3>
+        <p class="section-description">
+          Set global default provider priorities for book metadata fields. These settings apply to all libraries unless overridden below.
+          BookLore tries providers from left to right (1st → 2nd → 3rd → 4th priority) for each book field until it finds data.
+          The system checks your 1st priority provider first - if that provider doesn't have the specific field (like description or author),
+          it automatically moves to your 2nd priority, then 3rd, and finally 4th. Leave a priority empty to skip it entirely.
+          For example, if Amazon (1st) has no description but Google Books (2nd) does, Google's description will be used.
+        </p>
+      </div>
+
+      <div class="settings-card">
+        <app-metadata-advanced-fetch-options
+          [currentMetadataOptions]="defaultMetadataOptions"
+          [submitButtonLabel]="'Save Default Settings'"
+          (metadataOptionsSubmitted)="onDefaultMetadataOptionsSubmitted($event)">
+        </app-metadata-advanced-fetch-options>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-book"></i>
+          Library-Specific Overrides
+        </h3>
+        <p class="section-description">
+          Override the default priority settings for specific libraries. For example, you might prefer Amazon for fiction but Google Books for technical books. Each library can have its own provider priority order while falling back to defaults for unspecified fields.
+        </p>
+      </div>
+
+      <div class="settings-card">
+        @if (libraries$ | async; as libraries) {
+          <p-accordion>
+            @for (library of libraries; track trackByLibrary($index, library); let i = $index) {
+              <p-accordion-panel [value]="i">
+                <p-accordion-header>
+                  <div class="accordion-header-content">
+                    <div class="library-info">
+                      <i [class]="'pi pi-' + library.icon" class="library-icon"></i>
+                      <span class="library-name">{{ library.name }}</span>
+                      <span class="dot-separator">•</span>
+                      @if (hasLibraryOverride(library.id!)) {
+                        <span class="override-indicator custom">
+                          <i class="pi pi-check-circle"></i>
+                          Custom Settings
+                        </span>
+                      } @else {
+                        <span class="default-indicator default">
+                          <i class="pi pi-globe"></i>
+                          Default Settings
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </p-accordion-header>
+                <p-accordion-content>
+                  <div class="accordion-content-wrapper">
+                    <app-metadata-advanced-fetch-options
+                      [currentMetadataOptions]="getLibraryOptions(library.id!)"
+                      [submitButtonLabel]="'Save ' + library.name + ' Settings'"
+                      (metadataOptionsSubmitted)="onLibraryMetadataOptionsSubmitted(library.id!, $event)">
+                    </app-metadata-advanced-fetch-options>
+                  </div>
+                </p-accordion-content>
+              </p-accordion-panel>
+            }
+          </p-accordion>
+        }
+      </div>
+    </div>
+  </div>
+</div>

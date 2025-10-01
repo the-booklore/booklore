@@ -23,7 +23,6 @@ import {MetadataBatchProgressNotification} from '../../../core/model/metadata-ba
 import {UnifiedNotificationBoxComponent} from '../../../core/component/unified-notification-popover-component/unified-notification-popover-component';
 import {BookdropFileService} from '../../../bookdrop/bookdrop-file.service';
 import {DialogLauncherService} from '../../../dialog-launcher.service';
-import {TaskEventService} from '../../../shared/websocket/task-event.service';
 import {DuplicateFileService} from '../../../shared/websocket/duplicate-file.service';
 
 @Component({
@@ -82,12 +81,10 @@ export class AppTopBarComponent implements OnDestroy {
     private metadataProgressService: MetadataProgressService,
     private bookdropFileService: BookdropFileService,
     private dialogLauncher: DialogLauncherService,
-    private taskEventService: TaskEventService,
     private duplicateFileService: DuplicateFileService
   ) {
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
-    this.subscribeToTaskEvents();
     this.subscribeToDuplicateFiles();
 
     this.metadataProgressService.activeTasks$
@@ -178,16 +175,6 @@ export class AppTopBarComponent implements OnDestroy {
       });
   }
 
-  private subscribeToTaskEvents() {
-    this.taskEventService.tasks$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((tasks) => {
-        if (tasks.length > 0) {
-          this.triggerPulseEffect();
-        }
-      });
-  }
-
   private subscribeToDuplicateFiles() {
     this.duplicateFileService.duplicateFiles$
       .pipe(takeUntil(this.destroy$))
@@ -207,7 +194,7 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   private updateCompletedTaskCount() {
-    const completedMetadataTasks = Object.values(this.latestTasks).filter(task => task.status === 'COMPLETED').length;
+    const completedMetadataTasks = Object.values(this.latestTasks).length;
     const bookdropFileTaskCount = this.latestHasPendingFiles ? 1 : 0;
     const duplicateFileTaskCount = this.latestHasDuplicateFiles ? 1 : 0;
     this.completedTaskCount = completedMetadataTasks + bookdropFileTaskCount + duplicateFileTaskCount;

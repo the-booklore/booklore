@@ -1,16 +1,12 @@
 package com.adityachandel.booklore.service.file;
 
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.LibraryEntity;
-import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,9 +15,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -36,6 +33,9 @@ class UnifiedFileMoveServiceTest {
 
     @Mock
     MonitoringRegistrationService monitoringRegistrationService;
+
+    @Mock
+    LibraryRepository libraryRepository;
 
     @InjectMocks
     UnifiedFileMoveService service;
@@ -63,7 +63,6 @@ class UnifiedFileMoveServiceTest {
     @Test
     void moveSingleBookFile_skipsWhenNoLibrary() {
         BookEntity book = new BookEntity();
-        // no libraryPath set
         service.moveSingleBookFile(book);
         verifyNoInteractions(monitoredFileOperationService);
         verifyNoInteractions(fileMovingHelper);
@@ -124,6 +123,8 @@ class UnifiedFileMoveServiceTest {
 
     @Test
     void moveBatchBookFiles_movesBooks_and_callsCallback_and_reRegistersLibraries() throws Exception {
+        when(libraryRepository.findById(10L)).thenReturn(Optional.of(library));
+
         BookEntity b1 = new BookEntity();
         b1.setId(11L);
         b1.setLibraryPath(libraryPath);
@@ -182,6 +183,8 @@ class UnifiedFileMoveServiceTest {
 
     @Test
     void moveBatchBookFiles_callsOnBookMoveFailed_onIOException() throws Exception {
+        when(libraryRepository.findById(10L)).thenReturn(Optional.of(library));
+
         BookEntity b = new BookEntity();
         b.setId(21L);
         b.setLibraryPath(libraryPath);

@@ -1,15 +1,14 @@
 package com.adityachandel.booklore.service.kobo;
 
+import com.adityachandel.booklore.util.FileService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.stream.Collectors;
 
@@ -17,13 +16,22 @@ import java.util.stream.Collectors;
 @Service
 public class KepubConversionService {
 
-    private static final String KEPUBIFY_BINARY_MACOS_ARM64 = "/bin/kepubify-darwin-arm64";
-    private static final String KEPUBIFY_BINARY_LINUX_X64 = "/bin/kepubify-linux-64bit";
+    @Autowired
+    private FileService fileService;
+
+    private static final String KEPUBIFY_GITHUB_BASE_URL = "https://github.com/booklore-app/booklore-tools/raw/main/kepubify/";
+
+    private static final String BIN_DARWIN_ARM64 = "kepubify-darwin-arm64";
+    private static final String BIN_DARWIN_X64 = "kepubify-darwin-64bit";
+    private static final String BIN_LINUX_X64 = "kepubify-linux-64bit";
+    private static final String BIN_LINUX_X86 = "kepubify-linux-32bit";
+    private static final String BIN_LINUX_ARM = "kepubify-linux-arm";
+    private static final String BIN_LINUX_ARM64 = "kepubify-linux-arm64";
 
     public File convertEpubToKepub(File epubFile, File tempDir) throws IOException, InterruptedException {
         validateInputs(epubFile);
 
-        Path kepubifyBinary = setupKepubifyBinary(tempDir);
+        Path kepubifyBinary = setupKepubifyBinary();
         File outputFile = executeKepubifyConversion(epubFile, tempDir, kepubifyBinary);
 
         log.info("Successfully converted {} to {} (size: {} bytes)", epubFile.getName(), outputFile.getName(), outputFile.length());
@@ -36,33 +44,58 @@ public class KepubConversionService {
         }
     }
 
-    private Path setupKepubifyBinary(File tempDir) throws IOException {
-        Path tempKepubify = tempDir.toPath().resolve("kepubify");
-        String resourcePath = getKepubifyResourcePath();
-
-        try (InputStream in = getClass().getResourceAsStream(resourcePath)) {
-            if (in == null) {
-                throw new IOException("Resource not found: " + resourcePath);
-            }
-            Files.copy(in, tempKepubify, StandardCopyOption.REPLACE_EXISTING);
+    private Path setupKepubifyBinary() throws IOException {
+        String binaryName = getKepubifyBinaryName();
+        String toolsDirPath = fileService.getToolsKepubifyPath();
+        Path toolsDir = Paths.get(toolsDirPath);
+        if (!Files.exists(toolsDir)) {
+            Files.createDirectories(toolsDir);
         }
-        tempKepubify.toFile().setExecutable(true);
-        return tempKepubify;
+        Path binaryPath = toolsDir.resolve(binaryName);
+
+        if (!Files.exists(binaryPath)) {
+            String downloadUrl = KEPUBIFY_GITHUB_BASE_URL + binaryName;
+            log.info("Downloading kepubify binary '{}' from {}", binaryName, downloadUrl);
+            try (InputStream in = java.net.URI.create(downloadUrl).toURL().openStream()) {
+                Files.copy(in, binaryPath, StandardCopyOption.REPLACE_EXISTING);
+            }
+            if (!binaryPath.toFile().setExecutable(true)) {
+                log.warn("Failed to set executable permission for '{}'", binaryPath.toAbsolutePath());
+            }
+            log.info("Downloaded kepubify binary to {}", binaryPath.toAbsolutePath());
+        } else {
+            if (!binaryPath.toFile().setExecutable(true)) {
+                log.warn("Failed to set executable permission for '{}'", binaryPath.toAbsolutePath());
+            }
+            log.debug("Using existing kepubify binary at {}", binaryPath.toAbsolutePath());
+        }
+        return binaryPath;
     }
 
-    private String getKepubifyResourcePath() {
+    private String getKepubifyBinaryName() {
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = System.getProperty("os.arch").toLowerCase();
 
         log.debug("Detected OS: {} ({})", osName, osArch);
 
         if (osName.contains("mac") || osName.contains("darwin")) {
-            return KEPUBIFY_BINARY_MACOS_ARM64;
+            if (osArch.contains("arm") || osArch.contains("aarch64")) {
+                return BIN_DARWIN_ARM64;
+            } else {
+                return BIN_DARWIN_X64;
+            }
         } else if (osName.contains("linux")) {
-            return KEPUBIFY_BINARY_LINUX_X64;
-        } else {
-            throw new IllegalStateException("Unsupported operating system: " + osName);
+            if (osArch.contains("arm64") || osArch.contains("aarch64")) {
+                return BIN_LINUX_ARM64;
+            } else if (osArch.contains("arm")) {
+                return BIN_LINUX_ARM;
+            } else if (osArch.contains("64")) {
+                return BIN_LINUX_X64;
+            } else if (osArch.contains("86")) {
+                return BIN_LINUX_X86;
+            }
         }
+        throw new IllegalStateException("Unsupported operating system or architecture: " + osName + " / " + osArch);
     }
 
     private File executeKepubifyConversion(File epubFile, File tempDir, Path kepubifyBinary) throws IOException, InterruptedException {

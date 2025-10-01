@@ -7,46 +7,46 @@ import {
   OnInit,
   Output,
 } from "@angular/core";
-import { InputText } from "primeng/inputtext";
-import { Button } from "primeng/button";
-import { Divider } from "primeng/divider";
+import {InputText} from "primeng/inputtext";
+import {Button} from "primeng/button";
+import {Divider} from "primeng/divider";
 import {
   FormControl,
   FormGroup,
   FormsModule,
   ReactiveFormsModule,
 } from "@angular/forms";
-import { Observable } from "rxjs";
-import { AsyncPipe } from "@angular/common";
-import { MessageService } from "primeng/api";
+import {Observable} from "rxjs";
+import {AsyncPipe} from "@angular/common";
+import {MessageService} from "primeng/api";
 import {
   Book,
   BookMetadata,
   MetadataClearFlags,
   MetadataUpdateWrapper,
 } from "../../../book/model/book.model";
-import { UrlHelperService } from "../../../utilities/service/url-helper.service";
+import {UrlHelperService} from "../../../utilities/service/url-helper.service";
 import {
   FileUpload,
   FileUploadErrorEvent,
   FileUploadEvent,
 } from "primeng/fileupload";
-import { HttpResponse } from "@angular/common/http";
-import { BookService } from "../../../book/service/book.service";
-import { ProgressSpinner } from "primeng/progressspinner";
-import { Tooltip } from "primeng/tooltip";
-import { filter, take } from "rxjs/operators";
-import { MetadataRestoreDialogComponent } from "../../../book/components/book-browser/metadata-restore-dialog-component/metadata-restore-dialog-component";
-import { DialogService } from "primeng/dynamicdialog";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { MetadataRefreshRequest } from "../../model/request/metadata-refresh-request.model";
-import { MetadataRefreshType } from "../../model/request/metadata-refresh-type.enum";
-import { AutoComplete } from "primeng/autocomplete";
-import { Textarea } from "primeng/textarea";
-import { IftaLabel } from "primeng/iftalabel";
-import { CoverSearchComponent } from "../../cover-search/cover-search.component";
-import { Image } from "primeng/image";
-import { LazyLoadImageModule } from "ng-lazyload-image";
+import {HttpResponse} from "@angular/common/http";
+import {BookService} from "../../../book/service/book.service";
+import {ProgressSpinner} from "primeng/progressspinner";
+import {Tooltip} from "primeng/tooltip";
+import {filter, take} from "rxjs/operators";
+import {MetadataRestoreDialogComponent} from "../../../book/components/book-browser/metadata-restore-dialog-component/metadata-restore-dialog-component";
+import {DialogService} from "primeng/dynamicdialog";
+import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
+import {MetadataRefreshRequest} from "../../model/request/metadata-refresh-request.model";
+import {MetadataRefreshType} from "../../model/request/metadata-refresh-type.enum";
+import {AutoComplete} from "primeng/autocomplete";
+import {Textarea} from "primeng/textarea";
+import {IftaLabel} from "primeng/iftalabel";
+import {CoverSearchComponent} from "../../cover-search/cover-search.component";
+import {Image} from "primeng/image";
+import {LazyLoadImageModule} from "ng-lazyload-image";
 
 @Component({
   selector: "app-metadata-editor",
@@ -270,36 +270,36 @@ export class MetadataEditorComponent implements OnInit {
     });
 
     const lockableFields: { key: keyof BookMetadata; control: string }[] = [
-      { key: "titleLocked", control: "title" },
-      { key: "subtitleLocked", control: "subtitle" },
-      { key: "authorsLocked", control: "authors" },
-      { key: "categoriesLocked", control: "categories" },
-      { key: "publisherLocked", control: "publisher" },
-      { key: "publishedDateLocked", control: "publishedDate" },
-      { key: "languageLocked", control: "language" },
-      { key: "isbn10Locked", control: "isbn10" },
-      { key: "isbn13Locked", control: "isbn13" },
-      { key: "asinLocked", control: "asin" },
-      { key: "amazonReviewCountLocked", control: "amazonReviewCount" },
-      { key: "amazonRatingLocked", control: "amazonRating" },
-      { key: "personalRatingLocked", control: "personalRating" },
-      { key: "goodreadsIdLocked", control: "goodreadsId" },
-      { key: "comicvineIdLocked", control: "comicvineId" },
-      { key: "goodreadsReviewCountLocked", control: "goodreadsReviewCount" },
-      { key: "goodreadsRatingLocked", control: "goodreadsRating" },
-      { key: "hardcoverIdLocked", control: "hardcoverId" },
-      { key: "hardcoverReviewCountLocked", control: "hardcoverReviewCount" },
-      { key: "hardcoverRatingLocked", control: "hardcoverRating" },
-      { key: "googleIdLocked", control: "googleId" },
-      { key: "pageCountLocked", control: "pageCount" },
-      { key: "descriptionLocked", control: "description" },
-      { key: "seriesNameLocked", control: "seriesName" },
-      { key: "seriesNumberLocked", control: "seriesNumber" },
-      { key: "seriesTotalLocked", control: "seriesTotal" },
-      { key: "coverLocked", control: "thumbnailUrl" },
+      {key: "titleLocked", control: "title"},
+      {key: "subtitleLocked", control: "subtitle"},
+      {key: "authorsLocked", control: "authors"},
+      {key: "categoriesLocked", control: "categories"},
+      {key: "publisherLocked", control: "publisher"},
+      {key: "publishedDateLocked", control: "publishedDate"},
+      {key: "languageLocked", control: "language"},
+      {key: "isbn10Locked", control: "isbn10"},
+      {key: "isbn13Locked", control: "isbn13"},
+      {key: "asinLocked", control: "asin"},
+      {key: "amazonReviewCountLocked", control: "amazonReviewCount"},
+      {key: "amazonRatingLocked", control: "amazonRating"},
+      {key: "personalRatingLocked", control: "personalRating"},
+      {key: "goodreadsIdLocked", control: "goodreadsId"},
+      {key: "comicvineIdLocked", control: "comicvineId"},
+      {key: "goodreadsReviewCountLocked", control: "goodreadsReviewCount"},
+      {key: "goodreadsRatingLocked", control: "goodreadsRating"},
+      {key: "hardcoverIdLocked", control: "hardcoverId"},
+      {key: "hardcoverReviewCountLocked", control: "hardcoverReviewCount"},
+      {key: "hardcoverRatingLocked", control: "hardcoverRating"},
+      {key: "googleIdLocked", control: "googleId"},
+      {key: "pageCountLocked", control: "pageCount"},
+      {key: "descriptionLocked", control: "description"},
+      {key: "seriesNameLocked", control: "seriesName"},
+      {key: "seriesNumberLocked", control: "seriesNumber"},
+      {key: "seriesTotalLocked", control: "seriesTotal"},
+      {key: "coverLocked", control: "thumbnailUrl"},
     ];
 
-    for (const { key, control } of lockableFields) {
+    for (const {key, control} of lockableFields) {
       const isLocked = metadata[key] === true;
       const formControl = this.metadataForm.get(control);
       if (formControl) {
@@ -512,7 +512,7 @@ export class MetadataEditorComponent implements OnInit {
       cover: false,
     };
 
-    return { metadata, clearFlags };
+    return {metadata, clearFlags};
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
@@ -616,7 +616,7 @@ export class MetadataEditorComponent implements OnInit {
     this.bookService.getComicInfoMetadata(this.currentBookId).subscribe({
       next: (metadata) => {
         console.log("Retrieved ComicInfo.xml metadata:", metadata);
-        
+
         if (metadata) {
           this.originalMetadata = structuredClone(metadata);
           this.populateFormFromMetadata(metadata);
@@ -662,7 +662,6 @@ export class MetadataEditorComponent implements OnInit {
     this.refreshingBookIds.add(bookId);
     this.isAutoFetching = true;
     const request: MetadataRefreshRequest = {
-      quick: true,
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
     };

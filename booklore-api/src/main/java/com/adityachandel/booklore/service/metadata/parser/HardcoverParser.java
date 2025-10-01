@@ -27,8 +27,8 @@ public class HardcoverParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-
-        boolean searchByIsbn = fetchMetadataRequest.getIsbn() != null && !fetchMetadataRequest.getIsbn().isBlank();
+        String isbnCleaned = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
+        boolean searchByIsbn = isbnCleaned != null && !isbnCleaned.isBlank();
 
         List<GraphQLResponse.Hit> hits;
         if (searchByIsbn) {

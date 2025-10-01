@@ -47,40 +47,6 @@
       </div>
     </div>
 
-    <div class="setting-item setting-item-indented">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Backup Metadata</label>
-          <p-toggleswitch
-            [ngModel]="metadataPersistence.backupMetadata"
-            (onChange)="onPersistenceToggle('backupMetadata')"
-            [disabled]="!metadataPersistence.saveToOriginalFile">
-          </p-toggleswitch>
-        </div>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Save a JSON copy of the current metadata before writing new data to the file.
-        </p>
-      </div>
-    </div>
-
-    <div class="setting-item setting-item-indented">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Backup Cover</label>
-          <p-toggleswitch
-            [ngModel]="metadataPersistence.backupCover"
-            (onChange)="onPersistenceToggle('backupCover')"
-            [disabled]="!metadataPersistence.saveToOriginalFile">
-          </p-toggleswitch>
-        </div>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Save a copy of the existing embedded cover image before it is replaced.
-        </p>
-      </div>
-    </div>
-
     <div class="setting-item">
       <div class="setting-info">
         <div class="setting-label-row">

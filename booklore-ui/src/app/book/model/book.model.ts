@@ -28,6 +28,7 @@ export interface Book extends FileInfo {
   id: number;
   bookType: BookType;
   libraryId: number;
+  libraryName: string;
   metadata?: BookMetadata;
   shelves?: Shelf[];
   lastReadTime?: string;

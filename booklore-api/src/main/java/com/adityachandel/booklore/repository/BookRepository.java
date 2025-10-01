@@ -174,5 +174,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("DELETE FROM BookEntity b WHERE b.deletedAt IS NOT NULL AND b.deletedAt < :cutoff")
     int deleteAllByDeletedAtBefore(Instant cutoff);
 
-    
+    @Modifying
+    @Transactional
+    @Query("UPDATE BookEntity b SET b.library.id = :libraryId WHERE b.id = :bookId")
+    void updateLibraryId(@Param("bookId") Long bookId, @Param("libraryId") Long libraryId);
 }

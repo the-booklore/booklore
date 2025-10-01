@@ -1,4 +1,5 @@
 export interface MetadataRefreshOptions {
+  libraryId: number | null;
   allP4: string | null;
   allP3: string | null;
   allP2: string | null;

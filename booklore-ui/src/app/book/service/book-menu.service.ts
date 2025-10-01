@@ -16,12 +16,21 @@ export class BookMenuService {
   bookService = inject(BookService);
 
 
-  getMetadataMenuItems(updateMetadata: () => void, bulkEditMetadata: () => void, multiBookEditMetadata: () => void): MenuItem[] {
+  getMetadataMenuItems(
+    autoFetchMetadata: () => void,
+    fetchMetadata: () => void,
+    bulkEditMetadata: () => void,
+    multiBookEditMetadata: () => void): MenuItem[] {
     return [
       {
-        label: 'Refresh Metadata',
+        label: 'Auto Fetch Metadata',
+        icon: 'pi pi-bolt',
+        command: autoFetchMetadata
+      },
+      {
+        label: 'Custom Fetch Metadata',
         icon: 'pi pi-sync',
-        command: updateMetadata
+        command: fetchMetadata
       },
       {
         label: 'Bulk Metadata Editor',
