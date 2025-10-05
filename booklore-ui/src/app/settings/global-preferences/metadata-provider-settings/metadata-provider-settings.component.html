@@ -49,7 +49,7 @@
             placeholder="Paste your Amazon cookie"
             fluid
             class="max-w-[60rem]"
-            [(ngModel)]="amazonCookie" />
+            [(ngModel)]="amazonCookie"/>
         </div>
       </div>
     </div>
@@ -86,7 +86,15 @@
 
       <div class="provider-config">
         <div class="config-field">
-          <label class="config-label">API Token</label>
+          <div class="config-label-row">
+            <label class="config-label">API Token</label>
+            <i class="pi pi-external-link external-link-icon"
+               pTooltip="Click to view Hardcover API documentation"
+               tooltipPosition="right"
+               (click)="navigateToHardcoverTokenDocumentation()"
+               style="cursor: pointer;">
+            </i>
+          </div>
           <input
             type="text"
             pInputText
@@ -94,7 +102,7 @@
             fluid
             class="max-w-[60rem]"
             [(ngModel)]="hardcoverToken"
-            (ngModelChange)="onTokenChange($event)" />
+            (ngModelChange)="onTokenChange($event)"/>
         </div>
       </div>
     </div>
@@ -121,7 +129,7 @@
             fluid
             class="max-w-[60rem]"
             [(ngModel)]="comicvineToken"
-            (ngModelChange)="onComicTokenChange($event)" />
+            (ngModelChange)="onComicTokenChange($event)"/>
         </div>
       </div>
     </div>

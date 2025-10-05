@@ -148,4 +148,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
   navigateToAmazonCookieDocumentation() {
     window.open('https://booklore-app.github.io/booklore-docs/docs/metadata/amazon-cookie', '_blank');
   }
+
+  navigateToHardcoverTokenDocumentation() {
+    window.open('https://booklore-app.github.io/booklore-docs/docs/metadata/hardcover-token', '_blank');
+  }
 }
