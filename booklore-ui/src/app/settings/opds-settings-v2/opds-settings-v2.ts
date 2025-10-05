@@ -203,6 +203,10 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
     this.messageService.add({severity, summary, detail});
   }
 
+  navigateToOpdsDoc(): void {
+    window.open('https://booklore-app.github.io/booklore-docs/docs/integration/opds', '_blank');
+  }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
