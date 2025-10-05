@@ -1,4 +1,4 @@
-import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, AfterViewInit} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
 import {Button} from 'primeng/button';
@@ -74,6 +74,11 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
 
   epub!: Book;
+
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
+  private minSwipeDistance: number = 50;
+  private maxVerticalDistance: number = 100;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -152,6 +157,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
 
             displayPromise.then(() => {
               this.setupKeyListener();
+              this.setupTouchListeners();
               this.trackProgress();
               this.isLoading = false;
             });
@@ -193,6 +199,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     this.applyCombinedTheme();
 
     this.setupKeyListener();
+    this.setupTouchListeners();
     this.rendition.display(cfi || undefined);
     this.updateViewerSetting();
   }
@@ -277,6 +284,54 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     document.addEventListener('keyup', this.keyListener);
   }
 
+  private setupTouchListeners(): void {
+    if (!this.isMobileDevice() || this.selectedFlow === 'scrolled') return;
+
+    this.rendition.on('rendered', () => {
+      const iframe = this.epubContainer.nativeElement.querySelector('iframe');
+      if (iframe && iframe.contentDocument) {
+        const iframeDoc = iframe.contentDocument;
+
+        iframeDoc.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
+        iframeDoc.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+      }
+    });
+
+    const container = this.epubContainer.nativeElement;
+    container.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
+    container.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    if (this.selectedFlow === 'scrolled') return;
+
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    if (this.selectedFlow === 'scrolled') return;
+
+    const touchEndX = event.changedTouches[0].clientX;
+    const touchEndY = event.changedTouches[0].clientY;
+
+    const deltaX = touchEndX - this.touchStartX;
+    const deltaY = Math.abs(touchEndY - this.touchStartY);
+
+    if (Math.abs(deltaX) > this.minSwipeDistance && deltaY < this.maxVerticalDistance) {
+      event.preventDefault();
+      if (deltaX > 0) {
+        this.prevPage();
+      } else {
+        this.nextPage();
+      }
+    }
+  }
+
+  private isMobileDevice(): boolean {
+    return window.innerWidth <= 768;
+  }
+
   prevPage(): void {
     if (this.rendition) {
       this.rendition.prev();
@@ -333,7 +388,6 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       return this.book.locations.generate(1600);
     }).then(() => {
       this.locationsReady = true;
-      // Recalculate progress with new locations
       if (this.rendition.currentLocation()) {
         const location = this.rendition.currentLocation();
         const cfi = location.end.cfi;
@@ -341,7 +395,6 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
         this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
     }).catch(() => {
-      // If location generation fails, keep using spine-based calculation
       this.locationsReady = false;
     });
   }
