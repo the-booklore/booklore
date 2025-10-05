@@ -117,26 +117,6 @@
                     {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
                   </div>
                 </div>
-                <!--<div class="flex flex-col gap-2">
-                  <label class="font-medium text-sm">Show Sidebar Filters:</label>
-                  <div class="flex gap-4 justify-start">
-                    <p-toggle-switch
-                      [(ngModel)]="sidebarFilterTogglePrefService.selectedShowFilter"
-                      (onChange)="sidebarFilterTogglePrefService.selectedShowFilter = $event.checked">
-                    </p-toggle-switch>
-                  </div>
-                </div>-->
-                <div class="flex flex-col gap-2">
-                  <label class="font-medium text-sm">Sidebar Filter Sort:</label>
-                  <div class="flex gap-4 justify-start">
-                    <p-select
-                      size="small"
-                      [options]="filterSortPreferenceService.filterSortingOptions"
-                      [(ngModel)]="filterSortPreferenceService.selectedFilterSorting"
-                      placeholder="Select Sorting">
-                    </p-select>
-                  </div>
-                </div>
               </div>
             </p-popover>
           </div>

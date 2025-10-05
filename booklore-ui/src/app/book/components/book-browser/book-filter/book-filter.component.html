@@ -41,7 +41,11 @@
                     (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
                     {{ filter.value.name || filter.value }}
                     <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
-                    <!-- <p class="text-[var(--primary-color)]"> {{ filter.bookCount }}</p> -->
+                  </div>
+                }
+                @if (truncatedFilters[filterType]) {
+                  <div class="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">
+                    Showing first 250 items
                   </div>
                 }
               </div>
@@ -50,5 +54,9 @@
         </p-accordion-panel>
       }
     </p-accordion>
+
+    <div class="text-xs text-gray-500 text-center pt-4 px-4 mt-2">
+      Note: Top 500 items are displayed per filter category
+    </div>
   </div>
 </div>

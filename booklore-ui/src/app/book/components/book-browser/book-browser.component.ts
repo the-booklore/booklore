@@ -36,8 +36,6 @@ import {BookDialogHelperService} from './BookDialogHelperService';
 import {Checkbox} from 'primeng/checkbox';
 import {Popover} from 'primeng/popover';
 import {Slider} from 'primeng/slider';
-import {Select} from 'primeng/select';
-import {FilterSortPreferenceService} from './filters/filter-sorting-preferences.service';
 import {Divider} from 'primeng/divider';
 import {MultiSelect} from 'primeng/multiselect';
 import {TableColumnPreferenceService} from './table-column-preference-service';
@@ -85,7 +83,7 @@ const SORT_DIRECTION = {
   imports: [
     Button, VirtualScrollerModule, BookCardComponent, AsyncPipe, ProgressSpinner, Menu, InputText, FormsModule,
     BookTableComponent, BookFilterComponent, Tooltip, NgClass, PrimeTemplate, NgStyle, Popover,
-    Checkbox, Slider, Select, Divider, MultiSelect, TieredMenu
+    Checkbox, Slider, Divider, MultiSelect, TieredMenu
   ],
   providers: [SeriesCollapseFilter],
   animations: [
@@ -100,7 +98,6 @@ const SORT_DIRECTION = {
 export class BookBrowserComponent implements OnInit {
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
-  protected filterSortPreferenceService = inject(FilterSortPreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
   protected sidebarFilterTogglePrefService = inject(SidebarFilterTogglePrefService);
   private activatedRoute = inject(ActivatedRoute);
@@ -274,7 +271,6 @@ export class BookBrowserComponent implements OnInit {
       const globalPrefs = this.entityViewPreferences?.global;
       const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase() : undefined;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
-      this.filterSortPreferenceService.initValue(user.user?.userSettings?.filterSortingMode);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
