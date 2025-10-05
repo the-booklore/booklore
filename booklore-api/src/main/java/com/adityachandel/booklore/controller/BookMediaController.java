@@ -25,7 +25,6 @@ import java.io.IOException;
 public class BookMediaController {
 
     private final BookService bookService;
-    private final BookMetadataService bookMetadataService;
     private final PdfReaderService pdfReaderService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
