@@ -50,7 +50,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   reviewBeforeApply: boolean = false;
 
   fieldOptions: FieldOptions = this.initializeFieldOptions();
-  skipFields: Record<keyof FieldOptions, boolean> = this.initializeSkipFields();
+  enabledFields: Record<keyof FieldOptions, boolean> = this.initializeEnabledFields();
 
   bulkP1: string | null = null;
   bulkP2: string | null = null;
@@ -74,9 +74,9 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     }, {} as FieldOptions);
   }
 
-  private initializeSkipFields(): Record<keyof FieldOptions, boolean> {
+  private initializeEnabledFields(): Record<keyof FieldOptions, boolean> {
     return this.fields.reduce((acc, field) => {
-      acc[field] = false;
+      acc[field] = true;
       return acc;
     }, {} as Record<keyof FieldOptions, boolean>);
   }
@@ -97,10 +97,10 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       }
       this.fieldOptions = backendFieldOptions;
 
-      if (this.currentMetadataOptions.skipFields) {
-        this.skipFields = {...this.skipFields, ...this.currentMetadataOptions.skipFields};
+      if (this.currentMetadataOptions.enabledFields) {
+        this.enabledFields = {...this.enabledFields, ...this.currentMetadataOptions.enabledFields};
       } else {
-        this.skipFields = this.initializeSkipFields();
+        this.enabledFields = this.initializeEnabledFields();
       }
     }
   }
@@ -120,7 +120,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
 
   submit() {
     const allFieldsHaveProvider = Object.entries(this.fieldOptions).every(([field, opt]) =>
-      this.skipFields[field as keyof FieldOptions] ||
+      !this.enabledFields[field as keyof FieldOptions] ||
       this.isProviderSpecificField(field as keyof FieldOptions) ||
       opt.p1 !== null || opt.p2 !== null || opt.p3 !== null || opt.p4 !== null
     );
@@ -134,7 +134,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
         mergeCategories: this.mergeCategories,
         reviewBeforeApply: this.reviewBeforeApply,
         fieldOptions: this.fieldOptions,
-        skipFields: this.skipFields
+        enabledFields: this.enabledFields
       };
 
       this.metadataOptionsSubmitted.emit(metadataRefreshOptions);
@@ -146,7 +146,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'At least one provider (P1–P4) must be selected for each non-skipped book field.',
+        detail: 'At least one provider (P1–P4) must be selected for each enabled book field.',
         life: 5000
       });
     }
@@ -158,7 +158,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     const value = provider === 'Clear All' ? null : provider;
 
     for (const field of this.nonProviderSpecificFields) {
-      if (!this.skipFields[field]) {
+      if (this.enabledFields[field]) {
         this.fieldOptions[field][priority] = value;
       }
     }
@@ -189,7 +189,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
         p4: null
       };
     }
-    this.skipFields = this.initializeSkipFields();
+    this.enabledFields = this.initializeEnabledFields();
 
     // Reset bulk selectors
     this.bulkP1 = null;

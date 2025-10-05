@@ -69,6 +69,7 @@ public class DefaultUserSettingsProvider {
                 .letterSpacing(null)
                 .lineHeight(null)
                 .flow("paginated")
+                .spread("double")
                 .build();
     }
 

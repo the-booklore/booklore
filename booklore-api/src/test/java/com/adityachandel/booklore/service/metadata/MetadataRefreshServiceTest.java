@@ -82,6 +82,39 @@ class MetadataRefreshServiceTest {
         setupTestEntities();
     }
 
+    private MetadataRefreshOptions.EnabledFields allEnabledFields() {
+        return MetadataRefreshOptions.EnabledFields.builder()
+                .title(true)
+                .subtitle(true)
+                .description(true)
+                .authors(true)
+                .publisher(true)
+                .publishedDate(true)
+                .seriesName(true)
+                .seriesNumber(true)
+                .seriesTotal(true)
+                .isbn13(true)
+                .isbn10(true)
+                .language(true)
+                .categories(true)
+                .cover(true)
+                .pageCount(true)
+                .asin(true)
+                .goodreadsId(true)
+                .comicvineId(true)
+                .hardcoverId(true)
+                .googleId(true)
+                .amazonRating(true)
+                .amazonReviewCount(true)
+                .goodreadsRating(true)
+                .goodreadsReviewCount(true)
+                .hardcoverRating(true)
+                .hardcoverReviewCount(true)
+                .moods(true)
+                .tags(true)
+                .build();
+    }
+
     private void setupDefaultOptions() {
         MetadataRefreshOptions.FieldProvider titleProvider = MetadataRefreshOptions.FieldProvider.builder()
                 .p3(MetadataProvider.Google)
@@ -116,14 +149,14 @@ class MetadataRefreshServiceTest {
                 .cover(coverProvider)
                 .build();
 
-        MetadataRefreshOptions.SkipFields skipFields = MetadataRefreshOptions.SkipFields.builder().build();
+        MetadataRefreshOptions.EnabledFields skipFields = allEnabledFields();
 
         defaultOptions = MetadataRefreshOptions.builder()
                 .refreshCovers(true)
                 .mergeCategories(false)
                 .reviewBeforeApply(false)
                 .fieldOptions(fieldOptions)
-                .skipFields(skipFields)
+                .enabledFields(skipFields)
                 .build();
     }
 
@@ -136,7 +169,7 @@ class MetadataRefreshServiceTest {
                 .title(titleProvider)
                 .build();
 
-        MetadataRefreshOptions.SkipFields skipFields = MetadataRefreshOptions.SkipFields.builder().build();
+        MetadataRefreshOptions.EnabledFields skipFields = allEnabledFields();
 
         libraryOptions = MetadataRefreshOptions.builder()
                 .libraryId(1L)
@@ -144,7 +177,7 @@ class MetadataRefreshServiceTest {
                 .mergeCategories(true)
                 .reviewBeforeApply(true)
                 .fieldOptions(fieldOptions)
-                .skipFields(skipFields)
+                .enabledFields(skipFields)
                 .build();
     }
 
@@ -160,7 +193,6 @@ class MetadataRefreshServiceTest {
         testLibrary.setId(1L);
         testLibrary.setName("Test Library");
 
-        // Create AuthorEntity for proper type compatibility
         AuthorEntity authorEntity = new AuthorEntity();
         authorEntity.setName("Test Author");
 
@@ -252,21 +284,20 @@ class MetadataRefreshServiceTest {
 
     @Test
     void testRefreshMetadata_WithRequestOptions_ShouldUseRequestOptions() {
-        // Given
         MetadataRefreshOptions.FieldProvider titleProvider = MetadataRefreshOptions.FieldProvider.builder()
                 .p1(MetadataProvider.Hardcover)
                 .build();
         MetadataRefreshOptions.FieldOptions fieldOptions = MetadataRefreshOptions.FieldOptions.builder()
                 .title(titleProvider)
                 .build();
-        MetadataRefreshOptions.SkipFields skipFields = MetadataRefreshOptions.SkipFields.builder().build();
+        MetadataRefreshOptions.EnabledFields skipFields = allEnabledFields();
 
         MetadataRefreshOptions requestOptions = MetadataRefreshOptions.builder()
                 .refreshCovers(true)
                 .mergeCategories(false)
                 .reviewBeforeApply(false)
                 .fieldOptions(fieldOptions)
-                .skipFields(skipFields)
+                .enabledFields(skipFields)
                 .build();
 
         MetadataRefreshRequest request = MetadataRefreshRequest.builder()
@@ -322,14 +353,14 @@ class MetadataRefreshServiceTest {
 
     @Test
     void testRefreshMetadata_WithReviewMode_ShouldCreateTaskAndProposals() throws JsonProcessingException {
-        MetadataRefreshOptions.SkipFields skipFields = MetadataRefreshOptions.SkipFields.builder().build();
+        MetadataRefreshOptions.EnabledFields skipFields = allEnabledFields();
 
         MetadataRefreshOptions reviewOptions = MetadataRefreshOptions.builder()
                 .refreshCovers(true)
                 .mergeCategories(false)
                 .reviewBeforeApply(true)
                 .fieldOptions(defaultOptions.getFieldOptions())
-                .skipFields(skipFields)
+                .enabledFields(skipFields)
                 .build();
 
         MetadataRefreshRequest request = MetadataRefreshRequest.builder()
@@ -522,14 +553,14 @@ class MetadataRefreshServiceTest {
                 .cover(coverProvider)
                 .build();
 
-        MetadataRefreshOptions.SkipFields skipFields = MetadataRefreshOptions.SkipFields.builder().build();
+        MetadataRefreshOptions.EnabledFields skipFields = allEnabledFields();
 
         MetadataRefreshOptions mergeOptions = MetadataRefreshOptions.builder()
                 .refreshCovers(true)
                 .mergeCategories(true)
                 .reviewBeforeApply(false)
                 .fieldOptions(fieldOptions)
-                .skipFields(skipFields)
+                .enabledFields(skipFields)
                 .build();
 
         Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();

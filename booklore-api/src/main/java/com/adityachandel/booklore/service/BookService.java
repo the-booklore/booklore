@@ -193,6 +193,7 @@ public class BookService {
                             .fontSize(epubPref.getFontSize())
                             .theme(epubPref.getTheme())
                             .flow(epubPref.getFlow())
+                            .spread(epubPref.getSpread())
                             .letterSpacing(epubPref.getLetterSpacing())
                             .lineHeight(epubPref.getLineHeight())
                             .build()));
@@ -272,6 +273,7 @@ public class BookService {
             epubPrefs.setFontSize(epubSettings.getFontSize());
             epubPrefs.setTheme(epubSettings.getTheme());
             epubPrefs.setFlow(epubSettings.getFlow());
+            epubPrefs.setSpread(epubSettings.getSpread());
             epubPrefs.setLetterSpacing(epubSettings.getLetterSpacing());
             epubPrefs.setLineHeight(epubSettings.getLineHeight());
             epubViewerPreferencesRepository.save(epubPrefs);

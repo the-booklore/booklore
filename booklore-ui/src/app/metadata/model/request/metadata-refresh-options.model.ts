@@ -4,7 +4,7 @@ export interface MetadataRefreshOptions {
   mergeCategories: boolean;
   reviewBeforeApply: boolean;
   fieldOptions?: FieldOptions;
-  skipFields?: Record<keyof FieldOptions, boolean>;
+  enabledFields?: Record<keyof FieldOptions, boolean>;
 }
 
 export interface FieldProvider {

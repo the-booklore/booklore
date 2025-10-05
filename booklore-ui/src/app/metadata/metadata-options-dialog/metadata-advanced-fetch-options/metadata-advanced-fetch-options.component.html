@@ -2,8 +2,8 @@
   <table class="min-w-full table-auto border-collapse custom-table">
     <thead>
     <tr>
-      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">Skip</th>
-      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">Metadata Field</th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300" style="max-width: 70px; width: 70px;">Enabled</th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300" style="max-width: 127px; width: 127px;">Field</th>
       <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">
         4th Priority
         <i class="pi pi-question-circle ml-1 text-xs"
@@ -30,8 +30,8 @@
       </th>
     </tr>
     <tr>
-      <td class="px-4 py-2"></td>
-      <td class="px-4 py-2 text-sm text-zinc-400 italic">Set All:</td>
+      <td class="px-4 py-2" style="max-width: 70px; width: 70px;"></td>
+      <td class="px-4 py-2 text-sm text-zinc-400 italic" style="max-width: 127px; width: 127px;">Set All:</td>
       <td class="px-4 py-2">
         <p-select [options]="providersWithClear" [(ngModel)]="bulkP4"
                   (ngModelChange)="setBulkProvider('p4', $event)"
@@ -64,38 +64,37 @@
     </thead>
     <tbody>
       @for (field of nonProviderSpecificFields; track field) {
-        <tr [hidden]="field === 'cover' && !refreshCovers"
-            [class.opacity-50]="skipFields[field]">
-          <td class="px-4 py-1.5">
-            <p-checkbox [(ngModel)]="skipFields[field]" [binary]="true"
-                        pTooltip="Skip this field during metadata fetch"
+        <tr [hidden]="field === 'cover' && !refreshCovers" [class.opacity-50]="!enabledFields[field]">
+          <td class="px-4 py-1.5" style="max-width: 70px; width: 70px;">
+            <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                        pTooltip="Enable this field during metadata fetch"
                         tooltipPosition="top"></p-checkbox>
           </td>
-          <td class="px-4 py-1.5 text-zinc-200">{{ formatLabel(field) }}</td>
+          <td class="px-4 py-1.5 text-zinc-200" style="max-width: 127px; width: 127px;">{{ formatLabel(field) }}</td>
           <td class="px-4 py-1.5">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p4"
-                      [disabled]="skipFields[field]"
+                      [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
                       class="w-full" size="small">
             </p-select>
           </td>
           <td class="px-4 py-1.5">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p3"
-                      [disabled]="skipFields[field]"
+                      [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
                       class="w-full" size="small">
             </p-select>
           </td>
           <td class="px-4 py-1.5">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p2"
-                      [disabled]="skipFields[field]"
+                      [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
                       class="w-full" size="small">
             </p-select>
           </td>
           <td class="px-4 py-1.5">
             <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p1"
-                      [disabled]="skipFields[field]"
+                      [disabled]="!enabledFields[field]"
                       placeholder="Unset" appendTo="body"
                       class="w-full" size="small">
             </p-select>
@@ -107,12 +106,12 @@
 
   <div class="space-y-4">
     <h3 class="text-lg font-semibold text-zinc-300">Provider-Specific Fields</h3>
-    <p class="text-sm text-zinc-400">These fields are unique to specific providers and cannot have custom priority settings. Use the checkboxes to skip fetching these fields entirely.</p>
+    <p class="text-sm text-zinc-400">These fields are unique to specific providers and cannot have custom priority settings. Use the checkboxes to enable/disable fetching these fields.</p>
     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       @for (field of providerSpecificFields; track field) {
         <div class="flex items-center space-x-3 p-3 border border-zinc-600 rounded-lg">
-          <p-checkbox [(ngModel)]="skipFields[field]" [binary]="true"
-                      pTooltip="Skip this field during metadata fetch"
+          <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                      pTooltip="Enable this field during metadata fetch"
                       tooltipPosition="top"></p-checkbox>
           <span class="text-sm text-zinc-300">{{ formatLabel(field) }}</span>
         </div>

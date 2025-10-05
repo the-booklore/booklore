@@ -41,4 +41,7 @@ public class EpubViewerPreferencesEntity {
 
     @Column(name = "flow")
     private String flow;
+
+    @Column(name = "spread")
+    private String spread;
 }

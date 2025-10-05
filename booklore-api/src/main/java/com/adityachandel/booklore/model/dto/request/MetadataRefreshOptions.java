@@ -20,8 +20,8 @@ public class MetadataRefreshOptions {
     private Boolean reviewBeforeApply;
     @NotNull(message = "Field options cannot be null")
     private FieldOptions fieldOptions;
-    @NotNull(message = "Skip fields cannot be null")
-    private SkipFields skipFields;
+    @NotNull(message = "Enabled fields cannot be null")
+    private EnabledFields enabledFields;
 
     @Getter
     @Setter
@@ -76,7 +76,7 @@ public class MetadataRefreshOptions {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class SkipFields {
+    public static class EnabledFields {
         private boolean title;
         private boolean subtitle;
         private boolean description;

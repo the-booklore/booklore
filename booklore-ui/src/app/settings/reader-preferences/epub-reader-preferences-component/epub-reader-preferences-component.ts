@@ -1,6 +1,6 @@
 import {Component, inject, Input} from '@angular/core';
 import {Button} from 'primeng/button';
-import {Select} from 'primeng/select';
+import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule} from '@angular/forms';
 import {ReaderPreferencesService} from '../reader-preferences-service';
 import {UserSettings} from '../../user-management/user.service';
@@ -9,7 +9,7 @@ import {UserSettings} from '../../user-management/user.service';
   selector: 'app-epub-reader-preferences-component',
   imports: [
     Button,
-    Select,
+    RadioButton,
     FormsModule
   ],
   templateUrl: './epub-reader-preferences-component.html',
@@ -31,13 +31,16 @@ export class EpubReaderPreferencesComponent {
   ];
 
   readonly flowOptions = [
-    {name: 'Book Default', key: null},
     {name: 'Paginated', key: 'paginated'},
     {name: 'Scrolled', key: 'scrolled'}
   ];
 
+  readonly spreadOptions = [
+    {name: 'Single Page', key: 'single'},
+    {name: 'Double Page', key: 'double'}
+  ];
+
   readonly themes = [
-    {name: 'Book Default', key: null},
     {name: 'White', key: 'white'},
     {name: 'Black', key: 'black'},
     {name: 'Grey', key: 'grey'},
@@ -75,6 +78,17 @@ export class EpubReaderPreferencesComponent {
       this.userSettings.epubReaderSetting.flow = value;
     }
     this.readerPreferencesService.updatePreference(['epubReaderSetting', 'flow'], value);
+  }
+
+  get selectedSpread(): string | null {
+    return this.userSettings.epubReaderSetting.spread;
+  }
+
+  set selectedSpread(value: string | null) {
+    if (typeof value === "string") {
+      this.userSettings.epubReaderSetting.spread = value;
+    }
+    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'spread'], value);
   }
 
   get fontSize(): number {
