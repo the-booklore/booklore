@@ -216,18 +216,52 @@
             </div>
           </div>
 
-
-          @if (book?.metadata?.categories?.length) {
-            <div class="overflow-x-auto scrollbar-hide max-w-7xl pt-2 md:pt-0">
-              <div class="flex gap-2 w-max max-w-[1150px]">
-                @for (category of book.metadata!.categories; track category) {
-                  <a (click)="goToCategory(category)" class="shrink-0 no-underline cursor-pointer">
-                    <p-tag [value]="category"></p-tag>
-                  </a>
-                }
+          <div class="flex flex-col space-y-2">
+            @if (book?.metadata?.categories?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Genres:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (category of book.metadata!.categories; track category) {
+                      <a (click)="goToCategory(category)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="rose" size="xs">{{ category }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
               </div>
-            </div>
-          }
+            }
+
+            @if (book?.metadata?.moods?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Moods:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (mood of book.metadata!.moods; track mood) {
+                      <a (click)="goToMood(mood)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="indigo" size="xs">{{ mood }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (book?.metadata?.tags?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Tags:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (tag of book.metadata!.tags; track tag) {
+                      <a (click)="goToTag(tag)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="cyan" size="xs">{{ tag }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
 
           <div class="px-1 md:px-0">
             <div class="grid md:grid-cols-4 gap-y-2.5 text-sm pt-2 md:pt-4 pb-2 text-gray-300 md:min-w-[60rem] md:max-w-[100rem]">
@@ -251,20 +285,16 @@
               <p><strong>Language:</strong> {{ book?.metadata!.language || '-' }}</p>
               <p class="whitespace-nowrap flex items-center gap-2">
                 <span class="font-bold">File Type:</span>
-                <span
-                  class="inline-block px-2 py-0.5 rounded-lg text-xs font-bold text-gray-200"
-                  [ngClass]="getFileTypeColorClass(getFileExtension(book?.filePath))">
-                  {{ getFileExtension(book?.filePath) || '-' }}
-                </span>
+                <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                  {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
+                </app-tag>
               </p>
               <p class="whitespace-nowrap flex items-center">
                 <span class="font-bold mr-2">BookLore Progress:</span>
                 <span class="inline-flex items-center">
-                  <span
-                    class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                    [ngClass]="getProgressColorClass(getProgressPercent(book))">
+                  <app-tag size="3xs" variant="pill" [color]="getProgressColor(getProgressPercent(book))">
                     {{ getProgressPercent(book) !== null ? getProgressPercent(book) + '%' : 'N/A' }}
-                  </span>
+                  </app-tag>
                   @if (getProgressPercent(book) !== null) {
                     <p-button
                       pTooltip="Reset progress"
@@ -282,11 +312,9 @@
               <p class="whitespace-nowrap flex items-center gap-2">
                 <span class="font-bold">Metadata Match:</span>
                 @if (book?.metadataMatchScore != null) {
-                  <span
-                    class="inline-block px-2 py-0.5 rounded-lg text-xs font-bold text-gray-200 border"
-                    [ngClass]="getMatchScoreColorClass(book?.metadataMatchScore!)">
+                  <app-tag size="3xs" variant="pill" [color]="getMatchScoreColor(book?.metadataMatchScore!)">
                     {{ (book?.metadataMatchScore!) | number:'1.0-0' }}%
-                  </span>
+                  </app-tag>
                 } @else {
                   <span>-</span>
                 }
@@ -305,23 +333,22 @@
               </p>
               <p class="whitespace-nowrap flex items-center gap-2">
                 <span class="font-bold">Read Status:</span>
-                <span
-                  class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white cursor-pointer"
-                  [ngClass]="getStatusSeverityClass(selectedReadStatus)"
-                  (click)="menu.toggle($event)">
+                <app-tag size="3xs" variant="pill" [color]="getStatusColor(selectedReadStatus)">
                   {{ getStatusLabel(selectedReadStatus) }}
-              </span>
+                </app-tag>
+                <i
+                  class="pi pi-pencil cursor-pointer text-[cornflowerblue] hover:text-[darkturquoise] transition-colors"
+                  (click)="menu.toggle($event)">
+                </i>
                 <p-menu #menu [popup]="true" [model]="readStatusMenuItems"></p-menu>
               </p>
               @if (book?.koreaderProgress && book.koreaderProgress?.percentage != null) {
                 <p class="whitespace-nowrap flex items-center">
                   <span class="font-bold mr-2">KOReader Progress:</span>
                   <span class="inline-flex items-center">
-                  <span
-                    class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                    [ngClass]="getKoProgressColorClass(getKOReaderPercentage(book))">
-                    {{ getKOReaderPercentage(book) + '%' }}
-                  </span>
+                    <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(getKOReaderPercentage(book))">
+                      {{ getKOReaderPercentage(book) + '%' }}
+                    </app-tag>
                     @if (getKOReaderPercentage(book) !== null) {
                       <p-button
                         pTooltip="Reset progress"

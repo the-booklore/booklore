@@ -326,6 +326,8 @@ public class MetadataRefreshService {
             addProviderToSet(fieldOptions.getDescription(), uniqueProviders);
             addProviderToSet(fieldOptions.getAuthors(), uniqueProviders);
             addProviderToSet(fieldOptions.getCategories(), uniqueProviders);
+            addProviderToSet(fieldOptions.getMoods(), uniqueProviders);
+            addProviderToSet(fieldOptions.getTags(), uniqueProviders);
             addProviderToSet(fieldOptions.getCover(), uniqueProviders);
         }
 
@@ -396,8 +398,12 @@ public class MetadataRefreshService {
 
         if (refreshOptions.isMergeCategories()) {
             metadata.setCategories(getAllCategories(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
+            metadata.setMoods(getAllMoods(metadataMap, fieldOptions.getMoods(), BookMetadata::getMoods));
+            metadata.setTags(getAllTags(metadataMap, fieldOptions.getTags(), BookMetadata::getTags));
         } else {
             metadata.setCategories(resolveFieldAsList(metadataMap, fieldOptions.getCategories(), BookMetadata::getCategories));
+            metadata.setMoods(resolveFieldAsList(metadataMap, fieldOptions.getMoods(), BookMetadata::getMoods));
+            metadata.setTags(resolveFieldAsList(metadataMap, fieldOptions.getTags(), BookMetadata::getTags));
         }
         metadata.setThumbnailUrl(resolveFieldAsString(metadataMap, fieldOptions.getCover(), BookMetadata::getThumbnailUrl));
 
@@ -514,6 +520,48 @@ public class MetadataRefreshService {
             if (extracted != null) uniqueCategories.addAll(extracted);
         }
         return new HashSet<>(uniqueCategories);
+    }
+
+    Set<String> getAllMoods(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, FieldValueExtractorList fieldValueExtractor) {
+        Set<String> uniqueMoods = new HashSet<>();
+        if (fieldProvider.getP4() != null && metadataMap.containsKey(fieldProvider.getP4())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP4()));
+            if (extracted != null) uniqueMoods.addAll(extracted);
+        }
+        if (fieldProvider.getP3() != null && metadataMap.containsKey(fieldProvider.getP3())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP3()));
+            if (extracted != null) uniqueMoods.addAll(extracted);
+        }
+        if (fieldProvider.getP2() != null && metadataMap.containsKey(fieldProvider.getP2())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP2()));
+            if (extracted != null) uniqueMoods.addAll(extracted);
+        }
+        if (fieldProvider.getP1() != null && metadataMap.containsKey(fieldProvider.getP1())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP1()));
+            if (extracted != null) uniqueMoods.addAll(extracted);
+        }
+        return new HashSet<>(uniqueMoods);
+    }
+
+    Set<String> getAllTags(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, FieldValueExtractorList fieldValueExtractor) {
+        Set<String> uniqueTags = new HashSet<>();
+        if (fieldProvider.getP4() != null && metadataMap.containsKey(fieldProvider.getP4())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP4()));
+            if (extracted != null) uniqueTags.addAll(extracted);
+        }
+        if (fieldProvider.getP3() != null && metadataMap.containsKey(fieldProvider.getP3())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP3()));
+            if (extracted != null) uniqueTags.addAll(extracted);
+        }
+        if (fieldProvider.getP2() != null && metadataMap.containsKey(fieldProvider.getP2())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP2()));
+            if (extracted != null) uniqueTags.addAll(extracted);
+        }
+        if (fieldProvider.getP1() != null && metadataMap.containsKey(fieldProvider.getP1())) {
+            Set<String> extracted = fieldValueExtractor.extract(metadataMap.get(fieldProvider.getP1()));
+            if (extracted != null) uniqueTags.addAll(extracted);
+        }
+        return new HashSet<>(uniqueTags);
     }
 
 

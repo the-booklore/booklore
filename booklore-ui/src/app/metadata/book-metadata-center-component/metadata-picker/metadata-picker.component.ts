@@ -49,7 +49,9 @@ export class MetadataPickerComponent implements OnInit {
 
   metadataChips = [
     {label: 'Authors', controlName: 'authors', lockedKey: 'authorsLocked', fetchedKey: 'authors'},
-    {label: 'Categories', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'}
+    {label: 'Categories', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'},
+    {label: 'Moods', controlName: 'moods', lockedKey: 'moodsLocked', fetchedKey: 'moods'},
+    {label: 'Tags', controlName: 'tags', lockedKey: 'tagsLocked', fetchedKey: 'tags'},
   ];
 
   metadataDescription = [
@@ -84,11 +86,19 @@ export class MetadataPickerComponent implements OnInit {
 
   allAuthors!: string[];
   allCategories!: string[];
+  allMoods!: string[];
+  allTags!: string[];
   filteredCategories: string[] = [];
   filteredAuthors: string[] = [];
+  filteredMoods: string[] = [];
+  filteredTags: string[] = [];
 
   getFiltered(controlName: string): string[] {
-    return controlName === 'authors' ? this.filteredAuthors : this.filteredCategories;
+    if (controlName === 'authors') return this.filteredAuthors;
+    if (controlName === 'categories') return this.filteredCategories;
+    if (controlName === 'moods') return this.filteredMoods;
+    if (controlName === 'tags') return this.filteredTags;
+    return [];
   }
 
   filterItems(event: { query: string }, controlName: string) {
@@ -97,6 +107,10 @@ export class MetadataPickerComponent implements OnInit {
       this.filteredAuthors = this.allAuthors.filter(a => a.toLowerCase().includes(query));
     } else if (controlName === 'categories') {
       this.filteredCategories = this.allCategories.filter(c => c.toLowerCase().includes(query));
+    } else if (controlName === 'moods') {
+      this.filteredMoods = this.allMoods.filter(m => m.toLowerCase().includes(query));
+    } else if (controlName === 'tags') {
+      this.filteredTags = this.allTags.filter(t => t.toLowerCase().includes(query));
     }
   }
 
@@ -118,6 +132,8 @@ export class MetadataPickerComponent implements OnInit {
       subtitle: new FormControl(''),
       authors: new FormControl(''),
       categories: new FormControl(''),
+      moods: new FormControl(''),
+      tags: new FormControl(''),
       publisher: new FormControl(''),
       publishedDate: new FormControl(''),
       isbn10: new FormControl(''),
@@ -145,6 +161,8 @@ export class MetadataPickerComponent implements OnInit {
       subtitleLocked: new FormControl(false),
       authorsLocked: new FormControl(false),
       categoriesLocked: new FormControl(false),
+      moodsLocked: new FormControl(false),
+      tagsLocked: new FormControl(false),
       publisherLocked: new FormControl(false),
       publishedDateLocked: new FormControl(false),
       isbn10Locked: new FormControl(false),
@@ -181,14 +199,20 @@ export class MetadataPickerComponent implements OnInit {
       .subscribe(bookState => {
         const authors = new Set<string>();
         const categories = new Set<string>();
+        const moods = new Set<string>();
+        const tags = new Set<string>();
 
         (bookState.books ?? []).forEach(book => {
           book.metadata?.authors?.forEach(author => authors.add(author));
           book.metadata?.categories?.forEach(category => categories.add(category));
+          book.metadata?.moods?.forEach(mood => moods.add(mood));
+          book.metadata?.tags?.forEach(tag => tags.add(tag));
         });
 
         this.allAuthors = Array.from(authors);
         this.allCategories = Array.from(categories);
+        this.allMoods = Array.from(moods);
+        this.allTags = Array.from(tags);
       });
 
     this.book$
@@ -214,6 +238,8 @@ export class MetadataPickerComponent implements OnInit {
           subtitle: metadata.subtitle || null,
           authors: [...(metadata.authors ?? [])].sort(),
           categories: [...(metadata.categories ?? [])].sort(),
+          moods: [...(metadata.moods ?? [])].sort(),
+          tags: [...(metadata.tags ?? [])].sort(),
           publisher: metadata.publisher || null,
           publishedDate: metadata.publishedDate || null,
           isbn10: metadata.isbn10 || null,
@@ -241,6 +267,8 @@ export class MetadataPickerComponent implements OnInit {
           subtitleLocked: metadata.subtitleLocked || false,
           authorsLocked: metadata.authorsLocked || false,
           categoriesLocked: metadata.categoriesLocked || false,
+          moodsLocked: metadata.moodsLocked || false,
+          tagsLocked: metadata.tagsLocked || false,
           publisherLocked: metadata.publisherLocked || false,
           publishedDateLocked: metadata.publishedDateLocked || false,
           isbn10Locked: metadata.isbn10Locked || false,
@@ -277,6 +305,8 @@ export class MetadataPickerComponent implements OnInit {
         if (metadata.subtitleLocked) this.metadataForm.get('subtitle')?.disable({emitEvent: false});
         if (metadata.authorsLocked) this.metadataForm.get('authors')?.disable({emitEvent: false});
         if (metadata.categoriesLocked) this.metadataForm.get('categories')?.disable({emitEvent: false});
+        if (metadata.moodsLocked) this.metadataForm.get('moods')?.disable({emitEvent: false});
+        if (metadata.tagsLocked) this.metadataForm.get('tags')?.disable({emitEvent: false});
         if (metadata.publisherLocked) this.metadataForm.get('publisher')?.disable({emitEvent: false});
         if (metadata.publishedDateLocked) this.metadataForm.get('publishedDate')?.disable({emitEvent: false});
         if (metadata.languageLocked) this.metadataForm.get('language')?.disable({emitEvent: false});
@@ -353,6 +383,8 @@ export class MetadataPickerComponent implements OnInit {
       subtitle: this.metadataForm.get('subtitle')?.value || this.copiedFields['subtitle'] ? this.getValueOrCopied('subtitle') : '',
       authors: this.metadataForm.get('authors')?.value || this.copiedFields['authors'] ? this.getArrayFromFormField('authors', this.fetchedMetadata.authors) : [],
       categories: this.metadataForm.get('categories')?.value || this.copiedFields['categories'] ? this.getArrayFromFormField('categories', this.fetchedMetadata.categories) : [],
+      moods: this.metadataForm.get('moods')?.value || this.copiedFields['moods'] ? this.getArrayFromFormField('moods', this.fetchedMetadata.moods) : [],
+      tags: this.metadataForm.get('tags')?.value || this.copiedFields['tags'] ? this.getArrayFromFormField('tags', this.fetchedMetadata.tags) : [],
       publisher: this.metadataForm.get('publisher')?.value || this.copiedFields['publisher'] ? this.getValueOrCopied('publisher') : '',
       publishedDate: this.metadataForm.get('publishedDate')?.value || this.copiedFields['publishedDate'] ? this.getValueOrCopied('publishedDate') : '',
       isbn10: this.metadataForm.get('isbn10')?.value || this.copiedFields['isbn10'] ? this.getValueOrCopied('isbn10') : '',
@@ -381,6 +413,8 @@ export class MetadataPickerComponent implements OnInit {
       subtitleLocked: this.metadataForm.get('subtitleLocked')?.value,
       authorsLocked: this.metadataForm.get('authorsLocked')?.value,
       categoriesLocked: this.metadataForm.get('categoriesLocked')?.value,
+      moodsLocked: this.metadataForm.get('moodsLocked')?.value,
+      tagsLocked: this.metadataForm.get('tagsLocked')?.value,
       publisherLocked: this.metadataForm.get('publisherLocked')?.value,
       publishedDateLocked: this.metadataForm.get('publishedDateLocked')?.value,
       isbn10Locked: this.metadataForm.get('isbn10Locked')?.value,
@@ -422,6 +456,8 @@ export class MetadataPickerComponent implements OnInit {
       subtitle: !current.subtitle && !!original.subtitle,
       authors: current.authors?.length === 0 && original.authors?.length! > 0,
       categories: current.categories?.length === 0 && original.categories?.length! > 0,
+      moods: current.moods?.length === 0 && original.moods?.length! > 0,
+      tags: current.tags?.length === 0 && original.tags?.length! > 0,
       publisher: !current.publisher && !!original.publisher,
       publishedDate: !current.publishedDate && !!original.publishedDate,
       isbn10: !current.isbn10 && !!original.isbn10,

@@ -31,6 +31,8 @@ public class MetadataClearFlags {
     private boolean personalRating;
     private boolean authors;
     private boolean categories;
+    private boolean moods;
+    private boolean tags;
     private boolean cover;
     private boolean reviews;
 }

@@ -118,22 +118,6 @@ public class MetadataController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{bookId}/metadata/restore")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> getBackedUpMetadata(@PathVariable Long bookId) {
-        BookMetadata restoredMetadata = bookMetadataService.getBackedUpMetadata(bookId);
-        return ResponseEntity.ok(restoredMetadata);
-    }
-
-    @PostMapping("/{bookId}/metadata/restore")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> restoreMetadata(@PathVariable Long bookId) throws IOException {
-        BookMetadata restoredMetadata = bookMetadataService.restoreMetadataFromBackup(bookId);
-        return ResponseEntity.ok(restoredMetadata);
-    }
-
     @PostMapping("/{bookId}/metadata/covers")
     public ResponseEntity<List<CoverImage>> getImages(@RequestBody CoverFetchRequest request) {
         return ResponseEntity.ok(duckDuckGoCoverService.getCovers(request));

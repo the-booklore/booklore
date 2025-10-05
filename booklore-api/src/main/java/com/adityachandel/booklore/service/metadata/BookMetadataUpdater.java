@@ -4,18 +4,15 @@ import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
-import com.adityachandel.booklore.model.entity.AuthorEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
+import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.AuthorRepository;
 import com.adityachandel.booklore.repository.CategoryRepository;
+import com.adityachandel.booklore.repository.MoodRepository;
+import com.adityachandel.booklore.repository.TagRepository;
 import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.UnifiedFileMoveService;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestore;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestoreFactory;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.MetadataChangeDetector;
@@ -44,11 +41,12 @@ public class BookMetadataUpdater {
 
     private final AuthorRepository authorRepository;
     private final CategoryRepository categoryRepository;
+    private final MoodRepository moodRepository;
+    private final TagRepository tagRepository;
     private final FileService fileService;
     private final MetadataMatchService metadataMatchService;
     private final AppSettingService appSettingService;
     private final MetadataWriterFactory metadataWriterFactory;
-    private final MetadataBackupRestoreFactory metadataBackupRestoreFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final UnifiedFileMoveService unifiedFileMoveService;
 
@@ -82,6 +80,8 @@ public class BookMetadataUpdater {
         updateBasicFields(newMetadata, metadata, clearFlags);
         updateAuthorsIfNeeded(newMetadata, metadata, clearFlags);
         updateCategoriesIfNeeded(newMetadata, metadata, clearFlags, mergeCategories);
+        updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeCategories);
+        updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeCategories);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
         updateThumbnailIfNeeded(bookId, newMetadata, metadata, setThumbnail);
 
@@ -233,6 +233,67 @@ public class BookMetadataUpdater {
         }
     }
 
+    private void updateMoodsIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear, boolean merge) {
+        if (Boolean.TRUE.equals(e.getMoodsLocked())) {
+            return;
+        }
+        if (e.getMoods() == null) {
+            e.setMoods(new HashSet<>());
+        }
+        if (clear.isMoods()) {
+            e.getMoods().clear();
+        } else if (shouldUpdateField(false, m.getMoods()) && m.getMoods() != null) {
+            if (merge) {
+                Set<MoodEntity> existing = e.getMoods();
+                for (String name : m.getMoods()) {
+                    if (name == null || name.isBlank()) continue;
+                    MoodEntity entity = moodRepository.findByName(name)
+                            .orElseGet(() -> moodRepository.save(MoodEntity.builder().name(name).build()));
+                    existing.add(entity);
+                }
+            } else {
+                Set<MoodEntity> existing = e.getMoods();
+                existing.clear();
+                Set<MoodEntity> result = m.getMoods().stream()
+                        .filter(n -> n != null && !n.isBlank())
+                        .map(name -> moodRepository.findByName(name)
+                                .orElseGet(() -> moodRepository.save(MoodEntity.builder().name(name).build())))
+                        .collect(Collectors.toSet());
+                existing.addAll(result);
+            }
+        }
+    }
+
+    private void updateTagsIfNeeded(BookMetadata m, BookMetadataEntity e, MetadataClearFlags clear, boolean merge) {
+        if (Boolean.TRUE.equals(e.getTagsLocked())) {
+            return;
+        }
+        if (e.getTags() == null) {
+            e.setTags(new HashSet<>());
+        }
+        if (clear.isTags()) {
+            e.getTags().clear();
+        } else if (shouldUpdateField(false, m.getTags()) && m.getTags() != null) {
+            if (merge) {
+                Set<TagEntity> existing = e.getTags();
+                for (String name : m.getTags()) {
+                    if (name == null || name.isBlank()) continue;
+                    TagEntity entity = tagRepository.findByName(name)
+                            .orElseGet(() -> tagRepository.save(TagEntity.builder().name(name).build()));
+                    existing.add(entity);
+                }
+            } else {
+                Set<TagEntity> existing = e.getTags();
+                existing.clear();
+                Set<TagEntity> result = m.getTags().stream()
+                        .filter(n -> n != null && !n.isBlank())
+                        .map(name -> tagRepository.findByName(name)
+                                .orElseGet(() -> tagRepository.save(TagEntity.builder().name(name).build())))
+                        .collect(Collectors.toSet());
+                existing.addAll(result);
+            }
+        }
+    }
 
     private void updateThumbnailIfNeeded(long bookId, BookMetadata m, BookMetadataEntity e, boolean set) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
@@ -273,6 +334,8 @@ public class BookMetadataUpdater {
                 Pair.of(m.getCoverLocked(), e::setCoverLocked),
                 Pair.of(m.getAuthorsLocked(), e::setAuthorsLocked),
                 Pair.of(m.getCategoriesLocked(), e::setCategoriesLocked),
+                Pair.of(m.getMoodsLocked(), e::setMoodsLocked),
+                Pair.of(m.getTagsLocked(), e::setTagsLocked),
                 Pair.of(m.getReviewsLocked(), e::setReviewsLocked)
         );
         lockMappings.forEach(pair -> {

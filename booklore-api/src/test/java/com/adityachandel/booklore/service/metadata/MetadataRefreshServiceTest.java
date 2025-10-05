@@ -91,12 +91,16 @@ class MetadataRefreshServiceTest {
                 null, null, null, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider categoriesProvider = new MetadataRefreshOptions.FieldProvider(
                 null, null, null, MetadataProvider.Google);
+        MetadataRefreshOptions.FieldProvider moodProvider = new MetadataRefreshOptions.FieldProvider(
+                null, null, null, MetadataProvider.Google);
+        MetadataRefreshOptions.FieldProvider tagProvider = new MetadataRefreshOptions.FieldProvider(
+                null, null, null, MetadataProvider.Google);
         MetadataRefreshOptions.FieldProvider coverProvider = new MetadataRefreshOptions.FieldProvider(
                 null, null, null, MetadataProvider.GoodReads);
 
         MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
                 titleProvider, null, descriptionProvider, authorsProvider, null, null,
-                null, null, null, null, null, null, categoriesProvider, coverProvider);
+                null, null, null, null, null, null, categoriesProvider, moodProvider, tagProvider, coverProvider);
 
         defaultOptions = new MetadataRefreshOptions(
                 null, MetadataProvider.GoodReads, MetadataProvider.Google, null, null,
@@ -109,7 +113,7 @@ class MetadataRefreshServiceTest {
 
         MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
                 titleProvider, null, null, null, null, null,
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
 
         libraryOptions = new MetadataRefreshOptions(
                 1L, MetadataProvider.Google, null, null, null,
@@ -225,7 +229,7 @@ class MetadataRefreshServiceTest {
                 null, null, null, MetadataProvider.Hardcover);
         MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
                 titleProvider, null, null, null, null, null,
-                null, null, null, null, null, null, null, null);
+                null, null, null, null, null, null, null, null, null, null);
 
         MetadataRefreshOptions requestOptions = new MetadataRefreshOptions(
                 null, MetadataProvider.Hardcover, null, null, null,
@@ -340,7 +344,7 @@ class MetadataRefreshServiceTest {
         when(bookRepository.findAllWithMetadataByIds(Set.of(999L))).thenReturn(Collections.emptyList());
 
         assertThrows(RuntimeException.class, () ->
-            metadataRefreshService.refreshMetadata(request, 1L, "job-1"));
+                metadataRefreshService.refreshMetadata(request, 1L, "job-1"));
     }
 
     @Test
@@ -354,7 +358,7 @@ class MetadataRefreshServiceTest {
         when(libraryRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThrows(RuntimeException.class, () ->
-            metadataRefreshService.refreshMetadata(request, 1L, "job-1"));
+                metadataRefreshService.refreshMetadata(request, 1L, "job-1"));
     }
 
     @Test
@@ -451,6 +455,10 @@ class MetadataRefreshServiceTest {
                 null, null, null, MetadataProvider.Google);
         MetadataRefreshOptions.FieldProvider authorsProvider = new MetadataRefreshOptions.FieldProvider(
                 null, null, null, MetadataProvider.Google);
+        MetadataRefreshOptions.FieldProvider moodProvider = new MetadataRefreshOptions.FieldProvider(
+                null, null, null, MetadataProvider.Google);
+        MetadataRefreshOptions.FieldProvider tagProvider = new MetadataRefreshOptions.FieldProvider(
+                null, null, null, MetadataProvider.Google);
         MetadataRefreshOptions.FieldProvider categoriesProvider = new MetadataRefreshOptions.FieldProvider(
                 null, null, MetadataProvider.Google, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider coverProvider = new MetadataRefreshOptions.FieldProvider(
@@ -458,7 +466,7 @@ class MetadataRefreshServiceTest {
 
         MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
                 titleProvider, null, descriptionProvider, authorsProvider, null, null,
-                null, null, null, null, null, null, categoriesProvider, coverProvider);
+                null, null, null, null, null, null, categoriesProvider, moodProvider, tagProvider, coverProvider);
 
         MetadataRefreshOptions mergeOptions = new MetadataRefreshOptions(
                 null, MetadataProvider.GoodReads, MetadataProvider.Google, null, null,

@@ -3,11 +3,7 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
-import com.adityachandel.booklore.model.entity.AuthorEntity;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
-import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
@@ -50,6 +46,20 @@ public interface BookMapper {
         if (categories == null) return null;
         return categories.stream()
                 .map(CategoryEntity::getName)
+                .collect(Collectors.toSet());
+    }
+
+    default Set<String> mapMoods(Set<MoodEntity> moods) {
+        if (moods == null) return null;
+        return moods.stream()
+                .map(MoodEntity::getName)
+                .collect(Collectors.toSet());
+    }
+
+    default Set<String> mapTags(Set<TagEntity> tags) {
+        if (tags == null) return null;
+        return tags.stream()
+                .map(TagEntity::getName)
                 .collect(Collectors.toSet());
     }
 

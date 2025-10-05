@@ -40,18 +40,6 @@ public class BookMediaController {
         return ResponseEntity.ok(bookService.getBookCover(bookId));
     }
 
-    @GetMapping("/book/{bookId}/backup-cover")
-    public ResponseEntity<Resource> getBackupBookCover(@PathVariable long bookId) {
-        Resource file = bookMetadataService.getBackupCoverForBook(bookId);
-        if (file == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=cover.jpg")
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(file);
-    }
-
     @GetMapping("/book/{bookId}/pdf/pages/{pageNumber}")
     public void getPdfPage(@PathVariable Long bookId, @PathVariable int pageNumber, HttpServletResponse response) throws IOException {
         response.setContentType(MediaType.IMAGE_JPEG_VALUE);

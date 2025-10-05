@@ -1,42 +1,19 @@
-import {
-  Component,
-  DestroyRef,
-  EventEmitter,
-  inject,
-  Input,
-  OnInit,
-  Output,
-} from "@angular/core";
+import {Component, DestroyRef, EventEmitter, inject, Input, OnInit, Output,} from "@angular/core";
 import {InputText} from "primeng/inputtext";
 import {Button} from "primeng/button";
 import {Divider} from "primeng/divider";
-import {
-  FormControl,
-  FormGroup,
-  FormsModule,
-  ReactiveFormsModule,
-} from "@angular/forms";
+import {FormControl, FormGroup, FormsModule, ReactiveFormsModule,} from "@angular/forms";
 import {Observable} from "rxjs";
 import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
-import {
-  Book,
-  BookMetadata,
-  MetadataClearFlags,
-  MetadataUpdateWrapper,
-} from "../../../book/model/book.model";
+import {Book, BookMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../book/model/book.model";
 import {UrlHelperService} from "../../../utilities/service/url-helper.service";
-import {
-  FileUpload,
-  FileUploadErrorEvent,
-  FileUploadEvent,
-} from "primeng/fileupload";
+import {FileUpload, FileUploadErrorEvent, FileUploadEvent,} from "primeng/fileupload";
 import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
 import {filter, take} from "rxjs/operators";
-import {MetadataRestoreDialogComponent} from "../../../book/components/book-browser/metadata-restore-dialog-component/metadata-restore-dialog-component";
 import {DialogService} from "primeng/dynamicdialog";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshRequest} from "../../model/request/metadata-refresh-request.model";
@@ -99,8 +76,12 @@ export class MetadataEditorComponent implements OnInit {
 
   allAuthors!: string[];
   allCategories!: string[];
+  allMoods!: string[];
+  allTags!: string[];
   filteredCategories: string[] = [];
   filteredAuthors: string[] = [];
+  filteredMoods: string[] = [];
+  filteredTags: string[] = [];
 
   filterCategories(event: { query: string }) {
     const query = event.query.toLowerCase();
@@ -116,12 +97,28 @@ export class MetadataEditorComponent implements OnInit {
     );
   }
 
+  filterMoods(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredMoods = this.allMoods.filter((mood) =>
+      mood.toLowerCase().includes(query)
+    );
+  }
+
+  filterTags(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredTags = this.allTags.filter((tag) =>
+      tag.toLowerCase().includes(query)
+    );
+  }
+
   constructor() {
     this.metadataForm = new FormGroup({
       title: new FormControl(""),
       subtitle: new FormControl(""),
       authors: new FormControl(""),
       categories: new FormControl(""),
+      moods: new FormControl(""),
+      tags: new FormControl(""),
       publisher: new FormControl(""),
       publishedDate: new FormControl(""),
       isbn10: new FormControl(""),
@@ -150,6 +147,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitleLocked: new FormControl(false),
       authorsLocked: new FormControl(false),
       categoriesLocked: new FormControl(false),
+      moodsLocked: new FormControl(false),
+      tagsLocked: new FormControl(false),
       publisherLocked: new FormControl(false),
       publishedDateLocked: new FormControl(false),
       isbn10Locked: new FormControl(false),
@@ -197,16 +196,22 @@ export class MetadataEditorComponent implements OnInit {
       .subscribe((bookState) => {
         const authors = new Set<string>();
         const categories = new Set<string>();
+        const moods = new Set<string>();
+        const tags = new Set<string>();
 
         (bookState.books ?? []).forEach((book) => {
           book.metadata?.authors?.forEach((author) => authors.add(author));
           book.metadata?.categories?.forEach((category) =>
             categories.add(category)
           );
+          book.metadata?.moods?.forEach((mood) => moods.add(mood));
+          book.metadata?.tags?.forEach((tag) => tags.add(tag));
         });
 
         this.allAuthors = Array.from(authors);
         this.allCategories = Array.from(categories);
+        this.allMoods = Array.from(moods);
+        this.allTags = Array.from(tags);
       });
   }
 
@@ -216,6 +221,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitle: metadata.subtitle ?? null,
       authors: [...(metadata.authors ?? [])].sort(),
       categories: [...(metadata.categories ?? [])].sort(),
+      moods: [...(metadata.moods ?? [])].sort(),
+      tags: [...(metadata.tags ?? [])].sort(),
       publisher: metadata.publisher ?? null,
       publishedDate: metadata.publishedDate ?? null,
       isbn10: metadata.isbn10 ?? null,
@@ -244,6 +251,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitleLocked: metadata.subtitleLocked ?? false,
       authorsLocked: metadata.authorsLocked ?? false,
       categoriesLocked: metadata.categoriesLocked ?? false,
+      moodsLocked: metadata.moodsLocked ?? false,
+      tagsLocked: metadata.tagsLocked ?? false,
       publisherLocked: metadata.publisherLocked ?? false,
       publishedDateLocked: metadata.publishedDateLocked ?? false,
       isbn10Locked: metadata.isbn10Locked ?? false,
@@ -274,6 +283,8 @@ export class MetadataEditorComponent implements OnInit {
       {key: "subtitleLocked", control: "subtitle"},
       {key: "authorsLocked", control: "authors"},
       {key: "categoriesLocked", control: "categories"},
+      {key: "moodsLocked", control: "moods"},
+      {key: "tagsLocked", control: "tags"},
       {key: "publisherLocked", control: "publisher"},
       {key: "publishedDateLocked", control: "publishedDate"},
       {key: "languageLocked", control: "language"},
@@ -410,6 +421,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitle: form.get("subtitle")?.value,
       authors: form.get("authors")?.value ?? [],
       categories: form.get("categories")?.value ?? [],
+      moods: form.get("moods")?.value ?? [],
+      tags: form.get("tags")?.value ?? [],
       publisher: form.get("publisher")?.value,
       publishedDate: form.get("publishedDate")?.value,
       isbn10: form.get("isbn10")?.value,
@@ -441,6 +454,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitleLocked: form.get("subtitleLocked")?.value,
       authorsLocked: form.get("authorsLocked")?.value,
       categoriesLocked: form.get("categoriesLocked")?.value,
+      moodsLocked: form.get("moodsLocked")?.value,
+      tagsLocked: form.get("tagsLocked")?.value,
       publisherLocked: form.get("publisherLocked")?.value,
       publishedDateLocked: form.get("publishedDateLocked")?.value,
       isbn10Locked: form.get("isbn10Locked")?.value,
@@ -487,6 +502,8 @@ export class MetadataEditorComponent implements OnInit {
       subtitle: wasCleared("subtitle"),
       authors: wasCleared("authors"),
       categories: wasCleared("categories"),
+      moods: wasCleared("moods"),
+      tags: wasCleared("tags"),
       publisher: wasCleared("publisher"),
       publishedDate: wasCleared("publishedDate"),
       isbn10: wasCleared("isbn10"),
@@ -598,62 +615,6 @@ export class MetadataEditorComponent implements OnInit {
           summary: "Error",
           detail: "Failed to start cover regeneration",
         });
-      },
-    });
-  }
-
-  // restoreCbxMetadata() {
-  //   this.isLoading = true;
-  //   this.bookService.getComicInfoMetadata(this.currentBookId).subscribe();
-  //   setTimeout(() => {
-  //     this.isLoading = false;
-  //     // this.refreshingBookIds.delete(bookId);
-  //   }, 10000);
-  // }
-  restoreCbxMetadata() {
-    this.isLoading = true;
-    console.log("LOADING CBX METADATA FOR BOOK ID:", this.currentBookId);
-    this.bookService.getComicInfoMetadata(this.currentBookId).subscribe({
-      next: (metadata) => {
-        console.log("Retrieved ComicInfo.xml metadata:", metadata);
-
-        if (metadata) {
-          this.originalMetadata = structuredClone(metadata);
-          this.populateFormFromMetadata(metadata);
-          this.messageService.add({
-            severity: "success",
-            summary: "Restored",
-            detail: "Metadata loaded from ComicInfo.xml",
-          });
-        } else {
-          this.messageService.add({
-            severity: "warn",
-            summary: "No Data",
-            detail: "ComicInfo.xml not found or empty.",
-          });
-        }
-        this.isLoading = false;
-      },
-      error: (err) => {
-        console.error("Error loading ComicInfo.xml metadata:", err);
-        console.error(err.message);
-        this.isLoading = false;
-        this.messageService.add({
-          severity: "error",
-          summary: "Error",
-          detail: err?.error?.message || "Failed to load ComicInfo.xml",
-        });
-      },
-    });
-  }
-
-  restoreMetadata() {
-    this.dialogService.open(MetadataRestoreDialogComponent, {
-      header: "Restore Metadata from Backup",
-      modal: true,
-      closable: true,
-      data: {
-        bookId: [this.currentBookId],
       },
     });
   }

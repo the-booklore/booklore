@@ -12,8 +12,8 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "category")
-public class CategoryEntity {
+@Table(name = "tag")
+public class TagEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -22,13 +22,13 @@ public class CategoryEntity {
     @Column(name = "name", nullable = false, unique = true)
     private String name;
 
-    @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
+    @ManyToMany(mappedBy = "tags", fetch = FetchType.LAZY)
     private Set<BookMetadataEntity> bookMetadataEntityList = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof CategoryEntity that)) return false;
+        if (!(o instanceof TagEntity that)) return false;
         return name != null && name.equalsIgnoreCase(that.name);
     }
 
@@ -37,4 +37,3 @@ public class CategoryEntity {
         return name != null ? name.toLowerCase().hashCode() : 0;
     }
 }
-

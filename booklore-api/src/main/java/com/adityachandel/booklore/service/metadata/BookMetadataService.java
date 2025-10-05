@@ -27,8 +27,6 @@ import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestore;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestoreFactory;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
@@ -71,7 +69,6 @@ public class BookMetadataService {
     private final BookFileProcessorRegistry processorRegistry;
     private final BookQueryService bookQueryService;
     private final Map<MetadataProvider, BookParser> parserMap;
-    private final MetadataBackupRestoreFactory metadataBackupRestoreFactory;
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
@@ -238,18 +235,6 @@ public class BookMetadataService {
         return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));
     }
 
-    public BookMetadata restoreMetadataFromBackup(Long bookId) throws IOException {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        metadataBackupRestoreFactory.getService(bookEntity.getBookType()).restoreEmbeddedMetadata(bookEntity);
-        bookRepository.saveAndFlush(bookEntity);
-        return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
-    }
-
-    public BookMetadata getBackedUpMetadata(Long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        return metadataBackupRestoreFactory.getService(bookEntity.getBookType()).getBackedUpMetadata(bookId);
-    }
-
     @Transactional
     public List<BookMetadata> bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
@@ -265,6 +250,8 @@ public class BookMetadataService {
                     .seriesTotal(request.getSeriesTotal())
                     .publishedDate(request.getPublishedDate())
                     .categories(request.getGenres())
+                    .moods(request.getMoods())
+                    .tags(request.getTags())
                     .build();
 
             MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
@@ -279,17 +266,6 @@ public class BookMetadataService {
                 .map(BookEntity::getMetadata)
                 .map(m -> bookMetadataMapper.toBookMetadata(m, false))
                 .toList();
-    }
-
-    public Resource getBackupCoverForBook(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        MetadataBackupRestore backupRestore = metadataBackupRestoreFactory.getService(bookEntity.getBookType());
-        try {
-            return backupRestore.getBackupCover(bookId);
-        } catch (UnsupportedOperationException e) {
-            log.info("Cover backup not supported for file type: {}", bookEntity.getBookType());
-            return null;
-        }
     }
 }
 

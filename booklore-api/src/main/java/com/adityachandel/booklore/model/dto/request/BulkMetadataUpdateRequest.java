@@ -29,4 +29,10 @@ public class BulkMetadataUpdateRequest {
 
     private Set<String> genres;
     private boolean clearGenres;
+
+    private Set<String> moods;
+    private boolean clearMoods;
+
+    private Set<String> tags;
+    private boolean clearTags;
 }

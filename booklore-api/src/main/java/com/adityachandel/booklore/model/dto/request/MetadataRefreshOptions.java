@@ -41,6 +41,8 @@ public class MetadataRefreshOptions {
         private FieldProvider isbn10;
         private FieldProvider language;
         private FieldProvider categories;
+        private FieldProvider moods;
+        private FieldProvider tags;
         private FieldProvider cover;
     }
 

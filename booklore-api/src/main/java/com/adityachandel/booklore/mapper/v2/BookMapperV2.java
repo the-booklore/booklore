@@ -24,6 +24,8 @@ public interface BookMapperV2 {
     @Named("mapMetadata")
     @Mapping(target = "authors", source = "authors", qualifiedByName = "mapAuthors")
     @Mapping(target = "categories", source = "categories", qualifiedByName = "mapCategories")
+    @Mapping(target = "moods", source = "moods", qualifiedByName = "mapMoods")
+    @Mapping(target = "tags", source = "tags", qualifiedByName = "mapTags")
     BookMetadata mapMetadata(BookMetadataEntity metadataEntity);
 
     @Named("mapAuthors")
@@ -36,6 +38,18 @@ public interface BookMapperV2 {
     default Set<String> mapCategories(Set<CategoryEntity> categories) {
         return categories == null ? Set.of() :
                 categories.stream().map(CategoryEntity::getName).collect(Collectors.toSet());
+    }
+
+    @Named("mapMoods")
+    default Set<String> mapMoods(Set<MoodEntity> moods) {
+        return moods == null ? Set.of() :
+                moods.stream().map(MoodEntity::getName).collect(Collectors.toSet());
+    }
+
+    @Named("mapTags")
+    default Set<String> mapTags(Set<TagEntity> tags) {
+        return tags == null ? Set.of() :
+                tags.stream().map(TagEntity::getName).collect(Collectors.toSet());
     }
 
     @Named("mapLibraryPathIdOnly")

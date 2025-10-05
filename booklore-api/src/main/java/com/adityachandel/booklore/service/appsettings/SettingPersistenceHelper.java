@@ -38,12 +38,12 @@ public class SettingPersistenceHelper {
 
     public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, Class<T> clazz, T defaultValue, boolean persistDefault) {
         return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
-            json -> objectMapper.readValue(json, clazz));
+                json -> objectMapper.readValue(json, clazz));
     }
 
     public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, TypeReference<T> typeReference, T defaultValue, boolean persistDefault) {
         return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
-            json -> objectMapper.readValue(json, typeReference));
+                json -> objectMapper.readValue(json, typeReference));
     }
 
     private <T> T getJsonSettingInternal(Map<String, String> settingsMap, AppSettingKey key, T defaultValue, boolean persistDefault, JsonDeserializer<T> deserializer) {
@@ -136,6 +136,10 @@ public class SettingPersistenceHelper {
                 new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider categoriesProviders =
                 new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
+        MetadataRefreshOptions.FieldProvider moodsProviders =
+                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
+        MetadataRefreshOptions.FieldProvider tagsProviders =
+                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
         MetadataRefreshOptions.FieldProvider coverProviders =
                 new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
 
@@ -153,6 +157,8 @@ public class SettingPersistenceHelper {
                 isbn10Providers,
                 languageProviders,
                 categoriesProviders,
+                moodsProviders,
+                tagsProviders,
                 coverProviders
         );
 

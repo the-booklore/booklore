@@ -1,11 +1,10 @@
 import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges, ViewChild} from '@angular/core';
 import {Button} from 'primeng/button';
-import {AsyncPipe, DecimalPipe, NgClass} from '@angular/common';
+import {AsyncPipe, DecimalPipe, NgClass, UpperCasePipe} from '@angular/common';
 import {Observable} from 'rxjs';
 import {BookService} from '../../../book/service/book.service';
 import {Rating, RatingRateEvent} from 'primeng/rating';
 import {FormsModule} from '@angular/forms';
-import {Tag} from 'primeng/tag';
 import {Book, BookMetadata, BookRecommendation, FileInfo, ReadStatus} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../utilities/service/url-helper.service';
 import {UserService} from '../../../settings/user-management/user.service';
@@ -38,13 +37,14 @@ import {TieredMenu} from 'primeng/tieredmenu';
 import {AdditionalFileUploaderComponent} from '../../../book/components/additional-file-uploader/additional-file-uploader.component';
 import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../book/components/book-browser/BookDialogHelperService';
+import {TagColor, TagComponent} from '../../../shared/components/tag/tag.component';
 
 @Component({
   selector: 'app-metadata-viewer',
   standalone: true,
   templateUrl: './metadata-viewer.component.html',
   styleUrl: './metadata-viewer.component.scss',
-  imports: [Button, AsyncPipe, Rating, FormsModule, Tag, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image]
+  imports: [Button, AsyncPipe, Rating, FormsModule, SplitButton, NgClass, Tooltip, DecimalPipe, Editor, ProgressBar, Menu, InfiniteScrollDirective, BookCardLiteComponent, DatePicker, Tab, TabList, TabPanel, TabPanels, Tabs, BookReviewsComponent, BookNotesComponent, ProgressSpinner, TieredMenu, Image, TagComponent, UpperCasePipe]
 })
 export class MetadataViewerComponent implements OnInit, OnChanges {
   @Input() book$!: Observable<Book | null>;
@@ -551,6 +551,14 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.handleMetadataClick('category', category);
   }
 
+  goToMood(mood: string): void {
+    this.handleMetadataClick('mood', mood);
+  }
+
+  goToTag(tag: string): void {
+    this.handleMetadataClick('tag', tag);
+  }
+
   goToSeries(seriesName: string): void {
     const encodedSeriesName = encodeURIComponent(seriesName);
     this.router.navigate(['/series', encodedSeriesName]);
@@ -636,21 +644,21 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
   }
 
-  getFileTypeColorClass(fileType: string | null | undefined): string {
-    if (!fileType) return 'bg-gray-600 text-white';
+  getFileTypeColor(fileType: string | null | undefined): TagColor {
+    if (!fileType) return 'gray';
     switch (fileType.toLowerCase()) {
       case 'pdf':
-        return 'bg-pink-700 text-white';
+        return 'pink';
       case 'epub':
-        return 'bg-indigo-600 text-white';
+        return 'indigo';
       case 'cbz':
-        return 'bg-teal-600 text-white';
+        return 'teal';
       case 'cbr':
-        return 'bg-purple-700 text-white';
+        return 'purple';
       case 'cb7':
-        return 'bg-blue-700 text-white';
+        return 'blue';
       default:
-        return 'bg-gray-600 text-white';
+        return 'gray';
     }
   }
 
@@ -672,50 +680,51 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
   }
 
-  getMatchScoreColorClass(score: number): string {
-    if (score >= 0.95) return 'bg-green-800 border-green-900';
-    if (score >= 0.90) return 'bg-green-700 border-green-800';
-    if (score >= 0.80) return 'bg-green-600 border-green-700';
-    if (score >= 0.70) return 'bg-yellow-600 border-yellow-700';
-    if (score >= 0.60) return 'bg-yellow-500 border-yellow-600';
-    if (score >= 0.50) return 'bg-yellow-400 border-yellow-500';
-    if (score >= 0.40) return 'bg-red-400 border-red-500';
-    if (score >= 0.30) return 'bg-red-500 border-red-600';
-    return 'bg-red-600 border-red-700';
+
+  getMatchScoreColor(score: number): TagColor {
+    if (score >= 0.95) return 'emerald';
+    if (score >= 0.90) return 'green';
+    if (score >= 0.80) return 'lime';
+    if (score >= 0.70) return 'yellow';
+    if (score >= 0.60) return 'amber';
+    if (score >= 0.50) return 'orange';
+    if (score >= 0.40) return 'red';
+    if (score >= 0.30) return 'rose';
+    return 'pink';
   }
 
-  getStatusSeverityClass(status: string): string {
-    const normalized = status?.toUpperCase();
+  getStatusColor(status: string | null | undefined): TagColor {
+    const normalized = status?.toUpperCase() ?? '';
     switch (normalized) {
       case 'UNREAD':
-        return 'bg-gray-500';
+        return 'gray';
       case 'PAUSED':
-        return 'bg-zinc-600';
+        return 'zinc';
       case 'READING':
-        return 'bg-blue-600';
+        return 'blue';
       case 'RE_READING':
-        return 'bg-indigo-600';
+        return 'indigo';
       case 'READ':
-        return 'bg-green-600';
+        return 'green';
       case 'PARTIALLY_READ':
-        return 'bg-yellow-600';
+        return 'yellow';
       case 'ABANDONED':
-        return 'bg-red-600';
+        return 'red';
       case 'WONT_READ':
-        return 'bg-pink-700';
+        return 'pink';
       default:
-        return 'bg-gray-600';
+        return 'gray';
     }
   }
 
-  getProgressColorClass(progress: number | null | undefined): string {
-    if (progress == null) return 'bg-gray-600';
-    return 'bg-blue-500';
+  getProgressColor(progress: number | null | undefined): TagColor {
+    if (progress == null) return 'gray';
+    return 'blue';
   }
 
-  getKoProgressColorClass(progress: number | null | undefined): string {
-    if (progress == null) return 'bg-gray-600';
-    return 'bg-amber-500';
+  getKoProgressColor(progress: number | null | undefined): TagColor {
+    if (progress == null) return 'gray';
+    return 'amber';
   }
 
   getKOReaderPercentage(book: Book): number | null {

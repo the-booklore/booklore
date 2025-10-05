@@ -8,15 +8,18 @@ import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLRespo
 import com.adityachandel.booklore.service.metadata.parser.hardcover.HardcoverBookSearchService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.apache.commons.text.WordUtils;
 import org.apache.commons.text.similarity.FuzzyScore;
-
-import java.util.Locale;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,10 +51,13 @@ public class HardcoverParser implements BookParser {
         String searchAuthor = fetchMetadataRequest.getAuthor() != null ? fetchMetadataRequest.getAuthor() : "";
 
         return hits.stream()
-                .filter(hit -> {
+                .map(GraphQLResponse.Hit::getDocument)
+                .filter(doc -> {
                     if (searchByIsbn || searchAuthor.isBlank()) return true;
 
-                    List<String> actualAuthorTokens = hit.getDocument().getAuthorNames().stream()
+                    if (doc.getAuthorNames() == null || doc.getAuthorNames().isEmpty()) return false;
+
+                    List<String> actualAuthorTokens = doc.getAuthorNames().stream()
                             .flatMap(name -> List.of(name.toLowerCase().split("\\s+")).stream())
                             .toList();
                     List<String> searchAuthorTokens = List.of(searchAuthor.toLowerCase().split("\\s+"));
@@ -66,13 +72,15 @@ public class HardcoverParser implements BookParser {
                     }
                     return false;
                 })
-                .map(hit -> {
-                    GraphQLResponse.Document doc = hit.getDocument();
+                .map(doc -> {
                     BookMetadata metadata = new BookMetadata();
                     metadata.setHardcoverId(doc.getSlug());
                     metadata.setTitle(doc.getTitle());
+                    metadata.setSubtitle(doc.getSubtitle());
                     metadata.setDescription(doc.getDescription());
-                    metadata.setAuthors(doc.getAuthorNames());
+                    if (doc.getAuthorNames() != null) {
+                        metadata.setAuthors(Set.copyOf(doc.getAuthorNames()));
+                    }
 
                     if (doc.getFeaturedSeries() != null) {
                         if (doc.getFeaturedSeries().getSeries() != null) {
@@ -93,7 +101,22 @@ public class HardcoverParser implements BookParser {
                     metadata.setHardcoverReviewCount(doc.getRatingsCount());
                     metadata.setPageCount(doc.getPages());
                     metadata.setPublishedDate(doc.getReleaseDate() != null ? LocalDate.parse(doc.getReleaseDate()) : null);
-                    metadata.setCategories(doc.getGenres());
+
+                    if (doc.getGenres() != null && !doc.getGenres().isEmpty()) {
+                        metadata.setCategories(doc.getGenres().stream()
+                                .map(WordUtils::capitalizeFully)
+                                .collect(Collectors.toSet()));
+                    }
+                    if (doc.getMoods() != null && !doc.getMoods().isEmpty()) {
+                        metadata.setMoods(doc.getMoods().stream()
+                                .map(WordUtils::capitalizeFully)
+                                .collect(Collectors.toSet()));
+                    }
+                    if (doc.getTags() != null && !doc.getTags().isEmpty()) {
+                        metadata.setTags(doc.getTags().stream()
+                                .map(WordUtils::capitalizeFully)
+                                .collect(Collectors.toSet()));
+                    }
 
                     if (doc.getIsbns() != null) {
                         String inputIsbn = fetchMetadataRequest.getIsbn();
