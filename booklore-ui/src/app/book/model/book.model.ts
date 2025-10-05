@@ -187,6 +187,7 @@ export interface EpubViewerSetting {
   flow: string;
   lineHeight: number;
   letterSpacing: number;
+  spread: string;
 }
 
 export interface CbxViewerSetting {

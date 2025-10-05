@@ -109,6 +109,36 @@
                     </div>
                   </div>
 
+                  @if (selectedFlow === 'paginated' && !isMobileDevice()) {
+                    <p-divider></p-divider>
+
+                    <div class="flex items-center gap-2">
+                      <label id="spread-label" class="block font-semibold text-gray-200">Page Layout:</label>
+                      <div class="flex gap-4" role="radiogroup" aria-labelledby="spread-label">
+                        <div class="flex items-center gap-1.5">
+                          <p-radioButton
+                            name="spread"
+                            [value]="'none'"
+                            [(ngModel)]="selectedSpread"
+                            (onClick)="changeSpreadMode()"
+                            inputId="spread-single">
+                          </p-radioButton>
+                          <label for="spread-single" class="cursor-pointer select-none text-gray-200">Single Page</label>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <p-radioButton
+                            name="spread"
+                            [value]="'auto'"
+                            [(ngModel)]="selectedSpread"
+                            (onClick)="changeSpreadMode()"
+                            inputId="spread-auto">
+                          </p-radioButton>
+                          <label for="spread-auto" class="cursor-pointer select-none text-gray-200">Two Pages</label>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
                   <p-divider></p-divider>
 
                   <div>

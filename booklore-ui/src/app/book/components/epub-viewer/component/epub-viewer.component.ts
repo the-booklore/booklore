@@ -49,6 +49,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   selectedFlow?: string = 'paginated';
   selectedTheme?: string = 'white';
   selectedFontType?: string | null = null;
+  selectedSpread?: string = 'single';
   lineHeight?: number;
   letterSpacing?: number;
 
@@ -115,6 +116,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
             const resolvedTheme = settingScope === 'Global' ? globalSettings.theme : individualSetting?.theme;
             const resolvedLineHeight = settingScope === 'Global' ? globalSettings.lineHeight : individualSetting?.lineHeight;
             const resolvedLetterSpacing = settingScope === 'Global' ? globalSettings.letterSpacing : individualSetting?.letterSpacing;
+            const resolvedSpread = settingScope === 'Global' ? (globalSettings as any).spread || 'single' : (individualSetting as any)?.spread || 'single';
 
             if (resolvedTheme != null) this.selectedTheme = resolvedTheme;
             if (resolvedFontFamily != null) this.selectedFontType = resolvedFontFamily;
@@ -122,12 +124,14 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
             if (resolvedLineHeight != null) this.lineHeight = resolvedLineHeight;
             if (resolvedLetterSpacing != null) this.letterSpacing = resolvedLetterSpacing;
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
+            if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
             this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
               flow: this.selectedFlow ?? 'paginated',
               manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
               width: '100%',
               height: '100%',
+              spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? this.selectedSpread : 'none',
               allowScriptedContent: true,
             });
 
@@ -193,11 +197,33 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
       width: '100%',
       height: '100%',
+      spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? this.selectedSpread : 'none',
       allowScriptedContent: true,
     });
 
     this.applyCombinedTheme();
+    this.setupKeyListener();
+    this.setupTouchListeners();
+    this.rendition.display(cfi || undefined);
+    this.updateViewerSetting();
+  }
 
+  changeSpreadMode(): void {
+    if (!this.rendition || !this.book || this.selectedFlow === 'scrolled' || this.isMobileDevice()) return;
+
+    const cfi = this.rendition.currentLocation()?.start?.cfi;
+    this.rendition.destroy();
+
+    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+      flow: this.selectedFlow,
+      manager: 'default',
+      width: '100%',
+      height: '100%',
+      spread: this.selectedSpread,
+      allowScriptedContent: true,
+    });
+
+    this.applyCombinedTheme();
     this.setupKeyListener();
     this.setupTouchListeners();
     this.rendition.display(cfi || undefined);
@@ -255,6 +281,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     if (this.selectedFontType) epubSettings.font = this.selectedFontType;
     if (this.fontSize) epubSettings.fontSize = this.fontSize;
     if (this.selectedFlow) epubSettings.flow = this.selectedFlow;
+    if (this.selectedSpread) epubSettings.spread = this.selectedSpread;
     if (this.lineHeight) epubSettings.lineHeight = this.lineHeight;
     if (this.letterSpacing) epubSettings.letterSpacing = this.letterSpacing;
 
@@ -287,19 +314,24 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   private setupTouchListeners(): void {
     if (!this.isMobileDevice() || this.selectedFlow === 'scrolled') return;
 
-    this.rendition.on('rendered', () => {
+    // Remove existing listeners first
+    const container = this.epubContainer.nativeElement;
+    container.removeEventListener('touchstart', this.onTouchStart.bind(this));
+    container.removeEventListener('touchend', this.onTouchEnd.bind(this));
+
+    // Add listeners to the main container
+    container.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: true });
+    container.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: true });
+
+    // Also try to add listeners to iframe content when it's ready
+    setTimeout(() => {
       const iframe = this.epubContainer.nativeElement.querySelector('iframe');
       if (iframe && iframe.contentDocument) {
         const iframeDoc = iframe.contentDocument;
-
-        iframeDoc.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
-        iframeDoc.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+        iframeDoc.addEventListener('touchstart', this.onTouchStart.bind(this), { passive: true });
+        iframeDoc.addEventListener('touchend', this.onTouchEnd.bind(this), { passive: true });
       }
-    });
-
-    const container = this.epubContainer.nativeElement;
-    container.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
-    container.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+    }, 500);
   }
 
   onTouchStart(event: TouchEvent): void {
@@ -328,7 +360,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     }
   }
 
-  private isMobileDevice(): boolean {
+  public isMobileDevice(): boolean {
     return window.innerWidth <= 768;
   }
 
