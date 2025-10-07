@@ -533,7 +533,14 @@ export class MetadataPickerComponent implements OnInit {
   copyMissing(): void {
     Object.keys(this.fetchedMetadata).forEach((field) => {
       const isLocked = this.metadataForm.get(`${field}Locked`)?.value;
-      if (!isLocked && !this.metadataForm.get(field)?.value && this.fetchedMetadata[field]) {
+      const currentValue = this.metadataForm.get(field)?.value;
+      const fetchedValue = this.fetchedMetadata[field];
+
+      const isEmpty = Array.isArray(currentValue)
+        ? currentValue.length === 0
+        : !currentValue;
+
+      if (!isLocked && isEmpty && fetchedValue) {
         this.copyFetchedToCurrent(field);
       }
     });
