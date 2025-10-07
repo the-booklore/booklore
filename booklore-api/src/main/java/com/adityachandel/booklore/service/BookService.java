@@ -157,16 +157,10 @@ public class BookService {
                     .percentage(userProgress.getEpubProgressPercent())
                     .build());
             if (userProgress.getKoreaderProgressPercent() != null) {
-                var userReadProgress = userProgress.getKoreaderProgressPercent() * 100;
-                book.getKoreaderProgress().setPercentage(userReadProgress);
-                if (userReadProgress >= 99.5f) {
-                    book.setReadStatus(String.valueOf(ReadStatus.READ));
-                } else if (userReadProgress > 0.01f) {
-                    book.setReadStatus(String.valueOf(ReadStatus.READING));
-                } else {
-                    book.setReadStatus(String.valueOf(ReadStatus.UNREAD));
+                if (book.getKoreaderProgress() == null) {
+                    book.setKoreaderProgress(KoProgress.builder().build());
                 }
-
+                book.getKoreaderProgress().setPercentage(userProgress.getKoreaderProgressPercent() * 100);
             }
         }
         if (bookEntity.getBookType() == BookFileType.CBX) {

@@ -68,11 +68,32 @@ public class KoreaderService {
 
         UserBookProgressEntity userProgress = getOrCreateUserProgress(user, book);
         updateProgressData(userProgress, koProgress);
+
         progressRepository.save(userProgress);
 
-        log.info("saveProgress: saved progress='{}' percentage={} for userId={} bookHash={}",
-                koProgress.getProgress(), koProgress.getPercentage(),
-                authDetails.getBookLoreUserId(), bookHash);
+        log.info("saveProgress: saved progress='{}' percentage={} for userId={} bookHash={}", koProgress.getProgress(), koProgress.getPercentage(), authDetails.getBookLoreUserId(), bookHash);
+    }
+
+    private void updateProgressData(UserBookProgressEntity userProgress, KoreaderProgress koProgress) {
+        userProgress.setKoreaderProgress(koProgress.getProgress());
+        userProgress.setKoreaderProgressPercent(koProgress.getPercentage());
+        userProgress.setKoreaderDevice(koProgress.getDevice());
+        userProgress.setKoreaderDeviceId(koProgress.getDevice_id());
+        userProgress.setKoreaderLastSyncTime(Instant.now());
+        userProgress.setLastReadTime(Instant.now());
+
+        updateReadStatus(userProgress, koProgress.getPercentage());
+    }
+
+    private void updateReadStatus(UserBookProgressEntity userProgress, double progressFraction) {
+        double progressPercent = progressFraction * 100.0;
+        if (progressPercent >= 99.5) {
+            userProgress.setReadStatus(ReadStatus.READ);
+        } else if (progressPercent >= 0.25) {
+            userProgress.setReadStatus(ReadStatus.READING);
+        } else {
+            userProgress.setReadStatus(ReadStatus.UNREAD);
+        }
     }
 
     private KoreaderUserDetails getAuthDetails() {
@@ -129,25 +150,6 @@ public class KoreaderService {
                     newProgress.setBook(book);
                     return newProgress;
                 });
-    }
-
-    private void updateProgressData(UserBookProgressEntity userProgress, KoreaderProgress koProgress) {
-        userProgress.setKoreaderProgress(koProgress.getProgress());
-        userProgress.setKoreaderProgressPercent(koProgress.getPercentage());
-        userProgress.setKoreaderDevice(koProgress.getDevice());
-        userProgress.setKoreaderDeviceId(koProgress.getDevice_id());
-        userProgress.setKoreaderLastSyncTime(Instant.now());
-        userProgress.setLastReadTime(Instant.now());
-
-        updateReadStatus(userProgress, koProgress.getPercentage());
-    }
-
-    private void updateReadStatus(UserBookProgressEntity userProgress, double percentage) {
-        if (percentage >= 99.5) {
-            userProgress.setReadStatus(ReadStatus.READ);
-        } else if (percentage >= 0.5) {
-            userProgress.setReadStatus(ReadStatus.READING);
-        }
     }
 
     private void ensureSyncEnabled(KoreaderUserDetails details) {
