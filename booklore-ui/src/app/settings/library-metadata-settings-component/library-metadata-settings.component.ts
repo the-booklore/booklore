@@ -12,11 +12,12 @@ import {MetadataRefreshOptions} from '../../metadata/model/request/metadata-refr
 import {MetadataAdvancedFetchOptionsComponent} from '../../metadata/metadata-options-dialog/metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
 import {AppSettings, AppSettingKey} from '../../core/model/app-settings.model';
 import {AppSettingsService} from '../../core/service/app-settings.service';
+import {Tooltip} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-library-metadata-settings-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule],
+  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, Tooltip],
   templateUrl: './library-metadata-settings.component.html',
   styleUrls: ['./library-metadata-settings.component.scss']
 })
@@ -218,5 +219,9 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         tags: {p1: null, p2: null, p3: null, p4: null}
       }
     };
+  }
+
+  navigateMetadataDoc(): void {
+    window.open('https://booklore-app.github.io/booklore-docs/docs/metadata/metadata-fetch-configuration', '_blank');
   }
 }

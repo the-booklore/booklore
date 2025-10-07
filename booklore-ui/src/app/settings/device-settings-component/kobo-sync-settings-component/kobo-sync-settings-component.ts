@@ -206,7 +206,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   }
 
   openKoboDocumentation(): void {
-    window.open('https://booklore-app.github.io/booklore-docs/docs/devices/kobo', '_blank');
+    window.open('https://booklore-app.github.io/booklore-docs/docs/integration/kobo', '_blank');
   }
 
   ngOnDestroy(): void {

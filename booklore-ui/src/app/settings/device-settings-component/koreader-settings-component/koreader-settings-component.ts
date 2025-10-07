@@ -132,6 +132,6 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
   }
 
   openKoReaderDocumentation() {
-    window.open('https://booklore-app.github.io/booklore-docs/docs/devices/koreader', '_blank');
+    window.open('https://booklore-app.github.io/booklore-docs/docs/integration/koreader', '_blank');
   }
 }
