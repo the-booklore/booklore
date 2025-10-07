@@ -175,10 +175,10 @@
       </div>
       <div id="epubContainer" #epubContainer></div>
       @if (selectedFlow !== 'scrolled') {
-        <button class="epub-controls-left" (click)="prevPage()">←</button>
+        <button class="epub-controls-left" [class.visible]="showControls" (click)="prevPage(); onBookTouch()">←</button>
       }
       @if (selectedFlow !== 'scrolled') {
-        <button class="epub-controls-right" (click)="nextPage()">→</button>
+        <button class="epub-controls-right" [class.visible]="showControls" (click)="nextPage(); onBookTouch()">→</button>
       }
     </div>
   }

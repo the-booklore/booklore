@@ -61,16 +61,6 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
-
-  @media (max-width: 768px) {
-    touch-action: manipulation;
-    user-select: none;
-  }
-
-  iframe {
-    pointer-events: auto;
-    touch-action: manipulation;
-  }
 }
 
 .menu-toggle-button,
@@ -100,10 +90,16 @@
   background: none;
   border: none;
   padding: 10px;
-  transition: color 0.3s ease, transform 0.2s ease;
+  transition: color 0.3s ease, transform 0.2s ease, opacity 0.3s ease;
 
   @media (max-width: 768px) {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+
+    &.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
   }
 }
 
@@ -178,4 +174,3 @@
 ::ng-deep .p-divider.p-divider-horizontal {
   margin: 0.25rem 0 0.5rem 0 !important;
 }
-

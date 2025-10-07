@@ -1,4 +1,4 @@
-import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, AfterViewInit} from '@angular/core';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, AfterViewInit, NgZone} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
 import {Button} from 'primeng/button';
@@ -40,6 +40,9 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   public exactProgress = 0;
   public progressPercentage = 0;
 
+  showControls = !this.isMobileDevice();
+  private hideControlsTimeout?: number;
+
   private book: any;
   private rendition: any;
   private keyListener: (e: KeyboardEvent) => void = () => {
@@ -73,13 +76,9 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   private userService = inject(UserService);
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
+  private ngZone = inject(NgZone);
 
   epub!: Book;
-
-  private touchStartX: number = 0;
-  private touchStartY: number = 0;
-  private minSwipeDistance: number = 50;
-  private maxVerticalDistance: number = 100;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -161,8 +160,8 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
 
             displayPromise.then(() => {
               this.setupKeyListener();
-              this.setupTouchListeners();
               this.trackProgress();
+              this.setupTouchListener();
               this.isLoading = false;
             });
           };
@@ -204,7 +203,6 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     this.rendition.themes.override('font-size', `${this.fontSize}%`);
     this.applyCombinedTheme();
     this.setupKeyListener();
-    this.setupTouchListeners();
     this.rendition.display(cfi || undefined);
     this.updateViewerSetting();
   }
@@ -227,7 +225,6 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     this.rendition.themes.override('font-size', `${this.fontSize}%`);
     this.applyCombinedTheme();
     this.setupKeyListener();
-    this.setupTouchListeners();
     this.rendition.display(cfi || undefined);
     this.updateViewerSetting();
   }
@@ -313,50 +310,19 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     document.addEventListener('keyup', this.keyListener);
   }
 
-  private setupTouchListeners(): void {
-    if (!this.isMobileDevice() || this.selectedFlow === 'scrolled') return;
+  private setupTouchListener(): void {
+    if (!this.isMobileDevice() || !this.rendition) return;
 
-    const container = this.epubContainer.nativeElement;
-    container.removeEventListener('touchstart', this.onTouchStart.bind(this));
-    container.removeEventListener('touchend', this.onTouchEnd.bind(this));
-
-    container.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
-    container.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
-
-    setTimeout(() => {
+    this.rendition.on('rendered', () => {
       const iframe = this.epubContainer.nativeElement.querySelector('iframe');
       if (iframe && iframe.contentDocument) {
-        const iframeDoc = iframe.contentDocument;
-        iframeDoc.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
-        iframeDoc.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+        iframe.contentDocument.addEventListener('touchstart', () => {
+          this.ngZone.run(() => {
+            this.onBookTouch();
+          });
+        });
       }
-    }, 500);
-  }
-
-  onTouchStart(event: TouchEvent): void {
-    if (this.selectedFlow === 'scrolled') return;
-
-    this.touchStartX = event.touches[0].clientX;
-    this.touchStartY = event.touches[0].clientY;
-  }
-
-  onTouchEnd(event: TouchEvent): void {
-    if (this.selectedFlow === 'scrolled') return;
-
-    const touchEndX = event.changedTouches[0].clientX;
-    const touchEndY = event.changedTouches[0].clientY;
-
-    const deltaX = touchEndX - this.touchStartX;
-    const deltaY = Math.abs(touchEndY - this.touchStartY);
-
-    if (Math.abs(deltaX) > this.minSwipeDistance && deltaY < this.maxVerticalDistance) {
-      event.preventDefault();
-      if (deltaX > 0) {
-        this.prevPage();
-      } else {
-        this.nextPage();
-      }
-    }
+    });
   }
 
   public isMobileDevice(): boolean {
@@ -435,6 +401,10 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       this.rendition.off('keyup', this.keyListener);
     }
     document.removeEventListener('keyup', this.keyListener);
+
+    if (this.hideControlsTimeout) {
+      window.clearTimeout(this.hideControlsTimeout);
+    }
   }
 
   getThemeColor(themeKey: string | undefined): string {
@@ -455,5 +425,19 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   selectTheme(themeKey: string): void {
     this.selectedTheme = themeKey;
     this.changeThemes();
+  }
+
+  onBookTouch(): void {
+    if (this.isMobileDevice()) {
+      this.showControls = true;
+      if (this.hideControlsTimeout) {
+        window.clearTimeout(this.hideControlsTimeout);
+      }
+      this.hideControlsTimeout = window.setTimeout(() => {
+        this.ngZone.run(() => {
+          this.showControls = false;
+        });
+      }, 3000);
+    }
   }
 }
