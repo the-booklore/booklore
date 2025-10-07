@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.bookdrop;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookdropFileEntity;
@@ -61,13 +62,12 @@ public class BookdropMetadataService {
         BookdropFileEntity entity = getOrThrow(bookdropFileId);
 
         AppSettings appSettings = appSettingService.getAppSettings();
-        MetadataRefreshRequest request = MetadataRefreshRequest.builder()
-                .refreshOptions(appSettings.getMetadataRefreshOptions())
-                .build();
+
+        MetadataRefreshOptions refreshOptions = appSettings.getDefaultMetadataRefreshOptions();
 
         BookMetadata initial = objectMapper.readValue(entity.getOriginalMetadata(), BookMetadata.class);
 
-        List<MetadataProvider> providers = metadataRefreshService.prepareProviders(request);
+        List<MetadataProvider> providers = metadataRefreshService.prepareProviders(refreshOptions);
         Book book = Book.builder()
                 .fileName(entity.getFileName())
                 .metadata(initial)
@@ -82,7 +82,7 @@ public class BookdropMetadataService {
         }
 
         Map<MetadataProvider, BookMetadata> metadataMap = metadataRefreshService.fetchMetadataForBook(providers, book);
-        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(book.getId(), request, metadataMap);
+        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
         String fetchedJson = objectMapper.writeValueAsString(fetchedMetadata);
 
         entity.setFetchedMetadata(fetchedJson);

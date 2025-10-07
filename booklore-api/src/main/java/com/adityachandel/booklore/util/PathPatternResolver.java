@@ -36,6 +36,8 @@ public class PathPatternResolver {
                 ? metadata.getTitle()
                 : "Untitled");
 
+        String subtitle = sanitize(metadata != null ? metadata.getSubtitle() : "");
+
         String authors = sanitize(
                 metadata != null
                         ? String.join(", ", metadata.getAuthors())
@@ -70,6 +72,7 @@ public class PathPatternResolver {
         Map<String, String> values = new LinkedHashMap<>();
         values.put("authors", authors);
         values.put("title", title);
+        values.put("subtitle", subtitle);
         values.put("year", year);
         values.put("series", series);
         values.put("seriesIndex", seriesIndex);
@@ -169,6 +172,8 @@ public class PathPatternResolver {
     private interface MetadataProvider {
         String getTitle();
 
+        String getSubtitle();
+
         List<String> getAuthors();
 
         Integer getYear();
@@ -209,6 +214,11 @@ public class PathPatternResolver {
         @Override
         public String getTitle() {
             return metadata.getTitle();
+        }
+
+        @Override
+        public String getSubtitle() {
+            return metadata.getSubtitle();
         }
 
         @Override
@@ -262,6 +272,11 @@ public class PathPatternResolver {
         @Override
         public String getTitle() {
             return metadata.getTitle();
+        }
+
+        @Override
+        public String getSubtitle() {
+            return metadata.getSubtitle();
         }
 
         @Override

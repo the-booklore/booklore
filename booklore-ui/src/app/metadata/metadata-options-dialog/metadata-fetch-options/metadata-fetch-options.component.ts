@@ -36,7 +36,7 @@ export class MetadataFetchOptionsComponent {
       filter(settings => settings != null),
       take(1)
     ).subscribe(settings => {
-      this.currentMetadataOptions = settings?.metadataRefreshOptions;
+      this.currentMetadataOptions = settings?.defaultMetadataRefreshOptions;
     });
   }
 

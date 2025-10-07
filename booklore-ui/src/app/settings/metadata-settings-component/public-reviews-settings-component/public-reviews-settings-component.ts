@@ -25,6 +25,7 @@ export class PublicReviewsSettingsComponent implements OnInit {
 
   publicReviewSettings: PublicReviewSettings = {
     downloadEnabled: true,
+    autoDownloadEnabled: false,
     providers: [...DEFAULT_PROVIDERS]
   };
 
@@ -39,6 +40,11 @@ export class PublicReviewsSettingsComponent implements OnInit {
 
   onPublicReviewsToggle(checked: boolean): void {
     this.publicReviewSettings.downloadEnabled = checked;
+    this.settingsHelper.saveSetting(AppSettingKey.METADATA_PUBLIC_REVIEWS_SETTINGS, this.publicReviewSettings);
+  }
+
+  onAutoDownloadToggle(checked: boolean): void {
+    this.publicReviewSettings.autoDownloadEnabled = checked;
     this.settingsHelper.saveSetting(AppSettingKey.METADATA_PUBLIC_REVIEWS_SETTINGS, this.publicReviewSettings);
   }
 

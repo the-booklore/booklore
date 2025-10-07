@@ -37,8 +37,6 @@ import {BookDialogHelperService} from './BookDialogHelperService';
 import {Checkbox} from 'primeng/checkbox';
 import {Popover} from 'primeng/popover';
 import {Slider} from 'primeng/slider';
-import {Select} from 'primeng/select';
-import {FilterSortPreferenceService} from './filters/filter-sorting-preferences.service';
 import {Divider} from 'primeng/divider';
 import {MultiSelect} from 'primeng/multiselect';
 import {TableColumnPreferenceService} from './table-column-preference-service';
@@ -48,6 +46,8 @@ import {MagicShelf, MagicShelfService} from '../../../magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../book-rule-evaluator.service';
 import {GroupRule} from '../../../magic-shelf-component/magic-shelf-component';
 import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
+import {MetadataRefreshRequest} from '../../../metadata/model/request/metadata-refresh-request.model';
+import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -84,7 +84,7 @@ const SORT_DIRECTION = {
   imports: [
     Button, VirtualScrollerModule, BookCardComponent, AsyncPipe, ProgressSpinner, Menu, InputText, FormsModule,
     BookTableComponent, BookFilterComponent, Tooltip, NgClass, PrimeTemplate, NgStyle, Popover,
-    Checkbox, Slider, Select, Divider, MultiSelect, TieredMenu
+    Checkbox, Slider, Divider, MultiSelect, TieredMenu
   ],
   providers: [SeriesCollapseFilter],
   animations: [
@@ -99,7 +99,6 @@ const SORT_DIRECTION = {
 export class BookBrowserComponent implements OnInit {
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
-  protected filterSortPreferenceService = inject(FilterSortPreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
   protected sidebarFilterTogglePrefService = inject(SidebarFilterTogglePrefService);
   private activatedRoute = inject(ActivatedRoute);
@@ -150,11 +149,13 @@ export class BookBrowserComponent implements OnInit {
 
   private sideBarFilter = new SideBarFilter(this.selectedFilter, this.selectedFilterMode);
   private headerFilter = new HeaderFilter(this.searchTerm$);
-  protected bookSorter = new BookSorter(selectedSort => this.applySortOption(selectedSort));
+  protected bookSorter = new BookSorter(
+    selectedSort => this.onManualSortChange(selectedSort)
+  );
 
   @ViewChild(BookTableComponent)
   bookTableComponent!: BookTableComponent;
-  @ViewChild(BookFilterComponent, { static: false })
+  @ViewChild(BookFilterComponent, {static: false})
   bookFilterComponent!: BookFilterComponent;
 
   get currentCardSize() {
@@ -218,13 +219,13 @@ export class BookBrowserComponent implements OnInit {
     });
 
     this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
-      () => this.updateMetadata(),
+      () => this.autoFetchMetadata(),
+      () => this.fetchMetadata(),
       () => this.bulkEditMetadata(),
-      () => this.multiBookEditMetadata()
+      () => this.multiBookEditMetadata(),
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
 
-    // --- NEW: Subscribe to query params + user changes for reactive updates ---
     combineLatest([
       this.activatedRoute.paramMap,
       this.activatedRoute.queryParamMap,
@@ -254,7 +255,7 @@ export class BookBrowserComponent implements OnInit {
         });
 
         this.selectedFilter.next(parsedFilters);
-        if(this.bookFilterComponent) {
+        if (this.bookFilterComponent) {
           this.bookFilterComponent.setFilters?.(parsedFilters);
           this.bookFilterComponent.onFiltersChanged?.();
         }
@@ -279,7 +280,6 @@ export class BookBrowserComponent implements OnInit {
       const globalPrefs = this.entityViewPreferences?.global;
       const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase() : undefined;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
-      this.filterSortPreferenceService.initValue(user.user?.userSettings?.filterSortingMode);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
@@ -299,16 +299,17 @@ export class BookBrowserComponent implements OnInit {
         ? SortDirection.DESCENDING
         : SortDirection.ASCENDING;
 
-      const matchedSort = this.bookSorter.sortOptions.find(opt => opt.field === userSortKey) || this.bookSorter.sortOptions.find(opt => opt.field === sortParam);
+      const effectiveSortKey = sortParam || userSortKey;
+      const effectiveSortDir = directionParam
+        ? (directionParam.toLowerCase() === SORT_DIRECTION.DESCENDING ? SortDirection.DESCENDING : SortDirection.ASCENDING)
+        : userSortDir;
+
+      const matchedSort = this.bookSorter.sortOptions.find(opt => opt.field === effectiveSortKey);
 
       this.bookSorter.selectedSort = matchedSort ? {
         label: matchedSort.label,
         field: matchedSort.field,
-        direction: userSortDir ?? (
-          directionParam?.toUpperCase() === SORT_DIRECTION.DESCENDING
-            ? SortDirection.DESCENDING
-            : SortDirection.ASCENDING
-        )
+        direction: effectiveSortDir
       } : {
         label: 'Added On',
         field: 'addedOn',
@@ -462,6 +463,22 @@ export class BookBrowserComponent implements OnInit {
     this.seriesCollapseFilter.setCollapsed(value);
   }
 
+  onManualSortChange(sortOption: SortOption): void {
+    this.applySortOption(sortOption);
+
+    const currentParams = this.activatedRoute.snapshot.queryParams;
+    const newParams = {
+      ...currentParams,
+      sort: sortOption.field,
+      direction: sortOption.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING
+    };
+
+    this.router.navigate([], {
+      queryParams: newParams,
+      replaceUrl: true
+    });
+  }
+
   applySortOption(sortOption: SortOption): void {
     if (this.entityType === EntityType.ALL_BOOKS) {
       this.bookState$ = this.fetchAllBooks();
@@ -540,7 +557,15 @@ export class BookBrowserComponent implements OnInit {
     this.dynamicDialogRef = this.dialogHelperService.openLockUnlockMetadataDialog(this.selectedBooks);
   }
 
-  updateMetadata(): void {
+  autoFetchMetadata(): void {
+    const metadataRefreshRequest: MetadataRefreshRequest = {
+      refreshType: MetadataRefreshType.BOOKS,
+      bookIds: Array.from(this.selectedBooks),
+    };
+    this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
+  }
+
+  fetchMetadata(): void {
     this.dialogHelperService.openMetadataRefreshDialog(this.selectedBooks);
   }
 
@@ -549,7 +574,7 @@ export class BookBrowserComponent implements OnInit {
   }
 
   multiBookEditMetadata(): void {
-    this.dialogHelperService.openMultibookMetadataEditerDialog(this.selectedBooks);
+    this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
   }
 
   moveFiles() {
@@ -682,7 +707,15 @@ export class BookBrowserComponent implements OnInit {
     const forceExpandSeries = this.shouldForceExpandSeries();
     return this.headerFilter.filter(bookState).pipe(
       switchMap(filtered => this.sideBarFilter.filter(filtered)),
-      switchMap(filtered => this.seriesCollapseFilter.filter(filtered, forceExpandSeries))
+      switchMap(filtered => this.seriesCollapseFilter.filter(filtered, forceExpandSeries)),
+      map(filtered =>
+        (filtered.loaded && !filtered.error)
+          ? ({
+            ...filtered,
+            books: this.sortService.applySort(filtered.books || [], this.bookSorter.selectedSort!)
+          })
+          : filtered
+      )
     );
   }
 

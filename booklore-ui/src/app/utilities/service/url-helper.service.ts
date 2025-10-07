@@ -40,4 +40,16 @@ export class UrlHelperService {
     const url = `${this.mediaBaseUrl}/bookdrop/${bookdropId}/cover`;
     return this.appendToken(url);
   }
+
+  getBackgroundImageUrl(lastUpdated?: number): string {
+    let url = `${this.mediaBaseUrl}/background`;
+    if (lastUpdated) {
+      url += `?t=${lastUpdated}`;
+    }
+    const token = this.getToken();
+    if (token) {
+      url += `${url.includes('?') ? '&' : '?'}token=${token}`;
+    }
+    return url;
+  }
 }

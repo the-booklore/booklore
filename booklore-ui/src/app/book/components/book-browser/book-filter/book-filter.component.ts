@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, distinctUntilChanged, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
+import {combineLatest, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {BookService} from '../../../service/book.service';
 import {Library} from '../../../model/library.model';
@@ -12,7 +12,6 @@ import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
 import {UserService} from '../../../../settings/user-management/user.service';
-import {FilterSortPreferenceService} from '../filters/filter-sorting-preferences.service';
 import {MagicShelf} from '../../../../magic-shelf.service';
 import {GroupRule} from '../../../../magic-shelf-component/magic-shelf-component';
 import {BookRuleEvaluatorService} from '../../../../book-rule-evaluator.service';
@@ -161,6 +160,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   activeFilters: Record<string, any> = {};
   filterStreams: Record<string, Observable<Filter<any>[]>> = {};
+  truncatedFilters: Record<string, boolean> = {};
   filterTypes: string[] = [];
   filterModeOptions = [
     {label: 'AND', value: 'and'},
@@ -190,38 +190,37 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   bookService = inject(BookService);
   userService = inject(UserService);
-  filterSortPreferenceService = inject(FilterSortPreferenceService);
   bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
 
   ngOnInit(): void {
     combineLatest([
-      this.filterSortPreferenceService.sortMode$.pipe(distinctUntilChanged()),
       this.entity$ ?? of(null),
       this.entityType$ ?? of(EntityType.ALL_BOOKS)
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe(([sortMode]) => {
         this.filterStreams = {
-          // Temporarily disabled until we can optimize for large libraries
-          /*author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),
-          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name', sortMode),*/
-          series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name', sortMode),
-          publisher: this.getFilterStream((book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []), 'id', 'name', sortMode),
+          author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name'),
+          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name'),
+          series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name'),
+          publisher: this.getFilterStream((book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []), 'id', 'name'),
           readStatus: this.getFilterStream((book: Book) => {
             let status = book.readStatus;
             if (status == null || !(status in readStatusLabels)) {
               status = ReadStatus.UNSET;
             }
             return [{id: status, name: getReadStatusName(status)}];
-          }, 'id', 'name', sortMode),
+          }, 'id', 'name'),
+          mood: this.getFilterStream((book: Book) => book.metadata?.moods!.map(name => ({id: name, name})) || [], 'id', 'name'),
+          tag: this.getFilterStream((book: Book) => book.metadata?.tags!.map(name => ({id: name, name})) || [], 'id', 'name'),
           matchScore: this.getFilterStream((book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore), 'id', 'name', 'sortIndex'),
           personalRating: this.getFilterStream((book: Book) => getRatingRangeFilters10(book.metadata?.personalRating!), 'id', 'name', 'sortIndex'),
           amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating!), 'id', 'name', 'sortIndex'),
           goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating!), 'id', 'name', 'sortIndex'),
           hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating!), 'id', 'name', 'sortIndex'),
-          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name', sortMode),
-          publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name', sortMode),
-          language: this.getFilterStream(getLanguageFilter, 'id', 'name', sortMode),
+          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
+          publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name'),
+          language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
           fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
           pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount!), 'id', 'name', 'sortIndex'),
         };
@@ -266,18 +265,31 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
         const result = Array.from(filterMap.values());
 
-        return result.sort((a, b) => {
+        const sorted = result.sort((a, b) => {
           if (sortMode === 'sortIndex') {
             return (a.value.sortIndex ?? 999) - (b.value.sortIndex ?? 999);
-          }
-          if (sortMode === 'alphabetical') {
-            return a.value[nameKey].toString().localeCompare(b.value[nameKey].toString());
           }
           return (
             b.bookCount - a.bookCount ||
             a.value[nameKey].toString().localeCompare(b.value[nameKey].toString())
           );
         });
+
+        const isTruncated = sorted.length > 500;
+        const truncated = sorted.slice(0, 500);
+
+        return {items: truncated, isTruncated};
+      }),
+      map(({items, isTruncated}) => {
+        setTimeout(() => {
+          const filterType = Object.keys(this.filterStreams).find(key =>
+            this.filterStreams[key] === this.getFilterStream(extractor, idKey, nameKey)
+          );
+          if (filterType) {
+            this.truncatedFilters[filterType] = isTruncated;
+          }
+        });
+        return items;
       }),
       shareReplay({bufferSize: 1, refCount: true})
     );

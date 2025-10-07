@@ -81,9 +81,9 @@ export interface Douban {
 }
 
 export interface MetadataPersistenceSettings {
+  moveFilesToLibraryPattern: boolean;
   saveToOriginalFile: boolean;
-  backupMetadata: boolean;
-  backupCover: boolean;
+  convertCbrCb7ToCbz: boolean;
 }
 
 export interface ReviewProviderConfig {
@@ -94,6 +94,7 @@ export interface ReviewProviderConfig {
 
 export interface PublicReviewSettings {
   downloadEnabled: boolean;
+  autoDownloadEnabled: boolean;
   providers: ReviewProviderConfig[];
 }
 
@@ -105,7 +106,8 @@ export interface KoboSettings {
 export interface AppSettings {
   autoBookSearch: boolean;
   similarBookRecommendation: boolean;
-  metadataRefreshOptions: MetadataRefreshOptions;
+  defaultMetadataRefreshOptions: MetadataRefreshOptions;
+  libraryMetadataRefreshOptions: MetadataRefreshOptions[];
   uploadPattern: string;
   opdsServerEnabled: boolean;
   remoteAuthEnabled: boolean;
@@ -126,6 +128,7 @@ export enum AppSettingKey {
   QUICK_BOOK_MATCH = 'QUICK_BOOK_MATCH',
   AUTO_BOOK_SEARCH = 'AUTO_BOOK_SEARCH',
   SIMILAR_BOOK_RECOMMENDATION = 'SIMILAR_BOOK_RECOMMENDATION',
+  LIBRARY_METADATA_REFRESH_OPTIONS = 'LIBRARY_METADATA_REFRESH_OPTIONS',
   UPLOAD_FILE_PATTERN = 'UPLOAD_FILE_PATTERN',
   OPDS_SERVER_ENABLED = 'OPDS_SERVER_ENABLED',
   OIDC_ENABLED = 'OIDC_ENABLED',

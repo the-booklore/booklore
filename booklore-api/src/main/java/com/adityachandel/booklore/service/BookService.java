@@ -15,6 +15,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.repository.*;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
@@ -58,6 +59,7 @@ public class BookService {
     private final BookQueryService bookQueryService;
     private final UserProgressService userProgressService;
     private final BookDownloadService bookDownloadService;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
@@ -101,7 +103,8 @@ public class BookService {
                 user.getAssignedLibraries().stream()
                         .map(Library::getId)
                         .collect(Collectors.toSet()),
-                includeDescription
+                includeDescription,
+                user.getId()
         );
 
         Map<Long, UserBookProgressEntity> progressMap =
@@ -139,6 +142,7 @@ public class BookService {
         UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId).orElse(new UserBookProgressEntity());
 
         Book book = bookMapper.toBook(bookEntity);
+        book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
 
         if (bookEntity.getBookType() == BookFileType.PDF) {
@@ -189,6 +193,7 @@ public class BookService {
                             .fontSize(epubPref.getFontSize())
                             .theme(epubPref.getTheme())
                             .flow(epubPref.getFlow())
+                            .spread(epubPref.getSpread())
                             .letterSpacing(epubPref.getLetterSpacing())
                             .lineHeight(epubPref.getLineHeight())
                             .build()));
@@ -268,6 +273,7 @@ public class BookService {
             epubPrefs.setFontSize(epubSettings.getFontSize());
             epubPrefs.setTheme(epubSettings.getTheme());
             epubPrefs.setFlow(epubSettings.getFlow());
+            epubPrefs.setSpread(epubSettings.getSpread());
             epubPrefs.setLetterSpacing(epubSettings.getLetterSpacing());
             epubPrefs.setLineHeight(epubSettings.getLineHeight());
             epubViewerPreferencesRepository.save(epubPrefs);
@@ -295,29 +301,68 @@ public class BookService {
 
     @Transactional
     public void updateReadProgress(ReadProgressRequest request) {
-        BookEntity book = bookRepository.findById(request.getBookId()).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+        BookEntity book = bookRepository.findById(request.getBookId())
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(request.getBookId()));
+
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        UserBookProgressEntity userBookProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), book.getId()).orElse(new UserBookProgressEntity());
-        userBookProgress.setUser(userRepository.findById(user.getId()).orElseThrow(() -> new UsernameNotFoundException("User not found")));
-        userBookProgress.setBook(book);
-        userBookProgress.setLastReadTime(Instant.now());
-        if (book.getBookType() == BookFileType.EPUB && request.getEpubProgress() != null) {
-            userBookProgress.setEpubProgress(request.getEpubProgress().getCfi());
-            userBookProgress.setEpubProgressPercent(request.getEpubProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.PDF && request.getPdfProgress() != null) {
-            userBookProgress.setPdfProgress(request.getPdfProgress().getPage());
-            userBookProgress.setPdfProgressPercent(request.getPdfProgress().getPercentage());
-        } else if (book.getBookType() == BookFileType.CBX && request.getCbxProgress() != null) {
-            userBookProgress.setCbxProgress(request.getCbxProgress().getPage());
-            userBookProgress.setCbxProgressPercent(request.getCbxProgress().getPercentage());
+
+        UserBookProgressEntity progress = userBookProgressRepository
+                .findByUserIdAndBookId(user.getId(), book.getId())
+                .orElseGet(UserBookProgressEntity::new);
+
+        BookLoreUserEntity userEntity = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        progress.setUser(userEntity);
+
+        progress.setBook(book);
+        progress.setLastReadTime(Instant.now());
+
+        Float percentage = null;
+        switch (book.getBookType()) {
+            case EPUB -> {
+                if (request.getEpubProgress() != null) {
+                    progress.setEpubProgress(request.getEpubProgress().getCfi());
+                    percentage = request.getEpubProgress().getPercentage();
+                }
+            }
+            case PDF -> {
+                if (request.getPdfProgress() != null) {
+                    progress.setPdfProgress(request.getPdfProgress().getPage());
+                    percentage = request.getPdfProgress().getPercentage();
+                }
+            }
+            case CBX -> {
+                if (request.getCbxProgress() != null) {
+                    progress.setCbxProgress(request.getCbxProgress().getPage());
+                    percentage = request.getCbxProgress().getPercentage();
+                }
+            }
         }
 
-        // Update dateFinished if provided
+        if (percentage != null) {
+            progress.setReadStatus(getStatus(percentage));
+            setProgressPercent(progress, book.getBookType(), percentage);
+        }
+
         if (request.getDateFinished() != null) {
-            userBookProgress.setDateFinished(request.getDateFinished());
+            progress.setDateFinished(request.getDateFinished());
         }
 
-        userBookProgressRepository.save(userBookProgress);
+        userBookProgressRepository.save(progress);
+    }
+
+    private void setProgressPercent(UserBookProgressEntity progress, BookFileType type, Float percentage) {
+        switch (type) {
+            case EPUB -> progress.setEpubProgressPercent(percentage);
+            case PDF -> progress.setPdfProgressPercent(percentage);
+            case CBX -> progress.setCbxProgressPercent(percentage);
+        }
+    }
+
+    private ReadStatus getStatus(Float percentage) {
+        if (percentage >= 99.5f) return ReadStatus.READ;
+        if (percentage > 0.5f) return ReadStatus.READING;
+        return ReadStatus.UNREAD;
     }
 
     @Transactional
@@ -440,6 +485,7 @@ public class BookService {
 
         return bookEntities.stream().map(bookEntity -> {
             Book book = bookMapper.toBook(bookEntity);
+            book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
             book.setFilePath(FileUtils.getBookFullPath(bookEntity));
             enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
             return book;
@@ -466,11 +512,20 @@ public class BookService {
             if (Files.exists(coverPath)) {
                 return new UrlResource(coverPath.toUri());
             } else {
-                Path defaultCover = Paths.get("static/images/missing-cover.jpg");
-                return new UrlResource(defaultCover.toUri());
+                return new ClassPathResource("static/images/missing-cover.jpg");
             }
         } catch (MalformedURLException e) {
             throw new RuntimeException("Failed to load book cover for bookId=" + bookId, e);
+        }
+    }
+
+    public Resource getBackgroundImage() {
+        try {
+            BookLoreUser user = authenticationService.getAuthenticatedUser();
+            return fileService.getBackgroundResource(user.getId());
+        } catch (Exception e) {
+            log.error("Failed to get background image: {}", e.getMessage(), e);
+            return fileService.getBackgroundResource(null);
         }
     }
 
@@ -492,12 +547,14 @@ public class BookService {
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
-
         for (BookEntity book : books) {
             Path fullFilePath = book.getFullFilePath();
             try {
                 if (Files.exists(fullFilePath)) {
+                    monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
                     Files.delete(fullFilePath);
+                    log.info("Deleted book file: {}", fullFilePath);
+
                     Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
                             .map(LibraryPathEntity::getPath)
                             .map(Paths::get)
@@ -507,6 +564,7 @@ public class BookService {
                     deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
                 }
             } catch (IOException e) {
+                log.warn("Failed to delete book file: {}", fullFilePath, e);
                 failedFileDeletions.add(book.getId());
             }
         }
@@ -582,4 +640,12 @@ public class BookService {
             }
         }
     }
+
+    private Set<Shelf> filterShelvesByUserId(Set<Shelf> shelves, Long userId) {
+        if (shelves == null) return Collections.emptySet();
+        return shelves.stream()
+                .filter(shelf -> userId.equals(shelf.getUserId()))
+                .collect(Collectors.toSet());
+    }
+
 }

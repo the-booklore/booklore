@@ -16,4 +16,5 @@ export interface MetadataBatchProgressNotification {
   total: number;
   message: string;
   status: MetadataBatchStatus;
+  review: boolean;
 }

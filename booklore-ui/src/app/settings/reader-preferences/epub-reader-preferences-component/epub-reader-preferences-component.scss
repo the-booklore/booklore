@@ -1,7 +1,7 @@
 .epub-preferences-container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .setting-item {
@@ -46,26 +46,13 @@
       min-width: 100px;
     }
 
-    p-select {
-      flex: 1;
-      min-width: 200px;
-      max-width: 300px;
+    .radio-group {
+      display: flex;
+      gap: 1.5rem;
 
       @media (max-width: 768px) {
-        min-width: 180px;
-      }
-    }
-
-    .font-size-controls {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-
-      .font-size-value {
-        min-width: 3rem;
-        text-align: center;
-        font-weight: 500;
-        color: var(--p-text-color);
+        flex-direction: column;
+        gap: 0.75rem;
       }
     }
   }
@@ -75,5 +62,40 @@
     font-size: 0.875rem;
     line-height: 1.5;
     margin: 0;
+  }
+}
+
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.875rem;
+    color: var(--p-text-color);
+    cursor: pointer;
+  }
+}
+
+.font-size-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  .font-size-value {
+    min-width: 3rem;
+    text-align: center;
+    font-weight: 500;
+    color: var(--p-text-color);
   }
 }

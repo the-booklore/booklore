@@ -3,11 +3,7 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
-import com.adityachandel.booklore.model.entity.AuthorEntity;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
-import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
@@ -22,6 +18,7 @@ import java.util.stream.Collectors;
 public interface BookMapper {
 
     @Mapping(source = "library.id", target = "libraryId")
+    @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
@@ -30,20 +27,13 @@ public interface BookMapper {
     Book toBook(BookEntity bookEntity);
 
     @Mapping(source = "library.id", target = "libraryId")
+    @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
     @Mapping(source = "additionalFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "additionalFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
-
-    @Mapping(source = "library.id", target = "libraryId")
-    @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
-    @Mapping(target = "metadata", ignore = true)
-    @Mapping(target = "shelves", ignore = true)
-    @Mapping(target = "alternativeFormats", ignore = true)
-    @Mapping(target = "supplementaryFiles", ignore = true)
-    Book toBookWithoutMetadataAndShelves(BookEntity bookEntity);
 
     default Set<String> mapAuthors(Set<AuthorEntity> authors) {
         if (authors == null) return null;
@@ -56,6 +46,20 @@ public interface BookMapper {
         if (categories == null) return null;
         return categories.stream()
                 .map(CategoryEntity::getName)
+                .collect(Collectors.toSet());
+    }
+
+    default Set<String> mapMoods(Set<MoodEntity> moods) {
+        if (moods == null) return null;
+        return moods.stream()
+                .map(MoodEntity::getName)
+                .collect(Collectors.toSet());
+    }
+
+    default Set<String> mapTags(Set<TagEntity> tags) {
+        if (tags == null) return null;
+        return tags.stream()
+                .map(TagEntity::getName)
                 .collect(Collectors.toSet());
     }
 

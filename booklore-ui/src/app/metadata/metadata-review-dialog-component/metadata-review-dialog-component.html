@@ -46,7 +46,7 @@
         <p-divider layout="vertical"/>
 
         <p-button
-          label="Lock Metadata"
+          label="Lock All"
           icon="pi pi-lock"
           severity="warn"
           [outlined]="true"
@@ -54,7 +54,7 @@
         </p-button>
 
         <p-button
-          label="Unlock Metadata"
+          label="Unlock All"
           icon="pi pi-lock-open"
           severity="success"
           [outlined]="true"
@@ -64,30 +64,23 @@
         <p-divider layout="vertical"/>
 
         <p-button
-          label="Previous"
-          icon="pi pi-angle-left"
-          severity="secondary"
-          [outlined]="true"
-          (click)="previous()"
-          [disabled]="currentIndex === 0">
-        </p-button>
-
-        <p-button
-          [label]="isLast ? 'Reject & Finish' : 'Reject & Next'"
-          [icon]="isLast ? 'pi pi-times-circle' : 'pi pi-angle-right'"
-          iconPos="right"
-          severity="danger"
-          [outlined]="true"
-          (click)="onReject()">
-        </p-button>
-
-        <p-button
-          [label]="isLast ? 'Save & Finish' : 'Save & Next'"
-          [icon]="isLast ? 'pi pi-check-circle' : 'pi pi-angle-right'"
+          label="Accept & Save"
+          icon="pi pi-check-circle"
           iconPos="right"
           severity="success"
           [outlined]="true"
           (click)="onSave(currentProposal!)">
+        </p-button>
+
+        <p-divider layout="vertical"/>
+
+        <p-button
+          [label]="isLast ? 'Finish & Close' : 'Next'"
+          [icon]="isLast ? 'pi pi-check-circle' : 'pi pi-angle-right'"
+          iconPos="right"
+          severity="info"
+          [outlined]="true"
+          (click)="onNext()">
         </p-button>
 
       </div>
@@ -95,6 +88,6 @@
   </div>
 } @else {
   <div class="p-4 h-full flex items-center justify-center">
-    <p-progressSpinner styleClass="w-8 h-8" strokeWidth="4"></p-progressSpinner>
+    <p-progressSpinner class="w-8 h-8" strokeWidth="4"></p-progressSpinner>
   </div>
 }

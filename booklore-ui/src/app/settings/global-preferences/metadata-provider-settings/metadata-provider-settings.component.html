@@ -30,7 +30,15 @@
         </div>
 
         <div class="config-field">
-          <label class="config-label">Cookie (Optional)</label>
+          <div class="config-label-row">
+            <label class="config-label">Cookie (Optional, but highly recommended)</label>
+            <i class="pi pi-external-link external-link-icon"
+               pTooltip="Click to view Amazon cookie setup documentation"
+               tooltipPosition="right"
+               (click)="navigateToAmazonCookieDocumentation()"
+               style="cursor: pointer;">
+            </i>
+          </div>
           <p class="config-description">
             <i class="pi pi-info-circle"></i>
             Providing your Amazon session cookie allows the app to access richer book metadata and bypass rate limits. Optional but recommended for best results.
@@ -39,8 +47,9 @@
             type="text"
             pInputText
             placeholder="Paste your Amazon cookie"
-            class="config-input"
-            [(ngModel)]="amazonCookie" />
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="amazonCookie"/>
         </div>
       </div>
     </div>
@@ -77,14 +86,23 @@
 
       <div class="provider-config">
         <div class="config-field">
-          <label class="config-label">API Token</label>
+          <div class="config-label-row">
+            <label class="config-label">API Token</label>
+            <i class="pi pi-external-link external-link-icon"
+               pTooltip="Click to view Hardcover API documentation"
+               tooltipPosition="right"
+               (click)="navigateToHardcoverTokenDocumentation()"
+               style="cursor: pointer;">
+            </i>
+          </div>
           <input
             type="text"
             pInputText
             placeholder="Enter Hardcover API token"
-            class="config-input"
+            fluid
+            class="max-w-[60rem]"
             [(ngModel)]="hardcoverToken"
-            (ngModelChange)="onTokenChange($event)" />
+            (ngModelChange)="onTokenChange($event)"/>
         </div>
       </div>
     </div>
@@ -108,9 +126,10 @@
             type="text"
             pInputText
             placeholder="Enter Comic Vine API token"
-            class="config-input"
+            fluid
+            class="max-w-[60rem]"
             [(ngModel)]="comicvineToken"
-            (ngModelChange)="onComicTokenChange($event)" />
+            (ngModelChange)="onComicTokenChange($event)"/>
         </div>
       </div>
     </div>

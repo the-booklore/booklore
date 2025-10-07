@@ -35,22 +35,14 @@ public class HardcoverBookSearchService {
             return Collections.emptyList();
         }
 
-        String graphqlQuery = """
-                query SearchBooks {
-                    search(
-                        query: "%s",
-                        query_type: "Book",
-                        per_page: 5,
-                        page: 1
-                    ) {
-                        results
-                    }
-                }
-                """.formatted(query);
+        String graphqlQuery = String.format(
+                "query SearchBooks { search(query: \"%s\", query_type: \"Book\", per_page: 5, page: 1) { results } }",
+                query.replace("\"", "\\\"")
+        );
 
         GraphQLRequest body = new GraphQLRequest();
         body.setQuery(graphqlQuery);
-        body.setOperationName("SearchBooks");
+        body.setVariables(Collections.emptyMap());
 
         try {
             GraphQLResponse response = restClient.post()

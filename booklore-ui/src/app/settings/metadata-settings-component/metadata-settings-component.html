@@ -1,7 +1,7 @@
 <div class="main-container enclosing-container">
   <div class="settings-header">
     <h2 class="settings-title">
-      <i class="pi pi-database"></i>
+      <i class="pi pi-sliders-h"></i>
       Metadata Settings
     </h2>
     <p class="settings-description">
@@ -64,26 +64,6 @@
 
       <div class="settings-card">
         <app-public-reviews-settings-component></app-public-reviews-settings-component>
-      </div>
-    </div>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-search"></i>
-          Quick Book Match Preferences
-        </h3>
-        <p class="section-description">
-          Choose how metadata fields (title, description, authors, categories, cover) are retrieved by setting priority providers. You can apply the same provider settings to all fields or customize them individually. Enable 'Refresh Covers' to update book covers, and 'Merge Categories' to consolidate categories/genres from all sources while preserving the existing categories/genres in the book.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <app-metadata-advanced-fetch-options
-          (metadataOptionsSubmitted)="onMetadataSubmit($event)"
-          [currentMetadataOptions]="currentMetadataOptions"
-          [submitButtonLabel]="'Save'">
-        </app-metadata-advanced-fetch-options>
       </div>
     </div>
 

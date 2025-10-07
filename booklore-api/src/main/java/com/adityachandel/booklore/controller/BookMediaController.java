@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.service.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
@@ -24,7 +25,6 @@ import java.io.IOException;
 public class BookMediaController {
 
     private final BookService bookService;
-    private final BookMetadataService bookMetadataService;
     private final PdfReaderService pdfReaderService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
@@ -37,18 +37,6 @@ public class BookMediaController {
     @GetMapping("/book/{bookId}/cover")
     public ResponseEntity<Resource> getBookCover(@PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookCover(bookId));
-    }
-
-    @GetMapping("/book/{bookId}/backup-cover")
-    public ResponseEntity<Resource> getBackupBookCover(@PathVariable long bookId) {
-        Resource file = bookMetadataService.getBackupCoverForBook(bookId);
-        if (file == null) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=cover.jpg")
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(file);
     }
 
     @GetMapping("/book/{bookId}/pdf/pages/{pageNumber}")
@@ -72,5 +60,27 @@ public class BookMediaController {
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(file)
                 : ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/background")
+    public ResponseEntity<Resource> getBackgroundImage() {
+        try {
+            Resource file = bookService.getBackgroundImage();
+            if (file == null || !file.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String filename = file.getFilename();
+            MediaType mediaType = filename != null && filename.endsWith(".png")
+                    ? MediaType.IMAGE_PNG
+                    : MediaType.IMAGE_JPEG;
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + filename)
+                    .contentType(mediaType)
+                    .body(file);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

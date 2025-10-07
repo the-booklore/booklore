@@ -1,7 +1,7 @@
 <div class="metadata-progress-box flex gap-4 flex-col w-[25rem] max-h-[60vh] overflow-y-auto">
   <app-live-notification-box/>
-  @if (hasActiveTasks$ | async) {
-    <app-live-task-event-box/>
+  @if (hasDuplicateFiles$ | async) {
+    <app-duplicate-files-notification/>
   }
   @if (hasMetadataTasks$ | async) {
     <app-metadata-progress-widget/>

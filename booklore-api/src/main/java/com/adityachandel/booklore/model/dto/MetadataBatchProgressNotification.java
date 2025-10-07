@@ -11,4 +11,5 @@ public class MetadataBatchProgressNotification {
     private int total;
     private String message;
     private String status;
+    private boolean isReview;
 }

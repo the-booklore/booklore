@@ -1,4 +1,4 @@
-import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, AfterViewInit} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
 import {Button} from 'primeng/button';
@@ -39,6 +39,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   public locationsReady = false;
   public approxProgress = 0;
   public exactProgress = 0;
+  public progressPercentage = 0;
 
   private book: any;
   private rendition: any;
@@ -49,6 +50,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   selectedFlow?: string = 'paginated';
   selectedTheme?: string = 'white';
   selectedFontType?: string | null = null;
+  selectedSpread?: string = 'double';
   lineHeight?: number;
   letterSpacing?: number;
 
@@ -75,6 +77,11 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
   private pageTitle = inject(PageTitleService);
 
   epub!: Book;
+
+  private touchStartX: number = 0;
+  private touchStartY: number = 0;
+  private minSwipeDistance: number = 50;
+  private maxVerticalDistance: number = 100;
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -111,6 +118,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
             const resolvedTheme = settingScope === 'Global' ? globalSettings.theme : individualSetting?.theme;
             const resolvedLineHeight = settingScope === 'Global' ? globalSettings.lineHeight : individualSetting?.lineHeight;
             const resolvedLetterSpacing = settingScope === 'Global' ? globalSettings.letterSpacing : individualSetting?.letterSpacing;
+            const resolvedSpread = settingScope === 'Global' ? globalSettings.spread || 'double' : individualSetting?.spread || 'double';
 
             if (resolvedTheme != null) this.selectedTheme = resolvedTheme;
             if (resolvedFontFamily != null) this.selectedFontType = resolvedFontFamily;
@@ -118,12 +126,14 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
             if (resolvedLineHeight != null) this.lineHeight = resolvedLineHeight;
             if (resolvedLetterSpacing != null) this.letterSpacing = resolvedLetterSpacing;
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
+            if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
             this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
               flow: this.selectedFlow ?? 'paginated',
               manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
               width: '100%',
               height: '100%',
+              spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
               allowScriptedContent: true,
             });
 
@@ -153,6 +163,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
 
             displayPromise.then(() => {
               this.setupKeyListener();
+              this.setupTouchListeners();
               this.trackProgress();
               this.isLoading = false;
             });
@@ -190,12 +201,37 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
       width: '100%',
       height: '100%',
+      spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
       allowScriptedContent: true,
     });
 
+    this.rendition.themes.override('font-size', `${this.fontSize}%`);
     this.applyCombinedTheme();
-
     this.setupKeyListener();
+    this.setupTouchListeners();
+    this.rendition.display(cfi || undefined);
+    this.updateViewerSetting();
+  }
+
+  changeSpreadMode(): void {
+    if (!this.rendition || !this.book || this.selectedFlow === 'scrolled' || this.isMobileDevice()) return;
+
+    const cfi = this.rendition.currentLocation()?.start?.cfi;
+    this.rendition.destroy();
+
+    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+      flow: this.selectedFlow,
+      manager: 'default',
+      width: '100%',
+      height: '100%',
+      spread: this.selectedSpread === 'single' ? 'none' : this.selectedSpread,
+      allowScriptedContent: true,
+    });
+
+    this.rendition.themes.override('font-size', `${this.fontSize}%`);
+    this.applyCombinedTheme();
+    this.setupKeyListener();
+    this.setupTouchListeners();
     this.rendition.display(cfi || undefined);
     this.updateViewerSetting();
   }
@@ -251,6 +287,7 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
     if (this.selectedFontType) epubSettings.font = this.selectedFontType;
     if (this.fontSize) epubSettings.fontSize = this.fontSize;
     if (this.selectedFlow) epubSettings.flow = this.selectedFlow;
+    if (this.selectedSpread === 'single' || this.selectedSpread === 'double') epubSettings.spread = this.selectedSpread;
     if (this.lineHeight) epubSettings.lineHeight = this.lineHeight;
     if (this.letterSpacing) epubSettings.letterSpacing = this.letterSpacing;
 
@@ -278,6 +315,56 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       this.rendition.on('keyup', this.keyListener);
     }
     document.addEventListener('keyup', this.keyListener);
+  }
+
+  private setupTouchListeners(): void {
+    if (!this.isMobileDevice() || this.selectedFlow === 'scrolled') return;
+
+    const container = this.epubContainer.nativeElement;
+    container.removeEventListener('touchstart', this.onTouchStart.bind(this));
+    container.removeEventListener('touchend', this.onTouchEnd.bind(this));
+
+    container.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
+    container.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+
+    setTimeout(() => {
+      const iframe = this.epubContainer.nativeElement.querySelector('iframe');
+      if (iframe && iframe.contentDocument) {
+        const iframeDoc = iframe.contentDocument;
+        iframeDoc.addEventListener('touchstart', this.onTouchStart.bind(this), {passive: true});
+        iframeDoc.addEventListener('touchend', this.onTouchEnd.bind(this), {passive: true});
+      }
+    }, 500);
+  }
+
+  onTouchStart(event: TouchEvent): void {
+    if (this.selectedFlow === 'scrolled') return;
+
+    this.touchStartX = event.touches[0].clientX;
+    this.touchStartY = event.touches[0].clientY;
+  }
+
+  onTouchEnd(event: TouchEvent): void {
+    if (this.selectedFlow === 'scrolled') return;
+
+    const touchEndX = event.changedTouches[0].clientX;
+    const touchEndY = event.changedTouches[0].clientY;
+
+    const deltaX = touchEndX - this.touchStartX;
+    const deltaY = Math.abs(touchEndY - this.touchStartY);
+
+    if (Math.abs(deltaX) > this.minSwipeDistance && deltaY < this.maxVerticalDistance) {
+      event.preventDefault();
+      if (deltaX > 0) {
+        this.prevPage();
+      } else {
+        this.nextPage();
+      }
+    }
+  }
+
+  public isMobileDevice(): boolean {
+    return window.innerWidth <= 768;
   }
 
   prevPage(): void {
@@ -313,22 +400,37 @@ export class EpubViewerComponent implements OnInit, OnDestroy {
       const currentIndex = location.start.index;
       const totalSpineItems = this.book.spine.items.length;
       let percentage: number;
-      if (this.locationsReady) {
+
+      if (this.locationsReady && this.book.locations.total > 0) {
         percentage = this.book.locations.percentageFromCfi(cfi);
         this.exactProgress = Math.round(percentage * 1000) / 10;
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
       } else {
         if (totalSpineItems > 0) {
-          percentage = currentIndex / totalSpineItems;
+          percentage = (currentIndex + 1) / totalSpineItems;
         } else {
           percentage = 0;
         }
         this.approxProgress = Math.round(percentage * 1000) / 10;
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
+
       this.currentChapter = getChapter(this.book, location)?.label;
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
     });
-    this.book.ready.then(() => this.book.locations.generate(10000)).then(() => {
+
+    this.book.ready.then(() => {
+      return this.book.locations.generate(1600);
+    }).then(() => {
       this.locationsReady = true;
+      if (this.rendition.currentLocation()) {
+        const location = this.rendition.currentLocation();
+        const cfi = location.end.cfi;
+        const percentage = this.book.locations.percentageFromCfi(cfi);
+        this.progressPercentage = Math.round(percentage * 1000) / 10;
+      }
+    }).catch(() => {
+      this.locationsReady = false;
     });
   }
 

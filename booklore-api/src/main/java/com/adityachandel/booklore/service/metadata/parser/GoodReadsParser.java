@@ -53,7 +53,7 @@ public class GoodReadsParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        String isbn = fetchMetadataRequest.getIsbn();
+        String isbn = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbn != null && !isbn.isBlank()) {
             log.info("Goodreads Query URL (ISBN): " + BASE_ISBN_URL + "{}", isbn);
             Document doc = fetchDoc(BASE_ISBN_URL + isbn);
@@ -224,7 +224,8 @@ public class GoodReadsParser implements BookParser {
     private void extractBookDetails(JSONObject apolloStateJson, LinkedHashSet<String> keySet, BookMetadata.BookMetadataBuilder builder) {
         JSONObject bookJson = getValidBookJson(apolloStateJson, keySet, "Book:kca:");
         if (bookJson != null) {
-            builder.title(handleStringNull(bookJson.optString("title")))
+            builder.title(handleStringNull(extractTitleFromFull(bookJson.optString("title"))))
+                    .subtitle(handleStringNull(extractSubtitleFromFull(bookJson.optString("title"))))
                     .description(handleStringNull(bookJson.optString("description")))
                     .thumbnailUrl(handleStringNull(bookJson.optString("imageUrl")))
                     .categories(extractGenres(bookJson));
@@ -263,10 +264,20 @@ public class GoodReadsParser implements BookParser {
                     builder.goodreadsRating(parseDouble(statsJson.optString("averageRating")))
                             .goodreadsReviewCount(parseInteger(statsJson.optString("ratingsCount")));
                 }
-
-                JSONObject detailsJson = workJson.optJSONObject("details");
             }
         }
+    }
+
+    private String extractTitleFromFull(String fullTitle) {
+        if (fullTitle == null) return null;
+        String[] parts = fullTitle.split(":", 2);
+        return parts[0].trim();
+    }
+
+    private String extractSubtitleFromFull(String fullTitle) {
+        if (fullTitle == null) return null;
+        String[] parts = fullTitle.split(":", 2);
+        return parts.length > 1 ? parts[1].trim() : null;
     }
 
     private Double parseDouble(String value) {

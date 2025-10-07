@@ -21,18 +21,19 @@ export class CbxReaderPreferencesComponent {
   private readonly readerPreferencesService = inject(ReaderPreferencesService);
 
   readonly cbxSpreads = [
-    { name: 'Even', key: 'EVEN' },
-    { name: 'Odd', key: 'ODD' }
+    {name: 'Even', key: 'EVEN'},
+    {name: 'Odd', key: 'ODD'}
   ];
 
   readonly cbxViewModes = [
-    { name: 'Single Page', key: 'SINGLE_PAGE' },
-    { name: 'Two Page', key: 'TWO_PAGE' },
+    {name: 'Single Page', key: 'SINGLE_PAGE'},
+    {name: 'Two Page', key: 'TWO_PAGE'},
   ];
 
   get selectedCbxSpread(): CbxPageSpread {
     return this.userSettings.cbxReaderSetting.pageSpread;
   }
+
   set selectedCbxSpread(value: CbxPageSpread) {
     this.userSettings.cbxReaderSetting.pageSpread = value;
     this.readerPreferencesService.updatePreference(['cbxReaderSetting', 'pageSpread'], value);
@@ -41,6 +42,7 @@ export class CbxReaderPreferencesComponent {
   get selectedCbxViewMode(): CbxPageViewMode {
     return this.userSettings.cbxReaderSetting.pageViewMode;
   }
+
   set selectedCbxViewMode(value: CbxPageViewMode) {
     this.userSettings.cbxReaderSetting.pageViewMode = value;
     this.readerPreferencesService.updatePreference(['cbxReaderSetting', 'pageViewMode'], value);

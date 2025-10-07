@@ -1,0 +1,235 @@
+.main-container {
+  width: 100%;
+  padding: 1rem;
+  height: calc(100dvh - 10.5rem);
+  overflow-y: auto;
+  border-width: 1px;
+  border-radius: 0.5rem;
+
+  @media (min-width: 768px) {
+    height: calc(100dvh - 11.65rem);
+  }
+}
+
+.enclosing-container {
+  border-color: var(--p-content-border-color);
+  background: var(--p-content-background);
+}
+
+.settings-header {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.settings-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--p-text-color);
+  margin: 0 0 0.75rem 0;
+
+  .pi {
+    color: var(--p-primary-color);
+    font-size: 1.25rem;
+  }
+}
+
+.settings-description {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.settings-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.preferences-section {
+  @media (min-width: 768px) {
+    padding: 0 1rem;
+  }
+}
+
+.section-header {
+  margin-bottom: 1rem;
+
+  .section-description {
+    color: var(--p-text-muted-color);
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin: 0.5rem 0 0 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+
+    .pi {
+      color: var(--p-primary-color);
+      margin-top: 0.125rem;
+      flex-shrink: 0;
+    }
+  }
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  margin: 0 0 0.5rem 0;
+
+  .pi {
+    color: var(--p-primary-color);
+  }
+}
+
+.settings-card {
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 8px;
+  background: var(--p-content-background);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  app-metadata-advanced-fetch-options {
+    display: block;
+    width: 100%;
+
+    ::ng-deep {
+      > div,
+      > .container,
+      > .main-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+      }
+    }
+  }
+}
+
+:host ::ng-deep {
+  .p-accordion {
+    .p-accordion-panel {
+      margin-bottom: 0.5rem;
+      border: 1px solid var(--p-content-border-color);
+      border-radius: 6px;
+      overflow: hidden;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .p-accordion-header {
+      background: var(--p-surface-100);
+      border: none;
+      border-radius: 0;
+
+      &:hover {
+        background: var(--p-surface-200);
+      }
+
+      .p-accordion-header-content {
+        width: 100%;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+      }
+    }
+
+    .p-accordion-content {
+      border: none;
+      border-top: 1px solid var(--p-content-border-color);
+
+      .p-accordion-content-content {
+        padding: 0;
+      }
+    }
+  }
+}
+
+.accordion-header-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}
+
+.library-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .library-icon {
+    font-size: 1.2rem;
+    color: var(--p-primary-color);
+  }
+
+  .library-name {
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .dot-separator {
+    color: var(--p-text-muted-color);
+    font-weight: bold;
+    font-size: 0.875rem;
+    margin: 0 0.25rem;
+    opacity: 0.6;
+  }
+
+  .override-indicator,
+  .default-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    &.custom {
+      color: var(--p-green-500);
+    }
+
+    &.default {
+      color: var(--p-blue-500);
+    }
+
+    i {
+      font-size: 0.875rem;
+    }
+  }
+}
+
+.accordion-content-wrapper {
+  padding: 1.5rem;
+
+  app-metadata-advanced-fetch-options {
+    display: block;
+    width: 100%;
+
+    ::ng-deep {
+      > div,
+      > .container,
+      > .main-container {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+      }
+    }
+  }
+}

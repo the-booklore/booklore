@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.AppSettingsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,10 +37,20 @@ public class SettingPersistenceHelper {
     }
 
     public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, Class<T> clazz, T defaultValue, boolean persistDefault) {
+        return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
+                json -> objectMapper.readValue(json, clazz));
+    }
+
+    public <T> T getJsonSetting(Map<String, String> settingsMap, AppSettingKey key, TypeReference<T> typeReference, T defaultValue, boolean persistDefault) {
+        return getJsonSettingInternal(settingsMap, key, defaultValue, persistDefault,
+                json -> objectMapper.readValue(json, typeReference));
+    }
+
+    private <T> T getJsonSettingInternal(Map<String, String> settingsMap, AppSettingKey key, T defaultValue, boolean persistDefault, JsonDeserializer<T> deserializer) {
         String json = settingsMap.get(key.toString());
         if (json != null && !json.isBlank()) {
             try {
-                return objectMapper.readValue(json, clazz);
+                return deserializer.deserialize(json);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException("Failed to parse " + key, e);
             }
@@ -52,6 +63,11 @@ public class SettingPersistenceHelper {
             }
         }
         return defaultValue;
+    }
+
+    @FunctionalInterface
+    private interface JsonDeserializer<T> {
+        T deserialize(String json) throws JsonProcessingException;
     }
 
     public String serializeSettingValue(AppSettingKey key, Object val) throws JsonProcessingException {
@@ -94,62 +110,83 @@ public class SettingPersistenceHelper {
     }
 
     MetadataRefreshOptions getDefaultMetadataRefreshOptions() {
-        MetadataRefreshOptions.FieldProvider titleProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider subtitleProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider descriptionProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider authorsProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider publisherProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider publishedDateProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider seriesNameProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider seriesNumberProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider seriesTotalProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider isbn13Providers =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider isbn10Providers =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider languageProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider categoriesProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
-        MetadataRefreshOptions.FieldProvider coverProviders =
-                new MetadataRefreshOptions.FieldProvider(null, MetadataProvider.Google, MetadataProvider.Amazon, MetadataProvider.GoodReads);
+        MetadataRefreshOptions.FieldProvider amazonProvider = MetadataRefreshOptions.FieldProvider.builder()
+                .p1(MetadataProvider.Amazon)
+                .build();
 
-        MetadataRefreshOptions.FieldOptions fieldOptions = new MetadataRefreshOptions.FieldOptions(
-                titleProviders,
-                subtitleProviders,
-                descriptionProviders,
-                authorsProviders,
-                publisherProviders,
-                publishedDateProviders,
-                seriesNameProviders,
-                seriesNumberProviders,
-                seriesTotalProviders,
-                isbn13Providers,
-                isbn10Providers,
-                languageProviders,
-                categoriesProviders,
-                coverProviders
-        );
+        MetadataRefreshOptions.FieldProvider nullProvider = MetadataRefreshOptions.FieldProvider.builder()
+                .build();
 
-        return new MetadataRefreshOptions(
-                MetadataProvider.GoodReads,
-                MetadataProvider.Amazon,
-                MetadataProvider.Google,
-                null,
-                false,
-                true,
-                false,
-                fieldOptions
-        );
+        MetadataRefreshOptions.FieldOptions fieldOptions = MetadataRefreshOptions.FieldOptions.builder()
+                .title(amazonProvider)
+                .subtitle(amazonProvider)
+                .description(amazonProvider)
+                .authors(amazonProvider)
+                .publisher(amazonProvider)
+                .publishedDate(amazonProvider)
+                .seriesName(amazonProvider)
+                .seriesNumber(amazonProvider)
+                .seriesTotal(amazonProvider)
+                .isbn13(amazonProvider)
+                .isbn10(amazonProvider)
+                .language(amazonProvider)
+                .categories(amazonProvider)
+                .cover(amazonProvider)
+                .pageCount(amazonProvider)
+                .asin(nullProvider)
+                .goodreadsId(nullProvider)
+                .comicvineId(nullProvider)
+                .hardcoverId(nullProvider)
+                .googleId(nullProvider)
+                .amazonRating(nullProvider)
+                .amazonReviewCount(nullProvider)
+                .goodreadsRating(nullProvider)
+                .goodreadsReviewCount(nullProvider)
+                .hardcoverRating(nullProvider)
+                .hardcoverReviewCount(nullProvider)
+                .moods(nullProvider)
+                .tags(nullProvider)
+                .build();
+
+        MetadataRefreshOptions.EnabledFields enabledFields = MetadataRefreshOptions.EnabledFields.builder()
+                .title(true)
+                .subtitle(true)
+                .description(true)
+                .authors(true)
+                .publisher(true)
+                .publishedDate(true)
+                .seriesName(true)
+                .seriesNumber(true)
+                .seriesTotal(true)
+                .isbn13(true)
+                .isbn10(true)
+                .language(true)
+                .categories(true)
+                .cover(true)
+                .pageCount(true)
+                .asin(true)
+                .goodreadsId(true)
+                .comicvineId(true)
+                .hardcoverId(true)
+                .googleId(true)
+                .amazonRating(true)
+                .amazonReviewCount(true)
+                .goodreadsRating(true)
+                .goodreadsReviewCount(true)
+                .hardcoverRating(true)
+                .hardcoverReviewCount(true)
+                .moods(true)
+                .tags(true)
+                .build();
+
+        return MetadataRefreshOptions.builder()
+                .libraryId(null)
+                .refreshCovers(false)
+                .mergeCategories(true)
+                .reviewBeforeApply(false)
+                .fieldOptions(fieldOptions)
+                .enabledFields(enabledFields)
+                .build();
     }
 
     public MetadataMatchWeights getDefaultMetadataMatchWeights() {
@@ -183,14 +220,15 @@ public class SettingPersistenceHelper {
     public MetadataPersistenceSettings getDefaultMetadataPersistenceSettings() {
         return MetadataPersistenceSettings.builder()
                 .saveToOriginalFile(false)
-                .backupMetadata(false)
-                .backupCover(false)
+                .convertCbrCb7ToCbz(false)
+                .moveFilesToLibraryPattern(false)
                 .build();
     }
 
     public MetadataPublicReviewsSettings getDefaultMetadataPublicReviewsSettings() {
         return MetadataPublicReviewsSettings.builder()
                 .downloadEnabled(true)
+                .autoDownloadEnabled(false)
                 .providers(Set.of(
                         MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
                                 .provider(MetadataProvider.Amazon)

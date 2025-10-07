@@ -28,6 +28,7 @@ export interface Book extends FileInfo {
   id: number;
   bookType: BookType;
   libraryId: number;
+  libraryName: string;
   metadata?: BookMetadata;
   shelves?: Shelf[];
   lastReadTime?: string;
@@ -95,6 +96,8 @@ export interface BookMetadata {
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
+  moods?: string[];
+  tags?: string[];
   provider?: string;
   providerBookId?: string;
   thumbnailUrl?: string | null;
@@ -127,6 +130,8 @@ export interface BookMetadata {
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
+  moodsLocked?: boolean;
+  tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
 
@@ -160,6 +165,8 @@ export interface MetadataClearFlags {
   personalRating?: boolean;
   authors?: boolean;
   categories?: boolean;
+  moods?: boolean;
+  tags?: boolean;
   cover?: boolean;
 }
 
@@ -180,6 +187,7 @@ export interface EpubViewerSetting {
   flow: string;
   lineHeight: number;
   letterSpacing: number;
+  spread: string;
 }
 
 export interface CbxViewerSetting {

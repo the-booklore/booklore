@@ -47,6 +47,8 @@ public class MetadataChangeDetector {
         compare(changes, "hardcoverReviewCount", clear.isHardcoverReviewCount(), newMeta.getHardcoverReviewCount(), existingMeta.getHardcoverReviewCount(), () -> !isTrue(existingMeta.getHardcoverReviewCountLocked()), newMeta.getHardcoverReviewCountLocked(), existingMeta.getHardcoverReviewCountLocked());
         compare(changes, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()), newMeta.getAuthorsLocked(), existingMeta.getAuthorsLocked());
         compare(changes, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()), newMeta.getCategoriesLocked(), existingMeta.getCategoriesLocked());
+        compare(changes, "moods", clear.isMoods(), newMeta.getMoods(), toNameSet(existingMeta.getMoods()), () -> !isTrue(existingMeta.getMoodsLocked()), newMeta.getMoodsLocked(), existingMeta.getMoodsLocked());
+        compare(changes, "tags", clear.isTags(), newMeta.getTags(), toNameSet(existingMeta.getTags()), () -> !isTrue(existingMeta.getTagsLocked()), newMeta.getTagsLocked(), existingMeta.getTagsLocked());
 
         Boolean coverLockedNew = newMeta.getCoverLocked();
         Boolean coverLockedExisting = existingMeta.getCoverLocked();
@@ -90,6 +92,8 @@ public class MetadataChangeDetector {
         compareValue(diffs, "hardcoverReviewCount", clear.isHardcoverReviewCount(), newMeta.getHardcoverReviewCount(), existingMeta.getHardcoverReviewCount(), () -> !isTrue(existingMeta.getHardcoverReviewCountLocked()));
         compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));
         compareValue(diffs, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()));
+        compareValue(diffs, "moods", clear.isMoods(), newMeta.getMoods(), toNameSet(existingMeta.getMoods()), () -> !isTrue(existingMeta.getMoodsLocked()));
+        compareValue(diffs, "tags", clear.isTags(), newMeta.getTags(), toNameSet(existingMeta.getTags()), () -> !isTrue(existingMeta.getTagsLocked()));
         return !diffs.isEmpty();
     }
 
@@ -121,6 +125,8 @@ public class MetadataChangeDetector {
         if (differsLock(newMeta.getCoverLocked(), existingMeta.getCoverLocked())) return true;
         if (differsLock(newMeta.getAuthorsLocked(), existingMeta.getAuthorsLocked())) return true;
         if (differsLock(newMeta.getCategoriesLocked(), existingMeta.getCategoriesLocked())) return true;
+        if (differsLock(newMeta.getMoodsLocked(), existingMeta.getMoodsLocked())) return true;
+        if (differsLock(newMeta.getTagsLocked(), existingMeta.getTagsLocked())) return true;
         if (differsLock(newMeta.getReviewsLocked(), existingMeta.getReviewsLocked())) return true;
         return false;
     }

@@ -20,8 +20,8 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
 
   metadataPersistence: MetadataPersistenceSettings = {
     saveToOriginalFile: false,
-    backupMetadata: true,
-    backupCover: true
+    convertCbrCb7ToCbz: false,
+    moveFilesToLibraryPattern: false
   };
 
   private readonly appSettingsService = inject(AppSettingsService);
@@ -62,8 +62,7 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
       this.metadataPersistence.saveToOriginalFile = !this.metadataPersistence.saveToOriginalFile;
 
       if (!this.metadataPersistence.saveToOriginalFile) {
-        this.metadataPersistence.backupMetadata = false;
-        this.metadataPersistence.backupCover = false;
+        this.metadataPersistence.convertCbrCb7ToCbz = false;
       }
     } else {
       this.metadataPersistence[key] = !this.metadataPersistence[key];

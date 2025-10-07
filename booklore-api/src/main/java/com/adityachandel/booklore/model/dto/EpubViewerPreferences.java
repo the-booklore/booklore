@@ -10,6 +10,7 @@ public class EpubViewerPreferences {
     private String theme;
     private String font;
     private String flow;
+    private String spread;
     private Integer fontSize;
     private Float letterSpacing;
     private Float lineHeight;

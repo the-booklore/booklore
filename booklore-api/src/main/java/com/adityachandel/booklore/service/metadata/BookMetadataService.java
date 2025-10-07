@@ -11,8 +11,10 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.BulkMetadataUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.request.ToggleAllLockRequest;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.Lock;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.model.websocket.Topic;
@@ -25,11 +27,11 @@ import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestore;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestoreFactory;
+import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
 import com.adityachandel.booklore.util.FileService;
+import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -37,6 +39,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
@@ -66,7 +69,7 @@ public class BookMetadataService {
     private final BookFileProcessorRegistry processorRegistry;
     private final BookQueryService bookQueryService;
     private final Map<MetadataProvider, BookParser> parserMap;
-    private final MetadataBackupRestoreFactory metadataBackupRestoreFactory;
+    private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
 
@@ -164,7 +167,10 @@ public class BookMetadataService {
     private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
-        if (appSettingService.getAppSettings().getMetadataPersistenceSettings().isSaveToOriginalFile()) {
+        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
+        boolean saveToOriginalFile = settings.isSaveToOriginalFile();
+        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
+        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
             metadataWriterFactory.getWriter(bookEntity.getBookType())
                     .ifPresent(writer -> writerAction.accept(writer, bookEntity));
         }
@@ -219,16 +225,14 @@ public class BookMetadataService {
         log.info("{}Successfully regenerated cover for book ID {} ({})", progress, book.getId(), title);
     }
 
-    public BookMetadata restoreMetadataFromBackup(Long bookId) throws IOException {
+    public BookMetadata getComicInfoMetadata(long bookId) {
+        log.info("Extracting ComicInfo metadata for book ID: {}", bookId);
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        metadataBackupRestoreFactory.getService(bookEntity.getBookType()).restoreEmbeddedMetadata(bookEntity);
-        bookRepository.saveAndFlush(bookEntity);
-        return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
-    }
-
-    public BookMetadata getBackedUpMetadata(Long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        return metadataBackupRestoreFactory.getService(bookEntity.getBookType()).getBackedUpMetadata(bookId);
+        if (bookEntity.getBookType() != BookFileType.CBX) {
+            log.info("Unsupported operation for file type: {}", bookEntity.getBookType().name());
+            return null;
+        }
+        return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));
     }
 
     @Transactional
@@ -246,6 +250,8 @@ public class BookMetadataService {
                     .seriesTotal(request.getSeriesTotal())
                     .publishedDate(request.getPublishedDate())
                     .categories(request.getGenres())
+                    .moods(request.getMoods())
+                    .tags(request.getTags())
                     .build();
 
             MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
@@ -260,17 +266,6 @@ public class BookMetadataService {
                 .map(BookEntity::getMetadata)
                 .map(m -> bookMetadataMapper.toBookMetadata(m, false))
                 .toList();
-    }
-
-    public Resource getBackupCoverForBook(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        MetadataBackupRestore backupRestore = metadataBackupRestoreFactory.getService(bookEntity.getBookType());
-        try {
-            return backupRestore.getBackupCover(bookId);
-        } catch (UnsupportedOperationException e) {
-            log.info("Cover backup not supported for file type: {}", bookEntity.getBookType());
-            return null;
-        }
     }
 }
 

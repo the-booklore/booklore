@@ -113,6 +113,7 @@ public class BookLoreUser {
             private Float letterSpacing;
             private Float lineHeight;
             private String flow;
+            private String spread;
         }
 
         @Data

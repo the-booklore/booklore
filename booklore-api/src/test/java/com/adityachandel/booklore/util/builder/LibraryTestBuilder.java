@@ -2,23 +2,20 @@ package com.adityachandel.booklore.util.builder;
 
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.BookMapperImpl;
+import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
+import com.adityachandel.booklore.model.enums.*;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
-import org.jetbrains.annotations.NotNull;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.nio.file.Path;
 import java.security.MessageDigest;
@@ -30,8 +27,8 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 
 /**
  * Test builder for creating Library-related test objects.
@@ -74,7 +71,7 @@ public class LibraryTestBuilder {
         lenient().when(bookFileProcessorMock.processFile(any(LibraryFile.class)))
                 .then(invocation -> {
                     LibraryFile libraryFile = invocation.getArgument(0);
-                    return processFile(libraryFile);
+                    return processFileResult(libraryFile);
                 });
         lenient().when(bookRepositoryMock.getReferenceById(anyLong()))
                 .thenAnswer(invocation -> {
@@ -275,7 +272,15 @@ public class LibraryTestBuilder {
         return hexString.toString();
     }
 
-    private Book processFile(LibraryFile libraryFile) {
+    private FileProcessResult processFileResult(LibraryFile libraryFile) {
+        var book = processBook(libraryFile);
+        return FileProcessResult.builder()
+                .book(book)
+                .status(FileProcessStatus.NEW)
+                .build();
+    }
+
+    private Book processBook(LibraryFile libraryFile) {
         var hash = computeFileHash(libraryFile.getFullPath());
 
         long id = libraryFiles.indexOf(libraryFile) + 1L;

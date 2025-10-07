@@ -53,7 +53,18 @@
         </td>
 
         @for (col of visibleColumns; track col.field) {
-          @if (col.field === 'amazonRating' || col.field === 'goodreadsRating' || col.field === 'hardcoverRating') {
+          @if (col.field === 'readStatus') {
+            <td class="text-center min-w-[4rem] max-w-[4rem]">
+              @if (shouldShowStatusIcon(book.readStatus)) {
+                <div class="read-status-indicator"
+                     [ngClass]="getReadStatusClass(book.readStatus)"
+                     [pTooltip]="'Status: ' + getReadStatusTooltip(book.readStatus)"
+                     tooltipPosition="top">
+                  <i [class]="getReadStatusIcon(book.readStatus)"></i>
+                </div>
+              }
+            </td>
+          } @else if (col.field === 'amazonRating' || col.field === 'goodreadsRating' || col.field === 'hardcoverRating') {
             <td class="min-w-[10rem] max-w-[10rem] overflow-hidden truncate">
               <span class="flex items-center gap-1">
                 <p-rating

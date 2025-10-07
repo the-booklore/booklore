@@ -66,6 +66,14 @@ export class SideBarFilter implements BookFilter {
                 return mode === 'and'
                   ? filterValues.every(val => book.metadata?.categories?.includes(val))
                   : filterValues.some(val => book.metadata?.categories?.includes(val));
+              case 'mood':
+                return mode === 'and'
+                  ? filterValues.every(val => book.metadata?.moods?.includes(val))
+                  : filterValues.some(val => book.metadata?.moods?.includes(val));
+              case 'tag':
+                return mode === 'and'
+                  ? filterValues.every(val => book.metadata?.tags?.includes(val))
+                  : filterValues.some(val => book.metadata?.tags?.includes(val));
               case 'publisher':
                 return mode === 'and'
                   ? filterValues.every(val => book.metadata?.publisher === val)

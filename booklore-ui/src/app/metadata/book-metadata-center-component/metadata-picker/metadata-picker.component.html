@@ -22,10 +22,10 @@
       <div class="form-row">
         <label class="label"></label>
         <div class="input-container">
-          @if (!book.metadata!['coverLocked']) {
+          @if (!metadataForm.get('coverLocked')?.value) {
             <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success"></p-button>
           }
-          @if (book.metadata!['coverLocked']) {
+          @if (metadataForm.get('coverLocked')?.value) {
             <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="warn"></p-button>
           }
           <p-image
@@ -65,13 +65,14 @@
         <div class="form-row">
           <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
           <div class="input-container">
-            @if (!book.metadata![field.lockedKey]) {
+            @if (!metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
             }
-            @if (book.metadata![field.lockedKey]) {
+            @if (metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
-            <input pSize="small" fluid pInputText id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"/>
+            <input pSize="small" fluid pInputText id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"
+              [disabled]="metadataForm.get(field.lockedKey)?.value"/>
             <p-button
               [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
               [outlined]="true"
@@ -93,10 +94,10 @@
         <div class="form-row">
           <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
           <div class="input-container">
-            @if (!book.metadata![field.lockedKey]) {
+            @if (!metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
             }
-            @if (book.metadata![field.lockedKey]) {
+            @if (metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
             <div class="w-full px-4">
@@ -110,7 +111,8 @@
                 [suggestions]="getFiltered(field.controlName)"
                 (completeMethod)="filterItems($event, field.controlName)"
                 (onKeyUp)="onAutoCompleteKeyUp(field.controlName, $event)"
-                (onSelect)="onAutoCompleteSelect(field.controlName, $event)">
+                (onSelect)="onAutoCompleteSelect(field.controlName, $event)"
+                [disabled]="metadataForm.get(field.lockedKey)?.value">
               </p-autoComplete>
             </div>
             <p-button
@@ -142,13 +144,14 @@
         <div class="form-row">
           <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
           <div class="input-container">
-            @if (!book.metadata![field.lockedKey]) {
+            @if (!metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
             }
-            @if (book.metadata![field.lockedKey]) {
+            @if (metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
-            <textarea rows="3" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"></textarea>
+            <textarea rows="3" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"
+              [disabled]="metadataForm.get(field.lockedKey)?.value"></textarea>
             <p-button
               [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
               [outlined]="true"
@@ -170,13 +173,14 @@
         <div class="form-row">
           <label for="{{field.controlName}}" class="label">{{ field.label }}</label>
           <div class="input-container">
-            @if (!book.metadata![field.lockedKey]) {
+            @if (!metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="success"></p-button>
             }
-            @if (book.metadata![field.lockedKey]) {
+            @if (metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
-            <input pInputText pSize="small" id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"/>
+            <input pInputText pSize="small" id="{{field.controlName}}" formControlName="{{field.controlName}}" class="input"
+              [disabled]="metadataForm.get(field.lockedKey)?.value"/>
             <p-button
               [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
               [outlined]="true"

@@ -39,6 +39,8 @@ import {AppSettingKey} from '../../core/model/app-settings.model';
 export class OpdsSettingsV2 implements OnInit, OnDestroy {
 
   opdsEndpoint = `${API_CONFIG.BASE_URL}/api/v2/opds/catalog`;
+  opdsV1Endpoint = `${API_CONFIG.BASE_URL}/api/v2/opds/catalog`;
+  opdsV2Endpoint = `${API_CONFIG.BASE_URL}/api/v2/opds`;
   opdsEnabled = false;
 
   private opdsService = inject(OpdsV2Service);
@@ -157,6 +159,18 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
     });
   }
 
+  copyV1Endpoint(): void {
+    navigator.clipboard.writeText(this.opdsV1Endpoint).then(() => {
+      this.showMessage('success', 'Copied', 'OPDS v1 endpoint copied to clipboard');
+    });
+  }
+
+  copyV2Endpoint(): void {
+    navigator.clipboard.writeText(this.opdsV2Endpoint).then(() => {
+      this.showMessage('success', 'Copied', 'OPDS v2 endpoint copied to clipboard');
+    });
+  }
+
   toggleOpdsServer(): void {
     this.saveSetting(AppSettingKey.OPDS_SERVER_ENABLED, this.opdsEnabled);
     if (this.opdsEnabled) {
@@ -187,6 +201,10 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
 
   private showMessage(severity: string, summary: string, detail: string): void {
     this.messageService.add({severity, summary, detail});
+  }
+
+  navigateToOpdsDoc(): void {
+    window.open('https://booklore-app.github.io/booklore-docs/docs/integration/opds', '_blank');
   }
 
   ngOnDestroy(): void {

@@ -23,7 +23,7 @@ import {CreateEmailProviderDialogComponent} from '../create-email-provider-dialo
     TableModule,
     Tooltip,
     FormsModule
-],
+  ],
   templateUrl: './email-provider.component.html',
   styleUrl: './email-provider.component.scss'
 })
@@ -117,7 +117,7 @@ export class EmailProviderComponent implements OnInit {
       header: 'Create Email Provider',
       modal: true,
       closable: true,
-      style: { position: 'absolute', top: '15%' },
+      style: {position: 'absolute', top: '15%'},
     });
     this.ref.onClose.subscribe((result) => {
       if (result) {
@@ -135,5 +135,9 @@ export class EmailProviderComponent implements OnInit {
         detail: `${provider.name} is now the default email provider.`
       });
     });
+  }
+
+  navigateToEmailDocumentation() {
+    window.open('https://booklore-app.github.io/booklore-docs/docs/email-setup', '_blank');
   }
 }

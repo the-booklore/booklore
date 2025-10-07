@@ -23,7 +23,7 @@ import {MetadataBatchProgressNotification} from '../../../core/model/metadata-ba
 import {UnifiedNotificationBoxComponent} from '../../../core/component/unified-notification-popover-component/unified-notification-popover-component';
 import {BookdropFileService} from '../../../bookdrop/bookdrop-file.service';
 import {DialogLauncherService} from '../../../dialog-launcher.service';
-import {TaskEventService} from '../../../shared/websocket/task-event.service';
+import {DuplicateFileService} from '../../../shared/websocket/duplicate-file.service';
 
 @Component({
   selector: 'app-topbar',
@@ -62,12 +62,14 @@ export class AppTopBarComponent implements OnDestroy {
   showPulse = false;
   hasAnyTasks = false;
   hasPendingBookdropFiles = false;
+  hasDuplicateFiles = false;
 
   private eventTimer: any;
   private destroy$ = new Subject<void>();
 
   private latestTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
   private latestHasPendingFiles = false;
+  private latestHasDuplicateFiles = false;
 
   constructor(
     public layoutService: LayoutService,
@@ -79,11 +81,11 @@ export class AppTopBarComponent implements OnDestroy {
     private metadataProgressService: MetadataProgressService,
     private bookdropFileService: BookdropFileService,
     private dialogLauncher: DialogLauncherService,
-    private taskEventService: TaskEventService
+    private duplicateFileService: DuplicateFileService
   ) {
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
-    this.subscribeToTaskEvents();
+    this.subscribeToDuplicateFiles();
 
     this.metadataProgressService.activeTasks$
       .pipe(takeUntil(this.destroy$))
@@ -101,6 +103,15 @@ export class AppTopBarComponent implements OnDestroy {
         this.hasPendingBookdropFiles = hasPending;
         this.updateCompletedTaskCount();
         this.updateTaskVisibilityWithBookdrop();
+      });
+
+    this.duplicateFileService.duplicateFiles$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((duplicateFiles) => {
+        this.latestHasDuplicateFiles = duplicateFiles && duplicateFiles.length > 0;
+        this.hasDuplicateFiles = this.latestHasDuplicateFiles;
+        this.updateCompletedTaskCount();
+        this.updateTaskVisibilityWithDuplicates();
       });
   }
 
@@ -137,7 +148,11 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   navigateToBookdrop() {
-    this.router.navigate(['/bookdrop'], {queryParams: {reload: Date.now()}});
+    this.router.navigate(['/bookdrop']);
+  }
+
+  navigateToStats() {
+    this.router.navigate(['/stats']);
   }
 
   logout() {
@@ -160,11 +175,11 @@ export class AppTopBarComponent implements OnDestroy {
       });
   }
 
-  private subscribeToTaskEvents() {
-    this.taskEventService.tasks$
+  private subscribeToDuplicateFiles() {
+    this.duplicateFileService.duplicateFiles$
       .pipe(takeUntil(this.destroy$))
-      .subscribe((tasks) => {
-        if (tasks.length > 0) {
+      .subscribe((duplicateFiles) => {
+        if (duplicateFiles && duplicateFiles.length > 0) {
           this.triggerPulseEffect();
         }
       });
@@ -179,9 +194,10 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   private updateCompletedTaskCount() {
-    const completedMetadataTasks = Object.values(this.latestTasks).filter(task => task.status === 'COMPLETED').length;
+    const completedMetadataTasks = Object.values(this.latestTasks).length;
     const bookdropFileTaskCount = this.latestHasPendingFiles ? 1 : 0;
-    this.completedTaskCount = completedMetadataTasks + bookdropFileTaskCount;
+    const duplicateFileTaskCount = this.latestHasDuplicateFiles ? 1 : 0;
+    this.completedTaskCount = completedMetadataTasks + bookdropFileTaskCount + duplicateFileTaskCount;
   }
 
   private updateTaskVisibility(tasks: { [taskId: string]: MetadataBatchProgressNotification }) {
@@ -192,6 +208,11 @@ export class AppTopBarComponent implements OnDestroy {
 
   private updateTaskVisibilityWithBookdrop() {
     this.hasActiveOrCompletedTasks = this.hasActiveOrCompletedTasks || this.hasPendingBookdropFiles;
+    this.updateTaskVisibilityWithDuplicates();
+  }
+
+  private updateTaskVisibilityWithDuplicates() {
+    this.hasActiveOrCompletedTasks = this.hasActiveOrCompletedTasks || this.hasDuplicateFiles;
   }
 
   get iconClass(): string {
@@ -203,8 +224,8 @@ export class AppTopBarComponent implements OnDestroy {
 
   get iconColor(): string {
     if (this.progressHighlight) return 'yellow';
-    if (this.showPulse) return 'red';
-    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles) return 'orange';
+    if (this.showPulse) return 'orange';
+    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles) return 'yellowgreen';
     return 'inherit';
   }
 
@@ -214,7 +235,7 @@ export class AppTopBarComponent implements OnDestroy {
 
   get shouldShowNotificationBadge(): boolean {
     return (
-      (this.completedTaskCount > 0 || this.hasPendingBookdropFiles) &&
+      (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles) &&
       !this.progressHighlight &&
       !this.showPulse
     );

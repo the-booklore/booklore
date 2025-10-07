@@ -60,6 +60,12 @@ public class BookController {
         return ResponseEntity.ok(bookService.getBooksByIds(ids, withDescription));
     }
 
+    @GetMapping("/{bookId}/cbx/metadata/comicinfo")
+    public ResponseEntity<?> getComicInfoMetadata(@PathVariable long bookId) {
+        return ResponseEntity.ok(bookMetadataService.getComicInfoMetadata(bookId));
+    }
+
+
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<ByteArrayResource> getBookContent(@PathVariable long bookId) throws IOException {

@@ -32,6 +32,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -51,7 +52,7 @@ public class EpubMetadataWriter implements MetadataWriter {
             log.warn("Failed to create backup of EPUB {}: {}", epubFile.getName(), ex.getMessage());
             return;
         }
-        Path tempDir;
+        Path tempDir = null;
         try {
             tempDir = Files.createTempDirectory("epub_edit_" + UUID.randomUUID());
             ZipFile zipFile = new ZipFile(epubFile);
@@ -190,6 +191,9 @@ public class EpubMetadataWriter implements MetadataWriter {
                 }
             }
         } finally {
+            if (tempDir != null) {
+                deleteDirectoryRecursively(tempDir);
+            }
             if (backupFile.exists()) {
                 try {
                     Files.delete(backupFile.toPath());
@@ -252,9 +256,10 @@ public class EpubMetadataWriter implements MetadataWriter {
             return;
         }
 
+        Path tempDir = null;
         try {
             File epubFile = new File(bookEntity.getFullFilePath().toUri());
-            Path tempDir = Files.createTempDirectory("epub_cover_" + UUID.randomUUID());
+            tempDir = Files.createTempDirectory("epub_cover_" + UUID.randomUUID());
             new ZipFile(epubFile).extractAll(tempDir.toString());
 
             File opfFile = findOpfFile(tempDir.toFile());
@@ -286,6 +291,10 @@ public class EpubMetadataWriter implements MetadataWriter {
 
         } catch (Exception e) {
             log.warn("Failed to update EPUB with uploaded cover image: {}", e.getMessage(), e);
+        } finally {
+            if (tempDir != null) {
+                deleteDirectoryRecursively(tempDir);
+            }
         }
     }
 
@@ -295,9 +304,10 @@ public class EpubMetadataWriter implements MetadataWriter {
             log.warn("Cover update via URL failed: empty or null URL.");
             return;
         }
+        Path tempDir = null;
         try {
             File epubFile = new File(bookEntity.getFullFilePath().toUri());
-            Path tempDir = Files.createTempDirectory("epub_cover_url_" + UUID.randomUUID());
+            tempDir = Files.createTempDirectory("epub_cover_url_" + UUID.randomUUID());
             new ZipFile(epubFile).extractAll(tempDir.toString());
 
             File opfFile = findOpfFile(tempDir.toFile());
@@ -333,6 +343,10 @@ public class EpubMetadataWriter implements MetadataWriter {
             log.info("Cover image updated in EPUB via URL: {}", epubFile.getName());
         } catch (Exception e) {
             log.warn("Failed to update EPUB with cover from URL: {}", e.getMessage(), e);
+        } finally {
+            if (tempDir != null) {
+                deleteDirectoryRecursively(tempDir);
+            }
         }
     }
 
@@ -524,16 +538,19 @@ public class EpubMetadataWriter implements MetadataWriter {
         return null;
     }
 
-    private String getIdentifierByScheme(Element metadataElement, String scheme) {
-        NodeList identifiers = metadataElement.getElementsByTagNameNS("*", "identifier");
-        for (int i = 0; i < identifiers.getLength(); i++) {
-            Element idElement = (Element) identifiers.item(i);
-            String schemeAttr = idElement.getAttributeNS(OPF_NS, "scheme");
-            if (scheme.equalsIgnoreCase(schemeAttr)) {
-                return idElement.getTextContent();
-            }
+    private void deleteDirectoryRecursively(Path dir) {
+        try (var pathStream = Files.walk(dir)) {
+            pathStream
+                    .sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            log.warn("Failed to delete temp file/directory: {}", path, e);
+                        }
+                    });
+        } catch (IOException e) {
+            log.warn("Failed to clean up temporary directory: {}", dir, e);
         }
-        return null;
     }
 }
-

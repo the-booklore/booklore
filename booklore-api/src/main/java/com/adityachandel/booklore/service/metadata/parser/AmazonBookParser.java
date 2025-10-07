@@ -193,8 +193,8 @@ public class AmazonBookParser implements BookParser {
     }
 
     private String buildQueryUrl(FetchMetadataRequest fetchMetadataRequest, Book book) {
-        // 1. Prefer ISBN if present
-        if (fetchMetadataRequest.getIsbn() != null && !fetchMetadataRequest.getIsbn().isEmpty()) {
+        String isbnCleaned = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
+        if (isbnCleaned != null && !isbnCleaned.isEmpty()) {
             String url = "https://www.amazon."
                     + appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain()
                     + "/s?k=" + fetchMetadataRequest.getIsbn();
@@ -202,7 +202,6 @@ public class AmazonBookParser implements BookParser {
             return url;
         }
 
-        // 2. Otherwise, fall back to title + author + filename
         StringBuilder searchTerm = new StringBuilder();
 
         String title = fetchMetadataRequest.getTitle();
@@ -250,17 +249,23 @@ public class AmazonBookParser implements BookParser {
     private String getTitle(Document doc) {
         Element titleElement = doc.getElementById("productTitle");
         if (titleElement != null) {
-            return titleElement.text();
+            String fullTitle = titleElement.text();
+            return fullTitle.split(":", 2)[0].trim();
         }
         log.warn("Failed to parse title: Element not found.");
         return null;
     }
 
     private String getSubtitle(Document doc) {
-        Element subtitleElement = doc.getElementById("productSubtitle");
-        if (subtitleElement != null) {
-            return subtitleElement.text();
+        Element titleElement = doc.getElementById("productTitle");
+        if (titleElement != null) {
+            String fullTitle = titleElement.text();
+            String[] parts = fullTitle.split(":", 2);
+            if (parts.length > 1) {
+                return parts[1].trim();
+            }
         }
+
         log.warn("Failed to parse subtitle: Element not found.");
         return null;
     }
@@ -301,7 +306,8 @@ public class AmazonBookParser implements BookParser {
         try {
             Element isbn10Element = doc.select("#rpi-attribute-book_details-isbn10 .rpi-attribute-value span").first();
             if (isbn10Element != null) {
-                return isbn10Element.text();
+                String rawIsbn = isbn10Element.text();
+                return ParserUtils.cleanIsbn(rawIsbn);
             }
             log.warn("Failed to parse isbn10: Element not found.");
         } catch (Exception e) {
@@ -314,7 +320,8 @@ public class AmazonBookParser implements BookParser {
         try {
             Element isbn13Element = doc.select("#rpi-attribute-book_details-isbn13 .rpi-attribute-value span").first();
             if (isbn13Element != null) {
-                return isbn13Element.text();
+                String rawIsbn = isbn13Element.text();
+                return ParserUtils.cleanIsbn(rawIsbn);
             }
             log.warn("Failed to parse isbn13: Element not found.");
         } catch (Exception e) {

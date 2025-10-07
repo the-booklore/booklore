@@ -28,8 +28,7 @@ public class CategoryEntity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof CategoryEntity)) return false;
-        CategoryEntity that = (CategoryEntity) o;
+        if (!(o instanceof CategoryEntity that)) return false;
         return name != null && name.equalsIgnoreCase(that.name);
     }
 

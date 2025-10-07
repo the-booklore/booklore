@@ -5,6 +5,49 @@
   justify-content: space-between;
   padding-left: 1rem;
   padding-right: 1rem;
+  position: relative;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 0 0 auto;
+}
+
+.header-center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-percentage {
+  font-size: 0.85rem;
+  color: var(--text-color);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.progress-label {
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 .epub-viewer-container {
@@ -18,6 +61,16 @@
   height: 100%;
   width: 100%;
   overflow: hidden;
+
+  @media (max-width: 768px) {
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  iframe {
+    pointer-events: auto;
+    touch-action: manipulation;
+  }
 }
 
 .menu-toggle-button,
@@ -48,6 +101,10 @@
   border: none;
   padding: 10px;
   transition: color 0.3s ease, transform 0.2s ease;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
 }
 
 .epub-controls-left {
@@ -88,11 +145,7 @@
 }
 
 .chapter-item:hover {
-  color: greenyellow;
-}
-
-.chapter-item:active {
-  background-color: var(--card-background);
+  color: var(--primary-color);
 }
 
 .location-indicator {
@@ -125,3 +178,4 @@
 ::ng-deep .p-divider.p-divider-horizontal {
   margin: 0.25rem 0 0.5rem 0 !important;
 }
+
