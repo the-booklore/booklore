@@ -49,7 +49,9 @@ export class BookdropFileMetadataPickerComponent {
 
   metadataChips = [
     {label: 'Authors', controlName: 'authors', lockedKey: 'authorsLocked', fetchedKey: 'authors'},
-    {label: 'Genres', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'}
+    {label: 'Genres', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'},
+    {label: 'Moods', controlName: 'moods', lockedKey: 'moodsLocked', fetchedKey: 'moods'},
+    {label: 'Tags', controlName: 'tags', lockedKey: 'tagsLocked', fetchedKey: 'tags'},
   ];
 
   metadataDescription = [
@@ -81,7 +83,15 @@ export class BookdropFileMetadataPickerComponent {
 
   copyMissing(): void {
     Object.keys(this.fetchedMetadata).forEach((field) => {
-      if (!this.metadataForm.get(field)?.value && this.fetchedMetadata[field]) {
+      const isLocked = this.metadataForm.get(`${field}Locked`)?.value;
+      const currentValue = this.metadataForm.get(field)?.value;
+      const fetchedValue = this.fetchedMetadata[field];
+
+      const isEmpty = Array.isArray(currentValue)
+        ? currentValue.length === 0
+        : !currentValue;
+
+      if (!isLocked && isEmpty && fetchedValue) {
         this.copyFetchedToCurrent(field);
       }
     });
@@ -140,20 +150,16 @@ export class BookdropFileMetadataPickerComponent {
     }
   }
 
-  // Handle blur event for AutoComplete to add custom values
   onAutoCompleteBlur(fieldName: string, event: any) {
     const inputValue = event.target.value?.trim();
     if (inputValue) {
       const currentValue = this.metadataForm.get(fieldName)?.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
-        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
-
-      // Add the new value if it's not already in the array
+        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : []
       if (!values.includes(inputValue)) {
         values.push(inputValue);
         this.metadataForm.get(fieldName)?.setValue(values);
       }
-      // Clear the input
       event.target.value = '';
     }
   }
@@ -165,6 +171,8 @@ export class BookdropFileMetadataPickerComponent {
         subtitle: this.originalMetadata.subtitle || null,
         authors: [...(this.originalMetadata.authors ?? [])].sort(),
         categories: [...(this.originalMetadata.categories ?? [])].sort(),
+        moods: [...(this.originalMetadata.moods ?? [])].sort(),
+        tags: [...(this.originalMetadata.tags ?? [])].sort(),
         publisher: this.originalMetadata.publisher || null,
         publishedDate: this.originalMetadata.publishedDate || null,
         isbn10: this.originalMetadata.isbn10 || null,
