@@ -170,7 +170,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   expandedPanels: number = 0;
   readonly filterLabels: Record<string, string> = {
     author: 'Author',
-    category: 'Category',
+    category: 'Genre',
     series: 'Series',
     publisher: 'Publisher',
     readStatus: 'Read Status',

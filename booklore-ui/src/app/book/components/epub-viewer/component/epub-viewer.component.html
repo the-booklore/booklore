@@ -113,7 +113,7 @@
                     <p-divider></p-divider>
 
                     <div class="flex items-center gap-2">
-                      <label id="spread-label" class="block font-semibold text-gray-200">Page Spead:</label>
+                      <label id="spread-label" class="block font-semibold text-gray-200">Page Spread:</label>
                       <div class="flex gap-4" role="radiogroup" aria-labelledby="spread-label">
                         <div class="flex items-center gap-1.5">
                           <p-radioButton
@@ -175,10 +175,10 @@
       </div>
       <div id="epubContainer" #epubContainer></div>
       @if (selectedFlow !== 'scrolled') {
-        <button class="epub-controls-left" (click)="prevPage()">←</button>
+        <button class="epub-controls-left" [class.visible]="showControls" (click)="prevPage(); onBookTouch()">←</button>
       }
       @if (selectedFlow !== 'scrolled') {
-        <button class="epub-controls-right" (click)="nextPage()">→</button>
+        <button class="epub-controls-right" [class.visible]="showControls" (click)="nextPage(); onBookTouch()">→</button>
       }
     </div>
   }

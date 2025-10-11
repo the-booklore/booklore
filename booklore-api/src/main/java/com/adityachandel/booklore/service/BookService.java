@@ -113,7 +113,10 @@ public class BookService {
                         books.stream().map(Book::getId).collect(Collectors.toSet())
                 );
 
-        books.forEach(book -> enrichBookWithProgress(book, progressMap.get(book.getId())));
+        books.forEach(book -> {
+            enrichBookWithProgress(book, progressMap.get(book.getId()));
+            book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
+        });
 
         return books;
     }
@@ -653,5 +656,4 @@ public class BookService {
                 .filter(shelf -> userId.equals(shelf.getUserId()))
                 .collect(Collectors.toSet());
     }
-
 }

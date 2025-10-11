@@ -49,7 +49,7 @@ export class MetadataPickerComponent implements OnInit {
 
   metadataChips = [
     {label: 'Authors', controlName: 'authors', lockedKey: 'authorsLocked', fetchedKey: 'authors'},
-    {label: 'Categories', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'},
+    {label: 'Genres', controlName: 'categories', lockedKey: 'categoriesLocked', fetchedKey: 'categories'},
     {label: 'Moods', controlName: 'moods', lockedKey: 'moodsLocked', fetchedKey: 'moods'},
     {label: 'Tags', controlName: 'tags', lockedKey: 'tagsLocked', fetchedKey: 'tags'},
   ];
@@ -533,7 +533,14 @@ export class MetadataPickerComponent implements OnInit {
   copyMissing(): void {
     Object.keys(this.fetchedMetadata).forEach((field) => {
       const isLocked = this.metadataForm.get(`${field}Locked`)?.value;
-      if (!isLocked && !this.metadataForm.get(field)?.value && this.fetchedMetadata[field]) {
+      const currentValue = this.metadataForm.get(field)?.value;
+      const fetchedValue = this.fetchedMetadata[field];
+
+      const isEmpty = Array.isArray(currentValue)
+        ? currentValue.length === 0
+        : !currentValue;
+
+      if (!isLocked && isEmpty && fetchedValue) {
         this.copyFetchedToCurrent(field);
       }
     });

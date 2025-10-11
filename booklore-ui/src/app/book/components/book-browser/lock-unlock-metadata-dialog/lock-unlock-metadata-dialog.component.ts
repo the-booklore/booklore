@@ -30,10 +30,9 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
   lockableFields: string[] = [
     'titleLocked', 'subtitleLocked', 'publisherLocked', 'publishedDateLocked', 'descriptionLocked',
     'isbn13Locked', 'isbn10Locked', 'asinLocked', 'pageCountLocked', 'thumbnailLocked', 'languageLocked', 'coverLocked',
-    'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked',
+    'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'TagsLocked',
     'amazonRatingLocked', 'amazonReviewCountLocked', 'goodreadsRatingLocked', 'goodreadsReviewCountLocked',
-    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'googleIdLocked',
-    'comicvineIdLocked'
+    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'googleIdLocked', 'comicvineIdLocked'
   ];
 
   fieldLabels: Record<string, string> = {
@@ -53,7 +52,9 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     seriesNumberLocked: 'Series #',
     seriesTotalLocked: 'Series Total #',
     authorsLocked: 'Authors',
-    categoriesLocked: 'Categories',
+    categoriesLocked: 'Genres',
+    moodsLocked: 'Moods',
+    tagsLocked: 'Tags',
     amazonRatingLocked: 'Amazon ★',
     amazonReviewCountLocked: 'Amazon Reviews',
     goodreadsRatingLocked: 'Goodreads ★',

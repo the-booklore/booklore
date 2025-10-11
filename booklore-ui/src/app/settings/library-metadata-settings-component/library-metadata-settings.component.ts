@@ -10,13 +10,14 @@ import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
 import {MetadataRefreshOptions} from '../../metadata/model/request/metadata-refresh-options.model';
 import {MetadataAdvancedFetchOptionsComponent} from '../../metadata/metadata-options-dialog/metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
-import {AppSettings, AppSettingKey} from '../../core/model/app-settings.model';
+import {AppSettingKey, AppSettings} from '../../core/model/app-settings.model';
 import {AppSettingsService} from '../../core/service/app-settings.service';
+import {ExternalDocLinkComponent} from '../../shared/components/external-doc-link/external-doc-link.component';
 
 @Component({
   selector: 'app-library-metadata-settings-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule],
+  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, ExternalDocLinkComponent],
   templateUrl: './library-metadata-settings.component.html',
   styleUrls: ['./library-metadata-settings.component.scss']
 })

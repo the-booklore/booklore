@@ -145,9 +145,7 @@ export class FileMoverComponent implements OnDestroy {
 
   applyPattern(): void {
     this.filePreviews = this.books.map(book => {
-      const meta = book.metadata!;
       const fileName = book.fileName ?? '';
-      const extension = fileName.match(/\.[^.]+$/)?.[0] ?? '';
       const fileSubPath = book.fileSubPath ? `${book.fileSubPath.replace(/\/+$/g, '')}/` : '';
 
       const relativeOriginalPath = `${fileSubPath}${fileName}`;
@@ -155,7 +153,6 @@ export class FileMoverComponent implements OnDestroy {
       const currentLibraryId = book.libraryId ?? book.libraryPath?.id ?? (book as any).library?.id ?? null;
       const currentLibraryName = this.getLibraryNameById(currentLibraryId);
 
-      // Initially set target library to current library
       const targetLibraryId = currentLibraryId;
       const targetLibraryName = currentLibraryName;
 
@@ -265,8 +262,12 @@ export class FileMoverComponent implements OnDestroy {
 
   formatYear(dateStr?: string): string {
     if (!dateStr) return '';
+    const yearMatch = dateStr.match(/^(\d{4})/);
+    if (yearMatch) {
+      return yearMatch[1];
+    }
     const date = new Date(dateStr);
-    return isNaN(date.getTime()) ? '' : date.getFullYear().toString();
+    return isNaN(date.getTime()) ? '' : date.getUTCFullYear().toString();
   }
 
   formatSeriesIndex(seriesNumber?: number): string {
