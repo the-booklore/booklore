@@ -64,13 +64,18 @@ export class OpdsSettingsV2 implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loading = true;
 
+    let prevHasPermission = false;
     this.userService.userState$.pipe(
       filter(state => !!state?.user && state.loaded),
       takeUntil(this.destroy$),
       tap(state => {
         this.hasPermission = !!(state.user?.permissions.canAccessOpds || state.user?.permissions.admin);
       }),
-      filter(() => this.hasPermission),
+      filter(() => {
+        const shouldRun = this.hasPermission && !prevHasPermission;
+        prevHasPermission = this.hasPermission;
+        return shouldRun;
+      }),
       tap(() => this.loadAppSettings())
     ).subscribe();
   }

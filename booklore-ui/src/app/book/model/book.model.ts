@@ -1,5 +1,5 @@
 import {Shelf} from './shelf.model';
-import {NewPdfReaderSetting} from '../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, NewPdfReaderSetting} from '../../settings/user-management/user.service';
 import {BookReview} from '../../book-review-service';
 
 export type BookType = "PDF" | "EPUB" | "CBX";
@@ -193,6 +193,9 @@ export interface EpubViewerSetting {
 export interface CbxViewerSetting {
   pageSpread: CbxPageSpread;
   pageViewMode: CbxPageViewMode;
+  fitMode: CbxFitMode;
+  scrollMode?: CbxScrollMode;
+  backgroundColor?: CbxBackgroundColor;
 }
 
 export interface BookSetting {
@@ -207,26 +210,6 @@ export interface BookSetting {
 export interface BookRecommendation {
   book: Book;
   similarityScore: number;
-}
-
-export const enum CbxPageViewMode {
-  SINGLE_PAGE = 'SINGLE_PAGE',
-  TWO_PAGE = 'TWO_PAGE',
-}
-
-export const enum CbxPageSpread {
-  EVEN = 'EVEN',
-  ODD = 'ODD',
-}
-
-export const enum PdfPageViewMode {
-  SINGLE_PAGE = 'SINGLE_PAGE',
-  TWO_PAGE = 'TWO_PAGE',
-}
-
-export const enum PdfPageSpread {
-  EVEN = 'EVEN',
-  ODD = 'ODD',
 }
 
 export interface BulkMetadataUpdateRequest {

@@ -68,18 +68,31 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   }
 
   private setupUserStateSubscription() {
+    let prevHasKoboTokenPermission = false;
+    let prevIsAdmin = false;
     this.userService.userState$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
-      this.hasKoboTokenPermission = (userState.user?.permissions.canSyncKobo) ?? false;
-      this.isAdmin = userState.user?.permissions.admin ?? false;
-      if (this.hasKoboTokenPermission) {
+      const currHasKoboTokenPermission = (userState.user?.permissions.canSyncKobo) ?? false;
+      const currIsAdmin = userState.user?.permissions.admin ?? false;
+
+      if (currHasKoboTokenPermission && !prevHasKoboTokenPermission) {
+        this.hasKoboTokenPermission = true;
         this.loadKoboUserSettings();
+      } else {
+        this.hasKoboTokenPermission = currHasKoboTokenPermission;
       }
-      if (this.isAdmin) {
+
+      if (currIsAdmin && !prevIsAdmin) {
+        this.isAdmin = true;
         this.loadKoboAdminSettings();
+      } else {
+        this.isAdmin = currIsAdmin;
       }
+
+      prevHasKoboTokenPermission = currHasKoboTokenPermission;
+      prevIsAdmin = currIsAdmin;
     });
   }
 

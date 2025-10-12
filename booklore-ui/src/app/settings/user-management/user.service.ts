@@ -4,7 +4,6 @@ import {BehaviorSubject, Observable, throwError} from 'rxjs';
 import {API_CONFIG} from '../../config/api-config';
 import {Library} from '../../book/model/library.model';
 import {catchError, distinctUntilChanged, finalize, shareReplay, tap} from 'rxjs/operators';
-import {CbxPageSpread, CbxPageViewMode, PdfPageSpread, PdfPageViewMode} from '../../book/model/book.model';
 import {AuthService} from '../../core/service/auth.service';
 
 export interface EntityViewPreferences {
@@ -44,10 +43,49 @@ export interface PerBookSetting {
 
 export type PageSpread = 'off' | 'even' | 'odd';
 
+export enum CbxBackgroundColor {
+  GRAY = 'GRAY',
+  BLACK = 'BLACK',
+  WHITE = 'WHITE'
+}
+
 export interface PdfReaderSetting {
   pageSpread: PageSpread;
   pageZoom: string;
   showSidebar: boolean;
+}
+
+export enum CbxPageViewMode {
+  SINGLE_PAGE = 'SINGLE_PAGE',
+  TWO_PAGE = 'TWO_PAGE',
+}
+
+export enum CbxPageSpread {
+  EVEN = 'EVEN',
+  ODD = 'ODD',
+}
+
+export enum PdfPageViewMode {
+  SINGLE_PAGE = 'SINGLE_PAGE',
+  TWO_PAGE = 'TWO_PAGE',
+}
+
+export enum PdfPageSpread {
+  EVEN = 'EVEN',
+  ODD = 'ODD',
+}
+
+export enum CbxFitMode {
+  ACTUAL_SIZE = 'ACTUAL_SIZE',
+  FIT_PAGE = 'FIT_PAGE',
+  FIT_WIDTH = 'FIT_WIDTH',
+  FIT_HEIGHT = 'FIT_HEIGHT',
+  AUTO = 'AUTO'
+}
+
+export enum CbxScrollMode {
+  PAGINATED = 'PAGINATED',
+  INFINITE = 'INFINITE'
 }
 
 export interface EpubReaderSetting {
@@ -64,6 +102,9 @@ export interface EpubReaderSetting {
 export interface CbxReaderSetting {
   pageSpread: CbxPageSpread;
   pageViewMode: CbxPageViewMode;
+  fitMode: CbxFitMode;
+  scrollMode?: CbxScrollMode;
+  backgroundColor?: CbxBackgroundColor;
 }
 
 export interface NewPdfReaderSetting {

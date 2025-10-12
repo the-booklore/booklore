@@ -45,14 +45,17 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
   hasPermission = false;
 
   ngOnInit() {
+    let prevHasPermission = false;
     this.userService.userState$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
-      this.hasPermission = (userState.user?.permissions.canSyncKoReader || userState.user?.permissions.admin) ?? false;
-      if (this.hasPermission) {
+      const currHasPermission = (userState.user?.permissions.canSyncKoReader || userState.user?.permissions.admin) ?? false;
+      this.hasPermission = currHasPermission;
+      if (currHasPermission && !prevHasPermission) {
         this.loadKoreaderSettings();
       }
+      prevHasPermission = currHasPermission;
     });
   }
 

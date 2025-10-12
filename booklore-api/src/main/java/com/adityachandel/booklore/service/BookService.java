@@ -219,6 +219,9 @@ public class BookService {
                             .bookId(bookId)
                             .pageViewMode(cbxPref.getPageViewMode())
                             .pageSpread(cbxPref.getPageSpread())
+                            .fitMode(cbxPref.getFitMode())
+                            .scrollMode(cbxPref.getScrollMode())
+                            .backgroundColor(cbxPref.getBackgroundColor())
                             .build()));
         } else {
             throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
@@ -295,6 +298,9 @@ public class BookService {
             CbxViewerPreferences cbxSettings = bookViewerSettings.getCbxSettings();
             cbxPrefs.setPageSpread(cbxSettings.getPageSpread());
             cbxPrefs.setPageViewMode(cbxSettings.getPageViewMode());
+            cbxPrefs.setFitMode(cbxSettings.getFitMode());
+            cbxPrefs.setScrollMode(cbxSettings.getScrollMode());
+            cbxPrefs.setBackgroundColor(cbxSettings.getBackgroundColor());
             cbxViewerPreferencesRepository.save(cbxPrefs);
 
         } else {

@@ -132,6 +132,9 @@ public class BookLoreUser {
         public static class CbxReaderSetting {
             private CbxPageSpread pageSpread;
             private CbxPageViewMode pageViewMode;
+            private CbxPageFitMode fitMode;
+            private CbxPageScrollMode scrollMode;
+            private CbxBackgroundColor backgroundColor;
         }
 
         @Data

@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.model.dto;
 
-import com.adityachandel.booklore.model.enums.CbxPageSpread;
-import com.adityachandel.booklore.model.enums.CbxPageViewMode;
+import com.adityachandel.booklore.model.enums.*;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,4 +10,7 @@ public class CbxViewerPreferences {
     private Long bookId;
     private CbxPageSpread pageSpread;
     private CbxPageViewMode pageViewMode;
+    private CbxPageFitMode fitMode;
+    private CbxPageScrollMode scrollMode;
+    private CbxBackgroundColor backgroundColor;
 }
