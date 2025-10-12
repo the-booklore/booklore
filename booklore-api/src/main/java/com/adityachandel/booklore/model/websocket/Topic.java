@@ -13,7 +13,8 @@ public enum Topic {
     BOOK_METADATA_BATCH_PROGRESS("/queue/book-metadata-batch-progress"),
     BOOKDROP_FILE("/queue/bookdrop-file"),
     DUPLICATE_FILE("/queue/duplicate-file"),
-    LOG("/queue/log");
+    LOG("/queue/log"),
+    TASK_PROGRESS("/queue/task-progress");
 
     private final String path;
 

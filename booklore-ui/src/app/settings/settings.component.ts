@@ -15,6 +15,7 @@ import {DeviceSettingsComponent} from './device-settings-component/device-settin
 import {FileNamingPatternComponent} from './file-naming-pattern/file-naming-pattern.component';
 import {OpdsSettingsV2} from './opds-settings-v2/opds-settings-v2';
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings-component/library-metadata-settings.component';
+import {TaskManagementComponent} from './task-management/task-management.component';
 
 export enum SettingsTab {
   ReaderSettings = 'reader',
@@ -27,7 +28,8 @@ export enum SettingsTab {
   LibraryMetadataSettings = 'metadata-library',
   ApplicationSettings = 'application',
   AuthenticationSettings = 'authentication',
-  OpdsV2 = 'opds'
+  OpdsV2 = 'opds',
+  Tasks = 'tasks',
 }
 
 @Component({
@@ -49,7 +51,8 @@ export enum SettingsTab {
     DeviceSettingsComponent,
     FileNamingPatternComponent,
     OpdsSettingsV2,
-    LibraryMetadataSettingsComponent
+    LibraryMetadataSettingsComponent,
+    TaskManagementComponent
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'

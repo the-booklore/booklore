@@ -36,7 +36,7 @@ export class LibraryCreatorComponent implements OnInit {
   defaultBookFormat: BookFileType | undefined = undefined;
 
   readonly scanModeOptions = [
-    {label: 'Each file is a book', value: 'FILE_AS_BOOK'},
+    {label: 'Each file is a book (Recommended)', value: 'FILE_AS_BOOK'},
     {label: 'Each folder is a book with extras', value: 'FOLDER_AS_BOOK'}
   ];
 

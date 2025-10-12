@@ -15,6 +15,7 @@ import {DuplicateFileNotification} from './shared/websocket/model/duplicate-file
 import {DuplicateFileService} from './shared/websocket/duplicate-file.service';
 import {Subscription} from 'rxjs';
 import {DownloadProgressDialogComponent} from './shared/components/download-progress-dialog/download-progress-dialog.component';
+import {TaskService, TaskProgressPayload} from './settings/task-management/task.service';
 
 @Component({
   selector: 'app-root',
@@ -35,6 +36,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private metadataProgressService = inject(MetadataProgressService);
   private bookdropFileService = inject(BookdropFileService);
   private duplicateFileService = inject(DuplicateFileService);
+  private taskService = inject(TaskService);
   private appConfigService = inject(AppConfigService); // Keep it here to ensure the service is initialized
 
   ngOnInit(): void {
@@ -88,6 +90,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.rxStompService.watch('/user/queue/bookdrop-file').subscribe(msg => {
         const notification = JSON.parse(msg.body) as BookdropFileNotification;
         this.bookdropFileService.handleIncomingFile(notification);
+      })
+    );
+    this.subscriptions.push(
+      this.rxStompService.watch('/user/queue/task-progress').subscribe(msg => {
+        const progress = JSON.parse(msg.body) as TaskProgressPayload;
+        this.taskService.handleTaskProgress(progress);
       })
     );
   }

@@ -18,8 +18,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
-import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
-import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
+import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,8 +49,7 @@ public class FileUploadService {
     private final BookAdditionalFileRepository additionalFileRepository;
     private final AppSettingService appSettingService;
     private final AppProperties appProperties;
-    private final PdfMetadataExtractor pdfMetadataExtractor;
-    private final EpubMetadataExtractor epubMetadataExtractor;
+    private final MetadataExtractorFactory metadataExtractorFactory;
     private final AdditionalFileMapper additionalFileMapper;
     private final FileMovingHelper fileMovingHelper;
 
@@ -228,11 +226,7 @@ public class FileUploadService {
     }
 
     private BookMetadata extractMetadata(BookFileExtension fileExt, File file) throws IOException {
-        return switch (fileExt) {
-            case PDF -> pdfMetadataExtractor.extractMetadata(file);
-            case EPUB -> epubMetadataExtractor.extractMetadata(file);
-            case CBZ, CBR, CB7 -> new BookMetadata();
-        };
+        return metadataExtractorFactory.extractMetadata(fileExt, file);
     }
 
     private void validateFile(MultipartFile file) {

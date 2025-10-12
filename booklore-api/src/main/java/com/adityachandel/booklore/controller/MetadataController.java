@@ -4,11 +4,13 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.CoverImage;
 import com.adityachandel.booklore.model.dto.request.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.quartz.JobSchedulerService;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.metadata.*;
@@ -49,7 +51,16 @@ public class MetadataController {
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<BookMetadata> updateMetadata(@RequestBody MetadataUpdateWrapper metadataUpdateWrapper, @PathVariable long bookId, @RequestParam(defaultValue = "true") boolean mergeCategories) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        bookMetadataUpdater.setBookMetadata(bookEntity, metadataUpdateWrapper, true, mergeCategories);
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(metadataUpdateWrapper)
+                .updateThumbnail(true)
+                .mergeCategories(mergeCategories)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
         bookRepository.save(bookEntity);
         BookMetadata bookMetadata = bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
         return ResponseEntity.ok(bookMetadata);

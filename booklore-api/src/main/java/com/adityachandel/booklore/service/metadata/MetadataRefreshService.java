@@ -2,8 +2,12 @@ package com.adityachandel.booklore.service.metadata;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
-import com.adityachandel.booklore.model.dto.*;
+import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.BookReview;
+import com.adityachandel.booklore.model.dto.MetadataBatchProgressNotification;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
@@ -12,7 +16,10 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.MetadataFetchJobEntity;
 import com.adityachandel.booklore.model.entity.MetadataFetchProposalEntity;
-import com.adityachandel.booklore.model.enums.*;
+import com.adityachandel.booklore.model.enums.FetchedMetadataProposalStatus;
+import com.adityachandel.booklore.model.enums.MetadataFetchTaskStatus;
+import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -305,10 +312,18 @@ public class MetadataRefreshService {
 
     public void updateBookMetadata(BookEntity bookEntity, BookMetadata metadata, boolean replaceCover, boolean mergeCategories) {
         if (metadata != null) {
-            MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
-                    .metadata(metadata)
+
+            MetadataUpdateContext context = MetadataUpdateContext.builder()
+                    .bookEntity(bookEntity)
+                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                            .metadata(metadata)
+                            .build())
+                    .updateThumbnail(replaceCover)
+                    .mergeCategories(mergeCategories)
+                    .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                     .build();
-            bookMetadataUpdater.setBookMetadata(bookEntity, metadataUpdateWrapper, replaceCover, mergeCategories);
+
+            bookMetadataUpdater.setBookMetadata(context);
 
             Book book = bookMapper.toBook(bookEntity);
             notificationService.sendMessage(Topic.BOOK_METADATA_UPDATE, book);

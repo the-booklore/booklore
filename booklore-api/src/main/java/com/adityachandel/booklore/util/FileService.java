@@ -91,10 +91,6 @@ public class FileService {
         return Paths.get("/", BACKGROUNDS_DIR, filename).toString().replace("\\", "/");
     }
 
-    public String getMetadataBackupPath() {
-        return Paths.get(appProperties.getPathConfig(), "metadata_backup").toString();
-    }
-
     public String getBookMetadataBackupPath(long bookId) {
         return Paths.get(appProperties.getPathConfig(), "metadata_backup", String.valueOf(bookId)).toString();
     }

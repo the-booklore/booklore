@@ -31,6 +31,9 @@
             <p-tab [value]="SettingsTab.AuthenticationSettings">
               <i class="pi pi-lock"></i> Authentication
             </p-tab>
+            <p-tab [value]="SettingsTab.Tasks">
+              <i class="pi pi-list-check"></i> Tasks
+            </p-tab>
           }
           <p-tab [value]="SettingsTab.OpdsV2">
             <i class="pi pi-globe"></i> OPDS
@@ -67,6 +70,9 @@
             </p-tabpanel>
             <p-tabpanel [value]="SettingsTab.AuthenticationSettings">
               <app-authentication-settings></app-authentication-settings>
+            </p-tabpanel>
+            <p-tabpanel [value]="SettingsTab.Tasks">
+              <app-task-management></app-task-management>
             </p-tabpanel>
           }
           <p-tabpanel [value]="SettingsTab.OpdsV2">
