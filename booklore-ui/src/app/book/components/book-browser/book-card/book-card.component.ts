@@ -87,7 +87,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['book'] && !changes['book'].firstChange) {
-      // Reset the flag when book changes
       this.additionalFilesLoaded = false;
       this.initMenu();
     }

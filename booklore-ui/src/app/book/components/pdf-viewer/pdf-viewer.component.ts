@@ -25,6 +25,9 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
   spread!: 'off' | 'even' | 'odd';
   zoom!: number | string;
 
+  showDownloadButton = false;
+  showPrintButton = false;
+
   bookData!: string | Blob;
   bookId!: number;
   private appSettingsSubscription!: Subscription;
@@ -50,6 +53,9 @@ export class PdfViewerComponent implements OnInit, OnDestroy {
           const pdfPrefs = results[1];
           const pdfData = results[2];
           const myself = results[3];
+
+          this.showDownloadButton = myself.permissions.canDownload || myself.permissions.admin;
+          this.showPrintButton = myself.permissions.canDownload || myself.permissions.admin;
 
           let globalOrIndividual = myself.userSettings.perBookSetting.pdf;
           if (globalOrIndividual === 'Global') {
