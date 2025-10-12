@@ -15,7 +15,7 @@ import {DynamicDialogConfig} from 'primeng/dynamicdialog';
 import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../magic-shelf-utils';
-import { IconPickerService } from '../utilities/services/icon-picker.service';
+import {IconPickerService} from '../utilities/services/icon-picker.service';
 
 export type RuleOperator =
   | 'equals'
@@ -59,7 +59,9 @@ export type RuleField =
   | 'fileSize'
   | 'readStatus'
   | 'dateFinished'
-  | 'metadataScore';
+  | 'metadataScore'
+  | 'moods'
+  | 'tags';
 
 
 interface FullFieldConfig {
@@ -112,6 +114,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   title: {label: 'Title'},
   authors: {label: 'Authors'},
   categories: {label: 'Categories'},
+  moods: {label: 'Moods'},
+  tags: {label: 'Tags'},
   publisher: {label: 'Publisher'},
   publishedDate: {label: 'Published Date', type: 'date'},
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
@@ -189,10 +193,10 @@ export class MagicShelfComponent implements OnInit {
 
   shelfId: number | null = null;
 
-  libraryService    = inject(LibraryService);
+  libraryService = inject(LibraryService);
   magicShelfService = inject(MagicShelfService);
-  messageService    = inject(MessageService);
-  config            = inject(DynamicDialogConfig);
+  messageService = inject(MessageService);
+  config = inject(DynamicDialogConfig);
   private iconPicker = inject(IconPickerService);
 
   trackByFn(ruleCtrl: AbstractControl, index: number): any {
@@ -293,7 +297,7 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
+    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
@@ -411,20 +415,17 @@ export class MagicShelfComponent implements OnInit {
     });
   }
 
-  // Handle blur event for AutoComplete to add custom values
   onAutoCompleteBlur(formControl: any, event: any) {
     const inputValue = event.target.value?.trim();
     if (inputValue) {
       const currentValue = formControl.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
-                     typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
+        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
 
-      // Add the new value if it's not already in the array
       if (!values.includes(inputValue)) {
         values.push(inputValue);
         formControl.setValue(values);
       }
-      // Clear the input
       event.target.value = '';
     }
   }

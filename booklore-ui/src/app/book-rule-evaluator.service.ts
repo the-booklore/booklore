@@ -41,6 +41,10 @@ export class BookRuleEvaluatorService {
           return (book.metadata?.authors ?? []).map(a => a.toLowerCase());
         case 'categories':
           return (book.metadata?.categories ?? []).map(c => c.toLowerCase());
+        case 'moods':
+          return (book.metadata?.moods ?? []).map(m => m.toLowerCase());
+        case 'tags':
+          return (book.metadata?.tags ?? []).map(t => t.toLowerCase());
         case 'readStatus':
           return [String(book.readStatus).toLowerCase()];
         case 'fileType':
@@ -190,6 +194,10 @@ export class BookRuleEvaluatorService {
         return (book.metadata?.authors ?? []).map(a => a.toLowerCase());
       case 'categories':
         return (book.metadata?.categories ?? []).map(c => c.toLowerCase());
+      case 'moods':
+        return (book.metadata?.moods ?? []).map(m => m.toLowerCase());
+      case 'tags':
+        return (book.metadata?.tags ?? []).map(t => t.toLowerCase());
       case 'publisher':
         return book.metadata?.publisher?.toLowerCase() ?? null;
       case 'publishedDate':
