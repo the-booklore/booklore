@@ -1,6 +1,6 @@
 import { RxStompService } from './rx-stomp.service';
 import { createRxStompConfig } from './rx-stomp.config';
-import {AuthService} from '../../core/service/auth.service';
+import {AuthService} from '../service/auth.service';
 
 export function rxStompServiceFactory(authService: AuthService) {
   const rxStomp = new RxStompService(authService);
