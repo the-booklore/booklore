@@ -4,22 +4,22 @@ import {DirectoryPickerComponent} from '../../shared/components/directory-picker
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
-import {Button} from 'primeng/button';
 import {TableModule} from 'primeng/table';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {Library, LibraryScanMode, BookFileType} from '../book/model/library.model';
+import {BookFileType, Library, LibraryScanMode} from '../book/model/library.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
 import {IconPickerService} from '../../shared/service/icon-picker.service';
 import {Select} from 'primeng/select';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [Button, TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select],
+  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -81,9 +81,13 @@ export class LibraryCreatorComponent implements OnInit {
       contentStyle: {overflow: 'hidden'},
       baseZIndex: 10
     });
-    this.directoryPickerDialogRef.onClose.subscribe((selectedFolder: string) => {
-      if (selectedFolder) {
-        this.addFolder(selectedFolder);
+    this.directoryPickerDialogRef.onClose.subscribe((selectedFolders: string[] | null) => {
+      if (selectedFolders && selectedFolders.length > 0) {
+        selectedFolders.forEach(folder => {
+          if (!this.folders.includes(folder)) {
+            this.addFolder(folder);
+          }
+        });
       }
     });
   }
@@ -175,5 +179,13 @@ export class LibraryCreatorComponent implements OnInit {
         }
       });
     }
+  }
+
+  getFolderName(path: string): string {
+    if (!path || typeof path !== 'string') {
+      return '';
+    }
+    const parts = path.split('/').filter(p => p);
+    return parts[parts.length - 1] || path;
   }
 }

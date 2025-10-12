@@ -84,11 +84,7 @@ export class MainDashboardComponent implements OnInit {
     this.ref = this.dialogService.open(LibraryCreatorComponent, {
       header: 'Create New Library',
       modal: true,
-      closable: true,
-      style: {
-        position: 'absolute',
-        top: '15%',
-      }
+      closable: true
     });
   }
 }

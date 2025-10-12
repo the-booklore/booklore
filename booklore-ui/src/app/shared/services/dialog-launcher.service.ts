@@ -50,8 +50,7 @@ export class DialogLauncherService {
   openLibraryCreatorDialog(): void {
     this.open({
       component: LibraryCreatorComponent,
-      header: 'Create New Library',
-      top: '15%'
+      header: 'Create New Library'
     });
   }
 
