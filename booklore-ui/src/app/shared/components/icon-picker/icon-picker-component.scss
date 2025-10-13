@@ -15,7 +15,7 @@
   width: 100%;
   padding: 8px 12px;
   font-size: 16px;
-  border: 1px solid var(--text-color-secondary);
+  border: 1px solid var(--text-secondary-color);
   border-radius: 4px;
   margin-bottom: 15px;
   box-sizing: border-box;
@@ -27,6 +27,6 @@
 }
 
 .icon-search::placeholder {
-  color: var(--text-color-secondary);
+  color: var(--text-secondary-color);
   opacity: 1;
 }

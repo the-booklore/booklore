@@ -58,7 +58,7 @@
 
       p {
         margin-top: 1rem;
-        color: var(--text-color-secondary);
+        color: var(--text-secondary-color);
       }
     }
 
@@ -67,7 +67,7 @@
       flex-direction: column;
       align-items: center;
       padding: 3rem;
-      color: var(--text-color-secondary);
+      color: var(--text-secondary-color);
       background: var(--surface-card);
       border-radius: 8px;
       border: 1px solid var(--surface-border);

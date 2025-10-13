@@ -1,14 +1,15 @@
-<div class="ml-2 md:ml-5 relative w-full max-w-[500px]">
-  <!-- Desktop view -->
-  <p-iconfield class="w-full sm:flex">
-    <p-inputicon styleClass="pi pi-search"/>
+<div class="book-searcher-container">
+  <p-iconfield class="search-iconfield" [class.focused]="isSearchFocused" [class.has-results]="isDropdownOpen">
+    <p-inputicon class="pi pi-search"/>
     <input
       type="text"
       pInputText
       [(ngModel)]="searchQuery"
       (input)="onSearchInputChange()"
+      (focus)="isSearchFocused = true"
+      (blur)="onSearchBlur()"
       placeholder="Title, Author, Series, Genre, or ISBN..."
-      class="w-full pr-10"
+      class="search-input"
     />
     @if (searchQuery) {
       <p-button
@@ -16,35 +17,45 @@
         (click)="clearSearch()"
         [text]="true"
         [rounded]="true"
-        class="absolute right-2 top-1/2 -translate-y-1/2 hidden lg:inline-flex"
+        class="clear-search-btn"
         aria-label="Clear Search">
       </p-button>
     }
   </p-iconfield>
 
-  <!-- Search results below small screen search input -->
   @if (books.length > 0 || searchQuery) {
     <div
-      class="search-dropdown layout-menu w-[300px] sm:w-[600px]"
+      class="search-dropdown layout-menu"
       [class.show]="(books.length > 0)"
     >
       @if (books.length > 0) {
         @for (book of books; track book) {
-          <div class="search-dropdown-item flex flex-col" (click)="onBookClick(book)">
-            <div class="flex flex-row w-full p-2">
+          <div class="search-dropdown-item" (click)="onBookClick(book)">
+            <div class="search-item-content">
               <img
                 [attr.src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)"
                 alt="Book Cover"
                 class="search-book-cover"
               />
               <div class="search-book-details">
-                <div class="flex items-center">
-                  <p class="search-book-name text font-medium truncate">
+                <div class="search-book-title-container">
+                  <p class="search-book-name">
                     {{ book.metadata?.title | slice: 0:70 }}
                   </p>
                 </div>
-                @if (book.metadata?.authors?.length ?? 0 > 0) {
-                  <p class="italic text-gray-300">by: {{ getAuthorNames(book.metadata?.authors) }}</p>
+                <div class="search-book-meta-line">
+                  @if (book.metadata?.authors?.length ?? 0 > 0) {
+                    <p class="search-book-authors">by {{ getAuthorNames(book.metadata?.authors) }}</p>
+                  }
+                  @if (getPublishedYear(book.metadata?.publishedDate)) {
+                    <span class="metadata-badge year-badge">{{ getPublishedYear(book.metadata?.publishedDate) }}</span>
+                  }
+                </div>
+                @if (getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber)) {
+                  <div class="search-book-series metadata-badge series-badge">
+                    <i class="pi pi-book"></i>
+                    <span>{{ getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber) }}</span>
+                  </div>
                 }
               </div>
             </div>
@@ -52,7 +63,7 @@
           </div>
         }
       } @else {
-        <div class="search-dropdown-item px-4 py-2">
+        <div class="search-dropdown-item no-results">
           <span>No results found</span>
         </div>
       }

@@ -58,7 +58,7 @@
 
 .hash-group {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 8px;
   padding: 1rem;
   margin: 0.5rem 0;
@@ -120,7 +120,7 @@
   padding: 0.75rem;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--p-content-border-color);
   transition: all 0.2s ease;
   margin-left: 1rem;
 }

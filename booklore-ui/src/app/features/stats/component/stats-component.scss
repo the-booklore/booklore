@@ -12,7 +12,7 @@
   padding: 25px;
   margin-bottom: 30px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--p-content-border-color);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   overflow: visible;
 }
@@ -48,7 +48,7 @@
       align-items: center;
       margin-top: 8px;
       font-size: 0.95rem;
-      color: var(--text-color-secondary, #cccccc);
+      color: var(--text-secondary-color);
       flex-wrap: wrap;
 
       .total-item {
@@ -67,7 +67,7 @@
       }
 
       .total-label {
-        color: var(--text-color-secondary, #cccccc);
+        color: var(--text-secondary-color);
         font-size: 0.9rem;
         white-space: nowrap;
       }
@@ -309,7 +309,7 @@
             }
 
             label {
-              color: var(--text-color-secondary, #cccccc);
+              color: var(--text-secondary-color);
               font-size: 0.9rem;
               cursor: pointer;
               user-select: none;
@@ -426,7 +426,7 @@
   border-radius: 8px;
   padding: 15px;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--p-content-border-color);
   transition: all 0.3s ease;
 
   &:hover {
@@ -472,7 +472,7 @@
 
   .chart-description {
     text-align: center;
-    color: var(--text-color-secondary, #cccccc);
+    color: var(--text-secondary-color);
     font-size: 0.9rem;
     margin-bottom: 15px;
     line-height: 1.4;
@@ -546,7 +546,7 @@
 .no-data-message {
   text-align: center;
   padding: 50px;
-  color: var(--text-color-secondary, #cccccc);
+  color: var(--text-secondary-color);
   font-size: 16px;
 }
 
@@ -625,7 +625,7 @@
     }
 
     .insight-description {
-      color: var(--text-color-secondary, #cccccc);
+      color: var(--text-secondary-color);
       font-size: 0.85rem;
       line-height: 1.4;
       margin: 0;
@@ -702,7 +702,7 @@
     }
 
     .insight-description {
-      color: var(--text-color-secondary, #cccccc);
+      color: var(--text-secondary-color);
       font-size: 0.85rem;
       line-height: 1.4;
       margin: 0;

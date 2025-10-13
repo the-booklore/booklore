@@ -1,5 +1,5 @@
 @if (filteredBooks$ | async; as books) {
-<div class="rounded-xl overflow-hidden">
+<div class="rounded-xl overflow-hidden border-[1px] border-solid border-[var(--p-content-border-color)]">
   <p-tabs [value]="tab" lazy="true" scrollable>
     <p-tablist>
       <p-tab value="view">

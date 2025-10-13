@@ -102,7 +102,6 @@ export interface BookMetadata {
   providerBookId?: string;
   thumbnailUrl?: string | null;
   reviews?: BookReview[];
-
   titleLocked?: boolean;
   subtitleLocked?: boolean;
   publisherLocked?: boolean;
@@ -134,7 +133,6 @@ export interface BookMetadata {
   tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
-
   [key: string]: any;
 }
 
@@ -203,7 +201,6 @@ export interface BookSetting {
   epubSettings?: EpubViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
-
   [key: string]: any;
 }
 

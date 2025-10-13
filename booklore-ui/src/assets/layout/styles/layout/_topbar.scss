@@ -9,7 +9,7 @@
   top: 0;
   width: 100%;
   padding: 0 1rem;
-  background-color: var(--card-background);
+  background-color: color-mix(in srgb, var(--card-background) 25%, transparent);
   border: none;
   border-bottom: 1px solid var(--p-content-border-color);
   transition: left variables.$transitionDuration;

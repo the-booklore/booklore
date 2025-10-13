@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {BehaviorSubject, of, Subject, Subscription} from 'rxjs';
+import {BehaviorSubject, of, Subscription} from 'rxjs';
 import {catchError, switchMap} from 'rxjs/operators';
 import {Book} from '../../model/book.model';
 import {FormsModule} from '@angular/forms';
@@ -34,6 +34,7 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   books: Book[] = [];
   #searchSubject = new BehaviorSubject<string>('');
   #subscription!: Subscription;
+  isSearchFocused = false;
 
   private bookService = inject(BookService);
   private router = inject(Router);
@@ -41,29 +42,35 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   private headerFilter = new HeaderFilter(this.#searchSubject.asObservable());
 
   ngOnInit(): void {
-    this.initializeSearch();
-  }
-
-  initializeSearch(): void {
     this.#subscription = this.bookService.bookState$.pipe(
       switchMap(bookState => this.headerFilter.filter(bookState)),
-      catchError((error) => {
-        console.error('Error while searching books:', error);
-        return of({books: [], loaded: true, error: null});
-      })
+      catchError(() => of({books: [], loaded: true, error: null}))
     ).subscribe({
       next: (filteredState) => {
         const term = this.searchQuery.trim();
         this.books = term.length >= 2
           ? (filteredState.books || []).slice(0, 50)
           : [];
-      },
-      error: (error) => console.error('Subscription error:', error)
+      }
     });
   }
 
   getAuthorNames(authors: string[] | undefined): string {
     return authors?.join(', ') || 'Unknown Author';
+  }
+
+  getPublishedYear(publishedDate: string | undefined): string | null {
+    if (!publishedDate) return null;
+    const year = publishedDate.split('-')[0];
+    return year && year.length === 4 ? year : null;
+  }
+
+  getSeriesInfo(seriesName: string | undefined, seriesNumber: number | null | undefined): string | null {
+    if (!seriesName) return null;
+    if (seriesNumber) {
+      return `${seriesName} #${seriesNumber}`;
+    }
+    return seriesName;
   }
 
   onSearchInputChange(): void {
@@ -80,6 +87,18 @@ export class BookSearcherComponent implements OnInit, OnDestroy {
   clearSearch(): void {
     this.searchQuery = '';
     this.books = [];
+  }
+
+  get isDropdownOpen(): boolean {
+    return this.books.length > 0;
+  }
+
+  onSearchBlur(): void {
+    setTimeout(() => {
+      if (!this.isDropdownOpen) {
+        this.isSearchFocused = false;
+      }
+    }, 200);
   }
 
   ngOnDestroy(): void {

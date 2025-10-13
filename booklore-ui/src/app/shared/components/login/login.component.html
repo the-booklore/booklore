@@ -1,31 +1,30 @@
-<div class="flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden"
-     style="background: linear-gradient(60deg, var(--primary-color) 0%, #1e3a8a 100%);">
-  <div class="flex flex-col items-center justify-center -mt-48 w-[90%] sm:w-auto sm:min-w-[400px] md:min-w-[500px]">
-    <div class="w-full" style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-      <div class="w-full bg-surface-900 pt-8 pb-14 px-8 sm:px-12" style="border-radius: 53px">
-        <div class="text-center mb-8">
-          <svg class="mb-8 w-14 h-14 mx-auto" viewBox="0 0 126 126" fill="var(--primary-color)" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
-            <path
-              d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
-              fill="white"/>
-          </svg>
-          <div class="text-3xl font-medium mb-4">Welcome to Booklore</div>
-          <span class="font-medium">Sign in to continue</span>
+<div class="login-container">
+  <div class="login-card-wrapper">
+    <div class="login-card-border">
+      <div class="login-card">
+        <div class="login-header">
+          <div class="logo-wrapper">
+            <svg class="logo-icon" viewBox="0 0 126 126" fill="var(--primary-color)" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
+              <path
+                d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
+                fill="white"/>
+            </svg>
+          </div>
+          <h1 class="login-title">Welcome Back</h1>
+          <p class="login-subtitle">Sign in to continue your journey</p>
         </div>
 
         @if (showOidcBypassInfo) {
-          <div class="mb-4 p-3 rounded-md bg-yellow-900/30 border border-yellow-600/50 w-full">
-            <div class="flex flex-col items-center">
-              <div class="flex items-center gap-2 text-yellow-200 text-sm mb-2">
+          <div class="oidc-warning">
+            <div class="warning-content">
+              <div class="warning-header">
                 <i class="pi pi-exclamation-triangle"></i>
-                <span class="font-medium">OIDC Authentication Issues Detected</span>
+                <span>OIDC Authentication Issues</span>
               </div>
-              <p class="text-xs text-yellow-300 mb-3 text-center">
-                {{ oidcBypassMessage }}
-              </p>
-              <div class="flex gap-4">
+              <p class="warning-message">{{ oidcBypassMessage }}</p>
+              <div class="warning-actions">
                 <p-button
                   size="small"
                   severity="warn"
@@ -45,9 +44,12 @@
           </div>
         }
 
-        <form class="flex flex-col gap-4 w-full" #loginForm="ngForm" (ngSubmit)="login()">
-          <div class="flex flex-col gap-2">
-            <label for="username" class="text-lg font-medium">Username</label>
+        <form class="login-form" #loginForm="ngForm" (ngSubmit)="login()">
+          <div class="form-field">
+            <label for="username" class="form-label">
+              <i class="pi pi-user"></i>
+              <span>Username</span>
+            </label>
             <input
               fluid
               pInputText
@@ -56,13 +58,16 @@
               required
               [(ngModel)]="username"
               placeholder="Enter your username"
-              class="w-full"
+              class="form-input"
               autocomplete="username"
             />
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="password" class="text-lg font-medium">Password</label>
+          <div class="form-field">
+            <label for="password" class="form-label">
+              <i class="pi pi-lock"></i>
+              <span>Password</span>
+            </label>
             <p-password
               id="password"
               name="password"
@@ -71,7 +76,6 @@
               [feedback]="false"
               placeholder="Enter your password"
               [toggleMask]="true"
-              class="mb-4"
               [fluid]="true"
               autocomplete="current-password"
             ></p-password>
@@ -80,47 +84,47 @@
           <p-button
             fluid
             type="submit"
-            label="Login"
+            label="Sign In"
             icon="pi pi-sign-in"
             [disabled]="!loginForm.valid || !username || !password"
-            class="w-full">
+            class="login-button">
           </p-button>
 
           @if (errorMessage) {
-            <p-message severity="error">{{ errorMessage }}</p-message>
+            <div class="error-message">
+              <p-message severity="error">{{ errorMessage }}</p-message>
+            </div>
           }
 
           @if (oidcEnabled && !isOidcBypassed) {
-            <div class="flex items-center gap-2 my-2">
-              <hr class="flex-grow" style="border: none; border-top: 1px solid var(--border-color);"/>
-              <span class="text-gray-300">or</span>
-              <hr class="flex-grow" style="border: none; border-top: 1px solid var(--border-color);"/>
+            <div class="divider">
+              <span>or continue with</span>
             </div>
 
             <p-button
               fluid
-              severity="info"
-              [label]="isOidcLoginInProgress ? 'Redirecting to ' + oidcName + '...' : 'Login with ' + oidcName"
+              severity="secondary"
+              [label]="isOidcLoginInProgress ? 'Redirecting to ' + oidcName + '...' : oidcName"
               [icon]="isOidcLoginInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-id-card'"
               [disabled]="isOidcLoginInProgress"
               (click)="loginWithOidc()"
-              class="w-full bg-gray-800 text-white hover:bg-gray-700"/>
+              class="oidc-button"/>
 
-            <div class="text-center">
+            <div class="help-text">
               <button
                 type="button"
-                class="text-xs text-gray-400 hover:text-gray-300 underline"
+                class="text-link"
                 (click)="bypassOidc()">
-                Having trouble with {{ oidcName }}? Use local login only
+                Having trouble with {{ oidcName }}? Use local login
               </button>
             </div>
           }
 
           @if (oidcEnabled && isOidcBypassed) {
-            <div class="text-center mt-4">
+            <div class="help-text">
               <button
                 type="button"
-                class="text-xs text-blue-400 hover:text-blue-300 underline"
+                class="text-link primary"
                 (click)="enableOidc()">
                 Re-enable {{ oidcName }} login
               </button>

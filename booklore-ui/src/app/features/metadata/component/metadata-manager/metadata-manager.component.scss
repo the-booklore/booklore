@@ -9,7 +9,7 @@
   }
 
   .description {
-    color: var(--text-color-secondary);
+    color: var(--text-secondary-color);
     margin-bottom: 1.5rem;
   }
 
@@ -89,7 +89,7 @@
       margin-bottom: 0.5rem;
 
       .count {
-        color: var(--text-color-secondary);
+        color: var(--text-secondary-color);
         font-size: 0.875rem;
       }
     }
@@ -107,7 +107,7 @@
     small {
       display: block;
       margin-top: 0.5rem;
-      color: var(--text-color-secondary);
+      color: var(--text-secondary-color);
     }
   }
 }

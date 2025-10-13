@@ -1,42 +1,50 @@
-<div class="flex items-center justify-center min-h-screen min-w-[100vw] overflow-hidden"
-     style="background: linear-gradient(60deg, var(--primary-color) 0%, #1e3a8a 100%);">
-  <div class="flex flex-col items-center justify-center -mt-48">
-    <div style="border-radius: 56px; padding: 0.3rem; background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 30%)">
-      <div class="w-full bg-surface-900 py-16 px-8 sm:px-16" style="border-radius: 53px">
-        <div class="text-center mb-8">
-          <svg class="mb-8 w-16 h-16 mx-auto" viewBox="0 0 126 126" fill="var(--primary-color)" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
-            <path
-              d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
-              fill="white"/>
-          </svg>
-          <div class="text-3xl font-medium mb-4">Welcome to Booklore</div>
-          <span class="text-xl">Setup Initial Admin Account</span>
+<div class="setup-container">
+  <div class="setup-card-wrapper">
+    <div class="setup-card-border">
+      <div class="setup-card">
+        <div class="setup-header">
+          <div class="logo-wrapper">
+            <svg class="logo-icon" viewBox="0 0 126 126" fill="var(--primary-color)" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M59 4.79297C71.5051 11.5557 80 24.7854 80 40C80 40.5959 79.987 41.1888 79.9609 41.7783C79.8609 44.0406 81.7355 46 84 46C106.091 46 124 63.9086 124 86C124 108.091 106.091 126 84 126H10C4.47715 126 0 121.523 0 116V39.0068L0.0126953 38.9941C0.357624 25.0252 7.86506 12.8347 19 5.95215V63.832C19 64.8345 20.0676 65.4391 20.9121 64.9902L21.0771 64.8867L38.2227 52.3428C38.6819 52.0068 39.3064 52.0068 39.7656 52.3428L56.9229 64.8945L57.0879 64.998C57.9324 65.447 59 64.8423 59 63.8398V4.79297Z"/>
+              <path
+                d="M40 0C43.8745 0 47.6199 0.552381 51.1631 1.58008V50.9697L44.3926 46.0176L44.0879 45.8037C40.9061 43.6679 36.7098 43.7393 33.5957 46.0176L26.8369 50.9619V2.21875C30.9593 0.782634 35.3881 0 40 0Z"
+                fill="white"/>
+            </svg>
+          </div>
+          <h1 class="setup-title">Welcome to Booklore</h1>
+          <p class="setup-subtitle">Setup your initial admin account to get started</p>
         </div>
 
-        <form class="flex flex-col gap-4" [formGroup]="setupForm" (ngSubmit)="onSubmit()">
-
-          <div class="flex flex-col gap-2">
-            <label for="username" class="text-lg font-medium">Username</label>
+        <form class="setup-form" [formGroup]="setupForm" (ngSubmit)="onSubmit()">
+          <div class="form-field">
+            <label for="username" class="form-label">
+              <i class="pi pi-user"></i>
+              <span>Username</span>
+            </label>
             <input
               pInputText
               id="username"
               name="username"
               required
               formControlName="username"
-              placeholder="Enter your username"
-              class="w-full md:w-[30rem]"
+              placeholder="Choose a username"
+              class="form-input"
+              autocomplete="username"
             />
             @if (setupForm.get('username')?.invalid && setupForm.get('username')?.touched) {
-              <small class="text-red-500">
-                Username is required.
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Username is required
               </small>
             }
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="name" class="text-lg font-medium">Name</label>
+          <div class="form-field">
+            <label for="name" class="form-label">
+              <i class="pi pi-id-card"></i>
+              <span>Full Name</span>
+            </label>
             <input
               pInputText
               id="name"
@@ -44,68 +52,85 @@
               required
               formControlName="name"
               placeholder="Enter your full name"
-              class="w-full md:w-[30rem]"
+              class="form-input"
+              autocomplete="name"
             />
             @if (setupForm.get('name')?.invalid && setupForm.get('name')?.touched) {
-              <small class="text-red-500">
-                Name is required.
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Name is required
               </small>
             }
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="email" class="text-lg font-medium">Email</label>
+          <div class="form-field">
+            <label for="email" class="form-label">
+              <i class="pi pi-envelope"></i>
+              <span>Email Address</span>
+            </label>
             <input
               pInputText
               id="email"
               name="email"
+              type="email"
               required
               formControlName="email"
-              placeholder="Enter your email"
-              class="w-full md:w-[30rem]"
+              placeholder="Enter your email address"
+              class="form-input"
+              autocomplete="email"
             />
             @if (setupForm.get('email')?.invalid && setupForm.get('email')?.touched) {
-              <small class="text-red-500">
-                Valid email is required.
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Valid email is required
               </small>
             }
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="password" class="text-lg font-medium">Password</label>
+          <div class="form-field">
+            <label for="password" class="form-label">
+              <i class="pi pi-lock"></i>
+              <span>Password</span>
+            </label>
             <input
               pInputText
               id="password"
               name="password"
+              type="password"
               required
               formControlName="password"
-              placeholder="Enter new password"
-              class="w-full md:w-[30rem]"
+              placeholder="Create a secure password"
+              class="form-input"
+              autocomplete="new-password"
             />
             @if (setupForm.get('password')?.invalid && setupForm.get('password')?.touched) {
-              <small class="text-red-500">
-                Minimum 6 characters required.
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Minimum 6 characters required
               </small>
             }
           </div>
 
-          <div class="flex flex-col gap-3 mt-4">
-            <p-button
-              fluid
-              type="submit"
-              [label]="loading ? 'Creating…' : 'Create Admin Account'"
-              [disabled]="loading || setupForm.invalid"
-              icon="pi pi-user-plus"
-            >
-            </p-button>
+          <p-button
+            fluid
+            type="submit"
+            [label]="loading ? 'Creating Account...' : 'Create Admin Account'"
+            [icon]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-user-plus'"
+            [disabled]="loading || setupForm.invalid"
+            class="setup-button"
+          />
 
-            @if (error) {
-              <p-message severity="error" text="{{ error }}"></p-message>
-            }
-            @if (success) {
-              <p-message severity="success" text="Admin account created! Redirecting…"></p-message>
-            }
-          </div>
+          @if (error) {
+            <div class="message-container error-message">
+              <p-message severity="error">{{ error }}</p-message>
+            </div>
+          }
+
+          @if (success) {
+            <div class="message-container success-message">
+              <p-message severity="success">Admin account created successfully! Redirecting...</p-message>
+            </div>
+          }
         </form>
       </div>
     </div>

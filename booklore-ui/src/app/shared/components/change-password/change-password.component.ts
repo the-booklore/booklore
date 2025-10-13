@@ -1,11 +1,10 @@
 import {Component, inject} from '@angular/core';
 import {Button} from 'primeng/button';
-import {Card} from 'primeng/card';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {Message} from 'primeng/message';
 
 import {Password} from 'primeng/password';
-import {MessageService, PrimeTemplate} from 'primeng/api';
+import {MessageService} from 'primeng/api';
 import {UserService} from '../../../features/settings/user-management/user.service';
 import {AuthService} from '../../service/auth.service';
 
@@ -14,13 +13,11 @@ import {AuthService} from '../../service/auth.service';
   standalone: true,
   imports: [
     Button,
-    Card,
     FormsModule,
     Message,
     Password,
-    PrimeTemplate,
     ReactiveFormsModule
-],
+  ],
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss'
 })
