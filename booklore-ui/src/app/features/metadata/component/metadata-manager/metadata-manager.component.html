@@ -15,7 +15,7 @@
       <p-tablist>
         @for (tab of tabConfigs; track tab.type) {
           <p-tab [value]="tab.type">
-            <i class="pi {{ tab.icon }}"></i> {{ tab.label }}s ({{ getMetadataItems(tab.type).length }})
+            <i class="pi {{ tab.icon }}"></i> {{ tab.label.endsWith('s') ? tab.label : tab.label + 's' }} ({{ getMetadataItems(tab.type).length }})
           </p-tab>
         }
       </p-tablist>
