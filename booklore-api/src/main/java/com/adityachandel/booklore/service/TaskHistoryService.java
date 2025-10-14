@@ -7,8 +7,12 @@ import com.adityachandel.booklore.model.dto.response.TaskStatusResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -91,10 +95,82 @@ public class TaskHistoryService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public TaskStatusResponse getTaskHistory(int page, int size, String status, String type) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<TaskEntity> taskPage;
+
+        TaskStatus statusEnum = null;
+        TaskType typeEnum = null;
+
+        if (StringUtils.hasText(status)) {
+            try {
+                statusEnum = TaskStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status filter: {}", status);
+            }
+        }
+
+        if (StringUtils.hasText(type)) {
+            try {
+                typeEnum = TaskType.valueOf(type.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid type filter: {}", type);
+            }
+        }
+
+        if (statusEnum != null && typeEnum != null) {
+            taskPage = taskRepository.findTasksByStatusAndType(statusEnum, typeEnum, pageable);
+        } else if (statusEnum != null) {
+            taskPage = taskRepository.findTasksByStatus(statusEnum, pageable);
+        } else if (typeEnum != null) {
+            taskPage = taskRepository.findTasksByType(typeEnum, pageable);
+        } else {
+            taskPage = taskRepository.findAllTasksOrderByCreatedAtDesc(pageable);
+        }
+
+        List<TaskStatusResponse.TaskInfo> tasks = taskPage.getContent().stream()
+                .map(task -> mapToTaskInfo(task, true))
+                .collect(Collectors.toList());
+
+        return TaskStatusResponse.builder()
+                .tasks(tasks)
+                .totalElements(taskPage.getTotalElements())
+                .totalPages(taskPage.getTotalPages())
+                .currentPage(page)
+                .pageSize(size)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public TaskStatusResponse getRunningTasks() {
+        List<TaskEntity> runningTasks = taskRepository.findRunningTasks();
+
+        List<TaskStatusResponse.TaskInfo> tasks = runningTasks.stream()
+                .map(task -> mapToTaskInfo(task, true))
+                .collect(Collectors.toList());
+
+        return TaskStatusResponse.builder()
+                .tasks(tasks)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public TaskStatusResponse.TaskInfo getTaskById(String taskId) {
+        TaskEntity task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+
+        return mapToTaskInfo(task, true);
+    }
+
     private TaskStatusResponse.TaskInfo mapToTaskInfo(TaskEntity task) {
+        return mapToTaskInfo(task, false);
+    }
+
+    private TaskStatusResponse.TaskInfo mapToTaskInfo(TaskEntity task, boolean includeExtendedData) {
         Map<String, Object> metadata = taskMetadataService.getMetadataForTaskType(task.getType());
 
-        return TaskStatusResponse.TaskInfo.builder()
+        TaskStatusResponse.TaskInfo.TaskInfoBuilder builder = TaskStatusResponse.TaskInfo.builder()
                 .id(task.getId())
                 .type(task.getType())
                 .status(task.getStatus())
@@ -103,8 +179,14 @@ public class TaskHistoryService {
                 .createdAt(task.getCreatedAt())
                 .updatedAt(task.getUpdatedAt())
                 .completedAt(task.getCompletedAt())
-                .metadata(metadata)
-                .build();
+                .metadata(metadata);
+
+        if (includeExtendedData) {
+            builder.errorDetails(task.getErrorDetails())
+                   .taskOptions(task.getTaskOptions());
+        }
+
+        return builder.build();
     }
 
     private TaskStatusResponse.TaskInfo createMetadataOnlyTaskInfo(TaskType taskType) {
@@ -116,6 +198,8 @@ public class TaskHistoryService {
                 .status(null)
                 .progressPercentage(null)
                 .message(null)
+                .errorDetails(null)
+                .taskOptions(null)
                 .createdAt(null)
                 .updatedAt(null)
                 .completedAt(null)

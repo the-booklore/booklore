@@ -56,6 +56,15 @@ public class BookMetadataUpdater {
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
+        // First: Update metadata in database within transaction
+        updateMetadataInDatabase(context);
+        
+        // Second: Handle file operations outside of transaction to prevent session corruption
+        handleFileOperationsAfterMetadataUpdate(context);
+    }
+
+    @Transactional
+    private void updateMetadataInDatabase(MetadataUpdateContext context) {
         BookEntity bookEntity = context.getBookEntity();
         MetadataUpdateWrapper wrapper = context.getMetadataUpdateWrapper();
         boolean mergeCategories = context.isMergeCategories();
@@ -75,7 +84,6 @@ public class BookMetadataUpdater {
 
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
-        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
@@ -88,11 +96,7 @@ public class BookMetadataUpdater {
             return;
         }
 
-        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
-        boolean writeToFile = settings.isSaveToOriginalFile();
-        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
-        BookFileType bookType = bookEntity.getBookType();
-
+        // Database operations only - no file operations in this transaction
         updateBasicFields(newMetadata, metadata, clearFlags, replaceMode);
         updateAuthorsIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
         updateCategoriesIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
@@ -109,58 +113,101 @@ public class BookMetadataUpdater {
         } catch (Exception e) {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
+    }
 
+    /**
+     * Handles file operations (metadata writing and file movement) after database transaction has completed.
+     * This prevents file operation failures from corrupting the Hibernate session.
+     */
+    private void handleFileOperationsAfterMetadataUpdate(MetadataUpdateContext context) {
+        BookEntity bookEntity = context.getBookEntity();
+        MetadataUpdateWrapper wrapper = context.getMetadataUpdateWrapper();
+        boolean updateThumbnail = context.isUpdateThumbnail();
+        BookMetadata newMetadata = wrapper.getMetadata();
+        MetadataClearFlags clearFlags = wrapper.getClearFlags();
+        
+        Long bookId = bookEntity.getId();
+        BookMetadataEntity metadata = bookEntity.getMetadata();
+        
+        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
+        boolean writeToFile = settings.isSaveToOriginalFile();
+        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
+        boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
+        
+        // Handle metadata file writing with isolated error handling
         if ((writeToFile && hasValueChanges) || thumbnailRequiresUpdate) {
-            if (bookType == BookFileType.CBX && !convertCbrCb7ToCbz) {
-                log.info("CBX metadata writing disabled for book ID {}", bookId);
-            } else {
-                metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
-                    try {
-                        String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
-
-                        if ((StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl) || Boolean.TRUE.equals(metadata.getCoverLocked()))) {
-                            log.debug("Blocked local/private thumbnail URL: {}", thumbnailUrl);
-                            thumbnailUrl = null;
-                        }
-
-                        File file = new File(bookEntity.getFullFilePath().toUri());
-                        writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
-
-                        String newHash;
-
-                        // Special handling: If original file was .cbr or .cb7 and now .cbz exists, update to .cbz
-                        File resultingFile = file;
-                        if (!file.exists()) {
-                            // Replace last extension .cbr or .cb7 (case-insensitive) with .cbz
-                            String cbzName = file.getName().replaceFirst("(?i)\\.(cbr|cb7)$", ".cbz");
-                            File cbzFile = new File(file.getParentFile(), cbzName);
-                            if (cbzFile.exists()) {
-                                bookEntity.setFileName(cbzName);
-                                resultingFile = cbzFile;
-                            }
-                            bookEntity.setFileSizeKb(resultingFile.length() / 1024);
-                            log.info("Converted to CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
-                            newHash = FileFingerprint.generateHash(resultingFile.toPath());
-                        } else {
-                            newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
-                        }
-
-                        bookEntity.setCurrentHash(newHash);
-                    } catch (Exception e) {
-                        log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
-                    }
-                });
+            try {
+                writeMetadataToFile(bookEntity, newMetadata, metadata, clearFlags, updateThumbnail, thumbnailRequiresUpdate);
+            } catch (Exception e) {
+                log.warn("Failed to write metadata to file for book ID {}: {}", bookId, e.getMessage());
+                // Continue processing - don't fail the entire operation
             }
         }
-
-        boolean moveFilesToLibraryPattern = settings.isMoveFilesToLibraryPattern();
-        if (moveFilesToLibraryPattern) {
+        
+        // Handle file movement with isolated error handling
+        if (settings.isMoveFilesToLibraryPattern()) {
             try {
                 unifiedFileMoveService.moveSingleBookFile(bookEntity);
             } catch (Exception e) {
                 log.warn("Failed to move files for book ID {} after metadata update: {}", bookId, e.getMessage());
+                // Continue processing - don't fail the entire operation
             }
         }
+    }
+
+    /**
+     * Writes metadata to the book file, handling CBX conversion and file hash updates.
+     */
+    private void writeMetadataToFile(BookEntity bookEntity, BookMetadata newMetadata, BookMetadataEntity metadata, 
+                                   MetadataClearFlags clearFlags, boolean updateThumbnail, boolean thumbnailRequiresUpdate) {
+        Long bookId = bookEntity.getId();
+        BookFileType bookType = bookEntity.getBookType();
+        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
+        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
+        
+        if (bookType == BookFileType.CBX && !convertCbrCb7ToCbz) {
+            log.info("CBX metadata writing disabled for book ID {}", bookId);
+            return;
+        }
+        
+        metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
+            try {
+                String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
+
+                if ((StringUtils.hasText(thumbnailUrl) && isLocalOrPrivateUrl(thumbnailUrl) || Boolean.TRUE.equals(metadata.getCoverLocked()))) {
+                    log.debug("Blocked local/private thumbnail URL: {}", thumbnailUrl);
+                    thumbnailUrl = null;
+                }
+
+                File file = new File(bookEntity.getFullFilePath().toUri());
+                writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
+
+                String newHash;
+
+                // Special handling: If original file was .cbr or .cb7 and now .cbz exists, update to .cbz
+                File resultingFile = file;
+                if (!file.exists()) {
+                    // Replace last extension .cbr or .cb7 (case-insensitive) with .cbz
+                    String cbzName = file.getName().replaceFirst("(?i)\\.(cbr|cb7)$", ".cbz");
+                    File cbzFile = new File(file.getParentFile(), cbzName);
+                    if (cbzFile.exists()) {
+                        bookEntity.setFileName(cbzName);
+                        resultingFile = cbzFile;
+                    }
+                    bookEntity.setFileSizeKb(resultingFile.length() / 1024);
+                    log.info("Converted to CBZ: {} -> {}", file.getAbsolutePath(), resultingFile.getAbsolutePath());
+                    newHash = FileFingerprint.generateHash(resultingFile.toPath());
+                } else {
+                    newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                }
+
+                bookEntity.setCurrentHash(newHash);
+                bookRepository.save(bookEntity); // Save the updated hash and filename
+            } catch (Exception e) {
+                log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
+                throw e; // Re-throw to be caught by caller for proper error handling
+            }
+        });
     }
 
 

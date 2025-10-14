@@ -17,6 +17,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class TaskStatusResponse {
     private List<TaskInfo> tasks;
+    private Long totalElements;
+    private Integer totalPages;
+    private Integer currentPage;
+    private Integer pageSize;
 
     @Data
     @Builder
@@ -28,6 +32,8 @@ public class TaskStatusResponse {
         private TaskStatus status;
         private Integer progressPercentage;
         private String message;
+        private String errorDetails;
+        private Map<String, Object> taskOptions;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private LocalDateTime completedAt;

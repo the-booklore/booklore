@@ -6,7 +6,10 @@ import {ProgressBar} from 'primeng/progressbar';
 import {MessageService} from 'primeng/api';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
-import {MetadataReplaceMode, Task, TASK_TYPE_CONFIG, TaskCreateRequest, TaskProgressPayload, TaskService, TaskStatus, TaskType} from './task.service';
+import {TableModule} from 'primeng/table';
+import {Dialog} from 'primeng/dialog';
+import {Tooltip} from 'primeng/tooltip';
+import {MetadataReplaceMode, Task, TASK_TYPE_CONFIG, TaskCreateRequest, TaskProgressPayload, TaskService, TaskStatus, TaskType, TaskStatusResponse} from './task.service';
 import {finalize, Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 
@@ -20,6 +23,9 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     ProgressBar,
     Select,
     FormsModule,
+    TableModule,
+    Dialog,
+    Tooltip,
     ExternalDocLinkComponent
   ],
   templateUrl: './task-management.component.html',
@@ -33,6 +39,19 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   loading = false;
   private subscription?: Subscription;
 
+  // Task History Properties
+  taskHistory: Task[] = [];
+  loadingHistory = false;
+  totalHistoryRecords = 0;
+  totalHistoryPages = 0;
+  currentHistoryPage = 0;
+  historyPageSize = 25;
+  showRunningOnly = false;
+
+  // Task Details Modal
+  showTaskDetailsModal = false;
+  selectedTaskDetails: Task | null = null;
+
   metadataReplaceOptions = [
     {label: 'Replace Missing Only (Recommended)', value: MetadataReplaceMode.REPLACE_MISSING},
     {label: 'Replace All Metadata', value: MetadataReplaceMode.REPLACE_ALL}
@@ -41,6 +60,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadTasks();
+    this.loadTaskHistory();
     this.subscribeToTaskProgress();
   }
 
@@ -276,6 +296,109 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
       summary,
       detail
     });
+  }
+
+  // Task History Methods
+  loadTaskHistory(page: number = 0, size: number = 25): void {
+    this.loadingHistory = true;
+    const status = this.showRunningOnly ? 'IN_PROGRESS,ACCEPTED' : undefined;
+    
+    this.taskService.getTaskHistory(page, size, status)
+      .pipe(finalize(() => this.loadingHistory = false))
+      .subscribe({
+        next: (response: TaskStatusResponse) => {
+          this.taskHistory = response.tasks;
+          this.totalHistoryRecords = response.totalElements || 0;
+          this.totalHistoryPages = response.totalPages || 0;
+          this.currentHistoryPage = response.currentPage || 0;
+          this.historyPageSize = response.pageSize || 25;
+        },
+        error: (error) => {
+          console.error('Error loading task history:', error);
+          this.showMessage('error', 'Error', 'Failed to load task history');
+        }
+      });
+  }
+
+  loadTaskHistoryPage(event: any): void {
+    const page = event.first / event.rows;
+    this.loadTaskHistory(page, event.rows);
+  }
+
+  toggleRunningOnly(): void {
+    this.showRunningOnly = !this.showRunningOnly;
+    this.loadTaskHistory(0, this.historyPageSize);
+  }
+
+  showTaskDetails(task: Task): void {
+    if (task.id) {
+      this.taskService.getTaskById(task.id).subscribe({
+        next: (fullTask: Task) => {
+          this.selectedTaskDetails = fullTask;
+          this.showTaskDetailsModal = true;
+        },
+        error: (error) => {
+          console.error('Error loading task details:', error);
+          this.selectedTaskDetails = task; // Fallback to basic task info
+          this.showTaskDetailsModal = true;
+        }
+      });
+    } else {
+      this.selectedTaskDetails = task;
+      this.showTaskDetailsModal = true;
+    }
+  }
+
+  // Utility Methods for Task History
+  getTaskRowClass(task: Task): string {
+    if (this.isTaskRunning(task)) return 'task-running';
+    if (task.status === 'FAILED') return 'task-failed';
+    if (task.status === 'CANCELLED') return 'task-cancelled';
+    if (task.status === 'COMPLETED') return 'task-completed';
+    return '';
+  }
+
+  getStatusSeverity(status: string | null): 'success' | 'info' | 'warn' | 'danger' {
+    switch (status) {
+      case 'COMPLETED': return 'success';
+      case 'IN_PROGRESS': case 'ACCEPTED': return 'info';
+      case 'CANCELLED': return 'warn';
+      case 'FAILED': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  calculateDuration(createdAt: string, completedAt: string): string {
+    const created = new Date(createdAt);
+    const completed = new Date(completedAt);
+    const diffMs = completed.getTime() - created.getTime();
+    
+    const minutes = Math.floor(diffMs / 60000);
+    const seconds = Math.floor((diffMs % 60000) / 1000);
+    
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+  }
+
+  truncateMessage(message: string, maxLength: number = 50): string {
+    if (!message) return '';
+    return message.length > maxLength ? message.substring(0, maxLength) + '...' : message;
+  }
+
+  getDurationText(task: Task): string {
+    if (task.createdAt && task.completedAt) {
+      return this.calculateDuration(task.createdAt, task.completedAt);
+    } else if (this.isTaskRunning(task) && task.createdAt) {
+      return this.calculateDuration(task.createdAt, new Date().toISOString());
+    }
+    return 'N/A';
+  }
+
+  formatTaskOptions(taskOptions: any): string {
+    if (!taskOptions) return 'None';
+    return JSON.stringify(taskOptions, null, 2);
   }
 
   protected readonly TaskType = TaskType;

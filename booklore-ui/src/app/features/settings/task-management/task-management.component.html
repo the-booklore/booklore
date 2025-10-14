@@ -276,5 +276,241 @@
         </div>
       }
     </div>
+
+    <!-- Task History & Monitoring Section -->
+    <div class="preferences-section">
+      <div class="section-header">
+        <div class="section-header-content">
+          <h3 class="section-title">
+            <i class="pi pi-history"></i>
+            Task History & Monitoring
+          </h3>
+          <div class="header-actions">
+            <p-button
+              label="Refresh History"
+              icon="pi pi-refresh"
+              size="small"
+              outlined
+              [loading]="loadingHistory"
+              (onClick)="loadTaskHistory()">
+            </p-button>
+            <p-button
+              [label]="showRunningOnly ? 'Show All Tasks' : 'Show Running Only'"
+              [icon]="showRunningOnly ? 'pi pi-list' : 'pi pi-play'"
+              size="small"
+              [outlined]="!showRunningOnly"
+              severity="info"
+              (onClick)="toggleRunningOnly()">
+            </p-button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Task History Table -->
+      <div class="task-history-container">
+        <p-table [value]="taskHistory" 
+                 [loading]="loadingHistory"
+                 [paginator]="true" 
+                 [rows]="historyPageSize"
+                 [totalRecords]="totalHistoryRecords"
+                 [lazy]="true"
+                 (onLazyLoad)="loadTaskHistoryPage($event)"
+                 styleClass="p-datatable-sm"
+                 [tableStyle]="{'min-width': '60rem'}">
+          
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="width: 200px">Type</th>
+              <th style="width: 120px">Status</th>
+              <th style="width: 100px">Progress</th>
+              <th style="width: 160px">Started</th>
+              <th style="width: 100px">Duration</th>
+              <th>Message</th>
+              <th style="width: 100px">Actions</th>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="body" let-task>
+            <tr [class]="getTaskRowClass(task)">
+              <td>
+                <div class="task-type-info">
+                  <span class="task-type-badge">{{ getTaskDisplayName(task.type) }}</span>
+                  @if (task.id) {
+                    <small class="task-id">{{ task.id.substring(0, 8) }}...</small>
+                  }
+                </div>
+              </td>
+              <td>
+                <p-badge 
+                  [value]="task.status || 'Unknown'"
+                  [severity]="getStatusSeverity(task.status)">
+                </p-badge>
+              </td>
+              <td>
+                @if (task.progressPercentage !== null && task.progressPercentage !== undefined) {
+                  <div class="progress-mini">
+                    <p-progressbar [value]="task.progressPercentage" [style]="{'height': '0.5rem', 'margin-bottom': '0.25rem'}"></p-progressbar>
+                    <small>{{ task.progressPercentage }}%</small>
+                  </div>
+                }
+                @else {
+                  <span class="text-muted">--</span>
+                }
+              </td>
+              <td>
+                @if (task.createdAt) {
+                  <small>{{ formatDate(task.createdAt) }}</small>
+                }
+                @else {
+                  <span class="text-muted">--</span>
+                }
+              </td>
+              <td>
+                @if (task.completedAt && task.createdAt) {
+                  <small>{{ calculateDuration(task.createdAt, task.completedAt) }}</small>
+                }
+                @else if (isTaskRunning(task) && task.createdAt) {
+                  <span class="running-indicator">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <small>Running</small>
+                  </span>
+                }
+                @else {
+                  <span class="text-muted">--</span>
+                }
+              </td>
+              <td>
+                <div class="task-message-cell">
+                  @if (task.errorDetails) {
+                    <i class="pi pi-exclamation-triangle text-red-500" pTooltip="Has error details"></i>
+                  }
+                  <span class="task-message" [title]="task.message || task.errorDetails || 'No message'">
+                    {{ truncateMessage(task.message || task.errorDetails || 'No message', 40) }}
+                  </span>
+                </div>
+              </td>
+              <td>
+                <div class="task-actions-cell">
+                  <p-button
+                    icon="pi pi-eye"
+                    size="small"
+                    text
+                    pTooltip="View Details"
+                    (onClick)="showTaskDetails(task)">
+                  </p-button>
+                  @if (canCancelTask(task)) {
+                    <p-button
+                      icon="pi pi-times"
+                      size="small"
+                      text
+                      severity="danger"
+                      pTooltip="Cancel Task"
+                      (onClick)="cancelTask(task)">
+                    </p-button>
+                  }
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+          
+          <ng-template pTemplate="emptymessage">
+            <tr>
+              <td colspan="7" class="text-center">
+                <div class="empty-state">
+                  <i class="pi pi-info-circle"></i>
+                  <span>{{ showRunningOnly ? 'No running tasks found' : 'No task history found' }}</span>
+                </div>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Task Details Modal -->
+<p-dialog 
+  header="Task Details"
+  [(visible)]="showTaskDetailsModal"
+  [style]="{width: '800px'}"
+  [modal]="true"
+  [closable]="true">
+  
+  @if (selectedTaskDetails) {
+    <div class="task-details-content">
+      <!-- Task Overview -->
+      <div class="detail-section">
+        <h4>Overview</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Task ID:</label>
+            <span class="monospace">{{ selectedTaskDetails.id || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Type:</label>
+            <span>{{ getTaskDisplayName(selectedTaskDetails.type) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <p-badge [value]="selectedTaskDetails.status || 'Unknown'" [severity]="getStatusSeverity(selectedTaskDetails.status)"></p-badge>
+          </div>
+          <div class="detail-item">
+            <label>Progress:</label>
+            <span>{{ selectedTaskDetails.progressPercentage || 0 }}%</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Timing Information -->
+      <div class="detail-section">
+        <h4>Timing</h4>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <label>Created:</label>
+            <span>{{ selectedTaskDetails.createdAt ? formatDate(selectedTaskDetails.createdAt) : 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Last Updated:</label>
+            <span>{{ selectedTaskDetails.updatedAt ? formatDate(selectedTaskDetails.updatedAt) : 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Completed:</label>
+            <span>{{ selectedTaskDetails.completedAt ? formatDate(selectedTaskDetails.completedAt) : 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Duration:</label>
+            <span>{{ getDurationText(selectedTaskDetails) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Message & Error Details -->
+      @if (selectedTaskDetails.message || selectedTaskDetails.errorDetails) {
+        <div class="detail-section">
+          <h4>Message & Error Details</h4>
+          @if (selectedTaskDetails.message) {
+            <div class="detail-item full-width">
+              <label>Status Message:</label>
+              <pre class="message-box">{{ selectedTaskDetails.message }}</pre>
+            </div>
+          }
+          @if (selectedTaskDetails.errorDetails) {
+            <div class="detail-item full-width">
+              <label>Error Details:</label>
+              <pre class="error-box">{{ selectedTaskDetails.errorDetails }}</pre>
+            </div>
+          }
+        </div>
+      }
+      
+      <!-- Task Options -->
+      @if (selectedTaskDetails.taskOptions) {
+        <div class="detail-section">
+          <h4>Task Configuration</h4>
+          <pre class="options-box">{{ formatTaskOptions(selectedTaskDetails.taskOptions) }}</pre>
+        </div>
+      }
+    </div>
+  }
+</p-dialog>

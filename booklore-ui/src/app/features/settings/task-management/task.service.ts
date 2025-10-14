@@ -39,6 +39,10 @@ export interface TaskCreateResponse {
 
 export interface TaskStatusResponse {
   tasks: Task[];
+  totalElements?: number;
+  totalPages?: number;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export enum TaskStatus {
@@ -63,6 +67,8 @@ export interface Task {
   status: string | null;
   progressPercentage: number | null;
   message: string | null;
+  errorDetails?: string | null;
+  taskOptions?: any;
   createdAt: string | null;
   updatedAt: string | null;
   completedAt: string | null;
@@ -88,7 +94,7 @@ export interface TaskProgressPayload {
 })
 export class TaskService {
   private http = inject(HttpClient);
-  private readonly baseUrl = `${API_CONFIG.BASE_URL}/api/v2/tasks`;
+  private readonly baseUrl = `${API_CONFIG.BASE_URL}/api/v1/tasks`;
 
   private taskProgressSubject = new BehaviorSubject<TaskProgressPayload | null>(null);
   public taskProgress$ = this.taskProgressSubject.asObservable();
@@ -107,5 +113,23 @@ export class TaskService {
 
   handleTaskProgress(progress: TaskProgressPayload): void {
     this.taskProgressSubject.next(progress);
+  }
+
+  getTaskHistory(page: number = 0, size: number = 50, status?: string, type?: string): Observable<TaskStatusResponse> {
+    let params = new URLSearchParams();
+    params.set('page', page.toString());
+    params.set('size', size.toString());
+    if (status) params.set('status', status);
+    if (type) params.set('type', type);
+
+    return this.http.get<TaskStatusResponse>(`${this.baseUrl}/history?${params.toString()}`);
+  }
+
+  getRunningTasks(): Observable<TaskStatusResponse> {
+    return this.http.get<TaskStatusResponse>(`${this.baseUrl}/running`);
+  }
+
+  getTaskById(taskId: string): Observable<Task> {
+    return this.http.get<Task>(`${this.baseUrl}/${taskId}`);
   }
 }
