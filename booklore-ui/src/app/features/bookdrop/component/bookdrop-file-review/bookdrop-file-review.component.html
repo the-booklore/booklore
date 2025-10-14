@@ -1,0 +1,308 @@
+<div class="overflow-x-auto">
+  <div class="flex flex-col h-[calc(100dvh-6.1rem)] rounded-xl overflow-hidden bg-[var(--card-background)] space-y-4 min-w-[100rem] border-[1px] border-solid border-[var(--p-content-border-color)]">
+    <div class="px-4 md:px-6 pt-6 pb-4 flex flex-col md:flex-row md:items-center md:justify-between">
+      <div>
+        <h2 class="text-xl font-semibold pb-1 flex items-center gap-2">
+          Review Bookdrop Files
+          <a href="https://booklore-app.github.io/booklore-docs/docs/bookdrop" target="_blank" rel="noopener noreferrer">
+            <i
+              class="pi pi-external-link text-sky-600 cursor-pointer"
+              style="font-size: 0.9rem"
+              pTooltip="View documentation"
+              tooltipPosition="top"></i>
+          </a>
+        </h2>
+        <p class="text-sm text-gray-400">
+          These files were uploaded to the
+          <strong class="text-[var(--primary-color)]">Bookdrop Folder</strong>.
+          Review their fetched metadata, assign a library and subpath, and finalize where they belong in your collection.
+        </p>
+      </div>
+
+      <div class="mt-4 md:mt-0">
+        <p-button
+          label="Rescan Bookdrop"
+          icon="pi pi-refresh"
+          severity="primary"
+          outlined
+          (click)="rescanBookdrop()"
+          pTooltip="Manually trigger a rescan of the Bookdrop folder"
+          tooltipPosition="top">
+        </p-button>
+      </div>
+    </div>
+
+    @if (loading) {
+
+      <div class="absolute inset-0 flex items-center justify-center z-50 rounded-xl">
+        <div class="flex flex-col items-center space-y-3">
+          <p-progressSpinner class="w-8 h-8" strokeWidth="4"/>
+          <span class="text-gray-300">Loading Bookdrop files. Please wait...</span>
+        </div>
+      </div>
+
+    } @else {
+
+      <div class="px-6 pb-2">
+        @if (saving) {
+          <div class="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center z-50 rounded-xl space-y-3">
+            <p-progressSpinner class="w-8 h-8" strokeWidth="4"/>
+            <div class="bg-gray-900/90 px-4 py-2 rounded-md">
+            <span class="text-sm text-gray-200 text-center">
+              Organizing and moving files to their designated libraries. Please wait...
+            </span>
+            </div>
+          </div>
+        }
+
+        @if (bookdropFileUis.length !== 0) {
+          <div class="flex justify-between items-center gap-4 px-1">
+
+            <div class="flex gap-4 items-center">
+              <span class="text-sm text-gray-300 font-medium">Library for All Files:</span>
+              <p-select
+                size="small"
+                [options]="libraryOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Default Library"
+                class="min-w-[8rem] max-w-[16rem]"
+                [(ngModel)]="defaultLibraryId">
+              </p-select>
+
+              <span class="text-sm text-gray-300 font-medium">Subpath for All Files:</span>
+              <p-select
+                size="small"
+                [options]="selectedLibraryPaths"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Select Default Subpath"
+                class="min-w-[8rem] max-w-[16rem]"
+                [(ngModel)]="defaultPathId">
+              </p-select>
+
+              <p-button
+                size="small"
+                label="Apply to All"
+                icon="pi pi-check"
+                [disabled]="!canApplyDefaults"
+                (click)="applyDefaultsToAll()"
+                pTooltip="Apply selected library and subpath to all files"
+                tooltipPosition="top">
+              </p-button>
+            </div>
+
+            <div class="flex gap-4">
+              <p-button
+                size="small"
+                outlined
+                severity="info"
+                label="Apply (w/ Cover)"
+                icon="pi pi-copy"
+                (click)="copyAll(true)"
+                pTooltip="For all files, replace current metadata with fetched metadata, including cover images"
+                tooltipPosition="top">
+              </p-button>
+
+              <p-button
+                size="small"
+                outlined
+                severity="info"
+                label="Apply (no Cover)"
+                icon="pi pi-copy"
+                (click)="copyAll(false)"
+                pTooltip="For all files, replace current metadata with fetched metadata, excluding cover images"
+                tooltipPosition="top">
+              </p-button>
+
+              <p-button
+                size="small"
+                outlined
+                severity="warn"
+                label="Reset"
+                icon="pi pi-refresh"
+                (click)="resetAll()"
+                pTooltip="Reset all metadata changes"
+                tooltipPosition="left">
+              </p-button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex-1 overflow-y-auto px-4 md:px-6 pt-4 space-y-2 pb-4">
+        @if (bookdropFileUis.length === 0) {
+          <div class="h-full w-full flex items-center justify-center text-gray-400 italic py-8">
+            No bookdrop files to review.
+          </div>
+        } @else {
+          @for (file of bookdropFileUis; track file) {
+
+            <div class="flex flex-col">
+              <div class="flex items-center gap-4 custom-border rounded-xl px-4 py-2">
+
+                <p-checkbox
+                  [binary]="true"
+                  [(ngModel)]="file.selected"
+                  (ngModelChange)="toggleFileSelection(file.file.id, $event)">
+                </p-checkbox>
+
+                <i
+                  class="pi pi-circle-fill"
+                  [ngStyle]="{'color': file.file.fetchedMetadata ? 'green' : 'darkorange'}"
+                  style="font-size: 0.75rem"
+                  pTooltip="{{file.file.fetchedMetadata ? 'Fetched metadata is available.' : 'No fetched metadata available.'}}"
+                  tooltipPosition="top">
+                </i>
+
+                @if (file.metadataForm.get('thumbnailUrl')?.value) {
+                  <img
+                    [src]="file.metadataForm.get('thumbnailUrl')?.value"
+                    alt="Cover"
+                    title="Original cover"
+                    class="w-6 h-8 rounded-sm object-cover cursor-pointer hover:scale-105 hover:shadow-md transition-transform duration-200"
+                    (click)="file.showDetails = !file.showDetails"/>
+                }
+
+                @if (file.file.fetchedMetadata?.thumbnailUrl) {
+                  <img
+                    [src]="file.file.fetchedMetadata?.thumbnailUrl"
+                    alt="Fetched Cover"
+                    title="Fetched cover"
+                    class="w-6 h-8 rounded-sm object-cover cursor-pointer hover:scale-105 hover:shadow-md transition-transform duration-200"
+                    (click)="file.showDetails = !file.showDetails"/>
+                }
+
+                <div class="flex-1 font-medium text-sm truncate" (click)="file.showDetails = !file.showDetails">
+                  {{ file.file.fileName }}
+                </div>
+
+                <i
+                  class="pi"
+                  [ngClass]="{
+                  'pi-check-circle text-green-500': copiedFlags[file.file.id],
+                  'pi-check-circle text-blue-500': !file.file.fetchedMetadata,
+                  'pi-exclamation-triangle text-red-500': file.file.fetchedMetadata && !copiedFlags[file.file.id]
+                }"
+                  [pTooltip]="copiedFlags[file.file.id]
+                  ? 'Fetched metadata has been applied.'
+                  : !file.file.fetchedMetadata
+                    ? 'No fetched metadata available. Original metadata will be used.'
+                    : 'Fetched metadata hasn’t been applied yet. Open metadata picker to review.'"
+                  tooltipPosition="top">
+                </i>
+
+                <p-select
+                  size="small"
+                  [options]="libraryOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Select Library"
+                  class="min-w-[8rem] max-w-[16rem]"
+                  [(ngModel)]="file.selectedLibraryId"
+                  (onChange)="onLibraryChange(file)">
+                </p-select>
+
+                <p-select
+                  size="small"
+                  [options]="file.availablePaths"
+                  optionLabel="name"
+                  optionValue="id"
+                  placeholder="Select Subpath"
+                  class="min-w-[8rem] max-w-[16rem]"
+                  appendTo="body"
+                  [(ngModel)]="file.selectedPathId">
+                </p-select>
+
+                <p-button
+                  size="small"
+                  [icon]="file.showDetails ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                  (click)="file.showDetails = !file.showDetails"
+                  tooltipPosition="top">
+                </p-button>
+              </div>
+
+              @if (file.showDetails) {
+                <app-bookdrop-file-metadata-picker-component
+                  class="px-12 py-8 custom-border1"
+                  [originalMetadata]="file.file.originalMetadata"
+                  [fetchedMetadata]="file.file.fetchedMetadata!"
+                  [metadataForm]="file.metadataForm"
+                  [copiedFields]="file.copiedFields"
+                  [savedFields]="file.savedFields"
+                  [bookdropFileId]="file.file.id"
+                  (metadataCopied)="onMetadataCopied(file.file.id, $event)">
+                </app-bookdrop-file-metadata-picker-component>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <p-divider></p-divider>
+
+      <div class="pb-2 px-4 flex items-center justify-between gap-4">
+
+        <div class="flex gap-4 items-center min-w-[160px] justify-start">
+          @if (bookdropFileUis.length > 0) {
+            <p-button
+              label="Select All"
+              icon="pi pi-check-square"
+              severity="info"
+              (click)="selectAll(true)"
+              outlined
+              pTooltip="Select all files across all pages you have navigated"
+              tooltipPosition="top">
+            </p-button>
+
+            <p-button
+              label="Clear All"
+              icon="pi pi-times-circle"
+              severity="warn"
+              (click)="selectAll(false)"
+              outlined
+              pTooltip="Deselect all files across all pages you have navigated"
+              tooltipPosition="top">
+            </p-button>
+          } @else {
+            <div class="min-w-[160px]"></div>
+          }
+        </div>
+
+        <div class="flex-grow flex justify-center">
+          <p-paginator
+            [rows]="pageSize"
+            [totalRecords]="totalRecords"
+            [first]="currentPage * pageSize"
+            (onPageChange)="loadPage($event.page ?? 0)"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Showing files {first} - {last} of {totalRecords}">
+          </p-paginator>
+        </div>
+
+        <div class="flex gap-4 items-center min-w-[200px] justify-end">
+          <p-button
+            [label]="'Delete ' + selectedCount + ' File' + (selectedCount !== 1 ? 's' : '')"
+            icon="pi pi-times"
+            severity="danger"
+            [disabled]="!hasSelectedFiles"
+            outlined
+            (click)="confirmDelete()"
+            pTooltip="Permanently delete selected Bookdrop files and discard any changes"
+            tooltipPosition="top">
+          </p-button>
+          <p-button
+            [label]="saving ? ('Finalizing ' + selectedCount + ' File' + (selectedCount !== 1 ? 's' : '') + '...') : ('Finalize ' + selectedCount + ' File' + (selectedCount !== 1 ? 's' : ''))"
+            [icon]="saving ? 'pi pi-spin pi-spinner' : 'pi pi-save'"
+            severity="success"
+            outlined
+            [disabled]="!canFinalize || saving"
+            (click)="confirmFinalize()"
+            pTooltip="Move selected files into the chosen library and subpath">
+          </p-button>
+        </div>
+
+      </div>
+    }
+  </div>
+</div>

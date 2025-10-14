@@ -1,0 +1,62 @@
+<div class="h-[calc(100dvh-6.1rem)] rounded-xl overflow-hidden bg-[var(--card-background)] flex flex-col border-[1px] border-solid border-[var(--p-content-border-color)]">
+
+  <div class="flex items-center justify-between px-4 py-4">
+    <span class="text font-semibold">Filter Mode</span>
+    <p-selectButton
+      [options]="filterModeOptions"
+      [(ngModel)]="selectedFilterMode"
+      optionLabel="label"
+      optionValue="value"
+      class="text-sm"
+      allowEmpty="false"
+      styleClass="h-8"></p-selectButton>
+  </div>
+
+  <div class="flex-1 overflow-y-auto pb-4 pr-1" style="overscroll-behavior: contain;">
+    <p-accordion [value]="expandedPanels">
+      @for (filterType of filterTypes; track trackByFilterType(i, filterType); let i = $index) {
+        <p-accordion-panel [value]="i">
+          <p-accordion-header>
+            <span class="inline-flex items-center gap-1">
+              {{ filterLabels[filterType] || (filterType | titlecase) }}
+              @if (activeFilters[filterType]?.length) {
+                <span class="text-sm text-[var(--primary-color)]">
+                  ({{ activeFilters[filterType].length }})
+                </span>
+              }
+            </span>
+          </p-accordion-header>
+
+          <p-accordion-content>
+            @if (filterStreams[filterType] | async; as filters) {
+              <div
+                class="max-h-[27.5rem] overflow-y-auto overscroll-contain pr-1"
+                style="overscroll-behavior: contain;">
+                @for (filter of filters; track trackByFilter(j, filter); let j = $index) {
+                  <div
+                    class="filter-row cursor-pointer transition-colors duration-200 ease-in-out pb-1 flex flex-row items-center justify-between gap-2"
+                    [ngClass]="{
+                      'text-[var(--primary-color)]': activeFilters[filterType]?.includes(filter.value?.id || filter.value)
+                    }"
+                    (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
+                    {{ filter.value.name || filter.value }}
+                    <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
+                  </div>
+                }
+                @if (truncatedFilters[filterType]) {
+                  <div class="text-xs text-gray-500 text-center pt-2 border-t border-gray-200">
+                    Showing first 250 items
+                  </div>
+                }
+              </div>
+            }
+          </p-accordion-content>
+        </p-accordion-panel>
+      }
+    </p-accordion>
+
+    <div class="text-xs text-gray-500 text-center pt-4 px-4 mt-2">
+      Note: Top 500 items are displayed per filter category
+    </div>
+  </div>
+</div>

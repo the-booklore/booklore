@@ -1,0 +1,37 @@
+<div class="rounded-xl overflow-hidden border-[1px] border-solid border-[var(--p-content-border-color)]">
+  <p-tabs [value]="tab" lazy="true" scrollable>
+    <p-tablist>
+      <p-tab value="view">
+        <i [class]="'pi pi-book'"></i>
+        Book Details
+      </p-tab>
+      @if (admin || canEditMetadata) {
+        <p-tab value="edit">
+          <i [class]="'pi pi-pencil'"></i>
+          Edit Metadata
+        </p-tab>
+      }
+      @if (admin || canEditMetadata) {
+        <p-tab value="match">
+          <i [class]="'pi pi-search'"></i>
+          Search Metadata
+        </p-tab>
+      }
+    </p-tablist>
+    <p-tabpanels class="tabpanels-responsive overflow-auto">
+      <p-tabpanel value="view">
+        <app-metadata-viewer [book$]="book$" [recommendedBooks]="recommendedBooks"></app-metadata-viewer>
+      </p-tabpanel>
+      @if (admin || canEditMetadata) {
+        <p-tabpanel value="edit">
+          <app-metadata-editor [book$]="book$"></app-metadata-editor>
+        </p-tabpanel>
+      }
+      @if (admin || canEditMetadata) {
+        <p-tabpanel value="match">
+          <app-metadata-searcher [book$]="book$"></app-metadata-searcher>
+        </p-tabpanel>
+      }
+    </p-tabpanels>
+  </p-tabs>
+</div>

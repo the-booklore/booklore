@@ -21,6 +21,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.task.RescanLibraryContext;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import jakarta.annotation.PostConstruct;
@@ -180,12 +181,14 @@ public class LibraryService {
     }
 
     public void rescanLibrary(long libraryId) {
-        libraryRepository.findById(libraryId)
-                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
+        libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
 
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
             try {
-                libraryProcessingService.rescanLibrary(libraryId);
+                RescanLibraryContext context = RescanLibraryContext.builder()
+                        .libraryId(libraryId)
+                        .build();
+                libraryProcessingService.rescanLibrary(context);
             } catch (InvalidDataAccessApiUsageException e) {
                 log.debug("InvalidDataAccessApiUsageException - Library id: {}", libraryId);
             } catch (IOException e) {

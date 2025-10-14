@@ -1,0 +1,177 @@
+<div class="comic-reader-container" tabindex="0">
+  <div class="navigation">
+    <div class="goto-page-controls">
+      <div class="input-group">
+        <input
+          type="number"
+          [(ngModel)]="goToPageInput"
+          [min]="1"
+          [max]="pages.length"
+          placeholder="Page"
+          class="page-input"
+        />
+        <button
+          class="go-button"
+          (click)="goToPageInput !== null && goToPage(goToPageInput)"
+          [disabled]="goToPageInput === null || goToPageInput < 1 || goToPageInput > pages.length">
+          Go
+        </button>
+      </div>
+    </div>
+
+    <div class="page-controls">
+      <button class="nav-button first-page" (click)="goToPage(1)" [disabled]="currentPage === 0" title="First Page">
+        <span>⟨⟨</span>
+      </button>
+      <button class="nav-button prev-page" (click)="previousPage()" [disabled]="currentPage === 0" title="Previous Page">
+        <span>⟨</span>
+      </button>
+      <div class="page-info">
+        <span class="current-page">{{ currentPage + 1 }}</span>
+        <span class="page-separator">{{ isTwoPageView && imageUrls.length > 1 ? '-' + (currentPage + 2) : '' }}</span>
+        <span class="total-pages"> of {{ pages.length }}</span>
+      </div>
+      <button class="nav-button next-page" (click)="nextPage()" [disabled]="currentPage >= pages.length - 1" title="Next Page">
+        <span>⟩</span>
+      </button>
+      <button class="nav-button last-page" (click)="goToPage(pages.length)" [disabled]="currentPage >= pages.length - 1" title="Last Page">
+        <span>⟩⟩</span>
+      </button>
+    </div>
+
+    <div class="spread-controls">
+      <div class="desktop-controls">
+        <div class="fit-mode-dropdown">
+          <button class="view-button fit-mode-toggle"
+                  (click)="toggleFitModeDropdown()"
+                  title="Fit Mode">
+            <span>{{ displayLabel }}</span>
+          </button>
+          @if (showFitModeDropdown) {
+            <div class="fit-mode-menu">
+              @for (mode of fitModeOptions; track mode.value) {
+                <button
+                  class="fit-mode-option"
+                  [class.active]="fitMode === mode.value"
+                  (click)="selectFitMode(mode.value)">
+                  <span class="fit-mode-icon">{{ mode.icon }}</span>
+                  <span class="fit-mode-label">{{ mode.label }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+        <button class="view-button scroll-toggle" (click)="toggleScrollMode()" title="Toggle Scroll Mode">
+          <span>{{ scrollModeIcon }}</span>
+        </button>
+        @if (isTwoPageView && scrollMode === CbxScrollMode.PAGINATED) {
+          <button class="view-button spread-toggle" (click)="toggleSpreadDirection()" title="Toggle Spread Direction">
+            <span>{{ pageSpread === CbxPageSpread.ODD ? '⬅️' : '➡️' }}</span>
+          </button>
+        }
+        @if (scrollMode === CbxScrollMode.PAGINATED) {
+          <button class="view-button layout-toggle" (click)="toggleView()" title="Toggle View">
+            <span>{{ isTwoPageView ? '📄' : '📖' }}</span>
+          </button>
+        }
+        <button class="view-button background-toggle" (click)="toggleBackground()" title="Toggle Background Color">
+          <span>{{ backgroundColorIcon }}</span>
+        </button>
+      </div>
+
+      <div class="mobile-controls">
+        <button class="view-button more-options-toggle"
+                (click)="toggleMobileOptionsDropdown()"
+                title="More Options">
+          <span>⋮</span>
+        </button>
+        @if (showMobileOptionsDropdown) {
+          <div class="mobile-options-menu">
+            <button class="mobile-option" (click)="selectMobileOption('fitMode')">
+              <span class="option-icon">{{ displayLabel }}</span>
+              <span class="option-label">Fit Mode</span>
+            </button>
+            @if (showFitModeSubmenu) {
+              <div class="submenu">
+                @for (mode of fitModeOptions; track mode.value) {
+                  <button
+                    class="submenu-option"
+                    [class.active]="fitMode === mode.value"
+                    (click)="selectFitModeFromMobile(mode.value)">
+                    <span class="fit-mode-icon">{{ mode.icon }}</span>
+                    <span class="fit-mode-label">{{ mode.label }}</span>
+                  </button>
+                }
+              </div>
+            }
+            <button class="mobile-option" (click)="toggleScrollModeFromMobile()">
+              <span class="option-icon">{{ scrollModeIcon }}</span>
+              <span class="option-label">Scroll Mode</span>
+            </button>
+            @if (isTwoPageView && scrollMode === CbxScrollMode.PAGINATED) {
+              <button class="mobile-option" (click)="toggleSpreadDirectionFromMobile()">
+                <span class="option-icon">{{ pageSpread === CbxPageSpread.ODD ? '⬅️' : '➡️' }}</span>
+                <span class="option-label">Spread Direction</span>
+              </button>
+            }
+            @if (scrollMode === CbxScrollMode.PAGINATED) {
+              <button class="mobile-option" (click)="toggleViewFromMobile()">
+                <span class="option-icon">{{ isTwoPageView ? '📄' : '📖' }}</span>
+                <span class="option-label">Layout</span>
+              </button>
+            }
+            <button class="mobile-option" (click)="toggleBackgroundFromMobile()">
+              <span class="option-icon">{{ backgroundColorIcon }}</span>
+              <span class="option-label">Background</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="image-container"
+       [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
+       [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
+       [class.fit-actual-size]="fitMode === CbxFitMode.ACTUAL_SIZE"
+       [class.fit-page]="fitMode === CbxFitMode.FIT_PAGE"
+       [class.fit-width]="fitMode === CbxFitMode.FIT_WIDTH"
+       [class.fit-height]="fitMode === CbxFitMode.FIT_HEIGHT"
+       [class.fit-auto]="fitMode === CbxFitMode.AUTO"
+       [class.bg-black]="backgroundColor === CbxBackgroundColor.BLACK"
+       [class.bg-gray]="backgroundColor === CbxBackgroundColor.GRAY"
+       [class.bg-white]="backgroundColor === CbxBackgroundColor.WHITE"
+       (scroll)="onScroll($event)">
+    @if (!isLoading) {
+      @if (pages.length > 0) {
+        @if (scrollMode === CbxScrollMode.PAGINATED) {
+          <div class="pages-wrapper">
+            @for (url of imageUrls; track url) {
+              <img [src]="url" alt="Page Image" class="page-image"/>
+            }
+          </div>
+        } @else {
+          <div class="infinite-scroll-wrapper">
+            @for (url of infiniteScrollImageUrls; track url; let i = $index) {
+              <img [src]="url" alt="Page {{ infiniteScrollPages[i] + 1 }}" class="page-image"/>
+            }
+            @if (isLoadingMore) {
+              <div class="loading-more">
+                <p-progressSpinner class="small-spinner"></p-progressSpinner>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        <div class="no-pages">
+          <p>No pages available.</p>
+        </div>
+      }
+    } @else {
+      <div class="loading-container">
+        <p-progressSpinner class="custom-spinner"></p-progressSpinner>
+        <p class="loading-text">Processing pages... This may take a few seconds on first load. Future loads will be significantly faster.</p>
+      </div>
+    }
+  </div>
+</div>

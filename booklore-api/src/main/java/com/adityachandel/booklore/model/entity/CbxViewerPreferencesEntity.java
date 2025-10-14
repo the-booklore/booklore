@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
-import com.adityachandel.booklore.model.enums.CbxPageSpread;
-import com.adityachandel.booklore.model.enums.CbxPageViewMode;
+import com.adityachandel.booklore.model.enums.*;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,4 +32,16 @@ public class CbxViewerPreferencesEntity {
     @Column(name = "view_mode")
     @Enumerated(EnumType.STRING)
     private CbxPageViewMode pageViewMode;
+
+    @Column(name = "fit_mode")
+    @Enumerated(EnumType.STRING)
+    private CbxPageFitMode fitMode;
+
+    @Column(name = "scroll_mode")
+    @Enumerated(EnumType.STRING)
+    private CbxPageScrollMode scrollMode;
+
+    @Column(name = "background_color")
+    @Enumerated(EnumType.STRING)
+    private CbxBackgroundColor backgroundColor;
 }

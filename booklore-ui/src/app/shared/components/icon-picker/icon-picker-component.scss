@@ -1,0 +1,32 @@
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(25px, 1fr));
+  gap: 30px;
+}
+
+.icon-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.icon-search {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 16px;
+  border: 1px solid var(--text-secondary-color);
+  border-radius: 4px;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+}
+
+.icon-search:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.icon-search::placeholder {
+  color: var(--text-secondary-color);
+  opacity: 1;
+}

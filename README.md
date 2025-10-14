@@ -219,6 +219,16 @@ Thanks to all the amazing people who contribute to Booklore.
 
 [![Contributors List](https://contrib.rocks/image?repo=adityachandelgit/BookLore)](https://github.com/adityachandelgit/BookLore/graphs/contributors)
 
+## ⭐ Star History
+
+<a href="https://www.star-history.com/#booklore-app/booklore&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=booklore-app/booklore&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=booklore-app/booklore&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=booklore-app/booklore&type=date&legend=top-left" />
+ </picture>
+</a>
+
 ## ⚖️ License
 
 * [GNU GPL v3](http://www.gnu.org/licenses/gpl.html)

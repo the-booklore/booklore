@@ -1,7 +1,8 @@
 import {Component, Input} from '@angular/core';
 import {Tooltip} from 'primeng/tooltip';
 
-export type DocType = 'kobo' | 'opds' | 'metadataManager' | 'koReader' | 'email' | 'amazonCookie' | 'fetchConfig' | 'hardcover';
+export type DocType = 'kobo' | 'opds' | 'metadataManager' | 'koReader' | 'email'
+  | 'amazonCookie' | 'fetchConfig' | 'hardcover' | 'taskManagement';
 
 @Component({
   selector: 'app-external-doc-link',
@@ -33,7 +34,8 @@ export class ExternalDocLinkComponent {
     email: `${this.BASE_URL}/email-setup`,
     amazonCookie: `${this.BASE_URL}/metadata/amazon-cookie`,
     hardcover: `${this.BASE_URL}/metadata/hardcover-token`,
-    fetchConfig: `${this.BASE_URL}/metadata/metadata-fetch-configuration`
+    fetchConfig: `${this.BASE_URL}/metadata/metadata-fetch-configuration`,
+    taskManagement: `${this.BASE_URL}/tools/task-manager`
   };
 
   @Input() docType!: DocType;

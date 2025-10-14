@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.mapper.MetadataClearFlagsMapper;
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
@@ -252,12 +253,17 @@ public class BookMetadataService {
                     .tags(request.getTags())
                     .build();
 
-            MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
-                    .metadata(bookMetadata)
-                    .clearFlags(clearFlags)
+            MetadataUpdateContext context = MetadataUpdateContext.builder()
+                    .bookEntity(book)
+                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                            .metadata(bookMetadata)
+                            .clearFlags(clearFlags)
+                            .build())
+                    .updateThumbnail(false)
+                    .mergeCategories(mergeCategories)
                     .build();
 
-            bookMetadataUpdater.setBookMetadata(book, metadataUpdateWrapper, false, mergeCategories);
+            bookMetadataUpdater.setBookMetadata(context);
         }
 
         return books.stream()
