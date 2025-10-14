@@ -649,6 +649,14 @@
   word-break: break-word;
   max-height: 200px;
   overflow-y: auto;
+  color: var(--p-text-color);
+  font-family: monospace;
+}
+
+.message-box {
+  background: var(--p-surface-50);
+  border-color: var(--p-surface-200);
+  color: #1f2937 !important; /* Ensure dark text is always visible */
 }
 
 .error-box {
@@ -660,6 +668,7 @@
 .options-box {
   background: var(--p-blue-50);
   border-color: var(--p-blue-200);
+  color: var(--p-blue-800);
 }
 
 @media (max-width: 768px) {
