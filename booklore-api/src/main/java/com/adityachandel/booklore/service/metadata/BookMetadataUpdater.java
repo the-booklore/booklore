@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @Slf4j
 @Service
@@ -53,6 +54,51 @@ public class BookMetadataUpdater {
     private final MetadataWriterFactory metadataWriterFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final UnifiedFileMoveService unifiedFileMoveService;
+
+    // Helper methods to handle concurrent entity creation
+    private AuthorEntity findOrCreateAuthor(String name) {
+        try {
+            return authorRepository.findByName(name)
+                    .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(name).build()));
+        } catch (DataIntegrityViolationException e) {
+            // Handle race condition - another thread may have created the entity
+            return authorRepository.findByName(name)
+                    .orElseThrow(() -> new RuntimeException("Failed to find or create author: " + name, e));
+        }
+    }
+
+    private CategoryEntity findOrCreateCategory(String name) {
+        try {
+            return categoryRepository.findByName(name)
+                    .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(name).build()));
+        } catch (DataIntegrityViolationException e) {
+            // Handle race condition - another thread may have created the entity
+            return categoryRepository.findByName(name)
+                    .orElseThrow(() -> new RuntimeException("Failed to find or create category: " + name, e));
+        }
+    }
+
+    private MoodEntity findOrCreateMood(String name) {
+        try {
+            return moodRepository.findByName(name)
+                    .orElseGet(() -> moodRepository.save(MoodEntity.builder().name(name).build()));
+        } catch (DataIntegrityViolationException e) {
+            // Handle race condition - another thread may have created the entity
+            return moodRepository.findByName(name)
+                    .orElseThrow(() -> new RuntimeException("Failed to find or create mood: " + name, e));
+        }
+    }
+
+    private TagEntity findOrCreateTag(String name) {
+        try {
+            return tagRepository.findByName(name)
+                    .orElseGet(() -> tagRepository.save(TagEntity.builder().name(name).build()));
+        } catch (DataIntegrityViolationException e) {
+            // Handle race condition - another thread may have created the entity
+            return tagRepository.findByName(name)
+                    .orElseThrow(() -> new RuntimeException("Failed to find or create tag: " + name, e));
+        }
+    }
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
@@ -233,7 +279,6 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getAmazonRatingLocked(), clear.isAmazonRating(), m.getAmazonRating(), e::setAmazonRating, e::getAmazonRating, replaceMode);
         handleFieldUpdate(e.getAmazonReviewCountLocked(), clear.isAmazonReviewCount(), m.getAmazonReviewCount(), e::setAmazonReviewCount, e::getAmazonReviewCount, replaceMode);
         handleFieldUpdate(e.getGoodreadsRatingLocked(), clear.isGoodreadsRating(), m.getGoodreadsRating(), e::setGoodreadsRating, e::getGoodreadsRating, replaceMode);
-        handleFieldUpdate(e.getGoodreadsReviewCountLocked(), clear.isGoodreadsReviewCount(), m.getGoodreadsReviewCount(), e::setGoodreadsReviewCount, e::getGoodreadsReviewCount, replaceMode);
         handleFieldUpdate(e.getHardcoverRatingLocked(), clear.isHardcoverRating(), m.getHardcoverRating(), e::setHardcoverRating, e::getHardcoverRating, replaceMode);
         handleFieldUpdate(e.getHardcoverReviewCountLocked(), clear.isHardcoverReviewCount(), m.getHardcoverReviewCount(), e::setHardcoverReviewCount, e::getHardcoverReviewCount, replaceMode);
     }
@@ -278,8 +323,7 @@ public class BookMetadataUpdater {
         }
         Set<AuthorEntity> newAuthors = m.getAuthors().stream()
                 .filter(a -> a != null && !a.isBlank())
-                .map(name -> authorRepository.findByName(name)
-                        .orElseGet(() -> authorRepository.save(AuthorEntity.builder().name(name).build())))
+                .map(name -> findOrCreateAuthor(name))
                 .collect(Collectors.toSet());
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL) {
@@ -316,8 +360,7 @@ public class BookMetadataUpdater {
 
         Set<CategoryEntity> newCategories = m.getCategories().stream()
                 .filter(n -> n != null && !n.isBlank())
-                .map(name -> categoryRepository.findByName(name)
-                        .orElseGet(() -> categoryRepository.save(CategoryEntity.builder().name(name).build())))
+                .map(name -> findOrCreateCategory(name))
                 .collect(Collectors.toSet());
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL) {
@@ -354,8 +397,7 @@ public class BookMetadataUpdater {
 
         Set<MoodEntity> newMoods = m.getMoods().stream()
                 .filter(n -> n != null && !n.isBlank())
-                .map(name -> moodRepository.findByName(name)
-                        .orElseGet(() -> moodRepository.save(MoodEntity.builder().name(name).build())))
+                .map(name -> findOrCreateMood(name))
                 .collect(Collectors.toSet());
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL) {
@@ -392,8 +434,7 @@ public class BookMetadataUpdater {
 
         Set<TagEntity> newTags = m.getTags().stream()
                 .filter(n -> n != null && !n.isBlank())
-                .map(name -> tagRepository.findByName(name)
-                        .orElseGet(() -> tagRepository.save(TagEntity.builder().name(name).build())))
+                .map(name -> findOrCreateTag(name))
                 .collect(Collectors.toSet());
 
         if (replaceMode == MetadataReplaceMode.REPLACE_ALL) {

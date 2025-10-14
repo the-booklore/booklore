@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCancelResponse;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
+import com.adityachandel.booklore.model.dto.response.TaskStatusResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
 import com.adityachandel.booklore.task.*;
 import com.adityachandel.booklore.task.tasks.Task;
@@ -78,9 +79,20 @@ public class TaskService {
 
     public TaskCancelResponse cancelTask(String taskId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        boolean isRunning = runningTasks.containsValue(taskId);
-        if (!isRunning) {
-            throw new APIException("Task not found or not running: " + taskId, HttpStatus.NOT_FOUND);
+        // Check if task exists in database (more permissive than just in-memory check)
+        try {
+            TaskStatusResponse.TaskInfo taskInfo = taskHistoryService.getTaskById(taskId);
+            TaskStatus currentStatus = taskInfo.getStatus();
+            if (currentStatus == TaskStatus.COMPLETED || currentStatus == TaskStatus.FAILED || currentStatus == TaskStatus.CANCELLED) {
+                throw new APIException("Task " + taskId + " cannot be cancelled because it is already " + currentStatus.toString().toLowerCase(), HttpStatus.BAD_REQUEST);
+            }
+            // Log a warning if task is not tracked in memory but exists in database
+            boolean isRunning = runningTasks.containsValue(taskId);
+            if (!isRunning && currentStatus == TaskStatus.IN_PROGRESS) {
+                log.warn("Task {} appears to be running but not tracked in memory. Attempting cancellation anyway.", taskId);
+            }
+        } catch (RuntimeException e) {
+            throw new APIException("Task not found: " + taskId, HttpStatus.NOT_FOUND);
         }
         cancellationManager.cancelTask(taskId);
         taskHistoryService.updateTaskStatus(taskId, TaskStatus.CANCELLED, "Task cancellation requested by user");

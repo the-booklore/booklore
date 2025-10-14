@@ -46,7 +46,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
   totalHistoryPages = 0;
   currentHistoryPage = 0;
   historyPageSize = 25;
-  showRunningOnly = false;
 
   // Task Details Modal
   showTaskDetailsModal = false;
@@ -300,8 +299,8 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   // Task History Methods
   loadTaskHistory(page: number = 0, size: number = 25): void {
+    const status = undefined;
     this.loadingHistory = true;
-    const status = this.showRunningOnly ? 'IN_PROGRESS,ACCEPTED' : undefined;
     
     this.taskService.getTaskHistory(page, size, status)
       .pipe(finalize(() => this.loadingHistory = false))
@@ -325,10 +324,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     this.loadTaskHistory(page, event.rows);
   }
 
-  toggleRunningOnly(): void {
-    this.showRunningOnly = !this.showRunningOnly;
-    this.loadTaskHistory(0, this.historyPageSize);
-  }
 
   showTaskDetails(task: Task): void {
     if (task.id) {

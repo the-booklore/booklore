@@ -294,15 +294,6 @@
               [loading]="loadingHistory"
               (onClick)="loadTaskHistory()">
             </p-button>
-            <p-button
-              [label]="showRunningOnly ? 'Show All Tasks' : 'Show Running Only'"
-              [icon]="showRunningOnly ? 'pi pi-list' : 'pi pi-play'"
-              size="small"
-              [outlined]="!showRunningOnly"
-              severity="info"
-              (onClick)="toggleRunningOnly()">
-            </p-button>
-          </div>
         </div>
       </div>
 
@@ -418,7 +409,7 @@
               <td colspan="7" class="text-center">
                 <div class="empty-state">
                   <i class="pi pi-info-circle"></i>
-                  <span>{{ showRunningOnly ? 'No running tasks found' : 'No task history found' }}</span>
+                  <span>No task history found</span>
                 </div>
               </td>
             </tr>
