@@ -196,6 +196,12 @@ public class BookMetadataEntity {
     @Column(name = "reviews_locked")
     private Boolean reviewsLocked = Boolean.FALSE;
 
+    @Column(name = "embedding_vector", columnDefinition = "TEXT")
+    private String embeddingVector;
+
+    @Column(name = "embedding_updated_at")
+    private Instant embeddingUpdatedAt;
+
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "book_id")
