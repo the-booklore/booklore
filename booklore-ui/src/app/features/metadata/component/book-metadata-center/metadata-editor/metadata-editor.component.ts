@@ -24,6 +24,8 @@ import {IftaLabel} from "primeng/iftalabel";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
 import {CoverSearchComponent} from '../../cover-search/cover-search.component';
+import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: "app-metadata-editor",
@@ -59,6 +61,7 @@ export class MetadataEditorComponent implements OnInit {
 
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   private dialogService = inject(DialogService);
   private destroyRef = inject(DestroyRef);
@@ -622,11 +625,23 @@ export class MetadataEditorComponent implements OnInit {
   autoFetch(bookId: number) {
     this.refreshingBookIds.add(bookId);
     this.isAutoFetching = true;
-    const request: MetadataRefreshRequest = {
+
+    this.taskHelperService.refreshMetadataTask({
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
-    };
-    this.bookService.autoRefreshMetadata(request).subscribe();
+    }).subscribe({
+      next: () => {
+        this.isAutoFetching = false;
+      },
+      error: () => {
+        this.isAutoFetching = false;
+      },
+      complete: () => {
+        this.isAutoFetching = false;
+        this.refreshingBookIds.delete(bookId);
+      }
+    });
+
     setTimeout(() => {
       this.isAutoFetching = false;
       this.refreshingBookIds.delete(bookId);

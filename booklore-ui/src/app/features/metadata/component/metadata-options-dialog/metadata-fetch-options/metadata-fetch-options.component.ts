@@ -3,10 +3,11 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MetadataRefreshRequest} from '../../../model/request/metadata-refresh-request.model';
 import {MetadataRefreshType} from '../../../model/request/metadata-refresh-type.enum';
 import {MetadataRefreshOptions} from '../../../model/request/metadata-refresh-options.model';
-import {BookService} from '../../../../book/service/book.service';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
 import {MetadataAdvancedFetchOptionsComponent} from '../metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
+import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: 'app-metadata-fetch-options',
@@ -25,7 +26,7 @@ export class MetadataFetchOptionsComponent {
 
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   private dynamicDialogRef = inject(DynamicDialogRef);
-  private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   private appSettingsService = inject(AppSettingsService);
 
   constructor() {
@@ -47,7 +48,7 @@ export class MetadataFetchOptionsComponent {
       bookIds: this.bookIds,
       libraryId: this.libraryId
     };
-    this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
+    this.taskHelperService.refreshMetadataTask(metadataRefreshRequest).subscribe();
     this.dynamicDialogRef.close();
   }
 }

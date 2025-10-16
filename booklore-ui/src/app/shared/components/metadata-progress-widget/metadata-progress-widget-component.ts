@@ -13,8 +13,8 @@ import {MetadataBatchProgressNotification, MetadataBatchStatus, MetadataBatchSta
 import {MetadataProgressService} from '../../service/metadata-progress-service';
 import {MetadataReviewDialogComponent} from '../../../features/metadata/component/metadata-review-dialog/metadata-review-dialog-component';
 import {MetadataTaskService} from '../../../features/book/service/metadata-task';
-import {TaskService} from '../../services/task.service';
 import {Tag} from 'primeng/tag';
+import {TaskService} from '../../../features/settings/task-management/task.service';
 
 @Component({
   selector: 'app-metadata-progress-widget',
@@ -119,7 +119,7 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
         if (task) {
           this.activeTasks[taskId] = {
             ...task,
-            status: MetadataBatchStatus.ERROR,
+            status: MetadataBatchStatus.CANCELLED,
             message: 'Task cancelled by user'
           };
           this.activeTasks = {...this.activeTasks};
@@ -152,12 +152,14 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
     this.lastUpdateMap.clear();
   }
 
-  getTagSeverity(status: 'IN_PROGRESS' | 'COMPLETED' | 'ERROR'): 'info' | 'success' | 'danger' {
+  getTagSeverity(status: 'IN_PROGRESS' | 'COMPLETED' | 'ERROR' | 'CANCELLED'): 'info' | 'success' | 'danger' | 'warn' {
     switch (status) {
       case 'COMPLETED':
         return 'success';
       case 'ERROR':
         return 'danger';
+      case 'CANCELLED':
+        return 'warn';
       case 'IN_PROGRESS':
       default:
         return 'info';

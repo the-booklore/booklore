@@ -11,7 +11,6 @@ import com.adityachandel.booklore.model.dto.CoverImage;
 import com.adityachandel.booklore.model.dto.request.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
-import com.adityachandel.booklore.quartz.JobSchedulerService;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.metadata.*;
 import lombok.AllArgsConstructor;
@@ -31,7 +30,6 @@ public class MetadataController {
 
     private final BookMetadataService bookMetadataService;
     private final BookMetadataUpdater bookMetadataUpdater;
-    private final JobSchedulerService jobSchedulerService;
     private final AuthenticationService authenticationService;
     private final BookMetadataMapper bookMetadataMapper;
     private final MetadataMatchService metadataMatchService;
@@ -70,14 +68,6 @@ public class MetadataController {
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<List<BookMetadata>> bulkEditMetadata(@RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest, @RequestParam boolean mergeCategories) {
         return ResponseEntity.ok(bookMetadataService.bulkUpdateMetadata(bulkMetadataUpdateRequest, mergeCategories));
-    }
-
-    @PutMapping(path = "/metadata/refresh")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    public ResponseEntity<String> scheduleRefreshV2(@Validated @RequestBody MetadataRefreshRequest request) {
-        Long userId = authenticationService.getAuthenticatedUser().getId();
-        jobSchedulerService.scheduleMetadataRefresh(request, userId);
-        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{bookId}/metadata/cover/upload")

@@ -27,6 +27,8 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
+import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: 'app-book-card',
@@ -57,6 +59,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private additionalFilesLoaded = false;
 
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   private dialogService = inject(DialogService);
   private userService = inject(UserService);
   private emailService = inject(EmailService);
@@ -333,12 +336,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: 'Auto Fetch',
             icon: 'pi pi-bolt',
             command: () => {
-              const metadataRefreshRequest: MetadataRefreshRequest = {
+              this.taskHelperService.refreshMetadataTask({
                 refreshType: MetadataRefreshType.BOOKS,
                 bookIds: [this.book.id],
-              };
-              this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
-            },
+              }).subscribe();
+            }
           },
           {
             label: 'Custom Fetch',

@@ -38,6 +38,8 @@ import {BookDialogHelperService} from '../../../../book/components/book-browser/
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {MetadataFetchOptionsComponent} from '../../metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
+import {TaskCreateRequest, TaskService, TaskType} from '../../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -56,6 +58,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
@@ -392,11 +395,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   quickRefresh(bookId: number) {
     this.isAutoFetching = true;
-    const request: MetadataRefreshRequest = {
+
+    this.taskHelperService.refreshMetadataTask({
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
-    };
-    this.bookService.autoRefreshMetadata(request).subscribe();
+    }).subscribe();
+
     setTimeout(() => {
       this.isAutoFetching = false;
     }, 15000);

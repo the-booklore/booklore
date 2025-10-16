@@ -3,7 +3,6 @@ import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from './library.service';
 import {ShelfService} from './shelf.service';
-import {BookService} from './book.service';
 import {Library} from '../model/library.model';
 import {Shelf} from '../model/shelf.model';
 import {DialogService} from 'primeng/dynamicdialog';
@@ -13,6 +12,9 @@ import {ShelfEditDialogComponent} from '../components/shelf-edit-dialog/shelf-ed
 import {MagicShelf, MagicShelfService} from '../../magic-shelf/service/magic-shelf.service';
 import {MetadataFetchOptionsComponent} from '../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {MagicShelfComponent} from '../../magic-shelf/component/magic-shelf-component';
+import {TaskCreateRequest, TaskType} from '../../settings/task-management/task.service';
+import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
+import {TaskHelperService} from '../../settings/task-management/task-helper.service';
 
 @Injectable({
   providedIn: 'root',
@@ -23,7 +25,7 @@ export class LibraryShelfMenuService {
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
   private shelfService = inject(ShelfService);
-  private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   private router = inject(Router);
   private dialogService = inject(DialogService);
   private magicShelfService = inject(MagicShelfService);
@@ -136,9 +138,9 @@ export class LibraryShelfMenuService {
             label: 'Auto Fetch Metadata',
             icon: 'pi pi-bolt',
             command: () => {
-              this.bookService.autoRefreshMetadata({
+              this.taskHelperService.refreshMetadataTask({
                 refreshType: MetadataRefreshType.LIBRARY,
-                libraryId: entity?.id || undefined
+                libraryId: entity?.id ?? undefined
               }).subscribe();
             }
           }

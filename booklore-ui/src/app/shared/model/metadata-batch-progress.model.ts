@@ -2,12 +2,14 @@ export enum MetadataBatchStatus {
   IN_PROGRESS = 'IN_PROGRESS',
   COMPLETED = 'COMPLETED',
   ERROR = 'ERROR',
+  CANCELLED = 'CANCELLED',
 }
 
 export const MetadataBatchStatusLabels: Record<MetadataBatchStatus, string> = {
   [MetadataBatchStatus.IN_PROGRESS]: 'In Progress',
   [MetadataBatchStatus.COMPLETED]: 'Completed',
   [MetadataBatchStatus.ERROR]: 'Error',
+  [MetadataBatchStatus.CANCELLED]: 'Cancelled',
 };
 
 export interface MetadataBatchProgressNotification {
