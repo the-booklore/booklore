@@ -5,7 +5,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Checkbox} from 'primeng/checkbox';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
-import {EmailV2RecipientService} from '../../email-v2/email-v2-recipient/email-v2-recipient.service';
+import {EmailV2RecipientService} from '../email-v2-recipient/email-v2-recipient.service';
 
 @Component({
   selector: 'app-create-email-recipient-dialog',

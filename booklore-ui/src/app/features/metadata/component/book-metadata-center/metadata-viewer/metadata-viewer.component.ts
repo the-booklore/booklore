@@ -12,7 +12,7 @@ import {SplitButton} from 'primeng/splitbutton';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookSenderComponent} from '../../../../book/components/book-sender/book-sender.component';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {EmailService} from '../../../../settings/email/email.service';
+import {EmailService} from '../../../../settings/email-v2/email.service';
 import {ShelfAssignerComponent} from '../../../../book/components/shelf-assigner/shelf-assigner.component';
 import {Tooltip} from 'primeng/tooltip';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';

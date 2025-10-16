@@ -8,8 +8,8 @@ import {TableModule} from 'primeng/table';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2RecipientService} from './email-v2-recipient.service';
-import {EmailRecipient} from '../../email/email-recipient/email-recipient.model';
-import {CreateEmailRecipientDialogComponent} from '../../email/create-email-recipient-dialog/create-email-recipient-dialog.component';
+import {EmailRecipient} from '../email-recipient.model';
+import {CreateEmailRecipientDialogComponent} from '../create-email-recipient-dialog/create-email-recipient-dialog.component';
 
 @Component({
   selector: 'app-email-v2-recipient',

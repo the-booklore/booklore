@@ -2,7 +2,6 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {UserService} from './user-management/user.service';
 import {AsyncPipe} from '@angular/common';
-import {EmailComponent} from './email/email.component';
 import {GlobalPreferencesComponent} from './global-preferences/global-preferences.component';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
@@ -23,7 +22,6 @@ export enum SettingsTab {
   ViewPreferences = 'view',
   DeviceSettings = 'device',
   UserManagement = 'user',
-  EmailSettings = 'email',
   EmailSettingsV2 = 'email-v2',
   NamingPattern = 'naming-pattern',
   MetadataSettings = 'metadata',
@@ -31,7 +29,7 @@ export enum SettingsTab {
   ApplicationSettings = 'application',
   AuthenticationSettings = 'authentication',
   OpdsV2 = 'opds',
-  Tasks = 'tasks',
+  Tasks = 'task',
 }
 
 @Component({
@@ -43,7 +41,6 @@ export enum SettingsTab {
     TabPanels,
     TabPanel,
     AsyncPipe,
-    EmailComponent,
     GlobalPreferencesComponent,
     UserManagementComponent,
     AuthenticationSettingsComponent,

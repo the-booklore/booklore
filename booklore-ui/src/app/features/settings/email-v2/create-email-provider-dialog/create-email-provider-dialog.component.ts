@@ -6,7 +6,7 @@ import {InputText} from 'primeng/inputtext';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MessageService} from 'primeng/api';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
-import {EmailV2ProviderService} from '../../email-v2/email-v2-provider/email-v2-provider.service';
+import {EmailV2ProviderService} from '../email-v2-provider/email-v2-provider.service';
 
 @Component({
   selector: 'app-create-email-provider-dialog',

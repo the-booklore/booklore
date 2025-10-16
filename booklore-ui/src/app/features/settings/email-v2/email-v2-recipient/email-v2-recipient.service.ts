@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { API_CONFIG } from '../../../../core/config/api-config';
-import {EmailRecipient} from '../../email/email-recipient/email-recipient.model';
+import {EmailRecipient} from '../email-recipient.model';
 
 @Injectable({
   providedIn: 'root'

@@ -44,7 +44,7 @@ public class EmailRecipientV2Service {
         BookLoreUser user = authService.getAuthenticatedUser();
         boolean isFirstRecipient = repository.count() == 0;
         if (request.isDefaultRecipient() || isFirstRecipient) {
-            repository.updateAllRecipientsToNonDefault();
+            repository.updateAllRecipientsToNonDefault(user.getId());
         }
         EmailRecipientV2Entity entity = mapper.toEntity(request);
         entity.setDefaultRecipient(request.isDefaultRecipient() || isFirstRecipient);
@@ -58,7 +58,7 @@ public class EmailRecipientV2Service {
         BookLoreUser user = authService.getAuthenticatedUser();
         EmailRecipientV2Entity existingRecipient = repository.findByIdAndUserId(id, user.getId()).orElseThrow(() -> ApiError.EMAIL_RECIPIENT_NOT_FOUND.createException(id));
         if (request.isDefaultRecipient()) {
-            repository.updateAllRecipientsToNonDefault();
+            repository.updateAllRecipientsToNonDefault(user.getId());
         }
         mapper.updateEntityFromRequest(request, existingRecipient);
         EmailRecipientV2Entity updatedEntity = repository.save(existingRecipient);
@@ -69,7 +69,7 @@ public class EmailRecipientV2Service {
     public void setDefaultRecipient(Long id) {
         BookLoreUser user = authService.getAuthenticatedUser();
         EmailRecipientV2Entity emailRecipient = repository.findByIdAndUserId(id, user.getId()).orElseThrow(() -> ApiError.EMAIL_RECIPIENT_NOT_FOUND.createException(id));
-        repository.updateAllRecipientsToNonDefault();
+        repository.updateAllRecipientsToNonDefault(user.getId());
         emailRecipient.setDefaultRecipient(true);
         repository.save(emailRecipient);
     }

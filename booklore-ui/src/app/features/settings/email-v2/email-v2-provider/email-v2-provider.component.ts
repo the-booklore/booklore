@@ -9,8 +9,8 @@ import {TableModule} from 'primeng/table';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2ProviderService} from './email-v2-provider.service';
-import {CreateEmailProviderDialogComponent} from '../../email/create-email-provider-dialog/create-email-provider-dialog.component';
-import {EmailProvider} from '../../email/email-provider/email-provider.model';
+import {CreateEmailProviderDialogComponent} from '../create-email-provider-dialog/create-email-provider-dialog.component';
+import {EmailProvider} from '../email-provider.model';
 import {UserService} from '../../user-management/user.service';
 
 @Component({
@@ -138,13 +138,23 @@ export class EmailV2ProviderComponent implements OnInit {
   }
 
   setDefaultProvider(provider: EmailProvider) {
-    this.emailProvidersService.setDefaultProvider(provider.id).subscribe(() => {
-      this.defaultProviderId = provider.id;
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Default Provider Set',
-        detail: `${provider.name} is now the default email provider.`
-      });
+    this.emailProvidersService.setDefaultProvider(provider.id).subscribe({
+      next: () => {
+        this.defaultProviderId = provider.id;
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Default Provider Set',
+          detail: `${provider.name} is now the default email provider.`
+        });
+      },
+      error: (err) => {
+        console.error('Failed to set default provider', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: `Failed to set ${provider.name} as the default provider. Please try again.`
+        });
+      }
     });
   }
 

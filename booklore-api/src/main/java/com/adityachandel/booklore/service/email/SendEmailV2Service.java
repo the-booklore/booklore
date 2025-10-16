@@ -12,6 +12,7 @@ import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.EmailProviderV2Repository;
 import com.adityachandel.booklore.repository.EmailRecipientV2Repository;
+import com.adityachandel.booklore.repository.UserEmailProviderPreferenceRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.util.FileUtils;
 import com.adityachandel.booklore.util.SecurityContextVirtualThread;
@@ -35,6 +36,7 @@ import static com.adityachandel.booklore.model.websocket.LogNotification.createL
 public class SendEmailV2Service {
 
     private final EmailProviderV2Repository emailProviderRepository;
+    private final UserEmailProviderPreferenceRepository preferenceRepository;
     private final BookRepository bookRepository;
     private final EmailRecipientV2Repository emailRecipientRepository;
     private final NotificationService notificationService;
@@ -43,8 +45,8 @@ public class SendEmailV2Service {
     public void emailBookQuick(Long bookId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         BookEntity book = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        EmailProviderV2Entity defaultEmailProvider = emailProviderRepository.findDefaultEmailProvider(user.getId()).orElseThrow(ApiError.DEFAULT_EMAIL_PROVIDER_NOT_FOUND::createException);
-        EmailRecipientV2Entity defaultEmailRecipient = emailRecipientRepository.findDefaultEmailRecipient().orElseThrow(ApiError.DEFAULT_EMAIL_RECIPIENT_NOT_FOUND::createException);
+        EmailProviderV2Entity defaultEmailProvider = getDefaultEmailProvider();
+        EmailRecipientV2Entity defaultEmailRecipient = emailRecipientRepository.findDefaultEmailRecipientByUserId(user.getId()).orElseThrow(ApiError.DEFAULT_EMAIL_RECIPIENT_NOT_FOUND::createException);
         sendEmailInVirtualThread(defaultEmailProvider, defaultEmailRecipient.getEmail(), book);
     }
 
@@ -171,6 +173,17 @@ public class SendEmailV2Service {
                 
                 Thank you for using Booklore! Hope you enjoy your book.
                 """, bookTitle);
+    }
+
+    private EmailProviderV2Entity getDefaultEmailProvider() {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+
+        Long defaultProviderId = preferenceRepository.findByUserId(user.getId())
+                .map(pref -> pref.getDefaultProviderId())
+                .orElseThrow(ApiError.DEFAULT_EMAIL_PROVIDER_NOT_FOUND::createException);
+
+        return emailProviderRepository.findAccessibleProvider(defaultProviderId, user.getId())
+                .orElseThrow(ApiError.DEFAULT_EMAIL_PROVIDER_NOT_FOUND::createException);
     }
 
     private enum ConnectionType {

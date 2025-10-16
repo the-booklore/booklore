@@ -16,7 +16,6 @@ public class EmailProviderV2 {
     private String host;
     private Integer port;
     private String username;
-    private String password;
     private String fromAddress;
     private Boolean auth;
     private Boolean startTls;

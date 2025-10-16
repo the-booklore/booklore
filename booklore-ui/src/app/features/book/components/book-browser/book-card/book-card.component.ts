@@ -15,7 +15,7 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {filter, Subject} from 'rxjs';
-import {EmailService} from '../../../../settings/email/email.service';
+import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {BookSenderComponent} from '../../book-sender/book-sender.component';
 import {Router} from '@angular/router';
@@ -269,7 +269,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     if (this.hasEmailBookPermission()) {
       items.push(
         {
-          label: 'Send Book',
+          label: 'Email Book',
           icon: 'pi pi-envelope',
           items: [{
             label: 'Quick Send',

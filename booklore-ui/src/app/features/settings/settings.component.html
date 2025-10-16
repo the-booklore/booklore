@@ -20,10 +20,7 @@
               <i class="pi pi-cog"></i> Application
             </p-tab>
             <p-tab [value]="SettingsTab.UserManagement">
-              <i class="pi pi-users"></i> User
-            </p-tab>
-            <p-tab [value]="SettingsTab.EmailSettings">
-              <i class="pi pi-envelope"></i> Email
+              <i class="pi pi-users"></i> Users
             </p-tab>
           }
           <p-tab [value]="SettingsTab.EmailSettingsV2">
@@ -67,9 +64,6 @@
             </p-tabpanel>
             <p-tabpanel [value]="SettingsTab.UserManagement">
               <app-user-management></app-user-management>
-            </p-tabpanel>
-            <p-tabpanel [value]="SettingsTab.EmailSettings">
-              <app-email></app-email>
             </p-tabpanel>
           }
           <p-tabpanel [value]="SettingsTab.EmailSettingsV2">

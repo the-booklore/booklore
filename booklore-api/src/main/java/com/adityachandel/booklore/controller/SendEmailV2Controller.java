@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.request.SendBookByEmailRequest;
-import com.adityachandel.booklore.service.email.EmailService;
 import com.adityachandel.booklore.service.email.SendEmailV2Service;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
