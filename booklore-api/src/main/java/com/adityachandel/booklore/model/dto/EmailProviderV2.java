@@ -21,4 +21,5 @@ public class EmailProviderV2 {
     private Boolean auth;
     private Boolean startTls;
     private Boolean defaultProvider;
+    private Boolean shared;
 }

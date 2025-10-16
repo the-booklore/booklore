@@ -45,4 +45,8 @@ public class EmailProviderV2Entity {
 
     @Column(name = "is_default", nullable = false)
     private boolean defaultProvider;
+
+    @Column(name = "shared", nullable = false)
+    private boolean shared;
 }
+

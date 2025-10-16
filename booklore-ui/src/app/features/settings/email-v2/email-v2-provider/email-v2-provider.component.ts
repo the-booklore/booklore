@@ -11,6 +11,7 @@ import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2ProviderService} from './email-v2-provider.service';
 import {CreateEmailProviderDialogComponent} from '../../email/create-email-provider-dialog/create-email-provider-dialog.component';
 import {EmailProvider} from '../../email/email-provider/email-provider.model';
+import {UserService} from '../../user-management/user.service';
 
 @Component({
   selector: 'app-email-v2-provider',
@@ -34,10 +35,20 @@ export class EmailV2ProviderComponent implements OnInit {
   private dialogService = inject(DialogService);
   private emailProvidersService = inject(EmailV2ProviderService);
   private messageService = inject(MessageService);
+  private userService = inject(UserService);
   defaultProviderId: any;
+  currentUserId: number | null = null;
+  isAdmin: boolean = false;
 
   ngOnInit(): void {
+    this.loadCurrentUser();
     this.loadEmailProviders();
+  }
+
+  loadCurrentUser(): void {
+    const currentUser = this.userService.getCurrentUser();
+    this.currentUserId = currentUser?.id ?? null;
+    this.isAdmin = currentUser?.permissions.admin ?? false;
   }
 
   loadEmailProviders(): void {
@@ -134,6 +145,30 @@ export class EmailV2ProviderComponent implements OnInit {
         summary: 'Default Provider Set',
         detail: `${provider.name} is now the default email provider.`
       });
+    });
+  }
+
+  canModifyProvider(provider: EmailProvider): boolean {
+    return !provider.shared || provider.userId === this.currentUserId;
+  }
+
+  toggleShared(provider: EmailProvider): void {
+    this.emailProvidersService.updateProvider(provider).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: `Provider "${provider.name}" is now ${provider.shared ? 'shared' : 'not shared'}`,
+        });
+      },
+      error: () => {
+        provider.shared = !provider.shared;
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update shared status',
+        });
+      },
     });
   }
 }

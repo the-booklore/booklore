@@ -27,7 +27,13 @@ public class EmailProviderV2Service {
 
     public List<EmailProviderV2> getEmailProviders() {
         BookLoreUser user = authService.getAuthenticatedUser();
-        return repository.findAllByUserId(user.getId()).stream().map(mapper::toDTO).toList();
+        List<EmailProviderV2Entity> userProviders = repository.findAllByUserId(user.getId());
+        if (user.getPermissions().isAdmin()) {
+            return userProviders.stream().map(mapper::toDTO).toList();
+        }
+        List<EmailProviderV2Entity> sharedProviders = repository.findAllBySharedTrueAndAdmin();
+        userProviders.addAll(sharedProviders);
+        return userProviders.stream().map(mapper::toDTO).toList();
     }
 
     public EmailProviderV2 getEmailProvider(Long id) {
@@ -42,6 +48,7 @@ public class EmailProviderV2Service {
         EmailProviderV2Entity entity = mapper.toEntity(request);
         entity.setDefaultProvider(isFirstProvider);
         entity.setUserId(user.getId());
+        entity.setShared(user.getPermissions().isAdmin() && request.isShared());
         EmailProviderV2Entity savedEntity = repository.save(entity);
         return mapper.toDTO(savedEntity);
     }
@@ -50,6 +57,9 @@ public class EmailProviderV2Service {
         BookLoreUser user = authService.getAuthenticatedUser();
         EmailProviderV2Entity existingProvider = repository.findByIdAndUserId(id, user.getId()).orElseThrow(() -> ApiError.EMAIL_PROVIDER_NOT_FOUND.createException(id));
         mapper.updateEntityFromRequest(request, existingProvider);
+        if (user.getPermissions().isAdmin()) {
+            existingProvider.setShared(request.isShared());
+        }
         EmailProviderV2Entity updatedEntity = repository.save(existingProvider);
         return mapper.toDTO(updatedEntity);
     }

@@ -27,50 +27,58 @@
         <p-table [value]="emailProviders" [scrollable]="true" scrollHeight="flex">
           <ng-template pTemplate="header">
             <tr>
-              <th style="width: 6%;">
+              <th style="width: 5%;">
                 <div class="header-content">
                   <i class="pi pi-star"></i>
                   <span>Default</span>
                 </div>
               </th>
-              <th style="width: 10%;">
+              <th style="width: 20%;">
                 <div class="header-content">
                   <i class="pi pi-tag"></i>
                   <span>Name</span>
                 </div>
               </th>
-              <th style="width: 15%;">
+              <th style="width: 14%;">
                 <div class="header-content">
                   <i class="pi pi-server"></i>
                   <span>Host</span>
                 </div>
               </th>
-              <th style="width: 6%;">
+              <th style="width: 5%;">
                 <div class="header-content">
                   <i class="pi pi-link"></i>
                   <span>Port</span>
                 </div>
               </th>
-              <th style="width: 14%;">
+              <th style="width: 13%;">
                 <div class="header-content">
                   <i class="pi pi-user"></i>
                   <span>Username</span>
                 </div>
               </th>
-              <th style="width: 12%;">
+              <th style="width: 11%;">
                 <div class="header-content">
                   <i class="pi pi-lock"></i>
                   <span>Password</span>
                 </div>
               </th>
-              <th style="width: 12%;">
+              <th style="width: 11%;">
                 <div class="header-content">
                   <i class="pi pi-envelope"></i>
                   <span>From Address</span>
                 </div>
               </th>
-              <th style="width: 5%;" class="permission-header">Auth</th>
+              <th style="width: 4%;" class="permission-header">Auth</th>
               <th style="width: 5%;" class="permission-header">StartTLS</th>
+              @if (isAdmin) {
+                <th style="width: 5%;" class="permission-header">
+                  <div class="header-content">
+                    <i class="pi pi-share-alt"></i>
+                    <span>Shared</span>
+                  </div>
+                </th>
+              }
               <th style="width: 7%;" class="actions-header">
                 <div class="header-content">
                   <i class="pi pi-pencil"></i>
@@ -102,7 +110,14 @@
                   <input type="text" [(ngModel)]="provider.name" class="p-inputtext w-full" size="small"/>
                 }
                 @if (!provider.isEditing) {
-                  <span>{{ provider.name }}</span>
+                  <div class="flex align-items-center gap-2">
+                    <span>
+                      {{ provider.name }}
+                      @if (provider.shared) {
+                        <span class="shared-badge" pTooltip="Shared provider">S</span>
+                      }
+                    </span>
+                  </div>
                 }
               </td>
 
@@ -167,16 +182,29 @@
                 </p-checkbox>
               </td>
 
+              @if (isAdmin) {
+                <td class="text-center">
+                  <p-checkbox
+                    [(ngModel)]="provider.shared"
+                    [binary]="true"
+                    (onChange)="toggleShared(provider)"
+                    pTooltip="Share this provider with all users">
+                  </p-checkbox>
+                </td>
+              }
+
               <td class="actions-cell">
                 @if (!provider.isEditing) {
                   <p-button
-                    icon="pi pi-pencil"
-                    severity="info"
+                    [icon]="canModifyProvider(provider) ? 'pi pi-pencil' : 'pi pi-lock'"
+                    [severity]="canModifyProvider(provider) ? 'info' : 'secondary'"
                     size="small"
                     [outlined]="true"
                     [rounded]="true"
-                    (onClick)="toggleEdit(provider)"
-                    pTooltip="Edit provider">
+                    [disabled]="!canModifyProvider(provider)"
+                    (onClick)="canModifyProvider(provider) && toggleEdit(provider)"
+                    [pTooltip]="canModifyProvider(provider) ? 'Edit provider' : 'Cannot edit shared provider from another user'"
+                    tooltipPosition="left">
                   </p-button>
                 }
                 @if (provider.isEditing) {
@@ -205,13 +233,15 @@
 
               <td class="actions-cell">
                 <p-button
-                  icon="pi pi-trash"
-                  severity="danger"
+                  [icon]="canModifyProvider(provider) ? 'pi pi-trash' : 'pi pi-lock'"
+                  [severity]="canModifyProvider(provider) ? 'danger' : 'secondary'"
                   size="small"
                   [outlined]="true"
                   [rounded]="true"
-                  (onClick)="deleteProvider(provider)"
-                  pTooltip="Delete provider">
+                  [disabled]="!canModifyProvider(provider)"
+                  (onClick)="canModifyProvider(provider) && deleteProvider(provider)"
+                  [pTooltip]="canModifyProvider(provider) ? 'Delete provider' : 'Cannot delete shared provider from another user'"
+                  tooltipPosition="left">
                 </p-button>
               </td>
             </tr>
@@ -219,7 +249,7 @@
 
           <ng-template pTemplate="emptymessage">
             <tr>
-              <td colspan="11">
+              <td [attr.colspan]="isAdmin ? 12 : 11">
                 <div class="empty-message">
                   <i class="pi pi-envelope"></i>
                   <p class="empty-title">No email providers found</p>

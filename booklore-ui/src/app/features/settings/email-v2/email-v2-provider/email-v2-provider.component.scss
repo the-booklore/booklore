@@ -145,6 +145,10 @@
   padding: 0.75rem 0.5rem !important;
   min-width: 80px;
   width: 80px;
+
+  .header-content {
+    justify-content: center;
+  }
 }
 
 .actions-header {
@@ -181,4 +185,20 @@
   .empty-subtitle {
     font-size: 0.875rem;
   }
+}
+
+.shared-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  background-color: var(--p-green-600);
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: default;
+  vertical-align: text-bottom;
+  margin-left: 0.25rem;
 }

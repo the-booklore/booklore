@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.repository;
 
-import com.adityachandel.booklore.model.entity.EmailProviderEntity;
 import com.adityachandel.booklore.model.entity.EmailProviderV2Entity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -24,4 +23,8 @@ public interface EmailProviderV2Repository extends JpaRepository<EmailProviderV2
 
     @Query("SELECT e FROM EmailProviderV2Entity e WHERE e.userId = :userId AND e.defaultProvider = true")
     Optional<EmailProviderV2Entity> findDefaultEmailProvider(@Param("userId") Long userId);
+
+    @Query("SELECT e FROM EmailProviderV2Entity e WHERE e.shared = true AND e.userId IN (SELECT u.id FROM BookLoreUserEntity u WHERE u.permissions.permissionAdmin = true)")
+    List<EmailProviderV2Entity> findAllBySharedTrueAndAdmin();
 }
+
