@@ -71,7 +71,7 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query(value = "SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)",
-           countQuery = "SELECT COUNT(DISTINCT b.id) FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
+            countQuery = "SELECT COUNT(DISTINCT b.id) FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
     Page<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
@@ -88,21 +88,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     List<BookEntity> findAllFullBooks();
 
-    @Query("""
-                SELECT DISTINCT b FROM BookEntity b
-                LEFT JOIN FETCH b.metadata m
-                LEFT JOIN FETCH m.authors a
-                LEFT JOIN FETCH m.categories
-                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-                )
-                ORDER BY m.title ASC
-            """)
-    List<BookEntity> searchByMetadata(@Param("text") String text);
-
     @Query(value = """
                 SELECT DISTINCT b FROM BookEntity b
                 LEFT JOIN b.metadata m
@@ -115,58 +100,42 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
                 )
             """,
             countQuery = """
-                SELECT COUNT(DISTINCT b.id) FROM BookEntity b
-                LEFT JOIN b.metadata m
-                LEFT JOIN m.authors a
-                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-                )
-            """)
+                        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
+                        LEFT JOIN b.metadata m
+                        LEFT JOIN m.authors a
+                        WHERE (b.deleted IS NULL OR b.deleted = false) AND (
+                              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                        )
+                    """)
     Page<BookEntity> searchByMetadata(@Param("text") String text, Pageable pageable);
 
-    @Query("""
-        SELECT DISTINCT b FROM BookEntity b
-        LEFT JOIN FETCH b.metadata m
-        LEFT JOIN FETCH m.authors a
-        LEFT JOIN FETCH m.categories
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        ORDER BY m.title ASC
-        """)
-    List<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds);
-
     @Query(value = """
-        SELECT DISTINCT b FROM BookEntity b
-        LEFT JOIN b.metadata m
-        LEFT JOIN m.authors a
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        """,
-        countQuery = """
-        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
-        LEFT JOIN b.metadata m
-        LEFT JOIN m.authors a
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        """)
+            SELECT DISTINCT b FROM BookEntity b
+            LEFT JOIN b.metadata m
+            LEFT JOIN m.authors a
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+              AND b.library.id IN :libraryIds
+              AND (
+                  LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+               OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+               OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+              )
+            """,
+            countQuery = """
+                    SELECT COUNT(DISTINCT b.id) FROM BookEntity b
+                    LEFT JOIN b.metadata m
+                    LEFT JOIN m.authors a
+                    WHERE (b.deleted IS NULL OR b.deleted = false)
+                      AND b.library.id IN :libraryIds
+                      AND (
+                          LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+                       OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+                       OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                      )
+                    """)
     Page<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 
     @Modifying

@@ -45,7 +45,7 @@
           <div class="section-header">
             <h3 class="section-title">
               <i class="pi pi-link"></i>
-              OPDS Endpoints
+              OPDS Endpoint
             </h3>
           </div>
 
@@ -53,59 +53,28 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">OPDS v1 Catalog</label>
+                  <label class="setting-label">OPDS Catalog URL</label>
                   <div class="input-group">
                     <input
-                      id="endpoint-url-v1"
+                      id="endpoint-url"
                       class="endpoint-input"
                       fluid
                       type="text"
                       pInputText
-                      [value]="opdsV1Endpoint"
+                      [value]="opdsEndpoint"
                       readonly/>
                     <p-button
                       icon="pi pi-copy"
                       severity="info"
                       outlined
                       size="small"
-                      (onClick)="copyV1Endpoint()">
+                      (onClick)="copyEndpoint()">
                     </p-button>
                   </div>
                 </div>
                 <p class="setting-description">
                   <i class="pi pi-info-circle"></i>
-                  OPDS v1 specification - Compatible with most reading apps and OPDS clients.
-                </p>
-              </div>
-            </div>
-
-            <div class="endpoint-divider"></div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <div class="setting-label-row">
-                  <label class="setting-label">OPDS v2 Catalog</label>
-                  <div class="input-group">
-                    <input
-                      id="endpoint-url-v2"
-                      class="endpoint-input"
-                      fluid
-                      type="text"
-                      pInputText
-                      [value]="opdsV2Endpoint"
-                      readonly/>
-                    <p-button
-                      icon="pi pi-copy"
-                      severity="info"
-                      outlined
-                      size="small"
-                      (onClick)="copyV2Endpoint()">
-                    </p-button>
-                  </div>
-                </div>
-                <p class="setting-description">
-                  <i class="pi pi-exclamation-triangle"></i>
-                  OPDS v2 specification - Note: Not all clients support v2. Use v1 for better compatibility.
+                  Use this URL to access your book collection through OPDS-compatible reading apps.
                 </p>
               </div>
             </div>

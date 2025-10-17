@@ -5,13 +5,8 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Set;
@@ -35,27 +30,9 @@ public class BookQueryService {
         return createPageFromBooks(books, pageable, includeDescription, null);
     }
 
-    public Page<Book> getRecentBooksPage(boolean includeDescription, int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
-        Page<BookEntity> books = bookRepository.findAllWithMetadata(pageable);
-        return createPageFromBooks(books, pageable, includeDescription, null);
-    }
-
     public List<Book> getAllBooksByLibraryIds(Set<Long> libraryIds, boolean includeDescription, Long userId) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds);
         return mapBooksToDto(books, includeDescription, userId);
-    }
-
-    public Page<Book> getAllBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size, Long userId) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
-        Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
-        return createPageFromBooks(books, pageable, includeDescription, userId);
-    }
-
-    public Page<Book> getRecentBooksByLibraryIdsPage(Set<Long> libraryIds, boolean includeDescription, int page, int size, Long userId) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size, Sort.by("addedOn").descending());
-        Page<BookEntity> books = bookRepository.findAllWithMetadataByLibraryIds(libraryIds, pageable);
-        return createPageFromBooks(books, pageable, includeDescription, userId);
     }
 
     public List<BookEntity> findAllWithMetadataByIds(Set<Long> bookIds) {
@@ -71,13 +48,6 @@ public class BookQueryService {
         return bookRepository.findAllFullBooks();
     }
 
-    public List<Book> searchBooksByMetadata(String text) {
-        List<BookEntity> bookEntities = bookRepository.searchByMetadata(text);
-        return bookEntities.stream()
-                .map(bookMapperV2::toDTO)
-                .collect(Collectors.toList());
-    }
-
     public Page<Book> searchBooksByMetadataPage(String text, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
         Page<BookEntity> books = bookRepository.searchByMetadata(text, pageable);
@@ -87,30 +57,16 @@ public class BookQueryService {
         return new PageImpl<>(mapped, pageable, books.getTotalElements());
     }
 
-    public List<Book> searchBooksByMetadataInLibraries(String text, Set<Long> libraryIds) {
-        List<BookEntity> bookEntities = bookRepository.searchByMetadataAndLibraryIds(text, libraryIds);
-        return bookEntities.stream()
-                .map(bookMapperV2::toDTO)
-                .collect(Collectors.toList());
-    }
-
-    public Page<Book> searchBooksByMetadataInLibrariesPage(String text, Set<Long> libraryIds, int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
-        Page<BookEntity> books = bookRepository.searchByMetadataAndLibraryIds(text, libraryIds, pageable);
-        List<Book> mapped = books.getContent().stream()
-                .map(bookMapperV2::toDTO)
-                .collect(Collectors.toList());
-        return new PageImpl<>(mapped, pageable, books.getTotalElements());
-    }
-
-    public Page<Book> getAllBooksByShelfPage(Long shelfId, boolean includeDescription, int page, int size) {
-        Pageable pageable = PageRequest.of(Math.max(page - 1, 0), size);
-        Page<BookEntity> books = bookRepository.findAllWithMetadataByShelfId(shelfId, pageable);
-        return createPageFromBooks(books, pageable, includeDescription, null);
-    }
-
     public void saveAll(List<BookEntity> books) {
         bookRepository.saveAll(books);
+    }
+
+    public List<Book> searchBooksByMetadata(String text) {
+        Pageable pageable = PageRequest.of(0, Integer.MAX_VALUE);
+        Page<BookEntity> books = bookRepository.searchByMetadata(text, pageable);
+        return books.getContent().stream()
+                .map(bookMapperV2::toDTO)
+                .collect(Collectors.toList());
     }
 
     private List<Book> mapBooksToDto(List<BookEntity> books, boolean includeDescription, Long userId) {
