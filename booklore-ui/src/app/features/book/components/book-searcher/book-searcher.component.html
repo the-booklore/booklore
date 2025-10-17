@@ -1,0 +1,72 @@
+<div class="book-searcher-container">
+  <p-iconfield class="search-iconfield" [class.focused]="isSearchFocused" [class.has-results]="isDropdownOpen">
+    <p-inputicon class="pi pi-search"/>
+    <input
+      type="text"
+      pInputText
+      [(ngModel)]="searchQuery"
+      (input)="onSearchInputChange()"
+      (focus)="isSearchFocused = true"
+      (blur)="onSearchBlur()"
+      placeholder="Title, Author, Series, Genre, or ISBN..."
+      class="search-input"
+    />
+    @if (searchQuery) {
+      <p-button
+        icon="pi pi-times"
+        (click)="clearSearch()"
+        [text]="true"
+        [rounded]="true"
+        class="clear-search-btn"
+        aria-label="Clear Search">
+      </p-button>
+    }
+  </p-iconfield>
+
+  @if (books.length > 0 || searchQuery) {
+    <div
+      class="search-dropdown layout-menu"
+      [class.show]="(books.length > 0)"
+    >
+      @if (books.length > 0) {
+        @for (book of books; track book) {
+          <div class="search-dropdown-item" (click)="onBookClick(book)">
+            <div class="search-item-content">
+              <img
+                [attr.src]="urlHelper.getThumbnailUrl(book.id, book.metadata?.coverUpdatedOn)"
+                alt="Book Cover"
+                class="search-book-cover"
+              />
+              <div class="search-book-details">
+                <div class="search-book-title-container">
+                  <p class="search-book-name">
+                    {{ book.metadata?.title | slice: 0:70 }}
+                  </p>
+                </div>
+                <div class="search-book-meta-line">
+                  @if (book.metadata?.authors?.length ?? 0 > 0) {
+                    <p class="search-book-authors">by {{ getAuthorNames(book.metadata?.authors) }}</p>
+                  }
+                  @if (getPublishedYear(book.metadata?.publishedDate)) {
+                    <span class="metadata-badge year-badge">{{ getPublishedYear(book.metadata?.publishedDate) }}</span>
+                  }
+                </div>
+                @if (getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber)) {
+                  <div class="search-book-series metadata-badge series-badge">
+                    <i class="pi pi-book"></i>
+                    <span>{{ getSeriesInfo(book.metadata?.seriesName, book.metadata?.seriesNumber) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+            <p-divider></p-divider>
+          </div>
+        }
+      } @else {
+        <div class="search-dropdown-item no-results">
+          <span>No results found</span>
+        </div>
+      }
+    </div>
+  }
+</div>

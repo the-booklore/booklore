@@ -164,13 +164,6 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public List<BookLoreUser> getUsersWithLibraryAccess(Long libraryId) {
-        return userRepository.findAllByLibraries_Id(libraryId)
-                .stream()
-                .map(bookLoreUserTransformer::toDTO)
-                .collect(Collectors.toList());
-    }
-
     private boolean meetsMinimumPasswordRequirements(String password) {
         return password != null && password.length() >= 6;
     }

@@ -3,7 +3,11 @@ package com.adityachandel.booklore.service.metadata.writer;
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.github.junrar.Archive;
+import com.github.junrar.rarfile.FileHeader;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -17,34 +21,29 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-import com.github.junrar.Archive;
-import com.github.junrar.rarfile.FileHeader;
-import org.apache.commons.compress.archivers.sevenz.SevenZFile;
-import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 
 @Slf4j
 @Component
 public class CbxMetadataWriter implements MetadataWriter {
 
     @Override
-    public void writeMetadataToFile(File file, BookMetadataEntity metadata, String thumbnailUrl, boolean restoreMode, MetadataClearFlags clearFlags) {
+    public void writeMetadataToFile(File file, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clearFlags) {
         Path backup = null;
+        Path tempDir = null;
+        Path tempFile = null;
         boolean writeSucceeded = false;
         try {
             // Create a backup next to the source file (temp name, safe to delete later)
@@ -82,7 +81,8 @@ public class CbxMetadataWriter implements MetadataWriter {
                     SevenZArchiveEntry existing = null;
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e != null && !e.isDirectory() && isComicInfoName(e.getName())) {
-                            existing = e; break;
+                            existing = e;
+                            break;
                         }
                     }
                     if (existing != null) {
@@ -112,19 +112,19 @@ public class CbxMetadataWriter implements MetadataWriter {
             // Apply metadata to the Document
             Element root = doc.getDocumentElement();
             MetadataCopyHelper helper = new MetadataCopyHelper(metadata);
-            helper.copyTitle(restoreMode, clearFlags != null && clearFlags.isTitle(), val -> setElement(doc, root, "Title", val));
-            helper.copyDescription(restoreMode, clearFlags != null && clearFlags.isDescription(), val -> {
+            helper.copyTitle(clearFlags != null && clearFlags.isTitle(), val -> setElement(doc, root, "Title", val));
+            helper.copyDescription(clearFlags != null && clearFlags.isDescription(), val -> {
                 setElement(doc, root, "Summary", val);
                 removeElement(root, "Description");
             });
-            helper.copyPublisher(restoreMode, clearFlags != null && clearFlags.isPublisher(), val -> setElement(doc, root, "Publisher", val));
-            helper.copySeriesName(restoreMode, clearFlags != null && clearFlags.isSeriesName(), val -> setElement(doc, root, "Series", val));
-            helper.copySeriesNumber(restoreMode, clearFlags != null && clearFlags.isSeriesNumber(), val -> setElement(doc, root, "Number", formatFloat(val)));
-            helper.copySeriesTotal(restoreMode, clearFlags != null && clearFlags.isSeriesTotal(), val -> setElement(doc, root, "Count", val != null ? val.toString() : null));
-            helper.copyPublishedDate(restoreMode, clearFlags != null && clearFlags.isPublishedDate(), date -> setDateElements(doc, root, date));
-            helper.copyPageCount(restoreMode, clearFlags != null && clearFlags.isPageCount(), val -> setElement(doc, root, "PageCount", val != null ? val.toString() : null));
-            helper.copyLanguage(restoreMode, clearFlags != null && clearFlags.isLanguage(), val -> setElement(doc, root, "LanguageISO", val));
-            helper.copyAuthors(restoreMode, clearFlags != null && clearFlags.isAuthors(), set -> {
+            helper.copyPublisher(clearFlags != null && clearFlags.isPublisher(), val -> setElement(doc, root, "Publisher", val));
+            helper.copySeriesName(clearFlags != null && clearFlags.isSeriesName(), val -> setElement(doc, root, "Series", val));
+            helper.copySeriesNumber(clearFlags != null && clearFlags.isSeriesNumber(), val -> setElement(doc, root, "Number", formatFloat(val)));
+            helper.copySeriesTotal(clearFlags != null && clearFlags.isSeriesTotal(), val -> setElement(doc, root, "Count", val != null ? val.toString() : null));
+            helper.copyPublishedDate(clearFlags != null && clearFlags.isPublishedDate(), date -> setDateElements(doc, root, date));
+            helper.copyPageCount(clearFlags != null && clearFlags.isPageCount(), val -> setElement(doc, root, "PageCount", val != null ? val.toString() : null));
+            helper.copyLanguage(clearFlags != null && clearFlags.isLanguage(), val -> setElement(doc, root, "LanguageISO", val));
+            helper.copyAuthors(clearFlags != null && clearFlags.isAuthors(), set -> {
                 setElement(doc, root, "Writer", join(set));
                 removeElement(root, "Penciller");
                 removeElement(root, "Inker");
@@ -132,7 +132,7 @@ public class CbxMetadataWriter implements MetadataWriter {
                 removeElement(root, "Letterer");
                 removeElement(root, "CoverArtist");
             });
-            helper.copyCategories(restoreMode, clearFlags != null && clearFlags.isCategories(), set -> {
+            helper.copyCategories(clearFlags != null && clearFlags.isCategories(), set -> {
                 setElement(doc, root, "Genre", join(set));
                 removeElement(root, "Tags");
             });
@@ -147,18 +147,19 @@ public class CbxMetadataWriter implements MetadataWriter {
 
             // Repack depending on container type; always write to a temp target then atomic move
             if (isCbz) {
-                Path temp = Files.createTempFile("cbx_edit", ".cbz");
-                repackZipReplacingComicInfo(file.toPath(), temp, xmlBytes);
-                atomicReplace(temp, file.toPath());
+                tempFile = Files.createTempFile("cbx_edit", ".cbz");
+                repackZipReplacingComicInfo(file.toPath(), tempFile, xmlBytes);
+                atomicReplace(tempFile, file.toPath());
+                tempFile = null; // Successfully moved, don't delete in finally
                 writeSucceeded = true;
                 return;
             }
 
             if (isCb7) {
                 // Convert to CBZ with updated ComicInfo.xml
-                Path tempZip = Files.createTempFile("cbx_edit", ".cbz");
+                tempFile = Files.createTempFile("cbx_edit", ".cbz");
                 try (SevenZFile sevenZ = new SevenZFile(file);
-                     ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZip))) {
+                     ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempFile))) {
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e.isDirectory()) continue;
                         String entryName = e.getName();
@@ -178,8 +179,12 @@ public class CbxMetadataWriter implements MetadataWriter {
                     zos.closeEntry();
                 }
                 Path target = file.toPath().resolveSibling(stripExtension(file.getName()) + ".cbz");
-                atomicReplace(tempZip, target);
-                try { Files.deleteIfExists(file.toPath()); } catch (Exception ignored) {}
+                atomicReplace(tempFile, target);
+                tempFile = null; // Successfully moved, don't delete in finally
+                try {
+                    Files.deleteIfExists(file.toPath());
+                } catch (Exception ignored) {
+                }
                 writeSucceeded = true;
                 return;
             }
@@ -189,7 +194,7 @@ public class CbxMetadataWriter implements MetadataWriter {
             boolean rarAvailable = isRarAvailable(rarBin);
 
             if (rarAvailable) {
-                Path tempDir = Files.createTempDirectory("cbx_rar_");
+                tempDir = Files.createTempDirectory("cbx_rar_");
                 try {
                     // Extract entire RAR into a temp directory
                     try (Archive archive = new Archive(file)) {
@@ -234,20 +239,16 @@ public class CbxMetadataWriter implements MetadataWriter {
                         log.warn("RAR creation failed with exit code {}. Falling back to CBZ conversion for {}", code, file.getName());
                     }
                 } finally {
-                    try { // cleanup temp dir
-                        java.nio.file.Files.walk(tempDir)
-                            .sorted(java.util.Comparator.reverseOrder())
-                            .forEach(path -> { try { Files.deleteIfExists(path); } catch (Exception ignore) {} });
-                    } catch (Exception ignore) {}
+                    // tempDir cleanup will be handled in outer finally block
                 }
             } else {
                 log.warn("`rar` binary not found. Falling back to CBZ conversion for {}", file.getName());
             }
 
             // Fallback: convert the CBR to CBZ containing updated ComicInfo.xml
-            Path tempZip = Files.createTempFile("cbx_edit", ".cbz");
+            tempFile = Files.createTempFile("cbx_edit", ".cbz");
             try (Archive archive = new Archive(file);
-                 ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempZip))) {
+                 ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempFile))) {
                 for (FileHeader fh : archive.getFileHeaders()) {
                     if (fh.isDirectory()) continue;
                     String entryName = fh.getFileName();
@@ -265,8 +266,12 @@ public class CbxMetadataWriter implements MetadataWriter {
                 zos.closeEntry();
             }
             Path target = file.toPath().resolveSibling(stripExtension(file.getName()) + ".cbz");
-            atomicReplace(tempZip, target);
-            try { Files.deleteIfExists(file.toPath()); } catch (Exception ignored) {}
+            atomicReplace(tempFile, target);
+            tempFile = null; // Successfully moved, don't delete in finally
+            try {
+                Files.deleteIfExists(file.toPath());
+            } catch (Exception ignored) {
+            }
             writeSucceeded = true;
         } catch (Exception e) {
             // Attempt to restore the original file from backup
@@ -280,8 +285,27 @@ public class CbxMetadataWriter implements MetadataWriter {
             }
             log.warn("Failed to write metadata for {}: {}", file.getName(), e.getMessage(), e);
         } finally {
+            // Clean up temporary file if it wasn't successfully moved
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (Exception e) {
+                    log.warn("Failed to delete temp file: {}", tempFile, e);
+                }
+            }
+
+            // Clean up temporary directory if it was created
+            if (tempDir != null) {
+                deleteDirectoryRecursively(tempDir);
+            }
+
+            // Clean up backup file if write succeeded
             if (writeSucceeded && backup != null) {
-                try { Files.deleteIfExists(backup); } catch (Exception ignore) {}
+                try {
+                    Files.deleteIfExists(backup);
+                } catch (Exception e) {
+                    log.warn("Failed to delete backup file: {}", backup, e);
+                }
             }
         }
     }
@@ -450,5 +474,21 @@ public class CbxMetadataWriter implements MetadataWriter {
     @Override
     public BookFileType getSupportedBookType() {
         return BookFileType.CBX;
+    }
+
+    private void deleteDirectoryRecursively(Path dir) {
+        try (var pathStream = Files.walk(dir)) {
+            pathStream
+                    .sorted(Comparator.reverseOrder())
+                    .forEach(path -> {
+                        try {
+                            Files.delete(path);
+                        } catch (IOException e) {
+                            log.warn("Failed to delete temp file/directory: {}", path, e);
+                        }
+                    });
+        } catch (IOException e) {
+            log.warn("Failed to clean up temporary directory: {}", dir, e);
+        }
     }
 }

@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.bookdrop;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookdropFileEntity;
@@ -11,9 +12,7 @@ import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
-import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
-import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
-import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
+import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.util.FileService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,9 +38,7 @@ public class BookdropMetadataService {
     private final BookdropFileRepository bookdropFileRepository;
     private final AppSettingService appSettingService;
     private final ObjectMapper objectMapper;
-    private final EpubMetadataExtractor epubMetadataExtractor;
-    private final PdfMetadataExtractor pdfMetadataExtractor;
-    private final CbxMetadataExtractor cbxMetadataExtractor;
+    private final MetadataExtractorFactory metadataExtractorFactory;
     private final MetadataRefreshService metadataRefreshService;
     private final FileService fileService;
 
@@ -61,13 +58,12 @@ public class BookdropMetadataService {
         BookdropFileEntity entity = getOrThrow(bookdropFileId);
 
         AppSettings appSettings = appSettingService.getAppSettings();
-        MetadataRefreshRequest request = MetadataRefreshRequest.builder()
-                .refreshOptions(appSettings.getMetadataRefreshOptions())
-                .build();
+
+        MetadataRefreshOptions refreshOptions = appSettings.getDefaultMetadataRefreshOptions();
 
         BookMetadata initial = objectMapper.readValue(entity.getOriginalMetadata(), BookMetadata.class);
 
-        List<MetadataProvider> providers = metadataRefreshService.prepareProviders(request);
+        List<MetadataProvider> providers = metadataRefreshService.prepareProviders(refreshOptions);
         Book book = Book.builder()
                 .fileName(entity.getFileName())
                 .metadata(initial)
@@ -82,7 +78,7 @@ public class BookdropMetadataService {
         }
 
         Map<MetadataProvider, BookMetadata> metadataMap = metadataRefreshService.fetchMetadataForBook(providers, book);
-        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(book.getId(), request, metadataMap);
+        BookMetadata fetchedMetadata = metadataRefreshService.buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
         String fetchedJson = objectMapper.writeValueAsString(fetchedMetadata);
 
         entity.setFetchedMetadata(fetchedJson);
@@ -98,23 +94,16 @@ public class BookdropMetadataService {
 
     private BookMetadata extractInitialMetadata(BookdropFileEntity entity) {
         File file = new File(entity.getFilePath());
-        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName()).orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
-        return switch (fileExt) {
-            case PDF -> pdfMetadataExtractor.extractMetadata(file);
-            case EPUB -> epubMetadataExtractor.extractMetadata(file);
-            case CBZ, CBR, CB7 -> cbxMetadataExtractor.extractMetadata(file);
-        };
+        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName())
+            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+        return metadataExtractorFactory.extractMetadata(fileExt, file);
     }
 
     private void extractAndSaveCover(BookdropFileEntity entity) {
         File file = new File(entity.getFilePath());
-        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName()).orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
-        byte[] coverBytes;
-        coverBytes = switch (fileExt) {
-            case EPUB -> epubMetadataExtractor.extractCover(file);
-            case PDF -> pdfMetadataExtractor.extractCover(file);
-            case CBZ, CBR, CB7 -> cbxMetadataExtractor.extractCover(file);
-        };
+        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName())
+            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+        byte[] coverBytes = metadataExtractorFactory.extractCover(fileExt, file);
         if (coverBytes != null) {
             try {
                 fileService.saveImage(coverBytes, fileService.getTempBookdropCoverImagePath(entity.getId()));

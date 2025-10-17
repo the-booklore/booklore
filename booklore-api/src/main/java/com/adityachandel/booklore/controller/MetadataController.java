@@ -4,12 +4,13 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.CoverImage;
 import com.adityachandel.booklore.model.dto.request.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.quartz.JobSchedulerService;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.metadata.*;
 import lombok.AllArgsConstructor;
@@ -19,7 +20,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -30,12 +30,12 @@ public class MetadataController {
 
     private final BookMetadataService bookMetadataService;
     private final BookMetadataUpdater bookMetadataUpdater;
-    private final JobSchedulerService jobSchedulerService;
     private final AuthenticationService authenticationService;
     private final BookMetadataMapper bookMetadataMapper;
     private final MetadataMatchService metadataMatchService;
     private final DuckDuckGoCoverService duckDuckGoCoverService;
     private final BookRepository bookRepository;
+    private final MetadataManagementService metadataManagementService;
 
     @PostMapping("/{bookId}/metadata/prospective")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
@@ -49,7 +49,16 @@ public class MetadataController {
     @CheckBookAccess(bookIdParam = "bookId")
     public ResponseEntity<BookMetadata> updateMetadata(@RequestBody MetadataUpdateWrapper metadataUpdateWrapper, @PathVariable long bookId, @RequestParam(defaultValue = "true") boolean mergeCategories) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        bookMetadataUpdater.setBookMetadata(bookEntity, metadataUpdateWrapper, true, mergeCategories);
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(metadataUpdateWrapper)
+                .updateThumbnail(true)
+                .mergeCategories(mergeCategories)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
         bookRepository.save(bookEntity);
         BookMetadata bookMetadata = bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
         return ResponseEntity.ok(bookMetadata);
@@ -59,14 +68,6 @@ public class MetadataController {
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<List<BookMetadata>> bulkEditMetadata(@RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest, @RequestParam boolean mergeCategories) {
         return ResponseEntity.ok(bookMetadataService.bulkUpdateMetadata(bulkMetadataUpdateRequest, mergeCategories));
-    }
-
-    @PutMapping(path = "/metadata/refresh")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    public ResponseEntity<String> scheduleRefreshV2(@Validated @RequestBody MetadataRefreshRequest request) {
-        Long userId = authenticationService.getAuthenticatedUser().getId();
-        jobSchedulerService.scheduleMetadataRefresh(request, userId);
-        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{bookId}/metadata/cover/upload")
@@ -118,24 +119,22 @@ public class MetadataController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{bookId}/metadata/restore")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> getBackedUpMetadata(@PathVariable Long bookId) {
-        BookMetadata restoredMetadata = bookMetadataService.getBackedUpMetadata(bookId);
-        return ResponseEntity.ok(restoredMetadata);
-    }
-
-    @PostMapping("/{bookId}/metadata/restore")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<BookMetadata> restoreMetadata(@PathVariable Long bookId) throws IOException {
-        BookMetadata restoredMetadata = bookMetadataService.restoreMetadataFromBackup(bookId);
-        return ResponseEntity.ok(restoredMetadata);
-    }
-
     @PostMapping("/{bookId}/metadata/covers")
     public ResponseEntity<List<CoverImage>> getImages(@RequestBody CoverFetchRequest request) {
         return ResponseEntity.ok(duckDuckGoCoverService.getCovers(request));
+    }
+
+    @PostMapping("/metadata/manage/consolidate")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    public ResponseEntity<Void> mergeMetadata(@Validated @RequestBody MergeMetadataRequest request) {
+        metadataManagementService.consolidateMetadata(request.getMetadataType(), request.getTargetValues(), request.getValuesToMerge());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/metadata/manage/delete")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    public ResponseEntity<Void> deleteMetadata(@Validated @RequestBody DeleteMetadataRequest request) {
+        metadataManagementService.deleteMetadata(request.getMetadataType(), request.getValuesToDelete());
+        return ResponseEntity.noContent().build();
     }
 }

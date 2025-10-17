@@ -1,0 +1,140 @@
+<div class="metadata-settings">
+  <div class="setting-item">
+    <div class="setting-info">
+      <label class="setting-label">Enabled Metadata Providers</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        Enable or configure third-party metadata sources for enhanced book information. Each provider offers different types of data and coverage.
+      </p>
+    </div>
+  </div>
+
+  <div class="providers-list">
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox [(ngModel)]="amazonEnabled" [binary]="true"></p-checkbox>
+          <label class="provider-label">Amazon</label>
+        </div>
+      </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <label class="config-label">Region</label>
+          <p-select
+            [options]="amazonDomains"
+            [(ngModel)]="selectedAmazonDomain"
+            placeholder="Select Domain"
+            class="config-select">
+          </p-select>
+        </div>
+
+        <div class="config-field">
+          <div class="config-label-row">
+            <label class="config-label">Cookie (Optional, but highly recommended)</label>
+            <app-external-doc-link docType="amazonCookie"></app-external-doc-link>
+          </div>
+          <p class="config-description">
+            <i class="pi pi-info-circle"></i>
+            Providing your Amazon session cookie allows the app to access richer book metadata and bypass rate limits. Optional but recommended for best results.
+          </p>
+          <input
+            type="text"
+            pInputText
+            placeholder="Paste your Amazon cookie"
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="amazonCookie"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox [(ngModel)]="goodreadsEnabled" [binary]="true"></p-checkbox>
+          <label class="provider-label">Goodreads</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox [(ngModel)]="googleEnabled" [binary]="true"></p-checkbox>
+          <label class="provider-label">Google</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox
+            [binary]="true"
+            [(ngModel)]="hardcoverEnabled"
+            [disabled]="!hardcoverToken">
+          </p-checkbox>
+          <label class="provider-label">Hardcover</label>
+        </div>
+      </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <div class="config-label-row">
+            <label class="config-label">API Token</label>
+            <app-external-doc-link docType="hardcover"></app-external-doc-link>
+          </div>
+          <input
+            type="text"
+            pInputText
+            placeholder="Enter Hardcover API token"
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="hardcoverToken"
+            (ngModelChange)="onTokenChange($event)"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox
+            [binary]="true"
+            [(ngModel)]="comicvineEnabled"
+            [disabled]="!comicvineToken">
+          </p-checkbox>
+          <label class="provider-label">Comic Vine</label>
+        </div>
+      </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <label class="config-label">API Token</label>
+          <input
+            type="text"
+            pInputText
+            placeholder="Enter Comic Vine API token"
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="comicvineToken"
+            (ngModelChange)="onComicTokenChange($event)"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox [(ngModel)]="doubanEnabled" [binary]="true"></p-checkbox>
+          <label class="provider-label">Douban</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="setting-actions">
+    <p-button label="Save" icon="pi pi-save" severity="success" [outlined]="true" (click)="saveSettings()"></p-button>
+  </div>
+</div>

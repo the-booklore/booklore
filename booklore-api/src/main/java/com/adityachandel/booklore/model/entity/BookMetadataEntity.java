@@ -105,7 +105,6 @@ public class BookMetadataEntity {
     @Column(name = "comicvine_id", length = 100)
     private String comicvineId;
 
-    // Locking fields
 
     @Column(name = "title_locked")
     private Boolean titleLocked = Boolean.FALSE;
@@ -176,6 +175,12 @@ public class BookMetadataEntity {
     @Column(name = "categories_locked")
     private Boolean categoriesLocked = Boolean.FALSE;
 
+    @Column(name = "moods_locked")
+    private Boolean moodsLocked = Boolean.FALSE;
+
+    @Column(name = "tags_locked")
+    private Boolean tagsLocked = Boolean.FALSE;
+
     @Column(name = "goodreads_id_locked")
     private Boolean goodreadsIdLocked = Boolean.FALSE;
 
@@ -191,13 +196,19 @@ public class BookMetadataEntity {
     @Column(name = "reviews_locked")
     private Boolean reviewsLocked = Boolean.FALSE;
 
+    @Column(name = "embedding_vector", columnDefinition = "TEXT")
+    private String embeddingVector;
+
+    @Column(name = "embedding_updated_at")
+    private Instant embeddingUpdatedAt;
+
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
     @JoinColumn(name = "book_id")
     @JsonIgnore
     private BookEntity book;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "book_metadata_author_mapping",
             joinColumns = @JoinColumn(name = "book_id"),
@@ -205,7 +216,7 @@ public class BookMetadataEntity {
     @Fetch(FetchMode.SUBSELECT)
     private Set<AuthorEntity> authors;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "book_metadata_category_mapping",
             joinColumns = @JoinColumn(name = "book_id"),
@@ -213,6 +224,24 @@ public class BookMetadataEntity {
     )
     @Fetch(FetchMode.SUBSELECT)
     private Set<CategoryEntity> categories;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "book_metadata_mood_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "mood_id")
+    )
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<MoodEntity> moods;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "book_metadata_tag_mapping",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @Fetch(FetchMode.SUBSELECT)
+    private Set<TagEntity> tags;
 
     @OneToMany(mappedBy = "bookMetadata", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
@@ -235,6 +264,8 @@ public class BookMetadataEntity {
         this.seriesTotalLocked = lock;
         this.authorsLocked = lock;
         this.categoriesLocked = lock;
+        this.moodsLocked = lock;
+        this.tagsLocked = lock;
         this.amazonRatingLocked = lock;
         this.amazonReviewCountLocked = lock;
         this.goodreadsRatingLocked = lock;
@@ -266,6 +297,8 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.seriesTotalLocked)
                 && Boolean.TRUE.equals(this.authorsLocked)
                 && Boolean.TRUE.equals(this.categoriesLocked)
+                && Boolean.TRUE.equals(this.moodsLocked)
+                && Boolean.TRUE.equals(this.tagsLocked)
                 && Boolean.TRUE.equals(this.amazonRatingLocked)
                 && Boolean.TRUE.equals(this.amazonReviewCountLocked)
                 && Boolean.TRUE.equals(this.goodreadsRatingLocked)

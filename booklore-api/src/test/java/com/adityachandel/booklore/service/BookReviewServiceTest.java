@@ -108,6 +108,7 @@ class BookReviewServiceTest {
 
         return MetadataPublicReviewsSettings.builder()
             .downloadEnabled(enabled)
+            .autoDownloadEnabled(enabled)
             .providers(configs)
             .build();
     }
@@ -115,11 +116,13 @@ class BookReviewServiceTest {
     @Test
     void getByBookId_returnsExistingReviews_whenReviewsExist() {
         Long bookId = 1L;
+        BookEntity bookEntity = new BookEntity();
         BookReviewEntity entity = createBookReviewEntity(MetadataProvider.Amazon);
         BookReview dto = createBookReview(MetadataProvider.Amazon);
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPublicReviewsSettings(createReviewSettings(true));
 
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(bookReviewRepository.findByBookMetadataBookId(bookId))
             .thenReturn(Collections.singletonList(entity));
         when(mapper.toDto(entity)).thenReturn(dto);
@@ -135,9 +138,11 @@ class BookReviewServiceTest {
     @Test
     void getByBookId_returnsEmptyList_whenDownloadDisabled() {
         Long bookId = 1L;
+        BookEntity bookEntity = new BookEntity();
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPublicReviewsSettings(createReviewSettings(false));
 
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(bookReviewRepository.findByBookMetadataBookId(bookId))
             .thenReturn(Collections.emptyList());
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
@@ -151,10 +156,12 @@ class BookReviewServiceTest {
     @Test
     void getByBookId_returnsEmptyList_whenUserLacksPermissions() {
         Long bookId = 1L;
+        BookEntity bookEntity = new BookEntity();
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPublicReviewsSettings(createReviewSettings(true, MetadataProvider.Amazon));
         BookLoreUser user = createUser(false, false);
 
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(bookReviewRepository.findByBookMetadataBookId(bookId))
             .thenReturn(Collections.emptyList());
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
@@ -239,14 +246,7 @@ class BookReviewServiceTest {
     @Test
     void getByBookId_throwsException_whenBookNotFound() {
         Long bookId = 1L;
-        AppSettings appSettings = new AppSettings();
-        appSettings.setMetadataPublicReviewsSettings(createReviewSettings(true, MetadataProvider.Amazon));
-        BookLoreUser user = createUser(true, false);
 
-        when(bookReviewRepository.findByBookMetadataBookId(bookId))
-            .thenReturn(Collections.emptyList());
-        when(appSettingService.getAppSettings()).thenReturn(appSettings);
-        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
         RuntimeException exception = assertThrows(RuntimeException.class,

@@ -48,6 +48,8 @@ public class BookMetadata {
     private Instant coverUpdatedOn;
     private Set<String> authors;
     private Set<String> categories;
+    private Set<String> moods;
+    private Set<String> tags;
     private MetadataProvider provider;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
@@ -82,5 +84,7 @@ public class BookMetadata {
     private Boolean coverLocked;
     private Boolean authorsLocked;
     private Boolean categoriesLocked;
+    private Boolean moodsLocked;
+    private Boolean tagsLocked;
     private Boolean reviewsLocked;
 }

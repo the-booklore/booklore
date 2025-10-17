@@ -15,6 +15,7 @@ public class AppProperties {
     private String version;
     private RemoteAuth remoteAuth;
     private Swagger swagger = new Swagger();
+    private Boolean forceDisableOidc = false;
 
     @Getter
     @Setter

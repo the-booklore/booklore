@@ -1,0 +1,83 @@
+<div class="main-container enclosing-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-sliders-h"></i>
+      Metadata Settings
+    </h2>
+    <p class="settings-description">
+      Configure how metadata is retrieved, stored, and managed for your books. Set up automatic downloads, persistence options, and provider preferences.
+    </p>
+  </div>
+
+  <div class="settings-content">
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-download"></i>
+          Auto-Download Metadata
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">Auto-Download for BookDrop Files</label>
+              <p-toggleswitch
+                [(ngModel)]="metadataDownloadOnBookdrop"
+                (onChange)="onMetadataDownloadOnBookdropToggle($event.checked)">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-exclamation-triangle"></i>
+              Automatically downloads metadata from your configured sources (Amazon, Goodreads, etc.) when files are added to the Bookdrop folder. Use with caution if adding many files at once as metadata fetching can take time.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metadata-persistence-section">
+      <app-metadata-persistence-settings-component></app-metadata-persistence-settings-component>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-cloud"></i>
+          Metadata Providers
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <app-metadata-provider-settings></app-metadata-provider-settings>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-star"></i>
+          Public Reviews
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <app-public-reviews-settings-component></app-public-reviews-settings-component>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-sliders-h"></i>
+          Metadata Match Weights
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <app-metadata-match-weights-component></app-metadata-match-weights-component>
+      </div>
+    </div>
+  </div>
+</div>

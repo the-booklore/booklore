@@ -6,12 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class AppSettings {
-    private MetadataRefreshOptions metadataRefreshOptions;
+    private MetadataRefreshOptions defaultMetadataRefreshOptions;
+    private List<MetadataRefreshOptions> libraryMetadataRefreshOptions;
     private boolean autoBookSearch;
     private boolean similarBookRecommendation;
     private boolean opdsServerEnabled;

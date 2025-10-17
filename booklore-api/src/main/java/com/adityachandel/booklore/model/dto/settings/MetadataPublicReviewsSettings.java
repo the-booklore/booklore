@@ -11,6 +11,7 @@ import java.util.Set;
 public class MetadataPublicReviewsSettings {
 
     private boolean downloadEnabled;
+    private boolean autoDownloadEnabled;
     private Set<ReviewProviderConfig> providers;
 
     @Builder

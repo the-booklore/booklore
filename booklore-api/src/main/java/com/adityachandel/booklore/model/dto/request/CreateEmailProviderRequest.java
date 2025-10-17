@@ -18,4 +18,5 @@ public class CreateEmailProviderRequest {
     private String fromAddress;
     private Boolean auth;
     private Boolean startTls;
+    private boolean shared;
 }

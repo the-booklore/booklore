@@ -1,0 +1,185 @@
+<div #epubContainer class="epub-viewer-container">
+  @if (isLoading) {
+    <div class="spinner-wrapper">
+      <p-progressSpinner></p-progressSpinner>
+    </div>
+  }
+  @if (!isLoading) {
+    <div>
+      <div class="epub-header">
+        <div class="header-left">
+          <p-button size="small" class="menu-toggle-button" (click)="toggleDrawer()" icon="pi pi-bars" severity="secondary"></p-button>
+          <div class="progress-info">
+            <span class="progress-percentage"><span class="progress-label">Progress:  </span>{{ progressPercentage }}%</span>
+          </div>
+          <p-drawer [(visible)]="isDrawerVisible" [modal]="true" [position]="'left'" header="Chapters">
+            <ul class="chapter-list">
+              @for (chapter of chapters; track chapter) {
+                <li (click)="navigateToChapter(chapter); $event.stopPropagation()" class="chapter-item">
+                  {{ chapter.label }}
+                </li>
+              }
+            </ul>
+          </p-drawer>
+        </div>
+
+        <div class="header-center">
+          <p class="text-sm font-medium">{{ currentChapter }}</p>
+        </div>
+
+        <div class="header-right">
+          <div class="flex gap-4">
+            @if (!locationsReady) {
+              <div class="location-indicator" pTooltip="Saving progress not ready yet">
+                <span class="dot"></span>
+              </div>
+            }
+            <div>
+              <p-button size="small" class="settings-toggle-button" (click)="toggleSettingsDrawer()" icon="pi pi-cog" severity="secondary"></p-button>
+              <p-drawer [(visible)]="isSettingsDrawerVisible" [modal]="true" [position]="'right'" header="Settings">
+                <div class="flex flex-col gap-4 max-w-md mx-auto">
+
+                  <div class="flex items-center gap-4">
+                    <span class="font-semibold text-gray-200">Font Size:</span>
+                    <div class="flex items-center gap-2">
+                      <p-button size="small" icon="pi pi-minus" (click)="decreaseFontSize()" severity="info"></p-button>
+                      <span class="text-gray-100">{{ fontSize }}%</span>
+                      <p-button size="small" icon="pi pi-plus" (click)="increaseFontSize()" severity="info"></p-button>
+                    </div>
+                  </div>
+
+                  <p-divider></p-divider>
+
+                  <div class="flex items-center gap-2">
+                    <label for="font-type" class="block font-semibold text-gray-200">Font:</label>
+                    <p-select
+                      id="font-type"
+                      [options]="fontTypes"
+                      [(ngModel)]="selectedFontType"
+                      (onChange)="changeFontType()"
+                      class="w-full"
+                      placeholder="Select font type">
+                    </p-select>
+                  </div>
+
+                  <p-divider></p-divider>
+
+                  <div class="flex gap-2 items-center">
+                    <label class="block font-semibold text-gray-200">Theme:</label>
+                    <div class="flex gap-3 mt-1" role="radiogroup" aria-label="Theme selection">
+                      @for (theme of themes; track theme) {
+                        <button
+                          type="button"
+                          class="w-8 h-8 rounded-full border-2 transition-all"
+                          [class.border-blue-600]="selectedTheme === theme.value"
+                          [style.background-color]="getThemeColor(theme.value)"
+                          (click)="selectTheme(theme.value)"
+                          [attr.aria-pressed]="selectedTheme === theme.value"
+                          [attr.aria-label]="theme.label">
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                  <p-divider></p-divider>
+
+                  <div class="flex items-center gap-2">
+                    <label id="flow-label" class="block font-semibold text-gray-200">Flow:</label>
+                    <div class="flex gap-4" role="radiogroup" aria-labelledby="flow-label">
+                      <div class="flex items-center gap-1.5">
+                        <p-radioButton
+                          name="flow"
+                          [value]="'paginated'"
+                          [(ngModel)]="selectedFlow"
+                          (onClick)="changeScrollMode()"
+                          inputId="flow-paginated">
+                        </p-radioButton>
+                        <label for="flow-paginated" class="cursor-pointer select-none text-gray-200">Paginated</label>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <p-radioButton
+                          name="flow"
+                          [value]="'scrolled'"
+                          [(ngModel)]="selectedFlow"
+                          (onClick)="changeScrollMode()"
+                          inputId="flow-scrolled">
+                        </p-radioButton>
+                        <label for="flow-scrolled" class="cursor-pointer select-none text-gray-200">Scrolled</label>
+                      </div>
+                    </div>
+                  </div>
+
+                  @if (selectedFlow === 'paginated' && !isMobileDevice()) {
+                    <p-divider></p-divider>
+
+                    <div class="flex items-center gap-2">
+                      <label id="spread-label" class="block font-semibold text-gray-200">Page Spread:</label>
+                      <div class="flex gap-4" role="radiogroup" aria-labelledby="spread-label">
+                        <div class="flex items-center gap-1.5">
+                          <p-radioButton
+                            name="spread"
+                            [value]="'single'"
+                            [(ngModel)]="selectedSpread"
+                            (onClick)="changeSpreadMode()"
+                            inputId="spread-single">
+                          </p-radioButton>
+                          <label for="spread-single" class="cursor-pointer select-none text-gray-200">Single</label>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                          <p-radioButton
+                            name="spread"
+                            [value]="'double'"
+                            [(ngModel)]="selectedSpread"
+                            (onClick)="changeSpreadMode()"
+                            inputId="spread-auto">
+                          </p-radioButton>
+                          <label for="spread-auto" class="cursor-pointer select-none text-gray-200">Double</label>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <p-divider></p-divider>
+
+                  <div>
+                    <label class="block mb-1 font-semibold text-gray-200 pb-2">Line Height: {{ lineHeight }}</label>
+                    <p-slider
+                      [(ngModel)]="lineHeight"
+                      [min]="1"
+                      [max]="2.5"
+                      [step]="0.1"
+                      (onSlideEnd)="updateThemeStyle()"
+                      class="w-full"
+                      aria-label="Line Height">
+                    </p-slider>
+                  </div>
+
+                  <div>
+                    <label class="block mb-1 font-semibold text-gray-200 pb-2 pt-2">Letter Spacing: {{ letterSpacing }}em</label>
+                    <p-slider
+                      [(ngModel)]="letterSpacing"
+                      [min]="0"
+                      [max]="0.2"
+                      [step]="0.01"
+                      (onSlideEnd)="updateThemeStyle()"
+                      class="w-full"
+                      aria-label="Letter Spacing">
+                    </p-slider>
+                  </div>
+
+                </div>
+              </p-drawer>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="epubContainer" #epubContainer></div>
+      @if (selectedFlow !== 'scrolled') {
+        <button class="epub-controls-left" [class.visible]="showControls" [class.dark-theme]="selectedTheme === 'black' || selectedTheme === 'grey'" (click)="prevPage(); onBookTouch()">←</button>
+      }
+      @if (selectedFlow !== 'scrolled') {
+        <button class="epub-controls-right" [class.visible]="showControls" [class.dark-theme]="selectedTheme === 'black' || selectedTheme === 'grey'" (click)="nextPage(); onBookTouch()">→</button>
+      }
+    </div>
+  }
+</div>

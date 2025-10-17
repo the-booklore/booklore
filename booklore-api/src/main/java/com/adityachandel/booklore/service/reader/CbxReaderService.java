@@ -40,6 +40,7 @@ public class CbxReaderService {
     private static final String CBZ_EXTENSION = ".cbz";
     private static final String CBR_EXTENSION = ".cbr";
     private static final String CB7_EXTENSION = ".cb7";
+    private static final String[] SUPPORTED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"};
 
     private final BookRepository bookRepository;
     private final AppSettingService appSettingService;
@@ -81,11 +82,13 @@ public class CbxReaderService {
         }
 
         try (var stream = Files.list(cacheDir)) {
-            return stream
-                    .filter(p -> p.toString().endsWith(".jpg"))
+            List<Path> imageFiles = stream
+                    .filter(p -> isImageFile(p.getFileName().toString()))
                     .sorted(Comparator.comparing(Path::getFileName))
-                    .map(p -> extractPageNumber(p.getFileName().toString()))
-                    .filter(p -> p != -1)
+                    .toList();
+
+            return java.util.stream.IntStream.rangeClosed(1, imageFiles.size())
+                    .boxed()
                     .collect(Collectors.toList());
         } catch (IOException e) {
             log.error("Failed to list pages for book {}", bookId, e);
@@ -94,8 +97,21 @@ public class CbxReaderService {
     }
 
     public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {
-        Path pagePath = Path.of(fileService.getCbxCachePath(), String.valueOf(bookId), String.format("%04d.jpg", page));
-        if (!Files.exists(pagePath)) throw new FileNotFoundException("Page not found: " + page);
+        Path bookDir = Path.of(fileService.getCbxCachePath(), String.valueOf(bookId));
+        List<Path> images;
+        try (Stream<Path> files = Files.list(bookDir)) {
+            images = files
+                    .filter(p -> isImageFile(p.getFileName().toString()))
+                    .sorted(Comparator.comparing(p -> p.getFileName().toString()))
+                    .toList();
+        }
+        if (images.isEmpty()) {
+            throw new FileNotFoundException("No image files found for book: " + bookId);
+        }
+        if (page < 1 || page > images.size()) {
+            throw new FileNotFoundException("Page out of range: " + page);
+        }
+        Path pagePath = images.get(page - 1);
         try (InputStream in = Files.newInputStream(pagePath)) {
             IOUtils.copy(in, outputStream);
         }
@@ -119,12 +135,11 @@ public class CbxReaderService {
              ZipInputStream zis = new ZipInputStream(fis)) {
 
             ZipEntry entry;
-            int index = 1;
 
             while ((entry = zis.getNextEntry()) != null) {
-                isImageFile(entry.getName());
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
-                    Path target = targetDir.resolve(String.format("%04d.jpg", index++));
+                    String fileName = extractFileNameFromPath(entry.getName());
+                    Path target = targetDir.resolve(fileName);
                     Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
                 }
                 zis.closeEntry();
@@ -135,10 +150,10 @@ public class CbxReaderService {
     private void extract7zArchive(Path cb7Path, Path targetDir) throws IOException {
         try (SevenZFile sevenZFile = new SevenZFile(cb7Path.toFile())) {
             SevenZArchiveEntry entry;
-            int index = 1;
             while ((entry = sevenZFile.getNextEntry()) != null) {
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
-                    Path target = targetDir.resolve(String.format("%04d.jpg", index++));
+                    String fileName = extractFileNameFromPath(entry.getName());
+                    Path target = targetDir.resolve(fileName);
                     try (OutputStream out = Files.newOutputStream(target)) {
                         copySevenZEntry(sevenZFile, out, entry.getSize());
                     }
@@ -160,10 +175,10 @@ public class CbxReaderService {
     private void extractRarArchive(Path cbrPath, Path targetDir) throws IOException {
         try (Archive archive = new Archive(cbrPath.toFile())) {
             List<FileHeader> headers = archive.getFileHeaders();
-            int index = 1;
             for (FileHeader header : headers) {
                 if (!header.isDirectory() && isImageFile(header.getFileName())) {
-                    Path target = targetDir.resolve(String.format("%04d.jpg", index++));
+                    String fileName = extractFileNameFromPath(header.getFileName());
+                    Path target = targetDir.resolve(fileName);
                     try (OutputStream out = Files.newOutputStream(target)) {
                         archive.extractFile(header, out);
                     }
@@ -174,18 +189,22 @@ public class CbxReaderService {
         }
     }
 
-    private boolean isImageFile(String name) {
-        String lower = name.toLowerCase().replace("\\", "/");
-        return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp");
+    private String extractFileNameFromPath(String fullPath) {
+        String normalizedPath = fullPath.replace("\\", "/");
+        int lastSlash = normalizedPath.lastIndexOf('/');
+        return lastSlash >= 0 ? normalizedPath.substring(lastSlash + 1) : normalizedPath;
     }
 
-    private int extractPageNumber(String filename) {
-        try {
-            return Integer.parseInt(filename.replaceAll("\\D+", ""));
-        } catch (Exception e) {
-            return -1;
+    private boolean isImageFile(String name) {
+        String lower = name.toLowerCase().replace("\\", "/");
+        for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
+            if (lower.endsWith(extension)) {
+                return true;
+            }
         }
+        return false;
     }
+
 
     private boolean needsCacheRefresh(Path cbzPath, Path cacheInfoPath) throws IOException {
         if (!Files.exists(cacheInfoPath)) return true;

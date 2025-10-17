@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.mapper.MetadataClearFlagsMapper;
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
@@ -17,32 +18,29 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.Lock;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
-import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestore;
-import com.adityachandel.booklore.service.metadata.backuprestore.MetadataBackupRestoreFactory;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
+import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -71,7 +69,6 @@ public class BookMetadataService {
     private final BookFileProcessorRegistry processorRegistry;
     private final BookQueryService bookQueryService;
     private final Map<MetadataProvider, BookParser> parserMap;
-    private final MetadataBackupRestoreFactory metadataBackupRestoreFactory;
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
@@ -196,7 +193,7 @@ public class BookMetadataService {
                         .filter(book -> book.getMetadata().getCoverLocked() == null || !book.getMetadata().getCoverLocked())
                         .toList();
                 int total = books.size();
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Started regenerating covers for " + total + " books"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
 
                 int[] current = {1};
                 for (BookEntity book : books) {
@@ -208,11 +205,10 @@ public class BookMetadataService {
                     }
                     current[0]++;
                 }
-
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Finished regenerating covers"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers"));
             } catch (Exception e) {
                 log.error("Error during cover regeneration: {}", e.getMessage(), e);
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Error during cover regeneration: " + e.getMessage()));
+                notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
             }
         });
     }
@@ -220,7 +216,7 @@ public class BookMetadataService {
     private void regenerateCoverForBook(BookEntity book, String progress) {
         String title = book.getMetadata().getTitle();
         String message = progress + "Regenerating cover for: " + title;
-        notificationService.sendMessage(Topic.LOG, createLogNotification(message));
+        notificationService.sendMessage(Topic.LOG, LogNotification.info(message));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
         processor.generateCover(book);
@@ -238,18 +234,6 @@ public class BookMetadataService {
         return cbxMetadataExtractor.extractMetadata(new File(FileUtils.getBookFullPath(bookEntity)));
     }
 
-    public BookMetadata restoreMetadataFromBackup(Long bookId) throws IOException {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        metadataBackupRestoreFactory.getService(bookEntity.getBookType()).restoreEmbeddedMetadata(bookEntity);
-        bookRepository.saveAndFlush(bookEntity);
-        return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
-    }
-
-    public BookMetadata getBackedUpMetadata(Long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        return metadataBackupRestoreFactory.getService(bookEntity.getBookType()).getBackedUpMetadata(bookId);
-    }
-
     @Transactional
     public List<BookMetadata> bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
@@ -265,14 +249,21 @@ public class BookMetadataService {
                     .seriesTotal(request.getSeriesTotal())
                     .publishedDate(request.getPublishedDate())
                     .categories(request.getGenres())
+                    .moods(request.getMoods())
+                    .tags(request.getTags())
                     .build();
 
-            MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
-                    .metadata(bookMetadata)
-                    .clearFlags(clearFlags)
+            MetadataUpdateContext context = MetadataUpdateContext.builder()
+                    .bookEntity(book)
+                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                            .metadata(bookMetadata)
+                            .clearFlags(clearFlags)
+                            .build())
+                    .updateThumbnail(false)
+                    .mergeCategories(mergeCategories)
                     .build();
 
-            bookMetadataUpdater.setBookMetadata(book, metadataUpdateWrapper, false, mergeCategories);
+            bookMetadataUpdater.setBookMetadata(context);
         }
 
         return books.stream()
@@ -280,16 +271,4 @@ public class BookMetadataService {
                 .map(m -> bookMetadataMapper.toBookMetadata(m, false))
                 .toList();
     }
-
-    public Resource getBackupCoverForBook(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        MetadataBackupRestore backupRestore = metadataBackupRestoreFactory.getService(bookEntity.getBookType());
-        try {
-            return backupRestore.getBackupCover(bookId);
-        } catch (UnsupportedOperationException e) {
-            log.info("Cover backup not supported for file type: {}", bookEntity.getBookType());
-            return null;
-        }
-    }
 }
-

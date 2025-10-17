@@ -1,0 +1,145 @@
+<div class="flex flex-col space-y-6 p-4">
+  <table class="min-w-full table-auto border-collapse custom-table">
+    <thead>
+    <tr>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300" style="max-width: 70px; width: 70px;">Enabled</th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300" style="max-width: 127px; width: 127px;">Field</th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">
+        4th Priority
+        <i class="pi pi-question-circle ml-1 text-xs"
+           pTooltip="Last fallback option - only used if 1st, 2nd, and 3rd priorities fail or are empty"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">
+        3rd Priority
+        <i class="pi pi-question-circle ml-1 text-xs"
+           pTooltip="Third choice - used if 1st and 2nd priorities don't have data"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">
+        2nd Priority
+        <i class="pi pi-question-circle ml-1 text-xs"
+           pTooltip="Second choice - used if 1st priority doesn't have data"
+           tooltipPosition="top"></i>
+      </th>
+      <th class="px-4 py-1.5 text-left font-semibold text-zinc-300">
+        1st Priority
+        <i class="pi pi-question-circle ml-1 text-xs"
+           pTooltip="First choice - always tried first for this field"
+           tooltipPosition="top"></i>
+      </th>
+    </tr>
+    <tr>
+      <td class="px-4 py-2" style="max-width: 70px; width: 70px;"></td>
+      <td class="px-4 py-2 text-sm text-zinc-400 italic" style="max-width: 127px; width: 127px;">Set All:</td>
+      <td class="px-4 py-2">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP4"
+                  (ngModelChange)="setBulkProvider('p4', $event)"
+                  placeholder="Set all P4" appendTo="body"
+                  class="w-full" size="small">
+        </p-select>
+      </td>
+      <td class="px-4 py-2">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP3"
+                  (ngModelChange)="setBulkProvider('p3', $event)"
+                  placeholder="Set all P3" appendTo="body"
+                  class="w-full" size="small">
+        </p-select>
+      </td>
+      <td class="px-4 py-2">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP2"
+                  (ngModelChange)="setBulkProvider('p2', $event)"
+                  placeholder="Set all P2" appendTo="body"
+                  class="w-full" size="small">
+        </p-select>
+      </td>
+      <td class="px-4 py-2">
+        <p-select [options]="providersWithClear" [(ngModel)]="bulkP1"
+                  (ngModelChange)="setBulkProvider('p1', $event)"
+                  placeholder="Set all P1" appendTo="body"
+                  class="w-full" size="small">
+        </p-select>
+      </td>
+    </tr>
+    </thead>
+    <tbody>
+      @for (field of nonProviderSpecificFields; track field) {
+        <tr [hidden]="field === 'cover' && !refreshCovers" [class.opacity-50]="!enabledFields[field]">
+          <td class="px-4 py-1.5" style="max-width: 70px; width: 70px;">
+            <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                        pTooltip="Enable this field during metadata fetch"
+                        tooltipPosition="top"></p-checkbox>
+          </td>
+          <td class="px-4 py-1.5 text-zinc-200" style="max-width: 127px; width: 127px;">{{ formatLabel(field) }}</td>
+          <td class="px-4 py-1.5">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p4"
+                      [disabled]="!enabledFields[field]"
+                      placeholder="Unset" appendTo="body"
+                      class="w-full" size="small">
+            </p-select>
+          </td>
+          <td class="px-4 py-1.5">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p3"
+                      [disabled]="!enabledFields[field]"
+                      placeholder="Unset" appendTo="body"
+                      class="w-full" size="small">
+            </p-select>
+          </td>
+          <td class="px-4 py-1.5">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p2"
+                      [disabled]="!enabledFields[field]"
+                      placeholder="Unset" appendTo="body"
+                      class="w-full" size="small">
+            </p-select>
+          </td>
+          <td class="px-4 py-1.5">
+            <p-select [options]="providers" [(ngModel)]="fieldOptions[field].p1"
+                      [disabled]="!enabledFields[field]"
+                      placeholder="Unset" appendTo="body"
+                      class="w-full" size="small">
+            </p-select>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+
+  <div class="space-y-4">
+    <h3 class="text-lg font-semibold text-zinc-300">Provider-Specific Fields</h3>
+    <p class="text-sm text-zinc-400">These fields are unique to specific providers and cannot have custom priority settings. Use the checkboxes to enable/disable fetching these fields.</p>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      @for (field of providerSpecificFields; track field) {
+        <div class="flex items-center space-x-3 p-3 border border-zinc-600 rounded-lg">
+          <p-checkbox [(ngModel)]="enabledFields[field]" [binary]="true"
+                      pTooltip="Enable this field during metadata fetch"
+                      tooltipPosition="top"></p-checkbox>
+          <span class="text-sm text-zinc-300">{{ formatLabel(field) }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="flex flex-row items-center justify-between gap-4 w-full">
+
+    <div class="flex flex-row gap-10">
+      <div class="flex flex-row items-center gap-4">
+        <p pTooltip="Fetch and update new book cover images" tooltipPosition="top">Update covers:</p>
+        <p-checkbox [(ngModel)]="refreshCovers" [binary]="true"></p-checkbox>
+      </div>
+      <div class="flex flex-row items-center gap-4">
+        <p pTooltip="Combine new genres with existing ones" tooltipPosition="top">Merge genres:</p>
+        <p-checkbox [(ngModel)]="mergeCategories" [binary]="true"></p-checkbox>
+      </div>
+      <div class="flex flex-row items-center gap-4">
+        <p pTooltip="Review and approve metadata changes before saving" tooltipPosition="top">Manual review:</p>
+        <p-checkbox [(ngModel)]="reviewBeforeApply" [binary]="true"></p-checkbox>
+      </div>
+    </div>
+
+    <div class="flex flex-row gap-6">
+      <p-button severity="warn" outlined="true" label="Reset Form" (onClick)="reset()"></p-button>
+      <p-button [label]="submitButtonLabel" severity="success" icon="pi pi-save" outlined="true" (onClick)="submit()"></p-button>
+    </div>
+  </div>
+
+</div>

@@ -1,7 +1,9 @@
 package com.adityachandel.booklore.service.scheduler;
 
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.service.library.LibraryService;
+import com.adityachandel.booklore.task.RescanLibraryContext;
 import lombok.AllArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ public class LibraryRescanScheduler {
     @Scheduled(cron = "0 0 0 * * *")  // At 00:00 every day
     public void rescanLibraries() {
         log.info("Starting scheduled library rescan at midnight");
+
         for (Library library : libraryService.getAllLibraries()) {
             try {
                 libraryService.rescanLibrary(library.getId());

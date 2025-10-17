@@ -53,7 +53,7 @@ public class GoodReadsParser implements BookParser {
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        String isbn = fetchMetadataRequest.getIsbn();
+        String isbn = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbn != null && !isbn.isBlank()) {
             log.info("Goodreads Query URL (ISBN): " + BASE_ISBN_URL + "{}", isbn);
             Document doc = fetchDoc(BASE_ISBN_URL + isbn);

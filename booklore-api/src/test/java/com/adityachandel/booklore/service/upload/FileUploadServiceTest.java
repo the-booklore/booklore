@@ -18,6 +18,7 @@ import com.adityachandel.booklore.service.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
+import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,9 +54,7 @@ class FileUploadServiceTest {
     @Mock
     AppSettingService appSettingService;
     @Mock
-    PdfMetadataExtractor pdfMetadataExtractor;
-    @Mock
-    EpubMetadataExtractor epubMetadataExtractor;
+    MetadataExtractorFactory metadataExtractorFactory;
     @Mock
     FileMovingHelper fileMovingHelper;
     @Mock
@@ -77,8 +76,7 @@ class FileUploadServiceTest {
 
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                appSettingService, appProperties, pdfMetadataExtractor,
-                epubMetadataExtractor, additionalFileMapper, fileMovingHelper
+                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper
         );
     }
 
@@ -202,7 +200,6 @@ class FileUploadServiceTest {
 
         Path moved = tempDir.resolve("book.cbz");
         assertThat(Files.exists(moved)).isTrue();
-        verifyNoInteractions(pdfMetadataExtractor, epubMetadataExtractor);
     }
 
     @Test

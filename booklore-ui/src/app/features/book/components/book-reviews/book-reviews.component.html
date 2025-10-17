@@ -1,0 +1,215 @@
+<div class="book-reviews-container">
+  <div class="reviews-content">
+    @if (loading) {
+      <div class="flex flex-col items-center justify-center p-8 gap-4">
+        <p-progressSpinner/>
+        <span class="text-gray-400">Getting latest reviews...</span>
+      </div>
+    } @else if (reviews?.length === 0) {
+      <div class="text-center p-8 text-gray-400 empty-state">
+        <div class="empty-state-icon">
+          @if (hasPermission && !reviewsLocked && reviewDownloadEnabled) {
+            <p-button
+              outlined
+              rounded
+              icon="pi pi-download"
+              severity="primary"
+              (click)="fetchNewReviews()"
+              pTooltip="Fetch Reviews"
+              tooltipPosition="top"
+              class="action-btn floating-btn">
+            </p-button>
+          }
+        </div>
+        <p class="text-gray-200 empty-state-title">No reviews available for this book</p>
+        @if (!reviewDownloadEnabled) {
+          <p class="text-sm text-amber-400 mt-2 empty-state-subtitle">
+            Book review downloads are currently disabled. Enable this in Metadata Settings to fetch reviews.
+          </p>
+        } @else if (hasPermission && !reviewsLocked) {
+          <p class="text-sm text-gray-400 mt-2 empty-state-subtitle">
+            Click "Fetch Reviews" to download reviews from configured providers
+          </p>
+        }
+        <div class="empty-state-decoration"></div>
+      </div>
+    } @else {
+      <div class="reviews-scroll-container">
+        <div class="reviews-horizontal-list">
+          @for (review of reviews; track review.id || $index) {
+            <div [class]="'review-card border border-zinc-700' + (!review.title ? ' no-title' : '') + (review.spoiler && !isSpoilerRevealed(review.id!) ? ' has-spoiler' : '')">
+              @if (review.spoiler && !isSpoilerRevealed(review.id!)) {
+                <p-button
+                  label="Show Spoiler"
+                  icon="pi pi-eye"
+                  severity="warn"
+                  size="small"
+                  class="spoiler-overlay-button"
+                  (onClick)="revealSpoiler(review.id!)"/>
+              }
+
+              <div class="review-header">
+                <div class="flex justify-between items-start p-3">
+                  <div class="flex flex-col gap-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-medium text-sm reviewer-name">{{ review.reviewerName || 'Anonymous' }}</span>
+                      @if (review.metadataProvider) {
+                        <p-tag
+                          [rounded]="true"
+                          [value]="review.metadataProvider"
+                          [severity]="getProviderSeverity(review.metadataProvider)"/>
+                      }
+                      @if (review.country) {
+                        <p-tag [rounded]="true" [value]="review.country" severity="info"/>
+                      }
+                      @if (review.spoiler) {
+                        <p-tag [rounded]="true" value="Spoiler" severity="warn" icon="pi pi-exclamation-triangle"/>
+                      }
+                    </div>
+                    <div class="review-meta">
+                      <i class="pi pi-clock text-xs mr-1"></i>
+                      @if (review.date) {
+                        <span class="text-sm text-gray-400">{{ formatDate(review.date) }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    @if (review.rating) {
+                      <div class="flex items-center gap-1">
+                        <p-rating
+                          [ngModel]="review.rating"
+                          [readonly]="true"
+                          [stars]="5"/>
+                        <span class="text-sm font-medium">{{ review.rating }}/5</span>
+                      </div>
+                    }
+
+                    @if (hasPermission) {
+                      @if (reviewsLocked) {
+                        <div class="flex items-center justify-center w-8 h-8">
+                          <i class="pi pi-lock text-amber-500 text-sm"
+                             pTooltip="Reviews are locked"
+                             tooltipPosition="top"></i>
+                        </div>
+                      } @else {
+                        <p-button
+                          icon="pi pi-trash"
+                          size="small"
+                          severity="danger"
+                          text
+                          (onClick)="deleteReview(review)"
+                          pTooltip="Delete Review"
+                          tooltipPosition="top"
+                          class="action-btn-hover"/>
+                      }
+                    }
+                  </div>
+                </div>
+              </div>
+
+              @if (review.title && (!review.spoiler || isSpoilerRevealed(review.id!))) {
+                <div class="review-title-section">
+                  <h4 class="font-medium text-xl text-gray-200 leading-tight m-0 review-title"
+                      [pTooltip]="review.title"
+                      tooltipPosition="top">{{ review.title }}
+                  </h4>
+                </div>
+              }
+
+              <div class="review-content-area">
+                @if (review.spoiler && !isSpoilerRevealed(review.id!)) {
+                  <div class="spoiler-blur-content">
+                    @if (review.title) {
+                      <h4 class="font-medium text-gray-200 leading-tight m-0 review-title blur-sm mb-2">{{ review.title }}</h4>
+                    }
+                    @if (review.body) {
+                      <div class="text-zinc-300 review-body blur-sm">{{ review.body }}</div>
+                    } @else {
+                      <div class="text-zinc-400 italic text-sm blur-sm">No review content available</div>
+                    }
+                  </div>
+                } @else {
+                  @if (review.body) {
+                    <div class="text-zinc-300 review-body">{{ review.body }}</div>
+                  } @else {
+                    <div class="text-zinc-400 italic text-sm">No review content available</div>
+                  }
+                }
+                <div class="review-fade-overlay"></div>
+              </div>
+              <div class="review-bottom-glow"></div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="action-bar">
+    <div class="action-buttons">
+
+      @if (hasPermission) {
+        <p-button
+          outlined
+          [icon]="reviewsLocked ? 'pi pi-lock' : 'pi pi-lock-open'"
+          size="small"
+          [severity]="reviewsLocked ? 'danger' : 'success'"
+          [disabled]="!reviewDownloadEnabled || loading"
+          (click)="toggleReviewsLock()"
+          [pTooltip]="loading ? 'Please wait while reviews are being fetched' : (!reviewDownloadEnabled ? 'Enable review downloads in settings to use this feature' : (reviewsLocked ? 'Unlock Reviews' : 'Lock Reviews'))"
+          tooltipPosition="left"
+          class="action-btn"/>
+
+        <p-button
+          outlined
+          icon="pi pi-refresh"
+          size="small"
+          severity="primary"
+          [loading]="loading"
+          [disabled]="reviewsLocked || !reviewDownloadEnabled || loading"
+          (click)="fetchNewReviews()"
+          [pTooltip]="loading ? 'Please wait while reviews are being fetched' : (!reviewDownloadEnabled ? 'Enable review downloads in settings to use this feature' : (reviewsLocked ? 'Reviews are locked' : 'Fetch New Reviews'))"
+          tooltipPosition="left"
+          class="action-btn"/>
+      }
+
+      @if (hasPermission && reviews && reviews.length > 0) {
+        <p-button
+          outlined
+          icon="pi pi-trash"
+          size="small"
+          severity="danger"
+          [disabled]="reviewsLocked || loading"
+          (click)="deleteAllReviews()"
+          [pTooltip]="loading ? 'Please wait while reviews are being fetched' : (reviewsLocked ? 'Reviews are locked' : 'Delete All Reviews')"
+          tooltipPosition="left"
+          class="action-btn"/>
+      }
+
+      @if (reviews && reviews.length > 0) {
+        <p-button
+          outlined
+          [icon]="allSpoilersRevealed ? 'pi pi-eye-slash' : 'pi pi-eye'"
+          size="small"
+          [severity]="allSpoilersRevealed ? 'warn' : 'info'"
+          [disabled]="loading"
+          (click)="toggleSpoilerVisibility()"
+          [pTooltip]="loading ? 'Please wait while reviews are being fetched' : (allSpoilersRevealed ? 'Hide All Spoilers' : 'Reveal All Spoilers')"
+          tooltipPosition="left"
+          class="action-btn"/>
+
+        <p-button
+          outlined
+          icon="pi pi-sort-amount-down"
+          size="small"
+          severity="contrast"
+          [disabled]="loading"
+          (click)="toggleSortOrder()"
+          [pTooltip]="loading ? 'Please wait while reviews are being fetched' : (sortAscending ? 'Sort by Newest First' : 'Sort by Oldest First')"
+          tooltipPosition="left"
+          class="action-btn"/>
+      }
+    </div>
+  </div>
+</div>

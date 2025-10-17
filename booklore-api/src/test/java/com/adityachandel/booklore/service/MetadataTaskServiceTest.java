@@ -183,6 +183,7 @@ class MetadataTaskServiceTest {
         MetadataFetchProposalEntity p2 = mock(MetadataFetchProposalEntity.class);
 
         when(job1.getTaskId()).thenReturn("task1");
+        when(job1.getStatus()).thenReturn(MetadataFetchTaskStatus.COMPLETED);
         when(job1.getProposals()).thenReturn(List.of(p1, p2));
         when(p1.getStatus()).thenReturn(FetchedMetadataProposalStatus.ACCEPTED);
         when(p2.getStatus()).thenReturn(FetchedMetadataProposalStatus.REJECTED);
@@ -190,6 +191,7 @@ class MetadataTaskServiceTest {
         MetadataFetchJobEntity job2 = mock(MetadataFetchJobEntity.class);
         MetadataFetchProposalEntity p3 = mock(MetadataFetchProposalEntity.class);
         when(job2.getTaskId()).thenReturn("task2");
+        when(job2.getStatus()).thenReturn(MetadataFetchTaskStatus.COMPLETED);
         when(job2.getProposals()).thenReturn(List.of(p3));
         when(p3.getStatus()).thenReturn(FetchedMetadataProposalStatus.FETCHED);
 
@@ -204,14 +206,14 @@ class MetadataTaskServiceTest {
                 .findFirst().orElseThrow();
         assertThat(n1.getTotal()).isEqualTo(1);
         assertThat(n1.getCompleted()).isEqualTo(1);
-        assertThat(n1.getMessage()).contains("Metadata review pending for 0 of 1 books");
+        assertThat(n1.getMessage()).contains("Metadata fetch completed! 0 books need review.");
 
         MetadataBatchProgressNotification n2 = notifications.stream()
                 .filter(n -> n.getTaskId().equals("task2"))
                 .findFirst().orElseThrow();
         assertThat(n2.getTotal()).isEqualTo(1);
         assertThat(n2.getCompleted()).isEqualTo(0);
-        assertThat(n2.getMessage()).contains("Metadata review pending for 1 of 1 books");
+        assertThat(n2.getMessage()).contains("Metadata fetch completed! 1 books need review.");
 
         verify(jobRepository).findAllWithProposals();
     }
@@ -221,6 +223,7 @@ class MetadataTaskServiceTest {
         MetadataFetchJobEntity job = mock(MetadataFetchJobEntity.class);
         MetadataFetchProposalEntity p1 = mock(MetadataFetchProposalEntity.class);
         when(job.getTaskId()).thenReturn("task1");
+        when(job.getStatus()).thenReturn(MetadataFetchTaskStatus.COMPLETED);
         when(job.getProposals()).thenReturn(List.of(p1));
         when(p1.getStatus()).thenReturn(FetchedMetadataProposalStatus.REJECTED);
 

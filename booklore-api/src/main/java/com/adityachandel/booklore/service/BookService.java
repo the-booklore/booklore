@@ -113,7 +113,10 @@ public class BookService {
                         books.stream().map(Book::getId).collect(Collectors.toSet())
                 );
 
-        books.forEach(book -> enrichBookWithProgress(book, progressMap.get(book.getId())));
+        books.forEach(book -> {
+            enrichBookWithProgress(book, progressMap.get(book.getId()));
+            book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
+        });
 
         return books;
     }
@@ -193,6 +196,7 @@ public class BookService {
                             .fontSize(epubPref.getFontSize())
                             .theme(epubPref.getTheme())
                             .flow(epubPref.getFlow())
+                            .spread(epubPref.getSpread())
                             .letterSpacing(epubPref.getLetterSpacing())
                             .lineHeight(epubPref.getLineHeight())
                             .build()));
@@ -215,6 +219,9 @@ public class BookService {
                             .bookId(bookId)
                             .pageViewMode(cbxPref.getPageViewMode())
                             .pageSpread(cbxPref.getPageSpread())
+                            .fitMode(cbxPref.getFitMode())
+                            .scrollMode(cbxPref.getScrollMode())
+                            .backgroundColor(cbxPref.getBackgroundColor())
                             .build()));
         } else {
             throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
@@ -272,6 +279,7 @@ public class BookService {
             epubPrefs.setFontSize(epubSettings.getFontSize());
             epubPrefs.setTheme(epubSettings.getTheme());
             epubPrefs.setFlow(epubSettings.getFlow());
+            epubPrefs.setSpread(epubSettings.getSpread());
             epubPrefs.setLetterSpacing(epubSettings.getLetterSpacing());
             epubPrefs.setLineHeight(epubSettings.getLineHeight());
             epubViewerPreferencesRepository.save(epubPrefs);
@@ -290,6 +298,9 @@ public class BookService {
             CbxViewerPreferences cbxSettings = bookViewerSettings.getCbxSettings();
             cbxPrefs.setPageSpread(cbxSettings.getPageSpread());
             cbxPrefs.setPageViewMode(cbxSettings.getPageViewMode());
+            cbxPrefs.setFitMode(cbxSettings.getFitMode());
+            cbxPrefs.setScrollMode(cbxSettings.getScrollMode());
+            cbxPrefs.setBackgroundColor(cbxSettings.getBackgroundColor());
             cbxViewerPreferencesRepository.save(cbxPrefs);
 
         } else {
@@ -645,5 +656,4 @@ public class BookService {
                 .filter(shelf -> userId.equals(shelf.getUserId()))
                 .collect(Collectors.toSet());
     }
-
 }
