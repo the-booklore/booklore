@@ -5,6 +5,7 @@ import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcesso
 import com.adityachandel.booklore.config.security.userdetails.UserAuthenticationDetails;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
+import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -75,7 +76,9 @@ public class CoverJwtFilter extends OncePerRequestFilter {
             throw new RuntimeException("OIDC token expired or invalid");
         }
 
-        String username = claimsSet.getStringClaim("preferred_username");
+        OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
+        OidcProviderDetails.ClaimMapping claimMapping = providerDetails.getClaimMapping();
+        String username = claimsSet.getStringClaim(claimMapping.getUsername());
         BookLoreUserEntity entity = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("OIDC user not found: " + username));
         BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
 
