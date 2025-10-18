@@ -404,6 +404,7 @@ export class BookBrowserComponent implements OnInit {
         }
       }
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   handleBookSelect(bookId: number, selected: boolean): void {
@@ -413,11 +414,13 @@ export class BookBrowserComponent implements OnInit {
       this.selectedBooks.delete(bookId);
     }
     this.isDrawerVisible = this.selectedBooks.size > 0;
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.selectedBooks = new Set(selectedBookIds);
     this.isDrawerVisible = this.selectedBooks.size > 0;
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   selectAllBooks(): void {
@@ -428,6 +431,7 @@ export class BookBrowserComponent implements OnInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   deselectAllBooks(): void {
@@ -436,6 +440,7 @@ export class BookBrowserComponent implements OnInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   confirmDeleteBooks(): void {
