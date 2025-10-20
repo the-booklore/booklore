@@ -42,20 +42,20 @@ public class OpdsFeedService {
                     <title>All Books</title>
                     <id>urn:booklore:catalog:all</id>
                     <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/catalog?page=1&size=%d" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                    <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                     <content type="text">Browse all available books</content>
                   </entry>
-                """.formatted(now(), DEFAULT_PAGE_SIZE));
+                """.formatted(now(), escapeXml("/api/v1/opds/catalog?page=1&size=" + DEFAULT_PAGE_SIZE)));
 
         feed.append("""
                   <entry>
                     <title>Recently Added</title>
                     <id>urn:booklore:catalog:recent</id>
                     <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/recent?page=1&size=%d" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                    <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                     <content type="text">Recently added books</content>
                   </entry>
-                """.formatted(now(), DEFAULT_PAGE_SIZE));
+                """.formatted(now(), escapeXml("/api/v1/opds/recent?page=1&size=" + DEFAULT_PAGE_SIZE)));
 
         feed.append("""
                   <entry>
@@ -112,14 +112,14 @@ public class OpdsFeedService {
                         <title>%s</title>
                         <id>urn:booklore:library:%d</id>
                         <updated>%s</updated>
-                        <link rel="subsection" href="/api/v1/opds/catalog?libraryId=%d" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                        <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                         <content type="text">%s</content>
                       </entry>
                     """.formatted(
                     escapeXml(library.getName()),
                     library.getId(),
                     now(),
-                    library.getId(),
+                    escapeXml("/api/v1/opds/catalog?libraryId=" + library.getId()),
                     escapeXml(library.getName() != null ? library.getName() : "Library collection")
             ));
         }
@@ -153,14 +153,14 @@ public class OpdsFeedService {
                                 <title>%s</title>
                                 <id>urn:booklore:shelf:%d</id>
                                 <updated>%s</updated>
-                                <link rel="subsection" href="/api/v1/opds/catalog?shelfId=%d" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                                <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                                 <content type="text">Personal shelf collection</content>
                               </entry>
                             """.formatted(
                             escapeXml(shelf.getName()),
                             shelf.getId(),
                             now(),
-                            shelf.getId()
+                            escapeXml("/api/v1/opds/catalog?shelfId=" + shelf.getId())
                     ));
                 }
             }
@@ -202,7 +202,7 @@ public class OpdsFeedService {
                 booksPage.getTotalElements(),
                 ((page - 1) * size) + 1,
                 size,
-                buildCurrentUrl(request, page, size)
+                escapeXml(buildCurrentUrl(request, page, size))
         ));
 
         appendPaginationLinks(feed, request, page, booksPage.getTotalPages(), size);
@@ -232,7 +232,7 @@ public class OpdsFeedService {
                   <link rel="self" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                   <link rel="start" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
                   <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
-                """.formatted(now(), booksPage.getTotalElements(), ((page - 1) * size) + 1, size, buildCurrentUrl(request, page, size)));
+                """.formatted(now(), booksPage.getTotalElements(), ((page - 1) * size) + 1, size, escapeXml(buildCurrentUrl(request, page, size))));
 
         appendPaginationLinks(feed, request, page, booksPage.getTotalPages(), size);
 
