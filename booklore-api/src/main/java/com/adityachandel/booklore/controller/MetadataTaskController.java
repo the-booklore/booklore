@@ -2,7 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.MetadataBatchProgressNotification;
 import com.adityachandel.booklore.model.dto.response.MetadataTaskDetailsResponse;
-import com.adityachandel.booklore.service.MetadataTaskService;
+import com.adityachandel.booklore.service.metadata.MetadataTaskService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

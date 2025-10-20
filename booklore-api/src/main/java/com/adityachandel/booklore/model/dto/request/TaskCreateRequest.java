@@ -1,9 +1,7 @@
 package com.adityachandel.booklore.model.dto.request;
 
 import com.adityachandel.booklore.model.enums.TaskType;
-import com.adityachandel.booklore.task.tasks.options.ClearCbxCacheOptions;
-import com.adityachandel.booklore.task.tasks.options.ClearPdfCacheOptions;
-import com.adityachandel.booklore.task.tasks.options.LibraryRescanOptions;
+import com.adityachandel.booklore.task.options.LibraryRescanOptions;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,10 +20,8 @@ public class TaskCreateRequest {
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "taskType", include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
     @JsonSubTypes({
-            @JsonSubTypes.Type(value = ClearCbxCacheOptions.class, name = "CLEAR_CBX_CACHE"),
-            @JsonSubTypes.Type(value = ClearPdfCacheOptions.class, name = "CLEAR_PDF_CACHE"),
-            @JsonSubTypes.Type(value = LibraryRescanOptions.class, name = "RE_SCAN_LIBRARY"),
-            @JsonSubTypes.Type(value = MetadataRefreshRequest.class, name = "REFRESH_METADATA"),
+            @JsonSubTypes.Type(value = LibraryRescanOptions.class, name = "REFRESH_LIBRARY_METADATA"),
+            @JsonSubTypes.Type(value = MetadataRefreshRequest.class, name = "REFRESH_METADATA_MANUAL"),
     })
     private Object options;
 

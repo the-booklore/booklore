@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.controller.opds;
 
-import com.adityachandel.booklore.service.BookService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.opds.OpdsFeedService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

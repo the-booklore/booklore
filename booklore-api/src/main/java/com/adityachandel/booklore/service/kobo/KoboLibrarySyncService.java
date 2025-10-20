@@ -7,8 +7,6 @@ import com.adityachandel.booklore.model.dto.kobo.*;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.KoboLibrarySnapshotEntity;
 import com.adityachandel.booklore.repository.KoboDeletedBookProgressRepository;
-import com.adityachandel.booklore.service.KoboEntitlementService;
-import com.adityachandel.booklore.service.KoboLibrarySnapshotService;
 import com.adityachandel.booklore.util.RequestUtils;
 import com.adityachandel.booklore.util.kobo.BookloreSyncTokenGenerator;
 import com.fasterxml.jackson.databind.JsonNode;

@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.BookReview;
-import com.adityachandel.booklore.service.BookReviewService;
+import com.adityachandel.booklore.service.book.BookReviewService;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;

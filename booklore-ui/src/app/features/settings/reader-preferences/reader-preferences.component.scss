@@ -103,18 +103,6 @@
   app-cbx-reader-preferences-component {
     display: block;
     width: 100%;
-
-    // Remove any default margins/padding that might conflict with card styling
-    ::ng-deep {
-      > div,
-      > .container,
-      > .main-container {
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-      }
-    }
   }
 }
 

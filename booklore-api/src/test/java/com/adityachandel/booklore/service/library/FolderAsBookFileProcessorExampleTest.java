@@ -4,7 +4,7 @@ import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.FileFingerprint;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;

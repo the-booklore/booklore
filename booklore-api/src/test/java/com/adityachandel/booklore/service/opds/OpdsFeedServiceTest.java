@@ -8,7 +8,6 @@ import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.service.OpdsBookService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

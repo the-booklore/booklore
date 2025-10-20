@@ -3,7 +3,7 @@ package com.adityachandel.booklore;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.service.BookQueryService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileMoveService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

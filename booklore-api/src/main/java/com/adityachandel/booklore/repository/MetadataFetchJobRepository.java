@@ -13,6 +13,9 @@ public interface MetadataFetchJobRepository extends JpaRepository<MetadataFetchJ
 
     int deleteAllByCompletedAtBefore(Instant cutoff);
 
+    @Query("SELECT COUNT(m) FROM MetadataFetchJobEntity m")
+    long countAll();
+
     @Query("SELECT DISTINCT t FROM MetadataFetchJobEntity t LEFT JOIN FETCH t.proposals")
     List<MetadataFetchJobEntity> findAllWithProposals();
 }

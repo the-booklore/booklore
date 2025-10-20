@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.KoreaderUser;
-import com.adityachandel.booklore.service.KoreaderUserService;
+import com.adityachandel.booklore.service.koreader.KoreaderUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

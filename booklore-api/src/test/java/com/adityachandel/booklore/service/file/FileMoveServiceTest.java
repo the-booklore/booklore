@@ -7,7 +7,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookQueryService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import org.junit.jupiter.api.BeforeEach;

@@ -21,7 +21,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.monitoring.MonitoringService;
-import com.adityachandel.booklore.task.RescanLibraryContext;
+import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import jakarta.annotation.PostConstruct;

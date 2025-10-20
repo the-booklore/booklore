@@ -4,13 +4,11 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.UploadResponse;
 import com.adityachandel.booklore.model.dto.UrlRequest;
-import com.adityachandel.booklore.service.BackgroundUploadService;
+import com.adityachandel.booklore.service.file.BackgroundUploadService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/background")

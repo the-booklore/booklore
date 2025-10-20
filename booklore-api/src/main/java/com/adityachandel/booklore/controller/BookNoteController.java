@@ -2,7 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.BookNote;
 import com.adityachandel.booklore.model.dto.CreateBookNoteRequest;
-import com.adityachandel.booklore.service.BookNoteService;
+import com.adityachandel.booklore.service.book.BookNoteService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
