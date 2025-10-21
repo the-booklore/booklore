@@ -13,6 +13,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,10 +53,15 @@ public class BookDownloadService {
             InputStream inputStream = new FileInputStream(bookFile);
             InputStreamResource resource = new InputStreamResource(inputStream);
 
+            String contentDisposition = ContentDisposition.builder("attachment")
+                    .filename(file.getFileName().toString(), StandardCharsets.UTF_8)
+                    .build()
+                    .toString();
+
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .contentLength(bookFile.length())
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
                     .header(HttpHeaders.PRAGMA, "no-cache")
                     .header(HttpHeaders.EXPIRES, "0")
@@ -106,7 +113,11 @@ public class BookDownloadService {
     private void setResponseHeaders(HttpServletResponse response, File file) {
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         response.setContentLengthLong(file.length());
-        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"");
+        String contentDisposition = ContentDisposition.builder("attachment")
+                .filename(file.getName(), StandardCharsets.UTF_8)
+                .build()
+                .toString();
+        response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
     }
 
     private void streamFileToResponse(File file, HttpServletResponse response) throws IOException {

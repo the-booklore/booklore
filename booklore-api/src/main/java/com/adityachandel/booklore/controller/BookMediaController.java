@@ -9,6 +9,7 @@ import com.adityachandel.booklore.service.reader.PdfReaderService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @AllArgsConstructor
 @RestController
@@ -54,9 +56,13 @@ public class BookMediaController {
     @GetMapping("/bookdrop/{bookdropId}/cover")
     public ResponseEntity<Resource> getBookdropCover(@PathVariable long bookdropId) {
         Resource file = bookDropService.getBookdropCover(bookdropId);
+        String contentDisposition = ContentDisposition.builder("inline")
+                .filename("cover.jpg", StandardCharsets.UTF_8)
+                .build()
+                .toString();
         return (file != null)
                 ? ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=cover.jpg")
+                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(file)
                 : ResponseEntity.noContent().build();
@@ -75,8 +81,13 @@ public class BookMediaController {
                     ? MediaType.IMAGE_PNG
                     : MediaType.IMAGE_JPEG;
 
+            String contentDisposition = ContentDisposition.builder("inline")
+                    .filename(filename, StandardCharsets.UTF_8)
+                    .build()
+                    .toString();
+
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=" + filename)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .contentType(mediaType)
                     .body(file);
         } catch (Exception e) {
