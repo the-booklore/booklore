@@ -1,9 +1,7 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.service.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
-import com.adityachandel.booklore.service.metadata.BookMetadataService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import com.adityachandel.booklore.service.reader.PdfReaderService;
 import jakarta.servlet.http.HttpServletResponse;

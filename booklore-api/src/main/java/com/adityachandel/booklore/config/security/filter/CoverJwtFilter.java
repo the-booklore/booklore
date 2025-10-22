@@ -41,21 +41,24 @@ public class CoverJwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String token = request.getParameter("token");
-        if (token != null) {
-            try {
-                if (jwtUtils.validateToken(token)) {
-                    authenticateLocalUser(token, request);
-                } else if (appSettingService.getAppSettings().isOidcEnabled()) {
-                    authenticateOidcUser(token, request);
-                } else {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid token");
-                    return;
-                }
-            } catch (Exception ex) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+        if (token == null || token.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing authentication token");
+            return;
+        }
+        try {
+            if (jwtUtils.validateToken(token)) {
+                authenticateLocalUser(token, request);
+            } else if (appSettingService.getAppSettings().isOidcEnabled()) {
+                authenticateOidcUser(token, request);
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
                 return;
             }
+        } catch (Exception ex) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+            return;
         }
+
         chain.doFilter(request, response);
     }
 
