@@ -66,8 +66,12 @@ public class MetadataController {
 
     @PutMapping("/bulk-edit-metadata")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
-    public ResponseEntity<List<BookMetadata>> bulkEditMetadata(@RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest, @RequestParam boolean mergeCategories) {
-        return ResponseEntity.ok(bookMetadataService.bulkUpdateMetadata(bulkMetadataUpdateRequest, mergeCategories));
+    public ResponseEntity<Void> bulkEditMetadata(@RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest) {
+        boolean mergeCategories = bulkMetadataUpdateRequest.isMergeCategories();
+        boolean mergeMoods = bulkMetadataUpdateRequest.isMergeMoods();
+        boolean mergeTags = bulkMetadataUpdateRequest.isMergeTags();
+        bookMetadataService.bulkUpdateMetadata(bulkMetadataUpdateRequest, mergeCategories, mergeMoods, mergeTags);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{bookId}/metadata/cover/upload")

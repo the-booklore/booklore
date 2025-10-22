@@ -229,6 +229,9 @@ export interface BulkMetadataUpdateRequest {
   clearMoods?: boolean;
   tags?: string[];
   clearTags?: boolean;
+  mergeCategories?: boolean;
+  mergeMoods?: boolean;
+  mergeTags?: boolean;
 }
 
 export interface BookDeletionResponse {

@@ -95,7 +95,7 @@ export class BulkMetadataUpdateComponent implements OnInit {
     if (inputValue) {
       const currentValue = this.metadataForm.get(fieldName)?.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
-                     typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
+        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
 
       // Add the new value if it's not already in the array
       if (!values.includes(inputValue)) {
@@ -110,7 +110,7 @@ export class BulkMetadataUpdateComponent implements OnInit {
   onFormKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
       if ((event.target as HTMLElement)?.tagName === 'BUTTON' &&
-          (event.target as HTMLButtonElement)?.type === 'submit') {
+        (event.target as HTMLButtonElement)?.type === 'submit') {
         return;
       }
       event.preventDefault();
@@ -152,17 +152,21 @@ export class BulkMetadataUpdateComponent implements OnInit {
       clearMoods: this.clearFields.moods,
 
       tags: this.clearFields.tags ? [] : (formValue.tags?.length ? formValue.tags : undefined),
-      clearTags: this.clearFields.tags
+      clearTags: this.clearFields.tags,
+
+      mergeCategories: this.mergeCategories,
+      mergeMoods: this.mergeMoods,
+      mergeTags: this.mergeTags
     };
 
     this.loading = true;
-    this.bookService.updateBooksMetadata(payload, this.mergeCategories).subscribe({
-      next: updatedBooks => {
+    this.bookService.updateBooksMetadata(payload).subscribe({
+      next: () => {
         this.loading = false;
         this.messageService.add({
           severity: 'success',
           summary: 'Metadata Updated',
-          detail: `${updatedBooks.length} book${updatedBooks.length > 1 ? 's' : ''} updated successfully`
+          detail: 'Books updated successfully'
         });
         this.ref.close(true);
       },
