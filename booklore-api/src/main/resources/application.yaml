@@ -54,7 +54,10 @@ spring:
 
 springdoc:
   swagger-ui:
+    path: /api/v1/swagger-ui.html
     persist-authorization: true
+  api-docs:
+    path: /api/v1/api-docs
 
 logging:
   level:

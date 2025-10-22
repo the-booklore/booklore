@@ -42,9 +42,9 @@ public class SecurityConfig {
     private final AppProperties appProperties;
 
     private static final String[] SWAGGER_ENDPOINTS = {
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**"
+            "/api/v1/swagger-ui.html",
+            "/api/v1/swagger-ui/**",
+            "/api/v1/api-docs/**"
     };
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
