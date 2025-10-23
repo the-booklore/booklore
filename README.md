@@ -93,59 +93,26 @@ Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 ### 2️⃣ Create docker-compose.yml
 
-> ⚠️ If you intend to run the container as a non-root user, you must manually create all of your `/your/local/path/to/booklore` directories with read and write permissions for your intended user **before first run**.
-
-Create a `docker-compose.yml` file with content:
-
-```yaml
-services:
-  booklore:
-    # Official Docker Hub image:
-    image: booklore/booklore:latest
-    # Or the GHCR image:
-    # image: ghcr.io/booklore-app/booklore:latest
-    container_name: booklore
-    environment:
-      - USER_ID=0
-      - GROUP_ID=0
-      - TZ=Etc/UTC
-      - DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
-      - DATABASE_USERNAME=booklore                          # Must match MYSQL_USER defined in the mariadb container
-      - DATABASE_PASSWORD=your_secure_password              
-      - BOOKLORE_PORT=6060                                  # Port BookLore listens on inside the container; must match container port below
-    depends_on:
-      mariadb:
-        condition: service_healthy
-    ports:
-      - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
-      # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
-      # Example: To expose on host port 7070, set BOOKLORE_PORT=7070 and use "7070:7070". 
-    volumes:
-      - /your/local/path/to/booklore/data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
-      - /your/local/path/to/booklore/books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
-      - /your/local/path/to/booklore/bookdrop:/bookdrop   # BookDrop folder. Files placed here are automatically detected and prepared for import.
-    restart: unless-stopped
-
-  mariadb:
-    image: lscr.io/linuxserver/mariadb:11.4.5
-    container_name: mariadb
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - MYSQL_ROOT_PASSWORD=super_secure_password  # Use a strong password for the database's root user, should be different from MYSQL_PASSWORD
-      - MYSQL_DATABASE=booklore
-      - MYSQL_USER=booklore                        # Must match DATABASE_USERNAME defined in the booklore container
-      - MYSQL_PASSWORD=your_secure_password        # Use a strong password; must match DATABASE_PASSWORD defined in the booklore container
-    volumes:
-      - /your/local/path/to/mariadb/config:/config
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+Clone Repository
+```bash
+git clone https://github.com/booklore-app/booklore.git
 ```
+
+Edit ./booklore./example-docker/default.env
+```.env
+# Database Env Variables
+DB_NAME='booklore' 
+DB_USER='booklore'
+DB_PASSWORD='your_secure_password'
+DB_ROOT_PASSWORD='your_secure_password'
+
+# Booklore Env Variables
+BOOKLORE_PORT='6060'
+DISABLE_OIDC='false'
+SWAGGER_ENABLED='false'
+TZ='Etc/UTC'
+```
+For more infos on the Environment Variables functions see this [table here](#booklore-container)
 
 Note: You can find the latest BookLore image tag `BOOKLORE_IMAGE_TAG` (e.g. v.0.x.x) from the Releases section:
 📦 [Latest Image Tag – GitHub Releases](https://github.com/adityachandelgit/BookLore/releases)
@@ -163,7 +130,7 @@ docker compose up -d
 Once the containers are up, access BookLore in your browser at:
 
 ```ini
-http : //localhost:6060
+http://localhost:6060
 ```
 
 ## ⚙️ Supported Environment Variables
