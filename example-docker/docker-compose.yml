@@ -9,18 +9,18 @@ services:
     environment:
       - USER_ID=1000                                    # Modify this if the volume's ownership is root
       - GROUP_ID=1000                                   # Modify this if the volume's ownership is root
-      - TZ=$TZ
-      - DATABASE_URL=jdbc:mariadb://mariadb:3306/$DB_NAME
-      - DATABASE_USERNAME=$DB_USER                      
-      - DATABASE_PASSWORD=$DB_PASSWORD                      
-      - BOOKLORE_PORT=$BOOKLORE_PORT                   
-      - SWAGGER_ENABLED=$SWAGGER_ENABLED                              
-      - FORCE_DISABLE_OIDC=$DISABLE_OIDC
+      - TZ=${TZ}
+      - DATABASE_URL=jdbc:mariadb://mariadb:3306/${DB_NAME}
+      - DATABASE_USERNAME=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}                      
+      - BOOKLORE_PORT=${BOOKLORE_PORT}                   
+      - SWAGGER_ENABLED=${SWAGGER_ENABLED}                              
+      - FORCE_DISABLE_OIDC=${DISABLE_OIDC}
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "$BOOKLORE_PORT:$BOOKLORE_PORT"
+      - "${BOOKLORE_PORT}:${BOOKLORE_PORT}"
     volumes:
       - ./data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
       - ./books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
@@ -33,13 +33,16 @@ services:
     environment:
       - PUID=1000
       - PGID=1000
-      - TZ=Etc/UTC
-      - MYSQL_ROOT_PASSWORD=$DB_ROOT_PASSWORD 
-      - MYSQL_USER=$DB_USER                       
-      - MYSQL_PASSWORD=$DB_PASSWORD
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD} 
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}                       
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./mariadb_data:/var/lib/mysql
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}" ]
       interval: 5s
       timeout: 5s
       retries: 10
