@@ -10,6 +10,10 @@ import com.adityachandel.booklore.service.*;
 import com.adityachandel.booklore.service.kobo.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +35,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 @RestController
 @RequestMapping(value = "/api/kobo/{token}")
+@Tag(name = "Kobo Integration", description = "Endpoints for Kobo device and library integration")
 public class KoboController {
 
     private String token;
@@ -50,21 +55,27 @@ public class KoboController {
         this.token = token;
     }
 
+    @Operation(summary = "Initialize Kobo resources", description = "Initialize Kobo resources for the device.")
+    @ApiResponse(responseCode = "200", description = "Initialization successful")
     @GetMapping("/v1/initialization")
     public ResponseEntity<KoboResources> initialization() throws JsonProcessingException {
         return koboInitializationService.initialize(token);
     }
 
+    @Operation(summary = "Sync Kobo library", description = "Sync the user's Kobo library.")
+    @ApiResponse(responseCode = "200", description = "Library synced successfully")
     @GetMapping("/v1/library/sync")
     public ResponseEntity<?> syncLibrary(@AuthenticationPrincipal BookLoreUser user) {
         return koboLibrarySyncService.syncLibrary(user, token);
     }
 
+    @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a book.")
+    @ApiResponse(responseCode = "200", description = "Thumbnail returned successfully")
     @GetMapping("/v1/books/{imageId}/thumbnail/{width}/{height}/false/image.jpg")
     public ResponseEntity<Resource> getThumbnail(
-            @PathVariable String imageId,
-            @PathVariable int width,
-            @PathVariable int height) {
+            @Parameter(description = "Image ID") @PathVariable String imageId,
+            @Parameter(description = "Width of the thumbnail") @PathVariable int width,
+            @Parameter(description = "Height of the thumbnail") @PathVariable int height) {
 
         if (StringUtils.isNumeric(imageId)) {
             return koboThumbnailService.getThumbnail(Long.valueOf(imageId));
@@ -74,13 +85,15 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Get greyscale book thumbnail", description = "Retrieve a greyscale thumbnail image for a book.")
+    @ApiResponse(responseCode = "200", description = "Greyscale thumbnail returned successfully")
     @GetMapping("/v1/books/{bookId}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
     public ResponseEntity<Resource> getGreyThumbnail(
-            @PathVariable String bookId,
-            @PathVariable int width,
-            @PathVariable int height,
-            @PathVariable int quality,
-            @PathVariable boolean isGreyscale) {
+            @Parameter(description = "Book ID") @PathVariable String bookId,
+            @Parameter(description = "Width of the thumbnail") @PathVariable int width,
+            @Parameter(description = "Height of the thumbnail") @PathVariable int height,
+            @Parameter(description = "Quality of the thumbnail") @PathVariable int quality,
+            @Parameter(description = "Is greyscale") @PathVariable boolean isGreyscale) {
 
         if (StringUtils.isNumeric(bookId)) {
             return koboThumbnailService.getThumbnail(Long.valueOf(bookId));
@@ -90,13 +103,19 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Authenticate Kobo device", description = "Authenticate a Kobo device.")
+    @ApiResponse(responseCode = "200", description = "Device authenticated successfully")
     @PostMapping("/v1/auth/device")
-    public ResponseEntity<KoboAuthentication> authenticateDevice(@RequestBody JsonNode body) {
+    public ResponseEntity<KoboAuthentication> authenticateDevice(
+            @Parameter(description = "Authentication request body") @RequestBody JsonNode body) {
         return koboDeviceAuthService.authenticateDevice(body);
     }
 
+    @Operation(summary = "Get book metadata", description = "Retrieve metadata for a book in the Kobo library.")
+    @ApiResponse(responseCode = "200", description = "Metadata returned successfully")
     @GetMapping("/v1/library/{bookId}/metadata")
-    public ResponseEntity<?> getBookMetadata(@PathVariable String bookId) {
+    public ResponseEntity<?> getBookMetadata(
+            @Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(List.of(koboEntitlementService.getMetadataForBook(Long.parseLong(bookId), token)));
         } else {
@@ -104,8 +123,11 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Get reading state", description = "Retrieve the reading state for a book.")
+    @ApiResponse(responseCode = "200", description = "Reading state returned successfully")
     @GetMapping("/v1/library/{bookId}/state")
-    public ResponseEntity<?> getState(@PathVariable String bookId) {
+    public ResponseEntity<?> getState(
+            @Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(koboReadingStateService.getReadingState(bookId));
         } else {
@@ -113,8 +135,12 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Update reading state", description = "Update the reading state for a book.")
+    @ApiResponse(responseCode = "200", description = "Reading state updated successfully")
     @PutMapping("/v1/library/{bookId}/state")
-    public ResponseEntity<?> updateState(@PathVariable String bookId, @RequestBody KoboReadingStateWrapper body) {
+    public ResponseEntity<?> updateState(
+            @Parameter(description = "Book ID") @PathVariable String bookId,
+            @Parameter(description = "Reading state update body") @RequestBody KoboReadingStateWrapper body) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(koboReadingStateService.saveReadingState(body.getReadingStates()));
         } else {
@@ -122,16 +148,22 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Get Kobo test analytics", description = "Get test analytics for Kobo.")
+    @ApiResponse(responseCode = "200", description = "Test analytics returned successfully")
     @PostMapping("/v1/analytics/gettests")
-    public ResponseEntity<?> getTests(@RequestBody Object body) {
+    public ResponseEntity<?> getTests(
+            @Parameter(description = "Test analytics request body") @RequestBody Object body) {
         return ResponseEntity.ok(KoboTestResponse.builder()
                 .result("Success")
                 .testKey(RandomStringUtils.secure().nextAlphanumeric(24))
                 .build());
     }
 
+    @Operation(summary = "Download Kobo book", description = "Download a book from the Kobo library.")
+    @ApiResponse(responseCode = "200", description = "Book downloaded successfully")
     @GetMapping("/v1/books/{bookId}/download")
-    public void downloadBook(@PathVariable String bookId, HttpServletResponse response) throws IOException {
+    public void downloadBook(
+            @Parameter(description = "Book ID") @PathVariable String bookId, HttpServletResponse response) throws IOException {
         if (StringUtils.isNumeric(bookId)) {
             bookDownloadService.downloadKoboBook(Long.parseLong(bookId), response);
         } else {
@@ -139,8 +171,11 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Delete book from Kobo library", description = "Delete a book from the user's Kobo library.")
+    @ApiResponse(responseCode = "200", description = "Book deleted successfully")
     @DeleteMapping("/v1/library/{bookId}")
-    public ResponseEntity<?> deleteBookFromLibrary(@PathVariable String bookId) {
+    public ResponseEntity<?> deleteBookFromLibrary(
+            @Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
             Shelf userKoboShelf = shelfService.getUserKoboShelf();
             if (userKoboShelf != null) {
@@ -152,6 +187,8 @@ public class KoboController {
         }
     }
 
+    @Operation(summary = "Catch-all for Kobo API", description = "Catch-all endpoint for unhandled Kobo API requests.")
+    @ApiResponse(responseCode = "200", description = "Request proxied successfully")
     @RequestMapping(value = "/**", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.PATCH})
     public ResponseEntity<JsonNode> catchAll(HttpServletRequest request, @RequestBody(required = false) Object body) {
         String path = request.getRequestURI();

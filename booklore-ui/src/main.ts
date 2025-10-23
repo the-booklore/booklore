@@ -13,9 +13,14 @@ import Aura from '@primeng/themes/aura';
 import {routes} from './app/app.routes';
 import {AuthInterceptorService} from './app/core/security/auth-interceptor.service';
 import {AuthService, websocketInitializer} from './app/shared/service/auth.service';
-import {provideOAuthClient} from 'angular-oauth2-oidc';
+import {OAuthStorage, provideOAuthClient} from 'angular-oauth2-oidc';
 import {APP_INITIALIZER, provideAppInitializer} from '@angular/core';
 import {initializeAuthFactory} from './app/core/security/auth-initializer';
+
+export function storageFactory(): OAuthStorage {
+  return localStorage;
+}
+
 import {StartupService} from './app/shared/service/startup.service';
 import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
@@ -37,6 +42,11 @@ bootstrapApplication(AppComponent, {
     },
     provideHttpClient(withInterceptors([AuthInterceptorService])),
     provideOAuthClient(),
+    // Configure OAuth to use localStorage instead of sessionStorage
+    {
+      provide: OAuthStorage,
+      useFactory: storageFactory
+    },
     provideAppInitializer(initializeAuthFactory()),
     provideRouter(routes),
     DialogService,

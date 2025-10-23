@@ -235,7 +235,7 @@ public class BookMetadataService {
     }
 
     @Transactional
-    public List<BookMetadata> bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories) {
+    public void bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
 
         MetadataClearFlags clearFlags = metadataClearFlagsMapper.toClearFlags(request);
@@ -261,14 +261,12 @@ public class BookMetadataService {
                             .build())
                     .updateThumbnail(false)
                     .mergeCategories(mergeCategories)
+                    .mergeMoods(mergeMoods)
+                    .mergeTags(mergeTags)
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
         }
-
-        return books.stream()
-                .map(BookEntity::getMetadata)
-                .map(m -> bookMetadataMapper.toBookMetadata(m, false))
-                .toList();
     }
 }

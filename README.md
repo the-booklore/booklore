@@ -91,7 +91,7 @@ Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 > **Note:** Legacy images under `https://ghcr.io/adityachandelgit/booklore-app` will remain available but will not receive new updates.
 
-### 2️⃣ Create docker-compose.yml
+### 2️⃣ Set Up Your docker-compose.yml Configuration
 
 Clone Repository
 ```bash
@@ -114,9 +114,6 @@ TZ='Etc/UTC'
 ```
 For more infos on the Environment Variables functions see this [table here](#booklore-container)
 
-Note: You can find the latest BookLore image tag `BOOKLORE_IMAGE_TAG` (e.g. v.0.x.x) from the Releases section:
-📦 [Latest Image Tag – GitHub Releases](https://github.com/adityachandelgit/BookLore/releases)
-
 ### 3️⃣ Start the Containers
 
 Run the following command to start the services:
@@ -132,34 +129,6 @@ Once the containers are up, access BookLore in your browser at:
 ```ini
 http://localhost:6060
 ```
-
-## ⚙️ Supported Environment Variables
-
-### BookLore Container
-
-| Key                  | Default Value                          | Description                                                                                                                                                                                                                                                        |
-|----------------------|----------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `USER_ID`            | `0`                                    | User ID for file ownership within the container. Set this to match your host user's UID if running as non-root (e.g., `1000`). Use `id -u` on Linux to find your UID.                                                                                              |
-| `GROUP_ID`           | `0`                                    | Group ID for file ownership within the container. Set this to match your host user's GID if running as non-root (e.g., `1000`). Use `id -g` on Linux to find your GID.                                                                                             |
-| `TZ`                 | `Etc/UTC`                              | Timezone for the application. Controls timestamps in logs and UI. Use standard timezone identifiers (e.g., `America/New_York`, `Europe/London`, `Asia/Tokyo`). See [List of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). |
-| `DATABASE_URL`       | `jdbc:mariadb://mariadb:3306/booklore` | JDBC connection string for MariaDB/MySQL database. Format: `jdbc:mariadb://hostname:port/database_name`. Only modify if using a custom database host, port, or external database server.                                                                           |
-| `DATABASE_USERNAME`  | `booklore`                             | Username for database authentication. Must match `MYSQL_USER` in your MariaDB container configuration.                                                                                                                                                             |
-| `DATABASE_PASSWORD`  | -                                      | Password for database authentication. **Required**. Use a strong, unique password. Must match `MYSQL_PASSWORD` in your MariaDB container configuration. Store securely and never commit to version control.                                                        |
-| `BOOKLORE_PORT`      | `6060`                                 | Internal port BookLore listens on. **Critical**: This must match both the host and container ports in your port mapping (e.g., `6060:6060`). Changing this requires updating all three values. Example: For port `7070`, use `BOOKLORE_PORT=7070` and `7070:7070`. |
-| `SWAGGER_ENABLED`    | `false`                                | Controls access to Swagger UI for API documentation and testing. Set to `true` to enable at `/swagger-ui.html` (useful for development/testing). Keep `false` in production for security.                                                                          |
-| `FORCE_DISABLE_OIDC` | `false`                                | Forces local username/password authentication only. Set to `true` to completely disable OIDC/OAuth2 providers (Authentik, Pocket ID, etc.). Useful for troubleshooting authentication issues or temporarily bypassing external identity providers.                 |
-
-### MariaDB Container
-
-| Key                   | Default Value | Description                                                                                                                                                                                                      |
-|-----------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `PUID`                | `1000`        | Process User ID for the LinuxServer.io MariaDB container. Set this to match your host user's UID for proper file permissions. Use `id -u` on Linux to find your UID.                                            |
-| `PGID`                | `1000`        | Process Group ID for the LinuxServer.io MariaDB container. Set this to match your host user's GID for proper file permissions. Use `id -g` on Linux to find your GID.                                           |
-| `TZ`                  | `Etc/UTC`     | Timezone for the MariaDB container. Should match the BookLore container's timezone for consistency in timestamps.                                                                                                |
-| `MYSQL_ROOT_PASSWORD` | -             | Root password for the MariaDB database. **Required**. Use a strong, unique password different from `MYSQL_PASSWORD`. This provides administrative access to the database server. Never expose or commit to VCS. |
-| `MYSQL_DATABASE`      | `booklore`    | Name of the database to create on first run. This database will be used by BookLore to store all application data. Should not be changed after initial setup.                                                   |
-| `MYSQL_USER`          | `booklore`    | Username for the application database user. Must match `DATABASE_USERNAME` in the BookLore container configuration. This user will have full access to the `MYSQL_DATABASE`.                                     |
-| `MYSQL_PASSWORD`      | -             | Password for the application database user. **Required**. Use a strong, unique password. Must match `DATABASE_PASSWORD` in the BookLore container configuration. Store securely and never commit to VCS.         |
 
 ## 📥 Bookdrop Folder: Auto-Import Files
 
@@ -181,9 +150,9 @@ services:
   booklore:
     ...
     volumes:
-      - /your/local/path/to/booklore/data:/app/data
-      - /your/local/path/to/booklore/books:/books
-      - /your/local/path/to/booklore/bookdrop:/bookdrop # 👈 Bookdrop directory
+      - ./data:/app/data
+      - ./books:/books
+      - ./bookdrop:/bookdrop # 👈 Bookdrop directory
 ```
 
 ## 🔑 OIDC/OAuth2 Authentication (Authentik, Pocket ID, etc.)
