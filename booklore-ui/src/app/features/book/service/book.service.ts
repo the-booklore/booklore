@@ -448,15 +448,9 @@ export class BookService {
     );
   }
 
-  updateBooksMetadata(request: BulkMetadataUpdateRequest, mergeCategories: boolean): Observable<BookMetadata[]> {
-    const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
-    return this.http.put<BookMetadata[]>(`${this.url}/bulk-edit-metadata`, request, {params}).pipe(
-      map(updatedMetadataList => {
-        request.bookIds.forEach((id, index) => {
-          this.handleBookMetadataUpdate(id, updatedMetadataList[index]);
-        });
-        return updatedMetadataList;
-      })
+  updateBooksMetadata(request: BulkMetadataUpdateRequest): Observable<void> {
+    return this.http.put(`${this.url}/bulk-edit-metadata`, request).pipe(
+      map(() => void 0)
     );
   }
 

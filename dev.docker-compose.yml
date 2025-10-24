@@ -1,6 +1,6 @@
 services:
   backend:
-    image: gradle:8-jdk21-alpine
+    image: gradle:9-jdk25-alpine
     command: sh -c "cd /booklore-api && ./gradlew bootRun"
     ports:
       - "${BACKEND_PORT:-8080}:8080"
