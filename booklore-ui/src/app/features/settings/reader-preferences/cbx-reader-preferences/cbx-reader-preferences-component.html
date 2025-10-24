@@ -1,124 +1,121 @@
-<div class="p-4 pb-12">
-
-  <div class="cbx-preferences-container">
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Page Spread</label>
-          <div class="radio-group">
-            @for (spread of cbxSpreads; track spread) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="spread.key"
-                  name="spread"
-                  [value]="spread.key"
-                  [(ngModel)]="selectedCbxSpread">
-                </p-radiobutton>
-                <label [for]="spread.key">{{ spread.name }}</label>
-              </div>
-            }
-          </div>
+<div class="cbx-preferences-container">
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Spread</label>
+        <div class="radio-group">
+          @for (spread of cbxSpreads; track spread) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="spread.key"
+                name="spread"
+                [value]="spread.key"
+                [(ngModel)]="selectedCbxSpread">
+              </p-radiobutton>
+              <label [for]="spread.key">{{ spread.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Configure how comic book pages are displayed - single page or double page spread.
-        </p>
       </div>
+      <p class="setting-description">
+        Configure how comic book pages are displayed - single page or double page spread.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Page Layout</label>
-          <div class="radio-group">
-            @for (mode of cbxViewModes; track mode) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="mode.key"
-                  name="zoom"
-                  [value]="mode.key"
-                  [(ngModel)]="selectedCbxViewMode">
-                </p-radiobutton>
-                <label [for]="mode.key">{{ mode.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Layout</label>
+        <div class="radio-group">
+          @for (mode of cbxViewModes; track mode) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="mode.key"
+                name="zoom"
+                [value]="mode.key"
+                [(ngModel)]="selectedCbxViewMode">
+              </p-radiobutton>
+              <label [for]="mode.key">{{ mode.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Choose how comic pages are displayed while reading.
-        </p>
       </div>
+      <p class="setting-description">
+        Choose how comic pages are displayed while reading.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Fit Mode</label>
-          <div class="radio-group">
-            @for (mode of cbxFitModes; track mode) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="mode.key"
-                  name="fitMode"
-                  [value]="mode.key"
-                  [(ngModel)]="selectedCbxFitMode">
-                </p-radiobutton>
-                <label [for]="mode.key">{{ mode.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Fit Mode</label>
+        <div class="radio-group">
+          @for (mode of cbxFitModes; track mode) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="mode.key"
+                name="fitMode"
+                [value]="mode.key"
+                [(ngModel)]="selectedCbxFitMode">
+              </p-radiobutton>
+              <label [for]="mode.key">{{ mode.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Select how images should be scaled to fit the reader window.
-        </p>
       </div>
+      <p class="setting-description">
+        Select how images should be scaled to fit the reader window.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Scroll Mode</label>
-          <div class="radio-group">
-            @for (mode of cbxScrollModes; track mode) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="mode.key"
-                  name="scrollMode"
-                  [value]="mode.key"
-                  [(ngModel)]="selectedCbxScrollMode">
-                </p-radiobutton>
-                <label [for]="mode.key">{{ mode.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Scroll Mode</label>
+        <div class="radio-group">
+          @for (mode of cbxScrollModes; track mode) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="mode.key"
+                name="scrollMode"
+                [value]="mode.key"
+                [(ngModel)]="selectedCbxScrollMode">
+              </p-radiobutton>
+              <label [for]="mode.key">{{ mode.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Choose between paginated or infinite scroll reading experience.
-        </p>
       </div>
+      <p class="setting-description">
+        Choose between paginated or infinite scroll reading experience.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Background Color</label>
-          <div class="radio-group">
-            @for (color of cbxBackgroundColors; track color) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="color.key"
-                  name="backgroundColor"
-                  [value]="color.key"
-                  [(ngModel)]="selectedCbxBackgroundColor">
-                </p-radiobutton>
-                <label [for]="color.key">{{ color.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Background Color</label>
+        <div class="radio-group">
+          @for (color of cbxBackgroundColors; track color) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="color.key"
+                name="backgroundColor"
+                [value]="color.key"
+                [(ngModel)]="selectedCbxBackgroundColor">
+              </p-radiobutton>
+              <label [for]="color.key">{{ color.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Set the background color for the comic reader.
-        </p>
       </div>
+      <p class="setting-description">
+        Set the background color for the comic reader.
+      </p>
     </div>
   </div>
 </div>
