@@ -73,6 +73,7 @@ public class AppSettingService {
         PublicAppSetting.PublicAppSettingBuilder builder = PublicAppSetting.builder();
 
         builder.oidcEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false")));
+        builder.remoteAuthEnabled(appProperties.getRemoteAuth().isEnabled());
         builder.oidcProviderDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false));
 
         return builder.build();
