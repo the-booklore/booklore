@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 @Component
@@ -29,9 +30,15 @@ public class DeletedBooksCleanupTask implements Task {
         log.info("{}: Task started", getTaskType());
 
         try {
-            int deletedCount = bookRepository.deleteAllSoftDeleted();
-            log.info("{}: Removed {} deleted books", getTaskType(), deletedCount);
-
+            int deletedCount;
+            if (request.isTriggeredByCron()) {
+                Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
+                deletedCount = bookRepository.deleteSoftDeletedBefore(cutoff);
+                log.info("{}: Removed {} deleted books older than {}", getTaskType(), deletedCount, cutoff);
+            } else {
+                deletedCount = bookRepository.deleteAllSoftDeleted();
+                log.info("{}: Removed all {} deleted books (on-demand execution)", getTaskType(), deletedCount);
+            }
             builder.status(TaskStatus.COMPLETED);
         } catch (Exception e) {
             log.error("{}: Error cleaning up deleted books", getTaskType(), e);

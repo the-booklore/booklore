@@ -110,6 +110,11 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("DELETE FROM BookEntity b WHERE b.deleted IS TRUE")
     int deleteAllSoftDeleted();
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM BookEntity b WHERE b.deleted IS TRUE AND b.deletedAt < :cutoffDate")
+    int deleteSoftDeletedBefore(@Param("cutoffDate") Instant cutoffDate);
+
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.deleted = TRUE")
     long countAllSoftDeleted();
 

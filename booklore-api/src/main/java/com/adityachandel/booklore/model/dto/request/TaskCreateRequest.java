@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 public class TaskCreateRequest {
     private String taskId;
     private TaskType taskType;
+    private boolean triggeredByCron = false;
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "taskType", include = JsonTypeInfo.As.EXTERNAL_PROPERTY)
     @JsonSubTypes({

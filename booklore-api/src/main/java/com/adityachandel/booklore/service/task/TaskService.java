@@ -144,6 +144,7 @@ public class TaskService {
 
             TaskCreateRequest request = TaskCreateRequest.builder()
                     .taskType(taskType)
+                    .triggeredByCron(true)
                     .build();
 
             runAsSystemUser(request);

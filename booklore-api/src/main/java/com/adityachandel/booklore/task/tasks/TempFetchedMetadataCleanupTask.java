@@ -8,6 +8,7 @@ import com.adityachandel.booklore.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -21,6 +22,7 @@ public class TempFetchedMetadataCleanupTask implements Task {
     private final MetadataFetchJobRepository metadataFetchJobRepository;
 
     @Override
+    @Transactional
     public TaskCreateResponse execute(TaskCreateRequest request) {
         TaskCreateResponse.TaskCreateResponseBuilder builder = TaskCreateResponse.builder()
                 .taskId(UUID.randomUUID().toString())
@@ -30,9 +32,15 @@ public class TempFetchedMetadataCleanupTask implements Task {
         log.info("{}: Task started", getTaskType());
 
         try {
-            Instant cutoff = Instant.now().minus(5, ChronoUnit.DAYS);
-            int deleted = metadataFetchJobRepository.deleteAllByCompletedAtBefore(cutoff);
-            log.info("{}: Removed {} metadata fetch jobs older than {}", getTaskType(), deleted, cutoff);
+            int deleted;
+            if (request.isTriggeredByCron()) {
+                Instant cutoff = Instant.now().minus(3, ChronoUnit.DAYS);
+                deleted = metadataFetchJobRepository.deleteAllByCompletedAtBefore(cutoff);
+                log.info("{}: Removed {} metadata fetch jobs older than {}", getTaskType(), deleted, cutoff);
+            } else {
+                deleted = metadataFetchJobRepository.deleteAllRecords();
+                log.info("{}: Removed all {} metadata fetch jobs (on-demand execution)", getTaskType(), deleted);
+            }
 
             builder.status(TaskStatus.COMPLETED);
         } catch (Exception e) {
