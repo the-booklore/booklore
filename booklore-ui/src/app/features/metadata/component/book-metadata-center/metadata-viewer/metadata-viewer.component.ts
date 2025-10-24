@@ -12,14 +12,13 @@ import {SplitButton} from 'primeng/splitbutton';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookSenderComponent} from '../../../../book/components/book-sender/book-sender.component';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {EmailService} from '../../../../settings/email/email.service';
+import {EmailService} from '../../../../settings/email-v2/email.service';
 import {ShelfAssignerComponent} from '../../../../book/components/shelf-assigner/shelf-assigner.component';
 import {Tooltip} from 'primeng/tooltip';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Editor} from 'primeng/editor';
 import {ProgressBar} from 'primeng/progressbar';
 import {MetadataRefreshType} from '../../../model/request/metadata-refresh-type.enum';
-import {MetadataRefreshRequest} from '../../../model/request/metadata-refresh-request.model';
 import {Router} from '@angular/router';
 import {filter, map, switchMap, take, tap} from 'rxjs/operators';
 import {Menu} from 'primeng/menu';
@@ -38,6 +37,7 @@ import {BookDialogHelperService} from '../../../../book/components/book-browser/
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {MetadataFetchOptionsComponent} from '../../metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -56,6 +56,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
@@ -392,11 +393,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   quickRefresh(bookId: number) {
     this.isAutoFetching = true;
-    const request: MetadataRefreshRequest = {
+
+    this.taskHelperService.refreshMetadataTask({
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
-    };
-    this.bookService.autoRefreshMetadata(request).subscribe();
+    }).subscribe();
+
     setTimeout(() => {
       this.isAutoFetching = false;
     }, 15000);

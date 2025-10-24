@@ -1,5 +1,5 @@
 @if (book$ | async; as book) {
-  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="flex flex-col h-full md:min-w-[90rem]">
+  <form [formGroup]="metadataForm" class="flex flex-col h-full md:min-w-[90rem]">
     @if (isLoading) {
       <div class="absolute inset-0 bg-black opacity-25 z-10 "></div>
     }
@@ -510,7 +510,7 @@
             <p-button label="Unlock All" icon="pi pi-lock-open" [outlined]="true" severity="success" (onClick)="unlockAll()" pTooltip="Unlock all metadata fields for editing" tooltipPosition="top"></p-button>
             <p-button label="Lock All" icon="pi pi-lock" [outlined]="true" severity="warn" (onClick)="lockAll()" pTooltip="Lock all metadata fields to prevent changes" tooltipPosition="top"></p-button>
             <p-divider layout="vertical"/>
-            <p-button label="Save" icon="pi pi-check" [loading]="isSaving" [disabled]="isSaving" type="submit"></p-button>
+            <p-button label="Save" icon="pi pi-check" [loading]="isSaving" [disabled]="isSaving" (onClick)="onSave()"></p-button>
           </div>
         </div>
 
@@ -561,7 +561,7 @@
                 icon="pi pi-check"
                 [loading]="isSaving"
                 [disabled]="isSaving"
-                type="submit">
+                (onClick)="onSave()">
               </p-button>
             </div>
           </div>

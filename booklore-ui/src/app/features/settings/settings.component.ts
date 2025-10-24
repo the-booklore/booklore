@@ -2,7 +2,6 @@ import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {UserService} from './user-management/user.service';
 import {AsyncPipe} from '@angular/common';
-import {EmailComponent} from './email/email.component';
 import {GlobalPreferencesComponent} from './global-preferences/global-preferences.component';
 import {ActivatedRoute, Router} from '@angular/router';
 import {Subscription} from 'rxjs';
@@ -16,20 +15,21 @@ import {OpdsSettings} from './opds-settings/opds-settings';
 import {MetadataSettingsComponent} from './metadata-settings/metadata-settings-component';
 import {DeviceSettingsComponent} from './device-settings/device-settings-component';
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings/library-metadata-settings.component';
+import {EmailV2Component} from './email-v2/email-v2.component';
 
 export enum SettingsTab {
   ReaderSettings = 'reader',
   ViewPreferences = 'view',
   DeviceSettings = 'device',
   UserManagement = 'user',
-  EmailSettings = 'email',
+  EmailSettingsV2 = 'email-v2',
   NamingPattern = 'naming-pattern',
   MetadataSettings = 'metadata',
   LibraryMetadataSettings = 'metadata-library',
   ApplicationSettings = 'application',
   AuthenticationSettings = 'authentication',
   OpdsV2 = 'opds',
-  Tasks = 'tasks',
+  Tasks = 'task',
 }
 
 @Component({
@@ -41,7 +41,6 @@ export enum SettingsTab {
     TabPanels,
     TabPanel,
     AsyncPipe,
-    EmailComponent,
     GlobalPreferencesComponent,
     UserManagementComponent,
     AuthenticationSettingsComponent,
@@ -52,7 +51,8 @@ export enum SettingsTab {
     FileNamingPatternComponent,
     OpdsSettings,
     LibraryMetadataSettingsComponent,
-    TaskManagementComponent
+    TaskManagementComponent,
+    EmailV2Component
   ],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'

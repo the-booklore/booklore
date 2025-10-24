@@ -6,7 +6,8 @@ public enum TaskType {
 
     CLEAR_CBX_CACHE(false, false),
     CLEAR_PDF_CACHE(false, false),
-    RE_SCAN_LIBRARY(false, true);
+    RE_SCAN_LIBRARY(false, true),
+    REFRESH_METADATA(false, true);
 
     @Getter
     private final boolean parallel;

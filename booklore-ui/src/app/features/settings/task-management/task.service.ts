@@ -2,17 +2,20 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {API_CONFIG} from '../../../core/config/api-config';
+import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 
 export enum TaskType {
   CLEAR_CBX_CACHE = 'CLEAR_CBX_CACHE',
   CLEAR_PDF_CACHE = 'CLEAR_PDF_CACHE',
-  RE_SCAN_LIBRARY = 'RE_SCAN_LIBRARY'
+  RE_SCAN_LIBRARY = 'RE_SCAN_LIBRARY',
+  REFRESH_METADATA = 'REFRESH_METADATA',
 }
 
 export const TASK_TYPE_CONFIG: Record<TaskType, { parallel: boolean; async: boolean }> = {
   [TaskType.CLEAR_CBX_CACHE]: {parallel: false, async: false},
   [TaskType.CLEAR_PDF_CACHE]: {parallel: false, async: false},
-  [TaskType.RE_SCAN_LIBRARY]: {parallel: false, async: true}
+  [TaskType.RE_SCAN_LIBRARY]: {parallel: false, async: true},
+  [TaskType.REFRESH_METADATA]: {parallel: false, async: true}
 };
 
 export enum MetadataReplaceMode {
@@ -26,7 +29,7 @@ export interface LibraryRescanOptions {
 
 export interface TaskCreateRequest {
   taskType: TaskType;
-  options?: LibraryRescanOptions | null;
+  options?: LibraryRescanOptions | MetadataRefreshRequest | null;
 }
 
 export interface TaskCreateResponse {

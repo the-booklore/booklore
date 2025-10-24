@@ -24,6 +24,7 @@ import {BookdropFileService} from '../../../../features/bookdrop/service/bookdro
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {DuplicateFileService} from '../../../websocket/duplicate-file.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
+import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
 
 @Component({
   selector: 'app-topbar',
@@ -70,6 +71,7 @@ export class AppTopBarComponent implements OnDestroy {
   private latestTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
   private latestHasPendingFiles = false;
   private latestHasDuplicateFiles = false;
+  private latestNotificationSeverity?: Severity;
 
   constructor(
     public layoutService: LayoutService,
@@ -174,7 +176,8 @@ export class AppTopBarComponent implements OnDestroy {
   private subscribeToNotifications() {
     this.notificationService.latestNotification$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
+      .subscribe((notification: LogNotification) => {
+        this.latestNotificationSeverity = notification.severity;
         this.triggerPulseEffect();
       });
   }
@@ -227,9 +230,21 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   get iconColor(): string {
-    if (this.progressHighlight) return 'yellow';
-    if (this.showPulse) return 'orange';
-    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles) return 'yellowgreen';
+    if (this.progressHighlight) return 'gold';
+    if (this.showPulse) {
+      switch (this.latestNotificationSeverity) {
+        case Severity.ERROR:
+          return 'crimson';
+        case Severity.INFO:
+          return 'aqua';
+        case Severity.WARN:
+          return 'orange';
+        default:
+          return 'orange';
+      }
+    }
+    if (this.completedTaskCount > 0 || this.hasPendingBookdropFiles || this.hasDuplicateFiles)
+      return 'limegreen';
     return 'inherit';
   }
 

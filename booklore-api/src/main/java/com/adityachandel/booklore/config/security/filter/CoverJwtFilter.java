@@ -5,6 +5,7 @@ import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcesso
 import com.adityachandel.booklore.config.security.userdetails.UserAuthenticationDetails;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
+import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -40,21 +41,24 @@ public class CoverJwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
         String token = request.getParameter("token");
-        if (token != null) {
-            try {
-                if (jwtUtils.validateToken(token)) {
-                    authenticateLocalUser(token, request);
-                } else if (appSettingService.getAppSettings().isOidcEnabled()) {
-                    authenticateOidcUser(token, request);
-                } else {
-                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing or invalid token");
-                    return;
-                }
-            } catch (Exception ex) {
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+        if (token == null || token.isEmpty()) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing authentication token");
+            return;
+        }
+        try {
+            if (jwtUtils.validateToken(token)) {
+                authenticateLocalUser(token, request);
+            } else if (appSettingService.getAppSettings().isOidcEnabled()) {
+                authenticateOidcUser(token, request);
+            } else {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
                 return;
             }
+        } catch (Exception ex) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Authentication failed: " + ex.getMessage());
+            return;
         }
+
         chain.doFilter(request, response);
     }
 
@@ -75,7 +79,9 @@ public class CoverJwtFilter extends OncePerRequestFilter {
             throw new RuntimeException("OIDC token expired or invalid");
         }
 
-        String username = claimsSet.getStringClaim("preferred_username");
+        OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
+        OidcProviderDetails.ClaimMapping claimMapping = providerDetails.getClaimMapping();
+        String username = claimsSet.getStringClaim(claimMapping.getUsername());
         BookLoreUserEntity entity = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("OIDC user not found: " + username));
         BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
 

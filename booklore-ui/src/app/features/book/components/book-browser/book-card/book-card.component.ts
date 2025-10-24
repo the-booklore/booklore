@@ -15,7 +15,7 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {filter, Subject} from 'rxjs';
-import {EmailService} from '../../../../settings/email/email.service';
+import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {BookSenderComponent} from '../../book-sender/book-sender.component';
 import {Router} from '@angular/router';
@@ -27,6 +27,8 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
+import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: 'app-book-card',
@@ -57,6 +59,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private additionalFilesLoaded = false;
 
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   private dialogService = inject(DialogService);
   private userService = inject(UserService);
   private emailService = inject(EmailService);
@@ -266,7 +269,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     if (this.hasEmailBookPermission()) {
       items.push(
         {
-          label: 'Send Book',
+          label: 'Email Book',
           icon: 'pi pi-envelope',
           items: [{
             label: 'Quick Send',
@@ -333,12 +336,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: 'Auto Fetch',
             icon: 'pi pi-bolt',
             command: () => {
-              const metadataRefreshRequest: MetadataRefreshRequest = {
+              this.taskHelperService.refreshMetadataTask({
                 refreshType: MetadataRefreshType.BOOKS,
                 bookIds: [this.book.id],
-              };
-              this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
-            },
+              }).subscribe();
+            }
           },
           {
             label: 'Custom Fetch',

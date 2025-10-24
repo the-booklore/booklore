@@ -47,6 +47,8 @@ import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pr
 import {MetadataRefreshRequest} from '../../../metadata/model/request/metadata-refresh-request.model';
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
+import {TaskCreateRequest, TaskService, TaskType} from '../../../settings/task-management/task.service';
+import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -114,6 +116,7 @@ export class BookBrowserComponent implements OnInit {
   protected confirmationService = inject(ConfirmationService);
   protected magicShelfService = inject(MagicShelfService);
   protected bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  protected taskHelperService = inject(TaskHelperService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -128,7 +131,7 @@ export class BookBrowserComponent implements OnInit {
   entityOptions: MenuItem[] | undefined;
   selectedBooks = new Set<number>();
   isDrawerVisible = false;
-  dynamicDialogRef: DynamicDialogRef | undefined;
+  dynamicDialogRef: DynamicDialogRef | undefined | null;
   EntityType = EntityType;
   currentFilterLabel: string | null = null;
   rawFilterParamFromUrl: string | null = null;
@@ -401,6 +404,7 @@ export class BookBrowserComponent implements OnInit {
         }
       }
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   handleBookSelect(bookId: number, selected: boolean): void {
@@ -410,11 +414,13 @@ export class BookBrowserComponent implements OnInit {
       this.selectedBooks.delete(bookId);
     }
     this.isDrawerVisible = this.selectedBooks.size > 0;
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.selectedBooks = new Set(selectedBookIds);
     this.isDrawerVisible = this.selectedBooks.size > 0;
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   selectAllBooks(): void {
@@ -425,6 +431,7 @@ export class BookBrowserComponent implements OnInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   deselectAllBooks(): void {
@@ -433,6 +440,7 @@ export class BookBrowserComponent implements OnInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
+    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
   confirmDeleteBooks(): void {
@@ -539,7 +547,7 @@ export class BookBrowserComponent implements OnInit {
 
   openShelfAssigner(): void {
     this.dynamicDialogRef = this.dialogHelperService.openShelfAssigner(this.selectedBooks);
-    this.dynamicDialogRef.onClose.subscribe(() => {
+    this.dynamicDialogRef?.onClose.subscribe(() => {
       this.selectedBooks = new Set<number>();
     });
   }
@@ -549,11 +557,11 @@ export class BookBrowserComponent implements OnInit {
   }
 
   autoFetchMetadata(): void {
-    const metadataRefreshRequest: MetadataRefreshRequest = {
+    if (!this.selectedBooks || this.selectedBooks.size === 0) return;
+    this.taskHelperService.refreshMetadataTask({
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: Array.from(this.selectedBooks),
-    };
-    this.bookService.autoRefreshMetadata(metadataRefreshRequest).subscribe();
+    }).subscribe();
   }
 
   fetchMetadata(): void {

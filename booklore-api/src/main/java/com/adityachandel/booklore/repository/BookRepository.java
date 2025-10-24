@@ -1,11 +1,13 @@
 package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -71,7 +73,7 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query(value = "SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)",
-           countQuery = "SELECT COUNT(DISTINCT b.id) FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
+            countQuery = "SELECT COUNT(DISTINCT b.id) FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
     Page<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
@@ -88,21 +90,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     List<BookEntity> findAllFullBooks();
 
-    @Query("""
-                SELECT DISTINCT b FROM BookEntity b
-                LEFT JOIN FETCH b.metadata m
-                LEFT JOIN FETCH m.authors a
-                LEFT JOIN FETCH m.categories
-                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-                )
-                ORDER BY m.title ASC
-            """)
-    List<BookEntity> searchByMetadata(@Param("text") String text);
-
     @Query(value = """
                 SELECT DISTINCT b FROM BookEntity b
                 LEFT JOIN b.metadata m
@@ -115,59 +102,17 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
                 )
             """,
             countQuery = """
-                SELECT COUNT(DISTINCT b.id) FROM BookEntity b
-                LEFT JOIN b.metadata m
-                LEFT JOIN m.authors a
-                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-                )
-            """)
+                        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
+                        LEFT JOIN b.metadata m
+                        LEFT JOIN m.authors a
+                        WHERE (b.deleted IS NULL OR b.deleted = false) AND (
+                              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
+                           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                        )
+                    """)
     Page<BookEntity> searchByMetadata(@Param("text") String text, Pageable pageable);
-
-    @Query("""
-        SELECT DISTINCT b FROM BookEntity b
-        LEFT JOIN FETCH b.metadata m
-        LEFT JOIN FETCH m.authors a
-        LEFT JOIN FETCH m.categories
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        ORDER BY m.title ASC
-        """)
-    List<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds);
-
-    @Query(value = """
-        SELECT DISTINCT b FROM BookEntity b
-        LEFT JOIN b.metadata m
-        LEFT JOIN m.authors a
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        """,
-        countQuery = """
-        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
-        LEFT JOIN b.metadata m
-        LEFT JOIN m.authors a
-        WHERE (b.deleted IS NULL OR b.deleted = false)
-          AND b.library.id IN :libraryIds
-          AND (
-              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
-          )
-        """)
-    Page<BookEntity> searchByMetadataAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 
     @Modifying
     @Transactional
@@ -175,7 +120,18 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     int deleteAllByDeletedAtBefore(Instant cutoff);
 
     @Modifying
-    @Transactional
-    @Query("UPDATE BookEntity b SET b.library.id = :libraryId WHERE b.id = :bookId")
-    void updateLibraryId(@Param("bookId") Long bookId, @Param("libraryId") Long libraryId);
+    @Query("""
+                UPDATE BookEntity b
+                SET b.fileSubPath = :fileSubPath,
+                    b.fileName = :fileName,
+                    b.library.id = :libraryId,
+                    b.libraryPath = :libraryPath
+                WHERE b.id = :bookId
+            """)
+    void updateFileAndLibrary(
+            @Param("bookId") Long bookId,
+            @Param("fileSubPath") String fileSubPath,
+            @Param("fileName") String fileName,
+            @Param("libraryId") Long libraryId,
+            @Param("libraryPath") LibraryPathEntity libraryPath);
 }

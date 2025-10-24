@@ -18,6 +18,7 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.Lock;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -192,7 +193,7 @@ public class BookMetadataService {
                         .filter(book -> book.getMetadata().getCoverLocked() == null || !book.getMetadata().getCoverLocked())
                         .toList();
                 int total = books.size();
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Started regenerating covers for " + total + " books"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
 
                 int[] current = {1};
                 for (BookEntity book : books) {
@@ -204,11 +205,10 @@ public class BookMetadataService {
                     }
                     current[0]++;
                 }
-
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Finished regenerating covers"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers"));
             } catch (Exception e) {
                 log.error("Error during cover regeneration: {}", e.getMessage(), e);
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Error during cover regeneration: " + e.getMessage()));
+                notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
             }
         });
     }
@@ -216,7 +216,7 @@ public class BookMetadataService {
     private void regenerateCoverForBook(BookEntity book, String progress) {
         String title = book.getMetadata().getTitle();
         String message = progress + "Regenerating cover for: " + title;
-        notificationService.sendMessage(Topic.LOG, createLogNotification(message));
+        notificationService.sendMessage(Topic.LOG, LogNotification.info(message));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
         processor.generateCover(book);
@@ -235,7 +235,7 @@ public class BookMetadataService {
     }
 
     @Transactional
-    public List<BookMetadata> bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories) {
+    public void bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
 
         MetadataClearFlags clearFlags = metadataClearFlagsMapper.toClearFlags(request);
@@ -261,14 +261,12 @@ public class BookMetadataService {
                             .build())
                     .updateThumbnail(false)
                     .mergeCategories(mergeCategories)
+                    .mergeMoods(mergeMoods)
+                    .mergeTags(mergeTags)
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
         }
-
-        return books.stream()
-                .map(BookEntity::getMetadata)
-                .map(m -> bookMetadataMapper.toBookMetadata(m, false))
-                .toList();
     }
 }

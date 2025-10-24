@@ -13,6 +13,7 @@ import {filter, take} from 'rxjs/operators';
 import {MultiSelect} from 'primeng/multiselect';
 import {Library} from '../../../features/book/model/library.model';
 import {LibraryService} from '../../../features/book/service/library.service';
+import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 
 @Component({
   selector: 'app-authentication-settings',
@@ -25,7 +26,8 @@ import {LibraryService} from '../../../features/book/service/library.service';
     ToggleSwitch,
     Button,
     MultiSelect,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    ExternalDocLinkComponent
   ],
   styleUrls: ['./authentication-settings.component.scss']
 })

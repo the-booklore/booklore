@@ -12,6 +12,7 @@ app:
     header-email: ${REMOTE_AUTH_HEADER_EMAIL:Remote-Email}
     header-groups: ${REMOTE_AUTH_HEADER_GROUPS:Remote-Groups}
     admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
+  force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
 
 server:
   forward-headers-strategy: native
@@ -53,7 +54,10 @@ spring:
 
 springdoc:
   swagger-ui:
+    path: /api/v1/swagger-ui.html
     persist-authorization: true
+  api-docs:
+    path: /api/v1/api-docs
 
 logging:
   level:

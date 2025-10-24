@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.event;
 
 import com.adityachandel.booklore.model.dto.BookLoreUser;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.service.user.UserService;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,7 @@ public class AdminEventBroadcaster {
                 .filter(u -> u.getPermissions().isAdmin())
                 .toList();
         for (BookLoreUser admin : admins) {
-            messagingTemplate.convertAndSendToUser(admin.getUsername(), Topic.LOG.getPath(), createLogNotification(message));
+            messagingTemplate.convertAndSendToUser(admin.getUsername(), Topic.LOG.getPath(), LogNotification.info(message));
         }
     }
 }

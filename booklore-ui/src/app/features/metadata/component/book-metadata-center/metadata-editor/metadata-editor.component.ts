@@ -3,7 +3,7 @@ import {InputText} from "primeng/inputtext";
 import {Button} from "primeng/button";
 import {Divider} from "primeng/divider";
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule,} from "@angular/forms";
-import {Observable} from "rxjs";
+import {Observable, sample} from "rxjs";
 import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
 import {Book, BookMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
@@ -16,7 +16,6 @@ import {Tooltip} from "primeng/tooltip";
 import {filter, take} from "rxjs/operators";
 import {DialogService} from "primeng/dynamicdialog";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
-import {MetadataRefreshRequest} from "../../../model/request/metadata-refresh-request.model";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
 import {Textarea} from "primeng/textarea";
@@ -24,6 +23,7 @@ import {IftaLabel} from "primeng/iftalabel";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
 import {CoverSearchComponent} from '../../cover-search/cover-search.component';
+import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
   selector: "app-metadata-editor",
@@ -59,6 +59,7 @@ export class MetadataEditorComponent implements OnInit {
 
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
+  private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
   private dialogService = inject(DialogService);
   private destroyRef = inject(DestroyRef);
@@ -622,11 +623,23 @@ export class MetadataEditorComponent implements OnInit {
   autoFetch(bookId: number) {
     this.refreshingBookIds.add(bookId);
     this.isAutoFetching = true;
-    const request: MetadataRefreshRequest = {
+
+    this.taskHelperService.refreshMetadataTask({
       refreshType: MetadataRefreshType.BOOKS,
       bookIds: [bookId],
-    };
-    this.bookService.autoRefreshMetadata(request).subscribe();
+    }).subscribe({
+      next: () => {
+        this.isAutoFetching = false;
+      },
+      error: () => {
+        this.isAutoFetching = false;
+      },
+      complete: () => {
+        this.isAutoFetching = false;
+        this.refreshingBookIds.delete(bookId);
+      }
+    });
+
     setTimeout(() => {
       this.isAutoFetching = false;
       this.refreshingBookIds.delete(bookId);
@@ -661,11 +674,13 @@ export class MetadataEditorComponent implements OnInit {
       },
     });
 
-    ref.onClose.subscribe((result) => {
+    ref?.onClose.subscribe((result) => {
       if (result) {
         this.metadataForm.get("thumbnailUrl")?.setValue(result);
         this.onSave();
       }
     });
   }
+
+  protected readonly sample = sample;
 }

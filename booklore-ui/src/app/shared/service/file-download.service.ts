@@ -76,9 +76,11 @@ export class FileDownloadService {
 
   private extractFilenameFromResponse(response: HttpResponse<Blob>, defaultFilename: string): string {
     const contentDisposition = response.headers.get('Content-Disposition');
-    return contentDisposition
-      ? contentDisposition.match(/filename="(.+?)"/)?.[1] || defaultFilename
-      : defaultFilename;
+    if (contentDisposition) {
+      const encodedFilename = contentDisposition.match(/filename\*=UTF-8''([\w%\-\.]+)(?:; ?|$)/i)?.[1];
+      return encodedFilename ? decodeURIComponent(encodedFilename) : defaultFilename;
+    }
+    return defaultFilename;
   }
 
   private triggerBrowserDownload(blob: Blob, filename: string): void {

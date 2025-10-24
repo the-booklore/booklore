@@ -24,7 +24,8 @@ public class TaskCreateRequest {
     @JsonSubTypes({
             @JsonSubTypes.Type(value = ClearCbxCacheOptions.class, name = "CLEAR_CBX_CACHE"),
             @JsonSubTypes.Type(value = ClearPdfCacheOptions.class, name = "CLEAR_PDF_CACHE"),
-            @JsonSubTypes.Type(value = LibraryRescanOptions.class, name = "RE_SCAN_LIBRARY")
+            @JsonSubTypes.Type(value = LibraryRescanOptions.class, name = "RE_SCAN_LIBRARY"),
+            @JsonSubTypes.Type(value = MetadataRefreshRequest.class, name = "REFRESH_METADATA"),
     })
     private Object options;
 

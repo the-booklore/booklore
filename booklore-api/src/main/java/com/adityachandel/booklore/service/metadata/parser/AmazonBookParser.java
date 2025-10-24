@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class AmazonBookParser implements BookParser {
 
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
-    private static final String BASE_BOOK_URL = "https://www.amazon.com/dp/";
+    private static final String BASE_BOOK_URL_SUFFIX = "/dp/";
     private final AppSettingService appSettingService;
 
     @Override
@@ -153,7 +153,8 @@ public class AmazonBookParser implements BookParser {
     private BookMetadata getBookMetadata(String amazonBookId) {
         log.info("Amazon: Fetching metadata for: {}", amazonBookId);
 
-        Document doc = fetchDocument(BASE_BOOK_URL + amazonBookId);
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
+        Document doc = fetchDocument("https://www.amazon." + domain + BASE_BOOK_URL_SUFFIX + amazonBookId);
 
         List<BookReview> reviews = appSettingService.getAppSettings()
                 .getMetadataPublicReviewsSettings()
@@ -193,11 +194,10 @@ public class AmazonBookParser implements BookParser {
     }
 
     private String buildQueryUrl(FetchMetadataRequest fetchMetadataRequest, Book book) {
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
         String isbnCleaned = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbnCleaned != null && !isbnCleaned.isEmpty()) {
-            String url = "https://www.amazon."
-                    + appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain()
-                    + "/s?k=" + fetchMetadataRequest.getIsbn();
+            String url = "https://www.amazon." + domain + "/s?k=" + fetchMetadataRequest.getIsbn();
             log.info("Amazon Query URL (ISBN): {}", url);
             return url;
         }
@@ -239,9 +239,7 @@ public class AmazonBookParser implements BookParser {
         }
 
         String encodedSearchTerm = searchTerm.toString().replace(" ", "+");
-        String url = "https://www.amazon."
-                + appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain()
-                + "/s?k=" + encodedSearchTerm;
+        String url = "https://www.amazon." + domain + "/s?k=" + encodedSearchTerm;
         log.info("Amazon Query URL: {}", url);
         return url;
     }
@@ -627,6 +625,7 @@ public class AmazonBookParser implements BookParser {
 
     private Document fetchDocument(String url) {
         try {
+            String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
             String amazonCookie = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getCookie();
             Connection connection = Jsoup.connect(url)
                     .header("accept", "text/html, application/json")
@@ -636,7 +635,7 @@ public class AmazonBookParser implements BookParser {
                     .header("downlink", "10")
                     .header("dpr", "2")
                     .header("ect", "4g")
-                    .header("origin", "https://www.amazon.com")
+                    .header("origin", "https://www.amazon." + domain)
                     .header("priority", "u=1, i")
                     .header("rtt", "50")
                     .header("sec-ch-device-memory", "8")
@@ -704,3 +703,4 @@ public class AmazonBookParser implements BookParser {
         return html;
     }
 }
+

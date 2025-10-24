@@ -35,4 +35,8 @@ public class BulkMetadataUpdateRequest {
 
     private Set<String> tags;
     private boolean clearTags;
+
+    private boolean mergeCategories;
+    private boolean mergeMoods;
+    private boolean mergeTags;
 }

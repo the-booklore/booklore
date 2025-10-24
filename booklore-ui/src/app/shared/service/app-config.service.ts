@@ -360,7 +360,7 @@ export class AppConfigService {
     return {
       preset: 'Aura',
       primary: 'green',
-      surface: 'neutral',
+      surface: 'ash',
     };
   }
 

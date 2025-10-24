@@ -16,7 +16,8 @@
 > The legacy repo (`https://ghcr.io/adityachandelgit/booklore-app`) will remain available for existing images but will not receive further updates.
 
 
-BookLore is a self-hosted web app for organizing and managing your personal book collection. It provides an intuitive interface to browse, read, and track your progress across PDFs and eBooks. With robust metadata management, multi-user support, and a sleek, modern UI, BookLore makes it easy to build and explore your personal library.
+BookLore is a self-hosted web app for organizing and managing your personal book collection. It provides an intuitive interface to browse, read, and track your progress across PDFs and eBooks. With robust metadata management, multi-user support, and a sleek, modern UI, BookLore makes it easy to
+build and explore your personal library.
 
 ![BookLore Demo](assets/demo.gif)
 
@@ -51,7 +52,8 @@ If you find **BookLore** helpful, please consider supporting its development:
 
 Evaluate BookLore’s features and user experience in a live environment:
 
-**Demo Access:**  
+**Demo Access:**
+
 - 🌐 **URL:** [demo.booklore.dev](https://demo.booklore.dev)
 - 👤 **Username:** `booklore`
 - 🔑 **Password:** `9HC20PGGfitvWaZ1`
@@ -62,7 +64,6 @@ Evaluate BookLore’s features and user experience in a live environment:
 > - To explore all capabilities, including administration and multi-user management, please deploy your own instance as described below.
 
 ## 🚀 Getting Started with BookLore
-
 
 Kick off your BookLore journey with our official documentation and helpful video guides.
 
@@ -84,69 +85,83 @@ You can quickly set up and run BookLore using Docker.
 Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed.
 
 **Image Repositories:**
+
 - Docker Hub: `https://hub.docker.com/r/booklore/booklore`
 - GitHub Container Registry: `https://ghcr.io/booklore-app/booklore`
 
 > **Note:** Legacy images under `https://ghcr.io/adityachandelgit/booklore-app` will remain available but will not receive new updates.
 
-### 2️⃣ Create docker-compose.yml
+### 2️⃣ Set Up Your docker-compose.yml Configuration
 
-> ⚠️ If you intend to run the container as a non-root user, you must manually create all of your `/your/local/path/to/booklore` directories with read and write permissions for your intended user **before first run**.
+**Step 1: Create a `.env` file** in the same directory as your `docker-compose.yml`:
 
-Create a `docker-compose.yml` file with content:
+```ini
+# BookLore Application Settings
+APP_USER_ID=0
+APP_GROUP_ID=0
+TZ=Etc/UTC
+BOOKLORE_PORT=6060
+
+# Database Connection (BookLore)
+DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
+DB_USER=booklore
+DB_PASSWORD=ChangeMe_BookLoreApp_2025!
+
+# MariaDB Container Settings
+DB_USER_ID=1000
+DB_GROUP_ID=1000
+MYSQL_ROOT_PASSWORD=ChangeMe_MariaDBRoot_2025!
+MYSQL_DATABASE=booklore
+```
+
+**Step 2: Create a `docker-compose.yml` file** that references the `.env` variables:
 
 ```yaml
 services:
   booklore:
-    # Official Docker Hub image:
     image: booklore/booklore:latest
-    # Or the GHCR image:
+    # Alternative: Use GitHub Container Registry
     # image: ghcr.io/booklore-app/booklore:latest
     container_name: booklore
     environment:
-      - USER_ID=0  # Modify this if the volume's ownership is not root
-      - GROUP_ID=0 # Modify this if the volume's ownership is not root
-      - TZ=Etc/UTC
-      - DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore   # Only modify this if you're familiar with JDBC and your database setup
-      - DATABASE_USERNAME=booklore                          # Must match MYSQL_USER defined in the mariadb container
-      - DATABASE_PASSWORD=your_secure_password              # Use a strong password; must match MYSQL_PASSWORD defined in the mariadb container 
-      - BOOKLORE_PORT=6060                                  # Port BookLore listens on inside the container; must match container port below
-      - SWAGGER_ENABLED=false                               # Enable or disable Swagger UI (API docs). Set to 'true' to allow access; 'false' to block access (recommended for production).
+      - USER_ID=${APP_USER_ID}
+      - GROUP_ID=${APP_GROUP_ID}
+      - TZ=${TZ}
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USERNAME=${DB_USER}
+      - DATABASE_PASSWORD=${DB_PASSWORD}
+      - BOOKLORE_PORT=${BOOKLORE_PORT}
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "6060:6060" # HostPort:ContainerPort → Keep both numbers the same, and also ensure the container port matches BOOKLORE_PORT, no exceptions. 
-                    # All three (host port, container port, BOOKLORE_PORT) must be identical for BookLore to function properly.
-                    # Example: To expose on host port 7070, set BOOKLORE_PORT=7070 and use "7070:7070". 
+      - "${BOOKLORE_PORT}:${BOOKLORE_PORT}"
     volumes:
-      - /your/local/path/to/booklore/data:/app/data       # Application data (settings, metadata, cache, etc.). Persist this folder to retain your library state across container restarts.
-      - /your/local/path/to/booklore/books:/books         # Primary book library folder. Mount your collection here so BookLore can access and organize your books.
-      - /your/local/path/to/booklore/bookdrop:/bookdrop   # BookDrop folder. Files placed here are automatically detected and prepared for import.
+      - ./data:/app/data
+      - ./books:/books
+      - ./bookdrop:/bookdrop
     restart: unless-stopped
 
   mariadb:
     image: lscr.io/linuxserver/mariadb:11.4.5
     container_name: mariadb
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Etc/UTC
-      - MYSQL_ROOT_PASSWORD=super_secure_password  # Use a strong password for the database's root user, should be different from MYSQL_PASSWORD
-      - MYSQL_DATABASE=booklore
-      - MYSQL_USER=booklore                        # Must match DATABASE_USERNAME defined in the booklore container
-      - MYSQL_PASSWORD=your_secure_password        # Use a strong password; must match DATABASE_PASSWORD defined in the booklore container
+      - PUID=${DB_USER_ID}
+      - PGID=${DB_GROUP_ID}
+      - TZ=${TZ}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
     volumes:
-      - /your/local/path/to/mariadb/config:/config
+      - ./mariadb/config:/config
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
       interval: 5s
       timeout: 5s
       retries: 10
 ```
-Note: You can find the latest BookLore image tag `BOOKLORE_IMAGE_TAG` (e.g. v.0.x.x) from the Releases section:
-📦 [Latest Image Tag – GitHub Releases](https://github.com/adityachandelgit/BookLore/releases)
 
 ### 3️⃣ Start the Containers
 
@@ -163,7 +178,8 @@ Once the containers are up, access BookLore in your browser at:
 ```ini
 http://localhost:6060
 ```
-## 📥 Bookdrop Folder: Auto-Import Files (New)
+
+## 📥 Bookdrop Folder: Auto-Import Files
 
 BookLore now supports a **Bookdrop folder**, a special directory where you can drop your book files (`.pdf`, `.epub`, `.cbz`, etc.), and BookLore will automatically detect, process, and prepare them for import. This makes it easy to bulk add new books without manually uploading each one.
 
@@ -183,13 +199,12 @@ services:
   booklore:
     ...
     volumes:
-      - /your/local/path/to/booklore/data:/app/data
-      - /your/local/path/to/booklore/books:/books
-      - /your/local/path/to/booklore/bookdrop:/bookdrop # 👈 Bookdrop directory
+      - ./data:/app/data
+      - ./books:/books
+      - ./bookdrop:/bookdrop # 👈 Bookdrop directory
 ```
 
 ## 🔑 OIDC/OAuth2 Authentication (Authentik, Pocket ID, etc.)
-
 
 BookLore supports optional OIDC/OAuth2 authentication for secure access. This feature allows you to integrate external authentication providers for a seamless login experience.
 
@@ -202,9 +217,11 @@ For detailed instructions on setting up OIDC authentication:
 
 ## 🛡️ Forward Auth with Reverse Proxy
 
-BookLore also supports **Forward Auth** (also known as Remote Auth) for authentication through reverse proxies like **Traefik**, **Nginx**, or **Caddy**. Forward Auth works by having your reverse proxy handle authentication and pass user information via HTTP headers to BookLore. This can be set up with providers like **Authelia** and **Authentik**.
+BookLore also supports **Forward Auth** (also known as Remote Auth) for authentication through reverse proxies like **Traefik**, **Nginx**, or **Caddy**. Forward Auth works by having your reverse proxy handle authentication and pass user information via HTTP headers to BookLore. This can be set up
+with providers like **Authelia** and **Authentik**.
 
 For detailed setup instructions and configuration examples:
+
 - 📘 [Complete Forward Auth Setup Guide](docs/forward-auth-with-proxy.md)
 
 ## 🤝 Community & Support

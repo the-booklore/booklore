@@ -44,7 +44,7 @@
           [showValue]="true">
         </p-progressBar>
 
-        @if (task.value.status === 'COMPLETED' || task.value.status === 'ERROR') {
+        @if (task.value.status === 'COMPLETED' || task.value.status === 'ERROR' || task.value.status === 'CANCELLED') {
           <div class="action-buttons mt-4 flex justify-end gap-2">
             @if (task.value.review) {
               <p-button
