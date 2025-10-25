@@ -41,24 +41,35 @@ export class CoverGeneratorComponent {
     const titleLines = this.wrapText(this.title, maxLineLength);
     const authorLines = this.wrapText(this.author, maxLineLength);
 
-    let y = 30;
-    const titleElements = titleLines.map(line => {
-      const element = `<text x="10" y="${y}" font-family="sans-serif" font-size="18" fill="#000000">${line}</text>`;
-      y += 20;
-      return element;
-    }).join('');
+    const titleBoxHeight = titleLines.length * 40 + 20;
+    const titleElements = titleLines.map((line, index) => {
+      const y = 80 + index * 40;
+      return `<text x="20" y="${y}" font-family="serif" font-size="36" fill="#000000">${line}</text>`;
+    }).join('\n');
 
-    y += 20;
-    const authorElements = authorLines.map(line => {
-      const element = `<text x="10" y="${y}" font-family="sans-serif" font-size="14" fill="#000000">${line}</text>`;
-      y += 18;
-      return element;
-    }).join('');
+    const titleWithBackground = `
+      <rect x="0" y="40" width="100%" height="${titleBoxHeight}" fill="url(#titleGradient)" />
+      ${titleElements}
+    `;
 
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="128" height="192" viewBox="0 0 128 192">
-        <rect width="100%" height="100%" fill="#cccccc" />
-        ${titleElements}
+    const authorElements = authorLines.map((line, index) => {
+      const y = 364 - (authorLines.length - index - 1) * 36;
+      return `<text x="236" y="${y}" text-anchor="end" font-family="sans-serif" font-size="28" fill="#000000">${line}</text>`;
+    }).join('\n');
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="384" viewBox="0 0 256 384">
+        <defs>
+        <linearGradient id="titleGradient" >
+          <stop style="stop-color:#dddddd;stop-opacity:1;" offset="0" id="stop1" />
+          <stop style="stop-color:#dfdfdf;stop-opacity:0.6;" offset="1" id="stop2" />
+        </linearGradient>
+        <linearGradient id="pageGradient">
+          <stop style="stop-color:#557766;stop-opacity:1;" offset="0" id="stop8" />
+          <stop style="stop-color:#669988;stop-opacity:1;" offset="1" id="stop9" />
+        </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#pageGradient)" />
+        ${titleWithBackground}
         ${authorElements}
       </svg>
     `;
