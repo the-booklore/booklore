@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.service.BookService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import com.adityachandel.booklore.service.reader.PdfReaderService;

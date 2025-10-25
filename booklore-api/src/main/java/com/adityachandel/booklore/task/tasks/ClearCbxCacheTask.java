@@ -2,8 +2,9 @@ package com.adityachandel.booklore.task.tasks;
 
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
-import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.model.enums.TaskType;
+import com.adityachandel.booklore.task.TaskMetadataHelper;
+import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.util.FileService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,11 +27,12 @@ public class ClearCbxCacheTask implements Task {
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
-        log.info("Starting CBX cache clearing task");
-
         TaskCreateResponse.TaskCreateResponseBuilder builder = TaskCreateResponse.builder()
                 .taskId(UUID.randomUUID().toString())
                 .taskType(TaskType.CLEAR_CBX_CACHE);
+
+        long startTime = System.currentTimeMillis();
+        log.info("{}: Task started", getTaskType());
 
         try {
             String cbxCachePath = fileService.getCbxCachePath();
@@ -49,18 +51,20 @@ public class ClearCbxCacheTask implements Task {
                 }
 
                 Files.createDirectories(cachePath);
-                log.info("CBX cache cleared and directory recreated");
+                log.info("{}: Cache cleared and directory recreated", getTaskType());
             } else {
-                log.warn("CBX cache path does not exist or is not a directory: {}", cbxCachePath);
+                log.warn("{}: Cache path does not exist or is not a directory: {}", getTaskType(), cbxCachePath);
             }
 
             builder.status(TaskStatus.COMPLETED);
-            log.info("CBX cache clearing task completed successfully");
         } catch (Exception e) {
-            log.error("Error clearing CBX cache", e);
+            log.error("{}: Error clearing cache", getTaskType(), e);
             builder.status(TaskStatus.FAILED);
             throw new RuntimeException("Failed to clear CBX cache", e);
         }
+
+        long endTime = System.currentTimeMillis();
+        log.info("{}: Task completed. Duration: {} ms", getTaskType(), endTime - startTime);
 
         return builder.build();
     }
@@ -68,5 +72,10 @@ public class ClearCbxCacheTask implements Task {
     @Override
     public TaskType getTaskType() {
         return TaskType.CLEAR_CBX_CACHE;
+    }
+
+    @Override
+    public String getMetadata() {
+        return TaskMetadataHelper.getCacheSizeString(fileService.getCbxCachePath());
     }
 }

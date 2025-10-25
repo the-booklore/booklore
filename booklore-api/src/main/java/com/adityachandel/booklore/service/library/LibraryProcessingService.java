@@ -10,7 +10,7 @@ import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.task.RescanLibraryContext;
+import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;
@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification;
 
 @AllArgsConstructor
 @Service

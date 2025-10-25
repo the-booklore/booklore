@@ -1,115 +1,113 @@
-<div class="p-4">
-  <div class="epub-preferences-container">
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Theme</label>
-          <div class="radio-group">
-            @for (theme of themes; track theme) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="'theme-' + theme.key"
-                  name="theme"
-                  [value]="theme.key"
-                  [(ngModel)]="selectedTheme">
-                </p-radiobutton>
-                <label [for]="'theme-' + theme.key">{{ theme.name }}</label>
-              </div>
-            }
-          </div>
+<div class="epub-preferences-container">
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Theme</label>
+        <div class="radio-group">
+          @for (theme of themes; track theme) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="'theme-' + theme.key"
+                name="theme"
+                [value]="theme.key"
+                [(ngModel)]="selectedTheme">
+              </p-radiobutton>
+              <label [for]="'theme-' + theme.key">{{ theme.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Choose the visual theme for EPUB reading experience.
-        </p>
       </div>
+      <p class="setting-description">
+        Choose the visual theme for EPUB reading experience.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Font</label>
-          <div class="radio-group">
-            @for (font of fonts; track font) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="'font-' + font.key"
-                  name="font"
-                  [value]="font.key"
-                  [(ngModel)]="selectedFont">
-                </p-radiobutton>
-                <label [for]="'font-' + font.key">{{ font.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Font</label>
+        <div class="radio-group">
+          @for (font of fonts; track font) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="'font-' + font.key"
+                name="font"
+                [value]="font.key"
+                [(ngModel)]="selectedFont">
+              </p-radiobutton>
+              <label [for]="'font-' + font.key">{{ font.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Select the font family for text display.
-        </p>
       </div>
+      <p class="setting-description">
+        Select the font family for text display.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Flow</label>
-          <div class="radio-group">
-            @for (flow of flowOptions; track flow) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="'flow-' + flow.key"
-                  name="flow"
-                  [value]="flow.key"
-                  [(ngModel)]="selectedFlow">
-                </p-radiobutton>
-                <label [for]="'flow-' + flow.key">{{ flow.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Flow</label>
+        <div class="radio-group">
+          @for (flow of flowOptions; track flow) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="'flow-' + flow.key"
+                name="flow"
+                [value]="flow.key"
+                [(ngModel)]="selectedFlow">
+              </p-radiobutton>
+              <label [for]="'flow-' + flow.key">{{ flow.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Configure text flow and reading direction.
-        </p>
       </div>
+      <p class="setting-description">
+        Configure text flow and reading direction.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Page Spread</label>
-          <div class="radio-group">
-            @for (spread of spreadOptions; track spread) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="'spread-' + spread.key"
-                  name="spread"
-                  [value]="spread.key"
-                  [(ngModel)]="selectedSpread">
-                </p-radiobutton>
-                <label [for]="'spread-' + spread.key">{{ spread.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Spread</label>
+        <div class="radio-group">
+          @for (spread of spreadOptions; track spread) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="'spread-' + spread.key"
+                name="spread"
+                [value]="spread.key"
+                [(ngModel)]="selectedSpread">
+              </p-radiobutton>
+              <label [for]="'spread-' + spread.key">{{ spread.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Choose between single page or double page spread view.
-        </p>
       </div>
+      <p class="setting-description">
+        Choose between single page or double page spread view.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Font Size</label>
-          <div class="font-size-controls">
-            <p-button icon="pi pi-minus" size="small" rounded (click)="decreaseFontSize()"></p-button>
-            <span class="font-size-value">{{ fontSize }}%</span>
-            <p-button icon="pi pi-plus" size="small" rounded (click)="increaseFontSize()"></p-button>
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Font Size</label>
+        <div class="font-size-controls">
+          <p-button icon="pi pi-minus" size="small" rounded (click)="decreaseFontSize()"></p-button>
+          <span class="font-size-value">{{ fontSize }}%</span>
+          <p-button icon="pi pi-plus" size="small" rounded (click)="increaseFontSize()"></p-button>
         </div>
-        <p class="setting-description">
-          Adjust the text size for comfortable reading.
-        </p>
       </div>
+      <p class="setting-description">
+        Adjust the text size for comfortable reading.
+      </p>
     </div>
   </div>
 </div>

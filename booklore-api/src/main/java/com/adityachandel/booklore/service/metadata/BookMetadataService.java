@@ -22,9 +22,10 @@ import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookQueryService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
@@ -50,8 +51,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-
-import static com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification;
 
 @Slf4j
 @Service
@@ -172,8 +171,13 @@ public class BookMetadataService {
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
             metadataWriterFactory.getWriter(bookEntity.getBookType())
-                    .ifPresent(writer -> writerAction.accept(writer, bookEntity));
+                    .ifPresent(writer -> {
+                        writerAction.accept(writer, bookEntity);
+                        String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                        bookEntity.setCurrentHash(newHash);
+                    });
         }
+        bookRepository.save(bookEntity);
         return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
     }
 

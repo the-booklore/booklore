@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MergeMetadataType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.file.FileMoveService;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
@@ -56,21 +57,30 @@ public class MetadataManagementService {
     private void writeMetadataToFile(List<BookMetadataEntity> metadataList, boolean moveFile) {
         for (BookMetadataEntity metadata : metadataList) {
             if (metadata.getBook() != null) {
-                BookFileType bookType = metadata.getBook().getBookType();
+                BookEntity book = metadata.getBook();
+                boolean bookModified = false;
+
+                BookFileType bookType = book.getBookType();
                 Optional<MetadataWriter> writerOpt = metadataWriterFactory.getWriter(bookType);
-                writerOpt.ifPresent(writer -> {
-                    File file = metadata.getBook().getFullFilePath().toFile();
-                    writer.writeMetadataToFile(file, metadata, null, null);
-                });
+                if (writerOpt.isPresent()) {
+                    File file = book.getFullFilePath().toFile();
+                    writerOpt.get().writeMetadataToFile(file, metadata, null, null);
+                    String newHash = FileFingerprint.generateHash(book.getFullFilePath());
+                    book.setCurrentHash(newHash);
+                    bookModified = true;
+                }
 
                 if (moveFile) {
-                    BookEntity book = metadata.getBook();
                     FileMoveResult result = fileMoveService.moveSingleFile(book);
                     if (result.isMoved()) {
                         book.setFileName(result.getNewFileName());
                         book.setFileSubPath(result.getNewFileSubPath());
-                        bookRepository.saveAndFlush(book);
+                        bookModified = true;
                     }
+                }
+
+                if (bookModified) {
+                    bookRepository.saveAndFlush(book);
                 }
             }
         }

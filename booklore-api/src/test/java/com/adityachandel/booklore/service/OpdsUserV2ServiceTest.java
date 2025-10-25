@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.OpdsUserV2Entity;
 import com.adityachandel.booklore.repository.OpdsUserV2Repository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;

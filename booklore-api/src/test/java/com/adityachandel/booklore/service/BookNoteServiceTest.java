@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.BookNoteEntity;
 import com.adityachandel.booklore.repository.BookNoteRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.book.BookNoteService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

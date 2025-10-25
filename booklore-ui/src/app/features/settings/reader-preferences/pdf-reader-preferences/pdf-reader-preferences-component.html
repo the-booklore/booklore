@@ -1,52 +1,49 @@
-<div class="p-4">
-
-  <div class="pdf-preferences-container">
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Page Spread</label>
-          <div class="radio-group">
-            @for (spread of spreads; track spread) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="spread.key"
-                  name="spread"
-                  [value]="spread.key"
-                  [(ngModel)]="selectedSpread">
-                </p-radiobutton>
-                <label [for]="spread.key">{{ spread.name }}</label>
-              </div>
-            }
-          </div>
+<div class="pdf-preferences-container">
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Spread</label>
+        <div class="radio-group">
+          @for (spread of spreads; track spread) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="spread.key"
+                name="spread"
+                [value]="spread.key"
+                [(ngModel)]="selectedSpread">
+              </p-radiobutton>
+              <label [for]="spread.key">{{ spread.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Choose how PDF pages are displayed - single page or double page spread view.
-        </p>
       </div>
+      <p class="setting-description">
+        Choose how PDF pages are displayed - single page or double page spread view.
+      </p>
     </div>
+  </div>
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="setting-label-row">
-          <label class="setting-label">Page Zoom</label>
-          <div class="radio-group">
-            @for (zoom of zooms; track zoom) {
-              <div class="radio-option">
-                <p-radiobutton
-                  [inputId]="zoom.key"
-                  name="zoom"
-                  [value]="zoom.key"
-                  [(ngModel)]="selectedZoom">
-                </p-radiobutton>
-                <label [for]="zoom.key">{{ zoom.name }}</label>
-              </div>
-            }
-          </div>
+  <div class="setting-item">
+    <div class="setting-info">
+      <div class="setting-label-row">
+        <label class="setting-label">Page Zoom</label>
+        <div class="radio-group">
+          @for (zoom of zooms; track zoom) {
+            <div class="radio-option">
+              <p-radiobutton
+                [inputId]="zoom.key"
+                name="zoom"
+                [value]="zoom.key"
+                [(ngModel)]="selectedZoom">
+              </p-radiobutton>
+              <label [for]="zoom.key">{{ zoom.name }}</label>
+            </div>
+          }
         </div>
-        <p class="setting-description">
-          Set the default zoom level for PDF documents to enhance readability.
-        </p>
       </div>
+      <p class="setting-description">
+        Set the default zoom level for PDF documents to enhance readability.
+      </p>
     </div>
   </div>
 </div>

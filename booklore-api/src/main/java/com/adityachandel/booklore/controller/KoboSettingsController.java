@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.KoboSyncSettings;
-import com.adityachandel.booklore.service.KoboSettingsService;
+import com.adityachandel.booklore.service.kobo.KoboSettingsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

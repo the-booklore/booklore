@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BookLoreUser {
     private Long id;
     private String username;

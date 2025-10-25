@@ -11,6 +11,7 @@ import com.adityachandel.booklore.repository.BookOpdsRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.library.LibraryService;
+import com.adityachandel.booklore.service.opds.OpdsBookService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

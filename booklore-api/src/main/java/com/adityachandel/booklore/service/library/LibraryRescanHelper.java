@@ -12,7 +12,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.metadata.BookMetadataUpdater;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
-import com.adityachandel.booklore.task.RescanLibraryContext;
+import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import com.adityachandel.booklore.task.TaskCancellationManager;
 import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.model.enums.TaskType;
@@ -110,7 +110,7 @@ public class LibraryRescanHelper {
         try {
             TaskProgressPayload payload = TaskProgressPayload.builder()
                     .taskId(taskId)
-                    .taskType(TaskType.RE_SCAN_LIBRARY)
+                    .taskType(TaskType.REFRESH_LIBRARY_METADATA)
                     .message(message)
                     .progress(progress)
                     .taskStatus(taskStatus)

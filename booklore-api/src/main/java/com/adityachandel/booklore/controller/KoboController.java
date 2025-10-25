@@ -7,6 +7,8 @@ import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.dto.kobo.KoboResources;
 import com.adityachandel.booklore.model.dto.kobo.KoboTestResponse;
 import com.adityachandel.booklore.service.*;
+import com.adityachandel.booklore.service.book.BookDownloadService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.kobo.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,8 +28,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
 

@@ -3,12 +3,12 @@ package com.adityachandel.booklore.task.tasks;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
+import com.adityachandel.booklore.model.enums.TaskType;
 import com.adityachandel.booklore.service.library.LibraryRescanHelper;
 import com.adityachandel.booklore.service.library.LibraryService;
-import com.adityachandel.booklore.task.RescanLibraryContext;
+import com.adityachandel.booklore.task.options.RescanLibraryContext;
 import com.adityachandel.booklore.task.TaskCancellationManager;
-import com.adityachandel.booklore.model.enums.TaskType;
-import com.adityachandel.booklore.task.tasks.options.LibraryRescanOptions;
+import com.adityachandel.booklore.task.options.LibraryRescanOptions;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
@@ -30,12 +30,15 @@ public class LibraryRescanTask implements Task {
     public TaskCreateResponse execute(TaskCreateRequest request) {
         LibraryRescanOptions options = request.getOptions(LibraryRescanOptions.class);
         String taskId = request.getTaskId();
-        log.info("Starting LibraryRescanTask. TaskId: {}, Options: {}", taskId, options);
+
+        long startTime = System.currentTimeMillis();
+        log.info("{}: Task started. TaskId: {}, Options: {}", getTaskType(), taskId, options);
+
         List<Library> libraries = libraryService.getAllLibraries();
 
         for (Library library : libraries) {
             if (cancellationManager.isTaskCancelled(taskId)) {
-                log.info("LibraryRescanTask {} was cancelled, stopping execution", taskId);
+                log.info("{}: Task {} was cancelled, stopping execution", getTaskType(), taskId);
                 break;
             }
 
@@ -49,14 +52,17 @@ public class LibraryRescanTask implements Task {
             } catch (InvalidDataAccessApiUsageException e) {
                 log.debug("InvalidDataAccessApiUsageException - Library id: {}", libraryId);
             }
-            log.info("Library rescan completed for library: {}", libraryId);
+            log.info("{}: Library rescan completed for library: {}", getTaskType(), libraryId);
         }
+
+        long endTime = System.currentTimeMillis();
+        log.info("{}: Task completed. Duration: {} ms", getTaskType(), endTime - startTime);
 
         return null;
     }
 
     @Override
     public TaskType getTaskType() {
-        return TaskType.RE_SCAN_LIBRARY;
+        return TaskType.REFRESH_LIBRARY_METADATA;
     }
 }

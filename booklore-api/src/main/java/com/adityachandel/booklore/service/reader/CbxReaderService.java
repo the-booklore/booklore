@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.pdfbox.io.IOUtils;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -131,24 +134,43 @@ public class CbxReaderService {
     }
 
     private void extractZipArchive(Path cbzPath, Path targetDir) throws IOException {
-        try (InputStream fis = Files.newInputStream(cbzPath);
-             ZipInputStream zis = new ZipInputStream(fis)) {
+        String[] encodingsToTry = {"UTF-8", "Shift_JIS", "ISO-8859-1", "CP437", "MS932"};
 
-            ZipEntry entry;
+        for (String encoding : encodingsToTry) {
+            try {
+                extractZipWithEncoding(cbzPath, targetDir, Charset.forName(encoding));
+                return;
+            } catch (IllegalArgumentException | java.util.zip.ZipException e) {
+                log.debug("Failed to extract with encoding {}: {}", encoding, e.getMessage());
+            }
+        }
 
-            while ((entry = zis.getNextEntry()) != null) {
+        throw new IOException("Unable to extract ZIP archive with any supported encoding");
+    }
+
+    private void extractZipWithEncoding(Path cbzPath, Path targetDir, Charset charset) throws IOException {
+        try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
+                     org.apache.commons.compress.archivers.zip.ZipFile.builder()
+                             .setPath(cbzPath)
+                             .setCharset(charset)
+                             .get()) {
+
+            var entries = zipFile.getEntries();
+            while (entries.hasMoreElements()) {
+                ZipArchiveEntry entry = entries.nextElement();
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
                     String fileName = extractFileNameFromPath(entry.getName());
                     Path target = targetDir.resolve(fileName);
-                    Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
+                    try (InputStream in = zipFile.getInputStream(entry)) {
+                        Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+                    }
                 }
-                zis.closeEntry();
             }
         }
     }
 
     private void extract7zArchive(Path cb7Path, Path targetDir) throws IOException {
-        try (SevenZFile sevenZFile = new SevenZFile(cb7Path.toFile())) {
+        try (SevenZFile sevenZFile = SevenZFile.builder().setPath(cb7Path).get()) {
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
@@ -164,11 +186,13 @@ public class CbxReaderService {
 
     private void copySevenZEntry(SevenZFile sevenZFile, OutputStream out, long size) throws IOException {
         byte[] buffer = new byte[8192];
-        long read = 0;
-        int count;
-        while (read < size && (count = sevenZFile.read(buffer, 0, (int) Math.min(buffer.length, size - read))) > 0) {
-            out.write(buffer, 0, count);
-            read += count;
+        long remaining = size;
+        while (remaining > 0) {
+            int toRead = (int) Math.min(buffer.length, remaining);
+            int read = sevenZFile.read(buffer, 0, toRead);
+            if (read == -1) break;
+            out.write(buffer, 0, read);
+            remaining -= read;
         }
     }
 
@@ -306,20 +330,42 @@ public class CbxReaderService {
     }
 
     private long estimateCbzArchiveSize(Path cbxPath) throws IOException {
-        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(cbxPath))) {
-            ZipEntry entry;
+        String[] encodingsToTry = {"UTF-8", "Shift_JIS", "ISO-8859-1", "CP437", "MS932"};
+
+        for (String encoding : encodingsToTry) {
+            try {
+                return estimateCbzWithEncoding(cbxPath, Charset.forName(encoding));
+            } catch (IllegalArgumentException | java.util.zip.ZipException e) {
+                log.debug("Failed to estimate with encoding {}: {}", encoding, e.getMessage());
+            }
+        }
+
+        log.warn("Unable to estimate archive size for {} with any supported encoding", cbxPath);
+        return Long.MAX_VALUE;
+    }
+
+    private long estimateCbzWithEncoding(Path cbxPath, Charset charset) throws IOException {
+        try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
+                     org.apache.commons.compress.archivers.zip.ZipFile.builder()
+                             .setPath(cbxPath)
+                             .setCharset(charset)
+                             .get()) {
+
             long total = 0;
-            while ((entry = zis.getNextEntry()) != null) {
+            var entries = zipFile.getEntries();
+            while (entries.hasMoreElements()) {
+                ZipArchiveEntry entry = entries.nextElement();
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
-                    total += entry.getCompressedSize();
+                    long size = entry.getSize();
+                    total += (size >= 0) ? size : entry.getCompressedSize();
                 }
             }
-            return total;
+            return total > 0 ? total : Long.MAX_VALUE;
         }
     }
 
     private long estimateCb7ArchiveSize(Path cbxPath) throws IOException {
-        try (SevenZFile sevenZFile = new SevenZFile(cbxPath.toFile())) {
+        try (SevenZFile sevenZFile = SevenZFile.builder().setPath(cbxPath).get()) {
             SevenZArchiveEntry entry;
             long total = 0;
             while ((entry = sevenZFile.getNextEntry()) != null) {

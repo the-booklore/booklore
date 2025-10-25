@@ -2,7 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.MetadataBatchProgressNotification;
 import com.adityachandel.booklore.model.dto.response.MetadataTaskDetailsResponse;
-import com.adityachandel.booklore.service.MetadataTaskService;
+import com.adityachandel.booklore.service.metadata.MetadataTaskService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

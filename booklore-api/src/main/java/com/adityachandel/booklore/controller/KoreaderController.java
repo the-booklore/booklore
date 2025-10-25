@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.progress.KoreaderProgress;
-import com.adityachandel.booklore.service.KoreaderService;
+import com.adityachandel.booklore.service.koreader.KoreaderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

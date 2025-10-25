@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.KoreaderUserEntity;
 import com.adityachandel.booklore.repository.KoreaderUserRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.koreader.KoreaderUserService;
 import com.adityachandel.booklore.util.Md5Util;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,8 @@ class KoreaderUserServiceTest {
     @Mock UserRepository userRepository;
     @Mock KoreaderUserRepository koreaderUserRepository;
     @Mock com.adityachandel.booklore.mapper.KoreaderUserMapper koreaderUserMapper;
-    @InjectMocks KoreaderUserService service;
+    @InjectMocks
+    KoreaderUserService service;
 
     private BookLoreUser ownerDto;
     private BookLoreUserEntity ownerEntity;
