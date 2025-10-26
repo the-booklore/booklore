@@ -40,6 +40,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern UNDERSCORE_HYPHEN_PATTERN = Pattern.compile("[_\\-]");
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
+    private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
     private final BookMetadataRepository bookMetadataRepository;
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
@@ -214,8 +215,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
-        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(baseName
-                        .replaceAll("(?i)\\.cb[rz7]$", "")).replaceAll(" ")
+        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(CBX_FILE_EXTENSION_PATTERN.matcher(baseName).replaceAll("")).replaceAll(" ")
                 .trim();
         bookEntity.getMetadata().setTitle(truncate(title, 1000));
     }

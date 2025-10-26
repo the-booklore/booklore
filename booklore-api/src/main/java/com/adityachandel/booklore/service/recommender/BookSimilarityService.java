@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 public class BookSimilarityService {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern NON_ALPHANUMERIC_EXCEPT_SPACE_PATTERN = Pattern.compile("[^a-z0-9 ]");
 
     @Getter
     public enum SimilarityWeight {
@@ -96,7 +97,7 @@ public class BookSimilarityService {
         Map<String, Integer> vector = new HashMap<>();
         if (text == null || text.isBlank()) return vector;
 
-        String[] tokens = WHITESPACE_PATTERN.split(text.toLowerCase().replaceAll("[^a-z0-9 ]", ""));
+        String[] tokens = WHITESPACE_PATTERN.split(NON_ALPHANUMERIC_EXCEPT_SPACE_PATTERN.matcher(text.toLowerCase()).replaceAll(""));
         for (String token : tokens) {
             vector.put(token, vector.getOrDefault(token, 0) + 1);
         }

@@ -14,6 +14,7 @@ public class PathPatternResolver {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".*\\.[a-zA-Z0-9]+$");
+    private static final Pattern CONTROL_CHARACTER_PATTERN = Pattern.compile("[\\p{Cntrl}]");
 
     public static String resolvePattern(BookEntity book, String pattern) {
         String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
@@ -165,9 +166,8 @@ public class PathPatternResolver {
 
     private static String sanitize(String input) {
         if (input == null) return "";
-        return WHITESPACE_PATTERN.matcher(input
-                        .replaceAll("[\\\\/:*?\"<>|]", "")
-                        .replaceAll("[\\p{Cntrl}]", "")).replaceAll(" ")
+        return WHITESPACE_PATTERN.matcher(CONTROL_CHARACTER_PATTERN.matcher(input
+                        .replaceAll("[\\\\/:*?\"<>|]", "")).replaceAll("")).replaceAll(" ")
                 .trim();
     }
 
