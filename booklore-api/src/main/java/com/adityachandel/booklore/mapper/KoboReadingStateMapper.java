@@ -7,10 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+import java.util.regex.Pattern;
+
 @Mapper(componentModel = "spring")
 public interface KoboReadingStateMapper {
 
     ObjectMapper objectMapper = new ObjectMapper();
+    Pattern PATTERN = Pattern.compile("^\"|\"$");
 
     @Mapping(target = "currentBookmarkJson", expression = "java(toJson(dto.getCurrentBookmark()))")
     @Mapping(target = "statisticsJson", expression = "java(toJson(dto.getStatistics()))")
@@ -48,6 +51,6 @@ public interface KoboReadingStateMapper {
 
     default String cleanString(String value) {
         if (value == null) return null;
-        return value.replaceAll("^\"|\"$", "");
+        return PATTERN.matcher(value).replaceAll("");
     }
 }

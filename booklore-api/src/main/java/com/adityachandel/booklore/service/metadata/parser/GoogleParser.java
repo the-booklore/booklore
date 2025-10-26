@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,6 +31,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GoogleParser implements BookParser {
 
+    private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
     private final ObjectMapper objectMapper;
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
 
@@ -171,7 +175,7 @@ public class GoogleParser implements BookParser {
                         .orElse(null));
 
         if (searchTerm != null) {
-            searchTerm = searchTerm.replaceAll("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]", "").trim();
+            searchTerm = SPECIAL_CHARACTERS_PATTERN.matcher(searchTerm).replaceAll("").trim();
             searchTerm = truncateToMaxLength(searchTerm, 60);
         }
 
@@ -183,7 +187,7 @@ public class GoogleParser implements BookParser {
     }
 
     private String truncateToMaxLength(String input, int maxLength) {
-        String[] words = input.split("\\s+");
+        String[] words = WHITESPACE_PATTERN.split(input);
         StringBuilder truncated = new StringBuilder();
 
         for (String word : words) {
@@ -197,7 +201,7 @@ public class GoogleParser implements BookParser {
 
     public LocalDate parseDate(String input) {
         try {
-            if (input.matches("\\d{4}")) {
+            if (FOUR_DIGIT_YEAR_PATTERN.matcher(input).matches()) {
                 return LocalDate.of(Integer.parseInt(input), 1, 1);
             }
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");

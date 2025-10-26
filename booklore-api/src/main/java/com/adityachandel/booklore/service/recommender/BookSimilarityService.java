@@ -9,10 +9,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 @RequiredArgsConstructor
 @Service
 public class BookSimilarityService {
+
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     @Getter
     public enum SimilarityWeight {
@@ -93,7 +96,7 @@ public class BookSimilarityService {
         Map<String, Integer> vector = new HashMap<>();
         if (text == null || text.isBlank()) return vector;
 
-        String[] tokens = text.toLowerCase().replaceAll("[^a-z0-9 ]", "").split("\\s+");
+        String[] tokens = WHITESPACE_PATTERN.split(text.toLowerCase().replaceAll("[^a-z0-9 ]", ""));
         for (String token : tokens) {
             vector.put(token, vector.getOrDefault(token, 0) + 1);
         }

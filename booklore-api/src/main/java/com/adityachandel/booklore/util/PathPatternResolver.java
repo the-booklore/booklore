@@ -12,6 +12,9 @@ import java.util.regex.Pattern;
 
 public class PathPatternResolver {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".*\\.[a-zA-Z0-9]+$");
+
     public static String resolvePattern(BookEntity book, String pattern) {
         String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
         return resolvePattern(book.getMetadata(), pattern, currentFilename);
@@ -150,7 +153,7 @@ public class PathPatternResolver {
             result = values.getOrDefault("currentFilename", "untitled");
         }
 
-        boolean hasExtension = result.matches(".*\\.[a-zA-Z0-9]+$");
+        boolean hasExtension = FILE_EXTENSION_PATTERN.matcher(result).matches();
         boolean explicitlySetExtension = pattern.contains("{extension}");
 
         if (!explicitlySetExtension && !hasExtension && !extension.isBlank()) {
@@ -162,10 +165,9 @@ public class PathPatternResolver {
 
     private static String sanitize(String input) {
         if (input == null) return "";
-        return input
-                .replaceAll("[\\\\/:*?\"<>|]", "")
-                .replaceAll("[\\p{Cntrl}]", "")
-                .replaceAll("\\s+", " ")
+        return WHITESPACE_PATTERN.matcher(input
+                        .replaceAll("[\\\\/:*?\"<>|]", "")
+                        .replaceAll("[\\p{Cntrl}]", "")).replaceAll(" ")
                 .trim();
     }
 

@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -38,6 +39,8 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 @Component
 public class CbxMetadataWriter implements MetadataWriter {
+
+    private static final Pattern VALID_FILENAME_PATTERN = Pattern.compile("^[\\w./\\\\-]+$");
 
     @Override
     public void writeMetadataToFile(File file, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clearFlags) {
@@ -462,7 +465,7 @@ public class CbxMetadataWriter implements MetadataWriter {
     private boolean isSafeExecutable(String exec) {
         if (exec == null || exec.isBlank()) return false;
         // allow word chars, dot, slash, backslash, dash and underscore (no spaces or shell metas)
-        return exec.matches("^[\\w./\\\\-]+$");
+        return VALID_FILENAME_PATTERN.matcher(exec).matches();
     }
 
     private static String stripExtension(String filename) {

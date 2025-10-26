@@ -18,12 +18,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @AllArgsConstructor
 public class UserProvisioningService {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final AppProperties appProperties;
     private final UserRepository userRepository;
     private final LibraryRepository libraryRepository;
@@ -141,7 +143,7 @@ public class UserProvisioningService {
             if (groupsContent.startsWith("[") && groupsContent.endsWith("]")) {
                 groupsContent = groupsContent.substring(1, groupsContent.length() - 1);
             }
-            List<String> groupsList = Arrays.asList(groupsContent.split("\\s+"));
+            List<String> groupsList = Arrays.asList(WHITESPACE_PATTERN.split(groupsContent));
             isAdmin = groupsList.contains(appProperties.getRemoteAuth().getAdminGroup());
             log.debug("Remote-Auth: user {} will be admin: {}", username, isAdmin);
         }
