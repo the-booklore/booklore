@@ -127,46 +127,48 @@ public class AppMigrationService {
 
         try {
             if (Files.exists(thumbsDir)) {
-                Files.walk(thumbsDir)
-                        .filter(Files::isRegularFile)
-                        .forEach(path -> {
-                            try {
-                                // Load original image
-                                BufferedImage originalImage = ImageIO.read(path.toFile());
-                                if (originalImage == null) {
-                                    log.warn("Skipping non-image file: {}", path);
-                                    return;
+                try (var stream = Files.walk(thumbsDir)) {
+                    stream.filter(Files::isRegularFile)
+                            .forEach(path -> {
+                                try {
+                                    // Load original image
+                                    BufferedImage originalImage = ImageIO.read(path.toFile());
+                                    if (originalImage == null) {
+                                        log.warn("Skipping non-image file: {}", path);
+                                        return;
+                                    }
+
+                                    // Extract bookId from folder structure
+                                    Path relative = thumbsDir.relativize(path);       // e.g., "11/f.jpg"
+                                    String bookId = relative.getParent().toString();  // "11"
+
+                                    Path bookDir = imagesDir.resolve(bookId);
+                                    Files.createDirectories(bookDir);
+
+                                    // Copy original to cover.jpg
+                                    Path coverFile = bookDir.resolve("cover.jpg");
+                                    ImageIO.write(originalImage, "jpg", coverFile.toFile());
+
+                                    // Resize and save thumbnail.jpg
+                                    BufferedImage resized = fileService.resizeImage(originalImage, 250, 350);
+                                    Path thumbnailFile = bookDir.resolve("thumbnail.jpg");
+                                    ImageIO.write(resized, "jpg", thumbnailFile.toFile());
+
+                                    log.debug("Processed book {}: cover={} thumbnail={}", bookId, coverFile, thumbnailFile);
+                                } catch (IOException e) {
+                                    log.error("Error processing file {}", path, e);
+                                    throw new UncheckedIOException(e);
                                 }
-
-                                // Extract bookId from folder structure
-                                Path relative = thumbsDir.relativize(path);       // e.g., "11/f.jpg"
-                                String bookId = relative.getParent().toString();  // "11"
-
-                                Path bookDir = imagesDir.resolve(bookId);
-                                Files.createDirectories(bookDir);
-
-                                // Copy original to cover.jpg
-                                Path coverFile = bookDir.resolve("cover.jpg");
-                                ImageIO.write(originalImage, "jpg", coverFile.toFile());
-
-                                // Resize and save thumbnail.jpg
-                                BufferedImage resized = fileService.resizeImage(originalImage, 250, 350);
-                                Path thumbnailFile = bookDir.resolve("thumbnail.jpg");
-                                ImageIO.write(resized, "jpg", thumbnailFile.toFile());
-
-                                log.debug("Processed book {}: cover={} thumbnail={}", bookId, coverFile, thumbnailFile);
-                            } catch (IOException e) {
-                                log.error("Error processing file {}", path, e);
-                                throw new UncheckedIOException(e);
-                            }
-                        });
+                            });
+                }
 
                 // Delete old thumbs directory
                 log.info("Deleting old thumbs directory: {}", thumbsDir);
-                Files.walk(thumbsDir)
-                        .sorted(Comparator.reverseOrder())
-                        .map(Path::toFile)
-                        .forEach(File::delete);
+                try (var stream = Files.walk(thumbsDir)) {
+                    stream.sorted(Comparator.reverseOrder())
+                            .map(Path::toFile)
+                            .forEach(File::delete);
+                }
             }
         } catch (IOException e) {
             log.error("Error during migration populateCoversAndResizeThumbnails", e);

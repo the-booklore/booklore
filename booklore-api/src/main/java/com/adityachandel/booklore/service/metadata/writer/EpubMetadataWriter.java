@@ -55,8 +55,9 @@ public class EpubMetadataWriter implements MetadataWriter {
         Path tempDir = null;
         try {
             tempDir = Files.createTempDirectory("epub_edit_" + UUID.randomUUID());
-            ZipFile zipFile = new ZipFile(epubFile);
-            zipFile.extractAll(tempDir.toString());
+            try (ZipFile zipFile = new ZipFile(epubFile)) {
+                zipFile.extractAll(tempDir.toString());
+            }
 
             File opfFile = findOpfFile(tempDir.toFile());
             if (opfFile == null) {
@@ -171,7 +172,9 @@ public class EpubMetadataWriter implements MetadataWriter {
                 transformer.transform(new DOMSource(opfDoc), new StreamResult(opfFile));
 
                 File tempEpub = new File(epubFile.getParentFile(), epubFile.getName() + ".tmp");
-                addFolderContentsToZip(new ZipFile(tempEpub), tempDir.toFile(), tempDir.toFile());
+                try (ZipFile tempZipFile = new ZipFile(tempEpub)) {
+                    addFolderContentsToZip(tempZipFile, tempDir.toFile(), tempDir.toFile());
+                }
 
                 if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
                 if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
@@ -260,7 +263,9 @@ public class EpubMetadataWriter implements MetadataWriter {
         try {
             File epubFile = new File(bookEntity.getFullFilePath().toUri());
             tempDir = Files.createTempDirectory("epub_cover_" + UUID.randomUUID());
-            new ZipFile(epubFile).extractAll(tempDir.toString());
+            try (ZipFile zipFile = new ZipFile(epubFile)) {
+                zipFile.extractAll(tempDir.toString());
+            }
 
             File opfFile = findOpfFile(tempDir.toFile());
             if (opfFile == null) {
@@ -282,7 +287,9 @@ public class EpubMetadataWriter implements MetadataWriter {
             transformer.transform(new DOMSource(opfDoc), new StreamResult(opfFile));
 
             File tempEpub = new File(epubFile.getParentFile(), epubFile.getName() + ".tmp");
-            addFolderContentsToZip(new ZipFile(tempEpub), tempDir.toFile(), tempDir.toFile());
+            try (ZipFile tempZipFile = new ZipFile(tempEpub)) {
+                addFolderContentsToZip(tempZipFile, tempDir.toFile(), tempDir.toFile());
+            }
 
             if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
             if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
@@ -308,7 +315,9 @@ public class EpubMetadataWriter implements MetadataWriter {
         try {
             File epubFile = new File(bookEntity.getFullFilePath().toUri());
             tempDir = Files.createTempDirectory("epub_cover_url_" + UUID.randomUUID());
-            new ZipFile(epubFile).extractAll(tempDir.toString());
+            try (ZipFile zipFile = new ZipFile(epubFile)) {
+                zipFile.extractAll(tempDir.toString());
+            }
 
             File opfFile = findOpfFile(tempDir.toFile());
             if (opfFile == null) {
@@ -335,7 +344,9 @@ public class EpubMetadataWriter implements MetadataWriter {
             transformer.transform(new DOMSource(opfDoc), new StreamResult(opfFile));
 
             File tempEpub = new File(epubFile.getParentFile(), epubFile.getName() + ".tmp");
-            addFolderContentsToZip(new ZipFile(tempEpub), tempDir.toFile(), tempDir.toFile());
+            try (ZipFile tempZipFile = new ZipFile(tempEpub)) {
+                addFolderContentsToZip(tempZipFile, tempDir.toFile(), tempDir.toFile());
+            }
 
             if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
             if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
