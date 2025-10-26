@@ -90,21 +90,37 @@ export class BookRuleEvaluatorService {
         return value !== ruleVal;
 
       case 'contains':
+        if (Array.isArray(value)) {
+          if (typeof ruleVal !== 'string') return false;
+          return value.some(v => String(v).includes(ruleVal));
+        }
         if (typeof value !== 'string') return false;
         if (typeof ruleVal !== 'string') return false;
         return value.includes(ruleVal);
 
       case 'does_not_contain':
+        if (Array.isArray(value)) {
+          if (typeof ruleVal !== 'string') return true;
+          return value.every(v => !String(v).includes(ruleVal));
+        }
         if (typeof value !== 'string') return true;
         if (typeof ruleVal !== 'string') return true;
         return !value.includes(ruleVal);
 
       case 'starts_with':
+        if (Array.isArray(value)) {
+          if (typeof ruleVal !== 'string') return false;
+          return value.some(v => String(v).startsWith(ruleVal));
+        }
         if (typeof value !== 'string') return false;
         if (typeof ruleVal !== 'string') return false;
         return value.startsWith(ruleVal);
 
       case 'ends_with':
+        if (Array.isArray(value)) {
+          if (typeof ruleVal !== 'string') return false;
+          return value.some(v => String(v).endsWith(ruleVal));
+        }
         if (typeof value !== 'string') return false;
         if (typeof ruleVal !== 'string') return false;
         return value.endsWith(ruleVal);

@@ -1,9 +1,8 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {LibraryCreatorComponent} from '../../../library-creator/library-creator.component';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {LibraryService} from '../../../book/service/library.service';
 import {Observable} from 'rxjs';
-import {map} from 'rxjs/operators';
+import {map, shareReplay, switchMap} from 'rxjs/operators';
 import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
@@ -12,6 +11,18 @@ import {BookState} from '../../../book/model/state/book-state.model';
 import {Book, ReadStatus} from '../../../book/model/book.model';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
+import {TooltipModule} from 'primeng/tooltip';
+import {DashboardConfigService} from '../../services/dashboard-config.service';
+import {ScrollerConfig, ScrollerType} from '../../models/dashboard-config.model';
+import {DashboardSettingsComponent} from '../dashboard-settings/dashboard-settings.component';
+import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
+import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-evaluator.service';
+import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
+import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
+import {SortService} from '../../../book/service/sort.service';
+import {SortDirection, SortOption} from '../../../book/model/sort.model';
+
+const DEFAULT_MAX_ITEMS = 20;
 
 @Component({
   selector: 'app-main-dashboard',
@@ -21,70 +32,171 @@ import {ProgressSpinner} from 'primeng/progressspinner';
     Button,
     DashboardScrollerComponent,
     AsyncPipe,
-    ProgressSpinner
+    ProgressSpinner,
+    TooltipModule
   ],
-  providers: [DialogService],
   standalone: true
 })
 export class MainDashboardComponent implements OnInit {
   ref: DynamicDialogRef | undefined | null;
 
   private bookService = inject(BookService);
-  private dialogService = inject(DialogService);
+  private dialogLauncher = inject(DialogLauncherService);
   protected userService = inject(UserService);
+  private dashboardConfigService = inject(DashboardConfigService);
+  private magicShelfService = inject(MagicShelfService);
+  private ruleEvaluatorService = inject(BookRuleEvaluatorService);
+  private sortService = inject(SortService);
 
   bookState$ = this.bookService.bookState$;
+  dashboardConfig$ = this.dashboardConfigService.config$;
 
-  lastReadBooks$: Observable<Book[]> | undefined;
-  latestAddedBooks$: Observable<Book[]> | undefined;
-  randomBooks$: Observable<Book[]> | undefined;
+  private scrollerBooksCache = new Map<string, Observable<Book[]>>();
 
   isLibrariesEmpty$: Observable<boolean> = inject(LibraryService).libraryState$.pipe(
     map(state => !state.libraries || state.libraries.length === 0)
   );
 
+  ScrollerType = ScrollerType;
+
   ngOnInit(): void {
+    this.dashboardConfig$.subscribe(() => {
+      this.scrollerBooksCache.clear();
+    });
+  }
 
-    this.lastReadBooks$ = this.bookService.bookState$.pipe(
-      map((state: BookState) => (
-        (state.books || []).filter(book => book.lastReadTime && (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED))
-          .sort((a, b) => {
-            const aTime = new Date(a.lastReadTime!).getTime();
-            const bTime = new Date(b.lastReadTime!).getTime();
-            return bTime - aTime;
-          })
-          .slice(0, 25)
-      ))
-    );
+  private getLastReadBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        let books = (state.books || []).filter(book =>
+          book.lastReadTime &&
+          (book.readStatus === ReadStatus.READING ||
+            book.readStatus === ReadStatus.RE_READING ||
+            book.readStatus === ReadStatus.PAUSED)
+        );
 
-    this.latestAddedBooks$ = this.bookService.bookState$.pipe(
-      map((state: BookState) => (
-        (state.books || [])
-          .filter(book => book.addedOn)
-          .sort((a, b) => {
-            const aTime = new Date(a.addedOn!).getTime();
-            const bTime = new Date(b.addedOn!).getTime();
-            return bTime - aTime;
-          })
-          .slice(0, 25)
-      ))
-    );
+        books = books.sort((a, b) => {
+          const aTime = new Date(a.lastReadTime!).getTime();
+          const bTime = new Date(b.lastReadTime!).getTime();
+          return bTime - aTime;
+        });
 
-    this.randomBooks$ = this.bookService.bookState$.pipe(
-      map((state: BookState) => this.getRandomBooks(state.books || [], 15))
+        return books.slice(0, maxItems);
+      })
     );
   }
 
-  private getRandomBooks(books: Book[], count: number): Book[] {
-    const shuffled = books.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+  private getLatestAddedBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        let books = (state.books || []).filter(book => book.addedOn);
+
+        books = books.sort((a, b) => {
+          const aTime = new Date(a.addedOn!).getTime();
+          const bTime = new Date(b.addedOn!).getTime();
+          return bTime - aTime;
+        });
+
+        return books.slice(0, maxItems);
+      })
+    );
+  }
+
+  private getRandomBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
+    return this.bookService.bookState$.pipe(
+      map((state: BookState) => {
+        return this.shuffleBooks(state.books || [], maxItems);
+      })
+    );
+  }
+
+  private getMagicShelfBooks(shelfId: number, maxItems?: number, sortBy?: string): Observable<Book[]> {
+    return this.magicShelfService.getShelf(shelfId).pipe(
+      switchMap((shelf) => {
+        if (!shelf) return this.bookService.bookState$.pipe(map(() => []));
+
+        let group: GroupRule;
+        try {
+          group = JSON.parse(shelf.filterJson);
+        } catch (e) {
+          console.error('Invalid filter JSON', e);
+          return this.bookService.bookState$.pipe(map(() => []));
+        }
+
+        return this.bookService.bookState$.pipe(
+          map((state: BookState) => {
+            let filteredBooks = (state.books || []).filter((book) =>
+              this.ruleEvaluatorService.evaluateGroup(book, group)
+            );
+
+            return maxItems ? filteredBooks.slice(0, maxItems) : filteredBooks;
+          })
+        );
+      })
+    );
+  }
+
+  getBooksForScroller(config: ScrollerConfig): Observable<Book[]> {
+    if (!this.scrollerBooksCache.has(config.id)) {
+      let books$: Observable<Book[]>;
+
+      switch (config.type) {
+        case ScrollerType.LAST_READ:
+          books$ = this.getLastReadBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.LATEST_ADDED:
+          books$ = this.getLatestAddedBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.RANDOM:
+          books$ = this.getRandomBooks(config.maxItems || DEFAULT_MAX_ITEMS);
+          break;
+        case ScrollerType.MAGIC_SHELF:
+          books$ = this.getMagicShelfBooks(config.magicShelfId!, config.maxItems).pipe(
+            map(books => {
+              if (config.sortField && config.sortDirection) {
+                const sortOption = this.createSortOption(config.sortField, config.sortDirection);
+                return this.sortService.applySort(books, sortOption);
+              }
+              return books;
+            })
+          );
+          break;
+        default:
+          books$ = this.bookService.bookState$.pipe(map(() => []));
+      }
+
+      this.scrollerBooksCache.set(config.id, books$.pipe(shareReplay(1)));
+    }
+
+    return this.scrollerBooksCache.get(config.id)!;
+  }
+
+  private createSortOption(field: string, direction: string): SortOption {
+    return {
+      field: field,
+      direction: direction === 'asc' ? SortDirection.ASCENDING : SortDirection.DESCENDING,
+      label: ''
+    };
+  }
+
+  private shuffleBooks(books: Book[], maxItems: number): Book[] {
+    const shuffled = [...books];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled.slice(0, maxItems);
+  }
+
+  openDashboardSettings(): void {
+    this.ref = this.dialogLauncher.open({
+      component: DashboardSettingsComponent,
+      header: 'Configure Dashboard',
+      showHeader: false
+    });
   }
 
   createNewLibrary() {
-    this.ref = this.dialogService.open(LibraryCreatorComponent, {
-      header: 'Create New Library',
-      modal: true,
-      closable: true
-    });
+    this.dialogLauncher.openLibraryCreatorDialog();
   }
 }
