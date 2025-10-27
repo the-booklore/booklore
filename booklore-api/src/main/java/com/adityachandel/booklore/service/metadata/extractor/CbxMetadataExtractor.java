@@ -72,7 +72,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
 
     // CB7 path (7z)
     if (lowerName.endsWith(".cb7")) {
-      try (SevenZFile sevenZ = new SevenZFile(file)) {
+      try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
         SevenZArchiveEntry entry = findSevenZComicInfoEntry(sevenZ);
         if (entry == null) {
           return BookMetadata.builder().title(baseName).build();
@@ -321,7 +321,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
 
     // CB7 path
     if (lowerName.endsWith(".cb7")) {
-      try (SevenZFile sevenZ = new SevenZFile(file)) {
+      try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
         // Try via ComicInfo.xml first
         SevenZArchiveEntry ci = findSevenZComicInfoEntry(sevenZ);
         if (ci != null) {

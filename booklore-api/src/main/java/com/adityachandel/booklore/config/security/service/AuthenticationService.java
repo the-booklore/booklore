@@ -21,7 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,7 +126,7 @@ public class AuthenticationService {
         RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(refreshToken)
-                .expiryDate(new Date(System.currentTimeMillis() + jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
                 .revoked(false)
                 .build();
 
@@ -142,21 +142,21 @@ public class AuthenticationService {
     public ResponseEntity<Map<String, String>> refreshToken(String token) {
         RefreshTokenEntity storedToken = refreshTokenRepository.findByToken(token).orElseThrow(() -> ApiError.INVALID_CREDENTIALS.createException("Refresh token not found"));
 
-        if (storedToken.isRevoked() || storedToken.getExpiryDate().before(new Date()) || !jwtUtils.validateToken(token)) {
+        if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now()) || !jwtUtils.validateToken(token)) {
             throw ApiError.INVALID_CREDENTIALS.createException("Invalid or expired refresh token");
         }
 
         BookLoreUserEntity user = storedToken.getUser();
 
         storedToken.setRevoked(true);
-        storedToken.setRevocationDate(new Date());
+        storedToken.setRevocationDate(Instant.now());
         refreshTokenRepository.save(storedToken);
 
         String newRefreshToken = jwtUtils.generateRefreshToken(user);
         RefreshTokenEntity newRefreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(newRefreshToken)
-                .expiryDate(new Date(System.currentTimeMillis() + jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
                 .revoked(false)
                 .build();
 

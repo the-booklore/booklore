@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 
 @AllArgsConstructor
 @Component
@@ -75,7 +76,7 @@ public class CoverJwtFilter extends OncePerRequestFilter {
         var processor = dynamicOidcJwtProcessor.getProcessor();
         var claimsSet = processor.process(token, null);
 
-        if (claimsSet.getExpirationTime() == null || claimsSet.getExpirationTime().before(new java.util.Date())) {
+        if (claimsSet.getExpirationTime() == null || claimsSet.getExpirationTime().toInstant().isBefore(Instant.now())) {
             throw new RuntimeException("OIDC token expired or invalid");
         }
 

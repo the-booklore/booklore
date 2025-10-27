@@ -3,23 +3,19 @@ package com.adityachandel.booklore.config.security.service;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.source.DefaultJWKSetCache;
-import com.nimbusds.jose.jwk.source.JWKSetCache;
 import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSKeySelector;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.net.URL;
+import java.net.URI;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -49,15 +45,14 @@ public class DynamicOidcJwtProcessor {
         String discoveryUri = providerDetails.getIssuerUri() + "/.well-known/openid-configuration";
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
 
-        URL jwksUrl = fetchJwksUri(discoveryUri);
-
-        DefaultResourceRetriever resourceRetriever = new DefaultResourceRetriever(2000, 2000);
+        URI jwksUri = fetchJwksUri(discoveryUri);
 
         Duration ttl = Duration.ofHours(6);
         Duration refresh = Duration.ofHours(1);
-        JWKSetCache jwkSetCache = new DefaultJWKSetCache(ttl.toMillis(), refresh.toMillis(), TimeUnit.MILLISECONDS);
-
-        JWKSource<SecurityContext> jwkSource = new RemoteJWKSet<>(jwksUrl, resourceRetriever, jwkSetCache);
+        
+        JWKSource<SecurityContext> jwkSource = JWKSourceBuilder.create(jwksUri.toURL())
+                .cache(ttl.toMillis(), refresh.toMillis())
+                .build();
 
         JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, jwkSource);
         ConfigurableJWTProcessor<SecurityContext> jwtProcessor = new DefaultJWTProcessor<>();
@@ -66,17 +61,21 @@ public class DynamicOidcJwtProcessor {
         return jwtProcessor;
     }
 
-    private URL fetchJwksUri(String discoveryUri) throws Exception {
+    private URI fetchJwksUri(String discoveryUri) throws Exception {
         var restClient = org.springframework.web.client.RestClient.create();
         var discoveryDoc = restClient.get()
                 .uri(discoveryUri)
                 .retrieve()
                 .body(new org.springframework.core.ParameterizedTypeReference<java.util.Map<String, Object>>() {});
 
-        String jwksUri = (String) discoveryDoc.get("jwks_uri");
-        if (jwksUri == null || jwksUri.isEmpty()) {
+        if (discoveryDoc == null) {
+            throw new IllegalStateException("Failed to fetch OIDC discovery document.");
+        }
+        
+        String jwksUriStr = (String) discoveryDoc.get("jwks_uri");
+        if (jwksUriStr == null || jwksUriStr.isEmpty()) {
             throw new IllegalStateException("jwks_uri not found in OIDC discovery document.");
         }
-        return new URL(jwksUri);
+        return new URI(jwksUriStr);
     }
 }

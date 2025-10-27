@@ -107,7 +107,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
-        try (ZipFile zipFile = new ZipFile(file)) {
+        try (ZipFile zipFile = ZipFile.builder().setFile(file).get()) {
             return Collections.list(zipFile.getEntries()).stream()
                     .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
                     .min(Comparator.comparing(ZipArchiveEntry::getName))
@@ -126,7 +126,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFrom7z(File file) {
-        try (SevenZFile sevenZFile = new SevenZFile(file)) {
+        try (SevenZFile sevenZFile = SevenZFile.builder().setFile(file).get()) {
             List<SevenZArchiveEntry> imageEntries = new ArrayList<>();
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
@@ -136,7 +136,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             }
             imageEntries.sort(Comparator.comparing(SevenZArchiveEntry::getName));
 
-            try (SevenZFile sevenZFileReset = new SevenZFile(file)) {
+            try (SevenZFile sevenZFileReset = SevenZFile.builder().setFile(file).get()) {
                 for (SevenZArchiveEntry imgEntry : imageEntries) {
                     SevenZArchiveEntry current;
                     while ((current = sevenZFileReset.getNextEntry()) != null) {
@@ -162,8 +162,8 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private Optional<BufferedImage> extractFirstImageFromRar(File file) {
         try (Archive archive = new Archive(file)) {
             List<FileHeader> imageHeaders = archive.getFileHeaders().stream()
-                    .filter(h -> !h.isDirectory() && IMAGE_EXTENSION_PATTERN.matcher(h.getFileNameString().toLowerCase()).matches())
-                    .sorted(Comparator.comparing(FileHeader::getFileNameString))
+                    .filter(h -> !h.isDirectory() && IMAGE_EXTENSION_PATTERN.matcher(h.getFileName().toLowerCase()).matches())
+                    .sorted(Comparator.comparing(FileHeader::getFileName))
                     .toList();
 
             for (FileHeader header : imageHeaders) {
@@ -171,7 +171,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     archive.extractFile(header, baos);
                     return Optional.ofNullable(ImageIO.read(new ByteArrayInputStream(baos.toByteArray())));
                 } catch (Exception e) {
-                    log.warn("Error reading RAR entry {}: {}", header.getFileNameString(), e.getMessage());
+                    log.warn("Error reading RAR entry {}: {}", header.getFileName(), e.getMessage());
                 }
             }
         } catch (Exception e) {
