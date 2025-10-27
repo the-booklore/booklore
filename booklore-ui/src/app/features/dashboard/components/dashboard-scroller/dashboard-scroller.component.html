@@ -1,14 +1,17 @@
 <div class="dashboard-scroller-container">
-  <h2 class="dashboard-scroller-title">{{ title }}</h2>
+  <h2 class="dashboard-scroller-title">
+    {{ title }}
+    @if (isMagicShelf) {
+      <i class="pi pi-sparkles magic-shelf-icon"></i>
+    }
+  </h2>
 
   @if (!books || books.length === 0) {
     <div class="dashboard-scroller-no-books">
       <div class="empty-state-icon">
         <i class="pi pi-book"></i>
       </div>
-      <p>
-        {{ bookListType === 'lastRead' ? "You haven't read any books yet! Start your reading journey." : "No books have been added to BookLore yet! Add your first book to get started." }}
-      </p>
+      <p>No books found for this scroller.</p>
     </div>
   }
 
@@ -19,7 +22,7 @@
       [infiniteScrollThrottle]="50"
       #scrollContainer
       [horizontal]="true">
-      @for (book of books; track book) {
+      @for (book of books; track book.id) {
         <div class="dashboard-scroller-card">
           <app-book-card [book]="book" [isCheckboxEnabled]="false"></app-book-card>
         </div>

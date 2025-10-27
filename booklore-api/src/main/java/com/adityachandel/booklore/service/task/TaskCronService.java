@@ -16,12 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
 @AllArgsConstructor
 public class TaskCronService {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final TaskCronConfigurationRepository repository;
     private final AuthenticationService authService;
 
@@ -76,7 +78,7 @@ public class TaskCronService {
         if (cronExpression == null || cronExpression.trim().isEmpty()) {
             throw new APIException("Cron expression is required", HttpStatus.BAD_REQUEST);
         }
-        String[] fields = cronExpression.trim().split("\\s+");
+        String[] fields = WHITESPACE_PATTERN.split(cronExpression.trim());
         if (fields.length != 6) {
             throw new APIException("Invalid cron expression format. Expected 6 fields (second minute hour day month day-of-week)", HttpStatus.BAD_REQUEST);
         }

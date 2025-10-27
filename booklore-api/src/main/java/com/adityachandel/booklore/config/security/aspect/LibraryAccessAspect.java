@@ -13,12 +13,14 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 @Aspect
 @Component
 @RequiredArgsConstructor
 public class LibraryAccessAspect {
 
+    private static final Pattern NUMERIC_PATTERN = Pattern.compile("\\d+");
     private final AuthenticationService authenticationService;
 
     @Before("@annotation(com.adityachandel.booklore.config.security.annotation.CheckLibraryAccess)")
@@ -52,7 +54,7 @@ public class LibraryAccessAspect {
                 Object arg = args[i];
                 if (arg instanceof Long) {
                     return (Long) arg;
-                } else if (arg instanceof String str && str.matches("\\d+")) {
+                } else if (arg instanceof String str && NUMERIC_PATTERN.matcher(str).matches()) {
                     return Long.parseLong(str);
                 }
             }

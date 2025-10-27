@@ -79,3 +79,35 @@
 ::ng-deep .p-dialog-mask {
   backdrop-filter: blur(3px);
 }
+
+.dashboard-settings-button {
+  position: fixed;
+  top: 6rem;
+  right: 2rem;
+  z-index: 100;
+
+  ::ng-deep .p-button {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    background: rgba(var(--p-surface-900-rgb), 0.8);
+    border: 1px solid var(--p-content-border-color);
+
+    &:hover {
+      background: rgba(var(--p-surface-800-rgb), 0.9);
+      transform: scale(1.05);
+      transition: all 0.2s ease;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-settings-button {
+    top: 5rem;
+    right: 1rem;
+
+    ::ng-deep .p-button {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+}

@@ -28,6 +28,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.adityachandel.booklore.util.FileService.truncate;
 
@@ -36,6 +37,10 @@ import static com.adityachandel.booklore.util.FileService.truncate;
 @Service
 public class CbxProcessor extends AbstractFileProcessor implements BookFileProcessor {
 
+    private static final Pattern UNDERSCORE_HYPHEN_PATTERN = Pattern.compile("[_\\-]");
+    private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
+    private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
+    private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
     private final BookMetadataRepository bookMetadataRepository;
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
@@ -104,7 +109,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
         try (ZipFile zipFile = new ZipFile(file)) {
             return Collections.list(zipFile.getEntries()).stream()
-                    .filter(e -> !e.isDirectory() && e.getName().matches("(?i).*\\.(jpg|jpeg|png|webp)"))
+                    .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
                     .min(Comparator.comparing(ZipArchiveEntry::getName))
                     .map(entry -> {
                         try (InputStream is = zipFile.getInputStream(entry)) {
@@ -125,7 +130,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             List<SevenZArchiveEntry> imageEntries = new ArrayList<>();
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
-                if (!entry.isDirectory() && entry.getName().matches("(?i).*\\.(jpg|jpeg|png|webp)")) {
+                if (!entry.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(entry.getName()).matches()) {
                     imageEntries.add(entry);
                 }
             }
@@ -157,7 +162,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private Optional<BufferedImage> extractFirstImageFromRar(File file) {
         try (Archive archive = new Archive(file)) {
             List<FileHeader> imageHeaders = archive.getFileHeaders().stream()
-                    .filter(h -> !h.isDirectory() && h.getFileNameString().toLowerCase().matches(".*\\.(jpg|jpeg|png|webp)"))
+                    .filter(h -> !h.isDirectory() && IMAGE_EXTENSION_PATTERN.matcher(h.getFileNameString().toLowerCase()).matches())
                     .sorted(Comparator.comparing(FileHeader::getFileNameString))
                     .toList();
 
@@ -210,9 +215,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
-        String title = baseName
-                .replaceAll("(?i)\\.cb[rz7]$", "")
-                .replaceAll("[_\\-]", " ")
+        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(CBX_FILE_EXTENSION_PATTERN.matcher(baseName).replaceAll("")).replaceAll(" ")
                 .trim();
         bookEntity.getMetadata().setTitle(truncate(title, 1000));
     }

@@ -5,6 +5,7 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {Library} from '../../book/model/library.model';
 import {catchError, distinctUntilChanged, finalize, shareReplay, tap} from 'rxjs/operators';
 import {AuthService} from '../../../shared/service/auth.service';
+import {DashboardConfig} from '../../dashboard/models/dashboard-config.model';
 
 export interface EntityViewPreferences {
   global: EntityViewPreference;
@@ -130,6 +131,7 @@ export interface UserSettings {
   metadataCenterViewMode: 'route' | 'dialog';
   entityViewPreferences: EntityViewPreferences;
   tableColumnPreference?: TableColumnPreference[];
+  dashboardConfig?: DashboardConfig;
   koReaderEnabled: boolean;
 }
 
@@ -218,17 +220,17 @@ export class UserService {
 
   private fetchMyself(): Observable<User> {
     return this.http.get<User>(`${this.userUrl}/me`).pipe(
-      tap(user => this.userStateSubject.next({ user, loaded: true, error: null })),
+      tap(user => this.userStateSubject.next({user, loaded: true, error: null})),
       catchError(err => {
         const curr = this.userStateSubject.value;
-        this.userStateSubject.next({ user: curr.user, loaded: true, error: err.message });
+        this.userStateSubject.next({user: curr.user, loaded: true, error: err.message});
         throw err;
       })
     );
   }
 
   public setInitialUser(user: User): void {
-    this.userStateSubject.next({ user, loaded: true, error: null });
+    this.userStateSubject.next({user, loaded: true, error: null});
   }
 
   getCurrentUser(): User | null {

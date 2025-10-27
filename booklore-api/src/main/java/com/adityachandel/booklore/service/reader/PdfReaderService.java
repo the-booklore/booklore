@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -30,6 +31,7 @@ import java.util.stream.Stream;
 public class PdfReaderService {
 
     private static final String CACHE_INFO_FILENAME = ".cache-info";
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("\\D+");
 
     private final BookRepository bookRepository;
     private final AppSettingService appSettingService;
@@ -123,7 +125,7 @@ public class PdfReaderService {
 
     private int extractPageNumber(String filename) {
         try {
-            return Integer.parseInt(filename.replaceAll("\\D+", ""));
+            return Integer.parseInt(NON_DIGIT_PATTERN.matcher(filename).replaceAll(""));
         } catch (Exception e) {
             return -1;
         }

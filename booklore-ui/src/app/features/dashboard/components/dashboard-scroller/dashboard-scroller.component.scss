@@ -146,6 +146,15 @@
   }
 }
 
+.magic-shelf-icon {
+  margin-left: 0.5rem;
+  color: var(--primary-color) !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: var(--primary-color) !important;
+  background-clip: unset !important;
+}
+
 @media (max-width: 767px) {
 
   .dashboard-scroller-card {

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,6 +21,8 @@ public class BookVectorService {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final int VECTOR_DIMENSION = 128;
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern NON_ALPHANUMERIC_EXCEPT_SPACE_PATTERN = Pattern.compile("[^a-z0-9\\s]");
 
     public double[] generateEmbedding(BookEntity book) {
         if (book.getMetadata() == null) {
@@ -63,9 +66,7 @@ public class BookVectorService {
     }
 
     private void addTextFeatures(Map<String, Double> features, String prefix, String text, double weight) {
-        String[] words = text.toLowerCase()
-                .replaceAll("[^a-z0-9\\s]", " ")
-                .split("\\s+");
+        String[] words = WHITESPACE_PATTERN.split(NON_ALPHANUMERIC_EXCEPT_SPACE_PATTERN.matcher(text.toLowerCase()).replaceAll(" "));
 
         Arrays.stream(words)
                 .filter(w -> w.length() > 3)

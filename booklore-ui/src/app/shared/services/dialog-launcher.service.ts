@@ -13,16 +13,14 @@ export class DialogLauncherService {
 
   dialogService = inject(DialogService);
 
-  open(options: { component: any; header: string; top?: string; width?: string }): DynamicDialogRef | null {
+  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean }): DynamicDialogRef | null {
     const isMobile = window.innerWidth <= 768;
-    const {component, header, top, width} = options;
+    const {component, header, top, width, showHeader = true} = options;
     return this.dialogService.open(component, {
       header,
+      showHeader,
       modal: true,
       closable: true,
-      contentStyle: {
-        overflowY: 'hidden',
-      },
       style: {
         position: 'absolute',
         ...(top ? {top} : {}),

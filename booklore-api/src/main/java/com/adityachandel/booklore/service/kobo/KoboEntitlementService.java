@@ -21,12 +21,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
 public class KoboEntitlementService {
 
+    private static final Pattern NON_ALPHANUMERIC_LOWERCASE_PATTERN = Pattern.compile("[^a-z0-9]");
     private final KoboUrlBuilder koboUrlBuilder;
     private final BookQueryService bookQueryService;
     private final AppSettingService appSettingService;
@@ -167,7 +169,7 @@ public class KoboEntitlementService {
                 .isbn(metadata.getIsbn13() != null ? metadata.getIsbn13() : metadata.getIsbn10())
                 .genre(categories.isEmpty() ? null : categories.getFirst())
                 .slug(metadata.getTitle() != null
-                        ? metadata.getTitle().toLowerCase().replaceAll("[^a-z0-9]", "-")
+                        ? NON_ALPHANUMERIC_LOWERCASE_PATTERN.matcher(metadata.getTitle().toLowerCase()).replaceAll("-")
                         : null)
                 .coverImageId(String.valueOf(metadata.getBookId()))
                 .workId(String.valueOf(book.getId()))

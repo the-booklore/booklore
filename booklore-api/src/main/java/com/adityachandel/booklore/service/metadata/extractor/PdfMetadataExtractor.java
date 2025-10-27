@@ -33,12 +33,16 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
 @Slf4j
 public class PdfMetadataExtractor implements FileMetadataExtractor {
 
+
+    private static final Pattern COMMA_AMPERSAND_PATTERN = Pattern.compile("[,&]");
+    private static final Pattern ISBN_CLEANUP_PATTERN = Pattern.compile("[^0-9Xx]");
 
     @Override
     public byte[] extractCover(File file) {
@@ -139,7 +143,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                             if (!identifiers.isEmpty()) {
                                 String isbn = identifiers.get("isbn");
                                 if (StringUtils.isNotBlank(isbn)) {
-                                    isbn = isbn.replaceAll("[^0-9Xx]", "");
+                                    isbn = ISBN_CLEANUP_PATTERN.matcher(isbn).replaceAll("");
                                     if (isbn.length() == 10) {
                                         metadataBuilder.isbn10(isbn);
                                     } else if (isbn.length() == 13) {
@@ -273,7 +277,7 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
     private Set<String> parseAuthors(String authorString) {
         if (authorString == null) return Collections.emptySet();
-        return Arrays.stream(authorString.split("[,&]"))
+        return Arrays.stream(COMMA_AMPERSAND_PATTERN.split(authorString))
                 .map(String::trim)
                 .filter(StringUtils::isNotBlank)
                 .collect(Collectors.toSet());

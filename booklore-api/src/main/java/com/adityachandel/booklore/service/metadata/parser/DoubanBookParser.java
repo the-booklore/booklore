@@ -38,6 +38,9 @@ public class DoubanBookParser implements BookParser {
 
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
     private static final String BASE_BOOK_URL = "https://book.douban.com/subject/";
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^\\d]");
+    private static final Pattern NON_ALPHANUMERIC_CJK_PATTERN = Pattern.compile("[^a-zA-Z0-9\\u4e00-\\u9fff]");
+    private static final Pattern SLASH_SEPARATOR_PATTERN = Pattern.compile(" / ");
     private final AppSettingService appSettingService;
 
     @Override
@@ -173,7 +176,7 @@ public class DoubanBookParser implements BookParser {
 
                     if (abstractText != null && !abstractText.isEmpty()) {
                         // Parse abstract: "author0 / author1 / author 2 / ... / publisher / date (YYYY-MM or YYYY-MM-DD) / price"
-                        String[] parts = abstractText.split(" / ");
+                        String[] parts = SLASH_SEPARATOR_PATTERN.split(abstractText);
                         if (parts.length >= 4) {
                             // Authors are all parts except the last three (publisher, date, price)
                             authors = Arrays.stream(parts, 0, parts.length - 3)
@@ -297,7 +300,7 @@ public class DoubanBookParser implements BookParser {
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {
             String cleanedTitle = Arrays.stream(title.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedTitle);
@@ -305,7 +308,7 @@ public class DoubanBookParser implements BookParser {
             String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getFileName()));
             if (!filename.isEmpty()) {
                 String cleanedFilename = Arrays.stream(filename.split(" "))
-                        .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                        .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                         .filter(word -> !word.isEmpty())
                         .collect(Collectors.joining(" "));
                 searchTerm.append(cleanedFilename);
@@ -318,7 +321,7 @@ public class DoubanBookParser implements BookParser {
                 searchTerm.append(" ");
             }
             String cleanedAuthor = Arrays.stream(author.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedAuthor);
@@ -408,7 +411,7 @@ public class DoubanBookParser implements BookParser {
                     Node next = span.nextSibling();
                     if (next instanceof TextNode) {
                         String isbn = ((TextNode) next).text().trim();
-                        String digits = isbn.replaceAll("[^\\d]", "");
+                        String digits = NON_DIGIT_PATTERN.matcher(isbn).replaceAll("");
                         if (digits.length() == 10) {
                             return digits;
                         }
@@ -431,7 +434,7 @@ public class DoubanBookParser implements BookParser {
                     Node next = span.nextSibling();
                     if (next instanceof TextNode) {
                         String isbn = ((TextNode) next).text().trim();
-                        String digits = isbn.replaceAll("[^\\d]", "");
+                        String digits = NON_DIGIT_PATTERN.matcher(isbn).replaceAll("");
                         if (digits.length() == 13) {
                             return digits;
                         }
@@ -623,7 +626,7 @@ public class DoubanBookParser implements BookParser {
         try {
             Element reviewCountElement = doc.selectFirst("#interest_sectl .rating_people span");
             if (reviewCountElement != null) {
-                String reviewCountRaw = reviewCountElement.text().replaceAll("[^\\d]", "");
+                String reviewCountRaw = NON_DIGIT_PATTERN.matcher(reviewCountElement.text()).replaceAll("");
                 if (!reviewCountRaw.isEmpty()) {
                     return Integer.parseInt(reviewCountRaw);
                 }
@@ -659,7 +662,7 @@ public class DoubanBookParser implements BookParser {
                         String pageText = ((TextNode) next).text().trim();
                         if (!pageText.isEmpty()) {
                             try {
-                                return Integer.parseInt(pageText.replaceAll("[^\\d]", ""));
+                                return Integer.parseInt(NON_DIGIT_PATTERN.matcher(pageText).replaceAll(""));
                             } catch (NumberFormatException e) {
                                 log.warn("Error parsing page count: {}", pageText);
                             }

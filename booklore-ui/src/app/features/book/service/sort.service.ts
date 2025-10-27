@@ -24,6 +24,7 @@ export class SortService {
     publisher: (book) => book.metadata?.publisher || null,
     pageCount: (book) => book.metadata?.pageCount || null,
     rating: (book) => book.metadata?.rating || null,
+    personalRating: (book) => book.metadata?.personalRating || null,
     reviewCount: (book) => book.metadata?.reviewCount || null,
     amazonRating: (book) => book.metadata?.amazonRating || null,
     amazonReviewCount: (book) => book.metadata?.amazonReviewCount || null,

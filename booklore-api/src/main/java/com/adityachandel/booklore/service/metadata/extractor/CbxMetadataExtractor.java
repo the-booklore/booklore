@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.List;
@@ -39,7 +40,10 @@ import org.w3c.dom.NodeList;
 @Component
 public class CbxMetadataExtractor implements FileMetadataExtractor {
 
-  @Override
+    private static final Pattern LEADING_ZEROS_PATTERN = Pattern.compile("^0+");
+    private static final Pattern COMMA_SEMICOLON_PATTERN = Pattern.compile("[,;]");
+
+    @Override
   public BookMetadata extractMetadata(File file) {
     String baseName = FilenameUtils.getBaseName(file.getName());
     String lowerName = file.getName().toLowerCase();
@@ -215,7 +219,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     if (value == null) {
       return new HashSet<>();
     }
-    return Arrays.stream(value.split("[,;]"))
+    return Arrays.stream(COMMA_SEMICOLON_PATTERN.split(value))
       .map(String::trim)
       .filter(s -> !s.isEmpty())
       .collect(Collectors.toSet());
@@ -777,8 +781,8 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       if (Character.isDigit(c1) && Character.isDigit(c2)) {
         int i1 = i; while (i1 < n1 && Character.isDigit(s1.charAt(i1))) i1++;
         int j1 = j; while (j1 < n2 && Character.isDigit(s2.charAt(j1))) j1++;
-        String num1 = s1.substring(i, i1).replaceFirst("^0+", "");
-        String num2 = s2.substring(j, j1).replaceFirst("^0+", "");
+        String num1 = LEADING_ZEROS_PATTERN.matcher(s1.substring(i, i1)).replaceFirst("");
+        String num2 = LEADING_ZEROS_PATTERN.matcher(s2.substring(j, j1)).replaceFirst("");
         int cmp = Integer.compare(num1.isEmpty() ? 0 : Integer.parseInt(num1), num2.isEmpty() ? 0 : Integer.parseInt(num2));
         if (cmp != 0) return cmp;
         i = i1; j = j1;
