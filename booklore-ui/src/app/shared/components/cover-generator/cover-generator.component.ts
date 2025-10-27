@@ -115,7 +115,7 @@ export class CoverGeneratorComponent {
         ${authorElements}
       </svg>
     `;
-    
+
     const base64 = btoa(encodeURIComponent(svg).replace(/%([0-9A-F]{2})/g, (match, p1) => {
       return String.fromCharCode(parseInt(p1, 16));
     }));

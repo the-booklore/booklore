@@ -36,7 +36,7 @@ public class KoreaderUserEntity {
     @Column(name = "sync_enabled", nullable = false)
     private boolean syncEnabled = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "booklore_user_id")
     private BookLoreUserEntity bookLoreUser;
 
