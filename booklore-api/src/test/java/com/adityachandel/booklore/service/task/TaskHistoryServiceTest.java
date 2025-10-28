@@ -18,6 +18,8 @@ import static org.mockito.Mockito.*;
 
 class TaskHistoryServiceTest {
 
+    private static final LocalDateTime FIXED_TIME = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+
     @Mock
     private TaskHistoryRepository taskHistoryRepository;
 
@@ -69,7 +71,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.SYNC_LIBRARY_FILES)
                 .status(TaskStatus.ACCEPTED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         when(taskHistoryRepository.findById(taskId)).thenReturn(Optional.of(entity));
@@ -99,7 +101,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.REFRESH_LIBRARY_METADATA)
                 .status(TaskStatus.ACCEPTED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         when(taskHistoryRepository.findById(taskId)).thenReturn(Optional.of(entity));
@@ -128,7 +130,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.REFRESH_LIBRARY_METADATA)
                 .status(TaskStatus.COMPLETED)
                 .progressPercentage(100)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         TaskHistoryEntity exportTask = TaskHistoryEntity.builder()
@@ -136,7 +138,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.SYNC_LIBRARY_FILES)
                 .status(TaskStatus.ACCEPTED)
                 .progressPercentage(50)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME.plusMinutes(5))
                 .build();
 
         when(taskHistoryRepository.findLatestTaskForEachType())
@@ -167,7 +169,7 @@ class TaskHistoryServiceTest {
                 .type(null)
                 .status(TaskStatus.FAILED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         when(taskHistoryRepository.findLatestTaskForEachType()).thenReturn(Collections.singletonList(invalidTask));
@@ -200,7 +202,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.CLEANUP_TEMP_METADATA)
                 .status(TaskStatus.ACCEPTED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         when(taskHistoryRepository.findById(taskId)).thenReturn(Optional.of(entity));
@@ -222,7 +224,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.CLEANUP_TEMP_METADATA)
                 .status(TaskStatus.ACCEPTED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
 
         when(taskHistoryRepository.findById(taskId)).thenReturn(Optional.of(entity));
@@ -265,7 +267,7 @@ class TaskHistoryServiceTest {
                 .type(TaskType.CLEAR_CBX_CACHE)
                 .status(TaskStatus.FAILED)
                 .progressPercentage(0)
-                .createdAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
                 .build();
         when(taskHistoryRepository.findLatestTaskForEachType()).thenReturn(Collections.singletonList(dummyTask));
 

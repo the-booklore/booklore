@@ -36,6 +36,8 @@ class TaskCronServiceTest {
 
     private AutoCloseable mocks;
 
+    private static final LocalDateTime FIXED_TIME = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
@@ -55,8 +57,8 @@ class TaskCronServiceTest {
                 .cronExpression(cron)
                 .enabled(enabled)
                 .createdBy(10L)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .createdAt(FIXED_TIME)
+                .updatedAt(FIXED_TIME)
                 .build();
     }
 
