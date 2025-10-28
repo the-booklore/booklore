@@ -72,19 +72,12 @@ export class MainDashboardComponent implements OnInit {
   private getLastReadBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
-        let books = (state.books || []).filter(book =>
-          book.lastReadTime &&
-          (book.readStatus === ReadStatus.READING ||
-            book.readStatus === ReadStatus.RE_READING ||
-            book.readStatus === ReadStatus.PAUSED)
-        );
-
+        let books = (state.books || []).filter(book => book.lastReadTime);
         books = books.sort((a, b) => {
           const aTime = new Date(a.lastReadTime!).getTime();
           const bTime = new Date(b.lastReadTime!).getTime();
           return bTime - aTime;
         });
-
         return books.slice(0, maxItems);
       })
     );

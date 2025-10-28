@@ -112,6 +112,10 @@ function getMatchScoreRangeFilters(score?: number | null): { id: string; name: s
   return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
 }
 
+function getBookTypeFilter(book: Book): { id: string; name: string }[] {
+  return book.bookType ? [{id: book.bookType, name: book.bookType}] : [];
+}
+
 export const readStatusLabels: Record<ReadStatus, string> = {
   [ReadStatus.UNREAD]: 'Unread',
   [ReadStatus.READING]: 'Reading',
@@ -175,15 +179,16 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     publisher: 'Publisher',
     readStatus: 'Read Status',
     personalRating: 'Personal Rating',
+    publishedDate: 'Published Year',
     matchScore: 'Metadata Match Score',
+    language: 'Language',
+    bookType: 'Book Type',
+    shelfStatus: 'Shelf Status',
+    fileSize: 'File Size',
+    pageCount: 'Page Count',
     amazonRating: 'Amazon Rating',
     goodreadsRating: 'Goodreads Rating',
     hardcoverRating: 'Hardcover Rating',
-    publishedDate: 'Published Year',
-    fileSize: 'File Size',
-    shelfStatus: 'Shelf Status',
-    pageCount: 'Page Count',
-    language: 'Language'
   };
 
   private destroy$ = new Subject<void>();
@@ -200,10 +205,22 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(([sortMode]) => {
         this.filterStreams = {
-          author: this.getFilterStream((book: Book) => book.metadata?.authors!.map(name => ({id: name, name})) || [], 'id', 'name'),
-          category: this.getFilterStream((book: Book) => book.metadata?.categories!.map(name => ({id: name, name})) || [], 'id', 'name'),
-          series: this.getFilterStream((book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []), 'id', 'name'),
-          publisher: this.getFilterStream((book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []), 'id', 'name'),
+          author: this.getFilterStream(
+            (book: Book) => Array.isArray(book.metadata?.authors) ? book.metadata.authors.map(name => ({id: name, name})) : [],
+            'id', 'name'
+          ),
+          category: this.getFilterStream(
+            (book: Book) => Array.isArray(book.metadata?.categories) ? book.metadata.categories.map(name => ({id: name, name})) : [],
+            'id', 'name'
+          ),
+          series: this.getFilterStream(
+            (book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []),
+            'id', 'name'
+          ),
+          publisher: this.getFilterStream(
+            (book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []),
+            'id', 'name'
+          ),
           readStatus: this.getFilterStream((book: Book) => {
             let status = book.readStatus;
             if (status == null || !(status in readStatusLabels)) {
@@ -211,18 +228,25 @@ export class BookFilterComponent implements OnInit, OnDestroy {
             }
             return [{id: status, name: getReadStatusName(status)}];
           }, 'id', 'name'),
-          mood: this.getFilterStream((book: Book) => book.metadata?.moods!.map(name => ({id: name, name})) || [], 'id', 'name'),
-          tag: this.getFilterStream((book: Book) => book.metadata?.tags!.map(name => ({id: name, name})) || [], 'id', 'name'),
-          matchScore: this.getFilterStream((book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore), 'id', 'name', 'sortIndex'),
           personalRating: this.getFilterStream((book: Book) => getRatingRangeFilters10(book.metadata?.personalRating!), 'id', 'name', 'sortIndex'),
+          publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name'),
+          matchScore: this.getFilterStream((book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore), 'id', 'name', 'sortIndex'),
+          mood: this.getFilterStream(
+            (book: Book) => Array.isArray(book.metadata?.moods) ? book.metadata.moods.map(name => ({id: name, name})) : [],
+            'id', 'name'
+          ),
+          tag: this.getFilterStream(
+            (book: Book) => Array.isArray(book.metadata?.tags) ? book.metadata.tags.map(name => ({id: name, name})) : [],
+            'id', 'name'
+          ),
+          language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
+          bookType: this.getFilterStream(getBookTypeFilter, 'id', 'name'),
+          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
+          fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
+          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount!), 'id', 'name', 'sortIndex'),
           amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating!), 'id', 'name', 'sortIndex'),
           goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating!), 'id', 'name', 'sortIndex'),
           hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating!), 'id', 'name', 'sortIndex'),
-          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
-          publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name'),
-          language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
-          fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
-          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount!), 'id', 'name', 'sortIndex'),
         };
 
         this.filterTypes = Object.keys(this.filterStreams);

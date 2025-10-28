@@ -59,6 +59,7 @@ export type RuleField =
   | 'fileSize'
   | 'readStatus'
   | 'dateFinished'
+  | 'lastReadTime'
   | 'metadataScore'
   | 'moods'
   | 'tags';
@@ -110,6 +111,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   library: {label: 'Library'},
   readStatus: {label: 'Read Status'},
   dateFinished: {label: 'Date Finished', type: 'date'},
+  lastReadTime: {label: 'Last Read Time', type: 'date'},
   metadataScore: {label: 'Metadata Score', type: 'decimal', max: 100},
   title: {label: 'Title'},
   authors: {label: 'Authors'},
