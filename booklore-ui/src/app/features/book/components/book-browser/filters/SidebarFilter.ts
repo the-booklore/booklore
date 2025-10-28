@@ -105,6 +105,8 @@ export class SideBarFilter implements BookFilter {
                 return filterValues.includes(book.metadata?.language);
               case 'matchScore':
                 return filterValues.some(range => isMatchScoreInRange(book.metadataMatchScore, range));
+              case 'bookType':
+                return filterValues.includes(book.bookType);
               default:
                 return false;
             }
