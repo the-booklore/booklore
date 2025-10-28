@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {Button} from 'primeng/button';
 
 @Component({
@@ -7,10 +7,7 @@ import {Button} from 'primeng/button';
     Button
   ],
   templateUrl: './github-support-dialog.html',
-  styleUrl: './github-support-dialog.scss'
+  styleUrls: ['./github-support-dialog.scss']
 })
 export class GithubSupportDialog {
-  openGithub(): void {
-    window.open('https://github.com/adityachandelgit/booklore', '_blank');
-  }
 }
