@@ -10,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -80,11 +80,10 @@ public class AdditionalFileService {
 
         Resource resource = new UrlResource(filePath.toUri());
 
-        String contentDisposition = ContentDisposition.builder("attachment")
-                .filename(file.getFileName(), StandardCharsets.UTF_8)
-                .build()
-                .toString();
-
+        String encodedFilename = URLEncoder.encode(file.getFileName(), StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = file.getFileName().replaceAll("[^\\x00-\\x7F]", "_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
