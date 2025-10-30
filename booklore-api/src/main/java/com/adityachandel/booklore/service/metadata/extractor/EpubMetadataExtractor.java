@@ -19,6 +19,7 @@ import java.io.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
+import org.json.*;
 import java.util.Set;
 
 @Slf4j
@@ -140,6 +141,19 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if (name.equals("calibre:pages") || name.equals("pagecount") || prop.equals("schema:pagecount") || prop.equals("media:pagecount") || prop.equals("booklore:page_count")) {
                                     safeParseInt(content, builderMeta::pageCount);
+                                } else if (name.equals("calibre:user_metadata:#pagecount")) {
+                                    JSONObject jsonroot = new JSONObject(content);
+                                    Object value = jsonroot.opt("#value#");
+                                    if (value != null) {
+                                        safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                    }
+                                } else if (prop.equals("calibre:user_metadata")) {
+                                    JSONObject jsonroot = new JSONObject(content);
+                                    JSONObject pages = jsonroot.getJSONObject("#pagecount");
+                                    Object value = pages.opt("#value#");
+                                    if (value != null) {
+                                        safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                    }
                                 }
 
                                 if (name.equals("calibre:rating") || prop.equals("booklore:personal_rating")) {
