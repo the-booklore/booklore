@@ -1,7 +1,7 @@
 import {Component, inject, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
-import {PageTitleService} from "../../../utilities/service/page-title.service";
+import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {LibraryService} from '../../service/library.service';
 import {BookService} from '../../service/book.service';
 import {catchError, debounceTime, filter, map, switchMap, take} from 'rxjs/operators';
@@ -45,10 +45,8 @@ import {BookMenuService} from '../../service/book-menu.service';
 import {MagicShelf, MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-evaluator.service';
 import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
-import {MetadataRefreshRequest} from '../../../metadata/model/request/metadata-refresh-request.model';
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
-import {TaskCreateRequest, TaskService, TaskType} from '../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 
 export enum EntityType {

@@ -8,6 +8,7 @@ import {InputTextModule} from 'primeng/inputtext';
 import {DialogModule} from 'primeng/dialog';
 import {ConfirmDialogModule} from 'primeng/confirmdialog';
 import {ConfirmationService, MessageService} from 'primeng/api';
+import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {BookService} from '../../../book/service/book.service';
 import {Book} from '../../../book/model/book.model';
 import {FormsModule} from '@angular/forms';
@@ -67,6 +68,7 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
   private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private pageTitle = inject(PageTitleService);
 
   private routeSub!: Subscription;
 
@@ -107,6 +109,9 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
 
   set activeTab(value: MetadataType) {
     this._activeTab = value;
+
+    this.updatePageTitle();
+
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {tab: value},
@@ -139,7 +144,13 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
           replaceUrl: true
         });
       }
+      this.updatePageTitle();
     });
+  }
+
+  updatePageTitle() {
+    const currentTab = this.tabConfigs.find((tab)=> tab.type === this._activeTab);
+    this.pageTitle.setPageTitle(`Metadata Manager: ${currentTab?.label ?? this._activeTab}`);
   }
 
   ngOnDestroy(): void {

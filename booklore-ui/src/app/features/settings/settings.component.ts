@@ -1,6 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
-import {PageTitleService} from "../utilities/service/page-title.service";
 import {UserService} from './user-management/user.service';
 import {AsyncPipe} from '@angular/common';
 import {GlobalPreferencesComponent} from './global-preferences/global-preferences.component';
@@ -16,6 +15,7 @@ import {OpdsSettings} from './opds-settings/opds-settings';
 import {MetadataSettingsComponent} from './metadata-settings/metadata-settings-component';
 import {DeviceSettingsComponent} from './device-settings/device-settings-component';
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings/library-metadata-settings.component';
+import { PageTitleService } from "../../shared/service/page-title.service";
 import {EmailV2Component} from './email-v2/email-v2.component';
 
 export enum SettingsTab {
@@ -64,7 +64,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private pageTitle = inject(PageTitleService);
-
 
   private routeSub!: Subscription;
 
