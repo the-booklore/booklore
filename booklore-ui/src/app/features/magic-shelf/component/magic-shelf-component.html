@@ -19,6 +19,12 @@
           </p-button>
         </div>
       </div>
+      <div class="flex items-end">
+        <div class="flex items-center">
+          <p-checkbox formControlName="isPublic" [binary]="true" inputId="isPublic" (onChange)="onIsPublicChange($event)"></p-checkbox>
+          <label for="isPublic" class="ml-2">Public</label>
+        </div>
+      </div>
     </div>
 
     <div class="overflow-auto max-h-[40rem]">

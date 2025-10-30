@@ -16,6 +16,7 @@ import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService} from '../../../shared/service/icon-picker.service';
+import {CheckboxModule} from "primeng/checkbox";
 
 export type RuleOperator =
   | 'equals'
@@ -148,7 +149,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
     DatePicker,
     InputNumber,
     MultiSelect,
-    AutoComplete
+    AutoComplete,
+    CheckboxModule
   ]
 })
 export class MagicShelfComponent implements OnInit {
@@ -188,6 +190,7 @@ export class MagicShelfComponent implements OnInit {
   form = new FormGroup({
     name: new FormControl<string | null>(null),
     icon: new FormControl<string | null>(null),
+    isPublic: new FormControl<boolean>(false),
     group: this.createGroup()
   });
 
@@ -212,6 +215,7 @@ export class MagicShelfComponent implements OnInit {
         this.form = new FormGroup({
           name: new FormControl<string | null>(data?.name ?? null, {nonNullable: true, validators: [Validators.required]}),
           icon: new FormControl<string | null>(data?.icon ?? null, {nonNullable: true, validators: [Validators.required]}),
+          isPublic: new FormControl<boolean>(data?.isPublic ?? false),
           group: data?.filterJson ? this.buildGroupFromData(JSON.parse(data.filterJson)) : this.createGroup()
         });
       });
@@ -219,6 +223,7 @@ export class MagicShelfComponent implements OnInit {
       this.form = new FormGroup({
         name: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
         icon: new FormControl<string | null>(null, {nonNullable: true, validators: [Validators.required]}),
+        isPublic: new FormControl<boolean>(false),
         group: this.createGroup()
       });
     }
@@ -430,25 +435,36 @@ export class MagicShelfComponent implements OnInit {
     }
   }
 
+  onIsPublicChange(event: any) {
+    this.form.get('isPublic')?.setValue(event.checked);
+  }
+
   submit() {
     if (!this.hasAtLeastOneValidRule(this.group)) {
       this.messageService.add({severity: 'warn', summary: 'Validation Error', detail: 'You must add at least one valid rule before saving.'});
       return;
     }
 
-    const value = this.form.value as { name: string | null; icon: string | null; group: GroupRule };
+    const value = this.form.value as { name: string | null; icon: string | null; group: GroupRule, isPublic: boolean | null };
     const cleanedGroup = removeNulls(serializeDateRules(value.group));
 
     this.magicShelfService.saveShelf({
       id: this.shelfId ?? undefined,
       name: value.name,
       icon: value.icon,
+      isPublic: !!value.isPublic, // Ensure it's a boolean
       group: cleanedGroup
     }).subscribe({
       next: (savedShelf) => {
         this.messageService.add({severity: 'success', summary: 'Success', detail: 'Magic shelf saved successfully.'});
         if (savedShelf?.id) {
           this.shelfId = savedShelf.id;
+          // Update the form with the saved data to reflect changes immediately
+          this.form.patchValue({
+            name: savedShelf.name,
+            icon: savedShelf.icon,
+            isPublic: savedShelf.isPublic
+          });
         }
       },
       error: (err) => {
