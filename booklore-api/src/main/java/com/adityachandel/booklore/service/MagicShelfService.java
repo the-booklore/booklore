@@ -50,6 +50,9 @@ public class MagicShelfService {
             if (!existing.getUserId().equals(userId)) {
                 throw new SecurityException("You are not authorized to update this shelf");
             }
+            if (existing.isPublic() && !authenticationService.getAuthenticatedUser().getPermissions().isAdmin()) {
+                throw new SecurityException("You are not authorized to update a public shelf");
+            }
             existing.setName(dto.getName());
             existing.setIcon(dto.getIcon());
             existing.setFilterJson(dto.getFilterJson());

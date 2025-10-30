@@ -17,6 +17,7 @@ import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService} from '../../../shared/service/icon-picker.service';
 import {CheckboxModule} from "primeng/checkbox";
+import {UserService} from "../../settings/user-management/user.service";
 
 export type RuleOperator =
   | 'equals'
@@ -195,11 +196,13 @@ export class MagicShelfComponent implements OnInit {
   });
 
   shelfId: number | null = null;
+  isAdmin: boolean = false;
 
   libraryService = inject(LibraryService);
   magicShelfService = inject(MagicShelfService);
   messageService = inject(MessageService);
   config = inject(DynamicDialogConfig);
+  userService = inject(UserService);
   private iconPicker = inject(IconPickerService);
 
   trackByFn(ruleCtrl: AbstractControl, index: number): any {
@@ -207,6 +210,7 @@ export class MagicShelfComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const id = this.config?.data?.id;
 
     if (id) {
