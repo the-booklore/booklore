@@ -20,4 +20,17 @@ public class SecurityContextVirtualThread {
             }
         });
     }
+
+    public static void runWithSecurityContext(SecurityContext parentContext, Runnable task) {
+        Thread.startVirtualThread(() -> {
+            SecurityContext context = SecurityContextHolder.createEmptyContext();
+            context.setAuthentication(parentContext.getAuthentication());
+            SecurityContextHolder.setContext(context);
+            try {
+                task.run();
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        });
+    }
 }

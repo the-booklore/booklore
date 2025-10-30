@@ -77,6 +77,9 @@ public class DefaultUserSettingsProvider {
         return BookLoreUser.UserSettings.CbxReaderSetting.builder()
                 .pageViewMode(CbxPageViewMode.SINGLE_PAGE)
                 .pageSpread(CbxPageSpread.ODD)
+                .fitMode(CbxPageFitMode.FIT_HEIGHT)
+                .scrollMode(CbxPageScrollMode.PAGINATED)
+                .backgroundColor(CbxBackgroundColor.GRAY)
                 .build();
     }
 

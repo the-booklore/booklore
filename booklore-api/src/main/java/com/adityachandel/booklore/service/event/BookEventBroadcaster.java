@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.event;
 
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.service.user.UserService;
 import lombok.AllArgsConstructor;
@@ -26,7 +27,7 @@ public class BookEventBroadcaster {
                 .forEach(u -> {
                     String username = u.getUsername();
                     messagingTemplate.convertAndSendToUser(username, Topic.BOOK_ADD.getPath(), book);
-                    messagingTemplate.convertAndSendToUser(username, Topic.LOG.getPath(), createLogNotification("Book added: " + book.getFileName()));
+                    messagingTemplate.convertAndSendToUser(username, Topic.LOG.getPath(), LogNotification.info("Book added: " + book.getFileName()));
                 });
     }
 }

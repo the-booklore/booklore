@@ -1,0 +1,614 @@
+@if (book$ | async; as book) {
+  <div class="p-0 md:p-2 flex flex-col h-full w-full rounded-xl">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6 pb-8">
+
+      <div class="flex justify-center md:justify-start">
+        <div class="relative w-[175px] md:w-[250px]">
+
+          <p-image
+            [src]="urlHelper.getCoverUrl(book.id, book.metadata?.coverUpdatedOn)"
+            alt="Image"
+            width="250"
+            appendTo="body"
+            [preview]="true">
+          </p-image>
+
+          @if (book?.metadata!.seriesNumber != null) {
+            <div class="absolute top-2 left-2 bg-black/60 text-white px-2 py-0.5 rounded-lg text-xs font-semibold">
+              #{{ book?.metadata!.seriesNumber }}
+            </div>
+          }
+
+          @let progress = getProgressPercent(book);
+          @if (progress !== null) {
+            <p-progressBar
+              [value]="progress"
+              [showValue]="false"
+              class="cover-progress-bar"
+              [ngClass]="{
+                'rounded-b-xl': false,
+                'progress-complete': progress === 100,
+                'progress-incomplete': progress < 100
+              }"
+              [style]="{ height: '6px' }"
+            ></p-progressBar>
+          }
+
+          @if (getKoProgressPercent(book) !== null) {
+            <p-progressBar
+              [value]="getKoProgressPercent(book)"
+              [showValue]="false"
+              [ngClass]="[
+                getProgressPercent(book) == null ? 'cover-progress-bar-ko-only' : 'cover-progress-bar-ko-both',
+                getKoProgressPercent(book) === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
+              ]"
+              [style]="{ height: '6px' }"
+            >
+            </p-progressBar>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col justify-between flex-grow">
+        <div class="space-y-4">
+
+          <div class="flex items-start justify-between">
+            <div class="flex flex-col text-center md:text-left w-full">
+              @if (book?.metadata?.seriesName) {
+                <p
+                  class="text-blue-600 cursor-pointer hover:underline"
+                  (click)="goToSeries(book?.metadata?.seriesName!)"
+                >
+                  {{ book?.metadata?.seriesName }}
+                  @if (book?.metadata?.seriesNumber) {
+                    #{{ book?.metadata?.seriesNumber }}
+                  }
+                </p>
+              }
+
+              <div class="flex flex-col items-center md:items-start gap-1">
+                <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap text-center md:text-left">
+                  <h2 class="text-2xl md:text-3xl font-extrabold leading-tight">
+                    {{ book?.metadata?.title }}@if (book?.metadata?.subtitle) {
+                    : {{ book.metadata?.subtitle }}
+                  }
+                  </h2>
+                  <i
+                    class="pi align-middle"
+                    [ngClass]="isMetadataFullyLocked(book?.metadata!) ? 'pi-lock text-red-500' : 'pi-lock-open text-green-500'"
+                    [title]="isMetadataFullyLocked(book?.metadata!) ? 'Metadata is locked' : 'Metadata is unlocked'"
+                    pTooltip="{{ isMetadataFullyLocked(book?.metadata!) ? 'This book metadata is locked.' : 'This book metadata is unlocked.' }}"
+                    tooltipPosition="top"
+                  ></i>
+                </div>
+
+                <p class="text-lg">
+                  @for (author of book?.metadata!.authors; track $index; let isLast = $last) {
+                    <a class="hover:underline dark:text-blue-400 cursor-pointer" (click)="goToAuthorBooks(author)">
+                      {{ author }}
+                    </a>
+                    @if (!isLast) {
+                      <span>, </span>
+                    }
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-start text-sm w-full">
+
+            <div class="flex justify-center sm:justify-start">
+              <div class="flex items-center gap-2">
+                <i class="pi pi-thumbs-up-fill text-yellow-500" pTooltip="Personal Rating" tooltipPosition="top"></i>
+                <p-rating
+                  [ngModel]="book?.metadata!.personalRating"
+                  (onRate)="onPersonalRatingChange(book, $event)"
+                  stars="10"
+                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.metadata!.personalRating, 10)">
+                </p-rating>
+              </div>
+              <p-button
+                text
+                size="small"
+                icon="pi pi-undo"
+                severity="warn"
+                (onClick)="resetPersonalRating(book)"
+                pTooltip="Reset Rating"
+                tooltipPosition="top">
+              </p-button>
+            </div>
+
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.googleId) {
+              <span class="hidden sm:inline text-gray-400 text-xl px-1 leading-none">|</span>
+            }
+
+            <div class="flex flex-wrap justify-center sm:justify-start gap-4 pt-1">
+              @if (book?.metadata?.amazonRating) {
+                <a
+                  class="flex items-center gap-1"
+                  [href]="'https://www.amazon.com/dp/' + (book.metadata?.asin ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'amazon')"
+                  tooltipPosition="top"
+                >
+                  <img
+                    src="https://www.amazon.com/favicon.ico"
+                    alt="Amazon"
+                    class="w-5 h-5 object-contain transform transition duration-200 hover:scale-125 hover:drop-shadow-lg"
+                  />
+                  <span class="font-semibold">
+                    {{ getRatingPercent(book.metadata!.amazonRating) }}%
+                  </span>
+                </a>
+              }
+
+              @if (book?.metadata?.goodreadsRating) {
+                <a
+                  class="flex items-center gap-1"
+                  [href]="'https://www.goodreads.com/book/show/' + (book.metadata?.goodreadsId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'goodreads')"
+                  tooltipPosition="top"
+                >
+                  <img
+                    src="https://www.goodreads.com/favicon.ico"
+                    alt="Goodreads"
+                    class="w-5 h-5 object-contain transform transition duration-200 hover:scale-125 hover:drop-shadow-lg"
+                  />
+                  <span class="font-semibold">
+                    {{ getRatingPercent(book.metadata!.goodreadsRating) }}%
+                  </span>
+                </a>
+              }
+
+              @if (book?.metadata?.hardcoverRating) {
+                <a
+                  class="flex items-center gap-1"
+                  [href]="'https://hardcover.app/books/' + (book.metadata?.hardcoverId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'hardcover')"
+                  tooltipPosition="top"
+                >
+                  <img
+                    src="https://assets.hardcover.app/static/favicon.ico"
+                    alt="Hardcover"
+                    class="w-5 h-5 object-contain transform transition duration-200 hover:scale-125 hover:drop-shadow-lg"
+                  />
+                  <span class="font-semibold">
+                    {{ getRatingPercent(book.metadata!.hardcoverRating) }}%
+                  </span>
+                </a>
+              }
+
+              @if (book?.metadata?.googleId) {
+                <a
+                  class="flex items-center gap-1"
+                  [href]="'https://books.google.com/books?id=' + book.metadata!.googleId"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src="https://books.google.com/favicon.ico"
+                    alt="Google Books"
+                    class="w-5 h-5 object-contain transform transition duration-200 hover:scale-125 hover:drop-shadow-lg"
+                  />
+                </a>
+              }
+
+              @if (book?.metadata?.comicvineId) {
+                <a
+                  class="flex items-center gap-1"
+                  [href]="'https://comicvine.gamespot.com/' + book.metadata!.comicvineId"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <img
+                    src="https://www.comicvine.com/favicon.ico"
+                    alt="Comic Vine"
+                    class="w-5 h-5 object-contain transform transition duration-200 hover:scale-125 hover:drop-shadow-lg"
+                  />
+                </a>
+              }
+            </div>
+          </div>
+
+          <div class="flex flex-col space-y-2">
+            @if (book?.metadata?.categories?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Genres:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (category of book.metadata!.categories; track category) {
+                      <a (click)="goToCategory(category)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="rose" size="xs">{{ category }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (book?.metadata?.moods?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Moods:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (mood of book.metadata!.moods; track mood) {
+                      <a (click)="goToMood(mood)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="indigo" size="xs">{{ mood }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+
+            @if (book?.metadata?.tags?.length) {
+              <div class="flex items-center gap-1">
+                <p class="font-bold text-sm w-[50px]">Tags:</p>
+                <div class="overflow-x-auto scrollbar-hide max-w-7xl">
+                  <div class="flex gap-2 w-max max-w-[1150px]">
+                    @for (tag of book.metadata!.tags; track tag) {
+                      <a (click)="goToTag(tag)" class="shrink-0 no-underline cursor-pointer">
+                        <app-tag color="cyan" size="xs">{{ tag }}</app-tag>
+                      </a>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="px-1 md:px-0">
+            <div class="grid md:grid-cols-4 gap-y-2.5 text-sm pt-2 md:pt-4 pb-2 text-gray-300 md:min-w-[60rem] md:max-w-[100rem]">
+              <p class="whitespace-nowrap max-w-[250px] overflow-hidden text-ellipsis">
+                <span class="font-bold">Library: </span>
+                @if (book?.libraryName) {
+                  <span>{{ book.libraryName }}</span>
+                }
+              </p>
+              <p class="whitespace-nowrap max-w-[250px] overflow-hidden text-ellipsis">
+                <span class="font-bold">Publisher: </span>
+                @if (book?.metadata?.publisher) {
+                  <span class="underline hover:opacity-80 cursor-pointer" (click)="goToPublisher(book?.metadata?.publisher!)">
+                    {{ book?.metadata?.publisher }}
+                  </span>
+                } @else {
+                  <span>-</span>
+                }
+              </p>
+              <p><strong>Published:</strong> {{ book?.metadata!.publishedDate || '-' }}</p>
+              <p><strong>Language:</strong> {{ book?.metadata!.language || '-' }}</p>
+              <p class="whitespace-nowrap flex items-center gap-2">
+                <span class="font-bold">File Type:</span>
+                <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                  {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
+                </app-tag>
+              </p>
+              <p class="whitespace-nowrap flex items-center">
+                <span class="font-bold mr-2">BookLore Progress:</span>
+                <span class="inline-flex items-center">
+                  <app-tag size="3xs" variant="pill" [color]="getProgressColor(getProgressPercent(book))">
+                    {{ getProgressPercent(book) !== null ? getProgressPercent(book) + '%' : 'N/A' }}
+                  </app-tag>
+                  @if (getProgressPercent(book) !== null) {
+                    <p-button
+                      pTooltip="Reset progress"
+                      tooltipPosition="bottom"
+                      icon="pi pi-refresh"
+                      size="small"
+                      severity="danger"
+                      text
+                      class="ml-1 custom-button-padding"
+                      (onClick)="resetProgress(book, ResetProgressTypes.BOOKLORE)">
+                    </p-button>
+                  }
+                </span>
+              </p>
+              <p class="whitespace-nowrap flex items-center gap-2">
+                <span class="font-bold">Metadata Match:</span>
+                @if (book?.metadataMatchScore != null) {
+                  <app-tag size="3xs" variant="pill" [color]="getMatchScoreColor(book?.metadataMatchScore!)">
+                    {{ (book?.metadataMatchScore!) | number:'1.0-0' }}%
+                  </app-tag>
+                } @else {
+                  <span>-</span>
+                }
+              </p>
+              <p>
+                <strong>ISBN:</strong>
+                @if (book?.metadata?.isbn13 || book?.metadata?.isbn10) {
+                  {{ book.metadata!.isbn13 }}
+                  @if (book?.metadata?.isbn13 && book?.metadata?.isbn10) {
+                    /
+                  }
+                  {{ book.metadata!.isbn10 }}
+                } @else {
+                  <span>-</span>
+                }
+              </p>
+              <p class="whitespace-nowrap flex items-center gap-2">
+                <span class="font-bold">Read Status:</span>
+                <app-tag size="3xs" variant="pill" [color]="getStatusColor(selectedReadStatus)">
+                  {{ getStatusLabel(selectedReadStatus) }}
+                </app-tag>
+                <i
+                  class="pi pi-pencil cursor-pointer text-[cornflowerblue] hover:text-[darkturquoise] transition-colors"
+                  (click)="menu.toggle($event)">
+                </i>
+                <p-menu #menu [popup]="true" [model]="readStatusMenuItems"></p-menu>
+              </p>
+              @if (book?.koreaderProgress && book.koreaderProgress?.percentage != null) {
+                <p class="whitespace-nowrap flex items-center">
+                  <span class="font-bold mr-2">KOReader Progress:</span>
+                  <span class="inline-flex items-center">
+                    <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(getKOReaderPercentage(book))">
+                      {{ getKOReaderPercentage(book) + '%' }}
+                    </app-tag>
+                    @if (getKOReaderPercentage(book) !== null) {
+                      <p-button
+                        pTooltip="Reset progress"
+                        tooltipPosition="bottom"
+                        icon="pi pi-refresh"
+                        size="small"
+                        severity="danger"
+                        text
+                        class="ml-1 custom-button-padding"
+                        (onClick)="resetProgress(book, ResetProgressTypes.KOREADER)">
+                    </p-button>
+                    }
+                </span>
+                </p>
+              }
+              @if (selectedReadStatus === ReadStatus.READ) {
+                <div>
+                  @if (book?.dateFinished) {
+                    <div class="flex items-center gap-2">
+                      <p><strong>Finished On: </strong></p>
+                      @if (!isEditingDateFinished) {
+                        <div class="flex items-center gap-2">
+                          <p>{{ formatDate(book.dateFinished) }}</p>
+                          <i class="pi pi-pencil text-[cornflowerblue] hover:text-[darkturquoise] cursor-pointer"
+                             (click)="toggleDateFinishedEdit(book)">
+                          </i>
+                        </div>
+                      } @else {
+                        <div class="flex items-center">
+                          <p-datepicker
+                            [(ngModel)]="editDateFinished"
+                            dateFormat="dd-M-yy"
+                            size="small"
+                            [showIcon]="true"
+                            iconDisplay="input"
+                            [style]="{ 'width': '125px', 'font-size': '12px' }"
+                            class="text-xs">
+                          </p-datepicker>
+                          <p-button
+                            rounded
+                            icon="pi pi-check"
+                            size="small"
+                            severity="success"
+                            text
+                            (onClick)="saveDateFinished(book)"
+                            pTooltip="Save date">
+                          </p-button>
+                          <p-button
+                            rounded
+                            icon="pi pi-times"
+                            size="small"
+                            severity="danger"
+                            text
+                            (onClick)="cancelDateFinishedEdit()"
+                            pTooltip="Cancel">
+                          </p-button>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+              <p><strong>Page Count:</strong> {{ book?.metadata!.pageCount || '-' }}</p>
+              <p><strong>File Size:</strong> {{ getFileSizeInMB(book) }}</p>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-sm">File Path:</span>
+              <i
+                class="pi cursor-pointer text-sm"
+                [ngClass]="showFilePath ? 'pi-eye-slash' : 'pi-eye'"
+                (click)="showFilePath = !showFilePath"
+              ></i>
+              @if (showFilePath) {
+                <code class="text-xs font-mono truncate text-gray-300">{{ book?.filePath }}</code>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (userService.userState$ | async; as userState) {
+          <div class="flex flex-wrap gap-3 pt-6">
+            @if (book!.bookType === 'PDF') {
+              @if (readMenuItems$ | async; as readItems) {
+                <p-splitbutton
+                  label="Read"
+                  icon="pi pi-book"
+                  [model]="readItems"
+                  (onClick)="read(book.id, 'ngx')"
+                  severity="primary"/>
+              }
+            }
+            @if (book!.bookType !== 'PDF') {
+              <p-button
+                label="Read"
+                icon="pi pi-book"
+                (onClick)="read(book?.metadata!.bookId, undefined)"
+                severity="primary"/>
+            }
+            <p-button
+              label="Shelf"
+              icon="pi pi-folder"
+              severity="secondary"
+              outlined
+              (onClick)="assignShelf(book.id)">
+            </p-button>
+            @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
+              @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
+                @if (downloadMenuItems$ | async; as downloadItems) {
+                  <p-splitbutton
+                    label="Download"
+                    icon="pi pi-download"
+                    [model]="downloadItems"
+                    (onClick)="download(book!.id)"
+                    severity="success"
+                    outlined/>
+                }
+              } @else {
+                <p-button
+                  label="Download"
+                  icon="pi pi-download"
+                  severity="success"
+                  outlined
+                  (onClick)="download(book!.id)">
+                </p-button>
+              }
+            }
+            @if (userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
+              @if (emailMenuItems$ | async; as emailItems) {
+                <p-splitbutton
+                  label="Quick Send"
+                  icon="pi pi-send"
+                  [model]="emailItems"
+                  (onClick)="quickSend(book!.id)"
+                  outlined
+                  severity="info">
+                </p-splitbutton>
+              }
+            }
+            @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
+              @if (refreshMenuItems$ | async; as refreshItems) {
+                <p-splitbutton
+                  [label]="isAutoFetching ? 'Fetching...' : 'Auto Fetch'"
+                  [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
+                  [outlined]="true"
+                  [model]="refreshItems"
+                  severity="warn"
+                  (onClick)="quickRefresh(book!.id)"
+                  [disabled]="isAutoFetching"
+                  pTooltip="Automatically fetch metadata using default sources"
+                  tooltipPosition="top">
+                </p-splitbutton>
+              }
+            }
+            @if (userState.user!.permissions.canDeleteBook || userState.user!.permissions.admin) {
+              @if (otherItems$ | async; as otherItems) {
+                <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
+                <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
+              }
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="px-4 pb-2 pt-4 mb-4 md:mb-6 md:mx-2 border border-[var(--border-color)] rounded-xl">
+      <div [ngClass]="{ 'line-clamp-7': !isExpanded, 'line-clamp-none': isExpanded }" class="transition-all duration-300 overflow-hidden description-container">
+        <div class="readonly-editor px-2">
+          <p-editor #quillEditor [readonly]="true" [style]="{height: '200px'}" [(ngModel)]="book.metadata!.description">
+            <ng-template #header>
+            </ng-template>
+          </p-editor>
+        </div>
+      </div>
+      @if (book.metadata!.description && book.metadata!.description.length > 500) {
+        <p-button
+          [label]="isExpanded ? 'Show less' : 'Show more'"
+          [icon]="isExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+          iconPos="right"
+          size="small"
+          text
+          (click)="toggleExpand()">
+        </p-button>
+      }
+    </div>
+
+    <p-tabs lazy="true" class="custom-p-tabs" [value]="defaultTabValue" scrollable>
+      <p-tablist>
+        @if (bookInSeries.length > 0) {
+          <p-tab [value]="1">
+            <i class="pi pi-ethereum"></i> More in Series
+          </p-tab>
+        }
+        <p-tab [value]="2">
+          <i class="pi pi-bookmark"></i> Similar Books
+        </p-tab>
+        <p-tab [value]="3">
+          <i class="pi pi-pen-to-square"></i> Notes
+        </p-tab>
+        <p-tab [value]="4">
+          <i class="pi pi-comments"></i> Reviews
+        </p-tab>
+      </p-tablist>
+      <p-tabpanels>
+        <p-tabpanel [value]="1">
+          <div class="pt-2">
+            @if (bookInSeries.length > 0) {
+              <div>
+                <div class="dashboard-scroller-infinite"
+                     infiniteScroll
+                     [infiniteScrollDistance]="2"
+                     [infiniteScrollThrottle]="50"
+                     [horizontal]="true">
+                  @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </p-tabpanel>
+        <p-tabpanel [value]="2">
+          <div class="pt-2">
+            @if (recommendedBooks.length > 0) {
+              <div>
+                <div class="dashboard-scroller-infinite"
+                     infiniteScroll
+                     [infiniteScrollDistance]="2"
+                     [infiniteScrollThrottle]="50"
+                     [horizontal]="true">
+                  @for (book of recommendedBooks; track book.book.id) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </p-tabpanel>
+        <p-tabpanel [value]="3">
+          <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+        </p-tabpanel>
+        <p-tabpanel [value]="4">
+          <app-book-reviews [bookId]="book.id"></app-book-reviews>
+        </p-tabpanel>
+      </p-tabpanels>
+    </p-tabs>
+  </div>
+} @else {
+  <div class="flex flex-col justify-center items-center h-full gap-4">
+    <p-progressSpinner
+      strokeWidth="4"
+      fill="transparent"
+      animationDuration=".8s">
+    </p-progressSpinner>
+    <p style="color: var(--primary-color);">
+      Loading book details...
+    </p>
+  </div>
+}

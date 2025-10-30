@@ -1,7 +1,7 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {OAuthService} from 'angular-oauth2-oidc';
-import {AuthService} from '../../service/auth.service';
+import {AuthService} from '../../../shared/service/auth.service';
 import {MessageService} from 'primeng/api';
 
 @Component({

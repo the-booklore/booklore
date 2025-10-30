@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
-import {API_CONFIG} from '../../config/api-config';
+import {API_CONFIG} from '../../core/config/api-config';
 
 export interface CoverImage {
   url: string;

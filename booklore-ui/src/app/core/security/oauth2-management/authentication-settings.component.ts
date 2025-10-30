@@ -6,13 +6,14 @@ import {Button} from 'primeng/button';
 import {Checkbox} from 'primeng/checkbox';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {MessageService} from 'primeng/api';
-import {AppSettingsService} from '../../service/app-settings.service';
+import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {Observable} from 'rxjs';
-import {AppSettingKey, AppSettings, OidcProviderDetails} from '../../model/app-settings.model';
+import {AppSettingKey, AppSettings, OidcProviderDetails} from '../../../shared/model/app-settings.model';
 import {filter, take} from 'rxjs/operators';
 import {MultiSelect} from 'primeng/multiselect';
-import {Library} from '../../../book/model/library.model';
-import {LibraryService} from '../../../book/service/library.service';
+import {Library} from '../../../features/book/model/library.model';
+import {LibraryService} from '../../../features/book/service/library.service';
+import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 
 @Component({
   selector: 'app-authentication-settings',
@@ -25,7 +26,8 @@ import {LibraryService} from '../../../book/service/library.service';
     ToggleSwitch,
     Button,
     MultiSelect,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    ExternalDocLinkComponent
   ],
   styleUrls: ['./authentication-settings.component.scss']
 })

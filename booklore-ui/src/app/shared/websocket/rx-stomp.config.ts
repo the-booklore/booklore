@@ -1,6 +1,6 @@
 import {RxStompConfig} from '@stomp/rx-stomp';
-import {AuthService} from '../../core/service/auth.service';
-import {API_CONFIG} from '../../config/api-config';
+import {AuthService} from '../service/auth.service';
+import {API_CONFIG} from '../../core/config/api-config';
 
 export function createRxStompConfig(authService: AuthService): RxStompConfig {
   return {

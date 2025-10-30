@@ -33,7 +33,13 @@ import java.util.stream.Collectors;
 public class AmazonBookParser implements BookParser {
 
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
-    private static final String BASE_BOOK_URL = "https://www.amazon.com/dp/";
+    private static final String BASE_BOOK_URL_SUFFIX = "/dp/";
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^\\d]");
+    private static final Pattern SERIES_FORMAT_PATTERN = Pattern.compile("Book \\d+ of \\d+");
+    private static final Pattern SERIES_FORMAT_WITH_DECIMAL_PATTERN = Pattern.compile("Book \\d+(\\.\\d+)? of \\d+");
+    private static final Pattern PARENTHESES_WITH_WHITESPACE_PATTERN = Pattern.compile("\\s*\\(.*?\\)");
+    private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
+    private static final Pattern DP_SEPARATOR_PATTERN = Pattern.compile("/dp/");
     private final AppSettingService appSettingService;
 
     @Override
@@ -142,7 +148,7 @@ public class AmazonBookParser implements BookParser {
     }
 
     private String extractAsinFromUrl(String url) {
-        String[] parts = url.split("/dp/");
+        String[] parts = DP_SEPARATOR_PATTERN.split(url);
         if (parts.length > 1) {
             String[] asinParts = parts[1].split("/");
             return asinParts[0];
@@ -153,7 +159,8 @@ public class AmazonBookParser implements BookParser {
     private BookMetadata getBookMetadata(String amazonBookId) {
         log.info("Amazon: Fetching metadata for: {}", amazonBookId);
 
-        Document doc = fetchDocument(BASE_BOOK_URL + amazonBookId);
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
+        Document doc = fetchDocument("https://www.amazon." + domain + BASE_BOOK_URL_SUFFIX + amazonBookId);
 
         List<BookReview> reviews = appSettingService.getAppSettings()
                 .getMetadataPublicReviewsSettings()
@@ -193,11 +200,10 @@ public class AmazonBookParser implements BookParser {
     }
 
     private String buildQueryUrl(FetchMetadataRequest fetchMetadataRequest, Book book) {
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
         String isbnCleaned = ParserUtils.cleanIsbn(fetchMetadataRequest.getIsbn());
         if (isbnCleaned != null && !isbnCleaned.isEmpty()) {
-            String url = "https://www.amazon."
-                    + appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain()
-                    + "/s?k=" + fetchMetadataRequest.getIsbn();
+            String url = "https://www.amazon." + domain + "/s?k=" + fetchMetadataRequest.getIsbn();
             log.info("Amazon Query URL (ISBN): {}", url);
             return url;
         }
@@ -207,7 +213,7 @@ public class AmazonBookParser implements BookParser {
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {
             String cleanedTitle = Arrays.stream(title.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedTitle);
@@ -215,7 +221,7 @@ public class AmazonBookParser implements BookParser {
             String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getFileName()));
             if (!filename.isEmpty()) {
                 String cleanedFilename = Arrays.stream(filename.split(" "))
-                        .map(word -> word.replaceAll("[^a-zA-Z0-9]", "").trim())
+                        .map(word -> NON_ALPHANUMERIC_PATTERN.matcher(word).replaceAll("").trim())
                         .filter(word -> !word.isEmpty())
                         .collect(Collectors.joining(" "));
                 searchTerm.append(cleanedFilename);
@@ -228,7 +234,7 @@ public class AmazonBookParser implements BookParser {
                 searchTerm.append(" ");
             }
             String cleanedAuthor = Arrays.stream(author.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedAuthor);
@@ -239,9 +245,7 @@ public class AmazonBookParser implements BookParser {
         }
 
         String encodedSearchTerm = searchTerm.toString().replace(" ", "+");
-        String url = "https://www.amazon."
-                + appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain()
-                + "/s?k=" + encodedSearchTerm;
+        String url = "https://www.amazon." + domain + "/s?k=" + encodedSearchTerm;
         log.info("Amazon Query URL: {}", url);
         return url;
     }
@@ -341,7 +345,7 @@ public class AmazonBookParser implements BookParser {
                         Element publisherSpan = boldText.nextElementSibling();
                         if (publisherSpan != null) {
                             String fullPublisher = publisherSpan.text().trim();
-                            return fullPublisher.split(";")[0].trim().replaceAll("\\s*\\(.*?\\)", "").trim();
+                            return PARENTHESES_WITH_WHITESPACE_PATTERN.matcher(fullPublisher.split(";")[0].trim()).replaceAll("").trim();
                         }
                     }
                 }
@@ -386,7 +390,7 @@ public class AmazonBookParser implements BookParser {
             Element bookDetailsLabel = doc.selectFirst("#rpi-attribute-book_details-series .rpi-attribute-label span");
             if (bookDetailsLabel != null) {
                 String bookAndTotal = bookDetailsLabel.text();
-                if (bookAndTotal.matches("Book \\d+(\\.\\d+)? of \\d+")) {
+                if (SERIES_FORMAT_WITH_DECIMAL_PATTERN.matcher(bookAndTotal).matches()) {
                     String[] parts = bookAndTotal.split(" ");
                     return Float.parseFloat(parts[1]);
                 }
@@ -404,7 +408,7 @@ public class AmazonBookParser implements BookParser {
             Element bookDetailsLabel = doc.selectFirst("#rpi-attribute-book_details-series .rpi-attribute-label span");
             if (bookDetailsLabel != null) {
                 String bookAndTotal = bookDetailsLabel.text();
-                if (bookAndTotal.matches("Book \\d+ of \\d+")) {
+                if (SERIES_FORMAT_PATTERN.matcher(bookAndTotal).matches()) {
                     String[] parts = bookAndTotal.split(" ");
                     return Integer.parseInt(parts[3]);
                 }
@@ -577,7 +581,7 @@ public class AmazonBookParser implements BookParser {
                 Element reviewCountElement = reviewDiv.getElementById("acrCustomerReviewText");
                 if (reviewCountElement != null) {
                     String reviewCountRaw = reviewCountElement.text().split(" ")[0];
-                    String reviewCountClean = reviewCountRaw.replaceAll("[^\\d]", "");
+                    String reviewCountClean = NON_DIGIT_PATTERN.matcher(reviewCountRaw).replaceAll("");
                     if (!reviewCountClean.isEmpty()) {
                         return Integer.parseInt(reviewCountClean);
                     }
@@ -615,7 +619,7 @@ public class AmazonBookParser implements BookParser {
             String pageCountText = pageCountElements.first().text();
             if (!pageCountText.isEmpty()) {
                 try {
-                    String cleanedPageCount = pageCountText.replaceAll("[^\\d]", "");
+                    String cleanedPageCount = NON_DIGIT_PATTERN.matcher(pageCountText).replaceAll("");
                     return Integer.parseInt(cleanedPageCount);
                 } catch (NumberFormatException e) {
                     log.warn("Error parsing page count: {}, error: {}", pageCountText, e.getMessage());
@@ -627,6 +631,7 @@ public class AmazonBookParser implements BookParser {
 
     private Document fetchDocument(String url) {
         try {
+            String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
             String amazonCookie = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getCookie();
             Connection connection = Jsoup.connect(url)
                     .header("accept", "text/html, application/json")
@@ -636,7 +641,7 @@ public class AmazonBookParser implements BookParser {
                     .header("downlink", "10")
                     .header("dpr", "2")
                     .header("ect", "4g")
-                    .header("origin", "https://www.amazon.com")
+                    .header("origin", "https://www.amazon." + domain)
                     .header("priority", "u=1, i")
                     .header("rtt", "50")
                     .header("sec-ch-device-memory", "8")
@@ -704,3 +709,4 @@ public class AmazonBookParser implements BookParser {
         return html;
     }
 }
+

@@ -1,0 +1,141 @@
+<div class="dashboard-settings">
+  <div class="settings-info">
+    <h3 class="settings-info-title">
+      <i class="pi pi-info-circle"></i>
+      Dashboard Configuration
+    </h3>
+    <p class="settings-info-text">
+      Customize your dashboard by adding up to 5 scrollers. Each scroller can display different book collections.
+      Choose from Continue Reading, Recently Added, Random Discovery, or create custom views using Magic Shelves.
+      Enable/disable, reorder, and configure the number of items shown in each scroller.
+    </p>
+  </div>
+
+  <div class="add-scroller-wrapper">
+    <p-button
+      label="Add Scroller"
+      icon="pi pi-plus"
+      size="small"
+      (click)="addScroller()"
+      [disabled]="config.scrollers.length >= 5">
+    </p-button>
+  </div>
+
+  @for (scroller of config.scrollers; track scroller.id; let i = $index) {
+    <div class="scroller-item">
+      <div class="scroller-content">
+        <div class="scroller-controls-left">
+          <p-checkbox [(ngModel)]="scroller.enabled" [binary]="true"></p-checkbox>
+        </div>
+
+        <div class="scroller-fields">
+          <div class="scroller-field">
+            <label>Type</label>
+            <p-select
+              fluid
+              [options]="availableScrollerTypes"
+              [(ngModel)]="scroller.type"
+              (onChange)="onScrollerTypeChange(scroller)"
+              placeholder="Select type"
+              appendTo="body">
+            </p-select>
+          </div>
+
+          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
+            <label>Magic Shelf</label>
+            <p-select
+              fluid
+              [options]="magicShelves$ | async"
+              [(ngModel)]="scroller.magicShelfId"
+              placeholder="Select magic shelf"
+              appendTo="body">
+            </p-select>
+          </div>
+
+          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
+            <label>Sort Field</label>
+            <p-select
+              fluid
+              [options]="sortFieldOptions"
+              [(ngModel)]="scroller.sortField"
+              placeholder="Select field"
+              appendTo="body">
+            </p-select>
+          </div>
+
+          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
+            <label>Direction</label>
+            <p-select
+              fluid
+              [options]="sortDirectionOptions"
+              [(ngModel)]="scroller.sortDirection"
+              placeholder="Select direction"
+              appendTo="body">
+            </p-select>
+          </div>
+
+          <div class="scroller-field">
+            <label>Max Items</label>
+            <p-inputNumber
+              fluid
+              [(ngModel)]="scroller.maxItems"
+              [min]="MIN_ITEMS"
+              [max]="MAX_ITEMS"
+              [showButtons]="true">
+            </p-inputNumber>
+          </div>
+        </div>
+
+        <div class="scroller-controls-right">
+          <p-button
+            icon="pi pi-arrow-up"
+            outlined
+            rounded
+            severity="info"
+            size="small"
+            [disabled]="i === 0"
+            (click)="moveUp(i)">
+          </p-button>
+          <p-button
+            icon="pi pi-arrow-down"
+            outlined
+            rounded
+            severity="info"
+            size="small"
+            [disabled]="i === config.scrollers.length - 1"
+            (click)="moveDown(i)">
+          </p-button>
+          <p-button
+            icon="pi pi-trash"
+            outlined
+            rounded
+            size="small"
+            severity="danger"
+            (click)="removeScroller(i)"
+            [disabled]="config.scrollers.length === 1">
+          </p-button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="footer-actions">
+    <p-button
+      label="Reset to Default"
+      severity="warn"
+      text
+      (click)="resetToDefault()">
+    </p-button>
+    <p-button
+      label="Cancel"
+      outlined
+      severity="secondary"
+      (click)="cancel()">
+    </p-button>
+    <p-button
+      label="Save"
+      severity="success"
+      (click)="save()">
+    </p-button>
+  </div>
+</div>

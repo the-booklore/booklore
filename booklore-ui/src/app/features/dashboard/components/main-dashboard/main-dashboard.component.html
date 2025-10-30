@@ -1,0 +1,69 @@
+<div class="dashboard-container">
+  @if ((bookState$ | async)?.loaded === false) {
+    <div class="flex items-center justify-center h-full">
+      <p-progressSpinner
+        class="spinner center-spinner"
+        [style]="{'width': '60px', 'height': '60px'}"
+        strokeWidth="3"
+        fill="transparent"
+        animationDuration="1.5s">
+      </p-progressSpinner>
+    </div>
+  }
+  @if ((bookState$ | async)?.loaded === true) {
+    <div class="dashboard">
+      <div class="w-full">
+        @if (isLibrariesEmpty$ | async) {
+          <div class="dashboard-no-library">
+            @if ((userService.userState$ | async)?.user?.permissions; as permissions) {
+              <div>
+                @if (permissions.admin || permissions.canManipulateLibrary) {
+                  <div>
+                    <h1 class="no-library-header">
+                      Welcome to BookLore!<br>
+                      Let's create your first library
+                    </h1>
+                    <p class="text-gray-300 mb-8 mx-auto leading-relaxed">
+                      A library is where all your books live. Start building your digital collection today!
+                    </p>
+                    <p-button
+                      label="Create Your Library"
+                      icon="pi pi-plus"
+                      styleClass="p-button-rounded p-button-outlined"
+                      (click)="createNewLibrary()">
+                    </p-button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="dashboard-settings-button">
+            <p-button
+              icon="pi pi-cog"
+              severity="info"
+              rounded
+              text
+              [pTooltip]="'Customize Dashboard'"
+              tooltipPosition="left"
+              (click)="openDashboardSettings()">
+            </p-button>
+          </div>
+
+          @if (dashboardConfig$ | async; as config) {
+            @for (scroller of config.scrollers; track scroller.id) {
+              @if (scroller.enabled) {
+                <app-dashboard-scroller
+                  [bookListType]="scroller.type"
+                  [title]="scroller.title"
+                  [isMagicShelf]="scroller.type === ScrollerType.MAGIC_SHELF"
+                  [books]="getBooksForScroller(scroller) | async">
+                </app-dashboard-scroller>
+              }
+            }
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

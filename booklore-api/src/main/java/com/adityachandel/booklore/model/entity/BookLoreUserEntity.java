@@ -61,6 +61,9 @@ public class BookLoreUserEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<UserSettingEntity> settings = new HashSet<>();
 
+    @OneToOne(mappedBy = "bookLoreUser", cascade = CascadeType.ALL, orphanRemoval = true)
+    private KoreaderUserEntity koreaderUser;
+
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();

@@ -15,10 +15,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class HardcoverParser implements BookParser {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final HardcoverBookSearchService hardcoverBookSearchService;
 
     @Override
@@ -58,9 +59,9 @@ public class HardcoverParser implements BookParser {
                     if (doc.getAuthorNames() == null || doc.getAuthorNames().isEmpty()) return false;
 
                     List<String> actualAuthorTokens = doc.getAuthorNames().stream()
-                            .flatMap(name -> List.of(name.toLowerCase().split("\\s+")).stream())
+                            .flatMap(name -> List.of(WHITESPACE_PATTERN.split(name.toLowerCase())).stream())
                             .toList();
-                    List<String> searchAuthorTokens = List.of(searchAuthor.toLowerCase().split("\\s+"));
+                    List<String> searchAuthorTokens = List.of(WHITESPACE_PATTERN.split(searchAuthor.toLowerCase()));
 
                     for (String actual : actualAuthorTokens) {
                         for (String query : searchAuthorTokens) {

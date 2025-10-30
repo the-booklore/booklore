@@ -1,6 +1,6 @@
 import {Component, OnInit, OnDestroy, inject} from '@angular/core';
 import { Subscription } from 'rxjs';
-import {LoadingService} from '../../../core/service/loading.service';
+import {LoadingService} from '../../service/loading.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 
 

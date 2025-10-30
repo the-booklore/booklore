@@ -39,6 +39,7 @@ public class GoodReadsParser implements BookParser {
     private static final String BASE_BOOK_URL = "https://www.goodreads.com/book/show/";
     private static final String BASE_ISBN_URL = "https://www.goodreads.com/book/isbn/";
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final AppSettingService appSettingService;
 
     @Override
@@ -447,9 +448,9 @@ public class GoodReadsParser implements BookParser {
 
                 // Author fuzzy match if author provided
                 if (queryAuthor != null && !queryAuthor.isBlank()) {
-                    List<String> queryAuthorTokens = List.of(queryAuthor.toLowerCase().split("\\s+"));
+                    List<String> queryAuthorTokens = List.of(WHITESPACE_PATTERN.split(queryAuthor.toLowerCase()));
                     boolean matches = authors.stream()
-                            .flatMap(a -> Arrays.stream(a.toLowerCase().split("\\s+")))
+                            .flatMap(a -> Arrays.stream(WHITESPACE_PATTERN.split(a.toLowerCase())))
                             .anyMatch(actual -> {
                                 for (String query : queryAuthorTokens) {
                                     int score = fuzzyScore.fuzzyScore(actual, query);

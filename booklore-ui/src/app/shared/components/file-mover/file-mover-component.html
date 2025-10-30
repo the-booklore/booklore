@@ -1,0 +1,197 @@
+<div class="p-fluid px-4 py-2 rounded-xl flex flex-col h-full">
+
+  <div class="px-4 mx-2 mb-4 py-3 rounded-lg border border-[var(--border-color)] transition-all">
+    <p class="text-[var(--primary-color)] font-semibold mb-1">
+      File Organization Preview
+    </p>
+    <div class="text-sm text-gray-300 space-y-3">
+      <p>
+        Your files will be automatically renamed, organized, and can be moved between libraries based on your preferences.
+        Check the preview below to see how your files will look, select target libraries if needed, then click <span class="font-semibold text-green-400">Move Files</span> to organize them.
+      </p>
+      <p>
+        <i class="pi pi-lightbulb text-blue-400 mr-1"></i>
+        <span class="text-blue-300">Want to change how files are named? Go to <strong>Settings → File Naming Pattern</strong>. Each library can have its own naming pattern!</span>
+      </p>
+      <p class="text-yellow-500 font-medium flex items-center gap-2">
+        <i class="pi pi-exclamation-triangle text-yellow-400"></i>
+        This will actually move and rename files on your computer across different library folders. Make sure you're happy with the preview first!
+      </p>
+    </div>
+  </div>
+
+  <div class="flex gap-4 mb-4 px-2 items-center w-full">
+    <div class="flex-1">
+      <div class="flex items-center justify-between cursor-pointer" (click)="togglePatternsCollapsed()">
+        <p-button
+          outlined
+          [icon]="patternsCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-down'"
+          iconPos="right"
+          size="small"
+          severity="info"
+          [label]="patternsCollapsed ? 'Show Naming Rules' : 'Hide Naming Rules'">
+        </p-button>
+      </div>
+
+      @if (!patternsCollapsed) {
+        <div class="space-y-2 mt-2">
+          @for (pattern of libraryPatterns; track pattern.libraryId) {
+            <div class="p-3 border border-zinc-700 rounded-lg bg-zinc-800">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <p class="text-xs text-gray-400 mb-1">Library: {{ pattern.libraryName }}</p>
+                  <code class="text-[var(--primary-color)] font-mono text-sm">{{ pattern.pattern || 'No pattern available' }}</code>
+                  <p class="text-xs text-gray-400 mt-1">Source: {{ pattern.source }}</p>
+                </div>
+                <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded ml-2">{{ pattern.bookCount }} book{{ pattern.bookCount > 1 ? 's' : '' }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="flex gap-4 mb-4 px-2 items-center">
+    <div class="flex items-center gap-3">
+      <label class="text-sm font-medium text-gray-300">Set all files to:</label>
+      <p-select
+        [options]="availableLibraries"
+        [(ngModel)]="defaultTargetLibraryId"
+        optionLabel="name"
+        optionValue="id"
+        placeholder="Select default library"
+        (onChange)="onDefaultLibraryChange()"
+        class="min-w-[200px]"
+        size="small"
+        appendTo="body"
+      ></p-select>
+      @if (defaultAvailableLibraryPaths.length > 0) {
+        <p-select
+          [options]="defaultAvailableLibraryPaths"
+          [(ngModel)]="defaultTargetLibraryPathId"
+          optionLabel="path"
+          optionValue="id"
+          placeholder="Select default path"
+          (onChange)="onDefaultLibraryPathChange()"
+          class="min-w-[250px]"
+          size="small"
+          appendTo="body"
+        ></p-select>
+      }
+    </div>
+  </div>
+
+  <div class="mb-4" style="height: 500px;">
+    <p-table
+      [value]="filePreviews"
+      [scrollable]="true"
+      scrollHeight="500px"
+      [virtualScroll]="true"
+      [virtualScrollItemSize]="46"
+      [rows]="50"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="max-width:50px;">ID</th>
+          <th>Current Path</th>
+          <th style="max-width:150px;">Target Library</th>
+          <th style="max-width:150px;">Library Sub Path</th>
+          <th></th>
+          <th>New Path</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-preview>
+        <tr>
+          <td>{{ preview.bookId }}</td>
+          <td>
+            <div class="overflow-hidden text-ellipsis">
+              <span class="text-gray-400">{{ preview.currentLibraryName }}/</span><span class="text-gray-200">{{ preview.relativeOriginalPath }}</span>
+            </div>
+          </td>
+          <td style="max-width:150px;">
+            <p-select
+              [options]="availableLibraries"
+              [(ngModel)]="preview.targetLibraryId"
+              optionLabel="name"
+              optionValue="id"
+              placeholder="Select Library"
+              (onChange)="onLibraryChange(preview)"
+              [disabled]="preview.isMoved"
+              class="w-full"
+              appendTo="body"
+              size="small"
+            ></p-select>
+          </td>
+          <td style="max-width:150px;">
+            @if (preview.availableLibraryPaths.length > 0) {
+              <p-select
+                [options]="preview.availableLibraryPaths"
+                [(ngModel)]="preview.targetLibraryPathId"
+                optionLabel="path"
+                optionValue="id"
+                placeholder="Select Path"
+                (onChange)="onLibraryPathChange(preview)"
+                [disabled]="preview.isMoved"
+                class="w-full"
+                appendTo="body"
+                size="small"
+              ></p-select>
+            } @else {
+              <div class="text-xs text-red-400">No paths configured</div>
+            }
+          </td>
+          <td class="text-[var(--primary-color)] text-center">→</td>
+          <td>
+            <div class="overflow-hidden text-ellipsis">
+              <span class="text-gray-400">{{ preview.targetLibraryName }}/</span><span class="text-gray-200">{{ preview.relativeNewPath }}</span>
+            </div>
+          </td>
+          <td class="text-center">
+            @if (preview.isMoved) {
+              <i class="pi pi-check-circle text-green-600"></i>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="flex justify-end items-center gap-4 flex-shrink-0 px-4 pt-4">
+    @if (movedFileCount > 0) {
+      <span class="text-green-500 flex items-center font-semibold drop-shadow-sm select-none">
+        {{ movedFileCount }} file{{ movedFileCount > 1 ? 's' : '' }} successfully moved
+        <i
+          class="pi pi-check-circle ml-2 text-green-500 animate-bounce"
+          style="animation-duration: 1.5s;"
+          aria-label="Success"
+          role="img"
+        ></i>
+      </span>
+    }
+    @if (movedFileCount === 0) {
+      <p-button
+        [label]="loading ? 'Moving...' : 'Move Files'"
+        [icon]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-arrows-h'"
+        severity="success"
+        (click)="saveChanges()"
+        [disabled]="loading || filePreviews.length === 0"
+      ></p-button>
+      <p-button
+        label="Cancel"
+        icon="pi pi-times"
+        severity="danger"
+        (click)="cancel()"
+      ></p-button>
+    } @else {
+      <p-button
+        label="Close"
+        icon="pi pi-times"
+        severity="success"
+        (click)="cancel()"
+      ></p-button>
+    }
+  </div>
+</div>

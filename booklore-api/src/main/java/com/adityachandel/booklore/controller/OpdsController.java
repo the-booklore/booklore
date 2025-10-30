@@ -1,9 +1,15 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.service.BookService;
-import com.adityachandel.booklore.service.opds.OpdsService;
+import com.adityachandel.booklore.service.book.BookService;
+import com.adityachandel.booklore.service.opds.OpdsFeedService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,81 +19,38 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "OPDS", description = "Endpoints for OPDS catalog feeds, book downloads, covers, and search description")
+@Slf4j
 @RestController
-@RequestMapping({"/api/v1/opds", "/api/v2/opds"})
+@RequestMapping("/api/v1/opds")
 @RequiredArgsConstructor
 public class OpdsController {
 
-    private final OpdsService opdsService;
+    private static final String OPDS_CATALOG_MEDIA_TYPE = "application/atom+xml;profile=opds-catalog;kind=navigation;charset=utf-8";
+    private static final String OPDS_ACQUISITION_MEDIA_TYPE = "application/atom+xml;profile=opds-catalog;kind=acquisition;charset=utf-8";
+
+    private final OpdsFeedService opdsFeedService;
     private final BookService bookService;
 
-    @GetMapping(produces = {"application/opds+json"})
-    public ResponseEntity<String> getRootNavigation(HttpServletRequest request) {
-        // Only OPDS 2 navigation is defined for root
-        String nav = opdsService.generateOpdsV2Navigation(request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opds+json;profile=navigation"))
-                .body(nav);
-    }
-
-    @GetMapping(value = "/libraries", produces = {"application/opds+json"})
-    public ResponseEntity<String> getLibrariesNavigation(HttpServletRequest request) {
-        String nav = opdsService.generateOpdsV2LibrariesNavigation(request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opds+json;profile=navigation"))
-                .body(nav);
-    }
-
-
-    @GetMapping(value = "/shelves", produces = {"application/opds+json"})
-    public ResponseEntity<String> getShelvesNavigation(HttpServletRequest request) {
-        String nav = opdsService.generateOpdsV2ShelvesNavigation(request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opds+json;profile=navigation"))
-                .body(nav);
-    }
-
-    @GetMapping(value = "/catalog", produces = {"application/opds+json", "application/atom+xml;profile=opds-catalog"})
-    public ResponseEntity<String> getCatalogFeed(HttpServletRequest request) {
-        String feed = opdsService.generateCatalogFeed(request);
-        MediaType contentType = selectContentType(request);
-        return ResponseEntity.ok()
-                .contentType(contentType)
-                .body(feed);
-    }
-   
-    @GetMapping(value = "/search", produces = {"application/opds+json", "application/atom+xml;profile=opds-catalog"})
-    public ResponseEntity<String> search(HttpServletRequest request) {
-        String feed = opdsService.generateSearchResults(request, request.getParameter("q"));
-        MediaType contentType = selectContentType(request);
-        return ResponseEntity.ok()
-                .contentType(contentType)
-                .body(feed);
-    }
-
-    @GetMapping(value = "/recent", produces = {"application/opds+json"})
-    public ResponseEntity<String> recent(HttpServletRequest request) {
-        String feed = opdsService.generateRecentFeed(request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opds+json;profile=acquisition"))
-                .body(feed);
-    }
-
-    @GetMapping(value = "/search.opds", produces = "application/opensearchdescription+xml")
-    public ResponseEntity<String> searchDescription(HttpServletRequest request) {
-        String feed = opdsService.generateSearchDescription(request);
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opensearchdescription+xml"))
-                .body(feed);
-    }
-
+    @Operation(summary = "Download book file", description = "Download the book file by its ID.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Book file downloaded successfully"),
+        @ApiResponse(responseCode = "404", description = "Book not found")
+    })
     @GetMapping("/{bookId}/download")
-    public ResponseEntity<Resource> downloadBook(@PathVariable("bookId") Long bookId) {
+    public ResponseEntity<Resource> downloadBook(
+            @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
         return bookService.downloadBook(bookId);
     }
 
+    @Operation(summary = "Get book cover image", description = "Retrieve the cover image for a book by its ID.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Cover image returned successfully"),
+        @ApiResponse(responseCode = "404", description = "Book or cover not found")
+    })
     @GetMapping("/{bookId}/cover")
-    public ResponseEntity<Resource> getBookCover(@PathVariable long bookId) {
+    public ResponseEntity<Resource> getBookCover(
+            @Parameter(description = "ID of the book") @PathVariable long bookId) {
         Resource coverImage = bookService.getBookThumbnail(bookId);
         String contentType = "image/jpeg";
         return ResponseEntity.ok()
@@ -96,23 +59,84 @@ public class OpdsController {
                 .body(coverImage);
     }
 
-    @GetMapping(value = "/publications/{bookId}", produces = "application/opds-publication+json")
-    public ResponseEntity<String> getPublication(HttpServletRequest request, @PathVariable long bookId) {
-        String publication = opdsService.generateOpdsV2Publication(request, bookId);
+    @Operation(summary = "Get OPDS root catalog", description = "Retrieve the OPDS root navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Root OPDS catalog returned successfully")
+    @GetMapping(produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getRootCatalog(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateRootNavigation(request);
         return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType("application/opds-publication+json"))
-                .body(publication);
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
     }
 
-    private MediaType selectContentType(HttpServletRequest request) {
-        // Force OPDS 2 JSON when using v2-only filters
-        if (request.getParameter("shelfId") != null || request.getParameter("libraryId") != null) {
-            return MediaType.parseMediaType("application/opds+json;profile=acquisition");
-        }
-        String accept = request.getHeader("Accept");
-        if (accept != null && (accept.contains("application/opds+json") || accept.contains("version=2.0"))) {
-            return MediaType.parseMediaType("application/opds+json;profile=acquisition");
-        }
-        return MediaType.parseMediaType("application/atom+xml;profile=opds-catalog");
+    @Operation(summary = "Get OPDS libraries navigation", description = "Retrieve the OPDS libraries navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Libraries navigation feed returned successfully")
+    @GetMapping(value = "/libraries", produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getLibrariesNavigation(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateLibrariesNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get OPDS shelves navigation", description = "Retrieve the OPDS shelves navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Shelves navigation feed returned successfully")
+    @GetMapping(value = "/shelves", produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getShelvesNavigation(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateShelvesNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get OPDS catalog feed", description = "Retrieve the OPDS acquisition catalog feed.")
+    @ApiResponse(responseCode = "200", description = "Catalog feed returned successfully")
+    @GetMapping(value = "/catalog", produces = OPDS_ACQUISITION_MEDIA_TYPE)
+    public ResponseEntity<String> getCatalog(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateCatalogFeed(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get recent books feed", description = "Retrieve the OPDS feed for recently added books.")
+    @ApiResponse(responseCode = "200", description = "Recent books feed returned successfully")
+    @GetMapping(value = "/recent", produces = OPDS_ACQUISITION_MEDIA_TYPE)
+    public ResponseEntity<String> getRecentBooks(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateRecentFeed(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get surprise feed", description = "Retrieve the OPDS feed for surprise/random books.")
+    @ApiResponse(responseCode = "200", description = "Surprise feed returned successfully")
+    @GetMapping(value = "/surprise", produces = OPDS_ACQUISITION_MEDIA_TYPE)
+    public ResponseEntity<String> getSurpriseFeed(
+            @Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateSurpriseFeed(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get OPDS search description", description = "Retrieve the OpenSearch description document for OPDS search.")
+    @ApiResponse(responseCode = "200", description = "OpenSearch description returned successfully")
+    @GetMapping(value = "/search.opds", produces = {
+            "application/opensearchdescription+xml",
+            "application/atom+xml",
+            "application/xml",
+            "text/xml"
+    })
+    public ResponseEntity<String> getSearchDescription() {
+        String searchDoc = opdsFeedService.getOpenSearchDescription();
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/opensearchdescription+xml;charset=utf-8"))
+                .body(searchDoc);
     }
 }

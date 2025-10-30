@@ -1,7 +1,9 @@
 package com.adityachandel.booklore.service.metadata;
 
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
@@ -12,7 +14,10 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.MetadataFetchJobEntity;
 import com.adityachandel.booklore.model.entity.MetadataFetchProposalEntity;
-import com.adityachandel.booklore.model.enums.*;
+import com.adityachandel.booklore.model.enums.FetchedMetadataProposalStatus;
+import com.adityachandel.booklore.model.enums.MetadataFetchTaskStatus;
+import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -20,6 +25,7 @@ import com.adityachandel.booklore.repository.MetadataFetchJobRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
+import com.adityachandel.booklore.task.TaskCancellationManager;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -30,11 +36,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.adityachandel.booklore.model.enums.MetadataProvider.*;
@@ -54,9 +58,13 @@ public class MetadataRefreshService {
     private final ObjectMapper objectMapper;
     private final BookRepository bookRepository;
     private final PlatformTransactionManager transactionManager;
+    private final AuthenticationService authenticationService;
+    private final TaskCancellationManager cancellationManager;
 
 
-    public void refreshMetadata(MetadataRefreshRequest request, Long userId, String jobId) {
+    public void refreshMetadata(MetadataRefreshRequest request, String jobId) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        Long userId = user != null ? user.getId() : null;
         final Set<Long> bookIds = null;
         final int totalBooks;
         try {
@@ -93,14 +101,19 @@ public class MetadataRefreshService {
             int completedCount = 0;
 
             for (Long bookId : actualBookIds) {
-                checkForInterruption(jobId, task, totalBooks);
+                if (cancellationManager.isTaskCancelled(jobId)) {
+                    log.info("RefreshMetadataTask {} was cancelled, stopping execution", jobId);
+                    cancelTask(task);
+                    cancellationManager.clearCancellation(jobId);
+                    return;
+                }
+
                 int finalCompletedCount = completedCount;
                 txTemplate.execute(status -> {
                     BookEntity book = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId))
                             .stream().findFirst()
                             .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
                     try {
-                        checkForInterruption(jobId, task, totalBooks);
                         if (book.getMetadata().areAllFieldsLocked()) {
                             log.info("Skipping locked book: {}", book.getFileName());
                             sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Skipped locked book: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
@@ -158,9 +171,11 @@ public class MetadataRefreshService {
             }
 
             completeTask(task, completedCount, totalBooks, isReviewMode);
+            cancellationManager.clearCancellation(jobId);
             log.info("Metadata refresh task {} completed successfully", jobId);
 
         } catch (RuntimeException e) {
+            cancellationManager.clearCancellation(jobId);
             if (e.getCause() instanceof InterruptedException) {
                 log.info("Metadata refresh task {} cancelled successfully", jobId);
                 return;
@@ -170,6 +185,7 @@ public class MetadataRefreshService {
             sendBatchProgressNotification(jobId, 0, totalBooksForError, "Fatal error during metadata refresh: " + e.getMessage(), MetadataFetchTaskStatus.ERROR, false);
             throw e;
         } catch (Exception fatal) {
+            cancellationManager.clearCancellation(jobId);
             log.error("Fatal error during metadata refresh", fatal);
             int totalBooksForError = bookIds != null ? bookIds.size() : 0;
             sendBatchProgressNotification(jobId, 0, totalBooksForError, "Fatal error during metadata refresh: " + fatal.getMessage(), MetadataFetchTaskStatus.ERROR, false);
@@ -193,8 +209,7 @@ public class MetadataRefreshService {
 
     public Map<MetadataProvider, BookMetadata> fetchMetadataForBook(List<MetadataProvider> providers, Book book) {
         return providers.stream()
-                .map(provider -> createInterruptibleMetadataFuture(() -> fetchTopMetadataFromAProvider(provider, book)))
-                .map(this::joinFutureSafely)
+                .map(provider -> fetchTopMetadataFromAProvider(provider, book))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(
                         BookMetadata::getProvider,
@@ -206,8 +221,7 @@ public class MetadataRefreshService {
     public Map<MetadataProvider, BookMetadata> fetchMetadataForBook(List<MetadataProvider> providers, BookEntity bookEntity) {
         Book book = bookMapper.toBook(bookEntity);
         return providers.stream()
-                .map(provider -> createInterruptibleMetadataFuture(() -> fetchTopMetadataFromAProvider(provider, book)))
-                .map(this::joinFutureSafely)
+                .map(provider -> fetchTopMetadataFromAProvider(provider, book))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toMap(
                         BookMetadata::getProvider,
@@ -215,48 +229,6 @@ public class MetadataRefreshService {
                         (existing, replacement) -> existing
                 ));
     }
-
-    private CompletableFuture<BookMetadata> createInterruptibleMetadataFuture(Supplier<BookMetadata> metadataSupplier) {
-        return CompletableFuture.supplyAsync(() -> {
-            if (Thread.currentThread().isInterrupted()) {
-                log.info("Skipping metadata fetch due to interruption");
-                return null;
-            }
-            return metadataSupplier.get();
-        }).exceptionally(e -> {
-            if (e.getCause() instanceof InterruptedException) {
-                log.info("Metadata fetch was interrupted");
-                Thread.currentThread().interrupt();
-                return null;
-            }
-            log.error("Error fetching metadata from provider", e);
-            return null;
-        });
-    }
-
-    private BookMetadata joinFutureSafely(CompletableFuture<BookMetadata> future) {
-        try {
-            return future.join();
-        } catch (Exception e) {
-            if (Thread.currentThread().isInterrupted()) {
-                log.info("Future join interrupted");
-                return null;
-            }
-            throw e;
-        }
-    }
-
-    private void checkForInterruption(String jobId, MetadataFetchJobEntity task, int totalBooks) {
-        if (Thread.currentThread().isInterrupted()) {
-            log.info("Metadata refresh task {} cancelled by user request", jobId);
-            sendBatchProgressNotification(jobId, 0, totalBooks, "Task cancelled by user", MetadataFetchTaskStatus.ERROR, false);
-            if (task != null) {
-                failTask(task, totalBooks);
-            }
-            throw new RuntimeException(new InterruptedException("Task was cancelled"));
-        }
-    }
-
 
     private void reportProgressIfNeeded(MetadataFetchJobEntity task, String taskId, int completedCount, int total, BookEntity book, boolean isReviewMode) {
         if (task == null) return;
@@ -267,10 +239,7 @@ public class MetadataRefreshService {
     }
 
     private void sendBatchProgressNotification(String taskId, int current, int total, String message, MetadataFetchTaskStatus status, boolean isReview) {
-        notificationService.sendMessage(Topic.BOOK_METADATA_BATCH_PROGRESS,
-                new MetadataBatchProgressNotification(
-                        taskId, current, total, message, status.name(), isReview
-                ));
+        notificationService.sendMessage(Topic.BOOK_METADATA_BATCH_PROGRESS, new MetadataBatchProgressNotification(taskId, current, total, message, status.name(), isReview));
     }
 
     private void completeTask(MetadataFetchJobEntity task, int completed, int total, boolean isReviewMode) {
@@ -281,11 +250,11 @@ public class MetadataRefreshService {
         sendBatchProgressNotification(task.getTaskId(), completed, total, "Batch metadata fetch successfully completed!", MetadataFetchTaskStatus.COMPLETED, isReviewMode);
     }
 
-    private void failTask(MetadataFetchJobEntity task, int total) {
-        task.setStatus(MetadataFetchTaskStatus.ERROR);
+    private void cancelTask(MetadataFetchJobEntity task) {
+        task.setStatus(MetadataFetchTaskStatus.CANCELLED);
         task.setCompletedAt(Instant.now());
         metadataFetchJobRepository.save(task);
-        sendBatchProgressNotification(task.getTaskId(), 0, total, "Error: " + "Task was cancelled", MetadataFetchTaskStatus.ERROR, false);
+        sendBatchProgressNotification(task.getTaskId(), task.getCompletedBooks(), task.getTotalBooksCount(), "Task cancelled by user", MetadataFetchTaskStatus.CANCELLED, false);
     }
 
     private void saveProposal(MetadataFetchJobEntity job, Long bookId, BookMetadata metadata) throws JsonProcessingException {
@@ -305,10 +274,18 @@ public class MetadataRefreshService {
 
     public void updateBookMetadata(BookEntity bookEntity, BookMetadata metadata, boolean replaceCover, boolean mergeCategories) {
         if (metadata != null) {
-            MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
-                    .metadata(metadata)
+
+            MetadataUpdateContext context = MetadataUpdateContext.builder()
+                    .bookEntity(bookEntity)
+                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                            .metadata(metadata)
+                            .build())
+                    .updateThumbnail(replaceCover)
+                    .mergeCategories(mergeCategories)
+                    .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
                     .build();
-            bookMetadataUpdater.setBookMetadata(bookEntity, metadataUpdateWrapper, replaceCover, mergeCategories);
+
+            bookMetadataUpdater.setBookMetadata(context);
 
             Book book = bookMapper.toBook(bookEntity);
             notificationService.sendMessage(Topic.BOOK_METADATA_UPDATE, book);

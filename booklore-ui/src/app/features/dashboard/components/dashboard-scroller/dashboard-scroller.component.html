@@ -1,0 +1,41 @@
+<div class="dashboard-scroller-container">
+  <h2 class="dashboard-scroller-title">
+    {{ title }}
+    @if (isMagicShelf) {
+      <i class="pi pi-sparkles magic-shelf-icon"></i>
+    }
+  </h2>
+
+  @if (!books || books.length === 0) {
+    <div class="dashboard-scroller-no-books">
+      <div class="empty-state-icon">
+        <i class="pi pi-book"></i>
+      </div>
+      <p>No books found for this scroller.</p>
+    </div>
+  }
+
+  @if (books) {
+    <div class="dashboard-scroller-infinite"
+      infiniteScroll
+      [infiniteScrollDistance]="2"
+      [infiniteScrollThrottle]="50"
+      #scrollContainer
+      [horizontal]="true">
+      @for (book of books; track book.id) {
+        <div class="dashboard-scroller-card">
+          <app-book-card [book]="book" [isCheckboxEnabled]="false"></app-book-card>
+        </div>
+      }
+    </div>
+  }
+
+  @if (books === null) {
+    <div class="dashboard-scroller-error">
+      <div class="error-icon">
+        <i class="pi pi-exclamation-triangle"></i>
+      </div>
+      <p>Failed to load books! Please try refreshing the page.</p>
+    </div>
+  }
+</div>

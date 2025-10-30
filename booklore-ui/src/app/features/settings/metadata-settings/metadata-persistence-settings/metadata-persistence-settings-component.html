@@ -1,0 +1,49 @@
+<div class="preferences-section">
+  <div class="section-header">
+    <h3 class="section-title">
+      <i class="pi pi-save"></i>
+      Metadata Persistence
+    </h3>
+  </div>
+
+  <div class="settings-card">
+    <div class="warning-notice">
+      <i class="pi pi-exclamation-triangle"></i>
+      <div>
+        <strong>Network Storage Notice:</strong> These features are designed for local file systems and have not been tested with network storage (NAS/cloud). Functionality cannot be guaranteed on network file systems.
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Write Metadata to File</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile"
+            (onChange)="onPersistenceToggle('saveToOriginalFile')">
+          </p-toggleswitch>
+        </div>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          Write metadata directly into the original file. (Only Epub and PDF formats are currently supported.)
+        </p>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Auto-Move Files on Metadata Update</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          </p-toggleswitch>
+        </div>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          Automatically move and rename files according to their library's naming pattern when metadata is updated, either through manual editing or auto-fetch operations.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

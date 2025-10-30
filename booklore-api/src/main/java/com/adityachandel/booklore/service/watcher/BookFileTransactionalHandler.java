@@ -6,8 +6,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.PermissionType;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -25,7 +24,6 @@ import java.util.Set;
 
 import static com.adityachandel.booklore.model.enums.PermissionType.ADMIN;
 import static com.adityachandel.booklore.model.enums.PermissionType.MANIPULATE_LIBRARY;
-import static com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification;
 
 @Slf4j
 @Service
@@ -52,7 +50,7 @@ public class BookFileTransactionalHandler {
         String fileName = path.getFileName().toString();
         String libraryPath = bookFilePersistenceService.findMatchingLibraryPath(libraryEntity, path);
 
-        notificationService.sendMessageToPermissions(Topic.LOG, createLogNotification("Started processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Started processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
 
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
 
@@ -68,7 +66,7 @@ public class BookFileTransactionalHandler {
 
         libraryProcessingService.processLibraryFiles(List.of(libraryFile), libraryEntity);
 
-        notificationService.sendMessageToPermissions(Topic.LOG, createLogNotification("Finished processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
         log.info("[CREATE] Completed processing for file '{}'", filePath);
     }
 }

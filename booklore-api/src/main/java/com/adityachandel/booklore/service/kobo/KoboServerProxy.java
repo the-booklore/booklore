@@ -29,12 +29,14 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class KoboServerProxy {
 
+    private static final Pattern KOBO_API_PREFIX_PATTERN = Pattern.compile("^/api/kobo/[^/]+");
     private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(1)).build();
     private final ObjectMapper objectMapper;
     private final BookloreSyncTokenGenerator bookloreSyncTokenGenerator;
@@ -56,7 +58,7 @@ public class KoboServerProxy {
 
     public ResponseEntity<JsonNode> proxyCurrentRequest(Object body, boolean includeSyncToken) {
         HttpServletRequest request = RequestUtils.getCurrentRequest();
-        String path = request.getRequestURI().replaceFirst("^/api/kobo/[^/]+", "");
+        String path = KOBO_API_PREFIX_PATTERN.matcher(request.getRequestURI()).replaceFirst("");
 
         BookloreSyncToken syncToken = null;
         if (includeSyncToken) {

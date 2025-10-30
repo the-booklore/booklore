@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookdropFileEntity;
+import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -12,6 +13,7 @@ import com.adityachandel.booklore.service.bookdrop.BookdropMetadataService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
+import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
 import com.adityachandel.booklore.util.FileService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -53,6 +55,8 @@ class BookdropMetadataServiceTest {
     private MetadataRefreshService metadataRefreshService;
     @Mock
     private FileService fileService;
+    @Mock
+    private MetadataExtractorFactory metadataExtractorFactory;
 
     @InjectMocks
     private BookdropMetadataService bookdropMetadataService;
@@ -72,7 +76,7 @@ class BookdropMetadataServiceTest {
         BookMetadata metadata = BookMetadata.builder().title("Test Book").build();
 
         when(bookdropFileRepository.findById(1L)).thenReturn(Optional.of(sampleFile));
-        when(epubMetadataExtractor.extractMetadata(any(File.class))).thenReturn(metadata);
+        when(metadataExtractorFactory.extractMetadata(eq(BookFileExtension.EPUB), any(File.class))).thenReturn(metadata);
         when(objectMapper.writeValueAsString(metadata)).thenReturn("{\"title\":\"Test Book\"}");
         when(bookdropFileRepository.save(any())).thenReturn(sampleFile);
 
@@ -118,9 +122,8 @@ class BookdropMetadataServiceTest {
         BookMetadata metadata = BookMetadata.builder().title("No Cover Book").build();
 
         when(bookdropFileRepository.findById(1L)).thenReturn(Optional.of(sampleFile));
-        when(epubMetadataExtractor.extractMetadata(any(File.class))).thenReturn(metadata);
+        when(metadataExtractorFactory.extractMetadata(eq(BookFileExtension.EPUB), any(File.class))).thenReturn(metadata);
         when(objectMapper.writeValueAsString(metadata)).thenReturn("{\"title\":\"No Cover Book\"}");
-        when(epubMetadataExtractor.extractCover(any(File.class))).thenReturn(null);
         when(bookdropFileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookdropFileEntity result = bookdropMetadataService.attachInitialMetadata(1L);

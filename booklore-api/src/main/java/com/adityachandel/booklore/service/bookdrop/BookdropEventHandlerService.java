@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -106,7 +105,7 @@ public class BookdropEventHandlerService {
                 int queueSize = fileQueue.size();
                 notificationService.sendMessageToPermissions(
                         Topic.LOG,
-                        new LogNotification("Processing bookdrop file: " + fileName + " (" + queueSize + " files remaining)"),
+                        LogNotification.info("Processing bookdrop file: " + fileName + " (" + queueSize + " files remaining)"),
                         Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
                 );
 
@@ -134,13 +133,13 @@ public class BookdropEventHandlerService {
                 if (fileQueue.isEmpty()) {
                     notificationService.sendMessageToPermissions(
                             Topic.LOG,
-                            new LogNotification("All bookdrop files have finished processing"),
+                            LogNotification.info("All bookdrop files have finished processing"),
                             Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
                     );
                 } else {
                     notificationService.sendMessageToPermissions(
                             Topic.LOG,
-                            new LogNotification("Finished processing bookdrop file: " + fileName + " (" + fileQueue.size() + " files remaining)"),
+                            LogNotification.info("Finished processing bookdrop file: " + fileName + " (" + fileQueue.size() + " files remaining)"),
                             Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
                     );
                 }

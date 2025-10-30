@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.RefreshTokenEntity;
+import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.RefreshTokenRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.user.DefaultSettingInitializer;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,14 +41,48 @@ public class AuthenticationService {
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return null;
+        }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof BookLoreUser) {
-            defaultSettingInitializer.ensureDefaultSettings((BookLoreUser) principal);
-            return (BookLoreUser) principal;
+        if (principal instanceof BookLoreUser user) {
+            if (user.getId() != null && user.getId() != -1L) {
+                defaultSettingInitializer.ensureDefaultSettings(user);
+            }
+            return user;
         }
         throw new IllegalStateException("Authenticated principal is not of type BookLoreUser");
     }
 
+    public BookLoreUser getSystemUser() {
+        return createSystemUser();
+    }
+
+    private BookLoreUser createSystemUser() {
+        BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
+        permissions.setAdmin(true);
+        permissions.setCanUpload(true);
+        permissions.setCanDownload(true);
+        permissions.setCanEditMetadata(true);
+        permissions.setCanManipulateLibrary(true);
+        permissions.setCanSyncKoReader(true);
+        permissions.setCanSyncKobo(true);
+        permissions.setCanEmailBook(true);
+        permissions.setCanDeleteBook(true);
+        permissions.setCanAccessOpds(true);
+
+        return BookLoreUser.builder()
+                .id(-1L)
+                .username("system")
+                .name("System User")
+                .email("system@booklore.internal")
+                .provisioningMethod(ProvisioningMethod.LOCAL)
+                .isDefaultPassword(false)
+                .permissions(permissions)
+                .assignedLibraries(List.of())
+                .userSettings(new BookLoreUser.UserSettings())
+                .build();
+    }
 
     public OpdsUserDetails getOpdsUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

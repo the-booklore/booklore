@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.mapper.MetadataClearFlagsMapper;
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
@@ -17,30 +18,30 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.Lock;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookQueryService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
-import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
-import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
+import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.SecurityContextVirtualThread;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -50,8 +51,6 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-
-import static com.adityachandel.booklore.model.websocket.LogNotification.createLogNotification;
 
 @Slf4j
 @Service
@@ -172,8 +171,13 @@ public class BookMetadataService {
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
             metadataWriterFactory.getWriter(bookEntity.getBookType())
-                    .ifPresent(writer -> writerAction.accept(writer, bookEntity));
+                    .ifPresent(writer -> {
+                        writerAction.accept(writer, bookEntity);
+                        String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                        bookEntity.setCurrentHash(newHash);
+                    });
         }
+        bookRepository.save(bookEntity);
         return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
     }
 
@@ -193,7 +197,7 @@ public class BookMetadataService {
                         .filter(book -> book.getMetadata().getCoverLocked() == null || !book.getMetadata().getCoverLocked())
                         .toList();
                 int total = books.size();
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Started regenerating covers for " + total + " books"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
 
                 int[] current = {1};
                 for (BookEntity book : books) {
@@ -205,11 +209,10 @@ public class BookMetadataService {
                     }
                     current[0]++;
                 }
-
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Finished regenerating covers"));
+                notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers"));
             } catch (Exception e) {
                 log.error("Error during cover regeneration: {}", e.getMessage(), e);
-                notificationService.sendMessage(Topic.LOG, createLogNotification("Error during cover regeneration: " + e.getMessage()));
+                notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
             }
         });
     }
@@ -217,7 +220,7 @@ public class BookMetadataService {
     private void regenerateCoverForBook(BookEntity book, String progress) {
         String title = book.getMetadata().getTitle();
         String message = progress + "Regenerating cover for: " + title;
-        notificationService.sendMessage(Topic.LOG, createLogNotification(message));
+        notificationService.sendMessage(Topic.LOG, LogNotification.info(message));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
         processor.generateCover(book);
@@ -236,7 +239,7 @@ public class BookMetadataService {
     }
 
     @Transactional
-    public List<BookMetadata> bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories) {
+    public void bulkUpdateMetadata(BulkMetadataUpdateRequest request, boolean mergeCategories, boolean mergeMoods, boolean mergeTags) {
         List<BookEntity> books = bookRepository.findAllWithMetadataByIds(request.getBookIds());
 
         MetadataClearFlags clearFlags = metadataClearFlagsMapper.toClearFlags(request);
@@ -254,18 +257,20 @@ public class BookMetadataService {
                     .tags(request.getTags())
                     .build();
 
-            MetadataUpdateWrapper metadataUpdateWrapper = MetadataUpdateWrapper.builder()
-                    .metadata(bookMetadata)
-                    .clearFlags(clearFlags)
+            MetadataUpdateContext context = MetadataUpdateContext.builder()
+                    .bookEntity(book)
+                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                            .metadata(bookMetadata)
+                            .clearFlags(clearFlags)
+                            .build())
+                    .updateThumbnail(false)
+                    .mergeCategories(mergeCategories)
+                    .mergeMoods(mergeMoods)
+                    .mergeTags(mergeTags)
                     .build();
 
-            bookMetadataUpdater.setBookMetadata(book, metadataUpdateWrapper, false, mergeCategories);
+            bookMetadataUpdater.setBookMetadata(context);
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBook(book));
         }
-
-        return books.stream()
-                .map(BookEntity::getMetadata)
-                .map(m -> bookMetadataMapper.toBookMetadata(m, false))
-                .toList();
     }
 }
-

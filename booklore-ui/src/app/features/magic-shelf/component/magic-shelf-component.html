@@ -1,0 +1,117 @@
+<div class="flex flex-col border border-[var(--border-color)] rounded-lg w-[75rem] min-h-[50rem] overflow-hidden">
+
+  <div class="px-8 pt-8 flex-grow overflow-auto" [formGroup]="form">
+
+    <div class="mb-4 flex w-full gap-4">
+      <div class="flex-1">
+        <label for="shelfName" class="block mb-1 font-semibold">Shelf Name</label>
+        <input pInputText id="shelfName" type="text" formControlName="name" placeholder="E.g. Rom-Zom-Coms, Fast & Furious, Missing Metadata" class="w-full"/>
+      </div>
+      <div class="flex items-end">
+        <div>
+          <label class="block mb-1 font-semibold">Shelf Icon</label>
+          <p-button
+            [icon]="form.get('icon')?.value || 'pi pi-plus'"
+            (click)="openIconPicker()"
+            [outlined]="form.get('icon')?.value"
+            [severity]="form.get('icon')?.value ? 'success' : 'danger'"
+            [label]="form.get('icon')?.value ? 'Icon Selected' : 'Select Icon'">
+          </p-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-auto max-h-[40rem]">
+      <ng-container *ngTemplateOutlet="groupTemplate; context: { group: form.get('group') }"></ng-container>
+    </div>
+    <div class="my-4 text-left">
+      <p-button
+        label="Save Filter"
+        outlined
+        severity="success"
+        (click)="submit()"
+        [disabled]="form.invalid"></p-button>
+    </div>
+  </div>
+
+  <ng-template #groupTemplate let-group="group">
+    <div class="p-3 border-l-4 border-sky-500 mt-2 w-full" [formGroup]="group">
+      <div class="mb-2 flex items-center gap-2">
+        <label class="font-semibold">Condition:</label>
+        <p-select [options]="conditionOptions" formControlName="join" class="w-28" appendTo="body" [showClear]="false"/>
+        <p-button icon="pi pi-plus" size="small" text (click)="addRule(group)" label="Add Rule"></p-button>
+        <p-button icon="pi pi-folder-open" size="small" text (click)="addGroup(group)" label="Add Group"></p-button>
+        @if (group.parent) {
+          <p-button icon="pi pi-trash" text (click)="deleteGroup(group)" severity="danger"></p-button>
+        }
+      </div>
+
+      <div formArrayName="rules">
+        @for (ruleCtrl of group.get('rules')['controls']; let i = $index; track trackByFn(ruleCtrl, i)) {
+          <div [formGroupName]="i" class="ml-4 mt-2 flex gap-3 items-center">
+            @if (isGroup(ruleCtrl)) {
+              <ng-container>
+                <ng-container *ngTemplateOutlet="groupTemplate; context: { group: ruleCtrl }"></ng-container>
+              </ng-container>
+            } @else {
+              <p-select [options]="fieldOptions" formControlName="field" (onChange)="onFieldChange(ruleCtrl)" placeholder="Field" appendTo="body" class="min-w-56"/>
+              <p-select [options]="getOperatorOptionsForField(ruleCtrl.get('field')?.value)" appendTo="body" formControlName="operator" placeholder="Operator" class="min-w-56" (onChange)="onOperatorChange(ruleCtrl)"/>
+
+              @if (!['is_empty', 'is_not_empty'].includes(ruleCtrl.get('operator')?.value)) {
+                @if (ruleCtrl.get('operator')?.value === 'in_between') {
+                  @if (ruleCtrl.get('field')?.value === 'publishedDate') {
+                    <p-datepicker [formControl]="ruleCtrl.get('valueStart')" dateFormat="dd-M-yy" placeholder="Start Year" appendTo="body" fluid class="w-full"></p-datepicker>
+                    <p-datepicker [formControl]="ruleCtrl.get('valueEnd')" dateFormat="dd-M-yy" placeholder="End Year" appendTo="body" fluid class="w-full"></p-datepicker>
+                  } @else if (ruleCtrl.get('field')?.value === 'dateFinished') {
+                    <p-datepicker [formControl]="ruleCtrl.get('valueStart')" dateFormat="dd-M-yy" placeholder="Start Date" appendTo="body" fluid class="w-full"></p-datepicker>
+                    <p-datepicker [formControl]="ruleCtrl.get('valueEnd')" dateFormat="dd-M-yy" placeholder="End Date" appendTo="body" fluid class="w-full"></p-datepicker>
+                  } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'number') {
+                    <p-inputNumber [formControl]="ruleCtrl.get('valueStart')" [min]="0" class="w-full" placeholder="Start Value" [showButtons]="true"></p-inputNumber>
+                    <p-inputNumber [formControl]="ruleCtrl.get('valueEnd')" [min]="0" class="w-full" placeholder="End Value" [showButtons]="true"></p-inputNumber>
+                  } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'decimal') {
+                    <p-inputNumber [formControl]="ruleCtrl.get('valueStart')" mode="decimal" [minFractionDigits]="1" [maxFractionDigits]="1" [min]="0" [max]="numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.max || 10" class="w-full" placeholder="Start Value" [showButtons]="true"></p-inputNumber>
+                    <p-inputNumber [formControl]="ruleCtrl.get('valueEnd')" mode="decimal" [minFractionDigits]="1" [maxFractionDigits]="1" [min]="0" [max]="numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.max || 10" class="w-full" placeholder="End Value" [showButtons]="true"></p-inputNumber>
+                  } @else {
+                    <input pInputText [formControl]="ruleCtrl.get('valueStart')" class="w-full" placeholder="Start Value"/>
+                    <input pInputText [formControl]="ruleCtrl.get('valueEnd')" class="w-full" placeholder="End Value"/>
+                  }
+                } @else {
+                  @if (ruleCtrl.get('field')?.value === 'publishedDate') {
+                    <p-datepicker formControlName="value" dateFormat="dd-M-yy" appendTo="body" fluid class="w-full"></p-datepicker>
+                  } @else if (ruleCtrl.get('field')?.value === 'dateFinished') {
+                    <p-datepicker formControlName="value" dateFormat="dd-M-yy" appendTo="body" fluid class="w-full"></p-datepicker>
+                  } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'number') {
+                    <p-inputNumber formControlName="value" class="w-full" mode="decimal" placeholder="Value" [showButtons]="true"></p-inputNumber>
+                  } @else if (numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.type === 'decimal') {
+                    <p-inputNumber formControlName="value" mode="decimal" [minFractionDigits]="1" [maxFractionDigits]="1" [min]="0" [max]="numericFieldConfigMap.get(ruleCtrl.get('field')?.value)?.max || 10" class="w-full" placeholder="Value" [showButtons]="true"></p-inputNumber>
+                  } @else if (['includes_any', 'includes_all', 'excludes_all'].includes(ruleCtrl.get('operator')?.value)) {
+                    @if (ruleCtrl.get('field')?.value === 'readStatus') {
+                      <p-multiSelect [options]="readStatusOptions" formControlName="value" display="chip" class="w-full" appendTo="body" placeholder="Select Statuses"></p-multiSelect>
+                    } @else if (ruleCtrl.get('field')?.value === 'fileType') {
+                      <p-multiSelect [options]="fileType" formControlName="value" display="chip" class="w-full" appendTo="body" placeholder="Select File Types"></p-multiSelect>
+                    } @else if (ruleCtrl.get('field')?.value === 'library') {
+                      <p-multiSelect [options]="libraryOptions" formControlName="value" display="chip" class="w-full" appendTo="body" placeholder="Select Libraries"></p-multiSelect>
+                    } @else {
+                      <div class="w-full">
+                        <p-autoComplete [formControl]="ruleCtrl.get('value')" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" placeholder="Enter values (press Enter)" (onBlur)="onAutoCompleteBlur(ruleCtrl.get('value'), $event)"></p-autoComplete>
+                      </div>
+                    }
+                  } @else if (ruleCtrl.get('field')?.value === 'readStatus') {
+                    <p-select [options]="readStatusOptions" formControlName="value" placeholder="Select Status" appendTo="body" class="w-full"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'fileType') {
+                    <p-select [options]="fileType" formControlName="value" placeholder="Select File Type" appendTo="body" class="w-full"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'library') {
+                    <p-select [options]="libraryOptions" formControlName="value" placeholder="Select Library" appendTo="body" class="w-full"></p-select>
+                  } @else {
+                    <input pInputText formControlName="value" class="w-full" placeholder="Value"/>
+                  }
+                }
+              }
+              <p-button icon="pi pi-trash" text severity="danger" (click)="removeRule(group, i)"></p-button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </ng-template>
+</div>

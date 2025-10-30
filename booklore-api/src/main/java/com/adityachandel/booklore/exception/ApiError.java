@@ -51,7 +51,9 @@ public enum ApiError {
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "%s"),
     CONFLICT(HttpStatus.CONFLICT, "%s"),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File not found: %s"),
-    SHELF_CANNOT_BE_DELETED(HttpStatus.FORBIDDEN, "'%s' shelf can't be deleted" ),;
+    SHELF_CANNOT_BE_DELETED(HttpStatus.FORBIDDEN, "'%s' shelf can't be deleted" ),
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "Scheduled task not found: %s"),
+    TASK_ALREADY_RUNNING(HttpStatus.CONFLICT, "Task is already running: %s"),;
 
     private final HttpStatus status;
     private final String message;

@@ -14,6 +14,7 @@ import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookReviewRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.book.BookReviewService;
 import com.adityachandel.booklore.service.metadata.BookReviewUpdateService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import jakarta.persistence.EntityNotFoundException;
