@@ -15,6 +15,7 @@ import {MagicShelfComponent} from '../../magic-shelf/component/magic-shelf-compo
 import {TaskCreateRequest, TaskType} from '../../settings/task-management/task.service';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {TaskHelperService} from '../../settings/task-management/task-helper.service';
+import {UserService} from "../../settings/user-management/user.service";
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +30,7 @@ export class LibraryShelfMenuService {
   private router = inject(Router);
   private dialogService = inject(DialogService);
   private magicShelfService = inject(MagicShelfService);
+  private userService = inject(UserService);
 
   initializeLibraryMenuItems(entity: Library | Shelf | MagicShelf | null): MenuItem[] {
     return [
@@ -203,13 +205,18 @@ export class LibraryShelfMenuService {
   }
 
   initializeMagicShelfMenuItems(entity: any): MenuItem[] {
+    const isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
+    const isPublicShelf = entity?.isPublic ?? false;
+    const disableOptions = isPublicShelf && !isAdmin;
+
     return [
       {
-        label: 'Options',
+        label: (isPublicShelf ? 'Public Shelf - ' : '') + (disableOptions ? 'Read only' : 'Options'),
         items: [
           {
             label: 'Edit Magic Shelf',
             icon: 'pi pi-pen-to-square',
+            disabled: disableOptions,
             command: () => {
               this.dialogService.open(MagicShelfComponent, {
                 header: 'Edit Magic Shelf',
@@ -224,6 +231,7 @@ export class LibraryShelfMenuService {
           {
             label: 'Delete Magic Shelf',
             icon: 'pi pi-trash',
+            disabled: disableOptions,
             command: () => {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete magic shelf: ${entity?.name}?`,
