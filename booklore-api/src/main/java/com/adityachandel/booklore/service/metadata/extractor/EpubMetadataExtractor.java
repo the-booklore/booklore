@@ -7,6 +7,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.FileHeader;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -19,7 +21,6 @@ import java.io.*;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
-import org.json.*;
 import java.util.Set;
 
 @Slf4j
@@ -142,17 +143,19 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 if (name.equals("calibre:pages") || name.equals("pagecount") || prop.equals("schema:pagecount") || prop.equals("media:pagecount") || prop.equals("booklore:page_count")) {
                                     safeParseInt(content, builderMeta::pageCount);
                                 } else if (name.equals("calibre:user_metadata:#pagecount")) {
-                                    JSONObject jsonroot = new JSONObject(content);
-                                    Object value = jsonroot.opt("#value#");
-                                    if (value != null) {
+                                    try {
+                                        JSONObject jsonroot = new JSONObject(content);
+                                        Object value = jsonroot.opt("#value#");
                                         safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                    } catch (JSONException ignored) {
                                     }
                                 } else if (prop.equals("calibre:user_metadata")) {
-                                    JSONObject jsonroot = new JSONObject(content);
-                                    JSONObject pages = jsonroot.getJSONObject("#pagecount");
-                                    Object value = pages.opt("#value#");
-                                    if (value != null) {
+                                    try {
+                                        JSONObject jsonroot = new JSONObject(content);
+                                        JSONObject pages = jsonroot.getJSONObject("#pagecount");
+                                        Object value = pages.opt("#value#");
                                         safeParseInt(String.valueOf(value), builderMeta::pageCount);
+                                    } catch (JSONException ignored) {
                                     }
                                 }
 
