@@ -217,7 +217,7 @@ export class MagicShelfComponent implements OnInit {
       this.shelfId = id;
       this.magicShelfService.getShelf(id).subscribe((data) => {
         this.form = new FormGroup({
-          name: new FormControl<string | null>(data?.name?.replace(" (public)", "") ?? null, {nonNullable: true, validators: [Validators.required]}),
+          name: new FormControl<string | null>(data?.name ?? null, {nonNullable: true, validators: [Validators.required]}),
           icon: new FormControl<string | null>(data?.icon ?? null, {nonNullable: true, validators: [Validators.required]}),
           isPublic: new FormControl<boolean>(data?.isPublic ?? false),
           group: data?.filterJson ? this.buildGroupFromData(JSON.parse(data.filterJson)) : this.createGroup()

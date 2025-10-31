@@ -23,11 +23,6 @@ public class MagicShelfService {
 
         List<MagicShelf> shelves = repository.findAllByUserId(userId).stream()
                 .map(this::toDto)
-                .peek(shelf -> {
-                    if (shelf.getIsPublic() != null && shelf.getIsPublic()) {
-                        shelf.setName(shelf.getName() + " (public)");
-                    }
-                })
                 .collect(Collectors.toList());
 
         List<Long> userShelfIds = shelves.stream().map(MagicShelf::getId).toList();
@@ -35,7 +30,6 @@ public class MagicShelfService {
         List<MagicShelf> publicShelves = repository.findAllByIsPublicIsTrue().stream()
                 .map(this::toDto)
                 .filter(shelf -> !userShelfIds.contains(shelf.getId()))
-                .peek(shelf -> shelf.setName(shelf.getName() + " (public)"))
                 .toList();
 
         shelves.addAll(publicShelves);
