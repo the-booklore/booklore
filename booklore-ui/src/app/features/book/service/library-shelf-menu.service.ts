@@ -211,7 +211,7 @@ export class LibraryShelfMenuService {
 
     return [
       {
-        label: disableOptions ? 'Public Shelf - Read only' : 'Options',
+        label: (isPublicShelf ? 'Public Shelf - ' : '') + (disableOptions ? 'Read only' : 'Options'),
         items: [
           {
             label: 'Edit Magic Shelf',
