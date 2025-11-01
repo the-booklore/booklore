@@ -135,16 +135,6 @@ public class UserProvisioningService {
     }
 
     /**
-     * @deprecated Use {@link #provisionRemoteUserFromHeaders(String, String, String, String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
-    @Transactional
-    public BookLoreUserEntity provisionRemoteUser(String name, String username, String email, String groups) {
-        // Delegate to the new implementation to avoid keeping duplicated logic.
-        return provisionRemoteUserFromHeaders(name, username, email, groups);
-    }
-
-    /**
      * Create and persist a remote-provisioned user based on incoming headers.
      * This is the preferred (non-deprecated) entry point for remote provisioning.
      */
