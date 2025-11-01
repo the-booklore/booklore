@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 public interface KoboReadingStateMapper {
 
     ObjectMapper objectMapper = new ObjectMapper();
-    Pattern PATTERN = Pattern.compile("^\"|\"$");
+    Pattern SURROUNDING_DOUBLE_QUOTES_PATTERN = Pattern.compile("^\"|\"$");
 
     @Mapping(target = "currentBookmarkJson", expression = "java(toJson(dto.getCurrentBookmark()))")
     @Mapping(target = "statisticsJson", expression = "java(toJson(dto.getStatistics()))")
@@ -51,6 +51,6 @@ public interface KoboReadingStateMapper {
 
     default String cleanString(String value) {
         if (value == null) return null;
-        return PATTERN.matcher(value).replaceAll("");
+        return SURROUNDING_DOUBLE_QUOTES_PATTERN.matcher(value).replaceAll("");
     }
 }

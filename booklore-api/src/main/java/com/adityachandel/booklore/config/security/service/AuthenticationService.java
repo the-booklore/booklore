@@ -109,7 +109,7 @@ public class AuthenticationService {
 
         Optional<BookLoreUserEntity> user = userRepository.findByUsername(username);
         if (user.isEmpty() && appProperties.getRemoteAuth().isCreateNewUsers()) {
-            user = Optional.of(userProvisioningService.provisionRemoteUser(name, username, email, groups));
+            user = Optional.of(userProvisioningService.provisionRemoteUserFromHeaders(name, username, email, groups));
         }
 
         if (user.isEmpty()) {

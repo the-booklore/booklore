@@ -80,24 +80,25 @@ public class FileMoveHelper {
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+        Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
-        currentDir = currentDir.toAbsolutePath().normalize();
+        dir = dir.toAbsolutePath().normalize();
         Set<Path> normalizedRoots = new HashSet<>();
         for (Path root : libraryRoots) {
             normalizedRoots.add(root.toAbsolutePath().normalize());
         }
-        while (currentDir != null) {
-            if (isLibraryRoot(currentDir, normalizedRoots)) {
+        while (dir != null) {
+            if (isLibraryRoot(dir, normalizedRoots)) {
                 break;
             }
-            File[] files = currentDir.toFile().listFiles();
+            File[] files = dir.toFile().listFiles();
             if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", currentDir);
+                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
                 break;
             }
             if (hasOnlyIgnoredFiles(files, ignoredFilenames)) {
-                deleteIgnoredFilesAndDirectory(files, currentDir);
-                currentDir = currentDir.getParent();
+                deleteIgnoredFilesAndDirectory(files, dir);
+                dir = dir.getParent();
             } else {
                 break;
             }

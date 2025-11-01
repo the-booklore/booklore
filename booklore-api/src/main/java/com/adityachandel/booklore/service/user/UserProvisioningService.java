@@ -134,13 +134,26 @@ public class UserProvisioningService {
         return createUser(user);
     }
 
-    @Deprecated
+    /**
+     * @deprecated Use {@link #provisionRemoteUserFromHeaders(String, String, String, String)} instead.
+     */
+    @Deprecated(since = "1.0", forRemoval = false)
     @Transactional
     public BookLoreUserEntity provisionRemoteUser(String name, String username, String email, String groups) {
+        // Delegate to the new implementation to avoid keeping duplicated logic.
+        return provisionRemoteUserFromHeaders(name, username, email, groups);
+    }
+
+    /**
+     * Create and persist a remote-provisioned user based on incoming headers.
+     * This is the preferred (non-deprecated) entry point for remote provisioning.
+     */
+    @Transactional
+    public BookLoreUserEntity provisionRemoteUserFromHeaders(String name, String username, String email, String groups) {
         boolean isAdmin = false;
         if (groups != null && appProperties.getRemoteAuth().getAdminGroup() != null) {
             String groupsContent = groups.trim();
-            if (groupsContent.startsWith("[") && groupsContent.endsWith("]")) {
+            if (groupsContent.length() >= 2 && groupsContent.charAt(0) == '[' && groupsContent.charAt(groupsContent.length() - 1) == ']') {
                 groupsContent = groupsContent.substring(1, groupsContent.length() - 1);
             }
             List<String> groupsList = Arrays.asList(WHITESPACE_PATTERN.split(groupsContent));
@@ -199,9 +212,9 @@ public class UserProvisioningService {
     }
 
     protected BookLoreUserEntity createUser(BookLoreUserEntity user) {
-        user = userRepository.save(user);
-        userDefaultsService.addDefaultShelves(user);
-        userDefaultsService.addDefaultSettings(user);
-        return user;
+        BookLoreUserEntity save = userRepository.save(user);
+        userDefaultsService.addDefaultShelves(save);
+        userDefaultsService.addDefaultSettings(save);
+        return save;
     }
 }

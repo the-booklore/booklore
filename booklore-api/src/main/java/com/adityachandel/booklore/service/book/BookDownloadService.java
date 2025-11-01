@@ -28,11 +28,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 @Slf4j
 @AllArgsConstructor
 @Service
 public class BookDownloadService {
+
+    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookRepository bookRepository;
     private final KepubConversionService kepubConversionService;
@@ -55,7 +58,7 @@ public class BookDownloadService {
 
             String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
                     .replace("+", "%20");
-            String fallbackFilename = file.getFileName().toString().replaceAll("[^\\x00-\\x7F]", "_");
+            String fallbackFilename = NON_ASCII_PATTERN.matcher(file.getFileName().toString()).replaceAll("_");
             String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
                     fallbackFilename, encodedFilename);
             return ResponseEntity.ok()
@@ -114,7 +117,7 @@ public class BookDownloadService {
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         response.setContentLengthLong(file.length());
         String encodedFilename = URLEncoder.encode(file.getName(), StandardCharsets.UTF_8).replace("+", "%20");
-        String fallbackFilename = file.getName().replaceAll("[^\\x00-\\x7F]", "_");
+        String fallbackFilename = NON_ASCII_PATTERN.matcher(file.getName()).replaceAll("_");
         String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
                 fallbackFilename, encodedFilename);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);

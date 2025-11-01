@@ -157,10 +157,12 @@ public class MetadataChangeDetector {
     }
 
     private static boolean isEffectivelyEmpty(Object value) {
-        if (value == null) return true;
-        if (value instanceof String s) return s.isBlank();
-        if (value instanceof Collection<?> c) return c.isEmpty();
-        return false;
+        return switch (value) {
+            case null -> true;
+            case String s -> s.isBlank();
+            case Collection<?> c -> c.isEmpty();
+            default -> false;
+        };
     }
 
     private static boolean differsLock(Boolean dtoLock, Boolean entityLock) {

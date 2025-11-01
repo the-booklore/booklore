@@ -144,6 +144,9 @@ public class BookDropService {
     private BookdropFinalizeResult processFinalizationRequest(BookdropFinalizeRequest request) {
         BookdropFinalizeResult results = BookdropFinalizeResult.builder()
                 .processedAt(Instant.now())
+                .totalFiles(0)
+                .successfullyImported(0)
+                .failed(0)
                 .build();
 
         Long defaultLibraryId = request.getDefaultLibraryId();

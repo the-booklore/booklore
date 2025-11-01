@@ -15,6 +15,7 @@ public class PathPatternResolver {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".*\\.[a-zA-Z0-9]+$");
     private static final Pattern CONTROL_CHARACTER_PATTERN = Pattern.compile("[\\p{Cntrl}]");
+    private static final Pattern INVALID_CHARS_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]");
 
     public static String resolvePattern(BookEntity book, String pattern) {
         String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
@@ -90,7 +91,7 @@ public class PathPatternResolver {
 
     private static String resolvePatternWithValues(String pattern, Map<String, String> values, String currentFilename) {
         String extension = "";
-        int lastDot = currentFilename.lastIndexOf(".");
+        int lastDot = currentFilename.lastIndexOf('.');
         if (lastDot >= 0 && lastDot < currentFilename.length() - 1) {
             extension = sanitize(currentFilename.substring(lastDot + 1));  // e.g. "epub"
         }
@@ -100,7 +101,7 @@ public class PathPatternResolver {
         // Handle optional blocks enclosed in <...>
         Pattern optionalBlockPattern = Pattern.compile("<([^<>]*)>");
         Matcher matcher = optionalBlockPattern.matcher(pattern);
-        StringBuffer resolved = new StringBuffer();
+        StringBuilder resolved = new StringBuilder();
 
         while (matcher.find()) {
             String block = matcher.group(1);
@@ -134,7 +135,7 @@ public class PathPatternResolver {
         // Replace known placeholders with values, preserve unknown ones
         Pattern placeholderPattern = Pattern.compile("\\{(.*?)}");
         Matcher placeholderMatcher = placeholderPattern.matcher(result);
-        StringBuffer finalResult = new StringBuffer();
+        StringBuilder finalResult = new StringBuilder();
 
         while (placeholderMatcher.find()) {
             String key = placeholderMatcher.group(1);
@@ -166,8 +167,7 @@ public class PathPatternResolver {
 
     private static String sanitize(String input) {
         if (input == null) return "";
-        return WHITESPACE_PATTERN.matcher(CONTROL_CHARACTER_PATTERN.matcher(input
-                        .replaceAll("[\\\\/:*?\"<>|]", "")).replaceAll("")).replaceAll(" ")
+        return WHITESPACE_PATTERN.matcher(CONTROL_CHARACTER_PATTERN.matcher(INVALID_CHARS_PATTERN.matcher(input).replaceAll("")).replaceAll("")).replaceAll(" ")
                 .trim();
     }
 

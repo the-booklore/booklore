@@ -40,7 +40,9 @@ public class AmazonBookParser implements BookParser {
     private static final Pattern PARENTHESES_WITH_WHITESPACE_PATTERN = Pattern.compile("\\s*\\(.*?\\)");
     private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
     private static final Pattern DP_SEPARATOR_PATTERN = Pattern.compile("/dp/");
-    
+    // Pattern to extract country and date from strings like "Reviewed in ... on ..."
+    private static final Pattern REVIEWED_IN_ON_PATTERN = Pattern.compile("Reviewed in (.+?) on (.+)");
+
     private static final Map<String, LocaleInfo> DOMAIN_LOCALE_MAP = Map.ofEntries(
             Map.entry("com", new LocaleInfo("en-US,en;q=0.9", Locale.US)),
             Map.entry("co.uk", new LocaleInfo("en-GB,en;q=0.9", Locale.UK)),
@@ -58,13 +60,13 @@ public class AmazonBookParser implements BookParser {
             Map.entry("se", new LocaleInfo("en-GB,en;q=0.9,sv;q=0.8", new Locale.Builder().setLanguage("sv").setRegion("SE").build())),
             Map.entry("pl", new LocaleInfo("en-GB,en;q=0.9,pl;q=0.8", new Locale.Builder().setLanguage("pl").setRegion("PL").build()))
     );
-    
+
     private final AppSettingService appSettingService;
-    
+
     private static class LocaleInfo {
         final String acceptLanguage;
         final Locale locale;
-        
+
         LocaleInfo(String acceptLanguage, Locale locale) {
             this.acceptLanguage = acceptLanguage;
             this.locale = locale;
@@ -510,6 +512,7 @@ public class AmazonBookParser implements BookParser {
 
     private List<BookReview> getReviews(Document doc, int maxReviews) {
         List<BookReview> reviews = new ArrayList<>();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH);
         String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
         LocaleInfo localeInfo = getLocaleInfoForDomain(domain);
 
@@ -556,8 +559,7 @@ public class AmazonBookParser implements BookParser {
 
                 if (!fullDateText.isEmpty()) {
                     try {
-                        Pattern pattern = Pattern.compile("Reviewed in (.+?) on (.+)");
-                        Matcher matcher = pattern.matcher(fullDateText);
+                        Matcher matcher = REVIEWED_IN_ON_PATTERN.matcher(fullDateText);
                         String datePart = fullDateText;
 
                         if (matcher.find() && matcher.groupCount() == 2) {
@@ -671,9 +673,9 @@ public class AmazonBookParser implements BookParser {
         try {
             String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
             String amazonCookie = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getCookie();
-            
+
             LocaleInfo localeInfo = getLocaleInfoForDomain(domain);
-            
+
             Connection connection = Jsoup.connect(url)
                     .header("accept", "text/html, application/json")
                     .header("accept-language", localeInfo.acceptLanguage)
@@ -744,7 +746,7 @@ public class AmazonBookParser implements BookParser {
             }
         }
 
-        if (!localeInfo.locale.getLanguage().equals("en")) {
+        if (!"en".equals(localeInfo.locale.getLanguage())) {
             for (String pattern : patterns) {
                 try {
                     return LocalDate.parse(trimmedDate, DateTimeFormatter.ofPattern(pattern, localeInfo.locale));

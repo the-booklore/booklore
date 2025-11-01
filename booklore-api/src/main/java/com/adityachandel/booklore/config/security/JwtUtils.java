@@ -26,9 +26,9 @@ public class JwtUtils {
 
     private final JwtSecretService jwtSecretService;
     @Getter
-    public final long accessTokenExpirationMs = 1000L * 60 * 60 * 10;  // 10 hours
+    public static final long accessTokenExpirationMs = 1000L * 60 * 60 * 10;  // 10 hours
     @Getter
-    public final long refreshTokenExpirationMs = 1000L * 60 * 60 * 24 * 30; // 30 days
+    public static final long refreshTokenExpirationMs = 1000L * 60 * 60 * 24 * 30; // 30 days
 
     private SecretKey getSigningKey() {
         String secretKey = jwtSecretService.getSecret();

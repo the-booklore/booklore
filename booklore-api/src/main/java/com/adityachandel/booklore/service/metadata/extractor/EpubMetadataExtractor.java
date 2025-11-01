@@ -132,12 +132,12 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 String content = el.hasAttribute("content") ? el.getAttribute("content").trim() : text;
                                 if (StringUtils.isBlank(content)) continue;
 
-                                if (!seriesFound && (prop.equals("booklore:series") || name.equals("calibre:series") || prop.equals("calibre:series") || prop.equals("belongs-to-collection"))) {
+                                if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "calibre:series".equals(prop) || "belongs-to-collection".equals(prop))) {
                                     builderMeta.seriesName(content);
                                     seriesFound = true;
                                 }
 
-                                if (!seriesIndexFound && (prop.equals("booklore:series_index") || name.equals("calibre:series_index") || prop.equals("calibre:series_index") || prop.equals("group-position"))) {
+                                if (!seriesIndexFound && ("booklore:series_index".equals(prop) || "calibre:series_index".equals(name) || "calibre:series_index".equals(prop) || "group-position".equals(prop))) {
                                     try {
                                         builderMeta.seriesNumber(Float.parseFloat(content));
                                         seriesIndexFound = true;
@@ -145,11 +145,11 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                if (name.equals("calibre:pages") || name.equals("pagecount") || prop.equals("schema:pagecount") || prop.equals("media:pagecount") || prop.equals("booklore:page_count")) {
+                                if ("calibre:pages".equals(name) || "pagecount".equals(name) || "schema:pagecount".equals(prop) || "media:pagecount".equals(prop) || "booklore:page_count".equals(prop)) {
                                     safeParseInt(content, builderMeta::pageCount);
                                 }
 
-                                if (name.equals("calibre:rating") || prop.equals("booklore:personal_rating")) {
+                                if ("calibre:rating".equals(name) || "booklore:personal_rating".equals(prop)) {
                                     safeParseDouble(content, builderMeta::personalRating);
                                 }
 

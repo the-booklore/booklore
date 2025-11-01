@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -42,15 +43,14 @@ class CbxMetadataExtractorTest {
         if (tempDir != null) {
             // best-effort cleanup
             Files.walk(tempDir)
-                    .sorted((a, b) -> b.compareTo(a))
+                    .sorted(Comparator.reverseOrder())
                     .forEach(p -> { try { Files.deleteIfExists(p); } catch (Exception ignore) {} });
         }
     }
 
     @Test
     void extractMetadata_fromCbz_withComicInfo_populatesFields() throws Exception {
-        String xml = "" +
-                "<ComicInfo>" +
+        String xml = "<ComicInfo>" +
                 "  <Title>My Comic</Title>" +
                 "  <Summary>A short summary</Summary>" +
                 "  <Publisher>Indie</Publisher>" +
@@ -88,8 +88,7 @@ class CbxMetadataExtractorTest {
 
     @Test
     void extractCover_fromCbz_usesComicInfoImageFile() throws Exception {
-        String xml = "" +
-                "<ComicInfo>" +
+        String xml = "<ComicInfo>" +
                 "  <Pages>" +
                 "    <Page Type=\"FrontCover\" ImageFile=\"images/002.jpg\"/>" +
                 "  </Pages>" +
@@ -130,7 +129,7 @@ class CbxMetadataExtractorTest {
     @Test
     void extractMetadata_nonArchive_fallbackTitle() throws Exception {
         Path txt = tempDir.resolve("Some Book Title.txt");
-        Files.write(txt, "hello".getBytes(StandardCharsets.UTF_8));
+        Files.writeString(txt, "hello");
         BookMetadata md = extractor.extractMetadata(txt.toFile());
         assertEquals("Some Book Title", md.getTitle());
     }

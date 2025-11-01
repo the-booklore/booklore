@@ -69,7 +69,7 @@ class TaskServiceTest {
 
     @Test
     void testRunAsUserThrowsExceptionForNullTaskType() {
-        TaskCreateRequest req = TaskCreateRequest.builder().build();
+        TaskCreateRequest req = TaskCreateRequest.builder().triggeredByCron(false).build();
         APIException ex = assertThrows(APIException.class, () -> taskService.runAsUser(req));
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
     }
@@ -94,14 +94,14 @@ class TaskServiceTest {
         user.setUsername("user1");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(mockTask.execute(any())).thenReturn(TaskCreateResponse.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).build());
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).triggeredByCron(false).build();
         TaskCreateResponse resp = taskService.runAsUser(req);
         assertEquals(TaskType.CLEANUP_TEMP_METADATA, resp.getTaskType());
     }
 
     @Test
     void testExecuteTaskThrowsForUnknownTaskType() {
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEAR_CBX_CACHE).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEAR_CBX_CACHE).triggeredByCron(false).build();
         BookLoreUser user = new BookLoreUser();
         user.setId(1L);
         user.setUsername("user1");
@@ -119,8 +119,8 @@ class TaskServiceTest {
         user.setUsername("parallelUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
-        TaskCreateRequest req1 = TaskCreateRequest.builder().taskType(parallelType).build();
-        TaskCreateRequest req2 = TaskCreateRequest.builder().taskType(parallelType).build();
+        TaskCreateRequest req1 = TaskCreateRequest.builder().taskType(parallelType).triggeredByCron(false).build();
+        TaskCreateRequest req2 = TaskCreateRequest.builder().taskType(parallelType).triggeredByCron(false).build();
 
         TaskCreateResponse resp1 = taskService.runAsUser(req1);
         TaskCreateResponse resp2 = taskService.runAsUser(req2);
@@ -152,7 +152,7 @@ class TaskServiceTest {
         user.setUsername("nonParallelUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(nonParallelType).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(nonParallelType).triggeredByCron(false).build();
         taskService.runAsUser(req);
 
         APIException ex = assertThrows(APIException.class, () -> taskService.runAsUser(req));
@@ -193,7 +193,7 @@ class TaskServiceTest {
         user.setUsername("asyncUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(asyncType).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(asyncType).triggeredByCron(false).build();
         TaskCreateResponse resp = taskService.runAsUser(req);
 
         assertEquals(asyncType, resp.getTaskType());
@@ -210,7 +210,7 @@ class TaskServiceTest {
         user.setUsername("nullOptionsUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(type).options(null).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(type).options(null).triggeredByCron(false).build();
         TaskCreateResponse resp = taskService.runAsUser(req);
         assertEquals(type, resp.getTaskType());
     }
@@ -225,20 +225,20 @@ class TaskServiceTest {
         user.setUsername("exceptionUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(type).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(type).triggeredByCron(false).build();
         assertThrows(RuntimeException.class, () -> taskService.runAsUser(req));
     }
 
     @Test
     void testRunAsUserThrowsExceptionForNullUser() {
         when(authenticationService.getAuthenticatedUser()).thenReturn(null);
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).triggeredByCron(false).build();
         assertThrows(NullPointerException.class, () -> taskService.runAsUser(req));
     }
 
     @Test
     void testExecuteTaskThrowsForMissingTaskInRegistry() {
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_DELETED_BOOKS).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_DELETED_BOOKS).triggeredByCron(false).build();
         BookLoreUser user = new BookLoreUser();
         user.setId(8L);
         user.setUsername("missingTaskUser");
@@ -253,7 +253,7 @@ class TaskServiceTest {
         user.setUsername("invalidOptionsUser");
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(objectMapper.convertValue(any(), eq(Map.class))).thenThrow(new IllegalArgumentException("Conversion failed"));
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).options(new Object()).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).options(new Object()).triggeredByCron(false).build();
         when(mockTask.execute(any())).thenReturn(TaskCreateResponse.builder().taskType(TaskType.CLEANUP_TEMP_METADATA).build());
         TaskCreateResponse resp = taskService.runAsUser(req);
         assertEquals(TaskType.CLEANUP_TEMP_METADATA, resp.getTaskType());

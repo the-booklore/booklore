@@ -46,8 +46,6 @@ class KoreaderServiceTest {
     KoreaderService service;
 
     private KoreaderUserDetails details;
-    private Authentication auth;
-    private SecurityContext context;
 
     @BeforeEach
     void setUpAuth() {
@@ -55,8 +53,8 @@ class KoreaderServiceTest {
         when(details.getUsername()).thenReturn("u");
         when(details.getPassword()).thenReturn("md5pwd");
         when(details.getBookLoreUserId()).thenReturn(42L);
-        auth = mock(Authentication.class);
-        context = new SecurityContextImpl();
+        Authentication auth = mock(Authentication.class);
+        SecurityContext context = new SecurityContextImpl();
         when(auth.getPrincipal()).thenReturn(details);
         context.setAuthentication(auth);
         SecurityContextHolder.setContext(context);
@@ -77,7 +75,7 @@ class KoreaderServiceTest {
         when(details.getPassword()).thenReturn("MD5PWD");
 
         ResponseEntity<Map<String, String>> resp = service.authorizeUser();
-        assertEquals(200, resp.getStatusCodeValue());
+        assertEquals(200, resp.getStatusCode().value());
         assertEquals("u", resp.getBody().get("username"));
     }
 
