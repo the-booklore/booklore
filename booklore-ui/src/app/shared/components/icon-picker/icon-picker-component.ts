@@ -61,9 +61,24 @@ export class IconPickerComponent {
     return categories.map(iconName => `pi pi-${iconName}`);
   }
 
+  escapeRegExp(str: string) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  fuzzyMatch(pattern: string, str: string) {
+    pattern = '.*' + pattern.toLowerCase().split('')
+      .map(l => `${this.escapeRegExp(l)}.*`)
+      .join('');
+    const re = new RegExp(pattern);
+
+    return re.test(str.toLowerCase());
+  }
+
   filteredIcons(): string[] {
     if (!this.searchText) return this.icons;
-    return this.icons.filter(icon => icon.toLowerCase().includes(this.searchText.toLowerCase()));
+
+    return this.icons.
+      filter(icon => this.fuzzyMatch(this.searchText, icon));
   }
 
   selectIcon(icon: string) {
@@ -71,7 +86,32 @@ export class IconPickerComponent {
     this.ref.close(icon);
   }
 
+  selectCustomIcon(icon: string) {
+    if (!icon.endsWith('.svg')) {
+      icon += '.svg';
+    }
+
+    this.selectIcon(icon);
+  }
+
   cancel() {
     this.ref.close();
+  }
+
+  maybeSelectWithEnter(event: KeyboardEvent){
+    if (event.key !== 'Enter') {
+      return;
+    }
+
+    const filtered = this.filteredIcons();
+
+    if (filtered.length === 1) {
+      this.selectIcon(filtered[0]);
+    } else {
+      this.selectIcon(this.searchText)
+    }
+
+
+    return false;
   }
 }

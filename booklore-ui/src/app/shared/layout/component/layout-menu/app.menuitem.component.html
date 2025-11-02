@@ -54,7 +54,7 @@
           tabindex="0"
           pRipple
         >
-          <i [ngClass]="item.icon" class="layout-menuitem-icon"></i>
+          <app-icon-component [icon]="item.icon" class="layout-menuitem-icon"/>
           <span class="layout-menuitem-text w-full truncate">
         {{ item.label }}
       </span>

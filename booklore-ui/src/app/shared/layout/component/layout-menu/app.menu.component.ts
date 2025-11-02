@@ -101,7 +101,7 @@ export class AppMenuComponent implements OnInit {
               menu: this.libraryShelfMenuService.initializeLibraryMenuItems(library),
               label: library.name,
               type: 'Library',
-              icon: 'pi pi-' + library.icon,
+              icon: library.icon,
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
             })),
@@ -123,7 +123,7 @@ export class AppMenuComponent implements OnInit {
             items: sortedShelves.map((shelf) => ({
               label: shelf.name,
               type: 'magicShelfItem',
-              icon: 'pi pi-' + shelf.icon,
+              icon: shelf.icon,
               menu: this.libraryShelfMenuService.initializeMagicShelfMenuItems(shelf),
               routerLink: [`/magic-shelf/${shelf.id}/books`],
               bookCount$: this.magicShelfService.getBookCount(shelf.id ?? 0),
@@ -148,7 +148,7 @@ export class AppMenuComponent implements OnInit {
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
           type: 'Shelf',
-          icon: 'pi pi-' + shelf.icon,
+          icon: shelf.icon,
           routerLink: [`/shelf/${shelf.id}/books`],
           bookCount$: this.shelfService.getBookCount(shelf.id ?? 0),
         }));
@@ -166,7 +166,7 @@ export class AppMenuComponent implements OnInit {
           items.push({
             label: koboShelf.name,
             type: 'Shelf',
-            icon: 'pi pi-' + koboShelf.icon,
+            icon: koboShelf.icon,
             routerLink: [`/shelf/${koboShelf.id}/books`],
             bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
           });

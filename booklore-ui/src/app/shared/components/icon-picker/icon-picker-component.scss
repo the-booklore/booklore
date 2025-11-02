@@ -4,6 +4,10 @@
   gap: 30px;
 }
 
+.icon-use-raw {
+  grid-column: 1 / -1;
+  color: var(--text-secondary-color);
+}
 .icon-item {
   display: flex;
   justify-content: center;

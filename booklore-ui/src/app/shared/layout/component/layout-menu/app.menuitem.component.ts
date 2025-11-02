@@ -10,6 +10,7 @@ import {Button} from 'primeng/button';
 import {Menu} from 'primeng/menu';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
+import { IconComponent } from '../../../components/icon/icon-component';
 
 @Component({
   selector: '[app-menuitem]',
@@ -22,7 +23,8 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
     Ripple,
     AsyncPipe,
     Button,
-    Menu
+    Menu,
+    IconComponent
   ],
   animations: [
     trigger('children', [

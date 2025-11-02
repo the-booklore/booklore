@@ -14,12 +14,27 @@ import {Tooltip} from 'primeng/tooltip';
 import {IconPickerService} from '../../shared/service/icon-picker.service';
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
+import { IconComponent } from '../../shared/components/icon/icon-component';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button],
+  imports: [
+    TableModule,
+    StepPanel,
+    FormsModule,
+    InputText,
+    Stepper,
+    StepList,
+    Step,
+    StepPanels,
+    ToggleSwitch,
+    Tooltip,
+    Select,
+    Button,
+    IconComponent
+  ],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
