@@ -157,7 +157,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             items.push({
               label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
               icon: this.getFileIcon(extension),
-              command: () => this.downloadAdditionalFile(book.id, format.id)
+              command: () => this.downloadAdditionalFile(book, format.id)
             });
           });
         }
@@ -175,7 +175,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             items.push({
               label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
               icon: this.getFileIcon(extension),
-              command: () => this.downloadAdditionalFile(book.id, file.id)
+              command: () => this.downloadAdditionalFile(book, file.id)
             });
           });
         }
@@ -354,12 +354,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     if (bookId) this.bookService.readBook(bookId, reader);
   }
 
-  download(bookId: number) {
-    this.bookService.downloadFile(bookId);
+  download(book: Book) {
+    this.bookService.downloadFile(book);
   }
 
-  downloadAdditionalFile(bookId: number, fileId: number) {
-    this.bookService.downloadAdditionalFile(bookId, fileId);
+  downloadAdditionalFile(book: Book, fileId: number) {
+    this.bookService.downloadAdditionalFile(book, fileId);
   }
 
   deleteAdditionalFile(bookId: number, fileId: number, fileName: string) {
