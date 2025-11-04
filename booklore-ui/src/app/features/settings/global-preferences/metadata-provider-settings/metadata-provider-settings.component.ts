@@ -57,7 +57,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
     {label: 'English', value: 'en'},
     {label: 'French', value: 'fr'},
     {label: 'German', value: 'de'},
-    {label: 'Italian', value: 'it'}
+    {label: 'Italian', value: 'it'},
     {label: 'Japanese', value: 'ja'},
     {label: 'Polish', value: 'pl'},
     {label: 'Portuguese', value: 'pt'},
