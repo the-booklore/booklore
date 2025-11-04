@@ -139,6 +139,49 @@ class KoreaderServiceTest {
     }
 
     @Test
+    void getProgress_includesTimestamp() {
+        when(details.isSyncEnabled()).thenReturn(true);
+        var book = new BookEntity();
+        book.setId(100L);
+        when(bookRepo.findByCurrentHash("hash123")).thenReturn(Optional.of(book));
+
+        var prog = new UserBookProgressEntity();
+        prog.setKoreaderProgress("progress/path");
+        prog.setKoreaderProgressPercent(0.75F);
+        Instant syncTime = Instant.ofEpochSecond(1762209924L);
+        prog.setKoreaderLastSyncTime(syncTime);
+        when(progressRepo.findByUserIdAndBookId(42L, 100L))
+                .thenReturn(Optional.of(prog));
+
+        KoreaderProgress out = service.getProgress("hash123");
+        assertEquals("hash123", out.getDocument());
+        assertEquals("progress/path", out.getProgress());
+        assertEquals(0.75F, out.getPercentage());
+        assertEquals(1762209924L, out.getTimestamp());
+    }
+
+    @Test
+    void getProgress_nullTimestamp() {
+        when(details.isSyncEnabled()).thenReturn(true);
+        var book = new BookEntity();
+        book.setId(101L);
+        when(bookRepo.findByCurrentHash("hash456")).thenReturn(Optional.of(book));
+
+        var prog = new UserBookProgressEntity();
+        prog.setKoreaderProgress("progress/path2");
+        prog.setKoreaderProgressPercent(0.25F);
+        prog.setKoreaderLastSyncTime(null);
+        when(progressRepo.findByUserIdAndBookId(42L, 101L))
+                .thenReturn(Optional.of(prog));
+
+        KoreaderProgress out = service.getProgress("hash456");
+        assertEquals("hash456", out.getDocument());
+        assertEquals("progress/path2", out.getProgress());
+        assertEquals(0.25F, out.getPercentage());
+        assertNull(out.getTimestamp());
+    }
+
+    @Test
     void saveProgress_createsNew() {
         when(details.isSyncEnabled()).thenReturn(true);
         var book = new BookEntity();
