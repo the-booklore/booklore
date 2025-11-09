@@ -63,7 +63,6 @@ public class KoboReadingStateService {
         
         return dtos.stream()
                 .map(dto -> {
-                    // Save to Kobo reading state table
                     KoboReadingStateEntity entity = repository.findByEntitlementId(dto.getEntitlementId())
                             .map(existing -> {
                                 existing.setCurrentBookmarkJson(mapper.toJson(dto.getCurrentBookmark()));
@@ -90,25 +89,6 @@ public class KoboReadingStateService {
 
     public KoboReadingStateWrapper getReadingState(String entitlementId) {
         Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId).map(mapper::toDto);
-        
-        // If no Kobo reading state exists, check if we have progress in UserBookProgress and sync it
-        if (readingState.isEmpty()) {
-            try {
-                Long bookId = Long.parseLong(entitlementId);
-                BookLoreUser user = authenticationService.getAuthenticatedUser();
-                Optional<UserBookProgressEntity> userProgress = progressRepository.findByUserIdAndBookId(user.getId(), bookId);
-                
-                if (userProgress.isPresent() && userProgress.get().getKoboProgressPercent() != null) {
-                    // Create initial Kobo reading state from BookLore progress
-                    KoboReadingState initialState = createKoboReadingStateFromUserProgress(userProgress.get(), entitlementId);
-                    return KoboReadingStateWrapper.builder()
-                            .readingStates(List.of(initialState))
-                            .build();
-                }
-            } catch (NumberFormatException e) {
-                log.warn("Invalid entitlement ID format: {}", entitlementId);
-            }
-        }
         
         return readingState.map(state -> KoboReadingStateWrapper.builder()
                 .readingStates(List.of(state))
@@ -169,31 +149,6 @@ public class KoboReadingStateService {
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
-    }
-    
-    private KoboReadingState createKoboReadingStateFromUserProgress(UserBookProgressEntity progress, String entitlementId) {
-        KoboReadingState.CurrentBookmark.Location location = null;
-        if (progress.getKoboLocation() != null) {
-            location = KoboReadingState.CurrentBookmark.Location.builder()
-                    .value(progress.getKoboLocation())
-                    .type(progress.getKoboLocationType())
-                    .source(progress.getKoboLocationSource())
-                    .build();
-        }
-        
-        Integer progressPercent = progress.getKoboProgressPercent() != null 
-                ? Math.round(progress.getKoboProgressPercent()) 
-                : 0;
-        
-        KoboReadingState.CurrentBookmark bookmark = KoboReadingState.CurrentBookmark.builder()
-                .progressPercent(progressPercent)
-                .location(location)
-                .build();
-        
-        return KoboReadingState.builder()
-                .entitlementId(entitlementId)
-                .currentBookmark(bookmark)
-                .build();
     }
     
     private void updateKoboReadStatus(UserBookProgressEntity userProgress, double progressFraction) {
