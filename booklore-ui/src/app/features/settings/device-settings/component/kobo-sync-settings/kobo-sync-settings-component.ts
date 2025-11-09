@@ -45,9 +45,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   koboSettings: KoboSettings = {
     convertToKepub: false,
-    conversionLimitInMb: 100,
-    convertCbxToEpub: false,
-    conversionLimitInMbForCbx: 100
+    conversionLimitInMb: 100
   };
 
   koboSyncSettings: KoboSyncSettings = {
@@ -124,8 +122,6 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.koboSettings.convertToKepub = settings?.koboSettings?.convertToKepub ?? true;
         this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
-        this.koboSettings.convertCbxToEpub = settings?.koboSettings?.convertCbxToEpub ?? false;
-        this.koboSettings.conversionLimitInMbForCbx = settings?.koboSettings?.conversionLimitInMbForCbx ?? 100;
       });
   }
 
