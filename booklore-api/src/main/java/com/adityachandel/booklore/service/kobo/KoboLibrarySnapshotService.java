@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.mapper.BookEntityToKoboSnapshotBookMapper;
+
 import com.adityachandel.booklore.model.entity.KoboDeletedBookProgressEntity;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
@@ -11,6 +12,7 @@ import com.adityachandel.booklore.repository.KoboDeletedBookProgressRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.repository.KoboSnapshotBookRepository;
 import com.adityachandel.booklore.repository.KoboLibrarySnapshotRepository;
+import com.adityachandel.booklore.service.kobo.KoboCompatibilityService;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,7 @@ public class KoboLibrarySnapshotService {
     private final ShelfRepository shelfRepository;
     private final BookEntityToKoboSnapshotBookMapper mapper;
     private final KoboDeletedBookProgressRepository koboDeletedBookProgressRepository;
+    private final KoboCompatibilityService koboCompatibilityService;
 
     @Transactional(readOnly = true)
     public Optional<KoboLibrarySnapshotEntity> findByIdAndUserId(String id, Long userId) {
@@ -118,7 +121,7 @@ public class KoboLibrarySnapshotService {
 
     private List<KoboSnapshotBookEntity> mapBooksToKoboSnapshotBook(ShelfEntity shelf, KoboLibrarySnapshotEntity snapshot) {
         return shelf.getBookEntities().stream()
-                .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
+                .filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(book -> {
                     KoboSnapshotBookEntity snapshotBook = mapper.toKoboSnapshotBook(book);
                     snapshotBook.setSnapshot(snapshot);
@@ -130,4 +133,5 @@ public class KoboLibrarySnapshotService {
     public void deleteById(String id) {
         koboLibrarySnapshotRepository.deleteById(id);
     }
+
 }

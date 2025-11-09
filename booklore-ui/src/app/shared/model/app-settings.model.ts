@@ -101,6 +101,8 @@ export interface PublicReviewSettings {
 export interface KoboSettings {
   convertToKepub: boolean;
   conversionLimitInMb: number;
+  convertCbxToEpub: boolean;
+  conversionLimitInMbForCbx: number;
 }
 
 export interface AppSettings {
