@@ -71,15 +71,15 @@ public class BookService {
                     .build());
         }
         
-        book.setKoreaderProgress(KoProgress.builder()
-                .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
-                .build());
-        
         switch (book.getBookType()) {
             case EPUB -> book.setEpubProgress(EpubProgress.builder()
                         .cfi(progress.getEpubProgress())
                         .percentage(progress.getEpubProgressPercent())
                         .build());
+                book.setKoreaderProgress(KoProgress.builder()
+                        .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
+                        .build());
+            }
             case PDF -> book.setPdfProgress(PdfProgress.builder()
                     .page(progress.getPdfProgress())
                     .percentage(progress.getPdfProgressPercent())
