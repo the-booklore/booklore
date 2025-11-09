@@ -72,7 +72,8 @@ public class BookService {
         }
         
         switch (book.getBookType()) {
-            case EPUB -> book.setEpubProgress(EpubProgress.builder()
+            case EPUB -> {
+                book.setEpubProgress(EpubProgress.builder()
                         .cfi(progress.getEpubProgress())
                         .percentage(progress.getEpubProgressPercent())
                         .build());
