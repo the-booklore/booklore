@@ -45,12 +45,16 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   koboSettings: KoboSettings = {
     convertToKepub: false,
-    conversionLimitInMb: 100
+    conversionLimitInMb: 100,
+    convertCbxToEpub: false,
+    conversionLimitInMbForCbx: 100
   };
 
   koboSyncSettings: KoboSyncSettings = {
     token: '',
-    syncEnabled: false
+    syncEnabled: false,
+    progressMarkAsReadingThreshold: 0.25,
+    progressMarkAsFinishedThreshold: 99.5
   }
 
   ngOnInit() {
@@ -101,6 +105,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       next: (settings: KoboSyncSettings) => {
         this.koboSyncSettings.token = settings.token;
         this.koboSyncSettings.syncEnabled = settings.syncEnabled;
+        this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 0.25;
+        this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99.5;
         this.credentialsSaved = !!settings.token;
       },
       error: () => {
@@ -118,6 +124,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.koboSettings.convertToKepub = settings?.koboSettings?.convertToKepub ?? true;
         this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
+        this.koboSettings.convertCbxToEpub = settings?.koboSettings?.convertCbxToEpub ?? false;
+        this.koboSettings.conversionLimitInMbForCbx = settings?.koboSettings?.conversionLimitInMbForCbx ?? 100;
       });
   }
 
@@ -193,6 +201,28 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to update sync setting'
+        });
+      }
+    });
+  }
+
+  onProgressThresholdsChange() {
+    this.koboService.updateProgressThresholds(
+      this.koboSyncSettings.progressMarkAsReadingThreshold,
+      this.koboSyncSettings.progressMarkAsFinishedThreshold
+    ).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Thresholds Updated',
+          detail: 'Progress thresholds updated successfully'
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update progress thresholds'
         });
       }
     });

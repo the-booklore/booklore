@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.dto.progress.CbxProgress;
 import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.KoProgress;
+import com.adityachandel.booklore.model.dto.progress.KoboProgress;
 import com.adityachandel.booklore.model.dto.progress.PdfProgress;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
@@ -64,16 +65,21 @@ public class BookService {
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
+        if (progress.getKoboProgressPercent() != null) {
+            book.setKoboProgress(KoboProgress.builder()
+                    .percentage(progress.getKoboProgressPercent())
+                    .build());
+        }
+        
+        book.setKoreaderProgress(KoProgress.builder()
+                .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
+                .build());
+        
         switch (book.getBookType()) {
-            case EPUB -> {
-                book.setEpubProgress(EpubProgress.builder()
+            case EPUB -> book.setEpubProgress(EpubProgress.builder()
                         .cfi(progress.getEpubProgress())
                         .percentage(progress.getEpubProgressPercent())
                         .build());
-                book.setKoreaderProgress(KoProgress.builder()
-                        .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
-                        .build());
-            }
             case PDF -> book.setPdfProgress(PdfProgress.builder()
                     .page(progress.getPdfProgress())
                     .percentage(progress.getPdfProgressPercent())
@@ -148,6 +154,12 @@ public class BookService {
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
+
+        if (userProgress.getKoboProgressPercent() != null) {
+            book.setKoboProgress(KoboProgress.builder()
+                    .percentage(userProgress.getKoboProgressPercent())
+                    .build());
+        }
 
         if (bookEntity.getBookType() == BookFileType.PDF) {
             book.setPdfProgress(PdfProgress.builder()
@@ -456,6 +468,12 @@ public class BookService {
                 progress.setKoreaderDeviceId(null);
                 progress.setKoreaderDevice(null);
                 progress.setKoreaderLastSyncTime(null);
+            } else if (type == ResetProgressType.KOBO) {
+                progress.setKoboProgressPercent(null);
+                progress.setKoboLocation(null);
+                progress.setKoboLocationType(null);
+                progress.setKoboLocationSource(null);
+                progress.setKoboLastSyncTime(null);
             }
             userBookProgressRepository.save(progress);
             updatedBooks.add(bookMapper.toBook(bookEntity));
