@@ -734,11 +734,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return p != null ? Math.round(p * 10) / 10 : null;
   }
 
-  getKoboPercentage(book: Book): number | null {
-    const p = book?.koboProgress?.percentage;
-    return p != null ? Math.round(p * 10) / 10 : null;
-  }
-
   getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover'): string {
     const meta = book?.metadata;
     if (!meta) return '';

@@ -368,10 +368,10 @@
                 <p class="whitespace-nowrap flex items-center">
                   <span class="font-bold mr-2">Kobo Progress:</span>
                   <span class="inline-flex items-center">
-                    <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(getKoboPercentage(book))">
-                      {{ getKoboPercentage(book) + '%' }}
+                    <app-tag size="3xs" variant="pill" [color]="getKoProgressColor(book.koboProgress.percentage)">
+                      {{ book.koboProgress.percentage | number:'1.0-1' }}%
                     </app-tag>
-                    @if (getKoboPercentage(book) !== null) {
+                    @if (book.koboProgress.percentage !== null) {
                       <p-button
                         pTooltip="Reset progress"
                         tooltipPosition="bottom"
