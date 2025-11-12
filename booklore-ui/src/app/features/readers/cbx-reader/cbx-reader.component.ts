@@ -1,5 +1,5 @@
 import {Component, HostListener, inject, OnInit} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
@@ -15,15 +15,18 @@ import {
 } from '../../settings/user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {forkJoin} from 'rxjs';
-import {BookSetting, BookType} from '../../book/model/book.model';
+import {filter, first, timeout} from 'rxjs/operators';
+import {Book, BookSetting, BookType} from '../../book/model/book.model';
+import {BookState} from '../../book/model/state/book-state.model';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {FormsModule} from "@angular/forms";
 import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
+import {NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-cbx-reader',
   standalone: true,
-  imports: [ProgressSpinner, FormsModule],
+  imports: [ProgressSpinner, FormsModule, NgIf],
   templateUrl: './cbx-reader.component.html',
   styleUrl: './cbx-reader.component.scss'
 })
@@ -44,7 +47,12 @@ export class CbxReaderComponent implements OnInit {
   private touchStartX = 0;
   private touchEndX = 0;
 
+  currentBook: Book | null = null;
+  nextBookInSeries: Book | null = null;
+  previousBookInSeries: Book | null = null;
+
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private cbxReaderService = inject(CbxReaderService);
   private pdfReaderService = inject(NewPdfReaderService);
   private bookService = inject(BookService);
@@ -86,6 +94,10 @@ export class CbxReaderComponent implements OnInit {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
 
+      this.previousBookInSeries = null;
+      this.nextBookInSeries = null;
+      this.currentBook = null;
+
       forkJoin([
         this.bookService.getBookByIdFromAPI(this.bookId, false),
         this.bookService.getBookSetting(this.bookId),
@@ -94,8 +106,13 @@ export class CbxReaderComponent implements OnInit {
         next: ([book, bookSettings, myself]) => {
           const userSettings = myself.userSettings;
           this.bookType = book.bookType;
+          this.currentBook = book;
 
           this.pageTitle.setBookPageTitle(book);
+
+          if (book.metadata?.seriesName) {
+            this.loadSeriesNavigationAsync(book);
+          }
 
           const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
             ? this.pdfReaderService.getAvailablePages(this.bookId)
@@ -561,5 +578,106 @@ export class CbxReaderComponent implements OnInit {
       this.showMobileOptionsDropdown = false;
       this.showFitModeSubmenu = false;
     }
+  }
+
+  get isAtLastPage(): boolean {
+    return this.currentPage >= this.pages.length - 1;
+  }
+
+  navigateToPreviousBook(): void {
+    if (this.previousBookInSeries) {
+      this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id]);
+    }
+  }
+
+  navigateToNextBook(): void {
+    if (this.nextBookInSeries) {
+      this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id]);
+    }
+  }
+
+  private loadSeriesNavigationAsync(book: Book): void {
+    this.bookService.bookState$.pipe(
+      filter((state: BookState) => state.loaded),
+      first(),
+      timeout(10000)
+    ).subscribe({
+      next: () => {
+        this.loadSeriesNavigation(book);
+      },
+      error: (err) => {
+        console.warn('[SeriesNav] BookService state loading timed out or failed, series navigation will be disabled:', err);
+      }
+    });
+  }
+
+  private loadSeriesNavigation(book: Book): void {
+    this.bookService.getBooksInSeries(book.id).subscribe({
+      next: (seriesBooks) => {
+        const sortedBySeriesNumber = this.sortBooksBySeriesNumber(seriesBooks);
+        const currentBookIndex = sortedBySeriesNumber.findIndex(b => b.id === book.id);
+        
+        if (currentBookIndex === -1) {
+          console.warn('[SeriesNav] Current book not found in series');
+          return;
+        }
+
+        const hasPreviousBook = currentBookIndex > 0;
+        const hasNextBook = currentBookIndex < sortedBySeriesNumber.length - 1;
+
+        this.previousBookInSeries = hasPreviousBook ? sortedBySeriesNumber[currentBookIndex - 1] : null;
+        this.nextBookInSeries = hasNextBook ? sortedBySeriesNumber[currentBookIndex + 1] : null;
+
+        console.log('[SeriesNav] Navigation loaded:', {
+          series: book.metadata?.seriesName,
+          totalBooks: seriesBooks.length,
+          currentPosition: currentBookIndex + 1,
+          hasPrevious: hasPreviousBook,
+          hasNext: hasNextBook
+        });
+      },
+      error: (err) => {
+        console.error('[SeriesNav] Failed to load series information:', err);
+      }
+    });
+  }
+
+  private sortBooksBySeriesNumber(books: Book[]): Book[] {
+    return books.sort((bookA, bookB) => {
+      const seriesNumberA = bookA.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;
+      const seriesNumberB = bookB.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;
+      return seriesNumberA - seriesNumberB;
+    });
+  }
+
+  getBookDisplayTitle(book: Book | null): string {
+    if (!book) return '';
+    
+    const parts: string[] = [];
+    
+    if (book.metadata?.seriesNumber) {
+      parts.push(`#${book.metadata.seriesNumber}`);
+    }
+    
+    const title = book.metadata?.title || book.fileName;
+    if (title) {
+      parts.push(title);
+    }
+    
+    if (book.metadata?.subtitle) {
+      parts.push(book.metadata.subtitle);
+    }
+    
+    return parts.join(' - ');
+  }
+
+  getPreviousBookTooltip(): string {
+    if (!this.previousBookInSeries) return 'No Previous Book';
+    return `Previous Book: ${this.getBookDisplayTitle(this.previousBookInSeries)}`;
+  }
+
+  getNextBookTooltip(): string {
+    if (!this.nextBookInSeries) return 'No Next Book';
+    return `Next Book: ${this.getBookDisplayTitle(this.nextBookInSeries)}`;
   }
 }
