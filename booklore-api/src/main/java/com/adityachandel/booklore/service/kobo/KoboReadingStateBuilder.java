@@ -38,7 +38,7 @@ public class KoboReadingStateBuilder {
 
         return KoboReadingState.CurrentBookmark.builder()
                 .progressPercent(Optional.ofNullable(progress.getKoboProgressPercent())
-                        .map(Float::intValue)
+                        .map(Math::round)
                         .orElse(null))
                 .location(location)
                 .lastModified(lastModified)
