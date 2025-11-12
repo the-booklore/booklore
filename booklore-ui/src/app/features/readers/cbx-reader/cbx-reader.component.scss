@@ -31,6 +31,7 @@
       min-width: fit-content;
       display: flex;
       justify-content: flex-start;
+      gap: 0.5rem;
 
       .input-group {
         display: flex;
@@ -681,15 +682,10 @@
     .series-nav-button {
       padding: 6px 12px;
       background: #4a90e2;
-      color: white;
-      border: none;
       border-radius: 4px;
       font-size: 13px;
       font-weight: 500;
-      cursor: pointer;
       transition: all 0.2s ease;
-      white-space: nowrap;
-      margin: 0 4px;
 
       &:hover:not(:disabled) {
         background: #357abd;
@@ -716,7 +712,6 @@
     justify-content: center;
     align-items: center;
     padding: 2rem 1rem;
-    width: 100%;
 
     .next-book-action-button {
       display: flex;
@@ -725,11 +720,8 @@
       gap: 0.75rem;
       padding: 2rem 3rem;
       background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-      color: white;
-      border: none;
       border-radius: 12px;
       font-weight: 600;
-      cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
       min-width: 280px;
@@ -750,7 +742,6 @@
 
       .action-text {
         font-size: 1.1rem;
-        letter-spacing: 0.5px;
       }
 
       .book-title {
