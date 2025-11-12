@@ -339,12 +339,55 @@ class KoboReadingStateServiceTest {
     }
 
     @Test
-    @DisplayName("Should return null when no Kobo reading state exists")
-    void testGetReadingState_NoKoboState() {
+    @DisplayName("Should construct reading state from UserBookProgress when no Kobo state exists")
+    void testGetReadingState_ConstructFromProgress() {
         // Arrange
         String entitlementId = "100";
+        UserBookProgressEntity progress = new UserBookProgressEntity();
+        progress.setKoboProgressPercent(75.5f);
+        progress.setKoboLocation("epubcfi(/6/4[chap01ref]!/4/2/1:3)");
+        progress.setKoboLocationType("EpubCfi");
+        progress.setKoboLocationSource("Kobo");
+        progress.setKoboLastSyncTime(Instant.now());
 
         when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
+
+        // Act
+        KoboReadingStateWrapper result = service.getReadingState(entitlementId);
+
+        // Assert
+        assertNotNull(result);
+        assertNotNull(result.getReadingStates());
+        assertEquals(1, result.getReadingStates().size());
+        
+        KoboReadingState state = result.getReadingStates().get(0);
+        assertEquals(entitlementId, state.getEntitlementId());
+        assertNotNull(state.getCurrentBookmark());
+        assertEquals(75, state.getCurrentBookmark().getProgressPercent());
+        assertNotNull(state.getCurrentBookmark().getLocation());
+        assertEquals("epubcfi(/6/4[chap01ref]!/4/2/1:3)", state.getCurrentBookmark().getLocation().getValue());
+        assertEquals("EpubCfi", state.getCurrentBookmark().getLocation().getType());
+        assertEquals("Kobo", state.getCurrentBookmark().getLocation().getSource());
+        
+        verify(repository).findByEntitlementId(entitlementId);
+        verify(progressRepository).findByUserIdAndBookId(1L, 100L);
+    }
+
+    @Test
+    @DisplayName("Should return null when no Kobo reading state exists and UserBookProgress has no Kobo data")
+    void testGetReadingState_NoKoboDataInProgress() {
+        // Arrange
+        String entitlementId = "100";
+        UserBookProgressEntity progress = new UserBookProgressEntity();
+        // Progress exists but has no Kobo-specific data
+        progress.setKoboProgressPercent(null);
+        progress.setKoboLocation(null);
+
+        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
 
         // Act
         KoboReadingStateWrapper result = service.getReadingState(entitlementId);
@@ -352,6 +395,7 @@ class KoboReadingStateServiceTest {
         // Assert
         assertNull(result);
         verify(repository).findByEntitlementId(entitlementId);
+        verify(progressRepository).findByUserIdAndBookId(1L, 100L);
     }
 
     @Test
@@ -360,12 +404,15 @@ class KoboReadingStateServiceTest {
         // Arrange
         String entitlementId = "100";
         when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
 
         // Act
         KoboReadingStateWrapper result = service.getReadingState(entitlementId);
 
         // Assert
         assertNull(result);
+        verify(progressRepository).findByUserIdAndBookId(1L, 100L);
     }
 
     @Test

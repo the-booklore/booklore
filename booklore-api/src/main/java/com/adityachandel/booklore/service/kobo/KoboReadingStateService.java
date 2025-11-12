@@ -38,6 +38,7 @@ public class KoboReadingStateService {
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final KoboSettingsService koboSettingsService;
+    private final KoboReadingStateBuilder readingStateBuilder;
 
     @Transactional
     public KoboReadingStateResponse saveReadingState(List<KoboReadingState> readingStates) {
@@ -88,11 +89,31 @@ public class KoboReadingStateService {
     }
 
     public KoboReadingStateWrapper getReadingState(String entitlementId) {
-        Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId).map(mapper::toDto);
+        Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId)
+                .map(mapper::toDto)
+                .or(() -> constructReadingStateFromProgress(entitlementId));
         
         return readingState.map(state -> KoboReadingStateWrapper.builder()
                 .readingStates(List.of(state))
                 .build()).orElse(null);
+    }
+    
+    private Optional<KoboReadingState> constructReadingStateFromProgress(String entitlementId) {
+        try {
+            Long bookId = Long.parseLong(entitlementId);
+            BookLoreUser user = authenticationService.getAuthenticatedUser();
+            
+            return progressRepository.findByUserIdAndBookId(user.getId(), bookId)
+                    .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null)
+                    .map(progress -> {
+                        log.info("Constructed reading state from UserBookProgress for book: {}, progress: {}%",
+                                entitlementId, progress.getKoboProgressPercent());
+                        return readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress);
+                    });
+        } catch (NumberFormatException e) {
+            log.warn("Invalid entitlement ID format when constructing reading state: {}", entitlementId);
+            return Optional.empty();
+        }
     }
     
     private void syncKoboProgressToUserBookProgress(KoboReadingState readingState, Long userId) {
