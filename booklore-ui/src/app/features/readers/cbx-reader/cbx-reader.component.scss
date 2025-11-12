@@ -704,18 +704,9 @@
         color: #999;
       }
 
-      &.prev-book {
-        span {
-          display: inline-flex;
-          align-items: center;
-        }
-      }
-
-      &.next-book {
-        span {
-          display: inline-flex;
-          align-items: center;
-        }
+      span {
+        display: inline-flex;
+        align-items: center;
       }
     }
   }
@@ -737,7 +728,6 @@
       color: white;
       border: none;
       border-radius: 12px;
-      font-size: 16px;
       font-weight: 600;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -760,7 +750,6 @@
 
       .action-text {
         font-size: 1.1rem;
-        font-weight: 600;
         letter-spacing: 0.5px;
       }
 
@@ -795,15 +784,9 @@
         min-width: 240px;
         padding: 1.5rem 2rem;
 
-        .action-icon {
-          font-size: 2rem;
-        }
-
-        .action-text {
-          font-size: 1rem;
-        }
-
-        .book-title {
+        .action-icon { font-size: 2rem; }
+        .action-text { font-size: 1rem; }
+        .book-title { 
           font-size: 0.85rem;
           max-width: 250px;
         }
