@@ -178,10 +178,10 @@ public class KoboReadingStateService {
         double progressPercent = progressFraction * 100.0;
         float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null 
                 ? settings.getProgressMarkAsFinishedThreshold() 
-                : 99.5f;
+                : 99f;
         float readingThreshold = settings.getProgressMarkAsReadingThreshold() != null 
                 ? settings.getProgressMarkAsReadingThreshold() 
-                : 0.25f;
+                : 1f;
         
         if (progressPercent >= finishedThreshold) {
             userProgress.setReadStatus(ReadStatus.READ);

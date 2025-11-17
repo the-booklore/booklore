@@ -51,8 +51,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   koboSyncSettings: KoboSyncSettings = {
     token: '',
     syncEnabled: false,
-    progressMarkAsReadingThreshold: 0.25,
-    progressMarkAsFinishedThreshold: 99.5
+    progressMarkAsReadingThreshold: 1,
+    progressMarkAsFinishedThreshold: 99
   }
 
   ngOnInit() {
@@ -103,8 +103,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       next: (settings: KoboSyncSettings) => {
         this.koboSyncSettings.token = settings.token;
         this.koboSyncSettings.syncEnabled = settings.syncEnabled;
-        this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 0.25;
-        this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99.5;
+        this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 1;
+        this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99;
         this.credentialsSaved = !!settings.token;
       },
       error: () => {

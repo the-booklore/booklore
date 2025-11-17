@@ -8,5 +8,5 @@ ALTER TABLE user_book_progress
 
 -- Add configurable progress thresholds to kobo_user_settings table
 ALTER TABLE kobo_user_settings
-    ADD COLUMN IF NOT EXISTS progress_mark_as_reading_threshold  FLOAT DEFAULT 0.25,
-    ADD COLUMN IF NOT EXISTS progress_mark_as_finished_threshold FLOAT DEFAULT 99.5;
+    ADD COLUMN IF NOT EXISTS progress_mark_as_reading_threshold  FLOAT DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS progress_mark_as_finished_threshold FLOAT DEFAULT 99;
