@@ -104,7 +104,7 @@
               <div class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label-row">
-                    <label class="setting-label">Mark as Reading at: {{ koboSyncSettings.progressMarkAsReadingThreshold?.toFixed(2) }}%</label>
+                    <label class="setting-label">Mark as Reading at: {{ koboSyncSettings.progressMarkAsReadingThreshold?.toFixed(0) }}%</label>
                     <div class="slider-container">
                       <p-slider
                         id="markAsReadingThreshold"
@@ -128,7 +128,7 @@
               <div class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label-row">
-                    <label class="setting-label">Mark as Finished at: {{ koboSyncSettings.progressMarkAsFinishedThreshold?.toFixed(2) }}%</label>
+                    <label class="setting-label">Mark as Finished at: {{ koboSyncSettings.progressMarkAsFinishedThreshold?.toFixed(0) }}%</label>
                     <div class="slider-container">
                       <p-slider
                         id="markAsFinishedThreshold"
