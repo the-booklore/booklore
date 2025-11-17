@@ -8,7 +8,7 @@ import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
 import {BookService} from '../../../book/service/book.service';
 import {BookState} from '../../../book/model/state/book-state.model';
-import {Book, ReadStatus} from '../../../book/model/book.model';
+import {Book} from '../../../book/model/book.model';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TooltipModule} from 'primeng/tooltip';
@@ -20,6 +20,7 @@ import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-e
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 import {SortService} from '../../../book/service/sort.service';
+import { PageTitleService } from "../../../../shared/service/page-title.service";
 import {SortDirection, SortOption} from '../../../book/model/sort.model';
 
 const DEFAULT_MAX_ITEMS = 20;
@@ -47,6 +48,7 @@ export class MainDashboardComponent implements OnInit {
   private magicShelfService = inject(MagicShelfService);
   private ruleEvaluatorService = inject(BookRuleEvaluatorService);
   private sortService = inject(SortService);
+  private pageTitle = inject(PageTitleService);
 
   bookState$ = this.bookService.bookState$;
   dashboardConfig$ = this.dashboardConfigService.config$;
@@ -60,6 +62,8 @@ export class MainDashboardComponent implements OnInit {
   ScrollerType = ScrollerType;
 
   ngOnInit(): void {
+    this.pageTitle.setPageTitle('Dashboard');
+
     this.dashboardConfig$.subscribe(() => {
       this.scrollerBooksCache.clear();
     });

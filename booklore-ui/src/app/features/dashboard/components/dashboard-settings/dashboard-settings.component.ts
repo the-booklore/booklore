@@ -7,6 +7,7 @@ import {CheckboxModule} from 'primeng/checkbox';
 import {InputTextModule} from 'primeng/inputtext';
 import {SelectModule} from 'primeng/select';
 import {InputNumberModule} from 'primeng/inputnumber';
+import {SortDirection} from "../../../book/model/sort.model";
 import {DashboardConfig, ScrollerConfig, ScrollerType} from '../../models/dashboard-config.model';
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
@@ -56,6 +57,7 @@ export class DashboardSettingsComponent implements OnInit {
   sortFieldOptions = [
     {label: 'Title', value: 'title'},
     {label: 'Title + Series', value: 'titleSeries'},
+    {label: 'File Name', field: 'fileName'},
     {label: 'Date Added', value: 'addedOn'},
     {label: 'Author', value: 'author'},
     {label: 'Personal Rating', value: 'personalRating'},

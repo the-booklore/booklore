@@ -48,8 +48,27 @@
             (click)="toggleMetadataLock(metadata)">
           </p-button>
         </td>
-        <td (click)="openMetadataCenter(book.id)" class="cursor-pointer">
-          <img [attr.src]="urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn)" alt="Book Cover" class="size-7"/>
+        <td>
+          <a [routerLink]="urlHelper.getBookUrl(book)">
+            <img
+              [attr.src]="urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn)"
+              alt="Book Cover"
+              class="size-7"
+              tooltipPosition="left"
+              [pTooltip]="tooltipContent"
+              tooltipStyleClass="[&>.p-tooltip-text]:p-1"
+            />
+          </a>
+          <ng-template #tooltipContent>
+            <div class="flex flex-col items-center gap-2">
+              <img
+                [attr.src]="urlHelper.getThumbnailUrl(metadata.bookId, metadata.coverUpdatedOn)"
+                alt="Book Cover"
+                class="w-[40rem] h-auto"
+              />
+              <em class="text-sm text-balance text-center">{{ metadata.title }}</em>
+            </div>
+          </ng-template>
         </td>
 
         @for (col of visibleColumns; track col.field) {
@@ -79,9 +98,17 @@
               </span>
             </td>
           } @else {
-            <td [title]="getCellValue(metadata, book, col.field)"
-                class="overflow-hidden truncate text-right min-w-[6rem] max-w-[12rem]">
-              {{ getCellValue(metadata, book, col.field) }}
+            <td
+              [title]="getCellValue(metadata, book, col.field)"
+              class="overflow-hidden truncate text-right min-w-[6rem] max-w-[12rem]">
+              @if(['title', 'authors', 'publisher', 'seriesName', 'categories', 'language'].includes(col.field)) {
+                @for (item of getCellClickableValue(metadata, book, col.field); track $index; let isLast = $last) {
+                  <a [routerLink]="item.url" class="hover:underline hover:text-blue-400">
+                    {{ item.anchor }}</a>@if (!isLast) {<span>, </span>}
+                }
+              } @else {
+                {{ getCellValue(metadata, book, col.field) }}
+              }
             </td>
           }
         }

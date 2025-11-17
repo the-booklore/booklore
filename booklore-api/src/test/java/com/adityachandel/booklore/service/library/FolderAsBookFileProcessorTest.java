@@ -422,7 +422,7 @@ class FolderAsBookFileProcessorTest {
         book.setFileName(fileName);
         book.setFileSubPath(subPath);
         book.setBookType(BookFileType.PDF);
-        book.setAddedOn(Instant.now());
+        book.setAddedOn(Instant.parse("2025-01-01T12:00:00Z"));
 
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setId(1L);

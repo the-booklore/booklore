@@ -103,18 +103,25 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 String scheme = el.getAttributeNS("http://www.idpf.org/2007/opf", "scheme").toUpperCase();
                                 String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
 
-                                switch (scheme) {
-                                    case "ISBN" -> {
+                                if (!scheme.isEmpty()) {
+                                    switch (scheme) {
+                                        case "ISBN" -> {
+                                            if (value.length() == 13) builderMeta.isbn13(value);
+                                            else if (value.length() == 10) builderMeta.isbn10(value);
+                                        }
+                                        case "GOODREADS" -> builderMeta.goodreadsId(value);
+                                        case "COMICVINE" -> builderMeta.comicvineId(value);
+                                        case "GOOGLE" -> builderMeta.googleId(value);
+                                        case "AMAZON" -> builderMeta.asin(value);
+                                        case "HARDCOVER" -> builderMeta.hardcoverId(value);
+                                    }
+                                } else {
+                                    if (text.toLowerCase().startsWith("isbn:")) {
                                         if (value.length() == 13) builderMeta.isbn13(value);
                                         else if (value.length() == 10) builderMeta.isbn10(value);
                                     }
-                                    case "GOODREADS" -> builderMeta.goodreadsId(value);
-                                    case "COMICVINE" -> builderMeta.comicvineId(value);
-                                    case "GOOGLE" -> builderMeta.googleId(value);
-                                    case "AMAZON" -> builderMeta.asin(value);
-                                    case "HARDCOVER" -> builderMeta.hardcoverId(value);
                                 }
-                            }
+                           }
                             case "date" -> {
                                 LocalDate parsed = parseDate(text);
                                 if (parsed != null) builderMeta.publishedDate(parsed);

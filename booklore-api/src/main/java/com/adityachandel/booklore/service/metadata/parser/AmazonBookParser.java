@@ -40,7 +40,36 @@ public class AmazonBookParser implements BookParser {
     private static final Pattern PARENTHESES_WITH_WHITESPACE_PATTERN = Pattern.compile("\\s*\\(.*?\\)");
     private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
     private static final Pattern DP_SEPARATOR_PATTERN = Pattern.compile("/dp/");
+    
+    private static final Map<String, LocaleInfo> DOMAIN_LOCALE_MAP = Map.ofEntries(
+            Map.entry("com", new LocaleInfo("en-US,en;q=0.9", Locale.US)),
+            Map.entry("co.uk", new LocaleInfo("en-GB,en;q=0.9", Locale.UK)),
+            Map.entry("de", new LocaleInfo("en-GB,en;q=0.9,de;q=0.8", Locale.GERMANY)),
+            Map.entry("fr", new LocaleInfo("en-GB,en;q=0.9,fr;q=0.8", Locale.FRANCE)),
+            Map.entry("it", new LocaleInfo("en-GB,en;q=0.9,it;q=0.8", Locale.ITALY)),
+            Map.entry("es", new LocaleInfo("en-GB,en;q=0.9,es;q=0.8", new Locale.Builder().setLanguage("es").setRegion("ES").build())),
+            Map.entry("ca", new LocaleInfo("en-US,en;q=0.9", Locale.CANADA)),
+            Map.entry("com.au", new LocaleInfo("en-GB,en;q=0.9", new Locale.Builder().setLanguage("en").setRegion("AU").build())),
+            Map.entry("co.jp", new LocaleInfo("en-GB,en;q=0.9,ja;q=0.8", Locale.JAPAN)),
+            Map.entry("in", new LocaleInfo("en-GB,en;q=0.9", new Locale.Builder().setLanguage("en").setRegion("IN").build())),
+            Map.entry("com.br", new LocaleInfo("en-GB,en;q=0.9,pt;q=0.8", new Locale.Builder().setLanguage("pt").setRegion("BR").build())),
+            Map.entry("com.mx", new LocaleInfo("en-US,en;q=0.9,es;q=0.8", new Locale.Builder().setLanguage("es").setRegion("MX").build())),
+            Map.entry("nl", new LocaleInfo("en-GB,en;q=0.9,nl;q=0.8", new Locale.Builder().setLanguage("nl").setRegion("NL").build())),
+            Map.entry("se", new LocaleInfo("en-GB,en;q=0.9,sv;q=0.8", new Locale.Builder().setLanguage("sv").setRegion("SE").build())),
+            Map.entry("pl", new LocaleInfo("en-GB,en;q=0.9,pl;q=0.8", new Locale.Builder().setLanguage("pl").setRegion("PL").build()))
+    );
+    
     private final AppSettingService appSettingService;
+    
+    private static class LocaleInfo {
+        final String acceptLanguage;
+        final Locale locale;
+        
+        LocaleInfo(String acceptLanguage, Locale locale) {
+            this.acceptLanguage = acceptLanguage;
+            this.locale = locale;
+        }
+    }
 
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
@@ -362,7 +391,12 @@ public class AmazonBookParser implements BookParser {
         try {
             Element publicationDateElement = doc.select("#rpi-attribute-book_details-publication_date .rpi-attribute-value span").first();
             if (publicationDateElement != null) {
-                return parseAmazonDate(publicationDateElement.text());
+                String dateText = publicationDateElement.text();
+                LocalDate parsedDate = parseAmazonDate(dateText);
+                if (parsedDate == null) {
+                    log.warn("Failed to parse publication date: '{}', returning null", dateText);
+                }
+                return parsedDate;
             }
             log.warn("Failed to parse publishedDate: Element not found.");
         } catch (Exception e) {
@@ -463,7 +497,8 @@ public class AmazonBookParser implements BookParser {
                 if (ratingSpan != null) {
                     String text = ratingSpan.text().trim();
                     if (!text.isEmpty()) {
-                        return Double.parseDouble(text);
+                        String normalizedText = text.replace(',', '.');
+                        return Double.parseDouble(normalizedText);
                     }
                 }
             }
@@ -475,7 +510,8 @@ public class AmazonBookParser implements BookParser {
 
     private List<BookReview> getReviews(Document doc, int maxReviews) {
         List<BookReview> reviews = new ArrayList<>();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy", Locale.ENGLISH);
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
+        LocaleInfo localeInfo = getLocaleInfoForDomain(domain);
 
         try {
             Elements reviewElements = doc.select("li[data-hook=review]");
@@ -501,10 +537,12 @@ public class AmazonBookParser implements BookParser {
                 String ratingText = !ratingElements.isEmpty() ? ratingElements.first().text() : "";
                 if (!ratingText.isEmpty()) {
                     try {
-                        Pattern ratingPattern = Pattern.compile("^([0-9]+(\\.[0-9]+)?)");
+                        // Support both comma and dot as decimal separator
+                        Pattern ratingPattern = Pattern.compile("^([0-9]+([.,][0-9]+)?)");
                         Matcher ratingMatcher = ratingPattern.matcher(ratingText);
                         if (ratingMatcher.find()) {
-                            ratingValue = Float.parseFloat(ratingMatcher.group(1));
+                            String ratingStr = ratingMatcher.group(1).replace(',', '.');
+                            ratingValue = Float.parseFloat(ratingStr);
                         }
                     } catch (NumberFormatException e) {
                         log.warn("Failed to parse rating '{}': {}", ratingText, e.getMessage());
@@ -530,11 +568,11 @@ public class AmazonBookParser implements BookParser {
                             datePart = matcher.group(2).trim();
                         }
 
-                        LocalDate localDate = LocalDate.parse(datePart, formatter);
-                        dateInstant = localDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+                        LocalDate localDate = parseReviewDate(datePart, localeInfo);
+                        if (localDate != null) {
+                            dateInstant = localDate.atStartOfDay(ZoneOffset.UTC).toInstant();
+                        }
 
-                    } catch (DateTimeParseException e) {
-                        log.warn("Failed to parse date '{}' in review: {}", fullDateText, e.getMessage());
                     } catch (Exception e) {
                         log.warn("Error parsing date string '{}': {}", fullDateText, e.getMessage());
                     }
@@ -633,9 +671,12 @@ public class AmazonBookParser implements BookParser {
         try {
             String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
             String amazonCookie = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getCookie();
+            
+            LocaleInfo localeInfo = getLocaleInfoForDomain(domain);
+            
             Connection connection = Jsoup.connect(url)
                     .header("accept", "text/html, application/json")
-                    .header("accept-language", "en-US,en;q=0.9")
+                    .header("accept-language", localeInfo.acceptLanguage)
                     .header("content-type", "application/json")
                     .header("device-memory", "8")
                     .header("downlink", "10")
@@ -671,9 +712,60 @@ public class AmazonBookParser implements BookParser {
         }
     }
 
+    private static LocaleInfo getLocaleInfoForDomain(String domain) {
+        return DOMAIN_LOCALE_MAP.getOrDefault(domain,
+                new LocaleInfo("en-US,en;q=0.9", Locale.US));
+    }
+
+
+    private static LocalDate parseDate(String dateString, LocaleInfo localeInfo) {
+        if (dateString == null || dateString.trim().isEmpty()) {
+            return null;
+        }
+
+        String trimmedDate = dateString.trim();
+
+        String[] patterns = {
+            "MMMM d, yyyy",
+            "d MMMM yyyy",
+            "d. MMMM yyyy",
+            "MMM d, yyyy",
+            "MMM. d, yyyy",
+            "d MMM yyyy",
+            "d MMM. yyyy",
+            "d. MMM yyyy"
+        };
+
+        for (String pattern : patterns) {
+            try {
+                return LocalDate.parse(trimmedDate, DateTimeFormatter.ofPattern(pattern, Locale.ENGLISH));
+            } catch (DateTimeParseException e) {
+                log.debug("Date '{}' did not match pattern '{}' for locale ENGLISH", trimmedDate, pattern);
+            }
+        }
+
+        if (!localeInfo.locale.getLanguage().equals("en")) {
+            for (String pattern : patterns) {
+                try {
+                    return LocalDate.parse(trimmedDate, DateTimeFormatter.ofPattern(pattern, localeInfo.locale));
+                } catch (DateTimeParseException e) {
+                    log.debug("Date '{}' did not match pattern '{}' for locale {}", trimmedDate, pattern, localeInfo.locale);
+                }
+            }
+        }
+
+        log.warn("Failed to parse date '{}' with any known format for locale {}", dateString, localeInfo.locale);
+        return null;
+    }
+
     private LocalDate parseAmazonDate(String dateString) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM d, yyyy");
-        return LocalDate.parse(dateString, formatter);
+        String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
+        LocaleInfo localeInfo = getLocaleInfoForDomain(domain);
+        return parseDate(dateString, localeInfo);
+    }
+
+    private static LocalDate parseReviewDate(String dateString, LocaleInfo localeInfo) {
+        return parseDate(dateString, localeInfo);
     }
 
     private String cleanDescriptionHtml(String html) {

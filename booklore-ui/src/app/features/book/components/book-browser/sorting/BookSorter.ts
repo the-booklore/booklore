@@ -6,6 +6,7 @@ export class BookSorter {
   sortOptions: SortOption[] = [
     { label: 'Title', field: 'title', direction: SortDirection.ASCENDING },
     { label: 'Title + Series', field: 'titleSeries', direction: SortDirection.ASCENDING },
+    { label: 'File Name', field: 'fileName', direction: SortDirection.ASCENDING },
     { label: 'Author', field: 'author', direction: SortDirection.ASCENDING },
     { label: 'Last Read', field: 'lastReadTime', direction: SortDirection.ASCENDING },
     { label: 'Added On', field: 'addedOn', direction: SortDirection.ASCENDING },

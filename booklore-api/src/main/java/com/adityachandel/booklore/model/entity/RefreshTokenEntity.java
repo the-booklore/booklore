@@ -3,7 +3,7 @@ package com.adityachandel.booklore.model.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.Date;
+import java.time.Instant;
 
 @Entity
 @Getter
@@ -26,11 +26,11 @@ public class RefreshTokenEntity {
     private BookLoreUserEntity user;
 
     @Column(name = "expiry_date", nullable = false)
-    private Date expiryDate;
+    private Instant expiryDate;
 
     @Column(nullable = false)
     private boolean revoked = false;
 
     @Column(name = "revocation_date")
-    private Date revocationDate;
+    private Instant revocationDate;
 }

@@ -29,7 +29,7 @@ import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.URL;
+import java.net.URI;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
@@ -401,8 +401,8 @@ public class BookMetadataUpdater {
 
     private boolean isLocalOrPrivateUrl(String url) {
         try {
-            URL parsed = new URL(url);
-            String host = parsed.getHost();
+            URI uri = new URI(url);
+            String host = uri.getHost();
             if ("localhost".equalsIgnoreCase(host) || "127.0.0.1".equals(host)) return true;
             InetAddress addr = InetAddress.getByName(host);
             return addr.isLoopbackAddress() || addr.isSiteLocalAddress();

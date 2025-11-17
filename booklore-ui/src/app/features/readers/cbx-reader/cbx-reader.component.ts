@@ -1,5 +1,6 @@
 import {Component, HostListener, inject, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
+import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
 import {
@@ -49,6 +50,7 @@ export class CbxReaderComponent implements OnInit {
   private bookService = inject(BookService);
   private userService = inject(UserService);
   private messageService = inject(MessageService);
+  private pageTitle = inject(PageTitleService);
 
 
   showFitModeDropdown: boolean = false;
@@ -92,6 +94,8 @@ export class CbxReaderComponent implements OnInit {
         next: ([book, bookSettings, myself]) => {
           const userSettings = myself.userSettings;
           this.bookType = book.bookType;
+
+          this.pageTitle.setBookPageTitle(book);
 
           const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
             ? this.pdfReaderService.getAvailablePages(this.bookId)

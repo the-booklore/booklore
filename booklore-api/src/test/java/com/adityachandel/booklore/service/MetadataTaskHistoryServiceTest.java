@@ -27,6 +27,8 @@ import static org.mockito.Mockito.*;
 
 class MetadataTaskHistoryServiceTest {
 
+    private static final Instant FIXED_INSTANT = Instant.parse("2025-01-01T12:00:00Z");
+
     @Mock
     private MetadataFetchJobRepository jobRepository;
 
@@ -68,8 +70,7 @@ class MetadataTaskHistoryServiceTest {
         when(jobEntity.getStatus()).thenReturn(MetadataFetchTaskStatus.IN_PROGRESS);
         when(jobEntity.getCompletedBooks()).thenReturn(2);
         when(jobEntity.getTotalBooksCount()).thenReturn(3);
-        Instant now = Instant.now();
-        when(jobEntity.getStartedAt()).thenReturn(now.minusSeconds(60));
+        when(jobEntity.getStartedAt()).thenReturn(FIXED_INSTANT.minusSeconds(60));
         when(jobEntity.getCompletedAt()).thenReturn(null);
         when(jobEntity.getUserId()).thenReturn(99L);
 
@@ -92,7 +93,7 @@ class MetadataTaskHistoryServiceTest {
         assertThat(taskDto.getStatus()).isEqualTo(MetadataFetchTaskStatus.IN_PROGRESS);
         assertThat(taskDto.getCompleted()).isEqualTo(2);
         assertThat(taskDto.getTotalBooks()).isEqualTo(3);
-        assertThat(taskDto.getStartedAt()).isEqualTo(now.minusSeconds(60));
+        assertThat(taskDto.getStartedAt()).isEqualTo(FIXED_INSTANT.minusSeconds(60));
         assertThat(taskDto.getCompletedAt()).isNull();
         assertThat(taskDto.getInitiatedBy()).isEqualTo(99L);
         assertThat(taskDto.getProposals()).containsExactly(dto1);

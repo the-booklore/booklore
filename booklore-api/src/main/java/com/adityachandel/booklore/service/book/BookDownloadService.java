@@ -13,7 +13,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,11 +53,11 @@ public class BookDownloadService {
             InputStream inputStream = new FileInputStream(bookFile);
             InputStreamResource resource = new InputStreamResource(inputStream);
 
-            String contentDisposition = ContentDisposition.builder("attachment")
-                    .filename(file.getFileName().toString(), StandardCharsets.UTF_8)
-                    .build()
-                    .toString();
-
+            String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+            String fallbackFilename = file.getFileName().toString().replaceAll("[^\\x00-\\x7F]", "_");
+            String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                    fallbackFilename, encodedFilename);
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .contentLength(bookFile.length())
@@ -113,10 +113,10 @@ public class BookDownloadService {
     private void setResponseHeaders(HttpServletResponse response, File file) {
         response.setContentType(MediaType.APPLICATION_OCTET_STREAM_VALUE);
         response.setContentLengthLong(file.length());
-        String contentDisposition = ContentDisposition.builder("attachment")
-                .filename(file.getName(), StandardCharsets.UTF_8)
-                .build()
-                .toString();
+        String encodedFilename = URLEncoder.encode(file.getName(), StandardCharsets.UTF_8).replace("+", "%20");
+        String fallbackFilename = file.getName().replaceAll("[^\\x00-\\x7F]", "_");
+        String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
+                fallbackFilename, encodedFilename);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
     }
 

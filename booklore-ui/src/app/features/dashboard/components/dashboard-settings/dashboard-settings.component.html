@@ -45,7 +45,7 @@
             <label>Magic Shelf</label>
             <p-select
               fluid
-              [options]="magicShelves$ | async"
+              [options]="(magicShelves$ | async)!"
               [(ngModel)]="scroller.magicShelfId"
               placeholder="Select magic shelf"
               appendTo="body">

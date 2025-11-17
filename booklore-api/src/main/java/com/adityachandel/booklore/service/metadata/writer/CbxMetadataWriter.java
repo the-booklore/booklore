@@ -80,7 +80,7 @@ public class CbxMetadataWriter implements MetadataWriter {
                     }
                 }
             } else if (isCb7) {
-                try (SevenZFile sevenZ = new SevenZFile(file)) {
+                try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
                     SevenZArchiveEntry existing = null;
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e != null && !e.isDirectory() && isComicInfoName(e.getName())) {
@@ -161,7 +161,7 @@ public class CbxMetadataWriter implements MetadataWriter {
             if (isCb7) {
                 // Convert to CBZ with updated ComicInfo.xml
                 tempFile = Files.createTempFile("cbx_edit", ".cbz");
-                try (SevenZFile sevenZ = new SevenZFile(file);
+                try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get();
                      ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempFile))) {
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e.isDirectory()) continue;

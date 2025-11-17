@@ -25,6 +25,8 @@ import static org.mockito.Mockito.*;
 
 class OpdsFeedServiceTest {
 
+    private static final Instant FIXED_INSTANT = Instant.parse("2025-01-01T12:00:00Z");
+
     private AuthenticationService authenticationService;
     private OpdsBookService opdsBookService;
     private OpdsFeedService opdsFeedService;
@@ -128,7 +130,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(10L)
                 .bookType(BookFileType.EPUB)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder()
                         .title("Book Title")
                         .authors(Set.of("Author A"))
@@ -183,7 +185,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(11L)
                 .bookType(BookFileType.PDF)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Recent Book").build())
                 .build();
 
@@ -220,7 +222,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(12L)
                 .bookType(BookFileType.EPUB)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Surprise Book").build())
                 .build();
 

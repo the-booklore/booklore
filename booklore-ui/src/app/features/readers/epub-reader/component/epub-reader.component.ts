@@ -1,4 +1,4 @@
-import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, AfterViewInit, NgZone} from '@angular/core';
+import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, NgZone} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
 import {Button} from 'primeng/button';
@@ -17,6 +17,7 @@ import {Slider} from 'primeng/slider';
 import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
 import {EpubThemeUtil} from '../epub-theme-util';
 import {RadioButton} from 'primeng/radiobutton';
+import { PageTitleService } from "../../../../shared/service/page-title.service";
 import {Divider} from 'primeng/divider';
 
 @Component({
@@ -77,6 +78,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
   private ngZone = inject(NgZone);
+  private pageTitle = inject(PageTitleService);
 
   epub!: Book;
 
@@ -95,6 +97,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
           this.epub = epub;
           const individualSetting = bookSetting?.epubSettings;
           const fileReader = new FileReader();
+
+          this.pageTitle.setBookPageTitle(epub);
 
           fileReader.onload = () => {
             this.book = ePub(fileReader.result as ArrayBuffer);

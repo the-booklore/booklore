@@ -1,6 +1,7 @@
 import {Component, inject, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
+import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {LibraryService} from '../../service/library.service';
 import {BookService} from '../../service/book.service';
 import {catchError, debounceTime, filter, map, switchMap, take} from 'rxjs/operators';
@@ -44,10 +45,8 @@ import {BookMenuService} from '../../service/book-menu.service';
 import {MagicShelf, MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-evaluator.service';
 import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
-import {MetadataRefreshRequest} from '../../../metadata/model/request/metadata-refresh-request.model';
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
-import {TaskCreateRequest, TaskService, TaskType} from '../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 
 export enum EntityType {
@@ -116,6 +115,8 @@ export class BookBrowserComponent implements OnInit {
   protected confirmationService = inject(ConfirmationService);
   protected magicShelfService = inject(MagicShelfService);
   protected bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  private pageTitle = inject(PageTitleService);
+
   protected taskHelperService = inject(TaskHelperService);
 
   bookState$: Observable<BookState> | undefined;
@@ -179,6 +180,7 @@ export class BookBrowserComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.pageTitle.setPageTitle('')
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
 
     const currentPath = this.activatedRoute.snapshot.routeConfig?.path;
@@ -187,6 +189,8 @@ export class BookBrowserComponent implements OnInit {
       this.entityType = entityType;
       this.entityType$ = of(entityType);
       this.entity$ = of(null);
+
+      this.pageTitle.setPageTitle(currentPath === 'all-books' ? 'All Books' : 'Unshelved Books');
     } else {
       const routeEntityInfo$ = this.getEntityInfoFromRoute();
       this.entityType$ = routeEntityInfo$.pipe(map(info => info.entityType));
@@ -194,6 +198,9 @@ export class BookBrowserComponent implements OnInit {
         switchMap(({entityId, entityType}) => this.fetchEntity(entityId, entityType))
       );
       this.entity$.subscribe(entity => {
+        if (entity) {
+          this.pageTitle.setPageTitle(entity.name);
+        }
         this.entity = entity ?? null;
         this.entityOptions = entity
           ? this.isLibrary(entity)

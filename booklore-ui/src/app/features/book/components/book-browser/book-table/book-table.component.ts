@@ -10,7 +10,7 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
 import {MessageService} from 'primeng/api';
-import {Router} from '@angular/router';
+import {Router, RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {BookMetadataCenterComponent} from '../../../../metadata/component/book-metadata-center/book-metadata-center.component';
@@ -28,7 +28,8 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
     FormsModule,
     Button,
     TooltipModule,
-    NgClass
+    NgClass,
+    RouterLink
   ],
   styleUrls: ['./book-table.component.scss'],
   providers: [DatePipe]
@@ -207,6 +208,55 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
   shouldShowStatusIcon(readStatus: ReadStatus | undefined): boolean {
     return this.readStatusHelper.shouldShowStatusIcon(readStatus);
+  }
+
+  getAuthors(metadata: BookMetadata): string[] {
+    return metadata.authors ?? []
+  }
+
+  getCellClickableValue(metadata: BookMetadata, book: Book, field: string){
+    const filterKeys:Record<string, string> = {
+      'authors': 'author',
+      'publisher': 'publisher',
+      'categories': 'category',
+      'language': 'language',
+      'title': 'title'
+    } as const;
+
+    let data:string[] =[metadata[field]];
+
+    switch (field) {
+      case 'title':
+        return [
+          {
+            url: this.urlHelper.getBookUrl(book),
+            anchor: metadata.title ?? book.fileName
+          }
+        ];
+
+      case 'categories':
+        data = metadata.categories ?? [];
+        break;
+
+      case 'authors':
+        data = metadata.authors ?? [];
+        break;
+
+      case 'seriesName':
+        return [
+          {
+            url: this.urlHelper.filterBooksBy('series', metadata.seriesName ?? '' ),
+            anchor: metadata.seriesName
+          }
+        ]
+    }
+
+    return data.map(item => {
+      return {
+        url: this.urlHelper.filterBooksBy(filterKeys[field] ?? field, item),
+        anchor: item
+      }
+    });
   }
 
   getCellValue(metadata: BookMetadata, book: Book, field: string): string | number {

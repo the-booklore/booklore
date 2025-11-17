@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Date;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -101,8 +101,7 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
             OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
             JWTClaimsSet claimsSet = dynamicOidcJwtProcessor.getProcessor().process(token, null);
 
-            Date expirationTime = claimsSet.getExpirationTime();
-            if (expirationTime == null || expirationTime.before(new Date())) {
+            if (claimsSet.getExpirationTime() == null || claimsSet.getExpirationTime().toInstant().isBefore(Instant.now())) {
                 log.warn("OIDC token is expired or missing exp claim");
                 throw ApiError.GENERIC_UNAUTHORIZED.createException("Token has expired or is invalid.");
             }

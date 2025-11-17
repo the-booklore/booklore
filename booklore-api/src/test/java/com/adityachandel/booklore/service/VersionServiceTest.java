@@ -139,8 +139,8 @@ class VersionServiceTest {
 
         @Test
         void returnsNotesWhenAvailable() {
-            LocalDateTime now = LocalDateTime.now();
-            ReleaseNote note = new ReleaseNote("v1.1", "n", "b", "u", now);
+            LocalDateTime fixedTime = LocalDateTime.of(2025, 1, 1, 12, 0, 0);
+            ReleaseNote note = new ReleaseNote("v1.1", "n", "b", "u", fixedTime);
 
             Mockito.doReturn(List.of(note))
                     .when(spyService)
