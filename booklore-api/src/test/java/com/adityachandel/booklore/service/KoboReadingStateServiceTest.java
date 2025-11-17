@@ -81,8 +81,8 @@ class KoboReadingStateServiceTest {
         testBook.setId(100L);
 
         testSettings = new KoboSyncSettings();
-        testSettings.setProgressMarkAsReadingThreshold(0.25f);
-        testSettings.setProgressMarkAsFinishedThreshold(99.5f);
+        testSettings.setProgressMarkAsReadingThreshold(1f);
+        testSettings.setProgressMarkAsFinishedThreshold(99f);
 
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(koboSettingsService.getCurrentUserSettings()).thenReturn(testSettings);
@@ -185,7 +185,7 @@ class KoboReadingStateServiceTest {
     void testSyncKoboProgressToUserBookProgress_MarkAsRead() {
         // Arrange
         String entitlementId = "100";
-        testSettings.setProgressMarkAsFinishedThreshold(99.5f);
+        testSettings.setProgressMarkAsFinishedThreshold(99f);
 
         KoboReadingState.CurrentBookmark bookmark = KoboReadingState.CurrentBookmark.builder()
                 .progressPercent(100)
@@ -223,7 +223,7 @@ class KoboReadingStateServiceTest {
     void testSyncKoboProgressToUserBookProgress_MarkAsReading() {
         // Arrange
         String entitlementId = "100";
-        testSettings.setProgressMarkAsReadingThreshold(0.25f);
+        testSettings.setProgressMarkAsReadingThreshold(1f);
 
         KoboReadingState.CurrentBookmark bookmark = KoboReadingState.CurrentBookmark.builder()
                 .progressPercent(1)
