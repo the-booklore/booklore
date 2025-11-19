@@ -66,10 +66,7 @@ public class FileMoveService {
                 LibraryPathEntity libraryPathEntity = optionalLibraryPathEntity.get();
 
                 LibraryEntity sourceLibrary = bookEntity.getLibrary();
-                if (sourceLibrary.getId().equals(targetLibrary.getId())) {
-                    continue;
-                }
-                if (!sourceLibraryIds.contains(sourceLibrary.getId())) {
+                if (!sourceLibrary.getId().equals(targetLibrary.getId()) && !sourceLibraryIds.contains(sourceLibrary.getId())) {
                     monitoringRegistrationService.unregisterLibraries(Collections.singleton(sourceLibrary.getId()));
                     sourceLibraryIds.add(sourceLibrary.getId());
                 }
