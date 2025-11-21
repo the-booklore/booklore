@@ -11,8 +11,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -154,17 +152,10 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        return http.getSharedObject(AuthenticationManagerBuilder.class)
-                .authenticationProvider(authenticationProvider())
-                .build();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(opdsUserDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+        // Configure the shared AuthenticationManagerBuilder with the UserDetailsService and PasswordEncoder
+        AuthenticationManagerBuilder auth = http.getSharedObject(AuthenticationManagerBuilder.class);
+        auth.userDetailsService(opdsUserDetailsService).passwordEncoder(passwordEncoder());
+        return auth.build();
     }
 
     @Bean

@@ -107,9 +107,7 @@ public class EpubMetadataWriter implements MetadataWriter {
                 hasChanges[0] = true;
             });
 
-            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> {
-                replaceMetaElement(metadataElement, opfDoc, "calibre:series", val, hasChanges);
-            });
+            helper.copySeriesName(clear != null && clear.isSeriesName(), val -> replaceMetaElement(metadataElement, opfDoc, "calibre:series", val, hasChanges));
 
             helper.copySeriesNumber(clear != null && clear.isSeriesNumber(), val -> {
                 String formatted = val != null ? String.format("%.1f", val) : null;
@@ -136,24 +134,12 @@ public class EpubMetadataWriter implements MetadataWriter {
                 };
 
                 switch (scheme) {
-                    case "AMAZON" -> helper.copyAsin(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
-                    case "GOOGLE" -> helper.copyGoogleId(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
-                    case "GOODREADS" -> helper.copyGoodreadsId(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
-                    case "COMICVINE" -> helper.copyComicvineId(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
-                    case "HARDCOVER" -> helper.copyHardcoverId(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
-                    case "ISBN" -> helper.copyIsbn13(clearFlag, idValue -> {
-                        updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges);
-                    });
+                    case "AMAZON" -> helper.copyAsin(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "GOOGLE" -> helper.copyGoogleId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "GOODREADS" -> helper.copyGoodreadsId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "COMICVINE" -> helper.copyComicvineId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "HARDCOVER" -> helper.copyHardcoverId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+                    case "ISBN" -> helper.copyIsbn13(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
                 }
             }
 

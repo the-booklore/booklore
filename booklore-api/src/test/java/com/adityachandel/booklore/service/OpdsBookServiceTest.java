@@ -77,7 +77,7 @@ class OpdsBookServiceTest {
 
         List<Library> libraries = new ArrayList<>();
         for (Long id : libraryIds) {
-            libraries.add(Library.builder().id(id).name("Lib" + id).build());
+            libraries.add(Library.builder().id(id).name("Lib" + id).watch(false).build());
         }
         when(user.getAssignedLibraries()).thenReturn(libraries);
 
@@ -86,7 +86,7 @@ class OpdsBookServiceTest {
 
     @Test
     void getAccessibleLibraries_returnsAllLibraries_whenNoUserDetails() {
-        List<Library> libraries = List.of(Library.builder().id(1L).name("Lib1").build());
+        List<Library> libraries = List.of(Library.builder().id(1L).name("Lib1").watch(false).build());
         when(libraryService.getAllLibraries()).thenReturn(libraries);
 
         List<Library> result = opdsBookService.getAccessibleLibraries(null);
@@ -104,7 +104,7 @@ class OpdsBookServiceTest {
         BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
         when(user.getPermissions()).thenReturn(perms);
         when(perms.isAdmin()).thenReturn(false);
-        List<Library> assigned = List.of(Library.builder().id(2L).build());
+        List<Library> assigned = List.of(Library.builder().id(2L).watch(false).build());
         when(user.getAssignedLibraries()).thenReturn(assigned);
 
         List<Library> result = opdsBookService.getAccessibleLibraries(details);
@@ -115,7 +115,7 @@ class OpdsBookServiceTest {
     @Test
     void getAccessibleLibraries_returnsAllLibraries_forAdmin() {
         OpdsUserDetails details = v2UserDetails(1L, true, Set.of(1L));
-        List<Library> allLibs = List.of(Library.builder().id(1L).build());
+        List<Library> allLibs = List.of(Library.builder().id(1L).watch(false).build());
         when(libraryService.getAllLibraries()).thenReturn(allLibs);
 
         List<Library> result = opdsBookService.getAccessibleLibraries(details);
@@ -194,7 +194,7 @@ class OpdsBookServiceTest {
         BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
         when(user.getPermissions()).thenReturn(perms);
         when(perms.isAdmin()).thenReturn(false);
-        List<Library> libs = List.of(Library.builder().id(1L).build());
+        List<Library> libs = List.of(Library.builder().id(1L).watch(false).build());
         when(user.getAssignedLibraries()).thenReturn(libs);
 
         Book book = Book.builder().id(1L).shelves(Set.of(Shelf.builder().userId(2L).build())).build();
@@ -208,12 +208,12 @@ class OpdsBookServiceTest {
         Page<Book> result = opdsBookService.getRecentBooksPage(details, 0, 10);
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getShelves()).allMatch(shelf -> shelf.getUserId().equals(2L));
+        assertThat(result.getContent().getFirst().getShelves()).allMatch(shelf -> shelf.getUserId().equals(2L));
     }
 
     @Test
     void getLibraryName_returnsName_whenFound() {
-        List<Library> libs = List.of(Library.builder().id(1L).name("Lib1").build());
+        List<Library> libs = List.of(Library.builder().id(1L).name("Lib1").watch(false).build());
         when(libraryService.getAllLibraries()).thenReturn(libs);
 
         String name = opdsBookService.getLibraryName(1L);
@@ -264,7 +264,7 @@ class OpdsBookServiceTest {
     void getRandomBooks_returnsBooks_whenLibrariesAccessible() {
         OpdsUserDetails details = v2UserDetails(1L, true, Set.of(1L));
         OpdsBookService spy = Mockito.spy(opdsBookService);
-        List<Library> libs = List.of(Library.builder().id(1L).build());
+        List<Library> libs = List.of(Library.builder().id(1L).watch(false).build());
         doReturn(libs).when(spy).getAccessibleLibraries(details);
 
         when(bookOpdsRepository.findRandomBookIdsByLibraryIds(anyList())).thenReturn(List.of(1L, 2L));

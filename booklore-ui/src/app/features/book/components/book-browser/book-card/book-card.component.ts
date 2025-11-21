@@ -213,7 +213,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
           label: 'Download',
           icon: 'pi pi-download',
           command: () => {
-            this.bookService.downloadFile(this.book.id);
+            this.bookService.downloadFile(this.book);
           }
         });
       } else {
@@ -512,7 +512,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       label: `${this.book.fileName || 'Book File'}`,
       icon: 'pi pi-file',
       command: () => {
-        this.bookService.downloadFile(this.book.id);
+        this.bookService.downloadFile(this.book);
       }
     });
 
@@ -528,7 +528,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         items.push({
           label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
           icon: this.getFileIcon(extension),
-          command: () => this.downloadAdditionalFile(this.book.id, format.id)
+          command: () => this.downloadAdditionalFile(this.book, format.id)
         });
       });
     }
@@ -546,7 +546,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         items.push({
           label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
           icon: this.getFileIcon(extension),
-          command: () => this.downloadAdditionalFile(this.book.id, file.id)
+          command: () => this.downloadAdditionalFile(this.book, file.id)
         });
       });
     }
@@ -619,8 +619,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       !!(this.book.supplementaryFiles && this.book.supplementaryFiles.length > 0);
   }
 
-  private downloadAdditionalFile(bookId: number, fileId: number): void {
-    this.bookService.downloadAdditionalFile(bookId, fileId);
+  private downloadAdditionalFile(book: Book, fileId: number): void {
+    this.bookService.downloadAdditionalFile(book, fileId);
   }
 
   private deleteAdditionalFile(bookId: number, fileId: number, fileName: string): void {

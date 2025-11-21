@@ -397,7 +397,7 @@ public class CbxMetadataWriter implements MetadataWriter {
         String n = name.replace('\\', '/');
         if (n.endsWith("/")) return false;
         String lower = n.toLowerCase(Locale.ROOT);
-        return lower.equals("comicinfo.xml") || lower.endsWith("/comicinfo.xml");
+        return "comicinfo.xml".equals(lower) || lower.endsWith("/comicinfo.xml");
     }
 
     private static boolean isSafeEntryName(String name) {

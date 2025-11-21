@@ -90,6 +90,8 @@ public class LibraryRescanHelper {
                         .replaceMode(context.getOptions().getMetadataReplaceMode())
                         .updateThumbnail(false)
                         .mergeCategories(false)
+                        .mergeMoods(true)
+                        .mergeTags(true)
                         .build();
                 bookMetadataUpdater.setBookMetadata(metadataUpdateContext);
             } catch (Exception e) {

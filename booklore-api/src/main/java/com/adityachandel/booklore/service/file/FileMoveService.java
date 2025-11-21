@@ -101,15 +101,11 @@ public class FileMoveService {
 
         for (Long libraryId : targetLibraryIds) {
             Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(libraryId);
-            optionalLibrary.ifPresent(library -> {
-                monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library));
-            });
+            optionalLibrary.ifPresent(library -> monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library)));
         }
         for (Long libraryId : sourceLibraryIds) {
             Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(libraryId);
-            optionalLibrary.ifPresent(library -> {
-                monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library));
-            });
+            optionalLibrary.ifPresent(library -> monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library)));
         }
     }
 

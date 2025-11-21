@@ -283,6 +283,8 @@ public class MetadataRefreshService {
                     .updateThumbnail(replaceCover)
                     .mergeCategories(mergeCategories)
                     .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
+                    .mergeMoods(true)
+                    .mergeTags(true)
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);
@@ -293,13 +295,14 @@ public class MetadataRefreshService {
     }
 
     public List<MetadataProvider> prepareProviders(MetadataRefreshOptions refreshOptions) {
-        Set<MetadataProvider> allProviders = new HashSet<>(getAllProvidersUsingIndividualFields(refreshOptions));
+        Set<MetadataProvider> allProviders = EnumSet.noneOf(MetadataProvider.class);
+        allProviders.addAll(getAllProvidersUsingIndividualFields(refreshOptions));
         return new ArrayList<>(allProviders);
     }
 
     protected Set<MetadataProvider> getAllProvidersUsingIndividualFields(MetadataRefreshOptions refreshOptions) {
         MetadataRefreshOptions.FieldOptions fieldOptions = refreshOptions.getFieldOptions();
-        Set<MetadataProvider> uniqueProviders = new HashSet<>();
+        Set<MetadataProvider> uniqueProviders = EnumSet.noneOf(MetadataProvider.class);
 
         if (fieldOptions != null) {
             addProviderToSet(fieldOptions.getTitle(), uniqueProviders);
@@ -499,15 +502,15 @@ public class MetadataRefreshService {
     }
 
     protected <T> T resolveField(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, Function<BookMetadata, T> extractor) {
-        return resolveFieldWithProviders(metadataMap, fieldProvider, extractor, (value) -> value != null);
+        return resolveFieldWithProviders(metadataMap, fieldProvider, extractor, Objects::nonNull);
     }
 
     protected Integer resolveFieldAsInteger(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, Function<BookMetadata, Integer> fieldValueExtractor) {
-        return resolveFieldWithProviders(metadataMap, fieldProvider, fieldValueExtractor, (value) -> value != null);
+        return resolveFieldWithProviders(metadataMap, fieldProvider, fieldValueExtractor, Objects::nonNull);
     }
 
     protected String resolveFieldAsString(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, FieldValueExtractor fieldValueExtractor) {
-        return resolveFieldWithProviders(metadataMap, fieldProvider, fieldValueExtractor::extract, (value) -> value != null);
+        return resolveFieldWithProviders(metadataMap, fieldProvider, fieldValueExtractor::extract, Objects::nonNull);
     }
 
     protected Set<String> resolveFieldAsList(Map<MetadataProvider, BookMetadata> metadataMap, MetadataRefreshOptions.FieldProvider fieldProvider, FieldValueExtractorList fieldValueExtractor) {
