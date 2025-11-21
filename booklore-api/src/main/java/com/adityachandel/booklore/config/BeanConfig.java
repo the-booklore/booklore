@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.config.WebSocketMessageBrokerStats;
 
+import java.time.Duration;
+
 @Configuration
 public class BeanConfig {
 
@@ -16,7 +18,8 @@ public class BeanConfig {
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
+        return builder.connectTimeout(Duration.ofSeconds(10)).readTimeout(Duration.ofSeconds(15))
+                .build();
     }
 
     @PostConstruct
