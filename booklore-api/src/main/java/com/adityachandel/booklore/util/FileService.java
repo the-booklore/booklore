@@ -17,7 +17,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -26,8 +31,6 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -44,6 +47,7 @@ import java.util.stream.Stream;
 public class FileService {
 
     private final AppProperties appProperties;
+    private final RestTemplate restTemplate;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -155,13 +159,31 @@ public class FileService {
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
-            URI uri = URI.create(imageUrl);
-            URL url = uri.toURL();
-            BufferedImage image = ImageIO.read(url);
-            if (image == null) {
-                throw new IOException("Unable to read image from URL: " + imageUrl);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Metadata Fetcher)");
+            headers.set(HttpHeaders.ACCEPT, "image/*");
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<byte[]> response = restTemplate.exchange(
+                    imageUrl,
+                    HttpMethod.GET,
+                    entity,
+                    byte[].class
+            );
+
+            // Validate and convert
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                try (ByteArrayInputStream inputStream = new ByteArrayInputStream(response.getBody())) {
+                    BufferedImage image = ImageIO.read(inputStream);
+                    if (image == null) {
+                        throw new IOException("Downloaded content is not a supported image format.");
+                    }
+                    return image;
+                }
+            } else {
+                throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
             }
-            return image;
         } catch (Exception e) {
             log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
             throw new IOException("Failed to download image from URL: " + imageUrl, e);
