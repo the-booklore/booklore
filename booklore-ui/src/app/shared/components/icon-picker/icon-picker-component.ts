@@ -82,6 +82,11 @@ export class IconPickerComponent {
   }
 
   selectIcon(icon: string) {
+    if (!icon.startsWith('pi')) {
+      this.selectCustomIcon(icon);
+      return;
+    }
+
     this.selectedIcon = icon;
     this.ref.close(icon);
   }
@@ -91,7 +96,8 @@ export class IconPickerComponent {
       icon += '.svg';
     }
 
-    this.selectIcon(icon);
+    this.selectedIcon = icon;
+    this.ref.close(icon);
   }
 
   cancel() {

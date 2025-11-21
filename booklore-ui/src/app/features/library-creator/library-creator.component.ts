@@ -3,6 +3,7 @@ import {DialogService, DynamicDialogConfig, DynamicDialogRef} from 'primeng/dyna
 import {DirectoryPickerComponent} from '../../shared/components/directory-picker/directory-picker.component';
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
+import {IconNameComponent} from '../../shared/components/icon-name/icon-name-component';
 import {LibraryService} from '../book/service/library.service';
 import {TableModule} from 'primeng/table';
 import {Step, StepList, StepPanel, StepPanels, Stepper} from 'primeng/stepper';
@@ -33,7 +34,8 @@ import { IconComponent } from '../../shared/components/icon/icon-component';
     Tooltip,
     Select,
     Button,
-    IconComponent
+    IconComponent,
+    IconNameComponent
   ],
   styleUrl: './library-creator.component.scss'
 })
@@ -79,7 +81,7 @@ export class LibraryCreatorComponent implements OnInit {
         const {name, icon, paths, watch, scanMode, defaultBookFormat} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
-        this.selectedIcon = `pi pi-${icon}`;
+        this.selectedIcon = icon;
         this.watch = watch;
         this.scanMode = scanMode || 'FILE_AS_BOOK';
         this.defaultBookFormat = defaultBookFormat || undefined;
@@ -157,7 +159,7 @@ export class LibraryCreatorComponent implements OnInit {
     if (this.mode === 'edit') {
       const library: Library = {
         name: this.chosenLibraryName,
-        icon: this.selectedIcon?.replace('pi pi-', '') || 'heart',
+        icon: this.selectedIcon || 'heart',
         paths: this.folders.map(folder => ({path: folder})),
         watch: this.watch,
         scanMode: this.scanMode,
@@ -176,7 +178,7 @@ export class LibraryCreatorComponent implements OnInit {
     } else {
       const library: Library = {
         name: this.chosenLibraryName,
-        icon: this.selectedIcon?.replace('pi pi-', '') || 'heart',
+        icon: this.selectedIcon || 'heart',
         paths: this.folders.map(folder => ({path: folder})),
         watch: this.watch,
         scanMode: this.scanMode,
