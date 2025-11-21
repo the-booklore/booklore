@@ -29,8 +29,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     @Override
     public byte[] extractCover(File epubFile) {
-        try {
-            Book epub = new EpubReader().readEpub(new FileInputStream(epubFile));
+        try (FileInputStream fis = new FileInputStream(epubFile)) {
+            Book epub = new EpubReader().readEpub(fis);
             io.documentnode.epub4j.domain.Resource coverImage = epub.getCoverImage();
 
             if (coverImage == null) {

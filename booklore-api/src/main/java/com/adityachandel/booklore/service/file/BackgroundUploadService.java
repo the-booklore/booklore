@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -33,7 +34,10 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            BufferedImage originalImage;
+            try (InputStream inputStream = file.getInputStream()) {
+                originalImage = ImageIO.read(inputStream);
+            }
             if (originalImage == null) {
                 throw new IllegalArgumentException("Invalid image file");
             }

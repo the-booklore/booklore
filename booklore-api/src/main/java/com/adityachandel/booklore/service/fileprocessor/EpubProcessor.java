@@ -63,7 +63,10 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     public boolean generateCover(BookEntity bookEntity) {
         try {
             File epubFile = new File(FileUtils.getBookFullPath(bookEntity));
-            io.documentnode.epub4j.domain.Book epub = new EpubReader().readEpub(new FileInputStream(epubFile));
+            io.documentnode.epub4j.domain.Book epub;
+            try (FileInputStream fis = new FileInputStream(epubFile)) {
+                epub = new EpubReader().readEpub(fis);
+            }
             Resource coverImage = epub.getCoverImage();
 
             if (coverImage == null) {
