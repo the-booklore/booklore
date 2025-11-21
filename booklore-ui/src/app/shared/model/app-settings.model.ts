@@ -60,6 +60,7 @@ export interface Amazon {
 
 export interface Google {
   enabled: boolean;
+  language: string;
 }
 
 export interface Goodreads {

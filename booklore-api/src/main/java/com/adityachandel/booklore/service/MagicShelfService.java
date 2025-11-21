@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Service
@@ -19,9 +20,20 @@ public class MagicShelfService {
 
     public List<MagicShelf> getUserShelves() {
         Long userId = authenticationService.getAuthenticatedUser().getId();
-        return repository.findAllByUserId(userId).stream()
+
+        List<MagicShelf> shelves = repository.findAllByUserId(userId).stream()
                 .map(this::toDto)
+                .collect(Collectors.toList());
+
+        List<Long> userShelfIds = shelves.stream().map(MagicShelf::getId).toList();
+
+        List<MagicShelf> publicShelves = repository.findAllByIsPublicIsTrue().stream()
+                .map(this::toDto)
+                .filter(shelf -> !userShelfIds.contains(shelf.getId()))
                 .toList();
+
+        shelves.addAll(publicShelves);
+        return shelves;
     }
 
     @Transactional
@@ -32,9 +44,13 @@ public class MagicShelfService {
             if (!existing.getUserId().equals(userId)) {
                 throw new SecurityException("You are not authorized to update this shelf");
             }
+            if (existing.isPublic() && !authenticationService.getAuthenticatedUser().getPermissions().isAdmin()) {
+                throw new SecurityException("You are not authorized to update a public shelf");
+            }
             existing.setName(dto.getName());
             existing.setIcon(dto.getIcon());
             existing.setFilterJson(dto.getFilterJson());
+            existing.setPublic(dto.getIsPublic());
             return toDto(repository.save(existing));
         }
         if (repository.existsByUserIdAndName(userId, dto.getName())) {
@@ -59,6 +75,7 @@ public class MagicShelfService {
         dto.setName(entity.getName());
         dto.setIcon(entity.getIcon());
         dto.setFilterJson(entity.getFilterJson());
+        dto.setIsPublic(entity.isPublic());
         return dto;
     }
 
@@ -68,6 +85,7 @@ public class MagicShelfService {
         entity.setName(dto.getName());
         entity.setIcon(dto.getIcon());
         entity.setFilterJson(dto.getFilterJson());
+        entity.setPublic(dto.getIsPublic());
         entity.setUserId(userId);
         return entity;
     }

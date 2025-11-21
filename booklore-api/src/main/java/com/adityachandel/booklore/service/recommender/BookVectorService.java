@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -143,6 +144,7 @@ public class BookVectorService {
                 .collect(Collectors.toList());
     }
 
+    @Getter
     public static class ScoredBook {
         private final Long bookId;
         private final double score;
@@ -152,13 +154,6 @@ public class BookVectorService {
             this.score = score;
         }
 
-        public Long getBookId() {
-            return bookId;
-        }
-
-        public double getScore() {
-            return score;
-        }
     }
 }
 

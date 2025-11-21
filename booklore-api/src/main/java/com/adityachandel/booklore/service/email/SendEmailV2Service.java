@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.request.SendBookByEmailRequest;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.EmailProviderV2Entity;
 import com.adityachandel.booklore.model.entity.EmailRecipientV2Entity;
+import com.adityachandel.booklore.model.entity.UserEmailProviderPreferenceEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -179,7 +180,7 @@ public class SendEmailV2Service {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         Long defaultProviderId = preferenceRepository.findByUserId(user.getId())
-                .map(pref -> pref.getDefaultProviderId())
+                .map(UserEmailProviderPreferenceEntity::getDefaultProviderId)
                 .orElseThrow(ApiError.DEFAULT_EMAIL_PROVIDER_NOT_FOUND::createException);
 
         return emailProviderRepository.findAccessibleProvider(defaultProviderId, user.getId())

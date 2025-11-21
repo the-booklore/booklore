@@ -62,7 +62,7 @@ class LibraryRescanHelperTest {
 
         LibraryRescanOptions options = LibraryRescanOptions.builder()
                 .metadataReplaceMode(MetadataReplaceMode.REPLACE_ALL)
-                .build();
+                .updateMetadataFromFiles(true).build();
 
         rescanContext = RescanLibraryContext.builder()
                 .libraryId(1L)
@@ -226,7 +226,7 @@ class LibraryRescanHelperTest {
 
         List<TaskProgressPayload> payloads = payloadCaptor.getAllValues();
         assertEquals(3, payloads.size());
-        assertEquals(0, payloads.get(0).getProgress());
+        assertEquals(0, payloads.getFirst().getProgress());
         assertEquals(TaskStatus.IN_PROGRESS, payloads.get(0).getTaskStatus());
         assertEquals(TaskType.REFRESH_LIBRARY_METADATA, payloads.get(0).getTaskType());
         assertEquals(TaskStatus.IN_PROGRESS, payloads.get(1).getTaskStatus());

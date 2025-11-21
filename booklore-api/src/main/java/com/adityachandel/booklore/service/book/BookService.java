@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.dto.progress.CbxProgress;
 import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.KoProgress;
+import com.adityachandel.booklore.model.dto.progress.KoboProgress;
 import com.adityachandel.booklore.model.dto.progress.PdfProgress;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
@@ -64,6 +65,12 @@ public class BookService {
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
+        if (progress.getKoboProgressPercent() != null) {
+            book.setKoboProgress(KoboProgress.builder()
+                    .percentage(progress.getKoboProgressPercent())
+                    .build());
+        }
+        
         switch (book.getBookType()) {
             case EPUB -> {
                 book.setEpubProgress(EpubProgress.builder()
@@ -148,6 +155,12 @@ public class BookService {
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
+
+        if (userProgress.getKoboProgressPercent() != null) {
+            book.setKoboProgress(KoboProgress.builder()
+                    .percentage(userProgress.getKoboProgressPercent())
+                    .build());
+        }
 
         if (bookEntity.getBookType() == BookFileType.PDF) {
             book.setPdfProgress(PdfProgress.builder()
@@ -456,6 +469,12 @@ public class BookService {
                 progress.setKoreaderDeviceId(null);
                 progress.setKoreaderDevice(null);
                 progress.setKoreaderLastSyncTime(null);
+            } else if (type == ResetProgressType.KOBO) {
+                progress.setKoboProgressPercent(null);
+                progress.setKoboLocation(null);
+                progress.setKoboLocationType(null);
+                progress.setKoboLocationSource(null);
+                progress.setKoboLastSyncTime(null);
             }
             userBookProgressRepository.save(progress);
             updatedBooks.add(bookMapper.toBook(bookEntity));
@@ -587,35 +606,36 @@ public class BookService {
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+        Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
-        currentDir = currentDir.toAbsolutePath().normalize();
+        dir = dir.toAbsolutePath().normalize();
 
         Set<Path> normalizedRoots = new HashSet<>();
         for (Path root : libraryRoots) {
             normalizedRoots.add(root.toAbsolutePath().normalize());
         }
 
-        while (currentDir != null) {
+        while (dir != null) {
             boolean isLibraryRoot = false;
             for (Path root : normalizedRoots) {
                 try {
-                    if (Files.isSameFile(root, currentDir)) {
+                    if (Files.isSameFile(root, dir)) {
                         isLibraryRoot = true;
                         break;
                     }
                 } catch (IOException e) {
-                    log.warn("Failed to compare paths: {} and {}", root, currentDir);
+                    log.warn("Failed to compare paths: {} and {}", root, dir);
                 }
             }
 
             if (isLibraryRoot) {
-                log.debug("Reached library root: {}. Stopping cleanup.", currentDir);
+                log.debug("Reached library root: {}. Stopping cleanup.", dir);
                 break;
             }
 
-            File[] files = currentDir.toFile().listFiles();
+            File[] files = dir.toFile().listFiles();
             if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", currentDir);
+                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
                 break;
             }
 
@@ -637,15 +657,15 @@ public class BookService {
                     }
                 }
                 try {
-                    Files.delete(currentDir);
-                    log.info("Deleted empty directory: {}", currentDir);
+                    Files.delete(dir);
+                    log.info("Deleted empty directory: {}", dir);
                 } catch (IOException e) {
-                    log.warn("Failed to delete directory: {}", currentDir, e);
+                    log.warn("Failed to delete directory: {}", dir, e);
                     break;
                 }
-                currentDir = currentDir.getParent();
+                dir = dir.getParent();
             } else {
-                log.debug("Directory {} contains important files. Stopping cleanup.", currentDir);
+                log.debug("Directory {} contains important files. Stopping cleanup.", dir);
                 break;
             }
         }

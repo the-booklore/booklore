@@ -51,7 +51,12 @@ public class KoreaderService {
                 progress.getKoreaderProgress(), progress.getKoreaderProgressPercent(),
                 authDetails.getBookLoreUserId(), bookHash);
 
+        Long timestamp = progress.getKoreaderLastSyncTime() != null
+                ? progress.getKoreaderLastSyncTime().getEpochSecond()
+                : null;
+
         return KoreaderProgress.builder()
+                .timestamp(timestamp)
                 .document(bookHash)
                 .progress(progress.getKoreaderProgress())
                 .percentage(progress.getKoreaderProgressPercent())

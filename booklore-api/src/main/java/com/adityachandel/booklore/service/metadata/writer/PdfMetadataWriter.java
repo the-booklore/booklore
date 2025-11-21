@@ -123,13 +123,9 @@ public class PdfMetadataWriter implements MetadataWriter {
                 dc.addDate(cal);
             });
 
-            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> {
-                (authors != null ? authors : List.of("")).forEach(dc::addCreator);
-            });
+            helper.copyAuthors(clear != null && clear.isAuthors(), authors -> (authors != null ? authors : List.of("")).forEach(dc::addCreator));
 
-            helper.copyCategories(clear != null && clear.isCategories(), cats -> {
-                (cats != null ? cats : List.of("")).forEach(dc::addSubject);
-            });
+            helper.copyCategories(clear != null && clear.isCategories(), cats -> (cats != null ? cats : List.of("")).forEach(dc::addSubject));
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             new XmpSerializer().serialize(xmp, baos, true);

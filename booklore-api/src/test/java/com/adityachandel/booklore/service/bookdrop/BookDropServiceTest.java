@@ -86,12 +86,11 @@ class BookDropServiceTest {
 
     private BookdropFileEntity bookdropFileEntity;
     private LibraryEntity libraryEntity;
-    private LibraryPathEntity libraryPathEntity;
     private BookdropFile bookdropFile;
 
     @BeforeEach
     void setUp() throws IOException {
-        libraryPathEntity = new LibraryPathEntity();
+        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
         libraryPathEntity.setId(1L);
         libraryPathEntity.setPath(tempDir.toString());
 
@@ -142,7 +141,7 @@ class BookDropServiceTest {
         Page<BookdropFile> result = bookDropService.getFilesByStatus("pending", pageable);
 
         assertEquals(1, result.getContent().size());
-        assertEquals(bookdropFile, result.getContent().get(0));
+        assertEquals(bookdropFile, result.getContent().getFirst());
         verify(bookdropFileRepository).findAllByStatus(BookdropFileEntity.Status.PENDING_REVIEW, pageable);
         verify(mapper).toDto(bookdropFileEntity);
     }

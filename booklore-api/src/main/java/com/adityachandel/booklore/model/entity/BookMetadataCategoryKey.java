@@ -19,8 +19,7 @@ public class BookMetadataCategoryKey implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof BookMetadataCategoryKey)) return false;
-        BookMetadataCategoryKey that = (BookMetadataCategoryKey) o;
+        if (!(o instanceof BookMetadataCategoryKey that)) return false;
         return Objects.equals(bookId, that.bookId) && Objects.equals(categoryId, that.categoryId);
     }
 

@@ -8,12 +8,12 @@ import java.io.IOException;
 import java.util.Map;
 
 @Converter(autoApply = true)
-public class MapToStringConverter implements AttributeConverter<Map<String, String>, String> {
+public class MapToStringConverter implements AttributeConverter<Map, String> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public String convertToDatabaseColumn(Map<String, String> attribute) {
+    public String convertToDatabaseColumn(Map attribute) {
         try {
             return objectMapper.writeValueAsString(attribute);
         } catch (IOException e) {
@@ -22,7 +22,7 @@ public class MapToStringConverter implements AttributeConverter<Map<String, Stri
     }
 
     @Override
-    public Map<String, String> convertToEntityAttribute(String dbData) {
+    public Map convertToEntityAttribute(String dbData) {
         try {
             return objectMapper.readValue(dbData, Map.class);
         } catch (IOException e) {

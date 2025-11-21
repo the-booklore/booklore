@@ -31,6 +31,7 @@
       min-width: fit-content;
       display: flex;
       justify-content: flex-start;
+      gap: 0.5rem;
 
       .input-group {
         display: flex;
@@ -232,8 +233,18 @@
                 border-bottom: none;
               }
 
-              &:hover {
+              &:hover:not(:disabled) {
                 background: #3a3a3a;
+              }
+
+              &:disabled {
+                color: #666;
+                cursor: not-allowed;
+                opacity: 0.5;
+
+                .option-icon {
+                  opacity: 0.5;
+                }
               }
             }
 
@@ -376,6 +387,24 @@
     background: #0f0f0f;
     min-height: 0;
     position: relative;
+    
+    &:not(.two-page-view):not(.infinite-scroll) {
+      flex-direction: column;
+      align-items: stretch;
+      
+      .pages-wrapper {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 0;
+      }
+      
+      .end-of-comic-action {
+        flex: 0 0 auto;
+        margin-top: 1rem;
+      }
+    }
 
     &.bg-black {
       background: #000000;
@@ -647,5 +676,112 @@
   ::ng-deep .small-spinner {
     width: 40px;
     height: 40px;
+  }
+
+  .goto-page-controls {
+    .series-nav-button {
+      padding: 6px 12px;
+      background: #4a90e2;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background: #357abd;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+      }
+
+      &:disabled {
+        background: #555;
+        cursor: not-allowed;
+        opacity: 0.5;
+        color: #999;
+      }
+
+      span {
+        display: inline-flex;
+        align-items: center;
+      }
+    }
+  }
+
+  .end-of-comic-action {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+
+    .next-book-action-button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 2rem 3rem;
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      border-radius: 12px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
+      min-width: 280px;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(74, 144, 226, 0.5);
+        background: linear-gradient(135deg, #357abd 0%, #2a6399 100%);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      .action-icon {
+        font-size: 2.5rem;
+      }
+
+      .action-text {
+        font-size: 1.1rem;
+      }
+
+      .book-title {
+        font-size: 0.95rem;
+        font-weight: 400;
+        opacity: 0.9;
+        max-width: 350px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .comic-reader-container {
+    .goto-page-controls {
+      flex-wrap: wrap;
+      gap: 4px;
+
+      .series-nav-button {
+        display: none;
+      }
+    }
+
+    .end-of-comic-action {
+      padding: 1.5rem 1rem;
+
+      .next-book-action-button {
+        min-width: 240px;
+        padding: 1.5rem 2rem;
+
+        .action-icon { font-size: 2rem; }
+        .action-text { font-size: 1rem; }
+        .book-title { 
+          font-size: 0.85rem;
+          max-width: 250px;
+        }
+      }
+    }
   }
 }

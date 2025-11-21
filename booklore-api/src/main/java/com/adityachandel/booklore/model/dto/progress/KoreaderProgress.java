@@ -8,6 +8,7 @@ import lombok.ToString;
 @Builder
 @ToString
 public class KoreaderProgress {
+    private Long timestamp;
     private String document;
     private Float percentage;
     private String progress;

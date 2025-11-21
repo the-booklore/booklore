@@ -34,14 +34,13 @@ class KoreaderUserServiceTest {
     @InjectMocks
     KoreaderUserService service;
 
-    private BookLoreUser ownerDto;
     private BookLoreUserEntity ownerEntity;
     private KoreaderUserEntity entity;
     private KoreaderUser dto;
 
     @BeforeEach
     void init() {
-        ownerDto = mock(BookLoreUser.class);
+        BookLoreUser ownerDto = mock(BookLoreUser.class);
         when(ownerDto.getId()).thenReturn(123L);
         when(ownerDto.getUsername()).thenReturn("ownerName");
         when(authService.getAuthenticatedUser()).thenReturn(ownerDto);

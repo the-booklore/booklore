@@ -23,11 +23,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Slf4j
 @AllArgsConstructor
 @Service
 public class AdditionalFileService {
+
+    private static final Pattern NON_ASCII = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookAdditionalFileRepository additionalFileRepository;
     private final AdditionalFileMapper additionalFileMapper;
@@ -81,7 +84,7 @@ public class AdditionalFileService {
         Resource resource = new UrlResource(filePath.toUri());
 
         String encodedFilename = URLEncoder.encode(file.getFileName(), StandardCharsets.UTF_8).replace("+", "%20");
-        String fallbackFilename = file.getFileName().replaceAll("[^\\x00-\\x7F]", "_");
+        String fallbackFilename = NON_ASCII.matcher(file.getFileName()).replaceAll("_");
         String contentDisposition = String.format("attachment; filename=\"%s\"; filename*=UTF-8''%s",
                 fallbackFilename, encodedFilename);
         return ResponseEntity.ok()

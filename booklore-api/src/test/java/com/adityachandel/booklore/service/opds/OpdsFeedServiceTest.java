@@ -57,7 +57,7 @@ class OpdsFeedServiceTest {
         OpdsUserDetails userDetails = mock(OpdsUserDetails.class);
         when(authenticationService.getOpdsUser()).thenReturn(userDetails);
 
-        Library lib = Library.builder().id(1L).name("Test Library").build();
+        Library lib = Library.builder().id(1L).name("Test Library").watch(false).build();
         when(opdsBookService.getAccessibleLibraries(userDetails)).thenReturn(List.of(lib));
 
         String xml = opdsFeedService.generateLibrariesNavigation(request);

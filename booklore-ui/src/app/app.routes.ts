@@ -10,7 +10,7 @@ import {SetupComponent} from './shared/components/setup/setup.component';
 import {SetupGuard} from './shared/components/setup/setup.guard';
 import {SetupRedirectGuard} from './shared/components/setup/setup-redirect.guard';
 import {EmptyComponent} from './shared/components/empty/empty.component';
-import {LoginGuard} from './shared/components/setup/ login.guard';
+import {LoginGuard} from './shared/components/setup/login.guard';
 import {OidcCallbackComponent} from './core/security/oidc-callback/oidc-callback.component';
 import {CbxReaderComponent} from './features/readers/cbx-reader/cbx-reader.component';
 import {MainDashboardComponent} from './features/dashboard/components/main-dashboard/main-dashboard.component';

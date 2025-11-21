@@ -52,6 +52,21 @@ export class MetadataProviderSettingsComponent implements OnInit {
 
   selectedAmazonDomain = 'com';
 
+  googleLanguages = [
+    {label: 'Dutch', value: 'nl'},
+    {label: 'English', value: 'en'},
+    {label: 'French', value: 'fr'},
+    {label: 'German', value: 'de'},
+    {label: 'Italian', value: 'it'},
+    {label: 'Japanese', value: 'ja'},
+    {label: 'Polish', value: 'pl'},
+    {label: 'Portuguese', value: 'pt'},
+    {label: 'Spanish', value: 'es'},
+    {label: 'Swedish', value: 'sv'}
+  ];
+
+  selectedGoogleLanguage = '';
+
   hardcoverToken: string = '';
   amazonCookie: string = '';
   hardcoverEnabled: boolean = false;
@@ -80,6 +95,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.selectedAmazonDomain = metadataProviderSettings?.amazon?.domain ?? 'com';
         this.goodreadsEnabled = metadataProviderSettings?.goodReads?.enabled ?? false;
         this.googleEnabled = metadataProviderSettings?.google?.enabled ?? false;
+        this.selectedGoogleLanguage = metadataProviderSettings?.google?.language ?? '';
         this.hardcoverToken = metadataProviderSettings?.hardcover?.apiKey ?? '';
         this.hardcoverEnabled = metadataProviderSettings?.hardcover?.enabled ?? false;
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
@@ -119,7 +135,10 @@ export class MetadataProviderSettingsComponent implements OnInit {
           },
 
           goodReads: {enabled: this.goodreadsEnabled},
-          google: {enabled: this.googleEnabled},
+          google: {
+            enabled: this.googleEnabled,
+            language: this.selectedGoogleLanguage,
+          },
           hardcover: {
             enabled: this.hardcoverEnabled,
             apiKey: this.hardcoverToken.trim()

@@ -21,4 +21,6 @@ public class MagicShelf {
     @NotNull(message = "Filter JSON must not be null")
     @Size(min = 2, message = "Filter JSON must not be empty")
     private String filterJson;
+
+    private Boolean isPublic = false;
 }

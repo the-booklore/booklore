@@ -140,9 +140,7 @@ class BookdropMetadataServiceTest {
 
         when(bookdropFileRepository.findById(sampleFile.getId())).thenReturn(Optional.of(sampleFile));
 
-        assertThatThrownBy(() -> {
-            bookdropMetadataService.attachInitialMetadata(sampleFile.getId());
-        }).isInstanceOf(APIException.class)
+        assertThatThrownBy(() -> bookdropMetadataService.attachInitialMetadata(sampleFile.getId())).isInstanceOf(APIException.class)
                 .hasMessageContaining("Invalid file format");
     }
 

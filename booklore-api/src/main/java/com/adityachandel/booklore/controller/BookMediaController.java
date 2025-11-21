@@ -22,12 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 @Tag(name = "Book Media", description = "Endpoints for retrieving book media such as covers, thumbnails, and pages")
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/v1/media")
 public class BookMediaController {
+
+    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookService bookService;
     private final PdfReaderService pdfReaderService;
@@ -103,7 +106,7 @@ public class BookMediaController {
                     : MediaType.IMAGE_JPEG;
 
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
-            String fallbackFilename = filename.replaceAll("[^\\x00-\\x7F]", "_");
+            String fallbackFilename = NON_ASCII_PATTERN.matcher(filename).replaceAll("_");
             String contentDisposition = String.format("inline; filename=\"%s\"; filename*=UTF-8''%s",
                     fallbackFilename, encodedFilename);
             return ResponseEntity.ok()

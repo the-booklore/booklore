@@ -266,7 +266,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Series merge requires exactly one target value");
         }
-        String targetSeriesName = targetValues.get(0);
+        String targetSeriesName = targetValues.getFirst();
 
         for (String oldSeriesName : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldSeries = bookMetadataRepository.findAllBySeriesNameIgnoreCase(oldSeriesName);
@@ -289,7 +289,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Publisher merge requires exactly one target value");
         }
-        String targetPublisher = targetValues.get(0);
+        String targetPublisher = targetValues.getFirst();
 
         for (String oldPublisher : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldPublisher = bookMetadataRepository.findAllByPublisherIgnoreCase(oldPublisher);
@@ -312,7 +312,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Language merge requires exactly one target value");
         }
-        String targetLanguage = targetValues.get(0);
+        String targetLanguage = targetValues.getFirst();
 
         for (String oldLanguage : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldLanguage = bookMetadataRepository.findAllByLanguageIgnoreCase(oldLanguage);

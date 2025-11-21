@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.response.GoogleBooksApiResponse;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.BookUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ public class GoogleParser implements BookParser {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
     private final ObjectMapper objectMapper;
+    private final AppSettingService appSettingService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
 
@@ -55,7 +57,7 @@ public class GoogleParser implements BookParser {
 
     private List<BookMetadata> getMetadataListByIsbn(String isbn) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", "isbn:" + isbn.replace("-", ""))
                     .build()
                     .toUri();
@@ -84,7 +86,7 @@ public class GoogleParser implements BookParser {
 
     public List<BookMetadata> getMetadataListByTerm(String term) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", term)
                     .build()
                     .toUri();
@@ -175,11 +177,11 @@ public class GoogleParser implements BookParser {
 
         if (searchTerm != null) {
             searchTerm = SPECIAL_CHARACTERS_PATTERN.matcher(searchTerm).replaceAll("").trim();
-            searchTerm = truncateToMaxLength(searchTerm, 60);
+            searchTerm = "intitle:" + truncateToMaxLength(searchTerm, 60);
         }
 
         if (searchTerm != null && request.getAuthor() != null && !request.getAuthor().isEmpty()) {
-            searchTerm += " " + request.getAuthor();
+            searchTerm += " inauthor:" + request.getAuthor();
         }
 
         return searchTerm;
@@ -208,5 +210,19 @@ public class GoogleParser implements BookParser {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String getApiUrl() {
+        String language = appSettingService.getAppSettings().getMetadataProviderSettings().getGoogle().getLanguage();
+
+        if (language == null || language.isEmpty()) {
+            return GOOGLE_BOOKS_API_URL;
+        }
+
+        return UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            .queryParam("langRestrict", language)
+            .build()
+            .toUri()
+            .toString();
     }
 }
