@@ -111,7 +111,6 @@ export class IconPickerComponent {
       this.selectIcon(this.searchText)
     }
 
-
     return false;
   }
 }

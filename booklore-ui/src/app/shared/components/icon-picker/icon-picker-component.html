@@ -7,11 +7,11 @@
   />
 
 <div class="icon-grid">
-  @if(searchText) {
+  @if (searchText) {
     <div class="icon-use-raw">
       <button (click)="selectCustomIcon(searchText)">Use <code>{{searchText}}</code> as icon.</button> Upload files as <code>/custom-icons/{{searchText}}.svg</code>. <button (click)="selectCustomIcon(searchText)" class="underline">OK!</button>
 
-      @if(filteredIcons().length > 0) {
+      @if (filteredIcons().length > 0) {
         <div>Or pick one of the <strong>{{filteredIcons().length}}</strong> matching icons below:</div>
       }
     </div>

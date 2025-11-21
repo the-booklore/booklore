@@ -1,4 +1,4 @@
-import { Component, ElementRef, Input, OnInit, TemplateRef, ViewChild } from "@angular/core";
+import { Component, ElementRef, Input, OnInit, ViewChild } from "@angular/core";
 
 @Component({
   selector: 'app-icon-component',
@@ -30,7 +30,7 @@ export class IconComponent  implements OnInit {
 
   loadSvg(){
     if (!this.icon) {
-      return
+      return;
     }
 
     fetch(this.icon)
