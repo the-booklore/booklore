@@ -20,7 +20,7 @@ import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-e
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 import {SortService} from '../../../book/service/sort.service';
-import { PageTitleService } from "../../../../shared/service/page-title.service";
+import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {SortDirection, SortOption} from '../../../book/model/sort.model';
 
 const DEFAULT_MAX_ITEMS = 20;
@@ -106,7 +106,20 @@ export class MainDashboardComponent implements OnInit {
   private getRandomBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
-        return this.shuffleBooks(state.books || [], maxItems);
+        const excludedStatuses = new Set<ReadStatus>([
+          ReadStatus.READ,
+          ReadStatus.PARTIALLY_READ,
+          ReadStatus.READING,
+          ReadStatus.PAUSED,
+          ReadStatus.WONT_READ,
+          ReadStatus.ABANDONED
+        ]);
+
+        const candidates = (state.books || []).filter(book =>
+          !book.readStatus || !excludedStatuses.has(book.readStatus)
+        );
+
+        return this.shuffleBooks(candidates, maxItems);
       })
     );
   }
