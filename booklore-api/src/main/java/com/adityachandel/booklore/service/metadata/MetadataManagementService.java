@@ -88,7 +88,11 @@ public class MetadataManagementService {
 
     private void consolidateAuthors(List<String> targetValues, List<String> valuesToMerge, boolean writeToFile, boolean moveFile) {
         List<AuthorEntity> targetAuthors = targetValues.stream()
-                .map(name -> authorRepository.findByName(name)
+                .map(name -> authorRepository.findByNameIgnoreCase(name)
+                        .map(existing -> {
+                            existing.setName(name);
+                            return authorRepository.save(existing);
+                        })
                         .orElseGet(() -> {
                             AuthorEntity author = new AuthorEntity();
                             author.setName(name);
@@ -97,7 +101,7 @@ public class MetadataManagementService {
                 .toList();
 
         List<AuthorEntity> authorsToMerge = valuesToMerge.stream()
-                .map(authorRepository::findByName)
+                .map(authorRepository::findByNameIgnoreCase)
                 .filter(java.util.Optional::isPresent)
                 .map(java.util.Optional::get)
                 .toList();
