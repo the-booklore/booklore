@@ -462,7 +462,7 @@
                     label="Download"
                     icon="pi pi-download"
                     [model]="downloadItems"
-                    (onClick)="download(book!.id)"
+                    (onClick)="download(book)"
                     severity="success"
                     outlined/>
                 }
@@ -472,7 +472,7 @@
                   icon="pi pi-download"
                   severity="success"
                   outlined
-                  (onClick)="download(book!.id)">
+                  (onClick)="download(book)">
                 </p-button>
               }
             }

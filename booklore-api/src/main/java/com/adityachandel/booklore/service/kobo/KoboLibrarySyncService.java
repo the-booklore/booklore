@@ -47,13 +47,12 @@ public class KoboLibrarySyncService {
 
         if (prevSnapshot.isPresent()) {
             int maxRemaining = 5;
-            List<KoboSnapshotBookEntity> addedAll = new ArrayList<>();
             List<KoboSnapshotBookEntity> removedAll = new ArrayList<>();
 
             koboLibrarySnapshotService.updateSyncedStatusForExistingBooks(prevSnapshot.get().getId(), currSnapshot.getId());
 
             Page<KoboSnapshotBookEntity> addedPage = koboLibrarySnapshotService.getNewlyAddedBooks(prevSnapshot.get().getId(), currSnapshot.getId(), PageRequest.of(0, maxRemaining), user.getId());
-            addedAll.addAll(addedPage.getContent());
+            List<KoboSnapshotBookEntity> addedAll = new ArrayList<>(addedPage.getContent());
             maxRemaining -= addedPage.getNumberOfElements();
             shouldContinueSync = addedPage.hasNext();
 

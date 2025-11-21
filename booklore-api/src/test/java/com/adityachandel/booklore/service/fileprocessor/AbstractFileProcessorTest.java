@@ -215,7 +215,7 @@ class AbstractFileProcessorTest {
     @Test
     void processFile_shouldReturnUpdated_whenDuplicateFoundWithDifferentLibraryPath() {
         // Given
-        LibraryEntity library = LibraryEntity.builder().id(2L).build();
+        LibraryEntity library = LibraryEntity.builder().id(2L).watch(false).build();
         LibraryPathEntity newLibraryPath = LibraryPathEntity.builder()
                 .id(2L)
                 .library(library)
@@ -232,7 +232,7 @@ class AbstractFileProcessorTest {
 
         Book duplicateBook = createMockBook(1L, "file.pdf");
         BookEntity existingEntity = createMockBookEntity(1L, "file.pdf", "hash1", "sub",
-                LibraryPathEntity.builder().id(1L).library(LibraryEntity.builder().id(1L).build()).path("/old-path").build());
+                LibraryPathEntity.builder().id(1L).library(LibraryEntity.builder().id(1L).watch(false).build()).path("/old-path").build());
         Book updatedBook = createMockBook(1L, "file.pdf");
 
         try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
@@ -331,7 +331,7 @@ class AbstractFileProcessorTest {
     @Test
     void processFile_shouldHandleNullFileSubPath() {
         // Given
-        LibraryEntity library = LibraryEntity.builder().id(1L).build();
+        LibraryEntity library = LibraryEntity.builder().id(1L).watch(false).build();
         LibraryPathEntity libraryPath = LibraryPathEntity.builder()
                 .id(1L)
                 .library(library)
@@ -373,7 +373,7 @@ class AbstractFileProcessorTest {
     @Test
     void processFile_shouldHandleMultipleMetadataChangesSimultaneously() {
         // Given
-        LibraryEntity newLibrary = LibraryEntity.builder().id(2L).build();
+        LibraryEntity newLibrary = LibraryEntity.builder().id(2L).watch(false).build();
         LibraryPathEntity newLibraryPath = LibraryPathEntity.builder()
                 .id(2L)
                 .library(newLibrary)
@@ -390,7 +390,7 @@ class AbstractFileProcessorTest {
 
         Book duplicateBook = createMockBook(1L, "old-file.pdf");
         BookEntity existingEntity = createMockBookEntity(1L, "old-file.pdf", "hash1", "old-sub",
-                LibraryPathEntity.builder().id(1L).library(LibraryEntity.builder().id(1L).build()).build());
+                LibraryPathEntity.builder().id(1L).library(LibraryEntity.builder().id(1L).watch(false).build()).build());
         Book updatedBook = createMockBook(1L, "new-file.pdf");
 
         try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
@@ -442,7 +442,7 @@ class AbstractFileProcessorTest {
 
     // Helper methods
     private LibraryFile createMockLibraryFile() {
-        LibraryEntity library = LibraryEntity.builder().id(1L).build();
+        LibraryEntity library = LibraryEntity.builder().id(1L).watch(false).build();
         LibraryPathEntity libraryPath = LibraryPathEntity.builder()
                 .id(1L)
                 .library(library)

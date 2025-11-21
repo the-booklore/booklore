@@ -32,6 +32,10 @@ public class MagicShelfEntity {
     @Column(name = "filter_json", columnDefinition = "json", nullable = false)
     private String filterJson;
 
+    @Column(name = "is_public", nullable = false)
+    @lombok.Builder.Default
+    private boolean isPublic = false;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

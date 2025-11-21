@@ -65,6 +65,19 @@
           <label class="provider-label">Google</label>
         </div>
       </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <label class="config-label">Language restriction</label>
+          <p-select
+            [options]="googleLanguages"
+            [(ngModel)]="selectedGoogleLanguage"
+            [showClear]="!!selectedGoogleLanguage"
+            placeholder="Select Language"
+            class="config-select">
+          </p-select>
+        </div>
+      </div>
     </div>
 
     <div class="provider-item">

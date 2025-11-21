@@ -27,11 +27,21 @@ public class FileUtils {
     }
 
     public static String getRelativeSubPath(String basePath, Path fullFilePath) {
-        return Optional.ofNullable(Path.of(basePath)
-                        .relativize(fullFilePath)
-                        .getParent())
-                .map(path -> path.toString().replace("\\", "/"))
-                .orElse("");
+        try {
+            // Add .normalize() to both paths for robust comparison
+            Path normalizedBasePath = Path.of(basePath).normalize();
+            Path normalizedFullPath = fullFilePath.normalize();
+
+            return Optional.ofNullable(normalizedBasePath
+                            .relativize(normalizedFullPath)
+                            .getParent())
+                    .map(path -> path.toString().replace("\\", "/"))
+                    .orElse("");
+        } catch (Exception e) {
+            log.error("Failed to get relative sub-path for basePath '{}' and fullFilePath '{}': {}",
+                    basePath, fullFilePath, e.getMessage(), e);
+            return ""; // Fallback to empty string on any error
+        }
     }
 
     public static Long getFileSizeInKb(BookEntity bookEntity) {

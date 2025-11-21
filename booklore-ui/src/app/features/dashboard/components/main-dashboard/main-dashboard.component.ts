@@ -8,7 +8,7 @@ import {AsyncPipe} from '@angular/common';
 import {DashboardScrollerComponent} from '../dashboard-scroller/dashboard-scroller.component';
 import {BookService} from '../../../book/service/book.service';
 import {BookState} from '../../../book/model/state/book-state.model';
-import {Book} from '../../../book/model/book.model';
+import {Book, ReadStatus} from '../../../book/model/book.model';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TooltipModule} from 'primeng/tooltip';
@@ -76,7 +76,7 @@ export class MainDashboardComponent implements OnInit {
   private getLastReadBooks(maxItems: number, sortBy?: string): Observable<Book[]> {
     return this.bookService.bookState$.pipe(
       map((state: BookState) => {
-        let books = (state.books || []).filter(book => book.lastReadTime);
+        let books = (state.books || []).filter(book => book.lastReadTime && (book.readStatus === ReadStatus.READING || book.readStatus === ReadStatus.RE_READING || book.readStatus === ReadStatus.PAUSED));
         books = books.sort((a, b) => {
           const aTime = new Date(a.lastReadTime!).getTime();
           const bTime = new Date(b.lastReadTime!).getTime();

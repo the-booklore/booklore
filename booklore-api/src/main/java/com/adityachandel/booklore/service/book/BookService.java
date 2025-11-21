@@ -587,35 +587,36 @@ public class BookService {
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+        Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
-        currentDir = currentDir.toAbsolutePath().normalize();
+        dir = dir.toAbsolutePath().normalize();
 
         Set<Path> normalizedRoots = new HashSet<>();
         for (Path root : libraryRoots) {
             normalizedRoots.add(root.toAbsolutePath().normalize());
         }
 
-        while (currentDir != null) {
+        while (dir != null) {
             boolean isLibraryRoot = false;
             for (Path root : normalizedRoots) {
                 try {
-                    if (Files.isSameFile(root, currentDir)) {
+                    if (Files.isSameFile(root, dir)) {
                         isLibraryRoot = true;
                         break;
                     }
                 } catch (IOException e) {
-                    log.warn("Failed to compare paths: {} and {}", root, currentDir);
+                    log.warn("Failed to compare paths: {} and {}", root, dir);
                 }
             }
 
             if (isLibraryRoot) {
-                log.debug("Reached library root: {}. Stopping cleanup.", currentDir);
+                log.debug("Reached library root: {}. Stopping cleanup.", dir);
                 break;
             }
 
-            File[] files = currentDir.toFile().listFiles();
+            File[] files = dir.toFile().listFiles();
             if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", currentDir);
+                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
                 break;
             }
 
@@ -637,15 +638,15 @@ public class BookService {
                     }
                 }
                 try {
-                    Files.delete(currentDir);
-                    log.info("Deleted empty directory: {}", currentDir);
+                    Files.delete(dir);
+                    log.info("Deleted empty directory: {}", dir);
                 } catch (IOException e) {
-                    log.warn("Failed to delete directory: {}", currentDir, e);
+                    log.warn("Failed to delete directory: {}", dir, e);
                     break;
                 }
-                currentDir = currentDir.getParent();
+                dir = dir.getParent();
             } else {
-                log.debug("Directory {} contains important files. Stopping cleanup.", currentDir);
+                log.debug("Directory {} contains important files. Stopping cleanup.", dir);
                 break;
             }
         }

@@ -10,12 +10,12 @@ import java.util.Map;
 
 @Converter
 @Slf4j
-public class JpaJsonConverter implements AttributeConverter<Map<String, Object>, String> {
+public class JpaJsonConverter implements AttributeConverter<Map, String> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public String convertToDatabaseColumn(Map<String, Object> attribute) {
+    public String convertToDatabaseColumn(Map attribute) {
         if (attribute == null) {
             return null;
         }
@@ -28,7 +28,7 @@ public class JpaJsonConverter implements AttributeConverter<Map<String, Object>,
     }
 
     @Override
-    public Map<String, Object> convertToEntityAttribute(String dbData) {
+    public Map convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.isEmpty()) {
             return null;
         }

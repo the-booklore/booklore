@@ -26,6 +26,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -154,7 +155,8 @@ public class FileService {
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
-            URL url = new URL(imageUrl);
+            URI uri = URI.create(imageUrl);
+            URL url = uri.toURL();
             BufferedImage image = ImageIO.read(url);
             if (image == null) {
                 throw new IOException("Unable to read image from URL: " + imageUrl);

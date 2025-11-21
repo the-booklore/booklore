@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.zip.ZipEntry;
@@ -43,7 +44,7 @@ class CbxMetadataWriterTest {
     void cleanup() throws Exception {
         if (tempDir != null) {
             Files.walk(tempDir)
-                    .sorted((a, b) -> b.compareTo(a))
+                    .sorted(Comparator.reverseOrder())
                     .forEach(p -> { try { Files.deleteIfExists(p); } catch (Exception ignore) {} });
         }
     }
@@ -142,10 +143,11 @@ class CbxMetadataWriterTest {
     void writeMetadataToFile_cbz_updatesExistingComicInfo() throws Exception {
         // Create a CBZ *with* an existing ComicInfo.xml
         Path out = tempDir.resolve("with_meta.cbz");
-        String xml = "<ComicInfo>\n" +
-                "  <Title>Old Title</Title>\n" +
-                "  <Summary>Old Summary</Summary>\n" +
-                "</ComicInfo>";
+        String xml = """
+                <ComicInfo>
+                  <Title>Old Title</Title>
+                  <Summary>Old Summary</Summary>
+                </ComicInfo>""";
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(out.toFile()))) {
             put(zos, "ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
             put(zos, "a.jpg", new byte[]{1});
