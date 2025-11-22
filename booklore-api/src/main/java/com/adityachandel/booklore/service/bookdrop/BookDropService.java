@@ -17,6 +17,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
@@ -431,7 +432,7 @@ public class BookDropService {
                 .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
 
         notificationService.sendMessage(Topic.BOOK_ADD, fileProcessResult.getBook());
-        metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false);
+        metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false, MetadataReplaceMode.REPLACE_ALL);
 
         cleanupBookdropData(bookdropFile);
 
