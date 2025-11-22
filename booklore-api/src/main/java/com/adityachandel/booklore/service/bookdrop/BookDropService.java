@@ -4,6 +4,8 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookdropFileMapper;
 import com.adityachandel.booklore.model.FileProcessResult;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
+import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.BookdropFile;
 import com.adityachandel.booklore.model.dto.BookdropFileNotification;
@@ -432,7 +434,19 @@ public class BookDropService {
                 .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
 
         notificationService.sendMessage(Topic.BOOK_ADD, fileProcessResult.getBook());
-        metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false, MetadataReplaceMode.REPLACE_ALL);
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                        .metadata(metadata)
+                        .build())
+                .updateThumbnail(metadata.getThumbnailUrl() != null)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .mergeMoods(true)
+                .mergeTags(true)
+                .build();
+
+        metadataRefreshService.updateBookMetadata(context);
 
         cleanupBookdropData(bookdropFile);
 
