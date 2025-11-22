@@ -7,7 +7,9 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.KoboBookFormat;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.kobo.KoboCompatibilityService;
+import com.adityachandel.booklore.service.kobo.KoboEntitlementService;
 import com.adityachandel.booklore.util.kobo.KoboUrlBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,8 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,7 +43,7 @@ class KoboEntitlementServiceTest {
 
     @Test
     void getMetadataForBook_shouldUseCompatibilityServiceFilter() {
-        Long bookId = 1L;
+        long bookId = 1L;
         String token = "test-token";
 
         BookEntity cbxBook = createCbxBookEntity(bookId);
@@ -65,7 +65,7 @@ class KoboEntitlementServiceTest {
 
     @Test
     void mapToKoboMetadata_cbxBookWithConversionEnabled_shouldReturnEpubFormat() {
-        Long bookId = 1L;
+        long bookId = 1L;
         BookEntity cbxBook = createCbxBookEntity(bookId);
         String token = "test-token";
 
@@ -87,7 +87,7 @@ class KoboEntitlementServiceTest {
 
     @Test
     void mapToKoboMetadata_cbxBookWithKepubConversionEnabled_shouldReturnKepubFormat() {
-        Long bookId = 1L;
+        long bookId = 1L;
         BookEntity cbxBook = createCbxBookEntity(bookId);
         String token = "test-token";
 
