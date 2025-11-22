@@ -14,6 +14,40 @@ app:
     admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
 
+booklore:
+  security:
+    oidc:
+      jwks:
+        # Connection timeout for JWKS endpoint (Spring Duration format: 5s, 1000ms, etc.)
+        # Increased from default to handle slow Docker networking and container startup
+        connect-timeout: ${OIDC_JWKS_CONNECT_TIMEOUT:5s}
+        # Read timeout for JWKS endpoint (Spring Duration format: 5s, 1000ms, etc.)
+        # Prevents failures during GC pauses or network delays
+        read-timeout: ${OIDC_JWKS_READ_TIMEOUT:5s}
+        # Maximum size of JWKS response (in bytes)
+        # Default 1MB should be sufficient for most JWKS documents
+        size-limit: ${OIDC_JWKS_SIZE_LIMIT:1048576}
+        # WARNING: Long cache times (>1h) delay key revocation propagation
+        # For high-security environments, consider: cache-ttl: 15m, cache-refresh: 5m
+        # How long to cache JWKS keys (Spring Duration format: 6h, 1h, etc., default 6 hours)
+        cache-ttl: ${OIDC_JWKS_CACHE_TTL:6h}
+        # How often to refresh JWKS cache (Spring Duration format: 1h, 30m, etc., default 1 hour)
+        cache-refresh: ${OIDC_JWKS_CACHE_REFRESH:1h}
+        # Enable rate limiting for JWKS endpoint (disabled by default for internal networks)
+        rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:false}
+        # HTTP proxy configuration for JWKS endpoint (optional, for corporate environments)
+        proxy-host: ${OIDC_JWKS_PROXY_HOST}
+        proxy-port: ${OIDC_JWKS_PROXY_PORT}
+        # User-Agent string for JWKS requests (optional, defaults to BookLore-OIDC-Client/1.0)
+        user-agent: ${OIDC_USER_AGENT:BookLore-OIDC-Client/1.0}
+        # Proxy authentication (optional, for authenticated corporate proxies)
+        proxy-user: ${OIDC_PROXY_USER}
+        proxy-password: ${OIDC_PROXY_PASSWORD}
+      jwt:
+        # Clock skew tolerance for JWT timestamp validation (default 60s)
+        # Handles clock drift between services and authentication servers
+        clock-skew: ${OIDC_JWT_CLOCK_SKEW:60s}
+
 server:
   forward-headers-strategy: native
   port: 8080
