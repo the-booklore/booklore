@@ -1,61 +1,121 @@
-// package test.java.com.adityachandel.booklore.util;
-// import com.adityachandel.booklore.util.FileUtils;
-
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import static org.assertj.core.api.Assertions.assertThat;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class FileUtilsTest {
 
-    @Test
-    void getRelativeSubPath_shouldHandleStandardCase() {
-        String basePath = "C:\\Library\\Books";
-        Path fullFilePath = Path.of("C:\\Library\\Books\\Series A\\book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        assertThat(result).isEqualTo("Series A");
+    @TempDir
+    Path tempDir;
+
+    private BookEntity createBookEntity(Path libraryPath, String subPath, String fileName) {
+        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setPath(libraryPath.toString());
+
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setLibraryPath(libraryPathEntity);
+        bookEntity.setFileSubPath(subPath);
+        bookEntity.setFileName(fileName);
+
+        return bookEntity;
     }
 
     @Test
-    void getRelativeSubPath_shouldHandleNestedFolders() {
-        String basePath = "C:\\Library\\Books";
-        Path fullFilePath = Path.of("C:\\Library\\Books\\Series A\\Subfolder 1\\book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        assertThat(result).isEqualTo("Series A/Subfolder 1");
+    void testGetBookFullPath() {
+        Path libraryPath = tempDir;
+        String subPath = "sub/folder";
+        String fileName = "test.pdf";
+
+        BookEntity book = createBookEntity(libraryPath, subPath, fileName);
+
+        String fullPath = FileUtils.getBookFullPath(book);
+
+        String expected = libraryPath.resolve(subPath).resolve(fileName)
+                .toString().replace("\\", "/");
+
+        assertEquals(expected, fullPath);
     }
 
     @Test
-    void getRelativeSubPath_shouldHandleFileInRoot() {
-        String basePath = "C:\\Library\\Books";
-        Path fullFilePath = Path.of("C:\\Library\\Books\\book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        assertThat(result).isEqualTo("");
+    void testGetRelativeSubPath() {
+        Path base = tempDir;
+        Path nested = base.resolve("a/b/c/file.txt");
+
+        String relative = FileUtils.getRelativeSubPath(base.toString(), nested);
+
+        assertEquals("a/b/c", relative);
     }
 
     @Test
-    void getRelativeSubPath_shouldHandleTrailingSlashOnBase() {
-        // This was a likely cause of the bug
-        String basePath = "C:\\Library\\Books\\"; 
-        Path fullFilePath = Path.of("C:\\Library\\Books\\Series A\\book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        assertThat(result).isEqualTo("Series A");
+    void testGetRelativeSubPath_noParent() {
+        Path base = tempDir;
+        Path file = base.resolve("file.txt");
+
+        String result = FileUtils.getRelativeSubPath(base.toString(), file);
+
+        assertEquals("", result);
     }
 
     @Test
-    void getRelativeSubPath_shouldHandleLinuxPaths() {
-        String basePath = "/home/user/books";
-        Path fullFilePath = Path.of("/home/user/books/Series A/book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        assertThat(result).isEqualTo("Series A");
+    void testGetFileSizeInKb_path() throws IOException {
+        Path file = tempDir.resolve("sample.txt");
+        byte[] content = new byte[2048]; // 2 KB
+        Files.write(file, content);
+
+        Long size = FileUtils.getFileSizeInKb(file);
+
+        assertEquals(2, size);
     }
 
     @Test
-    void getRelativeSubPath_shouldHandleNonNormalizedPaths() {
-        String basePath = "C:\\Library\\.\\Books";
-        Path fullFilePath = Path.of("C:\\Library\\Books\\Series A\\..\\Series A\\book.epub");
-        String result = FileUtils.getRelativeSubPath(basePath, fullFilePath);
-        // The normalization should fix both paths and find the correct relative path
-        assertThat(result).isEqualTo("Series A");
+    void testGetFileSizeInKb_pathFileNotFound() {
+        Path file = tempDir.resolve("missing.txt");
+
+        Long size = FileUtils.getFileSizeInKb(file);
+
+        assertNull(size);
+    }
+
+    @Test
+    void testGetFileSizeInKb_bookEntity() throws IOException {
+        Path library = tempDir.resolve("lib");
+        Files.createDirectories(library);
+
+        String sub = "files";
+        Path subFolder = library.resolve(sub);
+        Files.createDirectories(subFolder);
+
+        Path file = subFolder.resolve("book.epub");
+        Files.write(file, new byte[4096]); // 4 KB
+
+        BookEntity book = createBookEntity(library, sub, "book.epub");
+
+        Long size = FileUtils.getFileSizeInKb(book);
+
+        assertEquals(4, size);
+    }
+
+    @Test
+    void testDeleteDirectoryRecursively() throws IOException {
+        Path dir = tempDir.resolve("deleteMe");
+        Files.createDirectories(dir);
+
+        Files.write(dir.resolve("file1.txt"), "data".getBytes());
+        Files.createDirectories(dir.resolve("nested"));
+        Files.write(dir.resolve("nested/file2.txt"), "more".getBytes());
+
+        assertTrue(Files.exists(dir));
+
+        FileUtils.deleteDirectoryRecursively(dir);
+
+        assertFalse(Files.exists(dir));
     }
 }

@@ -21,15 +21,15 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
 })
 export class FileNamingPatternComponent implements OnInit {
   readonly exampleMetadata: Record<string, string> = {
-    title: "Harry Potter and the Sorcerer's Stone",
-    subtitle: 'The Boy Who Lived',
-    authors: 'J.K. Rowling',
-    year: '1997',
-    series: 'Harry Potter',
-    seriesIndex: '01',
-    language: 'en',
-    publisher: 'Bloomsbury',
-    isbn: '9780747532699',
+    title: "The Name of the Wind",
+    subtitle: "Special Edition",
+    authors: "Patrick Rothfuss",
+    year: "2007",
+    series: "The Kingkiller Chronicle",
+    seriesIndex: "01",
+    language: "English",
+    publisher: "DAW Books",
+    isbn: "9780756404741",
   };
 
   defaultPattern = '';
@@ -95,7 +95,7 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   validatePattern(pattern: string): boolean {
-    const validPatternRegex = /^[\w\s\-{}\/().<>.,:'"]*$/;
+    const validPatternRegex = /^[\w\s\-{}\[\]\/().<>.,:'"]*$/;
     return validPatternRegex.test(pattern);
   }
 
