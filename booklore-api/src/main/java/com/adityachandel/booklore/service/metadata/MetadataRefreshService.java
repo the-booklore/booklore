@@ -282,7 +282,7 @@ public class MetadataRefreshService {
                             .build())
                     .updateThumbnail(replaceCover)
                     .mergeCategories(mergeCategories)
-                    .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
+                    .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                     .mergeMoods(true)
                     .mergeTags(true)
                     .build();
