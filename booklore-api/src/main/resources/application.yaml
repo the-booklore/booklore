@@ -36,13 +36,13 @@ booklore:
         # Enable rate limiting for JWKS endpoint (disabled by default for internal networks)
         rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:false}
         # HTTP proxy configuration for JWKS endpoint (optional, for corporate environments)
-        proxy-host: ${OIDC_JWKS_PROXY_HOST}
-        proxy-port: ${OIDC_JWKS_PROXY_PORT}
+        proxy-host: ${OIDC_JWKS_PROXY_HOST:}
+        proxy-port: ${OIDC_JWKS_PROXY_PORT:}
         # User-Agent string for JWKS requests (optional, defaults to BookLore-OIDC-Client/1.0)
         user-agent: ${OIDC_USER_AGENT:BookLore-OIDC-Client/1.0}
         # Proxy authentication (optional, for authenticated corporate proxies)
-        proxy-user: ${OIDC_PROXY_USER}
-        proxy-password: ${OIDC_PROXY_PASSWORD}
+        proxy-user: ${OIDC_PROXY_USER:}
+        proxy-password: ${OIDC_PROXY_PASSWORD:}
       jwt:
         # Clock skew tolerance for JWT timestamp validation (default 60s)
         # Handles clock drift between services and authentication servers
