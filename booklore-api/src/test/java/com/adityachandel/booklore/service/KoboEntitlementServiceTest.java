@@ -42,7 +42,7 @@ class KoboEntitlementServiceTest {
     private KoboEntitlementService koboEntitlementService;
 
     @Test
-    void getMetadataForBook_shouldUsCompatibilityServiceFilter() {
+    void getMetadataForBook_shouldUseCompatibilityServiceFilter() {
         Long bookId = 1L;
         String token = "test-token";
 
