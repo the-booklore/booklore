@@ -238,7 +238,12 @@ public class CbxConversionService {
 
     private boolean isImageFile(String fileName) {
         String lowerName = fileName.toLowerCase();
-        return lowerName.matches(".*\\.(jpg|jpeg|png|webp|gif|bmp)$");
+
+        boolean isImage = lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
+               lowerName.endsWith(".png") || lowerName.endsWith(".webp") ||
+               lowerName.endsWith(".gif") || lowerName.endsWith(".bmp");
+        
+        return isImage;
     }
 
     private void addMimetypeEntry(ZipArchiveOutputStream zipOut) throws IOException {
