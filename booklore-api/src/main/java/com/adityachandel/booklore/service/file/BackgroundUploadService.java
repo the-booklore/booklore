@@ -41,7 +41,7 @@ public class BackgroundUploadService {
             deleteExistingBackgroundFiles(userId);
             fileService.saveBackgroundImage(originalImage, filename, userId);
 
-            String fileUrl = fileService.getBackgroundUrl(filename, userId);
+            String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
         } catch (Exception e) {
             log.error("Failed to upload background file: {}", e.getMessage(), e);
@@ -56,12 +56,12 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
-            BufferedImage originalImage = fileService.downloadImageFromUrl(imageUrl);
+            BufferedImage originalImage = FileService.downloadImageFromUrl(imageUrl);
             deleteExistingBackgroundFiles(userId);
 
             fileService.saveBackgroundImage(originalImage, filename, userId);
 
-            String fileUrl = fileService.getBackgroundUrl(filename, userId);
+            String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
         } catch (Exception e) {
             log.error("Failed to upload background from URL: {}", e.getMessage(), e);
