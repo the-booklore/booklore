@@ -71,9 +71,6 @@ class DynamicOidcJwtProcessorTest {
 
     }
 
-    // -------------------------------------------------------------------------
-    // HAPPY PATH TESTS (Ensures Keycloak/Authentik integration actually works)
-    // -------------------------------------------------------------------------
 
     @Test
     @DisplayName("Should successfully verify a valid token signed by the provider")
@@ -88,12 +85,11 @@ class DynamicOidcJwtProcessorTest {
 
         // VERIFY
         assertThat(securityContext).isNotNull();
-        // If we reached here without exception, the signature verification succeeded
     }
 
     @Test
     @DisplayName("Should reject expired tokens")
-    void testExpiredToken() throws Exception {
+    void testExpiredToken() {
         setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
 
         // Create a token that expired 1 hour ago
@@ -110,19 +106,13 @@ class DynamicOidcJwtProcessorTest {
     void testUnknownKeySignature() throws Exception {
         setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
 
-        // Generate a DIFFERENT key that WireMock doesn't know about
         RSAKey attackerKey = new RSAKeyGenerator(2048).keyID("attacker-key").generate();
         String forgedToken = createSignedToken(attackerKey, "user-123", new Date(System.currentTimeMillis() + 10000));
 
-        // EXECUTE & VERIFY
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(forgedToken, null))
                 .isInstanceOf(com.nimbusds.jose.proc.BadJOSEException.class)
                 .hasMessageContaining("Signed JWT rejected: Another algorithm expected, or no matching key(s) found");
     }
-
-    // -------------------------------------------------------------------------
-    // RESILIENCE TESTS (Timeouts & Rate Limiting)
-    // -------------------------------------------------------------------------
 
     @Test
     @DisplayName("Should timeout when JWKS endpoint is slow (Regression Test)")
@@ -257,16 +247,13 @@ class DynamicOidcJwtProcessorTest {
                 .hasMessageContaining("Signed JWT rejected: Another algorithm expected, or no matching key(s) found");
     }
 
-    // -------------------------------------------------------------------------
-    // HELPERS
-    // -------------------------------------------------------------------------
 
     private void setupMockSettings(String issuerUri) {
         OidcProviderDetails providerDetails = new OidcProviderDetails();
         providerDetails.setIssuerUri(issuerUri);
         providerDetails.setClientId("booklore-client");
         when(appSettingService.getAppSettings()).thenReturn(
-                AppSettings.builder().oidcProviderDetails(providerDetails).build()
+                AppSettings.builder().oidcProviderDetails(providerDetails).autoBookSearch(false).similarBookRecommendation(false).opdsServerEnabled(false).remoteAuthEnabled(false).bookDeletionEnabled(false).metadataDownloadOnBookdrop(false).oidcEnabled(true).build()
         );
     }
 
