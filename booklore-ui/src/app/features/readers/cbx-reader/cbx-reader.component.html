@@ -1,6 +1,15 @@
 <div class="comic-reader-container" tabindex="0">
   <div class="navigation">
     <div class="goto-page-controls">
+      <button 
+        *ngIf="currentBook?.metadata?.seriesName"
+        class="series-nav-button prev-book" 
+        (click)="navigateToPreviousBook()" 
+        [disabled]="!previousBookInSeries"
+        [title]="getPreviousBookTooltip()">
+        <span>← Previous Book</span>
+      </button>
+
       <div class="input-group">
         <input
           type="number"
@@ -17,6 +26,15 @@
           Go
         </button>
       </div>
+
+      <button 
+        *ngIf="currentBook?.metadata?.seriesName"
+        class="series-nav-button next-book" 
+        (click)="navigateToNextBook()" 
+        [disabled]="!nextBookInSeries"
+        [title]="getNextBookTooltip()">
+        <span>Next Book →</span>
+      </button>
     </div>
 
     <div class="page-controls">
@@ -87,6 +105,22 @@
         </button>
         @if (showMobileOptionsDropdown) {
           <div class="mobile-options-menu">
+            @if (currentBook?.metadata?.seriesName) {
+              <button 
+                class="mobile-option" 
+                (click)="navigateToPreviousBook(); toggleMobileOptionsDropdown()"
+                [disabled]="!previousBookInSeries">
+                <span class="option-icon">⬅️</span>
+                <span class="option-label">Previous Book</span>
+              </button>
+              <button 
+                class="mobile-option" 
+                (click)="navigateToNextBook(); toggleMobileOptionsDropdown()"
+                [disabled]="!nextBookInSeries">
+                <span class="option-icon">➡️</span>
+                <span class="option-label">Next Book</span>
+              </button>
+            }
             <button class="mobile-option" (click)="selectMobileOption('fitMode')">
               <span class="option-icon">{{ displayLabel }}</span>
               <span class="option-label">Fit Mode</span>
@@ -150,6 +184,15 @@
               <img [src]="url" alt="Page Image" class="page-image"/>
             }
           </div>
+          @if (isAtLastPage && nextBookInSeries) {
+            <div class="end-of-comic-action">
+              <button class="next-book-action-button" (click)="navigateToNextBook()">
+                <span class="action-icon">📖</span>
+                <span class="action-text">Continue to Next Book</span>
+                <span class="book-title">{{ getBookDisplayTitle(nextBookInSeries) }}</span>
+              </button>
+            </div>
+          }
         } @else {
           <div class="infinite-scroll-wrapper">
             @for (url of infiniteScrollImageUrls; track url; let i = $index) {
@@ -158,6 +201,15 @@
             @if (isLoadingMore) {
               <div class="loading-more">
                 <p-progressSpinner class="small-spinner"></p-progressSpinner>
+              </div>
+            }
+            @if (infiniteScrollPages.length > 0 && infiniteScrollPages[infiniteScrollPages.length - 1] >= pages.length - 1 && nextBookInSeries) {
+              <div class="end-of-comic-action">
+                <button class="next-book-action-button" (click)="navigateToNextBook()">
+                  <span class="action-icon">📖</span>
+                  <span class="action-text">Continue to Next Book</span>
+                  <span class="book-title">{{ getBookDisplayTitle(nextBookInSeries) }}</span>
+                </button>
               </div>
             }
           </div>

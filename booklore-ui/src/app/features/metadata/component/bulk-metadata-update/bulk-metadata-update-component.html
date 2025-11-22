@@ -36,40 +36,39 @@
 
   <form [formGroup]="metadataForm" (ngSubmit)="onSubmit()" (keydown)="onFormKeydown($event)" class="flex flex-col gap-4 w-full p-4">
 
-    <div class="flex flex-col gap-2">
-      <label for="authors" class="flex items-center justify-between gap-2">
-        <span class="flex items-center gap-2">
-          Author(s)
-          <i class="pi pi-info-circle text-sky-600"
-             pTooltip="Enter multiple authors. Press Enter after typing each name."
-             tooltipPosition="right"
-             style="cursor: pointer"></i>
-        </span>
-        <div class="flex items-center gap-1">
-          <p-checkbox [(ngModel)]="clearFields.authors" [ngModelOptions]="{standalone: true}" (onChange)="onFieldClearToggle('authors')" binary="true" inputId="clearAuthors"/>
-          <label for="clearAuthors" class="text-sm text-gray-300 cursor-pointer">Clear</label>
-        </div>
-      </label>
-      <p-autoComplete formControlName="authors" [disabled]="clearFields.authors" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" (onBlur)="onAutoCompleteBlur('authors', $event)" class="w-full"></p-autoComplete>
-    </div>
-
-    <!-- Publisher -->
-    <div class="flex flex-col gap-2">
-      <label for="publisher" class="flex items-center justify-between gap-2">
-        <span>Publisher</span>
-        <div class="flex items-center gap-1">
-          <p-checkbox [(ngModel)]="clearFields.publisher" [ngModelOptions]="{standalone: true}"
-                      (onChange)="onFieldClearToggle('publisher')" binary="true" inputId="clearPublisher"/>
-          <label for="clearPublisher" class="text-sm text-gray-300 cursor-pointer">Clear</label>
-        </div>
-      </label>
-      <input pInputText id="publisher" formControlName="publisher" [disabled]="clearFields.publisher" class="w-full"/>
-    </div>
-
-    <!-- Language + Series Total + Published Date -->
     <div class="flex justify-between gap-7">
+      <!-- Authors -->
+      <div class="flex flex-col gap-2 w-full md:basis-[80%]">
+        <label for="authors" class="flex items-center justify-between gap-2">
+          <span class="flex items-center gap-2">
+            Author(s)
+            <i class="pi pi-info-circle text-sky-600"
+              pTooltip="Enter multiple authors. Press Enter after typing each name."
+              tooltipPosition="right"
+              style="cursor: pointer"></i>
+          </span>
+          <div class="flex items-center gap-1">
+            <p-checkbox [(ngModel)]="clearFields.authors" [ngModelOptions]="{standalone: true}" (onChange)="onFieldClearToggle('authors')" binary="true" inputId="clearAuthors"/>
+            <label for="clearAuthors" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+          </div>
+        </label>
+        <p-autoComplete
+          class="w-full"
+          id="authors"
+          formControlName="authors"
+          [disabled]="clearFields.authors"
+          [multiple]="true"
+          [dropdown]="false"
+          [forceSelection]="false"
+          [suggestions]="filteredAuthors"
+          (completeMethod)="filterAuthors($event)"
+          (onKeyUp)="onAutoCompleteKeyUp('authors', $event)"
+          (onSelect)="onAutoCompleteSelect('authors', $event)">
+        </p-autoComplete>
+      </div>
+
       <!-- Language -->
-      <div class="flex flex-col gap-2 w-full">
+      <div class="flex flex-col gap-2 md:basis-[20%]">
         <label for="language" class="flex items-center justify-between gap-2">
           <span>Language</span>
           <div class="flex items-center gap-1">
@@ -80,9 +79,36 @@
         </label>
         <input pInputText id="language" formControlName="language" [disabled]="clearFields.language" class="w-full"/>
       </div>
+    </div>
+
+    <div class="flex justify-between gap-7">
+      <!-- Publisher -->
+      <div class="flex flex-col gap-2 w-full md:basis-[80%]">
+        <label for="publisher" class="flex items-center justify-between gap-2">
+          <span>Publisher</span>
+          <div class="flex items-center gap-1">
+            <p-checkbox [(ngModel)]="clearFields.publisher" [ngModelOptions]="{standalone: true}"
+                        (onChange)="onFieldClearToggle('publisher')" binary="true" inputId="clearPublisher"/>
+            <label for="clearPublisher" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+          </div>
+        </label>
+        <p-autoComplete
+          class="w-full"
+          inputStyleClass="w-full"
+          formControlName="publisher"
+          inputId="publisher"
+          [disabled]="clearFields.publisher"
+          [multiple]="false"
+          [dropdown]="false"
+          [showClear]="true"
+          [forceSelection]="false"
+          [suggestions]="filteredPublishers"
+          (completeMethod)="filterPublishers($event)">
+        </p-autoComplete>
+      </div>
 
       <!-- Published Date -->
-      <div class="flex flex-col gap-2 w-96">
+      <div class="flex flex-col gap-2 md:basis-[20%]">
         <label for="publishedDate" class="flex items-center justify-between gap-2">
           <span>Published Date</span>
           <div class="flex items-center gap-1">
@@ -105,11 +131,44 @@
           appendTo="body">
         </p-datepicker>
       </div>
+    </div>
+
+    <div class="flex justify-between gap-7">
+      <!-- Series Name -->
+      <div class="flex flex-col gap-2 w-full md:basis-[80%]">
+        <label for="seriesName" class="flex items-center justify-between gap-2">
+          <span>Series Name</span>
+          <div class="flex items-center gap-1">
+            <p-checkbox [(ngModel)]="clearFields.seriesName" [ngModelOptions]="{standalone: true}"
+                        (onChange)="onFieldClearToggle('seriesName')" binary="true" inputId="clearSeriesName"/>
+            <label for="clearSeriesName" class="text-sm text-gray-300 cursor-pointer">Clear</label>
+          </div>
+        </label>
+        <p-autoComplete
+          class="w-full"
+          inputStyleClass="w-full"
+          formControlName="seriesName"
+          inputId="seriesName"
+          [disabled]="clearFields.seriesName"
+          [multiple]="false"
+          [dropdown]="false"
+          [showClear]="true"
+          [forceSelection]="false"
+          [suggestions]="filteredSeries"
+          (completeMethod)="filterSeries($event)">
+        </p-autoComplete>
+      </div>
 
       <!-- Series Total -->
-      <div class="flex flex-col gap-2 min-w-56">
+      <div class="flex flex-col gap-2 md:basis-[20%]">
         <label for="seriesTotal" class="flex items-center justify-between gap-2">
-          <span>Total Books in Series</span>
+          <span class="flex items-center gap-2">
+            Total Books
+            <i class="pi pi-info-circle text-sky-600"
+              pTooltip="Total number of books in the series."
+              tooltipPosition="right"
+              style="cursor: pointer"></i>
+          </span>
           <div class="flex items-center gap-1">
             <p-checkbox [(ngModel)]="clearFields.seriesTotal" [ngModelOptions]="{standalone: true}"
                         (onChange)="onFieldClearToggle('seriesTotal')" binary="true" inputId="clearSeriesTotal"/>
@@ -119,20 +178,6 @@
         <input pInputText id="seriesTotal" type="number" min="1" formControlName="seriesTotal"
                [disabled]="clearFields.seriesTotal" class="w-full"/>
       </div>
-
-    </div>
-
-    <!-- Series Name -->
-    <div class="flex flex-col gap-2">
-      <label for="seriesName" class="flex items-center justify-between gap-2">
-        <span>Series Name</span>
-        <div class="flex items-center gap-1">
-          <p-checkbox [(ngModel)]="clearFields.seriesName" [ngModelOptions]="{standalone: true}"
-                      (onChange)="onFieldClearToggle('seriesName')" binary="true" inputId="clearSeriesName"/>
-          <label for="clearSeriesName" class="text-sm text-gray-300 cursor-pointer">Clear</label>
-        </div>
-      </label>
-      <input pInputText id="seriesName" formControlName="seriesName" [disabled]="clearFields.seriesName" class="w-full"/>
     </div>
 
     <!-- Genres -->
@@ -151,7 +196,19 @@
           <label for="clearGenres" class="text-sm text-gray-300 cursor-pointer">Clear</label>
         </div>
       </label>
-      <p-autoComplete formControlName="genres" [disabled]="clearFields.genres" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" (onBlur)="onAutoCompleteBlur('genres', $event)" class="w-full"></p-autoComplete>
+      <p-autoComplete
+        class="w-full"
+        id="genres"
+        formControlName="genres"
+        [disabled]="clearFields.genres"
+        [multiple]="true"
+        [dropdown]="false"
+        [forceSelection]="false"
+        [suggestions]="filteredGenres"
+        (completeMethod)="filterGenres($event)"
+        (onKeyUp)="onAutoCompleteKeyUp('genres', $event)"
+        (onSelect)="onAutoCompleteSelect('genres', $event)">
+      </p-autoComplete>
 
       <div class="flex items-center gap-2 mt-2">
         <p-checkbox
@@ -183,7 +240,19 @@
           <label for="clearMoods" class="text-sm text-gray-300 cursor-pointer">Clear</label>
         </div>
       </label>
-      <p-autoComplete formControlName="moods" [disabled]="clearFields.moods" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" (onBlur)="onAutoCompleteBlur('moods', $event)" class="w-full"></p-autoComplete>
+      <p-autoComplete
+        class="w-full"
+        id="moods"
+        formControlName="moods"
+        [disabled]="clearFields.moods"
+        [multiple]="true"
+        [dropdown]="false"
+        [forceSelection]="false"
+        [suggestions]="filteredMoods"
+        (completeMethod)="filterMoods($event)"
+        (onKeyUp)="onAutoCompleteKeyUp('moods', $event)"
+        (onSelect)="onAutoCompleteSelect('moods', $event)">
+      </p-autoComplete>
 
       <div class="flex items-center gap-2 mt-2">
         <p-checkbox
@@ -215,7 +284,19 @@
           <label for="clearTags" class="text-sm text-gray-300 cursor-pointer">Clear</label>
         </div>
       </label>
-      <p-autoComplete formControlName="tags" [disabled]="clearFields.tags" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" (onBlur)="onAutoCompleteBlur('tags', $event)" class="w-full"></p-autoComplete>
+      <p-autoComplete
+        class="w-full"
+        id="tags"
+        formControlName="tags"
+        [disabled]="clearFields.tags"
+        [multiple]="true"
+        [dropdown]="false"
+        [forceSelection]="false"
+        [suggestions]="filteredTags"
+        (completeMethod)="filterTags($event)"
+        (onKeyUp)="onAutoCompleteKeyUp('tags', $event)"
+        (onSelect)="onAutoCompleteSelect('tags', $event)">
+      </p-autoComplete>
 
       <div class="flex items-center gap-2 mt-2">
         <p-checkbox

@@ -125,7 +125,18 @@
             <div class="flex flex-col gap-1 md:basis-[20%]">
               <label class="text-sm" for="publisher">Publisher</label>
               <div class="flex justify-between items-center gap-2">
-                <input pSize="small" pInputText id="publisher" formControlName="publisher" class="w-full"/>
+                <p-autoComplete
+                  class="w-full"
+                  inputStyleClass="w-full"
+                  formControlName="publisher"
+                  inputId="publisher"
+                  [multiple]="false"
+                  [dropdown]="false"
+                  [suggestions]="filteredPublishers"
+                  [forceSelection]="false"
+                  [showClear]="true"
+                  (completeMethod)="filterPublishers($event)">
+                </p-autoComplete>
                 @if (!book.metadata!['publisherLocked']) {
                   <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('publisher')" severity="success"></p-button>
                 }
@@ -137,7 +148,7 @@
             <div class="flex flex-col gap-1 md:basis-[14%]">
               <label class="text-sm" for="language">Language</label>
               <div class="flex justify-between items-center gap-2">
-                <input pSize="small" pInputText id="language" formControlName="language" class="w-full"/>
+                <input pInputText id="language" formControlName="language" class="w-full"/>
                 @if (!book.metadata!['languageLocked']) {
                   <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('language')" severity="success"></p-button>
                 }
@@ -235,7 +246,19 @@
             <div class="flex flex-col gap-1 md:basis-[75%]">
               <label class="text-sm" for="seriesName">Series Name</label>
               <div class="flex justify-between items-center gap-2">
-                <input pSize="small" pInputText id="seriesName" formControlName="seriesName" class="w-full"/>
+                <p-autoComplete
+                  size="small"
+                  class="w-full"
+                  inputStyleClass="w-full"
+                  formControlName="seriesName"
+                  inputId="seriesName"
+                  [multiple]="false"
+                  [dropdown]="false"
+                  [suggestions]="filteredSeries"
+                  [forceSelection]="false"
+                  [showClear]="true"
+                  (completeMethod)="filterSeries($event)">
+                </p-autoComplete>
                 @if (!book.metadata!['seriesNameLocked']) {
                   <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('seriesName')" severity="success"></p-button>
                 }

@@ -81,10 +81,14 @@ export class MetadataEditorComponent implements OnInit {
   allCategories!: string[];
   allMoods!: string[];
   allTags!: string[];
+  allPublishers!: string[];
+  allSeries!: string[];
   filteredCategories: string[] = [];
   filteredAuthors: string[] = [];
   filteredMoods: string[] = [];
   filteredTags: string[] = [];
+  filteredPublishers: string[] = [];
+  filteredSeries: string[] = [];
 
   filterCategories(event: { query: string }) {
     const query = event.query.toLowerCase();
@@ -111,6 +115,20 @@ export class MetadataEditorComponent implements OnInit {
     const query = event.query.toLowerCase();
     this.filteredTags = this.allTags.filter((tag) =>
       tag.toLowerCase().includes(query)
+    );
+  }
+
+  filterPublishers(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredPublishers = this.allPublishers.filter((publisher) =>
+      publisher.toLowerCase().includes(query)
+    );
+  }
+
+  filterSeries(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredSeries = this.allSeries.filter((seriesName) =>
+      seriesName.toLowerCase().includes(query)
     );
   }
 
@@ -201,6 +219,8 @@ export class MetadataEditorComponent implements OnInit {
         const categories = new Set<string>();
         const moods = new Set<string>();
         const tags = new Set<string>();
+        const publishers = new Set<string>();
+        const series = new Set<string>();
 
         (bookState.books ?? []).forEach((book) => {
           book.metadata?.authors?.forEach((author) => authors.add(author));
@@ -209,12 +229,20 @@ export class MetadataEditorComponent implements OnInit {
           );
           book.metadata?.moods?.forEach((mood) => moods.add(mood));
           book.metadata?.tags?.forEach((tag) => tags.add(tag));
+          if (book.metadata?.publisher) {
+            publishers.add(book.metadata.publisher);
+          }
+          if (book.metadata?.seriesName) {
+            series.add(book.metadata.seriesName);
+          }
         });
 
         this.allAuthors = Array.from(authors);
         this.allCategories = Array.from(categories);
         this.allMoods = Array.from(moods);
         this.allTags = Array.from(tags);
+        this.allPublishers = Array.from(publishers);
+        this.allSeries = Array.from(series);
       });
   }
 

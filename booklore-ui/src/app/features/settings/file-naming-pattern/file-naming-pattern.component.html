@@ -181,49 +181,49 @@
           <div class="example-category">
             <h4 class="subsection-title">Examples with Full Metadata</h4>
             <div class="metadata-sample">
-              <span>title: <code>Harry Potter and the Sorcerer's Stone</code></span>
-              <span>subtitle: <code>The Boy Who Lived</code></span>
-              <span>authors: <code>J.K. Rowling</code></span>
-              <span>series: <code>Harry Potter</code></span>
+              <span>title: <code>The Name of the Wind</code></span>
+              <span>subtitle: <code>Special Edition</code></span>
+              <span>authors: <code>Patrick Rothfuss</code></span>
+              <span>series: <code>The Kingkiller Chronicle</code></span>
               <span>seriesIndex: <code>01</code></span>
-              <span>year: <code>1997</code></span>
-              <span>currentFilename: <code>harry1_original.epub</code></span>
+              <span>year: <code>2007</code></span>
+              <span>currentFilename: <code>name_of_the_wind_original.epub</code></span>
             </div>
 
             <div class="example-list">
               <div class="example-item">
                 <p class="example-pattern"><strong>Basic pattern:</strong> <code>{{ '{authors} - {title}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>J.K. Rowling - Harry Potter and the Sorcerer's Stone.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>Patrick Rothfuss - The Name of the Wind.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Pattern with punctuation:</strong> <code>{{ '{title}: {series}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>Harry Potter and the Sorcerer's Stone: Harry Potter.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>The Name of the Wind: The Kingkiller Chronicle.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Series in folder path:</strong> <code>{{ '{authors}/{series}/{seriesIndex} - {title}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>J.K. Rowling/Harry Potter/01 - Harry Potter and the Sorcerer's Stone.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>Patrick Rothfuss/The Kingkiller Chronicle/01 - The Name of the Wind.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Folder only:</strong> <code>{{ '{title}/' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>/Harry Potter and the Sorcerer's Stone/harry1_original.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>/The Name of the Wind/name_of_the_wind_original.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Absolute path:</strong> <code>{{ '/{authors}/{title}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>/J.K. Rowling/Harry Potter and the Sorcerer's Stone.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>/Patrick Rothfuss/The Name of the Wind.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Reuse original filename in path:</strong> <code>{{ '{authors}/{series}/{currentFilename}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>J.K. Rowling/Harry Potter/harry1_original.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>Patrick Rothfuss/The Kingkiller Chronicle/name_of_the_wind_original.epub</code></p>
               </div>
 
               <div class="example-item">
                 <p class="example-pattern"><strong>Title + Subtitle:</strong> <code>{{ '{title}: {subtitle}' }}</code></p>
-                <p class="example-output"><strong>Output:</strong> <code>Harry Potter and the Sorcerer's Stone: The Boy Who Lived.epub</code></p>
+                <p class="example-output"><strong>Output:</strong> <code>The Name of the Wind: The Kingkiller Chronicle: Day One.epub</code></p>
               </div>
             </div>
           </div>

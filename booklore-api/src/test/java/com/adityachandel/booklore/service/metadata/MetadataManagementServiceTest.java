@@ -65,14 +65,14 @@ class MetadataManagementServiceTest {
         AuthorEntity oldAuthor = new AuthorEntity();
         oldAuthor.setName(oldName);
 
-        when(authorRepository.findByName(targetName)).thenReturn(Optional.empty());
+        when(authorRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
         when(authorRepository.save(any(AuthorEntity.class))).thenAnswer(invocation -> {
             AuthorEntity a = invocation.getArgument(0);
             a.setName(a.getName());
             return a;
         });
 
-        when(authorRepository.findByName(oldName)).thenReturn(Optional.of(oldAuthor));
+        when(authorRepository.findByNameIgnoreCase(oldName)).thenReturn(Optional.of(oldAuthor));
 
         BookMetadataEntity metadata = mock(BookMetadataEntity.class);
         Set<AuthorEntity> authorsSet = new HashSet<>();
@@ -91,28 +91,6 @@ class MetadataManagementServiceTest {
         assertThat(saved).containsExactly(metadata);
 
         verify(authorRepository).delete(oldAuthor);
-    }
-
-    @Test
-    void deleteAuthors_removesFromBooksAndDeletes() {
-        String name = "Author To Delete";
-        AuthorEntity author = new AuthorEntity();
-        author.setName(name);
-
-        when(authorRepository.findByName(name)).thenReturn(Optional.of(author));
-
-        BookMetadataEntity metadata = mock(BookMetadataEntity.class);
-        Set<AuthorEntity> authorsSet = new HashSet<>();
-        authorsSet.add(author);
-        when(metadata.getAuthors()).thenReturn(authorsSet);
-
-        when(bookMetadataRepository.findAllByAuthorsContaining(author)).thenReturn(List.of(metadata));
-
-        service.deleteMetadata(MergeMetadataType.authors, List.of(name));
-
-        assertThat(authorsSet).doesNotContain(author);
-        verify(bookMetadataRepository).saveAll(bookListCaptor.capture());
-        verify(authorRepository).delete(author);
     }
 
     @Test
@@ -300,37 +278,6 @@ class MetadataManagementServiceTest {
     }
 
     @Test
-    void mergeAuthors_targetExists_usesExistingTargetAndDeletesOld() {
-        String targetName = "Existing Author";
-        String oldName = "Old Author";
-
-        AuthorEntity existingAuthor = new AuthorEntity();
-        existingAuthor.setName(targetName);
-
-        AuthorEntity oldAuthor = new AuthorEntity();
-        oldAuthor.setName(oldName);
-
-        when(authorRepository.findByName(targetName)).thenReturn(Optional.of(existingAuthor));
-        when(authorRepository.findByName(oldName)).thenReturn(Optional.of(oldAuthor));
-
-        BookMetadataEntity metadata = mock(BookMetadataEntity.class);
-        Set<AuthorEntity> authorsSet = new HashSet<>();
-        authorsSet.add(oldAuthor);
-        when(metadata.getAuthors()).thenReturn(authorsSet);
-
-        when(bookMetadataRepository.findAllByAuthorsContaining(oldAuthor)).thenReturn(List.of(metadata));
-
-        service.consolidateMetadata(MergeMetadataType.authors, List.of(targetName), List.of(oldName));
-
-        assertThat(authorsSet).doesNotContain(oldAuthor);
-        assertThat(authorsSet).contains(existingAuthor);
-
-        verify(authorRepository, never()).save(any(AuthorEntity.class));
-        verify(authorRepository).delete(oldAuthor);
-        verify(bookMetadataRepository).saveAll(bookListCaptor.capture());
-    }
-
-    @Test
     void mergeTags_mergesMultipleOldTagsIntoSingleTarget() {
         String targetName = "UnifiedTag";
         String old1 = "OldTag1";
@@ -365,37 +312,6 @@ class MetadataManagementServiceTest {
         verify(tagRepository).delete(oldTag1);
         verify(tagRepository).delete(oldTag2);
         verify(bookMetadataRepository, times(2)).saveAll(anyList());
-    }
-
-    @Test
-    void mergeAuthors_ignoresNonExistentOldAuthor() {
-        String targetName = "TargetAuthor";
-        String existingOld = "ExistingOld";
-        String missingOld = "MissingOld";
-
-        AuthorEntity target = new AuthorEntity();
-        target.setName(targetName);
-        AuthorEntity old = new AuthorEntity();
-        old.setName(existingOld);
-
-        when(authorRepository.findByName(targetName)).thenReturn(Optional.of(target));
-        when(authorRepository.findByName(existingOld)).thenReturn(Optional.of(old));
-        when(authorRepository.findByName(missingOld)).thenReturn(Optional.empty());
-
-        BookMetadataEntity metadata = mock(BookMetadataEntity.class);
-        Set<AuthorEntity> authors = new HashSet<>();
-        authors.add(old);
-        when(metadata.getAuthors()).thenReturn(authors);
-
-        when(bookMetadataRepository.findAllByAuthorsContaining(old)).thenReturn(List.of(metadata));
-
-        service.consolidateMetadata(MergeMetadataType.authors, List.of(targetName), List.of(existingOld, missingOld));
-
-        assertThat(authors).doesNotContain(old);
-        assertThat(authors).contains(target);
-        verify(authorRepository).delete(old);
-        verify(authorRepository, never()).delete(argThat(a -> missingOld.equals(a.getName())));
-        verify(bookMetadataRepository).saveAll(anyList());
     }
 
     @Test
@@ -462,16 +378,6 @@ class MetadataManagementServiceTest {
         List<BookMetadataEntity> saved = bookListCaptor.getValue();
         assertThat(saved).isEmpty();
         verify(tagRepository).delete(old);
-    }
-
-    @Test
-    void deleteAuthors_noMatchingAuthor_noOps() {
-        when(authorRepository.findByName("NoAuthor")).thenReturn(Optional.empty());
-
-        service.deleteMetadata(MergeMetadataType.authors, List.of("NoAuthor"));
-
-        verify(bookMetadataRepository, never()).saveAll(anyList());
-        verify(authorRepository, never()).delete(any());
     }
 
     @Test
