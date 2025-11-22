@@ -141,12 +141,16 @@ class CbxConversionIntegrationTest {
                     .filter(name -> name.startsWith("OEBPS/Text/") && name.endsWith(".xhtml"))
                     .count();
 
+            // Note: The EPUB contains 4 images because the conversion service duplicates the first image:
+            // once as 'cover.jpg' (for the cover, referenced in the manifest but not in the spine)
+            // and once as 'page-0001.jpg' (for the first comic page). Only 3 HTML pages are created,
+            // one for each comic page image, since the cover image is not given its own HTML page.
             assertThat(imageCount)
                     .as("Should have converted all comic pages to images")
                     .isEqualTo(4);
 
             assertThat(pageCount)
-                    .as("Should have created HTML page for each image")
+                    .as("Should have created HTML page for each image (excluding cover)")
                     .isEqualTo(3);
 
             verifyContentOpf(zipFile, expectedMetadata);
