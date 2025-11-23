@@ -43,6 +43,7 @@ public class CbxConversionService {
     private static final String STYLESHEET_CSS_PATH = "OEBPS/Styles/stylesheet.css";
     private static final String COVER_IMAGE_PATH = "OEBPS/Images/cover.jpg";
     private static final String MIMETYPE_CONTENT = "application/epub+zip";
+    private static final long MAX_IMAGE_SIZE_BYTES = 50L * 1024 * 1024;
     
     private final Configuration freemarkerConfig;
 
@@ -147,6 +148,12 @@ public class CbxConversionService {
             log.debug("Found {} image entries in CBZ file", imageEntries.size());
 
             for (ZipArchiveEntry entry : imageEntries) {
+                long entrySize = entry.getSize();
+                if (entrySize > MAX_IMAGE_SIZE_BYTES) {
+                    throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
+                            entry.getName(), entrySize, MAX_IMAGE_SIZE_BYTES));
+                }
+                
                 try (InputStream inputStream = zipFile.getInputStream(entry)) {
                     BufferedImage image = ImageIO.read(inputStream);
                     if (image != null) {
@@ -181,6 +188,12 @@ public class CbxConversionService {
             log.debug("Found {} image entries in CBR file", imageHeaders.size());
             
             for (FileHeader fileHeader : imageHeaders) {
+                long fileSize = fileHeader.getFullUnpackSize();
+                if (fileSize > MAX_IMAGE_SIZE_BYTES) {
+                    throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
+                            fileHeader.getFileName(), fileSize, MAX_IMAGE_SIZE_BYTES));
+                }
+                
                 try (InputStream inputStream = rarFile.getInputStream(fileHeader)) {
                     BufferedImage image = ImageIO.read(inputStream);
                     if (image != null) {
@@ -206,7 +219,16 @@ public class CbxConversionService {
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
-                    byte[] imageData = new byte[(int) entry.getSize()];
+                    long entrySize = entry.getSize();
+                    if (entrySize > MAX_IMAGE_SIZE_BYTES) {
+                        throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
+                                entry.getName(), entrySize, MAX_IMAGE_SIZE_BYTES));
+                    }
+                    if (entrySize > Integer.MAX_VALUE) {
+                        throw new IOException(String.format("Image '%s' is too large for processing: %d bytes",
+                                entry.getName(), entrySize));
+                    }
+                    byte[] imageData = new byte[(int) entrySize];
                     sevenZFile.read(imageData);
                     imageDataMap.put(entry.getName(), imageData);
                 }
