@@ -23,9 +23,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -242,7 +245,7 @@ class DynamicOidcJwtProcessorTest {
 
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(tokenWithWrongAudience, null))
                 .isInstanceOf(BadJWTException.class)
-                .hasMessageContaining("JWT aud claim has value");
+                .hasMessageContaining("expected audience or azp");
     }
 
     @Test
@@ -259,6 +262,63 @@ class DynamicOidcJwtProcessorTest {
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(tokenWithWrongIssuer, null))
                 .isInstanceOf(BadJWTException.class)
                 .hasMessageContaining("JWT iss claim has value");
+    }
+
+    @Test
+    @DisplayName("Should accept token when azp matches client id")
+    void shouldAcceptTokenWhenAzpMatches() throws Exception {
+        setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
+
+        JWSSigner signer = new RSASSASigner(rsaKey);
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .subject("user-123")
+                .issuer("http://localhost:9999/auth/realms/booklore")
+                .audience("wrong-audience")
+                .claim("azp", DEFAULT_CLIENT_ID)
+                .expirationTime(new Date(System.currentTimeMillis() + 10000))
+                .build();
+
+        SignedJWT signedJWT = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.RS256).keyID(rsaKey.getKeyID()).build(),
+                claims);
+        signedJWT.sign(signer);
+
+        assertThat(jwtProcessor.getProcessor().process(signedJWT.serialize(), null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should normalize issuer URIs with trailing slash")
+    void shouldNormalizeIssuerWithTrailingSlash() throws Exception {
+        String configuredIssuer = "http://localhost:9999/auth/realms/booklore/";
+        String discoveryIssuer = "http://localhost:9999/auth/realms/booklore";
+        String jwksUri = discoveryIssuer + "/protocol/openid-connect/certs";
+
+        setupOidcWireMock(configuredIssuer, discoveryIssuer, jwksUri, 0, List.of("RS256"));
+
+        String validToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000));
+        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should accept PS256 tokens when advertised by provider")
+    void shouldAcceptPs256TokensWhenAdvertised() throws Exception {
+        String issuer = "http://localhost:9999/auth/realms/booklore";
+        setupOidcWireMock(issuer, issuer, issuer + "/protocol/openid-connect/certs", 0, List.of("PS256", "RS256"));
+
+        JWSSigner signer = new RSASSASigner(rsaKey);
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .subject("user-123")
+                .issuer(issuer)
+                .audience(DEFAULT_CLIENT_ID)
+                .expirationTime(new Date(System.currentTimeMillis() + 10000))
+                .build();
+
+        SignedJWT signedJWT = new SignedJWT(
+                new JWSHeader.Builder(JWSAlgorithm.PS256).keyID(rsaKey.getKeyID()).build(),
+                claims);
+        signedJWT.sign(signer);
+
+        assertThat(jwtProcessor.getProcessor().process(signedJWT.serialize(), null)).isNotNull();
     }
 
     @Test
@@ -280,19 +340,37 @@ class DynamicOidcJwtProcessorTest {
     }
 
     private void setupOidcWireMock(String issuer, int delayMs) {
-        setupMockSettings(issuer);
+        setupOidcWireMock(issuer, issuer, issuer + "/protocol/openid-connect/certs", delayMs, List.of());
+    }
 
-        // 1. Mock Discovery Doc
-        stubFor(get(urlPathMatching(".*/.well-known/openid-configuration"))
+    private void setupOidcWireMock(String configuredIssuer,
+                                   String discoveryIssuer,
+                                   String jwksUri,
+                                   int delayMs,
+                                   List<String> advertisedAlgorithms) {
+        setupMockSettings(configuredIssuer);
+
+        String normalizedIssuer = configuredIssuer != null && configuredIssuer.endsWith("/")
+                ? configuredIssuer.substring(0, configuredIssuer.length() - 1)
+                : configuredIssuer;
+
+        String discoveryPath = URI.create(normalizedIssuer + "/.well-known/openid-configuration").getPath();
+        String jwksPath = URI.create(jwksUri).getPath();
+
+        String algorithmsJson = advertisedAlgorithms == null || advertisedAlgorithms.isEmpty() ? "" :
+                ", \"id_token_signing_alg_values_supported\": [" + advertisedAlgorithms.stream()
+                        .map(alg -> "\"" + alg + "\"")
+                        .collect(Collectors.joining(", ")) + "]";
+
+        stubFor(get(urlEqualTo(discoveryPath))
                 .willReturn(okJson("""
                     {
                         "issuer": "%s",
-                        "jwks_uri": "%s/protocol/openid-connect/certs"
+                        "jwks_uri": "%s"%s
                     }
-                """.formatted(issuer, issuer))));
+                """.formatted(discoveryIssuer, jwksUri, algorithmsJson))));
 
-        // 2. Mock JWKS Endpoint returning our Generated Public Key
-        stubFor(get(urlPathMatching(".*/protocol/openid-connect/certs"))
+        stubFor(get(urlEqualTo(jwksPath))
                 .willReturn(okJson(new JWKSet(rsaKey).toPublicJWKSet().toString())
                 .withFixedDelay(delayMs)));
     }

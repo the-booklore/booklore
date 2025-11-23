@@ -4,14 +4,15 @@ import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
-import com.nimbusds.jose.util.DefaultResourceRetriever;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.util.Resource;
 import com.nimbusds.jose.proc.SecurityContext;
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
-import com.nimbusds.jwt.proc.DefaultJWTProcessor;
-import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
+import com.nimbusds.jose.util.Resource;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
+import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
+import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Component;
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,6 +33,23 @@ import java.util.Set;
 @EnableConfigurationProperties(OidcProperties.class)
 @RequiredArgsConstructor
 public class DynamicOidcJwtProcessor {
+    private static final Set<JWSAlgorithm> KNOWN_JWS_ALGORITHMS = Set.of(
+            JWSAlgorithm.RS256,
+            JWSAlgorithm.RS384,
+            JWSAlgorithm.RS512,
+            JWSAlgorithm.PS256,
+            JWSAlgorithm.PS384,
+            JWSAlgorithm.PS512,
+            JWSAlgorithm.ES256,
+            JWSAlgorithm.ES256K,
+            JWSAlgorithm.ES384,
+            JWSAlgorithm.ES512,
+            JWSAlgorithm.EdDSA,
+            JWSAlgorithm.HS256,
+            JWSAlgorithm.HS384,
+            JWSAlgorithm.HS512
+    );
+
     private final AppSettingService appSettingService;
     private final OidcProperties oidcProperties;
 
@@ -45,15 +66,16 @@ public class DynamicOidcJwtProcessor {
         }
 
         String issuerUri = providerDetails.getIssuerUri();
+        String normalizedIssuerUri = normalizeIssuerUri(issuerUri);
         String clientId = providerDetails.getClientId();
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
-        if (localRef == null || !issuerUri.equals(currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
+        if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
             synchronized (this) {
                 localRef = jwtProcessor;
-                if (localRef == null || !issuerUri.equals(currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-                    this.jwtProcessor = buildProcessor(providerDetails);
-                    this.currentIssuerUri = issuerUri;
+                if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
+                    this.jwtProcessor = buildProcessor(providerDetails, normalizedIssuerUri);
+                    this.currentIssuerUri = normalizedIssuerUri;
                     this.currentClientId = clientId;
                     localRef = this.jwtProcessor;
                 }
@@ -62,29 +84,41 @@ public class DynamicOidcJwtProcessor {
         return localRef;
     }
 
-    private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails) throws Exception {
+    private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails, String normalizedIssuerUri) throws Exception {
         if (providerDetails == null) {
             throw new IllegalStateException("OIDC provider details are not configured in app settings.");
         }
 
-        String issuerUri = providerDetails.getIssuerUri();
-        if (issuerUri == null || issuerUri.isEmpty()) {
+        if (normalizedIssuerUri == null || normalizedIssuerUri.isEmpty()) {
             throw new IllegalStateException("OIDC issuer URI is not configured in app settings.");
         }
 
         String clientId = providerDetails.getClientId();
         if (clientId == null || clientId.isEmpty()) {
-            throw new IllegalStateException("OIDC client ID is not configured in app settings for issuer: " + issuerUri);
+            throw new IllegalStateException("OIDC client ID is not configured in app settings for issuer: " + normalizedIssuerUri);
         }
 
-        String discoveryUri = providerDetails.getIssuerUri() + "/.well-known/openid-configuration";
+        String discoveryUri = normalizedIssuerUri + "/.well-known/openid-configuration";
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
 
         var resourceRetriever = createResourceRetriever();
-        URI jwksUri = fetchJwksUri(discoveryUri, resourceRetriever);
+        DiscoveryConfiguration discoveryConfiguration = fetchDiscoveryConfiguration(discoveryUri, resourceRetriever);
 
-        log.debug("Configuring JWKS retrieval from {} with timeouts: connect={}ms, read={}ms, sizeLimit={}bytes",
-                jwksUri, oidcProperties.jwks().connectTimeout().toMillis(), oidcProperties.jwks().readTimeout().toMillis(), oidcProperties.jwks().sizeLimit());
+        if (discoveryConfiguration.issuer() != null) {
+            String discoveredIssuer = normalizeIssuerUri(discoveryConfiguration.issuer());
+            if (discoveredIssuer != null && !discoveredIssuer.isEmpty() && !Objects.equals(discoveredIssuer, normalizedIssuerUri)) {
+                log.warn("Issuer mismatch between configuration ({}) and discovery document ({}). Proceeding with configured issuer.", normalizedIssuerUri, discoveredIssuer);
+            }
+        }
+
+        URI jwksUri = discoveryConfiguration.jwksUri();
+
+    Set<JWSAlgorithm> supportedAlgorithms = discoveryConfiguration.supportedAlgorithms().isEmpty()
+        ? Set.of(JWSAlgorithm.RS256)
+                : discoveryConfiguration.supportedAlgorithms();
+
+        log.debug("Configuring JWKS retrieval from {} with timeouts: connect={}ms, read={}ms, sizeLimit={}bytes, algorithms={}",
+                jwksUri, oidcProperties.jwks().connectTimeout().toMillis(), oidcProperties.jwks().readTimeout().toMillis(), oidcProperties.jwks().sizeLimit(), supportedAlgorithms);
 
         var jwkSourceBuilder = JWKSourceBuilder
                 .create(jwksUri.toURL(), resourceRetriever)
@@ -97,22 +131,24 @@ public class DynamicOidcJwtProcessor {
 
         var jwkSource = jwkSourceBuilder.build();
 
-        var keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, jwkSource);
+        var keySelector = new JWSVerificationKeySelector<>(supportedAlgorithms, jwkSource);
         var processor = new DefaultJWTProcessor<>();
         processor.setJWSKeySelector(keySelector);
 
-        // Configure clock skew tolerance for timestamp validation (handles clock drift between services)
         long clockSkewSeconds = oidcProperties.jwt().clockSkew().toSeconds();
         log.debug("JWT clock skew tolerance set to {}s for handling clock drift between services", clockSkewSeconds);
 
         var expectedClaims = new JWTClaimsSet.Builder()
-                .issuer(issuerUri)
-                .audience(clientId)
+                .issuer(normalizedIssuerUri)
                 .build();
 
-        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp", "aud"));
+        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp"));
         claimsVerifier.setMaxClockSkew(Math.toIntExact(clockSkewSeconds));
-        processor.setJWTClaimsSetVerifier(claimsVerifier);
+
+        processor.setJWTClaimsSetVerifier((claims, context) -> {
+            claimsVerifier.verify(claims, context);
+            validateAudienceOrAzp(claims, clientId);
+        });
 
         return processor;
     }
@@ -132,7 +168,7 @@ public class DynamicOidcJwtProcessor {
         );
     }
 
-    private static URI fetchJwksUri(String discoveryUri, DefaultResourceRetriever retriever) {
+    private DiscoveryConfiguration fetchDiscoveryConfiguration(String discoveryUri, DefaultResourceRetriever retriever) {
         try {
             var resource = retriever.retrieveResource(URI.create(discoveryUri).toURL());
 
@@ -158,12 +194,100 @@ public class DynamicOidcJwtProcessor {
             }
 
             try {
-                return URI.create(jwksUriStr);
+                URI jwksUri = URI.create(jwksUriStr);
+                String discoveryIssuer = root.path("issuer").asText(null);
+                Set<JWSAlgorithm> algorithms = extractSupportedAlgorithms(root);
+                return new DiscoveryConfiguration(jwksUri, algorithms, discoveryIssuer);
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("Invalid JWKS URI format in OIDC discovery document from " + discoveryUri + ": " + jwksUriStr, e);
             }
         } catch (java.io.IOException e) {
             throw new IllegalStateException("Failed to fetch OIDC discovery document from " + discoveryUri, e);
+        }
+    }
+
+    private Set<JWSAlgorithm> extractSupportedAlgorithms(com.fasterxml.jackson.databind.JsonNode root) {
+        var algorithms = new LinkedHashSet<JWSAlgorithm>();
+        String[] fieldsToInspect = {
+                "id_token_signing_alg_values_supported",
+                "userinfo_signing_alg_values_supported",
+                "token_endpoint_auth_signing_alg_values_supported"
+        };
+
+        for (String field : fieldsToInspect) {
+            var node = root.path(field);
+            if (node != null && node.isArray()) {
+                node.forEach(value -> {
+                    if (value.isTextual()) {
+                        String algValue = value.asText();
+                        JWSAlgorithm algorithm = JWSAlgorithm.parse(algValue);
+                        if (KNOWN_JWS_ALGORITHMS.contains(algorithm)) {
+                            algorithms.add(algorithm);
+                        } else {
+                            log.warn("Ignoring unrecognised or unsupported JWS algorithm '{}' advertised by provider", algValue);
+                        }
+                    }
+                });
+            }
+        }
+
+        if (algorithms.isEmpty()) {
+            log.debug("Discovery document did not advertise signing algorithms; defaulting to {}", JWSAlgorithm.RS256);
+        }
+
+        return Collections.unmodifiableSet(algorithms);
+    }
+
+    private void validateAudienceOrAzp(JWTClaimsSet claims, String clientId) throws BadJWTException {
+        List<String> audiences = claims.getAudience();
+        if (audiences != null && audiences.contains(clientId)) {
+            return;
+        }
+
+        Object azp = claims.getClaim("azp");
+        if (azp instanceof String authorizedParty && clientId.equals(authorizedParty)) {
+            log.debug("JWT audience did not include client id {}, but azp matched. Accepting token.", clientId);
+            return;
+        }
+
+        throw new BadJWTException("JWT does not contain expected audience or azp for client '" + clientId + "'");
+    }
+
+    private static String normalizeIssuerUri(String issuerUri) {
+        if (issuerUri == null) {
+            return null;
+        }
+        int end = issuerUri.length();
+        while (end > 0 && issuerUri.charAt(end - 1) == '/') {
+            end--;
+        }
+        if (end == 0) {
+            return "/";
+        }
+        return end == issuerUri.length() ? issuerUri : issuerUri.substring(0, end);
+    }
+
+    private static final class DiscoveryConfiguration {
+        private final URI jwksUri;
+        private final Set<JWSAlgorithm> supportedAlgorithms;
+        private final String issuer;
+
+        private DiscoveryConfiguration(URI jwksUri, Set<JWSAlgorithm> supportedAlgorithms, String issuer) {
+            this.jwksUri = jwksUri;
+            this.supportedAlgorithms = supportedAlgorithms;
+            this.issuer = issuer;
+        }
+
+        private URI jwksUri() {
+            return jwksUri;
+        }
+
+        private Set<JWSAlgorithm> supportedAlgorithms() {
+            return supportedAlgorithms;
+        }
+
+        private String issuer() {
+            return issuer;
         }
     }
 
