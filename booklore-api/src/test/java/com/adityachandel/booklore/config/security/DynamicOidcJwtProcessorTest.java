@@ -51,12 +51,9 @@ class DynamicOidcJwtProcessorTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // 1. Generate a real RSA Key Pair for this test run
         rsaKey = new RSAKeyGenerator(2048)
                 .keyID("test-key-id")
                 .generate();
-
-        // 2. Create OidcProperties with test configuration
         OidcProperties oidcProperties = new OidcProperties(
                 new OidcProperties.Jwks(
                         Duration.ofSeconds(2),
@@ -84,13 +81,10 @@ class DynamicOidcJwtProcessorTest {
     void testHappyPathVerification() throws Exception {
         setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
 
-        // Create a valid signed JWT using our generated key
         String validToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000));
 
-        // EXECUTE
         var securityContext = jwtProcessor.getProcessor().process(validToken, null);
 
-        // VERIFY
         assertThat(securityContext).isNotNull();
     }
 
@@ -122,10 +116,8 @@ class DynamicOidcJwtProcessorTest {
     void testExpiredToken() {
         setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
 
-        // Create a token that expired 1 hour ago
         String expiredToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() - 3600000));
 
-        // EXECUTE & VERIFY
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(expiredToken, null))
                 .isInstanceOf(BadJWTException.class)
                 .hasMessageContaining("Expired JWT");
@@ -147,7 +139,6 @@ class DynamicOidcJwtProcessorTest {
     @Test
     @DisplayName("Should timeout when JWKS endpoint is slow (Regression Test)")
     void shouldTimeoutWhenJwksEndpointIsSlow() {
-        // Create processor with very short timeouts for this test
         OidcProperties shortTimeoutProperties = new OidcProperties(
                 new OidcProperties.Jwks(
                         Duration.ofMillis(500),
@@ -169,7 +160,6 @@ class DynamicOidcJwtProcessorTest {
 
         setupMockSettings("http://localhost:9999/auth/realms/slow-realm");
 
-        // Mock Discovery
         stubFor(get("/auth/realms/slow-realm/.well-known/openid-configuration")
                 .willReturn(okJson("""
                     {
@@ -178,10 +168,9 @@ class DynamicOidcJwtProcessorTest {
                     }
                 """)));
 
-        // Mock JWKS with delay
         stubFor(get("/auth/realms/slow-realm/jwks")
                 .willReturn(okJson(new JWKSet(rsaKey).toPublicJWKSet().toString())
-                .withFixedDelay(1000))); // Delay > Timeout
+                .withFixedDelay(1000)));
 
         String token = createSignedToken(rsaKey, "user", new Date());
 
@@ -203,7 +192,7 @@ class DynamicOidcJwtProcessorTest {
 
         String token = createSignedToken(rsaKey, "user", new Date());
 
-        // Hammer the endpoint
+        // Test multiple rapid requests to verify rate limiting behavior
         for (int i = 0; i < 5; i++) {
             assertThatThrownBy(() -> jwtProcessor.getProcessor().process(token, null))
                     .isInstanceOf(Exception.class)
@@ -253,11 +242,11 @@ class DynamicOidcJwtProcessorTest {
     void shouldRejectTokenWithWrongIssuer() throws Exception {
         setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
 
-        // Create token claiming to be from different issuer
+        // Create token with incorrect issuer
         String tokenWithWrongIssuer = createSignedTokenWithIssuer(
                 rsaKey, "user-123",
                 new Date(System.currentTimeMillis() + 10000),
-                "http://evil.com/realms/fake");
+                "http://malicious.example.com/realms/invalid");
 
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(tokenWithWrongIssuer, null))
                 .isInstanceOf(BadJWTException.class)
@@ -334,6 +323,73 @@ class DynamicOidcJwtProcessorTest {
                 .hasMessageContaining("Signed JWT rejected: Another algorithm expected, or no matching key(s) found");
     }
 
+    @Test
+    @DisplayName("Should handle discovery without issuer field")
+    void shouldHandleDiscoveryWithoutIssuerField() throws Exception {
+        String issuer = "http://localhost:9999/auth/realms/booklore";
+        setupOidcWireMock(issuer, null, issuer + "/protocol/openid-connect/certs", 0, List.of());
+
+        String validToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000));
+        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should accept tokens from Keycloak with standard RS256")
+    void shouldAcceptKeycloakStandardRs256() throws Exception {
+        String keycloakIssuer = "http://localhost:9999/auth/realms/keycloak";
+        setupOidcWireMock(keycloakIssuer, keycloakIssuer, keycloakIssuer + "/protocol/openid-connect/certs", 0,
+                List.of("RS256", "PS256", "ES256"));
+
+        String validToken = createSignedTokenWithIssuer(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000), keycloakIssuer);
+        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should accept tokens from Authentik with standard configuration")
+    void shouldAcceptAuthentikStandardToken() throws Exception {
+        String authentikIssuer = "http://localhost:9999/application/o/booklore";
+        setupOidcWireMock(authentikIssuer + "/", authentikIssuer, authentikIssuer + "/.well-known/jwks.json", 0,
+                List.of("RS256"));
+
+        String validToken = createSignedTokenWithIssuer(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000), authentikIssuer);
+        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should accept fallback RS256 from Authelia without algorithm advertisement")
+    void shouldAcceptAutheliaSilentRs256Fallback() throws Exception {
+        String autheliaIssuer = "http://localhost:9999";
+        setupOidcWireMock(autheliaIssuer, autheliaIssuer, autheliaIssuer + "/.well-known/oauth-authorization-server/jwks", 0,
+                List.of());
+
+        String validToken = createSignedTokenWithIssuer(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000), autheliaIssuer);
+        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+    }
+
+    @Test
+    @DisplayName("All providers should reject expired tokens")
+    void shouldRejectExpiredTokensAcrossAllProviders() throws Exception {
+        setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
+
+        String expiredToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() - 3600000));
+
+        assertThatThrownBy(() -> jwtProcessor.getProcessor().process(expiredToken, null))
+                .isInstanceOf(BadJWTException.class)
+                .hasMessageContaining("Expired JWT");
+    }
+
+    @Test
+    @DisplayName("All providers should reject tokens from wrong issuer")
+    void shouldRejectWrongIssuerAcrossAllProviders() throws Exception {
+        setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
+
+        String wrongIssuerToken = createSignedTokenWithIssuer(rsaKey, "user-123",
+                new Date(System.currentTimeMillis() + 10000), "http://evil.com/realms/fake");
+
+        assertThatThrownBy(() -> jwtProcessor.getProcessor().process(wrongIssuerToken, null))
+                .isInstanceOf(BadJWTException.class)
+                .hasMessageContaining("JWT iss claim");
+    }
 
     private void setupMockSettings(String issuerUri) {
         when(appSettingService.getAppSettings()).thenReturn(createAppSettings(issuerUri, DEFAULT_CLIENT_ID));
