@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@WireMockTest(httpPort = 9999) // We run a fake Keycloak on port 9999
+@WireMockTest(httpPort = 9999)
 class OidcTimeoutTest {
 
     @Mock
@@ -47,8 +47,6 @@ class OidcTimeoutTest {
         );
 
         jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties);
-
-        // Mock the app settings to return our test issuer URI
         OidcProviderDetails providerDetails = new OidcProviderDetails();
         providerDetails.setIssuerUri("http://localhost:9999/auth/realms/booklore");
         providerDetails.setClientId("booklore-client");
@@ -61,7 +59,6 @@ class OidcTimeoutTest {
 
     @Test
     void shouldTimeoutWhenJwksEndpointIsSlow() {
-        // 1. Mock the OIDC Discovery endpoint (needs to return the JWKS URL)
         stubFor(get("/auth/realms/booklore/.well-known/openid-configuration")
             .willReturn(okJson("""
                 {
@@ -70,34 +67,27 @@ class OidcTimeoutTest {
                 }
             """)));
 
-        // 2. Mock the JWKS endpoint with a DELAY
-        // We tell WireMock: "When you get this request, wait 2000ms before replying"
         stubFor(get("/auth/realms/booklore/protocol/openid-connect/certs")
             .willReturn(okJson("{\"keys\": []}")
-            .withFixedDelay(2000))); // <--- THE TRAP
+            .withFixedDelay(2000)));
 
-        // 3. Run the code and expect it to fail FAST (at ~1000ms), not SLOW (at 2000ms)
-        // Use a minimal valid JWT format: header.payload.signature
         String dummyJwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.dummy";
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(dummyJwt, null))
-            .hasCauseInstanceOf(java.net.SocketTimeoutException.class) // The proof your fix works
+            .hasCauseInstanceOf(java.net.SocketTimeoutException.class)
             .hasMessageContaining("Read timed out");
     }
 
     @Test
     void shouldNotThrowRateLimitExceptionOnMultipleFailures() {
-        // Setup: Discovery works, but JWKS always fails (500 error) immediately
         stubFor(get("/auth/realms/booklore/.well-known/openid-configuration")
             .willReturn(okJson("{\"jwks_uri\": \"http://localhost:9999/jwks\"}")));
 
-        stubFor(get("/jwks").willReturn(serverError())); // 500 Internal Server Error
+        stubFor(get("/jwks").willReturn(serverError()));
 
-        // Hammer the endpoint 5 times rapidly
         String testJwt = "eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIn0.dummy";
         for (int i = 0; i < 5; i++) {
             assertThatThrownBy(() -> jwtProcessor.getProcessor().process(testJwt, null))
                 .isInstanceOf(Exception.class)
-                // Crucial: assert it is NOT a RateLimitReachedException
                 .hasRootCauseInstanceOf(java.io.IOException.class);
         }
     }
