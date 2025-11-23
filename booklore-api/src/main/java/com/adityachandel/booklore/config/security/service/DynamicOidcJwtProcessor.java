@@ -23,6 +23,7 @@ import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -86,6 +87,65 @@ public class DynamicOidcJwtProcessor {
             }
         }
         return localRef;
+    }
+
+    private void logTokenMetadata(String token) {
+        if (!log.isDebugEnabled()) return;
+
+        try {
+            // Parse without verifying signature just for inspection
+            var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
+            var claims = jwt.getJWTClaimsSet();
+            var header = jwt.getHeader();
+
+            // Calculate time deltas for easier debugging
+            var now = new Date();
+            long secondsLeft = claims.getExpirationTime() != null
+                ? (claims.getExpirationTime().getTime() - now.getTime()) / 1000
+                : 0;
+
+            log.debug("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub=***, aud={}, azp={}, exp_in={}s]",
+                    header.getAlgorithm(),
+                    header.getKeyID(),
+                    claims.getIssuer(),
+                    // distinct log for audiences list
+                    claims.getAudience(),
+                    claims.getClaim("azp"),
+                    secondsLeft
+            );
+
+            // Check for potential clock skew issues immediately
+            if (secondsLeft < 0) {
+                log.warn("Token received is already expired by {} seconds. Check server clock sync.", Math.abs(secondsLeft));
+            }
+
+        } catch (Exception e) {
+            log.warn("Received token that could not be parsed for logging: {}", e.getMessage());
+        }
+    }
+
+    public JWTClaimsSet process(String token) throws Exception {
+        // 1. Log safe metadata
+        logTokenMetadata(token);
+
+        try {
+            // 2. Execute verification
+            return getProcessor().process(token, null);
+        } catch (BadJWTException e) {
+            // 3. Contextualize the error without leaking the token
+            log.error("JWT Verification Failed: {}", e.getMessage());
+
+            // Add hints for common configuration errors
+            if (e.getMessage().contains("Issuer")) {
+                log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", currentIssuerUri);
+            } else if (e.getMessage().contains("Audience")) {
+                 log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", currentClientId);
+            }
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error processing JWT: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails, String normalizedIssuerUri) throws Exception {
@@ -201,6 +261,16 @@ public class DynamicOidcJwtProcessor {
                 URI jwksUri = URI.create(jwksUriStr);
                 String discoveryIssuer = root.path("issuer").asText(null);
                 Set<JWSAlgorithm> algorithms = extractSupportedAlgorithms(root);
+
+                // --- ADD THIS LOGGING ---
+                log.info("OIDC Discovery Loaded from {}: Issuer='{}', JWKS='{}', Algs={}",
+                         discoveryUri, discoveryIssuer, jwksUriStr, algorithms);
+
+                if (algorithms.isEmpty()) {
+                     log.warn("Provider did not advertise supported algorithms. Defaulting to RS256. If using Authentik, check 'Signing Key' settings.");
+                }
+                // ------------------------
+
                 return new DiscoveryConfiguration(jwksUri, algorithms, discoveryIssuer);
             } catch (IllegalArgumentException e) {
                 throw new IllegalStateException("Invalid JWKS URI format in OIDC discovery document from " + discoveryUri + ": " + jwksUriStr, e);

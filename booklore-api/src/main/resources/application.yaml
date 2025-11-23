@@ -97,6 +97,8 @@ logging:
   level:
     root: ${ROOT_LOG_LEVEL:INFO}
     com.adityachandel.booklore: ${LOG_LEVEL:INFO}
+    com.adityachandel.booklore.config.security: ${OIDC_LOG_LEVEL:INFO}
+    com.nimbusds.jose: INFO
     org.apache.fontbox: ERROR
     org.apache.pdfbox: ERROR
     org.quartz.core.QuartzScheduler: WARN

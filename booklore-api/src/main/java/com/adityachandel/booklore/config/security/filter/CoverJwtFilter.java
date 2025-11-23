@@ -73,8 +73,7 @@ public class CoverJwtFilter extends OncePerRequestFilter {
     }
 
     private void authenticateOidcUser(String token, HttpServletRequest request) throws Exception {
-        var processor = dynamicOidcJwtProcessor.getProcessor();
-        var claimsSet = processor.process(token, null);
+        var claimsSet = dynamicOidcJwtProcessor.process(token);
 
         if (claimsSet.getExpirationTime() == null || claimsSet.getExpirationTime().toInstant().isBefore(Instant.now())) {
             throw new RuntimeException("OIDC token expired or invalid");
