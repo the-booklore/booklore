@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Set;
 
 @Slf4j
@@ -33,17 +34,27 @@ public class DynamicOidcJwtProcessor {
 
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
     private volatile String currentIssuerUri;
+    private volatile String currentClientId;
 
     public ConfigurableJWTProcessor<SecurityContext> getProcessor() throws Exception {
-        String issuerUri = appSettingService.getAppSettings().getOidcProviderDetails().getIssuerUri();
+        var appSettings = appSettingService.getAppSettings();
+        OidcProviderDetails providerDetails = appSettings.getOidcProviderDetails();
+
+        if (providerDetails == null) {
+            throw new IllegalStateException("OIDC provider details are not configured in app settings");
+        }
+
+        String issuerUri = providerDetails.getIssuerUri();
+        String clientId = providerDetails.getClientId();
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
-        if (localRef == null || !issuerUri.equals(currentIssuerUri)) {
+        if (localRef == null || !issuerUri.equals(currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
             synchronized (this) {
                 localRef = jwtProcessor;
-                if (localRef == null || !issuerUri.equals(currentIssuerUri)) {
-                    this.jwtProcessor = buildProcessor(issuerUri);
+                if (localRef == null || !issuerUri.equals(currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
+                    this.jwtProcessor = buildProcessor(providerDetails);
                     this.currentIssuerUri = issuerUri;
+                    this.currentClientId = clientId;
                     localRef = this.jwtProcessor;
                 }
             }
@@ -51,11 +62,19 @@ public class DynamicOidcJwtProcessor {
         return localRef;
     }
 
-    private ConfigurableJWTProcessor<SecurityContext> buildProcessor(String issuerUri) throws Exception {
-        OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
+    private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails) throws Exception {
+        if (providerDetails == null) {
+            throw new IllegalStateException("OIDC provider details are not configured in app settings.");
+        }
 
-        if (providerDetails == null || providerDetails.getIssuerUri() == null || providerDetails.getIssuerUri().isEmpty()) {
-            throw new IllegalStateException("OIDC issuer URI is not configured in app settings for issuer: " + issuerUri);
+        String issuerUri = providerDetails.getIssuerUri();
+        if (issuerUri == null || issuerUri.isEmpty()) {
+            throw new IllegalStateException("OIDC issuer URI is not configured in app settings.");
+        }
+
+        String clientId = providerDetails.getClientId();
+        if (clientId == null || clientId.isEmpty()) {
+            throw new IllegalStateException("OIDC client ID is not configured in app settings for issuer: " + issuerUri);
         }
 
         String discoveryUri = providerDetails.getIssuerUri() + "/.well-known/openid-configuration";
@@ -81,14 +100,14 @@ public class DynamicOidcJwtProcessor {
         var keySelector = new JWSVerificationKeySelector<>(JWSAlgorithm.RS256, jwkSource);
         var processor = new DefaultJWTProcessor<>();
         processor.setJWSKeySelector(keySelector);
-        
+
         // Configure clock skew tolerance for timestamp validation (handles clock drift between services)
         long clockSkewSeconds = oidcProperties.jwt().clockSkew().toSeconds();
         log.debug("JWT clock skew tolerance set to {}s for handling clock drift between services", clockSkewSeconds);
 
         var expectedClaims = new JWTClaimsSet.Builder()
                 .issuer(issuerUri)
-                .audience(appSettingService.getAppSettings().getOidcProviderDetails().getClientId())
+                .audience(clientId)
                 .build();
 
         var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp", "aud"));
@@ -101,26 +120,16 @@ public class DynamicOidcJwtProcessor {
     private DefaultResourceRetriever createResourceRetriever() {
         var jwks = oidcProperties.jwks();
 
-        // Check if proxy is configured
-        if (jwks.proxyHost() != null && !jwks.proxyHost().isEmpty() && jwks.proxyPort() != null) {
-            log.debug("Configuring JWKS resource retriever with proxy: {}:{}", jwks.proxyHost(), jwks.proxyPort());
-            return new ProxyResourceRetriever(
-                    (int) jwks.connectTimeout().toMillis(),
-                    (int) jwks.readTimeout().toMillis(),
-                    jwks.sizeLimit(),
-                    jwks.proxyHost(),
-                    jwks.proxyPort(),
-                    jwks.userAgent(),
-                    jwks.proxyUser(),
-                    jwks.proxyPassword()
-            );
-        } else {
-            return new DefaultResourceRetriever(
-                    (int) jwks.connectTimeout().toMillis(),
-                    (int) jwks.readTimeout().toMillis(),
-                    jwks.sizeLimit()
-            );
-        }
+        return new ConfigurableResourceRetriever(
+                (int) jwks.connectTimeout().toMillis(),
+                (int) jwks.readTimeout().toMillis(),
+                jwks.sizeLimit(),
+                jwks.proxyHost(),
+                jwks.proxyPort(),
+                jwks.userAgent(),
+                jwks.proxyUser(),
+                jwks.proxyPassword()
+        );
     }
 
     private static URI fetchJwksUri(String discoveryUri, DefaultResourceRetriever retriever) {
@@ -158,15 +167,15 @@ public class DynamicOidcJwtProcessor {
         }
     }
 
-    private static class ProxyResourceRetriever extends DefaultResourceRetriever {
+    private static class ConfigurableResourceRetriever extends DefaultResourceRetriever {
         private final String proxyHost;
-        private final int proxyPort;
+        private final Integer proxyPort;
         private final String userAgent;
         private final String proxyUser;
         private final String proxyPassword;
 
-        public ProxyResourceRetriever(int connectTimeout, int readTimeout, int sizeLimit, String proxyHost, int proxyPort,
-                                    String userAgent, String proxyUser, String proxyPassword) {
+        public ConfigurableResourceRetriever(int connectTimeout, int readTimeout, int sizeLimit, String proxyHost, Integer proxyPort,
+                                             String userAgent, String proxyUser, String proxyPassword) {
             super(connectTimeout, readTimeout, sizeLimit);
             this.proxyHost = proxyHost;
             this.proxyPort = proxyPort;
@@ -177,8 +186,13 @@ public class DynamicOidcJwtProcessor {
 
         @Override
         public Resource retrieveResource(URL url) throws IOException {
-            Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection(proxy);
+            HttpURLConnection connection;
+            if (proxyHost != null && !proxyHost.isEmpty() && proxyPort != null) {
+                Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+                connection = (HttpURLConnection) url.openConnection(proxy);
+            } else {
+                connection = (HttpURLConnection) url.openConnection();
+            }
 
             connection.setConnectTimeout(getConnectTimeout());
             connection.setReadTimeout(getReadTimeout());

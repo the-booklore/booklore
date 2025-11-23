@@ -11,9 +11,11 @@ import com.nimbusds.jose.crypto.RSASSASigner;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.BadJWTException;
+import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +35,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @WireMockTest(httpPort = 9999)
 class DynamicOidcJwtProcessorTest {
+
+    private static final String DEFAULT_CLIENT_ID = "booklore-client";
 
     @Mock
     private AppSettingService appSettingService;
@@ -85,6 +89,29 @@ class DynamicOidcJwtProcessorTest {
 
         // VERIFY
         assertThat(securityContext).isNotNull();
+    }
+
+    @Test
+    @DisplayName("Should rebuild processor when client ID changes")
+    void shouldRebuildProcessorWhenClientIdChanges() throws Exception {
+        String issuer = "http://localhost:9999/auth/realms/booklore";
+        setupOidcWireMock(issuer, 0);
+
+        AppSettings initialSettings = createAppSettings(issuer, DEFAULT_CLIENT_ID);
+        AppSettings updatedSettings = createAppSettings(issuer, "booklore-client-updated");
+
+        when(appSettingService.getAppSettings()).thenReturn(initialSettings, updatedSettings, updatedSettings);
+
+        ConfigurableJWTProcessor<SecurityContext> initialProcessor = jwtProcessor.getProcessor();
+        String tokenForInitialClient = createSignedTokenWithAudience(rsaKey, "user-123",
+                new Date(System.currentTimeMillis() + 10_000L), DEFAULT_CLIENT_ID);
+        assertThat(initialProcessor.process(tokenForInitialClient, null)).isNotNull();
+
+        ConfigurableJWTProcessor<SecurityContext> updatedProcessor = jwtProcessor.getProcessor();
+        String tokenForUpdatedClient = createSignedTokenWithAudience(rsaKey, "user-123",
+                new Date(System.currentTimeMillis() + 10_000L), "booklore-client-updated");
+
+        assertThat(updatedProcessor.process(tokenForUpdatedClient, null)).isNotNull();
     }
 
     @Test
@@ -249,12 +276,7 @@ class DynamicOidcJwtProcessorTest {
 
 
     private void setupMockSettings(String issuerUri) {
-        OidcProviderDetails providerDetails = new OidcProviderDetails();
-        providerDetails.setIssuerUri(issuerUri);
-        providerDetails.setClientId("booklore-client");
-        when(appSettingService.getAppSettings()).thenReturn(
-                AppSettings.builder().oidcProviderDetails(providerDetails).autoBookSearch(false).similarBookRecommendation(false).opdsServerEnabled(false).remoteAuthEnabled(false).bookDeletionEnabled(false).metadataDownloadOnBookdrop(false).oidcEnabled(true).build()
-        );
+        when(appSettingService.getAppSettings()).thenReturn(createAppSettings(issuerUri, DEFAULT_CLIENT_ID));
     }
 
     private void setupOidcWireMock(String issuer, int delayMs) {
@@ -281,7 +303,7 @@ class DynamicOidcJwtProcessorTest {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(subject)
                     .issuer("http://localhost:9999/auth/realms/booklore") // Must match Mock
-                    .audience("booklore-client")
+                    .audience(DEFAULT_CLIENT_ID)
                     .expirationTime(expiration)
                     .build();
 
@@ -347,7 +369,7 @@ class DynamicOidcJwtProcessorTest {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(subject)
                     .issuer("http://localhost:9999/auth/realms/booklore")
-                    .audience("booklore-client")
+                    .audience(DEFAULT_CLIENT_ID)
                     .expirationTime(expiration)
                     .build();
 
@@ -368,7 +390,7 @@ class DynamicOidcJwtProcessorTest {
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(subject)
                     .issuer(issuer)
-                    .audience("booklore-client")
+                    .audience(DEFAULT_CLIENT_ID)
                     .expirationTime(expiration)
                     .build();
 
@@ -381,5 +403,22 @@ class DynamicOidcJwtProcessorTest {
         } catch (Exception e) {
             throw new RuntimeException("Failed to sign test token with custom issuer", e);
         }
+    }
+
+    private AppSettings createAppSettings(String issuerUri, String clientId) {
+        OidcProviderDetails providerDetails = new OidcProviderDetails();
+        providerDetails.setIssuerUri(issuerUri);
+        providerDetails.setClientId(clientId);
+
+        return AppSettings.builder()
+                .oidcProviderDetails(providerDetails)
+                .autoBookSearch(false)
+                .similarBookRecommendation(false)
+                .opdsServerEnabled(false)
+                .remoteAuthEnabled(false)
+                .bookDeletionEnabled(false)
+                .metadataDownloadOnBookdrop(false)
+                .oidcEnabled(true)
+                .build();
     }
 }
