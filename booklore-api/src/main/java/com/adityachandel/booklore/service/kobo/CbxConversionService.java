@@ -31,6 +31,36 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for converting comic book archive files (CBX) to EPUB format.
+ * <p>
+ * This service supports the following comic book archive formats:
+ * <ul>
+ *   <li><b>CBZ</b> - Comic book ZIP archive</li>
+ *   <li><b>CBR</b> - Comic book RAR archive</li>
+ *   <li><b>CB7</b> - Comic book 7z archive</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Supported image formats within archives: JPG, JPEG, PNG, WEBP, GIF, BMP
+ * </p>
+ * 
+ * <h3>Memory Considerations</h3>
+ * <p>
+ * <b>Warning:</b> This conversion process loads all images from the comic archive into memory
+ * simultaneously, which can consume significant heap space for large comics. Comics with more 
+ * than 500 pages may cause memory issues on systems with limited heap space. Consider adjusting
+ * JVM heap settings (-Xmx) if processing large comic collections.
+ * </p>
+ * 
+ * <h3>Size Limits</h3>
+ * <ul>
+ *   <li>Maximum individual image size: 50 MB</li>
+ *   <li>Comics with 500+ images will trigger a memory warning</li>
+ * </ul>
+ * 
+ * @see KepubConversionService
+ */
 @Slf4j
 @Service
 public class CbxConversionService {
@@ -44,6 +74,7 @@ public class CbxConversionService {
     private static final String COVER_IMAGE_PATH = "OEBPS/Images/cover.jpg";
     private static final String MIMETYPE_CONTENT = "application/epub+zip";
     private static final long MAX_IMAGE_SIZE_BYTES = 50L * 1024 * 1024;
+    private static final int WARNING_IMAGE_COUNT_THRESHOLD = 500;
     
     private final Configuration freemarkerConfig;
 
@@ -54,6 +85,32 @@ public class CbxConversionService {
     public record EpubContentFileGroup(String contentKey, String imagePath, String htmlPath) {
     }
 
+    /**
+     * Converts a comic book archive (CBZ, CBR, or CB7) to EPUB format.
+     * <p>
+     * The conversion process:
+     * <ol>
+     *   <li>Extracts all images from the archive</li>
+     *   <li>Creates an EPUB structure with one XHTML page per image, excluding the cover image</li>
+     *   <li>Includes proper EPUB metadata from the book entity</li>
+     *   <li>Compresses images to JPEG format (85% quality)</li>
+     * </ol>
+     * </p>
+     * <p>
+     * <b>Note:</b> All images are loaded into memory during conversion. Large comics
+     * (500+ pages) may require increased JVM heap space.
+     * </p>
+     * 
+     * @param cbxFile the comic book archive file (must be CBZ, CBR, or CB7)
+     * @param tempDir the temporary directory where the output EPUB will be created
+     * @param bookEntity the book metadata to include in the EPUB
+     * @return the converted EPUB file
+     * @throws IOException if file I/O operations fail
+     * @throws TemplateException if EPUB template processing fails
+     * @throws RarException if RAR extraction fails (for CBR files)
+     * @throws IllegalArgumentException if the file format is not supported
+     * @throws IllegalStateException if no valid images are found in the archive
+     */
     public File convertCbxToEpub(File cbxFile, File tempDir, BookEntity bookEntity) 
             throws IOException, TemplateException, RarException {
         validateInputs(cbxFile, tempDir);
@@ -77,6 +134,10 @@ public class CbxConversionService {
         List<BufferedImage> images = extractImagesFromCbx(cbxFile);
         if (images.isEmpty()) {
             throw new IllegalStateException("No valid images found in CBX file: " + cbxFile.getName());
+        }
+
+        if (images.size() > WARNING_IMAGE_COUNT_THRESHOLD) {
+            log.warn("CBX file contains {} images, which may cause memory issues on systems with limited heap space", images.size());
         }
 
         log.debug("Extracted {} images from CBX file", images.size());
@@ -354,7 +415,12 @@ public class CbxConversionService {
         
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         
-        ImageWriter writer = ImageIO.getImageWritersByFormatName("jpg").next();
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+        if (!writers.hasNext()) {
+            throw new IOException("No JPEG image writer available");
+        }
+        ImageWriter writer = writers.next();
+
         ImageWriteParam param = writer.getDefaultWriteParam();
         
         if (param.canWriteCompressed()) {
@@ -544,7 +610,7 @@ public class CbxConversionService {
         Path targetPath = Paths.get(fullPath);
         
         if (targetPath.startsWith(oebpsPath)) {
-            return oebpsPath.relativize(targetPath).toString();
+            return oebpsPath.relativize(targetPath).toString().replace('\\', '/');
         }
         
         return fullPath;
