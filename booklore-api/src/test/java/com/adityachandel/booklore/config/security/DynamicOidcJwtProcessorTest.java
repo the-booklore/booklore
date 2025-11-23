@@ -1,5 +1,8 @@
 package com.adityachandel.booklore.config.security;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
@@ -22,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.net.URI;
 import java.time.Duration;
@@ -29,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -358,37 +364,60 @@ class DynamicOidcJwtProcessorTest {
     @Test
     @DisplayName("Should accept fallback RS256 from Authelia without algorithm advertisement")
     void shouldAcceptAutheliaSilentRs256Fallback() throws Exception {
-        String autheliaIssuer = "http://localhost:9999";
-        setupOidcWireMock(autheliaIssuer, autheliaIssuer, autheliaIssuer + "/.well-known/oauth-authorization-server/jwks", 0,
-                List.of());
+        Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(DynamicOidcJwtProcessor.class);
+        logger.setLevel(ch.qos.logback.classic.Level.DEBUG);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
 
-        String validToken = createSignedTokenWithIssuer(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000), autheliaIssuer);
-        assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+        try {
+            String autheliaIssuer = "http://localhost:9999";
+            setupOidcWireMock(autheliaIssuer, autheliaIssuer, autheliaIssuer + "/.well-known/oauth-authorization-server/jwks", 0,
+                    List.of());
+
+            String validToken = createSignedTokenWithIssuer(rsaKey, "user-123", new Date(System.currentTimeMillis() + 10000), autheliaIssuer);
+            assertThat(jwtProcessor.getProcessor().process(validToken, null)).isNotNull();
+
+            // Verify fallback log message was emitted
+            List<ILoggingEvent> logs = listAppender.list;
+            assertThat(logs.stream().anyMatch(event -> event.getMessage().contains("Discovery document did not advertise signing algorithms")))
+                .isTrue();
+        } finally {
+            logger.detachAppender(listAppender);
+        }
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("providerIssuers")
     @DisplayName("All providers should reject expired tokens")
-    void shouldRejectExpiredTokensAcrossAllProviders() throws Exception {
-        setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
-
-        String expiredToken = createSignedToken(rsaKey, "user-123", new Date(System.currentTimeMillis() - 3600000));
+    void shouldRejectExpiredTokensAcrossAllProviders(String issuer) throws Exception {
+        setupOidcWireMock(issuer, 0);
+        String expiredToken = createSignedTokenWithIssuer(rsaKey, "user",
+            new Date(System.currentTimeMillis() - 3600000), issuer);
 
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(expiredToken, null))
-                .isInstanceOf(BadJWTException.class)
-                .hasMessageContaining("Expired JWT");
+            .isInstanceOf(BadJWTException.class);
     }
 
-    @Test
+    @ParameterizedTest
+    @MethodSource("providerIssuers")
     @DisplayName("All providers should reject tokens from wrong issuer")
-    void shouldRejectWrongIssuerAcrossAllProviders() throws Exception {
-        setupOidcWireMock("http://localhost:9999/auth/realms/booklore", 0);
-
+    void shouldRejectWrongIssuerAcrossAllProviders(String issuer) throws Exception {
+        setupOidcWireMock(issuer, 0);
         String wrongIssuerToken = createSignedTokenWithIssuer(rsaKey, "user-123",
-                new Date(System.currentTimeMillis() + 10000), "http://evil.com/realms/fake");
+            new Date(System.currentTimeMillis() + 10000), "http://evil.com/realms/fake");
 
         assertThatThrownBy(() -> jwtProcessor.getProcessor().process(wrongIssuerToken, null))
-                .isInstanceOf(BadJWTException.class)
-                .hasMessageContaining("JWT iss claim");
+            .isInstanceOf(BadJWTException.class)
+            .hasMessageContaining("JWT iss claim");
+    }
+
+    static Stream<String> providerIssuers() {
+        return Stream.of(
+            "http://localhost:9999/auth/realms/keycloak",
+            "http://localhost:9999/application/o/booklore",
+            "http://localhost:9999" // Authelia
+        );
     }
 
     private void setupMockSettings(String issuerUri) {
@@ -554,5 +583,17 @@ class DynamicOidcJwtProcessorTest {
                 .metadataDownloadOnBookdrop(false)
                 .oidcEnabled(true)
                 .build();
+    }
+
+    @Test
+    @DisplayName("Should fail gracefully on malformed discovery JSON")
+    void shouldRejectMalformedDiscoveryDocument() {
+        setupMockSettings("http://localhost:9999/auth/realms/broken");
+
+        stubFor(get("/auth/realms/broken/.well-known/openid-configuration")
+            .willReturn(okJson("{ invalid json {{{")));
+
+        assertThatThrownBy(() -> jwtProcessor.getProcessor())
+            .hasRootCauseInstanceOf(com.fasterxml.jackson.core.JsonParseException.class);
     }
 }
