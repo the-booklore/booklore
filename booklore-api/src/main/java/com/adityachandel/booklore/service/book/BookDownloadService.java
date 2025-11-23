@@ -100,13 +100,15 @@ public class BookDownloadService {
             File inputFile = new File(FileUtils.getBookFullPath(bookEntity));
             File fileToSend = inputFile;
 
+            if (convertCbx || asKepub) {
+                tempDir = Files.createTempDirectory("kobo-conversion");
+            }
+
             if (convertCbx) {
-                tempDir = Files.createTempDirectory("cbx-epub-output");
                 fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity);
             }
 
             if (asKepub) {
-                tempDir = Files.createTempDirectory("kepub-output");
                 fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile());
             }
 
