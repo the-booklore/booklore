@@ -67,6 +67,9 @@ public class DynamicOidcJwtProcessor {
 
         String issuerUri = providerDetails.getIssuerUri();
         String normalizedIssuerUri = normalizeIssuerUri(issuerUri);
+        if (!Objects.equals(issuerUri, normalizedIssuerUri)) {
+            log.debug("Normalized issuer URI from '{}' to '{}'", issuerUri, normalizedIssuerUri);
+        }
         String clientId = providerDetails.getClientId();
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
@@ -74,6 +77,7 @@ public class DynamicOidcJwtProcessor {
             synchronized (this) {
                 localRef = jwtProcessor;
                 if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
+                    log.info("OIDC configuration change detected (Old Issuer: {}, New Issuer: {}). Rebuilding JWT Processor.", currentIssuerUri, normalizedIssuerUri);
                     this.jwtProcessor = buildProcessor(providerDetails, normalizedIssuerUri);
                     this.currentIssuerUri = normalizedIssuerUri;
                     this.currentClientId = clientId;
@@ -250,6 +254,8 @@ public class DynamicOidcJwtProcessor {
             return;
         }
 
+        log.warn("Token validation failed: Audience mismatch. Expected ClientID: '{}'. Token Claims - aud: {}, azp: {}",
+            clientId, audiences, azp);
         throw new BadJWTException("JWT does not contain expected audience or azp for client '" + clientId + "'");
     }
 
@@ -312,9 +318,11 @@ public class DynamicOidcJwtProcessor {
         public Resource retrieveResource(URL url) throws IOException {
             HttpURLConnection connection;
             if (proxyHost != null && !proxyHost.isEmpty() && proxyPort != null) {
+                log.debug("Opening connection to {} via proxy {}:{}", url, proxyHost, proxyPort);
                 Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
                 connection = (HttpURLConnection) url.openConnection(proxy);
             } else {
+                log.debug("Opening direct connection to {}", url);
                 connection = (HttpURLConnection) url.openConnection();
             }
 
@@ -358,6 +366,7 @@ public class DynamicOidcJwtProcessor {
 
                     byte[] content = buffer.toByteArray();
                     String contentType = connection.getContentType();
+                    log.debug("Successfully retrieved resource from {}. Size: {} bytes, Content-Type: {}", url, content.length, contentType);
                     return new Resource(new String(content, StandardCharsets.UTF_8),
                         contentType != null ? contentType : "application/octet-stream");
                 }
