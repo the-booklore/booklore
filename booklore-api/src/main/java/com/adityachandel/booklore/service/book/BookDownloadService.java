@@ -92,23 +92,23 @@ public class BookDownloadService {
             throw ApiError.GENERIC_BAD_REQUEST.createException("Kobo settings not found.");
         }
 
-        boolean asKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
-        boolean convertCbx = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
+        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
+        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
 
         Path tempDir = null;
         try {
             File inputFile = new File(FileUtils.getBookFullPath(bookEntity));
             File fileToSend = inputFile;
 
-            if (convertCbx || asKepub) {
+            if (convertCbxToEpub || convertEpubToKepub) {
                 tempDir = Files.createTempDirectory("kobo-conversion");
             }
 
-            if (convertCbx) {
+            if (convertCbxToEpub) {
                 fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity);
             }
 
-            if (asKepub) {
+            if (convertEpubToKepub) {
                 fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile());
             }
 
