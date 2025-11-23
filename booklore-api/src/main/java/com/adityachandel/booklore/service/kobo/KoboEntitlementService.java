@@ -187,7 +187,7 @@ public class KoboEntitlementService {
             if (isEpubFile && koboSettings.isConvertToKepub()) {
                 bookFormat = KoboBookFormat.KEPUB;
             } else if (isCbxFile && koboSettings.isConvertCbxToEpub()) {
-                bookFormat = koboSettings.isConvertToKepub() ? KoboBookFormat.KEPUB : KoboBookFormat.EPUB3;
+                bookFormat = KoboBookFormat.EPUB3;
             }
         }
 
