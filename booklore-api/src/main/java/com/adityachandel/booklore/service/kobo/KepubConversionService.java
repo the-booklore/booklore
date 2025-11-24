@@ -121,9 +121,12 @@ public class KepubConversionService {
     }
 
     private String readProcessOutput(InputStream inputStream) {
-        return new BufferedReader(new InputStreamReader(inputStream))
-                .lines()
-                .collect(Collectors.joining("\n"));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+            return reader.lines().collect(Collectors.joining("\n"));
+        } catch (Exception e) {
+            log.warn("Error reading process output: {}", e.getMessage());
+            return "";
+        }
     }
 
     private void logProcessResults(int exitCode, String output, String error) {
