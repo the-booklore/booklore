@@ -1,44 +1,51 @@
-# Stage 1: Build the Angular app
-FROM node:22-alpine AS angular-build
+# syntax=docker/dockerfile:1.7
 
-WORKDIR /angular-app
+########################
+# Stage 1: Build UI
+########################
+FROM node:22 AS ui-build
+WORKDIR /workspace
 
-COPY ./booklore-ui/package.json ./booklore-ui/package-lock.json ./
-RUN npm config set registry http://registry.npmjs.org/ \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm install --force
-COPY ./booklore-ui /angular-app/
+COPY booklore-ui/package*.json ./booklore-ui/
+RUN cd booklore-ui && npm ci --force
 
-RUN npm run build --configuration=production
+COPY booklore-ui ./booklore-ui
+RUN cd booklore-ui && npm run build --configuration=production
 
-# Stage 2: Build the Spring Boot app with Gradle
-FROM gradle:9.1-jdk25-alpine AS springboot-build
 
-WORKDIR /springboot-app
+########################
+# Stage 2: Build API
+########################
+FROM eclipse-temurin:25-jdk AS api-build
+WORKDIR /workspace/booklore-api
 
-COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle /springboot-app/
-COPY ./booklore-api/src /springboot-app/src
+COPY booklore-api/gradlew ./gradlew
+COPY booklore-api/gradle ./gradle
+COPY booklore-api/settings.gradle ./settings.gradle
+COPY booklore-api/build.gradle ./build.gradle
+COPY booklore-api/src ./src
 
-# Inject version into application.yaml using yq
-ARG APP_VERSION
-RUN apk add --no-cache yq && \
-    yq eval '.app.version = strenv(APP_VERSION)' -i /springboot-app/src/main/resources/application.yaml
+RUN chmod +x ./gradlew
+RUN ./gradlew clean bootJar -x test --no-daemon
 
-RUN gradle clean build -x test
 
-# Stage 3: Final image
-FROM eclipse-temurin:25-jre-alpine
+########################
+# Stage 3: Runtime
+########################
+FROM eclipse-temurin:25-jre AS runtime
+ENV BOOKLORE_PORT=6060
+WORKDIR /opt/booklore
 
-RUN apk update && apk add nginx gettext su-exec
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx gettext-base \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
-COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY --from=api-build /workspace/booklore-api/build/libs/booklore-api-*.jar /opt/booklore/app.jar
+COPY --from=ui-build /workspace/booklore-ui/dist/booklore/browser /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/nginx.conf.template
+COPY docker/entrypoint.sh /entrypoint.sh
 
-EXPOSE 8080 80
+RUN chmod +x /entrypoint.sh
 
-CMD ["/start.sh"]
+EXPOSE ${BOOKLORE_PORT}
+ENTRYPOINT ["/entrypoint.sh"]

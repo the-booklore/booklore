@@ -39,6 +39,13 @@
           </li>
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+              <a class="topbar-item" (click)="navigateToEphemera()" pTooltip="Ephemera" tooltipPosition="bottom">
+                <i class="pi pi-external-link text-surface-100"></i>
+              </a>
+            }
+          </li>
+          <li>
+            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
                 <i class="pi pi-plus-circle text-surface-100"></i>
               </a>
@@ -174,6 +181,15 @@
                 >
                   <i class="pi pi-inbox text-surface-100"></i>
                   Bookdrop
+                </button>
+              </li>
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="navigateToEphemera(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-external-link text-surface-100"></i>
+                  Ephemera
                 </button>
               </li>
             }

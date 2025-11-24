@@ -161,6 +161,10 @@ export class AppTopBarComponent implements OnDestroy {
     this.router.navigate(['/stats']);
   }
 
+  navigateToEphemera() {
+    this.router.navigate(['/ephemera']);
+  }
+
   logout() {
     this.authService.logout();
   }
