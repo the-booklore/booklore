@@ -115,8 +115,9 @@ public class UserProvisioningService {
         user.setUsername(username);
         user.setEmail(email);
         user.setName(name);
-        // Set an unguessable password hash for OIDC users to prevent local auth bypass
-        user.setPasswordHash("OIDC_EXTERNAL_" + UUID.randomUUID());
+        // Set an invalid password hash that explicitly fails bcrypt validation
+        // Format: "!OIDC_LOCKED:" prefix makes it invalid for bcrypt, preventing any local auth attempts
+        user.setPasswordHash("!OIDC_LOCKED:" + UUID.randomUUID());
         user.setDefaultPassword(false);
         user.setProvisioningMethod(ProvisioningMethod.OIDC);
 

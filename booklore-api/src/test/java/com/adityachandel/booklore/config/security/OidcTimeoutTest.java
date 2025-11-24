@@ -5,13 +5,14 @@ import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -43,11 +44,13 @@ class OidcTimeoutTest {
                         null,
                         null
                 ),
-                new OidcProperties.Jwt(Duration.ofSeconds(60)),
+                new OidcProperties.Jwt(Duration.ofSeconds(60), true, 10000),
+                false,
+                true,
                 false
         );
 
-        jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties);
+        jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties, Mockito.mock(Environment.class));
         OidcProviderDetails providerDetails = new OidcProviderDetails();
         providerDetails.setIssuerUri("http://localhost:9999/auth/realms/booklore");
         providerDetails.setClientId("booklore-client");

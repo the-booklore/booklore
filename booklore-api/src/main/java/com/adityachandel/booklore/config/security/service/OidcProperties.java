@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.time.Duration;
 
 @ConfigurationProperties(prefix = "booklore.security.oidc")
-public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMismatch) {
+public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMismatch, boolean strictIssuerValidation, boolean strictAudienceValidation) {
 
     public OidcProperties {
         if (jwks == null) {
@@ -13,9 +13,9 @@ public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMism
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(5),
                 1048576,
-                Duration.ofHours(6),
-                Duration.ofHours(1),
-                false,
+                Duration.ofMinutes(30), // Reduced from 6h to 30m for faster key revocation
+                Duration.ofMinutes(10), // Reduced from 1h to 10m
+                true, // Enabled by default (was false)
                 "",
                 null,
                 "BookLore-OIDC-Client/1.0",
@@ -24,7 +24,7 @@ public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMism
             );
         }
         if (jwt == null) {
-            jwt = new Jwt(Duration.ofSeconds(60));
+            jwt = new Jwt(Duration.ofSeconds(60), true, 10000); // Enable JTI cache by default
         }
     }
 
@@ -42,5 +42,15 @@ public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMism
             String proxyPassword
     ) {}
 
-    public record Jwt(Duration clockSkew) {}
+    public record Jwt(
+            Duration clockSkew, 
+            boolean enableReplayPrevention,
+            int replayCacheSize
+    ) {
+        public Jwt {
+            if (replayCacheSize <= 0) {
+                throw new IllegalArgumentException("replayCacheSize must be positive, got: " + replayCacheSize);
+            }
+        }
+    }
 }

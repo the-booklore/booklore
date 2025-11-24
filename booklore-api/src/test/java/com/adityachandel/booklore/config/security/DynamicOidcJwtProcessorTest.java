@@ -24,7 +24,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -74,11 +76,13 @@ class DynamicOidcJwtProcessorTest {
                         null,
                         null
                 ),
-                new OidcProperties.Jwt(Duration.ofSeconds(60)),
+                new OidcProperties.Jwt(Duration.ofSeconds(60), true, 10000),
+                false,
+                true,
                 false
         );
 
-        jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties);
+        jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties, Mockito.mock(Environment.class));
 
     }
 
@@ -160,11 +164,13 @@ class DynamicOidcJwtProcessorTest {
                         null,
                         null
                 ),
-                new OidcProperties.Jwt(Duration.ofSeconds(60)),
+                new OidcProperties.Jwt(Duration.ofSeconds(60), true, 10000),
+                false,
+                true,
                 false
         );
 
-        DynamicOidcJwtProcessor timeoutProcessor = new DynamicOidcJwtProcessor(appSettingService, shortTimeoutProperties);
+        DynamicOidcJwtProcessor timeoutProcessor = new DynamicOidcJwtProcessor(appSettingService, shortTimeoutProperties, Mockito.mock(Environment.class));
 
         setupMockSettings("http://localhost:9999/auth/realms/slow-realm");
 
@@ -444,6 +450,7 @@ class DynamicOidcJwtProcessorTest {
         String discoveryPath = URI.create(normalizedIssuer + "/.well-known/openid-configuration").getPath();
         String jwksPath = URI.create(jwksUri).getPath();
 
+        String issuerJson = "\"issuer\": \"%s\",".formatted(discoveryIssuer);
         String algorithmsJson = advertisedAlgorithms == null || advertisedAlgorithms.isEmpty() ? "" :
                 ", \"id_token_signing_alg_values_supported\": [" + advertisedAlgorithms.stream()
                         .map(alg -> "\"" + alg + "\"")
@@ -452,10 +459,10 @@ class DynamicOidcJwtProcessorTest {
         stubFor(get(urlEqualTo(discoveryPath))
                 .willReturn(okJson("""
                     {
-                        "issuer": "%s",
+                        %s
                         "jwks_uri": "%s"%s
                     }
-                """.formatted(discoveryIssuer, jwksUri, algorithmsJson))));
+                """.formatted(issuerJson, jwksUri, algorithmsJson))));
 
         stubFor(get(urlEqualTo(jwksPath))
                 .willReturn(okJson(new JWKSet(rsaKey).toPublicJWKSet().toString())

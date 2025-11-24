@@ -2,6 +2,8 @@ package com.adityachandel.booklore.config.security.service;
 
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
@@ -17,11 +19,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
@@ -53,10 +57,14 @@ public class DynamicOidcJwtProcessor {
 
     private final AppSettingService appSettingService;
     private final OidcProperties oidcProperties;
+    private final Environment environment;
 
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
     private volatile String currentIssuerUri;
     private volatile String currentClientId;
+    
+    // Cache for JWT IDs to prevent token replay attacks
+    private volatile Cache<String, Boolean> usedTokenCache;
 
     public ConfigurableJWTProcessor<SecurityContext> getProcessor() throws Exception {
         var appSettings = appSettingService.getAppSettings();
@@ -130,9 +138,45 @@ public class DynamicOidcJwtProcessor {
 
         try {
             // 2. Execute verification
-            return getProcessor().process(token, null);
+            JWTClaimsSet claimsSet = getProcessor().process(token, null);
+            
+            // 3. Check for token replay (JTI-based prevention)
+            if (oidcProperties.jwt().enableReplayPrevention()) {
+                String jti = claimsSet.getJWTID();
+                if (jti != null && !jti.isEmpty()) {
+                    Cache<String, Boolean> localCache = usedTokenCache;
+                    if (localCache == null) {
+                        synchronized (this) {
+                            localCache = usedTokenCache;
+                            if (localCache == null) {
+                                usedTokenCache = Caffeine.newBuilder()
+                                    .expireAfterWrite(Duration.ofHours(2)) // Tokens typically expire within 1h
+                                    .maximumSize(oidcProperties.jwt().replayCacheSize())
+                                    .build();
+                                localCache = usedTokenCache;
+                                log.info("Initialized JWT replay prevention cache (size: {}, TTL: 2h)", 
+                                    oidcProperties.jwt().replayCacheSize());
+                            }
+                        }
+                    }
+                    
+                    // Check if token was already used
+                    if (localCache.getIfPresent(jti) != null) {
+                        log.error("SECURITY: Token replay attempt detected. JTI: {}", jti);
+                        throw new BadJWTException("Token has already been used (replay attack prevention)");
+                    }
+                    
+                    localCache.put(jti, Boolean.TRUE);
+                    log.debug("Token JTI '{}' cached to prevent replay", jti);
+                } else {
+                    log.error("SECURITY: Token does not contain JTI claim. Replay prevention is enabled but JTI is required for security.");
+                    throw new BadJWTException("Token missing JTI claim (required for replay prevention)");
+                }
+            }
+            
+            return claimsSet;
         } catch (BadJWTException e) {
-            // 3. Contextualize the error without leaking the token
+            // 4. Contextualize the error without leaking the token
             log.error("JWT Verification Failed: {}", e.getMessage());
 
             // Add hints for common configuration errors
@@ -171,7 +215,16 @@ public class DynamicOidcJwtProcessor {
         if (discoveryConfiguration.issuer() != null) {
             String discoveredIssuer = normalizeIssuerUri(discoveryConfiguration.issuer());
             if (discoveredIssuer != null && !discoveredIssuer.isEmpty() && !Objects.equals(discoveredIssuer, normalizedIssuerUri)) {
-                log.warn("Issuer mismatch between configuration ({}) and discovery document ({}). Proceeding with configured issuer.", normalizedIssuerUri, discoveredIssuer);
+                if (oidcProperties.strictIssuerValidation()) {
+                    throw new IllegalStateException(
+                        "SECURITY: Issuer mismatch detected. Expected: " + normalizedIssuerUri + 
+                        ", Got: " + discoveredIssuer + 
+                        ". Set booklore.security.oidc.strict-issuer-validation=false to allow (not recommended in production).");
+                }
+                log.warn("SECURITY WARNING: Issuer mismatch between configuration ({}) and discovery document ({}). " +
+                         "Proceeding with configured issuer due to strict validation being disabled. " +
+                         "This could indicate a misconfiguration or potential security issue.",
+                         normalizedIssuerUri, discoveredIssuer);
             }
         }
 
@@ -188,9 +241,14 @@ public class DynamicOidcJwtProcessor {
                 .create(jwksUri.toURL(), resourceRetriever)
                 .cache(oidcProperties.jwks().cacheTtl().toMillis(), oidcProperties.jwks().cacheRefresh().toMillis());
 
-        if (!oidcProperties.jwks().rateLimitEnabled()) {
+        // Configure rate limiting based on security settings
+        if (oidcProperties.jwks().rateLimitEnabled()) {
+            jwkSourceBuilder.rateLimited(true);
+            log.debug("JWKS rate limiting enabled for security (recommended for production)");
+        } else {
             jwkSourceBuilder.rateLimited(false);
-            log.debug("JWKS rate limiting disabled for internal network communication");
+            log.warn("JWKS rate limiting disabled. This reduces protection against JWKS endpoint flooding attacks. " +
+                    "Only disable for high-trust internal networks with alternative DDoS protection.");
         }
 
         var jwkSource = jwkSourceBuilder.build();
@@ -327,9 +385,18 @@ public class DynamicOidcJwtProcessor {
             return;
         }
 
+        // In strict mode, azp fallback is not allowed
+        if (oidcProperties.strictAudienceValidation()) {
+            log.error("SECURITY: Strict audience validation failed. Expected ClientID '{}' in 'aud' claim. " +
+                     "Token Claims - aud: {}, azp: {}. Fallback to 'azp' is disabled in strict mode.",
+                     clientId, audiences, claims.getClaim("azp"));
+            throw new BadJWTException("JWT 'aud' claim must contain client ID '" + clientId + "' (strict validation mode)");
+        }
+
+        // Fallback to azp in non-strict mode (spec-compliant but less secure)
         Object azp = claims.getClaim("azp");
         if (azp instanceof String authorizedParty && clientId.equals(authorizedParty)) {
-            log.debug("JWT audience did not include client id {}, but azp matched. Accepting token.", clientId);
+            log.debug("JWT audience did not include client id {}, but azp matched. Accepting token (non-strict mode).", clientId);
             return;
         }
 
@@ -351,7 +418,22 @@ public class DynamicOidcJwtProcessor {
 
         // Check if this is a protocol upgrade scenario (http -> https)
         if (isProtocolUpgrade(issuer, this.currentIssuerUri)) {
-            log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. Upgrading to HTTPS due to allowIssuerProtocolMismatch=true", 
+            String[] activeProfiles = environment.getActiveProfiles();
+            boolean isDevelopment = activeProfiles != null && activeProfiles.length > 0 &&
+                (java.util.Arrays.asList(activeProfiles).contains("dev") || 
+                 java.util.Arrays.asList(activeProfiles).contains("development") ||
+                 java.util.Arrays.asList(activeProfiles).contains("local"));
+            
+            if (!isDevelopment) {
+                throw new IllegalStateException(
+                    "SECURITY: Protocol mismatch (HTTP to HTTPS upgrade) is only allowed in development profiles. " +
+                    "Token issuer: " + issuer + ", Configured: " + this.currentIssuerUri + ". " +
+                    "Either fix your OIDC provider configuration or set an active profile to 'dev', 'development', or 'local'.");
+            }
+            
+            log.warn("DEVELOPMENT ONLY: JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
+                    "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true. " +
+                    "This is ONLY allowed in development profiles.", 
                     issuer, this.currentIssuerUri);
             return issuer.replace("http://", "https://");
         }
