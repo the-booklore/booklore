@@ -74,7 +74,8 @@ class DynamicOidcJwtProcessorTest {
                         null,
                         null
                 ),
-                new OidcProperties.Jwt(Duration.ofSeconds(60))
+                new OidcProperties.Jwt(Duration.ofSeconds(60)),
+                false
         );
 
         jwtProcessor = new DynamicOidcJwtProcessor(appSettingService, oidcProperties);
@@ -159,7 +160,8 @@ class DynamicOidcJwtProcessorTest {
                         null,
                         null
                 ),
-                new OidcProperties.Jwt(Duration.ofSeconds(60))
+                new OidcProperties.Jwt(Duration.ofSeconds(60)),
+                false
         );
 
         DynamicOidcJwtProcessor timeoutProcessor = new DynamicOidcJwtProcessor(appSettingService, shortTimeoutProperties);

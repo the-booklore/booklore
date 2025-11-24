@@ -206,7 +206,16 @@ public class DynamicOidcJwtProcessor {
                 .issuer(normalizedIssuerUri)
                 .build();
 
-        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp"));
+        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp")) {
+            @Override
+            public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
+                String actualIssuer = normalizeIssuer(claimsSet.getIssuer(), true);
+                if (!normalizedIssuerUri.equals(actualIssuer)) {
+                    throw new BadJWTException("JWT iss claim has value " + claimsSet.getIssuer() + ", must be " + normalizedIssuerUri);
+                }
+                super.verify(claimsSet, ctx);
+            }
+        };
         claimsVerifier.setMaxClockSkew(Math.toIntExact(clockSkewSeconds));
 
         processor.setJWTClaimsSetVerifier((claims, context) -> {
@@ -329,6 +338,52 @@ public class DynamicOidcJwtProcessor {
         throw new BadJWTException("JWT does not contain expected audience or azp for client '" + clientId + "'");
     }
 
+    private String normalizeIssuer(String issuer, boolean allowProtocolMismatch) {
+        if (issuer == null) return null;
+
+        // Remove trailing slashes
+        issuer = normalizeIssuerUri(issuer);
+
+        if (!allowProtocolMismatch || !oidcProperties.allowIssuerProtocolMismatch() 
+                || this.currentIssuerUri == null) {
+            return issuer;
+        }
+
+        // Check if this is a protocol upgrade scenario (http -> https)
+        if (isProtocolUpgrade(issuer, this.currentIssuerUri)) {
+            log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. Upgrading to HTTPS due to allowIssuerProtocolMismatch=true", 
+                    issuer, this.currentIssuerUri);
+            return issuer.replace("http://", "https://");
+        }
+
+        return issuer;
+    }
+
+    private boolean isProtocolUpgrade(String tokenIssuer, String configIssuer) {
+        try {
+            URI tokenUri = new URI(tokenIssuer);
+            URI configUri = new URI(configIssuer);
+            
+            // Only allow HTTP -> HTTPS upgrade, never downgrade
+            if (!"http".equals(tokenUri.getScheme()) || !"https".equals(configUri.getScheme())) {
+                return false;
+            }
+            
+            return tokenUri.getHost().equals(configUri.getHost())
+                    && normalizePath(tokenUri.getPath()).equals(normalizePath(configUri.getPath()));
+        } catch (URISyntaxException e) {
+            log.debug("Invalid URI syntax during protocol upgrade check: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    private String normalizePath(String path) {
+        if (path == null || path.isEmpty()) {
+            return "/";
+        }
+        return !path.isEmpty() && path.charAt(path.length() - 1) == '/' ? path.substring(0, path.length() - 1) : path;
+    }
+
     private static String normalizeIssuerUri(String issuerUri) {
         if (issuerUri == null) {
             return null;
@@ -341,6 +396,15 @@ public class DynamicOidcJwtProcessor {
             return "/";
         }
         return end == issuerUri.length() ? issuerUri : issuerUri.substring(0, end);
+    }
+
+    private static String stripPort(String url) {
+        try {
+            URI uri = new URI(url);
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), -1, uri.getPath(), uri.getQuery(), uri.getFragment()).toString();
+        } catch (URISyntaxException e) {
+            return url;
+        }
     }
 
     private static final class DiscoveryConfiguration {

@@ -15,14 +15,17 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "users")
+@Table(name = "users", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_users_username", columnNames = "username"),
+    @UniqueConstraint(name = "uk_users_email", columnNames = "email")
+})
 public class BookLoreUserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String username;
 
     @Column(name = "password_hash", nullable = false)
@@ -34,7 +37,7 @@ public class BookLoreUserEntity {
     @Column(nullable = false)
     private String name;
 
-    @Column(unique = true)
+    @Column
     private String email;
 
     @Column(name = "provisioning_method")

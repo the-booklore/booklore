@@ -2,14 +2,16 @@ package com.adityachandel.booklore.config.security;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
-import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
+import com.adityachandel.booklore.config.security.service.SimpleRoleConverter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -19,6 +21,9 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -29,16 +34,16 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import jakarta.servlet.http.HttpServletResponse;
-
 @AllArgsConstructor
 @EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 
     private final OpdsUserDetailsService opdsUserDetailsService;
-    private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final SimpleRoleConverter simpleRoleConverter;
     private final AppProperties appProperties;
+    private final JwtDecoder jwtDecoder;
+    private final Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter;
 
     private static final String[] SWAGGER_ENDPOINTS = {
             "/api/v1/swagger-ui.html",
@@ -62,6 +67,11 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter(OidcJwtAuthenticationConverter converter) {
+        return converter;
     }
 
     @Bean
@@ -125,8 +135,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
-                .addFilterBefore(coverJwtFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(dualJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(coverJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -146,7 +155,7 @@ public class SecurityConfig {
                         .requestMatchers(publicEndpoints.toArray(new String[0])).permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(dualJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder).jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }
 
@@ -157,6 +166,7 @@ public class SecurityConfig {
         auth.userDetailsService(opdsUserDetailsService).passwordEncoder(passwordEncoder());
         return auth.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

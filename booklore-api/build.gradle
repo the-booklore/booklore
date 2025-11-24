@@ -36,6 +36,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
@@ -80,6 +81,10 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
     testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.3.0'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'org.testcontainers:mariadb:1.20.4'
+    testImplementation 'com.github.dasniko:testcontainers-keycloak:3.4.0'
+    testRuntimeOnly 'com.h2database:h2'
 }
 
 hibernate {
@@ -92,4 +97,3 @@ test {
     useJUnitPlatform()
     jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
-

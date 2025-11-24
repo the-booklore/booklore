@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.enums.*;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import org.springframework.dao.DataIntegrityViolationException;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,16 +102,34 @@ public class UserProvisioningService {
     }
 
     @Transactional
-    public BookLoreUserEntity provisionOidcUser(String username, String email, String name, OidcAutoProvisionDetails oidcAutoProvisionDetails) {
+    public BookLoreUserEntity provisionOidcUser(String username, String email, String name,
+                                                OidcAutoProvisionDetails oidcAutoProvisionDetails) {
+        // Try to find existing first
+        Optional<BookLoreUserEntity> existing = userRepository.findByUsername(username);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // Create new user
         BookLoreUserEntity user = new BookLoreUserEntity();
         user.setUsername(username);
         user.setEmail(email);
         user.setName(name);
+        // Set an unguessable password hash for OIDC users to prevent local auth bypass
+        user.setPasswordHash("OIDC_EXTERNAL_" + UUID.randomUUID());
         user.setDefaultPassword(false);
-        user.setPasswordHash("OIDC_USER_" + UUID.randomUUID());
         user.setProvisioningMethod(ProvisioningMethod.OIDC);
 
+        // Assign default libraries if specified
+        List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
+        if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
+            List<LibraryEntity> libraries = libraryRepository.findAllById(defaultLibraryIds);
+            user.setLibraries(new ArrayList<>(libraries));
+        }
+
         UserPermissionsEntity perms = new UserPermissionsEntity();
+        perms.setUser(user);
+
         List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
         if (defaultPermissions != null) {
             perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
@@ -122,16 +141,22 @@ public class UserProvisioningService {
             perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
             perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
             perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
+            perms.setPermissionAdmin(defaultPermissions.contains("permissionAdmin"));
         }
+
         user.setPermissions(perms);
 
-        List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
-        if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
-            List<LibraryEntity> libraries = libraryRepository.findAllById(defaultLibraryIds);
-            user.setLibraries(new ArrayList<>(libraries));
+        try {
+            return userRepository.saveAndFlush(user);
+        } catch (DataIntegrityViolationException e) {
+            if (e.getMessage() != null && e.getMessage().contains("uk_users_username")) {
+                log.debug("Race condition on user creation for {}, fetching existing", username);
+                return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException("User not found after constraint violation"));
+            }
+            // Email conflict or other issue - rethrow
+            throw e;
         }
-
-        return createUser(user);
     }
 
     /**

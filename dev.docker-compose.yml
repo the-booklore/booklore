@@ -12,7 +12,10 @@ services:
     tty: true
     restart: unless-stopped
     depends_on:
-      - backend_db
+      backend_db:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     volumes:
       - './booklore-api:/booklore-api'
       - ./shared/data:/app/data
@@ -55,6 +58,25 @@ services:
       - '/dev/null:/angular-app/package-lock.json'
     ports:
       - "${FRONTEND_PORT:-4200}:4200"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.0
+    command: start-dev --import-realm
+    ports:
+      - "9090:8080"
+    environment:
+      KC_HOSTNAME: keycloak
+      KC_HOSTNAME_PORT: 8080
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "false"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    volumes:
+      - ./booklore-api/src/test/resources/test-realm.json:/opt/keycloak/data/import/realm.json
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   node_modules:
