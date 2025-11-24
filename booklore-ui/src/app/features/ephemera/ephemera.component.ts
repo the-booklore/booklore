@@ -8,7 +8,7 @@ import {API_CONFIG} from '../../core/config/api-config';
   standalone: true,
   imports: [NgIf],
   template: `
-    <section class="flex h-full flex-col">
+    <section class="flex flex-col" style="height: calc(100dvh - 5rem);">
       <header class="border-b border-surface-300 bg-surface-0 p-4 dark:border-surface-700 dark:bg-surface-900">
         <h1 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">Ephemera</h1>
         <p class="text-sm text-surface-600 dark:text-surface-300">Ephemera runs inside Booklore. Close this tab when you are finished.</p>
@@ -17,7 +17,7 @@ import {API_CONFIG} from '../../core/config/api-config';
       <div class="relative flex-1">
         <iframe
           *ngIf="iframeUrl"
-          class="h-full w-full border-0"
+          class="absolute inset-0 h-full w-full border-0"
           [src]="iframeUrl"
           title="Ephemera"
           (load)="handleLoad()"
