@@ -30,6 +30,8 @@ out/
 !**/src/main/**/out/
 !**/src/test/**/out/
 
+/mariadb/
+
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
