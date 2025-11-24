@@ -13,6 +13,9 @@ app:
     header-groups: ${REMOTE_AUTH_HEADER_GROUPS:Remote-Groups}
     admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
+  ephemera:
+    base-url: 'http://10.129.20.50:8286'
+    timeout-ms: 30000
 
 server:
   forward-headers-strategy: native
