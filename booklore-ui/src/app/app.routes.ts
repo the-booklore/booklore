@@ -21,7 +21,6 @@ import {PdfReaderComponent} from './features/readers/pdf-reader/pdf-reader.compo
 import {BookdropFileReviewComponent} from './features/bookdrop/component/bookdrop-file-review/bookdrop-file-review.component';
 import {ManageLibraryGuard} from './core/security/guards/manage-library.guard';
 import {LoginGuard} from './shared/components/setup/login.guard';
-import {EphemeraComponent} from './features/ephemera/ephemera.component';
 
 export const routes: Routes = [
   {
@@ -52,7 +51,6 @@ export const routes: Routes = [
       {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [ManageLibraryGuard]},
       {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [ManageLibraryGuard]},
       {path: 'stats', component: StatsComponent, canActivate: [AuthGuard]},
-      {path: 'ephemera', component: EphemeraComponent, canActivate: [ManageLibraryGuard]},
     ]
   },
   {
