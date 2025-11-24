@@ -53,7 +53,6 @@ public class FileService {
     private final BookRepository bookRepository;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
     private final BookMapper bookMapper;
-    private final RestTemplate restTemplate;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -171,7 +170,7 @@ public class FileService {
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<byte[]> response = restTemplate.exchange(
+            ResponseEntity<byte[]> response = new RestTemplate().exchange(
                     imageUrl,
                     HttpMethod.GET,
                     entity,

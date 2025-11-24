@@ -7,6 +7,7 @@ import {BulkMetadataUpdateComponent} from '../../../metadata/component/bulk-meta
 import {MultiBookMetadataEditorComponent} from '../../../metadata/component/multi-book-metadata-editor/multi-book-metadata-editor-component';
 import {MultiBookMetadataFetchComponent} from '../../../metadata/component/multi-book-metadata-fetch/multi-book-metadata-fetch-component';
 import {FileMoverComponent} from '../../../../shared/components/file-mover/file-mover-component';
+import {ShelfCreatorComponent} from '../shelf-creator/shelf-creator.component';
 
 @Injectable({providedIn: 'root'})
 export class BookDialogHelperService {
@@ -15,7 +16,7 @@ export class BookDialogHelperService {
 
   openShelfAssigner(bookIds: Set<number>): DynamicDialogRef | null {
     return this.dialogService.open(ShelfAssignerComponent, {
-      header: `Update Books' Shelves`,
+      showHeader: false,
       modal: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
@@ -29,6 +30,22 @@ export class BookDialogHelperService {
         bookIds,
       },
     });
+  }
+
+  openShelfCreator(): DynamicDialogRef {
+    return this.dialogService.open(ShelfCreatorComponent, {
+      showHeader: false,
+      modal: true,
+      draggable: false,
+      dismissableMask: true,
+      closable: true,
+      contentStyle: {overflow: 'auto'},
+      baseZIndex: 10,
+      style: {
+        position: 'absolute',
+        top: '15%',
+      },
+    })!;
   }
 
   openLockUnlockMetadataDialog(bookIds: Set<number>): DynamicDialogRef | null {
