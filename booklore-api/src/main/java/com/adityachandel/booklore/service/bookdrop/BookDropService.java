@@ -4,6 +4,8 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookdropFileMapper;
 import com.adityachandel.booklore.model.FileProcessResult;
+import com.adityachandel.booklore.model.MetadataUpdateContext;
+import com.adityachandel.booklore.model.MetadataUpdateWrapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.BookdropFile;
 import com.adityachandel.booklore.model.dto.BookdropFileNotification;
@@ -17,6 +19,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
@@ -431,7 +434,19 @@ public class BookDropService {
                 .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
 
         notificationService.sendMessage(Topic.BOOK_ADD, fileProcessResult.getBook());
-        metadataRefreshService.updateBookMetadata(bookEntity, metadata, metadata.getThumbnailUrl() != null, false);
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                        .metadata(metadata)
+                        .build())
+                .updateThumbnail(metadata.getThumbnailUrl() != null)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .mergeMoods(true)
+                .mergeTags(true)
+                .build();
+
+        metadataRefreshService.updateBookMetadata(context);
 
         cleanupBookdropData(bookdropFile);
 

@@ -17,7 +17,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
@@ -26,6 +31,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
@@ -44,6 +50,9 @@ import java.util.stream.Stream;
 public class FileService {
 
     private final AppProperties appProperties;
+    private final BookRepository bookRepository;
+    private final BookAdditionalFileRepository bookAdditionalFileRepository;
+    private final BookMapper bookMapper;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -85,7 +94,7 @@ public class FileService {
         return getBackgroundsFolder(null);
     }
 
-    public String getBackgroundUrl(String filename, Long userId) {
+    public static String getBackgroundUrl(String filename, Long userId) {
         if (userId != null) {
             return Paths.get("/", BACKGROUNDS_DIR, "user-" + userId, filename).toString().replace("\\", "/");
         }
@@ -116,7 +125,7 @@ public class FileService {
     // VALIDATION
     // ========================================
 
-    private void validateCoverFile(MultipartFile file) {
+    private static void validateCoverFile(MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
@@ -133,7 +142,7 @@ public class FileService {
     // IMAGE OPERATIONS
     // ========================================
 
-    public BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
+    public static BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
         Image tmp = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = resizedImage.createGraphics();
@@ -142,7 +151,7 @@ public class FileService {
         return resizedImage;
     }
 
-    public void saveImage(byte[] imageData, String filePath) throws IOException {
+    public static void saveImage(byte[] imageData, String filePath) throws IOException {
         BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageData));
         File outputFile = new File(filePath);
         File parentDir = outputFile.getParentFile();
@@ -153,15 +162,33 @@ public class FileService {
         log.info("Image saved successfully to: {}", filePath);
     }
 
-    public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
+    public static BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
-            URI uri = URI.create(imageUrl);
-            URL url = uri.toURL();
-            BufferedImage image = ImageIO.read(url);
-            if (image == null) {
-                throw new IOException("Unable to read image from URL: " + imageUrl);
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Metadata Fetcher)");
+            headers.set(HttpHeaders.ACCEPT, "image/*");
+
+            HttpEntity<String> entity = new HttpEntity<>(headers);
+
+            ResponseEntity<byte[]> response = new RestTemplate().exchange(
+                    imageUrl,
+                    HttpMethod.GET,
+                    entity,
+                    byte[].class
+            );
+
+            // Validate and convert
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                try (ByteArrayInputStream inputStream = new ByteArrayInputStream(response.getBody())) {
+                    BufferedImage image = ImageIO.read(inputStream);
+                    if (image == null) {
+                        throw new IOException("Downloaded content is not a supported image format.");
+                    }
+                    return image;
+                }
+            } else {
+                throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
             }
-            return image;
         } catch (Exception e) {
             log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
             throw new IOException("Failed to download image from URL: " + imageUrl, e);
@@ -175,7 +202,10 @@ public class FileService {
     public void createThumbnailFromFile(long bookId, MultipartFile file) {
         try {
             validateCoverFile(file);
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            BufferedImage originalImage;
+            try (InputStream inputStream = file.getInputStream()) {
+                originalImage = ImageIO.read(inputStream);
+            }
             if (originalImage == null) {
                 throw ApiError.IMAGE_NOT_FOUND.createException();
             }
@@ -229,7 +259,7 @@ public class FileService {
         return originalSaved && thumbnailSaved;
     }
 
-    public void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {
+    public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {
         bookMetadataEntity.setCoverUpdatedOn(Instant.now());
     }
 
@@ -344,7 +374,7 @@ public class FileService {
     // ========================================
 
     @Transactional
-    public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash, BookRepository bookRepository, BookAdditionalFileRepository bookAdditionalFileRepository, BookMapper bookMapper) {
+    public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash) {
         if (StringUtils.isBlank(hash)) {
             log.warn("Skipping file due to missing hash: {}", libraryFile.getFullPath());
             return Optional.empty();
@@ -397,6 +427,8 @@ public class FileService {
     }
 
     public static String truncate(String input, int maxLength) {
-        return input == null ? null : (input.length() <= maxLength ? input : input.substring(0, maxLength));
+        if (input == null) return null;
+        if (maxLength <= 0) return "";
+        return input.length() <= maxLength ? input : input.substring(0, maxLength);
     }
 }

@@ -273,23 +273,30 @@ public class MetadataRefreshService {
 
 
     public void updateBookMetadata(BookEntity bookEntity, BookMetadata metadata, boolean replaceCover, boolean mergeCategories) {
-        if (metadata != null) {
+        updateBookMetadata(bookEntity, metadata, replaceCover, mergeCategories, MetadataReplaceMode.REPLACE_MISSING);
+    }
 
-            MetadataUpdateContext context = MetadataUpdateContext.builder()
-                    .bookEntity(bookEntity)
-                    .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
-                            .metadata(metadata)
-                            .build())
-                    .updateThumbnail(replaceCover)
-                    .mergeCategories(mergeCategories)
-                    .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
-                    .mergeMoods(true)
-                    .mergeTags(true)
-                    .build();
+    public void updateBookMetadata(BookEntity bookEntity, BookMetadata metadata, boolean replaceCover, boolean mergeCategories, MetadataReplaceMode replaceMode) {
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(MetadataUpdateWrapper.builder()
+                        .metadata(metadata)
+                        .build())
+                .updateThumbnail(replaceCover)
+                .mergeCategories(mergeCategories)
+                .replaceMode(replaceMode)
+                .mergeMoods(true)
+                .mergeTags(true)
+                .build();
 
+        updateBookMetadata(context);
+    }
+
+    public void updateBookMetadata(MetadataUpdateContext context) {
+        if (context.getMetadataUpdateWrapper() != null && context.getMetadataUpdateWrapper().getMetadata() != null) {
             bookMetadataUpdater.setBookMetadata(context);
 
-            Book book = bookMapper.toBook(bookEntity);
+            Book book = bookMapper.toBook(context.getBookEntity());
             notificationService.sendMessage(Topic.BOOK_METADATA_UPDATE, book);
         }
     }

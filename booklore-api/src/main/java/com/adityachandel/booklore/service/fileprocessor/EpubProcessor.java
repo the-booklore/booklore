@@ -54,7 +54,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.EPUB);
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
-            fileService.setBookCoverPath(bookEntity.getMetadata());
+            FileService.setBookCoverPath(bookEntity.getMetadata());
         }
         return bookEntity;
     }
@@ -63,7 +63,10 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     public boolean generateCover(BookEntity bookEntity) {
         try {
             File epubFile = new File(FileUtils.getBookFullPath(bookEntity));
-            io.documentnode.epub4j.domain.Book epub = new EpubReader().readEpub(new FileInputStream(epubFile));
+            io.documentnode.epub4j.domain.Book epub;
+            try (FileInputStream fis = new FileInputStream(epubFile)) {
+                epub = new EpubReader().readEpub(fis);
+            }
             Resource coverImage = epub.getCoverImage();
 
             if (coverImage == null) {
