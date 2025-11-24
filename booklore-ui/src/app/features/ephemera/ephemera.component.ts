@@ -1,65 +1,55 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {NgIf} from '@angular/common';
+import {DomSanitizer, SafeResourceUrl} from '@angular/platform-browser';
+import {API_CONFIG} from '../../core/config/api-config';
 
 @Component({
   selector: 'app-ephemera',
   standalone: true,
-  imports: [CommonModule],
+  imports: [NgIf],
   template: `
-    <div class="h-full w-full flex flex-col">
-      <div class="p-4 border-b border-surface-300 dark:border-surface-700">
-        <h1 class="text-2xl font-bold">Ephemera Book Processing</h1>
-        <p class="text-surface-600 dark:text-surface-400">
-          Access the internal Ephemera book processing application
-        </p>
-      </div>
-      <div class="flex-1 relative">
-        <iframe 
-          src="/api/ephemera/"
-          class="w-full h-full border-0"
-          title="Ephemera Book Processing Interface"
-          (load)="onIframeLoad()"
-          (error)="onIframeError()">
-        </iframe>
-        <div *ngIf="loading" class="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-900">
-          <div class="text-center">
-            <i class="pi pi-spin pi-spinner text-4xl text-primary-500 mb-4"></i>
-            <p class="text-surface-600 dark:text-surface-400">Loading Ephemera...</p>
-          </div>
-        </div>
-        <div *ngIf="error" class="absolute inset-0 flex items-center justify-center bg-surface-100 dark:bg-surface-900">
-          <div class="text-center">
-            <i class="pi pi-exclamation-triangle text-4xl text-red-500 mb-4"></i>
-            <p class="text-surface-600 dark:text-surface-400">Unable to load Ephemera. Please check if the service is running.</p>
+    <section class="flex h-full flex-col">
+      <header class="border-b border-surface-300 bg-surface-0 p-4 dark:border-surface-700 dark:bg-surface-900">
+        <h1 class="text-2xl font-semibold text-surface-900 dark:text-surface-0">Ephemera</h1>
+        <p class="text-sm text-surface-600 dark:text-surface-300">Ephemera runs inside Booklore. Close this tab when you are finished.</p>
+      </header>
+
+      <div class="relative flex-1">
+        <iframe
+          *ngIf="iframeUrl"
+          class="h-full w-full border-0"
+          [src]="iframeUrl"
+          title="Ephemera"
+          (load)="handleLoad()"
+        ></iframe>
+
+        <div *ngIf="isLoading" class="absolute inset-0 flex items-center justify-center bg-surface-50 dark:bg-surface-900">
+          <div class="text-center text-surface-600 dark:text-surface-200">
+            <i class="pi pi-spin pi-spinner text-3xl mb-3 block"></i>
+            <p>Connecting to Ephemera...</p>
           </div>
         </div>
       </div>
-    </div>
+    </section>
   `,
-  styles: [`
-    :host {
-      display: block;
-      height: 100%;
-    }
-  `]
 })
-export class EphemeraComponent implements OnInit {
-  loading = true;
-  error = false;
+export class EphemeraComponent implements OnInit, OnDestroy {
+  iframeUrl?: SafeResourceUrl;
+  isLoading = true;
 
-  ngOnInit() {
-    // Set loading state initially
-    this.loading = true;
-    this.error = false;
+  constructor(private sanitizer: DomSanitizer) {}
+
+  ngOnInit(): void {
+    const ephemeraUrl = `${API_CONFIG.BASE_URL}/api/v1/ephemera/`;
+    this.iframeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(ephemeraUrl);
   }
 
-  onIframeLoad() {
-    this.loading = false;
-    this.error = false;
+  ngOnDestroy(): void {
+    this.isLoading = false;
   }
 
-  onIframeError() {
-    this.loading = false;
-    this.error = true;
+  handleLoad(): void {
+    this.isLoading = false;
   }
 }
+

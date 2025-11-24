@@ -51,8 +51,8 @@ export const routes: Routes = [
       {path: 'book/:bookId', component: BookMetadataCenterComponent, canActivate: [AuthGuard]},
       {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [ManageLibraryGuard]},
       {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [ManageLibraryGuard]},
-      {path: 'stats', component: StatsComponent, canActivate: [AuthGuard]},
       {path: 'ephemera', component: EphemeraComponent, canActivate: [ManageLibraryGuard]},
+      {path: 'stats', component: StatsComponent, canActivate: [AuthGuard]},
     ]
   },
   {
