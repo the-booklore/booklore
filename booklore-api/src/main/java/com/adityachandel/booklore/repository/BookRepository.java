@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -23,8 +22,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     Optional<BookEntity> findBookByFileNameAndLibraryId(String fileName, long libraryId);
 
     Optional<BookEntity> findByCurrentHash(String currentHash);
-
-    Optional<BookEntity> findByCurrentHashAndDeletedTrue(String currentHash);
 
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     Set<Long> findBookIdsByLibraryId(@Param("libraryId") long libraryId);
@@ -42,10 +39,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadata();
-
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
-    @Query(value = "SELECT b FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false)")
-    Page<BookEntity> findAllWithMetadata(Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")

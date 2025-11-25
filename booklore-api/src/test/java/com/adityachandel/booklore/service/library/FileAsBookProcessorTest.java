@@ -95,9 +95,9 @@ class FileAsBookProcessorTest {
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(processorRegistry.getProcessorOrThrow(BookFileType.PDF)).thenReturn(bookFileProcessor);
         when(bookFileProcessor.processFile(file1))
-                .thenReturn(new FileProcessResult(book1, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(book1, FileProcessStatus.NEW));
         when(bookFileProcessor.processFile(file2))
-                .thenReturn(new FileProcessResult(book2, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(book2, FileProcessStatus.NEW));
 
         // When
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
@@ -145,7 +145,7 @@ class FileAsBookProcessorTest {
 
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(bookFileProcessor.processFile(validFile))
-                .thenReturn(new FileProcessResult(book, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(book, FileProcessStatus.NEW));
 
         // When
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
@@ -215,7 +215,7 @@ class FileAsBookProcessorTest {
 
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(bookFileProcessor.processFile(libraryFile))
-                .thenReturn(new FileProcessResult(expectedBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(expectedBook, FileProcessStatus.NEW));
 
         // When
         FileProcessResult result = fileAsBookProcessor.processLibraryFile(libraryFile);
@@ -351,13 +351,13 @@ class FileAsBookProcessorTest {
         when(processorRegistry.getProcessorOrThrow(BookFileType.CBX)).thenReturn(bookFileProcessor);
 
         when(bookFileProcessor.processFile(epubFile))
-                .thenReturn(new FileProcessResult(epubBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(epubBook, FileProcessStatus.NEW));
         when(bookFileProcessor.processFile(pdfFile))
-                .thenReturn(new FileProcessResult(pdfBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(pdfBook, FileProcessStatus.NEW));
         when(bookFileProcessor.processFile(cbzFile))
-                .thenReturn(new FileProcessResult(cbzBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(cbzBook, FileProcessStatus.NEW));
         when(bookFileProcessor.processFile(cbrFile))
-                .thenReturn(new FileProcessResult(cbrBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(cbrBook, FileProcessStatus.NEW));
 
         // When
         fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);

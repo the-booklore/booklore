@@ -4,8 +4,6 @@ import {MetadataProgressService} from '../../service/metadata-progress-service';
 import {map} from 'rxjs/operators';
 import {AsyncPipe} from '@angular/common';
 import {BookdropFileService} from '../../../features/bookdrop/service/bookdrop-file.service';
-import {DuplicateFilesNotificationComponent} from '../duplicate-files-notification/duplicate-files-notification.component';
-import {DuplicateFileService} from '../../websocket/duplicate-file.service';
 import {BookdropFilesWidgetComponent} from '../../../features/bookdrop/component/bookdrop-files-widget/bookdrop-files-widget.component';
 import {MetadataProgressWidgetComponent} from '../metadata-progress-widget/metadata-progress-widget-component';
 
@@ -15,8 +13,7 @@ import {MetadataProgressWidgetComponent} from '../metadata-progress-widget/metad
     LiveNotificationBoxComponent,
     MetadataProgressWidgetComponent,
     AsyncPipe,
-    BookdropFilesWidgetComponent,
-    DuplicateFilesNotificationComponent
+    BookdropFilesWidgetComponent
   ],
   templateUrl: './unified-notification-popover-component.html',
   standalone: true,
@@ -25,15 +22,10 @@ import {MetadataProgressWidgetComponent} from '../metadata-progress-widget/metad
 export class UnifiedNotificationBoxComponent {
   metadataProgressService = inject(MetadataProgressService);
   bookdropFileService = inject(BookdropFileService);
-  duplicateFileService = inject(DuplicateFileService);
 
   hasMetadataTasks$ = this.metadataProgressService.activeTasks$.pipe(
     map(tasks => Object.keys(tasks).length > 0)
   );
 
   hasPendingBookdropFiles$ = this.bookdropFileService.hasPendingFiles$;
-
-  hasDuplicateFiles$ = this.duplicateFileService.duplicateFiles$.pipe(
-    map(files => files && files.length > 0)
-  );
 }

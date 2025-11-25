@@ -36,15 +36,8 @@ public class BookFileTransactionalHandler {
     private final LibraryRepository libraryRepository;
 
     @Transactional()
-    public void handleNewBookFile(long libraryId, Path path, String currentHash) {
+    public void handleNewBookFile(long libraryId, Path path) {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
-
-        Optional<BookEntity> existingOpt = bookFilePersistenceService.findByHash(currentHash);
-        if (existingOpt.isPresent()) {
-            BookEntity existingBook = existingOpt.get();
-            bookFilePersistenceService.updatePathIfChanged(existingBook, libraryEntity, path, currentHash);
-            return;
-        }
 
         String filePath = path.toString();
         String fileName = path.getFileName().toString();
