@@ -13,9 +13,9 @@ public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMism
                 Duration.ofSeconds(5),
                 Duration.ofSeconds(5),
                 1048576,
-                Duration.ofMinutes(30), // Reduced from 6h to 30m for faster key revocation
-                Duration.ofMinutes(10), // Reduced from 1h to 10m
-                true, // Enabled by default (was false)
+                Duration.ofMinutes(30),
+                Duration.ofMinutes(10),
+                true,
                 "",
                 null,
                 "BookLore-OIDC-Client/1.0",
