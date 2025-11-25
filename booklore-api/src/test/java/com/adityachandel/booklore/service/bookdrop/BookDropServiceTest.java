@@ -15,6 +15,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
+import com.adityachandel.booklore.repository.LibraryPathRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
@@ -44,6 +45,7 @@ import org.springframework.data.domain.Pageable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,6 +63,8 @@ class BookDropServiceTest {
     private MonitoringRegistrationService monitoringRegistrationService;
     @Mock
     private LibraryRepository libraryRepository;
+    @Mock
+    private LibraryPathRepository libraryPathRepository;
     @Mock
     private BookRepository bookRepository;
     @Mock
@@ -122,7 +126,7 @@ class BookDropServiceTest {
     void tearDown() throws IOException {
         if (Files.exists(tempDir)) {
             try (var stream = Files.walk(tempDir)) {
-                stream.sorted((a, b) -> b.compareTo(a)) // reverse order for directories
+                stream.sorted(Comparator.reverseOrder()) // reverse order for directories
                       .forEach(path -> {
                           try {
                               if (!path.equals(tempDir)) { // Don't delete the tempDir itself
@@ -450,7 +454,13 @@ class BookDropServiceTest {
         when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(1L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(bookdropFileEntity));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(libraryEntity));
-        when(objectMapper.readValue(anyString(), eq(BookMetadata.class))).thenReturn(new BookMetadata());
+        
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(1L);
+        pathEntity.setPath("/books");
+        when(libraryPathRepository.findById(1L)).thenReturn(Optional.of(pathEntity));
+
+        lenient().when(objectMapper.readValue(anyString(), any(Class.class))).thenReturn(new BookMetadata());
         when(fileMovingHelper.getFileNamingPattern(libraryEntity)).thenReturn("{title}");
         when(fileMovingHelper.generateNewFilePath(anyString(), any(), anyString(), anyString()))
                 .thenReturn(tempDir.resolve("moved-book.pdf"));
@@ -465,10 +475,15 @@ class BookDropServiceTest {
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        
+        when(bookRepository.save(any())).thenAnswer(i -> i.getArguments()[0]);
 
         doNothing().when(bookdropFileRepository).deleteById(any());
         doNothing().when(bookdropNotificationService).sendBookdropFileSummaryNotification();
         doNothing().when(notificationService).sendMessage(any(), any());
+        lenient().doNothing().when(metadataRefreshService).updateBookMetadata(any());
+
+        when(appProperties.getPathConfig()).thenReturn(tempDir.toString());
 
         Path sourcePath = Path.of(bookdropFileEntity.getFilePath());
         Path tempPath = tempDir.resolve("temp-file");
@@ -481,7 +496,6 @@ class BookDropServiceTest {
             filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(tempDir);
             filesMock.when(() -> Files.move(any(Path.class), any(Path.class), any())).thenReturn(targetPath);
             
-
             BookdropFinalizeResult result = bookDropService.finalizeImport(request);
 
             assertNotNull(result);
