@@ -23,6 +23,7 @@ import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistr
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -115,6 +116,24 @@ class BookDropServiceTest {
         bookdropFile.setFileName("test-book.pdf");
 
         Files.createFile(tempDir.resolve("test-book.pdf"));
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        if (Files.exists(tempDir)) {
+            try (var stream = Files.walk(tempDir)) {
+                stream.sorted((a, b) -> b.compareTo(a)) // reverse order for directories
+                      .forEach(path -> {
+                          try {
+                              if (!path.equals(tempDir)) { // Don't delete the tempDir itself
+                                  Files.deleteIfExists(path);
+                              }
+                          } catch (IOException e) {
+                              // Ignore cleanup failures in tearDown
+                          }
+                      });
+            }
+        }
     }
 
     @Test
@@ -422,42 +441,25 @@ class BookDropServiceTest {
 
     @Test
     void finalizeImport_WhenProcessingSucceeds_ShouldDeleteSourceFileFromBookdrop() throws Exception {
-        Path sourceFile = tempDir.resolve("success-test-book.pdf");
-        Files.createFile(sourceFile);
-        assertTrue(Files.exists(sourceFile), "Source file should exist");
-        bookdropFileEntity.setFilePath(sourceFile.toString());
-
-        Path targetDir = tempDir.resolve("library");
-        Files.createDirectories(targetDir);
-
         BookdropFinalizeRequest request = new BookdropFinalizeRequest();
         request.setSelectAll(true);
         request.setDefaultLibraryId(1L);
         request.setDefaultPathId(1L);
         request.setExcludedIds(List.of());
 
-        BookMetadata metadata = new BookMetadata();
-        metadata.setTitle("Test Book");
-
         when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(1L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(bookdropFileEntity));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(libraryEntity));
-        when(objectMapper.readValue(anyString(), eq(BookMetadata.class))).thenReturn(metadata);
+        when(objectMapper.readValue(anyString(), eq(BookMetadata.class))).thenReturn(new BookMetadata());
         when(fileMovingHelper.getFileNamingPattern(libraryEntity)).thenReturn("{title}");
         when(fileMovingHelper.generateNewFilePath(anyString(), any(), anyString(), anyString()))
-                .thenReturn(targetDir.resolve("moved-book.pdf"));
+                .thenReturn(tempDir.resolve("moved-book.pdf"));
 
         BookFileProcessor processor = mock(BookFileProcessor.class);
         when(processorRegistry.getProcessorOrThrow(any())).thenReturn(processor);
 
-        Book book = Book.builder()
-                .id(1L)
-                .title("Test Book")
-                .build();
-
-        FileProcessResult processResult = FileProcessResult.builder()
-                .book(book)
-                .build();
+        Book book = Book.builder().id(1L).title("Test Book").build();
+        FileProcessResult processResult = FileProcessResult.builder().book(book).build();
         when(processor.processFile(any())).thenReturn(processResult);
 
         BookEntity bookEntity = new BookEntity();
@@ -467,34 +469,32 @@ class BookDropServiceTest {
         doNothing().when(bookdropFileRepository).deleteById(any());
         doNothing().when(bookdropNotificationService).sendBookdropFileSummaryNotification();
         doNothing().when(notificationService).sendMessage(any(), any());
-        doNothing().when(metadataRefreshService).updateBookMetadata(any());
 
-        when(appProperties.getPathConfig()).thenReturn(tempDir.toString());
+        Path sourcePath = Path.of(bookdropFileEntity.getFilePath());
+        Path tempPath = tempDir.resolve("temp-file");
+        Path targetPath = tempDir.resolve("moved-book.pdf");
 
-        doNothing().when(monitoringRegistrationService).unregisterLibrary(any());
-        doNothing().when(monitoringRegistrationService).registerLibraryPaths(any(), any());
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.createTempFile(anyString(), anyString())).thenReturn(tempPath);
+            filesMock.when(() -> Files.copy(any(Path.class), any(Path.class), any())).thenReturn(tempPath);
+            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(tempDir);
+            filesMock.when(() -> Files.move(any(Path.class), any(Path.class), any())).thenReturn(targetPath);
+            
 
-        BookdropFinalizeResult result = bookDropService.finalizeImport(request);
+            BookdropFinalizeResult result = bookDropService.finalizeImport(request);
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalFiles());
-        assertEquals(1, result.getSuccessfullyImported());
-        assertEquals(0, result.getFailed());
+            assertNotNull(result);
+            assertEquals(1, result.getTotalFiles());
+            assertEquals(1, result.getSuccessfullyImported());
+            assertEquals(0, result.getFailed());
 
-        assertFalse(Files.exists(sourceFile), "Source file should be deleted on success");
-        assertTrue(Files.exists(targetDir.resolve("moved-book.pdf")), "Target file should exist");
+            filesMock.verify(() -> Files.delete(sourcePath), times(1));
+        }
     }
 
     @Test
     void finalizeImport_WhenProcessingFails_ShouldPreserveSourceFileInBookdrop() throws Exception {
-        Path sourceFile = tempDir.resolve("failure-test-book.pdf");
-        Files.createFile(sourceFile);
-        assertTrue(Files.exists(sourceFile), "Source file should exist");
-        bookdropFileEntity.setFilePath(sourceFile.toString());
-
-        Path targetDir = tempDir.resolve("library");
-        Files.createDirectories(targetDir);
-
         BookdropFinalizeRequest.BookdropFinalizeFile finalizeFile = new BookdropFinalizeRequest.BookdropFinalizeFile();
         finalizeFile.setFileId(1L);
         finalizeFile.setLibraryId(1L);
@@ -510,24 +510,36 @@ class BookDropServiceTest {
         when(objectMapper.readValue(anyString(), eq(BookMetadata.class))).thenReturn(new BookMetadata());
         when(fileMovingHelper.getFileNamingPattern(libraryEntity)).thenReturn("{title}");
         when(fileMovingHelper.generateNewFilePath(anyString(), any(), anyString(), anyString()))
-                .thenReturn(targetDir.resolve("moved-book.pdf"));
+                .thenReturn(tempDir.resolve("moved-book.pdf"));
 
         BookFileProcessor processor = mock(BookFileProcessor.class);
         when(processorRegistry.getProcessorOrThrow(any())).thenReturn(processor);
 
         when(processor.processFile(any())).thenThrow(new RuntimeException("Processing failed"));
 
-        when(appProperties.getPathConfig()).thenReturn(tempDir.toString());
+        Path sourcePath = Path.of(bookdropFileEntity.getFilePath());
+        Path tempPath = tempDir.resolve("temp-file");
+        Path targetPath = tempDir.resolve("moved-book.pdf");
 
-        BookdropFinalizeResult result = bookDropService.finalizeImport(request);
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+            filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
+            filesMock.when(() -> Files.createTempFile(anyString(), anyString())).thenReturn(tempPath);
+            filesMock.when(() -> Files.copy(any(Path.class), any(Path.class), any())).thenReturn(tempPath);
+            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(tempDir);
+            filesMock.when(() -> Files.move(any(Path.class), any(Path.class), any())).thenReturn(targetPath);
+            
+            filesMock.when(() -> Files.deleteIfExists(targetPath)).thenReturn(true);
 
-        assertNotNull(result);
-        assertEquals(1, result.getTotalFiles());
-        assertEquals(0, result.getSuccessfullyImported());
-        assertEquals(1, result.getFailed());
+            BookdropFinalizeResult result = bookDropService.finalizeImport(request);
 
-        assertTrue(Files.exists(sourceFile), "Source file should be preserved on failure");
-        assertFalse(Files.exists(targetDir.resolve("moved-book.pdf")), "Target file should be cleaned up on failure");
+            assertNotNull(result);
+            assertEquals(1, result.getTotalFiles());
+            assertEquals(0, result.getSuccessfullyImported());
+            assertEquals(1, result.getFailed());
+
+            filesMock.verify(() -> Files.delete(sourcePath), never());
+            filesMock.verify(() -> Files.deleteIfExists(targetPath), times(1));
+        }
     }
 
     @Test
