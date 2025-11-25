@@ -39,5 +39,6 @@ public class ShelfEntity {
             joinColumns = {@JoinColumn(name = "shelf_id")},
             inverseJoinColumns = {@JoinColumn(name = "book_id")}
     )
+    @Builder.Default
     private Set<BookEntity> bookEntities = new HashSet<>();
 }

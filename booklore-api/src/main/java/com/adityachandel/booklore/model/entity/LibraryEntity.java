@@ -45,6 +45,7 @@ public class LibraryEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "scan_mode", nullable = false)
+    @Builder.Default
     private LibraryScanMode scanMode = LibraryScanMode.FILE_AS_BOOK;
 
     @Enumerated(EnumType.STRING)

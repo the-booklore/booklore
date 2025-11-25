@@ -3,8 +3,9 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.PdfViewerPreferences;
 import com.adityachandel.booklore.model.entity.PdfViewerPreferencesEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface PdfViewerPreferencesMapper {
 
     PdfViewerPreferences toModel(PdfViewerPreferencesEntity entity);

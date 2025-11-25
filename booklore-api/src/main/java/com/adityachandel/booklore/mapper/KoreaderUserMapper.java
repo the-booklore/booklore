@@ -3,11 +3,12 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.KoreaderUser;
 import com.adityachandel.booklore.model.entity.KoreaderUserEntity;
 import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface KoreaderUserMapper {
 
     KoreaderUserMapper INSTANCE = Mappers.getMapper(KoreaderUserMapper.class);
