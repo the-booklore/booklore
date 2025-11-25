@@ -167,6 +167,7 @@ jobs:
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             --build-arg APP_VERSION=${{ env.image_tag }} \
+            --build-arg APP_REVISION=${{ github.sha }} \
             --tag booklore/booklore:${{ env.image_tag }} \
             --tag ghcr.io/booklore-app/booklore:${{ env.image_tag }} \
             --push .
