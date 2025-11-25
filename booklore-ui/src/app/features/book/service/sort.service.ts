@@ -7,7 +7,48 @@ import {SortDirection, SortOption} from "../model/sort.model";
 })
 export class SortService {
 
-  private readonly fieldExtractors: Record<string, (book: Book) => any> = {
+  private naturalCompare(a: string, b: string): number {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+
+    const aStr = a.toString();
+    const bStr = b.toString();
+
+    const chunkRegex = /(\d+|\D+)/g;
+
+    const aChunks = aStr.match(chunkRegex) || [aStr];
+    const bChunks = bStr.match(chunkRegex) || [bStr];
+
+    const maxLength = Math.max(aChunks.length, bChunks.length);
+
+    for (let i = 0; i < maxLength; i++) {
+      const aChunk = aChunks[i] || '';
+      const bChunk = bChunks[i] || '';
+
+      if (aChunk === '' && bChunk === '') continue;
+
+      const aIsNumeric = /^\d+$/.test(aChunk);
+      const bIsNumeric = /^\d+$/.test(bChunk);
+
+      if (aIsNumeric && bIsNumeric) {
+        const aNum = parseInt(aChunk, 10);
+        const bNum = parseInt(bChunk, 10);
+        if (aNum !== bNum) {
+          return aNum - bNum;
+        }
+      } else {
+        const comparison = aChunk.localeCompare(bChunk);
+        if (comparison !== 0) {
+          return comparison;
+        }
+      }
+    }
+
+    return aChunks.length - bChunks.length;
+  }
+
+  private readonly fieldExtractors: Record<string, (book: Book) => unknown> = {
     title: (book) => (book.seriesCount ? (book.metadata?.seriesName?.toLowerCase() || null) : null)
       ?? (book.metadata?.title?.toLowerCase() || null),
     titleSeries: (book) => {
@@ -20,7 +61,21 @@ export class SortService {
       return [title, Number.MAX_SAFE_INTEGER];
     },
     author: (book) => book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null,
-    publishedDate: (book) => book.metadata?.publishedDate === null ? null : new Date(book.metadata?.publishedDate!).getTime(),
+    authorSeries: (book) => {
+      const author = book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null;
+      const series = book.metadata?.seriesName?.toLowerCase() || null;
+      const seriesNumber = book.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;
+      const title = book.metadata?.title?.toLowerCase() || '';
+      if (series) {
+        return [author, series, seriesNumber, title];
+      }
+      // For books without a series, use a very large string for series name to sort them last within an author.
+      return [author, '~~~~~~~~~~~~~~~~~', Number.MAX_SAFE_INTEGER, title];
+    },
+    publishedDate: (book) => {
+      const date = book.metadata?.publishedDate;
+      return date === null || date === undefined ? null : new Date(date).getTime();
+    },
     publisher: (book) => book.metadata?.publisher || null,
     pageCount: (book) => book.metadata?.pageCount || null,
     rating: (book) => book.metadata?.rating || null,
@@ -39,7 +94,7 @@ export class SortService {
     lastReadTime: (book) => book.lastReadTime ? new Date(book.lastReadTime).getTime() : null,
     addedOn: (book) => book.addedOn ? new Date(book.addedOn).getTime() : null,
     fileSizeKb: (book) => book.fileSizeKb || null,
-    fileName:(book) => book.fileName,
+    fileName: (book) => book.fileName,
   };
 
   applySort(books: Book[], selectedSort: SortOption | null): Book[] {
@@ -57,13 +112,33 @@ export class SortService {
       const aValue = extractor(a);
       const bValue = extractor(b);
 
-      let result: number;
+      let result = 0;
 
       if (Array.isArray(aValue) && Array.isArray(bValue)) {
-        const nameCompare = aValue[0]?.localeCompare?.(bValue[0]) ?? 0;
-        result = nameCompare !== 0 ? nameCompare : (aValue[1] - bValue[1]);
+        for (let i = 0; i < aValue.length; i++) {
+          const valA = aValue[i];
+          const valB = bValue[i];
+
+          if (typeof valA === 'string' && typeof valB === 'string') {
+            result = this.naturalCompare(valA, valB);
+            if (result !== 0) break;
+          } else if (typeof valA === 'number' && typeof valB === 'number') {
+            result = valA - valB;
+            if (result !== 0) break;
+          } else {
+            if (valA == null && valB != null) {
+              result = 1;
+              break;
+            }
+            if (valA != null && valB == null) {
+              result = -1;
+              break;
+            }
+            result = 0;
+          }
+        }
       } else if (typeof aValue === 'string' && typeof bValue === 'string') {
-        result = aValue.localeCompare(bValue);
+        result = this.naturalCompare(aValue, bValue);
       } else if (typeof aValue === 'number' && typeof bValue === 'number') {
         result = aValue - bValue;
       } else {

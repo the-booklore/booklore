@@ -55,11 +55,6 @@ public class BookFilePersistenceService {
         notificationService.sendMessageToPermissions(Topic.BOOK_ADD, bookMapper.toBookWithDescription(book, false), Set.of(ADMIN, MANIPULATE_LIBRARY));
     }
 
-    @Transactional(readOnly = true)
-    public Optional<BookEntity> findByHash(String hash) {
-        return bookRepository.findByCurrentHash(hash);
-    }
-
     String findMatchingLibraryPath(LibraryEntity libraryEntity, Path filePath) {
         return libraryEntity.getLibraryPaths().stream()
                 .map(lp -> Paths.get(lp.getPath()).toAbsolutePath().normalize())

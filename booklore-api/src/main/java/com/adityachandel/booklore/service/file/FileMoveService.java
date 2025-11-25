@@ -50,6 +50,9 @@ public class FileMoveService {
             Long targetLibraryId = move.getTargetLibraryId();
             Long targetLibraryPathId = move.getTargetLibraryPathId();
 
+            Path tempPath = null;
+            Path currentFilePath = null;
+
             try {
                 Optional<BookEntity> optionalBook = bookRepository.findById(bookId);
                 Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(targetLibraryId);
@@ -70,17 +73,21 @@ public class FileMoveService {
                     monitoringRegistrationService.unregisterLibraries(Collections.singleton(sourceLibrary.getId()));
                     sourceLibraryIds.add(sourceLibrary.getId());
                 }
-                Path currentFilePath = bookEntity.getFullFilePath();
+                currentFilePath = bookEntity.getFullFilePath();
                 String pattern = fileMoveHelper.getFileNamingPattern(targetLibrary);
                 Path newFilePath = fileMoveHelper.generateNewFilePath(bookEntity, libraryPathEntity, pattern);
                 if (currentFilePath.equals(newFilePath)) {
                     continue;
                 }
-                fileMoveHelper.moveFile(currentFilePath, newFilePath);
+
+                tempPath = fileMoveHelper.moveFileWithBackup(currentFilePath, newFilePath);
 
                 String newFileName = newFilePath.getFileName().toString();
                 String newFileSubPath = fileMoveHelper.extractSubPath(newFilePath, libraryPathEntity);
                 bookRepository.updateFileAndLibrary(bookEntity.getId(), newFileSubPath, newFileName, targetLibrary.getId(), libraryPathEntity);
+
+                fileMoveHelper.commitMove(tempPath, newFilePath);
+                tempPath = null;
 
                 Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
                 fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(currentFilePath.getParent(), Set.of(libraryRoot));
@@ -93,6 +100,10 @@ public class FileMoveService {
 
             } catch (Exception e) {
                 log.error("Error moving file for book ID {}: {}", bookId, e.getMessage(), e);
+            } finally {
+                if (tempPath != null && currentFilePath != null) {
+                    fileMoveHelper.rollbackMove(tempPath, currentFilePath);
+                }
             }
         }
 

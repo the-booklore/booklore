@@ -178,7 +178,7 @@ export class AppMenuComponent implements OnInit {
             type: 'shelf',
             label: 'Shelves',
             hasDropDown: true,
-            hasCreate: false,
+            hasCreate: true,
             items,
           },
         ];
