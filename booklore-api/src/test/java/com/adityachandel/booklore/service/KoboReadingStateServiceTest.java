@@ -78,7 +78,7 @@ class KoboReadingStateServiceTest {
         testUser = BookLoreUser.builder()
                 .id(1L)
                 .username("testuser")
-                .build();
+                .isDefaultPassword(true).build();
 
         testUserEntity = new BookLoreUserEntity();
         testUserEntity.setId(1L);
