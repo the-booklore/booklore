@@ -405,11 +405,36 @@ public class BookDropService {
 
             Files.createDirectories(target.getParent());
             Files.move(tempPath, target, StandardCopyOption.REPLACE_EXISTING);
-            Files.deleteIfExists(source);
 
             log.info("Moved file id={}, name={} from '{}' to '{}'", bookdropFile.getId(), bookdropFile.getFileName(), source, target);
 
-            return processMovedFile(bookdropFile, target.toFile(), library, path, metadata);
+            BookdropFileResult result;
+            try {
+                result = processMovedFile(bookdropFile, target.toFile(), library, path, metadata);
+            } catch (Exception e) {
+                try {
+                    Files.deleteIfExists(target);
+                    log.info("Cleaned up target file '{}' after processing exception for file id={}", target, bookdropFile.getId());
+                } catch (Exception cleanupException) {
+                    log.warn("Failed to cleanup target file '{}' after processing exception for file id={}: {}",
+                            target, bookdropFile.getId(), cleanupException.getMessage());
+                }
+                return failureResult(bookdropFile.getFileName(), "Processing failed: " + e.getMessage());
+            }
+
+            if (result.isSuccess()) {
+                Files.deleteIfExists(source);
+            } else {
+                try {
+                    Files.deleteIfExists(target);
+                    log.info("Cleaned up target file '{}' after logical failure for file id={}", target, bookdropFile.getId());
+                } catch (Exception cleanupException) {
+                    log.warn("Failed to cleanup target file '{}' after logical failure for file id={}: {}",
+                            target, bookdropFile.getId(), cleanupException.getMessage());
+                }
+            }
+
+            return result;
 
         } catch (Exception e) {
             log.error("Failed to move file id={}, name={} from '{}' to '{}': {}", bookdropFile.getId(), bookdropFile.getFileName(), source, target, e.getMessage(), e);
