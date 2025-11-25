@@ -450,7 +450,7 @@ class DynamicOidcJwtProcessorTest {
         String discoveryPath = URI.create(normalizedIssuer + "/.well-known/openid-configuration").getPath();
         String jwksPath = URI.create(jwksUri).getPath();
 
-        String issuerJson = "\"issuer\": \"%s\",".formatted(discoveryIssuer);
+        String issuerJson = discoveryIssuer != null ? "\"issuer\": \"%s\",".formatted(discoveryIssuer) : "";
         String algorithmsJson = advertisedAlgorithms == null || advertisedAlgorithms.isEmpty() ? "" :
                 ", \"id_token_signing_alg_values_supported\": [" + advertisedAlgorithms.stream()
                         .map(alg -> "\"" + alg + "\"")
