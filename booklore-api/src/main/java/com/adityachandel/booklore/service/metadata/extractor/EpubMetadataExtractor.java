@@ -18,10 +18,14 @@ import org.w3c.dom.NodeList;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 @Slf4j
@@ -55,6 +59,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         }
     }
 
+    @Override
     public BookMetadata extractMetadata(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -89,6 +94,10 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                     boolean seriesIndexFound = false;
 
                     NodeList children = metadata.getChildNodes();
+
+                    Map<String, String> titlesById = new HashMap<>();
+                    Map<String, String> titleTypeById = new HashMap<>();
+
                     for (int i = 0; i < children.getLength(); i++) {
                         if (!(children.item(i) instanceof Element el)) continue;
 
@@ -96,51 +105,29 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         String text = el.getTextContent().trim();
 
                         switch (tag) {
-                            case "title" -> builderMeta.title(text);
-                            case "description" -> builderMeta.description(text);
-                            case "publisher" -> builderMeta.publisher(text);
-                            case "language" -> builderMeta.language(text);
-                            case "creator" -> authors.add(text);
-                            case "subject" -> categories.add(text);
-                            case "identifier" -> {
-                                String scheme = el.getAttributeNS("http://www.idpf.org/2007/opf", "scheme").toUpperCase();
-                                String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
-
-                                if (!scheme.isEmpty()) {
-                                    switch (scheme) {
-                                        case "ISBN" -> {
-                                            if (value.length() == 13) builderMeta.isbn13(value);
-                                            else if (value.length() == 10) builderMeta.isbn10(value);
-                                        }
-                                        case "GOODREADS" -> builderMeta.goodreadsId(value);
-                                        case "COMICVINE" -> builderMeta.comicvineId(value);
-                                        case "GOOGLE" -> builderMeta.googleId(value);
-                                        case "AMAZON" -> builderMeta.asin(value);
-                                        case "HARDCOVER" -> builderMeta.hardcoverId(value);
-                                    }
+                            case "title" -> {
+                                String id = el.getAttribute("id");
+                                if (StringUtils.isNotBlank(id)) {
+                                    titlesById.put(id, text);
                                 } else {
-                                    if (text.toLowerCase().startsWith("isbn:")) {
-                                        if (value.length() == 13) builderMeta.isbn13(value);
-                                        else if (value.length() == 10) builderMeta.isbn10(value);
-                                    }
+                                    builderMeta.title(text);
                                 }
-                           }
-                            case "date" -> {
-                                LocalDate parsed = parseDate(text);
-                                if (parsed != null) builderMeta.publishedDate(parsed);
                             }
                             case "meta" -> {
-                                String name = el.getAttribute("name").trim().toLowerCase();
-                                String prop = el.getAttribute("property").trim().toLowerCase();
+                                String prop = el.getAttribute("property").trim();
+                                String name = el.getAttribute("name").trim();
+                                String refines = el.getAttribute("refines").trim();
                                 String content = el.hasAttribute("content") ? el.getAttribute("content").trim() : text;
-                                if (StringUtils.isBlank(content)) continue;
 
-                                if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "calibre:series".equals(prop) || "belongs-to-collection".equals(prop))) {
+                                if ("title-type".equals(prop) && StringUtils.isNotBlank(refines)) {
+                                    titleTypeById.put(refines.substring(1), content.toLowerCase());
+                                }
+
+                                if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
                                     builderMeta.seriesName(content);
                                     seriesFound = true;
                                 }
-
-                                if (!seriesIndexFound && ("booklore:series_index".equals(prop) || "calibre:series_index".equals(name) || "calibre:series_index".equals(prop) || "group-position".equals(prop))) {
+                                if (!seriesIndexFound && ("booklore:series_index".equals(prop) || "calibre:series_index".equals(name) || "group-position".equals(prop))) {
                                     try {
                                         builderMeta.seriesNumber(Float.parseFloat(content));
                                         seriesIndexFound = true;
@@ -180,14 +167,52 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:page_count" -> safeParseInt(content, builderMeta::pageCount);
                                 }
                             }
+                            case "creator" -> authors.add(text);
+                            case "subject" -> categories.add(text);
+                            case "publisher" -> builderMeta.publisher(text);
+                            case "language" -> builderMeta.language(text);
+                            case "identifier" -> {
+                                String scheme = el.getAttributeNS("http://www.idpf.org/2007/opf", "scheme").toUpperCase();
+                                String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
+
+                                if (!scheme.isEmpty()) {
+                                    switch (scheme) {
+                                        case "ISBN" -> {
+                                            if (value.length() == 13) builderMeta.isbn13(value);
+                                            else if (value.length() == 10) builderMeta.isbn10(value);
+                                        }
+                                        case "GOODREADS" -> builderMeta.goodreadsId(value);
+                                        case "COMICVINE" -> builderMeta.comicvineId(value);
+                                        case "GOOGLE" -> builderMeta.googleId(value);
+                                        case "AMAZON" -> builderMeta.asin(value);
+                                        case "HARDCOVER" -> builderMeta.hardcoverId(value);
+                                    }
+                                } else {
+                                    if (text.toLowerCase().startsWith("isbn:")) {
+                                        if (value.length() == 13) builderMeta.isbn13(value);
+                                        else if (value.length() == 10) builderMeta.isbn10(value);
+                                    }
+                                }
+                            }
+                            case "date" -> {
+                                LocalDate parsed = parseDate(text);
+                                if (parsed != null) builderMeta.publishedDate(parsed);
+                            }
                         }
+                    }
+
+                    for (Map.Entry<String, String> entry : titlesById.entrySet()) {
+                        String id = entry.getKey();
+                        String value = entry.getValue();
+                        String type = titleTypeById.getOrDefault(id, "main");
+                        if ("main".equals(type)) builderMeta.title(value);
+                        else if ("subtitle".equals(type)) builderMeta.subtitle(value);
                     }
 
                     if (builderMeta.build().getPublishedDate() == null) {
                         for (int i = 0; i < children.getLength(); i++) {
                             if (!(children.item(i) instanceof Element el)) continue;
                             if (!"meta".equals(el.getLocalName())) continue;
-
                             String prop = el.getAttribute("property").trim().toLowerCase();
                             String content = el.hasAttribute("content") ? el.getAttribute("content").trim() : el.getTextContent().trim();
                             if ("dcterms:modified".equals(prop)) {
@@ -204,7 +229,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                     builderMeta.categories(categories);
 
                     BookMetadata extractedMetadata = builderMeta.build();
-                    // Fallback to filename if no title found in EPUB metadata
+
                     if (StringUtils.isBlank(extractedMetadata.getTitle())) {
                         builderMeta.title(FilenameUtils.getBaseName(epubFile.getName()));
                         extractedMetadata = builderMeta.build();
@@ -219,7 +244,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             return null;
         }
     }
-
 
     private void safeParseInt(String value, java.util.function.IntConsumer setter) {
         try {
