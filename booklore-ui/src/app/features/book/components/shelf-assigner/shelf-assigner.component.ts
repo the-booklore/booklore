@@ -1,7 +1,7 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {DialogService, DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Book} from '../../model/book.model';
-import {MessageService, PrimeTemplate} from 'primeng/api';
+import {MessageService} from 'primeng/api';
 import {ShelfService} from '../../service/shelf.service';
 import {Observable} from 'rxjs';
 import {BookService} from '../../service/book.service';
@@ -12,24 +12,19 @@ import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
-import {Dialog} from 'primeng/dialog';
-import {InputText} from 'primeng/inputtext';
-import {IconPickerService} from '../../../../shared/service/icon-picker.service';
+import {BookDialogHelperService} from '../book-browser/BookDialogHelperService';
 
 @Component({
   selector: 'app-shelf-assigner',
   standalone: true,
   templateUrl: './shelf-assigner.component.html',
+  styleUrl: './shelf-assigner.component.scss',
   imports: [
     Button,
     Checkbox,
     AsyncPipe,
-    FormsModule,
-    Dialog,
-    InputText,
-    PrimeTemplate
-],
-  styleUrls: ['./shelf-assigner.component.scss']
+    FormsModule
+  ]
 })
 export class ShelfAssignerComponent implements OnInit {
 
@@ -38,16 +33,13 @@ export class ShelfAssignerComponent implements OnInit {
   private dynamicDialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
-  private iconPickerService = inject(IconPickerService);
+  private bookDialogHelper = inject(BookDialogHelperService);
 
   shelfState$: Observable<ShelfState> = this.shelfService.shelfState$;
   book: Book = this.dynamicDialogConfig.data.book;
   selectedShelves: Shelf[] = [];
-  displayShelfDialog: boolean = false;
-  shelfName: string = '';
   bookIds: Set<number> = this.dynamicDialogConfig.data.bookIds;
   isMultiBooks: boolean = this.dynamicDialogConfig.data.isMultiBooks;
-  selectedIcon: string | null = null;
 
   ngOnInit(): void {
     if (!this.isMultiBooks && this.book.shelves) {
@@ -60,23 +52,6 @@ export class ShelfAssignerComponent implements OnInit {
         })
       ).subscribe();
     }
-  }
-
-  saveNewShelf(): void {
-    const newShelf: Partial<Shelf> = {
-      name: this.shelfName,
-      icon: this.selectedIcon ? this.selectedIcon.replace('pi pi-', '') : 'heart'
-    };
-    this.shelfService.createShelf(newShelf as Shelf).subscribe({
-      next: () => {
-        this.messageService.add({severity: 'info', summary: 'Success', detail: `Shelf created: ${this.shelfName}`});
-        this.displayShelfDialog = false;
-      },
-      error: (e) => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to create shelf'});
-        console.error('Error creating shelf:', e);
-      }
-    });
   }
 
   updateBooksShelves(): void {
@@ -110,26 +85,20 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   createShelfDialog(): void {
-    this.displayShelfDialog = true;
-  }
+    const dialogRef = this.bookDialogHelper.openShelfCreator();
 
-  closeShelfDialog(): void {
-    this.displayShelfDialog = false;
+    dialogRef.onClose.subscribe((created: boolean) => {
+      if (created) {
+        this.shelfService.reloadShelves();
+      }
+    });
   }
 
   closeDialog(): void {
     this.dynamicDialogRef.close();
   }
 
-  openIconPicker() {
-    this.iconPickerService.open().subscribe(icon => {
-      if (icon) {
-        this.selectedIcon = icon;
-      }
-    })
-  }
-
-  clearSelectedIcon() {
-    this.selectedIcon = null;
+  isShelfSelected(shelf: Shelf): boolean {
+    return this.selectedShelves.some(s => s.id === shelf.id);
   }
 }

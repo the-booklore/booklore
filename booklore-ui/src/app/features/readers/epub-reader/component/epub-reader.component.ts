@@ -31,8 +31,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   @ViewChild('epubContainer', {static: false}) epubContainer!: ElementRef;
 
   isLoading = true;
-  chapters: { label: string; href: string }[] = [];
+  chapters: { label: string; href: string; level: number }[] = [];
   currentChapter = '';
+  currentChapterHref: string | null = null;
   isDrawerVisible = false;
   isSettingsDrawerVisible = false;
 
@@ -104,10 +105,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             this.book = ePub(fileReader.result as ArrayBuffer);
 
             this.book.loaded.navigation.then((nav: any) => {
-              this.chapters = nav.toc.map((chapter: any) => ({
-                label: chapter.label,
-                href: chapter.href,
-              }));
+              this.chapters = this.extractChapters(nav.toc, 0);
             });
 
             const settingScope = myself.userSettings.perBookSetting.epub;
@@ -163,6 +161,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
               : this.rendition.display();
 
             displayPromise.then(() => {
+              this.updateCurrentChapter(this.rendition.currentLocation());
               this.setupKeyListener();
               this.trackProgress();
               this.setupTouchListener();
@@ -345,7 +344,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  navigateToChapter(chapter: { label: string; href: string }): void {
+  navigateToChapter(chapter: { label: string; href: string; level: number }): void {
     if (this.book && chapter.href) {
       this.book.rendition.display(chapter.href);
     }
@@ -362,6 +361,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private trackProgress(): void {
     if (!this.book || !this.rendition) return;
     this.rendition.on('relocated', (location: any) => {
+      this.updateCurrentChapter(location);
       const cfi = location.end.cfi;
       const currentIndex = location.start.index;
       const totalSpineItems = this.book.spine.items.length;
@@ -381,7 +381,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
 
-      this.currentChapter = getChapter(this.book, location)?.label;
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
     });
 
@@ -443,5 +442,34 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         });
       }, 3000);
     }
+  }
+
+  private updateCurrentChapter(location: any): void {
+    if (!location) return;
+    const chapter = getChapter(this.book, location);
+    if (chapter) {
+      if (chapter.label) {
+        this.currentChapter = chapter.label;
+      }
+      this.currentChapterHref = chapter.href;
+    }
+  }
+
+  private extractChapters(toc: any[], level: number): { label: string; href: string; level: number }[] {
+    const chapters: { label: string; href: string; level: number }[] = [];
+
+    for (const item of toc) {
+      chapters.push({
+        label: item.label,
+        href: item.href,
+        level: level
+      });
+
+      if (item.subitems && item.subitems.length > 0) {
+        chapters.push(...this.extractChapters(item.subitems, level + 1));
+      }
+    }
+
+    return chapters;
   }
 }

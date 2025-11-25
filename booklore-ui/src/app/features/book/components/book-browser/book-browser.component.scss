@@ -46,18 +46,42 @@
   left: 10%;
   right: 10%;
   display: flex;
-  justify-content: center;
+  align-items: center;
   padding: 1rem 0.5rem 0.5rem;
   z-index: 1;
   border-radius: 10px 10px 0 0;
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-width: 1px 1px 0px 1px;
+
+  > .flex {
+    width: 100%;
+  }
+}
+
+.selected-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+
+  i {
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 768px) {
   .book-browser-footer {
     left: 0%;
     right: 0%;
+  }
+
+  .selected-count-badge {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+
+    i {
+      font-size: 0.9rem;
+    }
   }
 }
 

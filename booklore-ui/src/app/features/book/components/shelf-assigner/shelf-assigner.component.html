@@ -1,47 +1,89 @@
-<div class="p-4 min-w-[26rem] min-h-[30rem] flex flex-col">
-
-  <div class="flex flex-col flex-grow">
-
-    @for (shelf of (shelfState$ | async)?.shelves; track shelf) {
-      <div>
-        <div class="flex flex-row items-center gap-4 py-2">
-          <p-checkbox [inputId]="shelf.name" name="group" [value]="shelf" [(ngModel)]="selectedShelves"></p-checkbox>
-          <label [for]="shelf.id">{{ shelf.name }}</label>
-        </div>
-      </div>
-    }
-
-    <div class="flex justify-between items-center pt-4 mt-auto">
-      <p-button outlined="true" label="Create Shelf" (onClick)="createShelfDialog()"></p-button>
-      <div class="flex gap-4">
-        <p-button severity="secondary" label="Cancel" (onClick)="closeDialog()"></p-button>
-        <p-button label="Save" (onClick)="updateBooksShelves()"></p-button>
-      </div>
+<div class="shelf-assigner">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-bookmark header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Assign Books to Shelves</h2>
+      <p class="panel-description">
+        @if (isMultiBooks) {
+          Select shelves for {{ bookIds.size }} {{ bookIds.size === 1 ? 'book' : 'books' }}
+        } @else {
+          Organize "{{ book.metadata?.title }}" into your shelves
+        }
+      </p>
     </div>
   </div>
 
-  <p-dialog [style]="{ width: '26rem', height: '30rem' }"  [(visible)]="displayShelfDialog" header="Create Shelf" [modal]="true" [draggable]="false" [closable]="true" (onHide)="closeShelfDialog()">
-    <div class="py-2">
-      <label for="shelfName">Shelf Name</label>
-      <input id="shelfName" type="text" pInputText [(ngModel)]="shelfName" class="w-full"/>
-    </div>
-    <div class="py-4">
-      <label>Shelf Icon</label>
-      @if (!selectedIcon) {
-        <div>
-          <p-button label="Select Icon" icon="pi pi-search" (onClick)="openIconPicker()"></p-button>
+  <div class="shelves-container">
+    @if ((shelfState$ | async)?.shelves && (shelfState$ | async)!.shelves!.length > 0) {
+      <div class="shelves-list">
+        <div class="list-header">
+          <span class="shelf-count">
+            <i class="pi pi-bookmark"></i>
+            {{ (shelfState$ | async)!.shelves!.length }} {{ (shelfState$ | async)!.shelves!.length === 1 ? 'shelf' : 'shelves' }} available
+          </span>
         </div>
-      }
-      @if (selectedIcon) {
-        <div class="flex items-center gap-4">
-          <i [class]="selectedIcon"></i>
-          <p-button icon="pi pi-times" text="true" outlined="true" severity="warn" (onClick)="clearSelectedIcon()"></p-button>
+
+        <div class="shelves-grid">
+          @for (shelf of (shelfState$ | async)?.shelves; track shelf.id) {
+            <div class="shelf-item" [class.selected]="isShelfSelected(shelf)">
+              <div class="shelf-checkbox">
+                <p-checkbox
+                  [inputId]="'shelf-' + shelf.id"
+                  name="shelves"
+                  [value]="shelf"
+                  [(ngModel)]="selectedShelves"
+                />
+              </div>
+              <label [for]="'shelf-' + shelf.id" class="shelf-label">
+                <div class="shelf-icon-wrapper">
+                  @if (shelf.icon) {
+                    <i [class]="'pi pi-' + shelf.icon + ' shelf-icon'"></i>
+                  } @else {
+                    <i class="pi pi-bookmark shelf-icon"></i>
+                  }
+                </div>
+                <span class="shelf-name">{{ shelf.name }}</span>
+              </label>
+            </div>
+          }
         </div>
-      }
+      </div>
+    } @else {
+      <div class="empty-state">
+        <div class="empty-icon-wrapper">
+          <i class="pi pi-bookmark empty-icon"></i>
+        </div>
+        <h3 class="empty-title">No Shelves Available</h3>
+        <p class="empty-description">
+          Create your first shelf to start organizing your books.<br/>
+          Click the button below to get started.
+        </p>
+      </div>
+    }
+  </div>
+
+  <div class="dialog-footer">
+    <p-button
+      label="Create Shelf"
+      icon="pi pi-plus"
+      [outlined]="true"
+      (onClick)="createShelfDialog()"
+    />
+    <div class="footer-actions">
+      <p-button
+        label="Cancel"
+        severity="secondary"
+        [outlined]="true"
+        (onClick)="closeDialog()"
+      />
+      <p-button
+        label="Save Changes"
+        icon="pi pi-check"
+        severity="success"
+        (onClick)="updateBooksShelves()"
+      />
     </div>
-    <ng-template pTemplate="footer">
-      <p-button label="Cancel" severity="secondary" (onClick)="closeShelfDialog()" class="p-button-text"></p-button>
-      <p-button label="Save" (onClick)="saveNewShelf()"></p-button>
-    </ng-template>
-  </p-dialog>
+  </div>
 </div>
