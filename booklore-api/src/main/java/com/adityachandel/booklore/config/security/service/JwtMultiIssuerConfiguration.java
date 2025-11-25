@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.config.security.service;
 
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -7,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -14,7 +17,11 @@ import java.util.*;
 @Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "booklore.security.oidc")
+@RequiredArgsConstructor
 public class JwtMultiIssuerConfiguration {
+
+    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+    private final AppSettingService appSettingService;
 
     @Value("${booklore.security.oauth2.multi-issuer.enabled:false}")
     private boolean legacyEnabled = false;
@@ -49,35 +56,8 @@ public class JwtMultiIssuerConfiguration {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        if (shouldUseLegacyConfig()) {
-            log.info("Using legacy multi-issuer configuration for backward compatibility");
-            return createLegacyMultiIssuerDecoder();
-        }
-
-        if (!enabled) {
-            log.warn("JWT issuer configuration is disabled");
-            return null;
-        }
-
-        if (!issuers.isEmpty()) {
-            return createExplicitMultiIssuerDecoder();
-        }
-
-        if (issuerUri != null || internalIssuerUri != null) {
-            return createEnvironmentBasedDecoder();
-        }
-
-        if (enableLocalDevFallback && isLocalDevelopmentEnvironment()) {
-            log.warn("Using local development fallback - NOT FOR PRODUCTION");
-            return createLocalDevDecoder();
-        }
-
-        throw new IllegalStateException(
-            "No JWT issuer configuration found. Please configure:\n" +
-            "1. app.security.jwt.issuers[] (recommended), or\n" +
-            "2. app.security.jwt.issuer-uri + internal-issuer-uri, or\n" +
-            "3. Set app.security.jwt.enable-local-dev-fallback=true for local dev only"
-        );
+        // Defer configuration check until first use to avoid circular dependency
+        return new LazyJwtDecoder(dynamicOidcJwtProcessor, appSettingService, this);
     }
 
     private JwtDecoder createExplicitMultiIssuerDecoder() {
@@ -241,24 +221,18 @@ public class JwtMultiIssuerConfiguration {
             );
         }
 
+        /**
+         * Extracts the issuer from JWT token using proper JWT parser.
+         * This avoids fragile string manipulation that can fail on edge cases.
+         */
         private String extractIssuerFromToken(String token) {
             try {
-                String[] parts = token.split("\\.");
-                if (parts.length >= 2) {
-                    String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
-                    int issStart = payload.indexOf("\"iss\":\"");
-                    if (issStart != -1) {
-                        issStart += 7;
-                        int issEnd = payload.indexOf("\"", issStart);
-                        if (issEnd != -1) {
-                            return payload.substring(issStart, issEnd);
-                        }
-                    }
-                }
+                com.nimbusds.jwt.SignedJWT signedJWT = com.nimbusds.jwt.SignedJWT.parse(token);
+                return signedJWT.getJWTClaimsSet().getIssuer();
             } catch (Exception e) {
-                // Ignore
+                log.debug("Unable to extract issuer from token: {}", e.getMessage());
+                return null;
             }
-            return null;
         }
     }
 
@@ -348,5 +322,145 @@ public class JwtMultiIssuerConfiguration {
     public boolean isStrictIssuerValidation() { return strictIssuerValidation; }
     public void setStrictIssuerValidation(boolean strict) {
         this.strictIssuerValidation = strict;
+    }
+
+    /**
+     * JwtDecoder implementation that delegates to DynamicOidcJwtProcessor
+     * to enable advanced features like JTI replay prevention and protocol upgrades.
+     */
+    private static class DynamicOidcJwtDecoder implements JwtDecoder {
+        private final DynamicOidcJwtProcessor processor;
+
+        public DynamicOidcJwtDecoder(DynamicOidcJwtProcessor processor) {
+            this.processor = processor;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException {
+            try {
+                var claimsSet = processor.process(token);
+                return createJwtFromClaimsSet(token, claimsSet);
+            } catch (JwtValidationException e) {
+                log.debug("JWT validation failed: {}", e.getMessage());
+                if (e.getErrors() != null && !e.getErrors().isEmpty()) {
+                    log.debug("JWT validation errors: {}", e.getErrors());
+                }
+                // Ensure errors list is not empty for Spring Security
+                if (e.getErrors() == null || e.getErrors().isEmpty()) {
+                    throw new JwtValidationException(e.getMessage(), 
+                        java.util.Collections.singletonList(new OAuth2Error("jwt_validation_error", e.getMessage(), null)));
+                }
+                throw e;
+            } catch (JwtException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new JwtValidationException("Failed to process JWT: " + e.getMessage(), 
+                    java.util.Collections.singletonList(new OAuth2Error("jwt_processing_error", e.getMessage(), null)));
+            }
+        }
+
+        private Jwt createJwtFromClaimsSet(String token, com.nimbusds.jwt.JWTClaimsSet claimsSet) {
+            // Parse the original token to get headers
+            try {
+                var parsedJwt = com.nimbusds.jwt.SignedJWT.parse(token);
+                var headers = parsedJwt.getHeader().toJSONObject();
+                var claims = claimsSet.toJSONObject();
+
+                // Convert timestamp claims from Long to Instant
+                if (claims.get("iat") instanceof Long iat) {
+                    claims.put("iat", java.time.Instant.ofEpochSecond(iat));
+                }
+                if (claims.get("exp") instanceof Long exp) {
+                    claims.put("exp", java.time.Instant.ofEpochSecond(exp));
+                }
+                if (claims.get("nbf") instanceof Long nbf) {
+                    claims.put("nbf", java.time.Instant.ofEpochSecond(nbf));
+                }
+
+                return Jwt.withTokenValue(token)
+                    .headers(h -> h.putAll(headers))
+                    .claims(c -> c.putAll(claims))
+                    .build();
+            } catch (Exception e) {
+                throw new JwtValidationException("Failed to create Jwt from claims: " + e.getMessage(), 
+                    java.util.Collections.singletonList(new OAuth2Error("jwt_creation_error", e.getMessage(), null)));
+            }
+        }
+    }
+
+    /**
+     * Lazy JwtDecoder that defers configuration until first use to avoid circular dependencies.
+     */
+    private static class LazyJwtDecoder implements JwtDecoder {
+        private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+        private final AppSettingService appSettingService;
+        private final JwtMultiIssuerConfiguration config;
+        private volatile JwtDecoder delegate;
+        private final Object lock = new Object();
+
+        public LazyJwtDecoder(DynamicOidcJwtProcessor dynamicOidcJwtProcessor,
+                            AppSettingService appSettingService,
+                            JwtMultiIssuerConfiguration config) {
+            this.dynamicOidcJwtProcessor = dynamicOidcJwtProcessor;
+            this.appSettingService = appSettingService;
+            this.config = config;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException {
+            log.debug("LazyJwtDecoder.decode() called");
+            if (delegate == null) {
+                synchronized (lock) {
+                    if (delegate == null) {
+                        delegate = createDelegate();
+                        log.debug("Created delegate: {}", (delegate != null ? delegate.getClass().getSimpleName() : "null"));
+                    }
+                }
+            }
+            if (delegate == null) {
+                throw new JwtException("No JWT decoder available - check configuration");
+            }
+            return delegate.decode(token);
+        }
+
+        private JwtDecoder createDelegate() {
+            var appSettings = appSettingService.getAppSettings();
+            log.debug("OIDC enabled: {}, provider details: {}", appSettings.isOidcEnabled(), (appSettings.getOidcProviderDetails() != null));
+            if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
+                log.info("Using dynamic OIDC JWT processor for advanced security features");
+                return new DynamicOidcJwtDecoder(dynamicOidcJwtProcessor);
+            }
+
+            if (config.shouldUseLegacyConfig()) {
+                log.info("Using legacy multi-issuer configuration for backward compatibility");
+                return config.createLegacyMultiIssuerDecoder();
+            }
+
+            if (!config.enabled) {
+                log.warn("JWT issuer configuration is disabled");
+                return null;
+            }
+
+            if (!config.issuers.isEmpty()) {
+                return config.createExplicitMultiIssuerDecoder();
+            }
+
+            if (config.issuerUri != null || config.internalIssuerUri != null) {
+                return config.createEnvironmentBasedDecoder();
+            }
+
+            if (config.enableLocalDevFallback && config.isLocalDevelopmentEnvironment()) {
+                log.warn("Using local development fallback - NOT FOR PRODUCTION");
+                return config.createLocalDevDecoder();
+            }
+
+            throw new IllegalStateException(
+                "No JWT issuer configuration found. Please configure:\n" +
+                "1. OIDC provider details in app settings (recommended for dynamic config), or\n" +
+                "2. app.security.jwt.issuers[] (recommended), or\n" +
+                "3. app.security.jwt.issuer-uri + internal-issuer-uri, or\n" +
+                "4. Set app.security.jwt.enable-local-dev-fallback=true for local dev only"
+            );
+        }
     }
 }

@@ -7,3 +7,4 @@ app:
         - name: "Production Keycloak"
           external-url: "https://auth.company.com/realms/prod"
           internal-url: "http://keycloak:8080/realms/prod"
+

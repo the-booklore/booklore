@@ -4,12 +4,15 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
+import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import com.adityachandel.booklore.config.security.service.SimpleRoleConverter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -44,6 +47,7 @@ public class SecurityConfig {
     private final AppProperties appProperties;
     private final JwtDecoder jwtDecoder;
     private final Converter<Jwt, JwtAuthenticationToken> jwtAuthenticationConverter;
+    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
 
     private static final String[] SWAGGER_ENDPOINTS = {
             "/api/v1/swagger-ui.html",
@@ -181,5 +185,10 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
 
         return source;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void onApplicationReady() {
+        dynamicOidcJwtProcessor.warmUpOidcConfiguration();
     }
 }

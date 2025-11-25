@@ -4,6 +4,7 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.JwtUtils;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
@@ -20,6 +21,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Instant;
 import java.util.List;
@@ -38,6 +40,7 @@ public class AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final DefaultSettingInitializer defaultSettingInitializer;
+    private final BookLoreUserTransformer bookLoreUserTransformer;
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -50,8 +53,17 @@ public class AuthenticationService {
                 defaultSettingInitializer.ensureDefaultSettings(user);
             }
             return user;
+        } else if (principal instanceof String username) {
+            // Handle OIDC authentication where principal is username
+            BookLoreUserEntity userEntity = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException("User not found for username: " + username));
+            BookLoreUser user = bookLoreUserTransformer.toDTO(userEntity);
+            if (user.getId() != null && user.getId() != -1L) {
+                defaultSettingInitializer.ensureDefaultSettings(user);
+            }
+            return user;
         }
-        throw new IllegalStateException("Authenticated principal is not of type BookLoreUser");
+        throw new IllegalStateException("Authenticated principal is not of type BookLoreUser or String");
     }
 
     public BookLoreUser getSystemUser() {
@@ -94,6 +106,11 @@ public class AuthenticationService {
 
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
         BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername()));
+
+        if (user.getProvisioningMethod() == ProvisioningMethod.OIDC) {
+            log.warn("Password authentication attempt blocked for OIDC-provisioned user: {}", loginRequest.getUsername());
+            throw ApiError.INVALID_CREDENTIALS.createException("OIDC users cannot authenticate with password. Please use your identity provider.");
+        }
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {
             throw ApiError.INVALID_CREDENTIALS.createException();

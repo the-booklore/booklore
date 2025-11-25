@@ -22,6 +22,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
 import java.net.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -58,13 +60,20 @@ public class DynamicOidcJwtProcessor {
     private final AppSettingService appSettingService;
     private final OidcProperties oidcProperties;
     private final Environment environment;
+    
+    private volatile boolean healthCheckCompleted = false;
 
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
     private volatile String currentIssuerUri;
     private volatile String currentClientId;
-    
+
     // Cache for JWT IDs to prevent token replay attacks
     private volatile Cache<String, Boolean> usedTokenCache;
+
+    // Read-write lock for thread-safe configuration changes and concurrent token processing
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
+    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
 
     public ConfigurableJWTProcessor<SecurityContext> getProcessor() throws Exception {
         var appSettings = appSettingService.getAppSettings();
@@ -83,7 +92,9 @@ public class DynamicOidcJwtProcessor {
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
         if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-            synchronized (this) {
+            // Acquire write lock for configuration changes
+            writeLock.lock();
+            try {
                 localRef = jwtProcessor;
                 if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
                     log.info("OIDC configuration change detected (Old Issuer: {}, New Issuer: {}). Rebuilding JWT Processor.", currentIssuerUri, normalizedIssuerUri);
@@ -92,6 +103,8 @@ public class DynamicOidcJwtProcessor {
                     this.currentClientId = clientId;
                     localRef = this.jwtProcessor;
                 }
+            } finally {
+                writeLock.unlock();
             }
         }
         return localRef;
@@ -136,17 +149,22 @@ public class DynamicOidcJwtProcessor {
         // 1. Log safe metadata
         logTokenMetadata(token);
 
+        // Acquire read lock for concurrent token processing
+        readLock.lock();
         try {
             // 2. Execute verification
             JWTClaimsSet claimsSet = getProcessor().process(token, null);
-            
+
             // 3. Check for token replay (JTI-based prevention)
             if (oidcProperties.jwt().enableReplayPrevention()) {
                 String jti = claimsSet.getJWTID();
                 if (jti != null && !jti.isEmpty()) {
                     Cache<String, Boolean> localCache = usedTokenCache;
                     if (localCache == null) {
-                        synchronized (this) {
+                        // Need write lock for cache initialization
+                        readLock.unlock();
+                        writeLock.lock();
+                        try {
                             localCache = usedTokenCache;
                             if (localCache == null) {
                                 usedTokenCache = Caffeine.newBuilder()
@@ -154,18 +172,22 @@ public class DynamicOidcJwtProcessor {
                                     .maximumSize(oidcProperties.jwt().replayCacheSize())
                                     .build();
                                 localCache = usedTokenCache;
-                                log.info("Initialized JWT replay prevention cache (size: {}, TTL: 2h)", 
+                                log.info("Initialized JWT replay prevention cache (size: {}, TTL: 2h)",
                                     oidcProperties.jwt().replayCacheSize());
                             }
+                            // Downgrade to read lock for the rest of the processing
+                            readLock.lock();
+                        } finally {
+                            writeLock.unlock();
                         }
                     }
-                    
+
                     // Check if token was already used
                     if (localCache.getIfPresent(jti) != null) {
                         log.error("SECURITY: Token replay attempt detected. JTI: {}", jti);
                         throw new BadJWTException("Token has already been used (replay attack prevention)");
                     }
-                    
+
                     localCache.put(jti, Boolean.TRUE);
                     log.debug("Token JTI '{}' cached to prevent replay", jti);
                 } else {
@@ -173,7 +195,7 @@ public class DynamicOidcJwtProcessor {
                     throw new BadJWTException("Token missing JTI claim (required for replay prevention)");
                 }
             }
-            
+
             return claimsSet;
         } catch (BadJWTException e) {
             // 4. Contextualize the error without leaking the token
@@ -183,12 +205,14 @@ public class DynamicOidcJwtProcessor {
             if (e.getMessage().contains("Issuer")) {
                 log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", currentIssuerUri);
             } else if (e.getMessage().contains("Audience")) {
-                 log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", currentClientId);
+                log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", currentClientId);
             }
             throw e;
         } catch (Exception e) {
             log.error("Unexpected error processing JWT: {}", e.getMessage(), e);
             throw e;
+        } finally {
+            readLock.unlock();
         }
     }
 
@@ -274,7 +298,7 @@ public class DynamicOidcJwtProcessor {
                 super.verify(claimsSet, ctx);
             }
         };
-        claimsVerifier.setMaxClockSkew(Math.toIntExact(clockSkewSeconds));
+        claimsVerifier.setMaxClockSkew((int) clockSkewSeconds);
 
         processor.setJWTClaimsSetVerifier((claims, context) -> {
             claimsVerifier.verify(claims, context);
@@ -374,6 +398,7 @@ public class DynamicOidcJwtProcessor {
 
         if (algorithms.isEmpty()) {
             log.debug("Discovery document did not advertise signing algorithms; defaulting to {}", JWSAlgorithm.RS256);
+            algorithms.add(JWSAlgorithm.RS256);
         }
 
         return Collections.unmodifiableSet(algorithms);
@@ -589,6 +614,25 @@ public class DynamicOidcJwtProcessor {
             } finally {
                 connection.disconnect();
             }
+        }
+    }
+
+    public void warmUpOidcConfiguration() {
+        if (healthCheckCompleted) {
+            return;
+        }
+        
+        try {
+            var appSettings = appSettingService.getAppSettings();
+            if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
+                log.info("Warming up OIDC configuration at startup...");
+                getProcessor(); // This will fetch JWKS and validate configuration
+                healthCheckCompleted = true;
+                log.info("OIDC configuration validated successfully - provider is reachable");
+            }
+        } catch (Exception e) {
+            log.error("OIDC provider not reachable at startup. First authentication requests may fail until provider is available: {}", 
+                     e.getMessage());
         }
     }
 }

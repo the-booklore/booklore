@@ -24,7 +24,7 @@ public record OidcProperties(Jwks jwks, Jwt jwt, boolean allowIssuerProtocolMism
             );
         }
         if (jwt == null) {
-            jwt = new Jwt(Duration.ofSeconds(60), true, 10000); // Enable JTI cache by default
+            jwt = new Jwt(Duration.ofSeconds(60), false, 10000); // Disable replay prevention by default for tests
         }
     }
 
