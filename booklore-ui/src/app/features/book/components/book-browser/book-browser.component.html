@@ -276,10 +276,17 @@
           @if (selectedBooks.size > 0) {
             @if (userService.userState$ | async; as userState) {
               <div class="book-browser-footer bg-[var(--card-background)] bg-opacity-10" [@slideInOut]>
-                <div class="flex justify-between items-center">
-                  <div class="flex">
+                <div class="flex items-center">
+                  <div class="flex items-center pl-2 w-1/4">
+                    <div class="selected-count-badge text-zinc-200">
+                      <i class="pi pi-check-circle mr-2"></i>
+                      <span class="font-bold text-base" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
+                      <span class="ml-1">selected</span>
+                    </div>
+                  </div>
+                  <div class="flex justify-center w-2/4">
                     @if (entityType$ | async; as entityType) {
-                      <div class="flex gap-2 md:gap-6 pr-2">
+                      <div class="flex gap-2 md:gap-6">
                         @if (userState.user!.permissions.canEditMetadata) {
                           <p-menu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body" class="hidden"/>
                           <p-button
@@ -343,7 +350,7 @@
                       </div>
                     }
                     <p-divider layout="vertical"></p-divider>
-                    <div class="flex gap-2 md:gap-6 px-2">
+                    <div class="flex gap-2 md:gap-6">
                       <p-button
                         outlined="true"
                         icon="pi pi-check-square"
@@ -361,20 +368,19 @@
                         tooltipPosition="top">
                       </p-button>
                     </div>
+                    @if (userState?.user?.permissions?.admin || userState?.user?.permissions?.canDeleteBook) {
+                      <p-divider layout="vertical"></p-divider>
+                      <p-button
+                        outlined="true"
+                        icon="pi pi-trash"
+                        severity="danger"
+                        (click)="confirmDeleteBooks()"
+                        pTooltip="Delete selected books"
+                        tooltipPosition="top">
+                      </p-button>
+                    }
                   </div>
-
-                  @if (userState?.user?.permissions?.admin || userState?.user?.permissions?.canDeleteBook) {
-                    <p-divider layout="vertical"></p-divider>
-                    <p-button
-                      outlined="true"
-                      icon="pi pi-trash"
-                      severity="danger"
-                      (click)="confirmDeleteBooks()"
-                      pTooltip="Delete selected books"
-                      class="pl-2"
-                      tooltipPosition="top">
-                    </p-button>
-                  }
+                  <div class="w-1/4"></div>
                 </div>
               </div>
             }

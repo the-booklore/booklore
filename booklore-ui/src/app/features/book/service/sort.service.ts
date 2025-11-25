@@ -61,6 +61,17 @@ export class SortService {
       return [title, Number.MAX_SAFE_INTEGER];
     },
     author: (book) => book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null,
+    authorSeries: (book) => {
+      const author = book.metadata?.authors?.map(a => a.toLowerCase()).join(", ") || null;
+      const series = book.metadata?.seriesName?.toLowerCase() || null;
+      const seriesNumber = book.metadata?.seriesNumber ?? Number.MAX_SAFE_INTEGER;
+      const title = book.metadata?.title?.toLowerCase() || '';
+      if (series) {
+        return [author, series, seriesNumber, title];
+      }
+      // For books without a series, use a very large string for series name to sort them last within an author.
+      return [author, '~~~~~~~~~~~~~~~~~', Number.MAX_SAFE_INTEGER, title];
+    },
     publishedDate: (book) => {
       const date = book.metadata?.publishedDate;
       return date === null || date === undefined ? null : new Date(date).getTime();
@@ -83,7 +94,7 @@ export class SortService {
     lastReadTime: (book) => book.lastReadTime ? new Date(book.lastReadTime).getTime() : null,
     addedOn: (book) => book.addedOn ? new Date(book.addedOn).getTime() : null,
     fileSizeKb: (book) => book.fileSizeKb || null,
-    fileName:(book) => book.fileName,
+    fileName: (book) => book.fileName,
   };
 
   applySort(books: Book[], selectedSort: SortOption | null): Book[] {
@@ -101,12 +112,31 @@ export class SortService {
       const aValue = extractor(a);
       const bValue = extractor(b);
 
-      let result: number;
+      let result = 0;
 
       if (Array.isArray(aValue) && Array.isArray(bValue)) {
-        // For titleSeries: [seriesName, seriesNumber]
-        const nameCompare = this.naturalCompare(aValue[0] || '', bValue[0] || '');
-        result = nameCompare !== 0 ? nameCompare : (aValue[1] - bValue[1]);
+        for (let i = 0; i < aValue.length; i++) {
+          const valA = aValue[i];
+          const valB = bValue[i];
+
+          if (typeof valA === 'string' && typeof valB === 'string') {
+            result = this.naturalCompare(valA, valB);
+            if (result !== 0) break;
+          } else if (typeof valA === 'number' && typeof valB === 'number') {
+            result = valA - valB;
+            if (result !== 0) break;
+          } else {
+            if (valA == null && valB != null) {
+              result = 1;
+              break;
+            }
+            if (valA != null && valB == null) {
+              result = -1;
+              break;
+            }
+            result = 0;
+          }
+        }
       } else if (typeof aValue === 'string' && typeof bValue === 'string') {
         result = this.naturalCompare(aValue, bValue);
       } else if (typeof aValue === 'number' && typeof bValue === 'number') {

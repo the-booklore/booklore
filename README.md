@@ -6,13 +6,6 @@
 ![Docker Pulls](https://img.shields.io/docker/pulls/booklore/booklore?color=2496ED)
 [![Join us on Discord](https://img.shields.io/badge/Chat-Discord-5865F2?logo=discord&style=flat)](https://discord.gg/Ee5hd458Uz)
 [![Open Collective backers and sponsors](https://img.shields.io/opencollective/all/booklore?label=Open%20Collective&logo=opencollective&color=7FADF2)](https://opencollective.com/booklore)
-> 🚨 **Important Announcement:**  
-> Docker images have moved to new repositories:
-> - Docker Hub: `https://hub.docker.com/r/booklore/booklore`
-> - GitHub Container Registry: `https://ghcr.io/booklore-app/booklore`
->
-> The legacy repo (`https://ghcr.io/adityachandelgit/booklore-app`) will remain available for existing images but will not receive further updates.
-
 
 BookLore is a self-hosted web app for organizing and managing your personal book collection. It provides an intuitive interface to browse, read, and track your progress across PDFs and eBooks. With robust metadata management, multi-user support, and a sleek, modern UI, BookLore makes it easy to
 build and explore your personal library.
@@ -44,7 +37,6 @@ If you find **BookLore** helpful, please consider supporting its development:
 - 💸 Contribute via [Open Collective](https://opencollective.com/booklore) to help fund development, hosting, and testing costs.
   > 📌 Currently raising funds for a **Kobo device** to implement and test native Kobo sync support.  
   > 💡 [Support the Kobo Sync Bounty →](https://opencollective.com/booklore/projects/kobo-device-for-testing)
-- ⚡ Prefer one-time support? You can also donate via [Venmo](https://venmo.com/AdityaChandel).
 
 ## 🌐 Live Demo: Explore BookLore in Action
 
@@ -70,9 +62,6 @@ Our up-to-date docs walk you through installation, setup, configuration, and key
 
 > 💡 **Want to improve the documentation?**  
 > You can update the docs at [booklore-app/booklore-docs](https://github.com/booklore-app/booklore-docs) and create a pull request to contribute your changes!
-
-🎥 [BookLore Tutorials: YouTube](https://www.youtube.com/watch?v=UMrn_fIeFRo&list=PLi0fq0zaM7lqY7dX0R66jQtKW64z4_Tdz)  
-These older videos provide useful walkthroughs and visual guidance, but note that some content may be outdated compared to the current docs.
 
 ## 🐳 Deploy with Docker
 
@@ -201,26 +190,6 @@ services:
       - ./books:/books
       - ./bookdrop:/bookdrop # 👈 Bookdrop directory
 ```
-
-## 🔑 OIDC/OAuth2 Authentication (Authentik, Pocket ID, etc.)
-
-BookLore supports optional OIDC/OAuth2 authentication for secure access. This feature allows you to integrate external authentication providers for a seamless login experience.
-
-While the integration has been tested with **Authentik** and **Pocket ID**, it should work with other OIDC providers like **Authelia** as well. The setup allows you to use either JWT-based local authentication or external providers, giving users the flexibility to choose their preferred method.
-
-For detailed instructions on setting up OIDC authentication:
-
-- 📺 [YouTube video on configuring Authentik with BookLore](https://www.youtube.com/watch?v=r6Ufh9ldF9M)
-- 📘 [Step-by-step setup guide for Pocket ID](docs/OIDC-Setup-With-PocketID.md)
-
-## 🛡️ Forward Auth with Reverse Proxy
-
-BookLore also supports **Forward Auth** (also known as Remote Auth) for authentication through reverse proxies like **Traefik**, **Nginx**, or **Caddy**. Forward Auth works by having your reverse proxy handle authentication and pass user information via HTTP headers to BookLore. This can be set up
-with providers like **Authelia** and **Authentik**.
-
-For detailed setup instructions and configuration examples:
-
-- 📘 [Complete Forward Auth Setup Guide](docs/forward-auth-with-proxy.md)
 
 ## 🤝 Community & Support
 
