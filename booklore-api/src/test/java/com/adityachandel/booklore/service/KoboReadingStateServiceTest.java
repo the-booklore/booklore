@@ -139,7 +139,7 @@ class KoboReadingStateServiceTest {
         assertEquals("epubcfi(/6/4[chap01ref]!/4/2/1:3)", savedProgress.getKoboLocation());
         assertEquals("EpubCfi", savedProgress.getKoboLocationType());
         assertEquals("Kobo", savedProgress.getKoboLocationSource());
-        assertNotNull(savedProgress.getKoboLastSyncTime());
+        assertNotNull(savedProgress.getKoboProgressReceivedTime());
         assertNotNull(savedProgress.getLastReadTime());
         assertEquals(ReadStatus.READING, savedProgress.getReadStatus());
     }
@@ -379,7 +379,7 @@ class KoboReadingStateServiceTest {
         progress.setKoboLocation("epubcfi(/6/4[chap01ref]!/4/2/1:3)");
         progress.setKoboLocationType("EpubCfi");
         progress.setKoboLocationSource("Kobo");
-        progress.setKoboLastSyncTime(Instant.now());
+        progress.setKoboProgressReceivedTime(Instant.now());
 
         KoboReadingState expectedState = KoboReadingState.builder()
                 .entitlementId(entitlementId)
@@ -496,7 +496,7 @@ class KoboReadingStateServiceTest {
 
         UserBookProgressEntity savedProgress = progressCaptor.getValue();
         assertNull(savedProgress.getKoboProgressPercent());
-        assertNotNull(savedProgress.getKoboLastSyncTime());
+        assertNotNull(savedProgress.getKoboProgressReceivedTime());
     }
 
     @Test

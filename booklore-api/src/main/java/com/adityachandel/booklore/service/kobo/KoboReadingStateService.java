@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class KoboReadingStateService {
 
+    private static final int STATUS_SYNC_BUFFER_SECONDS = 10;
+    
     private final KoboReadingStateRepository repository;
     private final KoboReadingStateMapper mapper;
     private final UserBookProgressRepository progressRepository;
@@ -88,6 +90,11 @@ public class KoboReadingStateService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public void deleteReadingState(Long bookId) {
+        repository.findByEntitlementId(String.valueOf(bookId)).ifPresent(repository::delete);
+    }
+
     public KoboReadingStateWrapper getReadingState(String entitlementId) {
         Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId)
                 .map(mapper::toDto)
@@ -105,11 +112,7 @@ public class KoboReadingStateService {
             
             return progressRepository.findByUserIdAndBookId(user.getId(), bookId)
                     .filter(progress -> progress.getKoboProgressPercent() != null || progress.getKoboLocation() != null)
-                    .map(progress -> {
-                        log.info("Constructed reading state from UserBookProgress for book: {}, progress: {}%",
-                                entitlementId, progress.getKoboProgressPercent());
-                        return readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress);
-                    });
+                    .map(progress -> readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress));
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format when constructing reading state: {}", entitlementId);
             return Optional.empty();
@@ -155,7 +158,7 @@ public class KoboReadingStateService {
                 }
             }
             
-            progress.setKoboLastSyncTime(Instant.now());
+            progress.setKoboProgressReceivedTime(Instant.now());
             progress.setLastReadTime(Instant.now());
             
             if (progress.getKoboProgressPercent() != null) {
@@ -163,10 +166,7 @@ public class KoboReadingStateService {
             }
             
             progressRepository.save(progress);
-            
-            log.info("Synced Kobo progress to BookLore: userId={}, bookId={}, progress={}%", 
-                    userId, bookId, progress.getKoboProgressPercent());
-            
+            log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
@@ -183,15 +183,33 @@ public class KoboReadingStateService {
                 ? settings.getProgressMarkAsReadingThreshold() 
                 : 1f;
         
+        ReadStatus progressBasedStatus;
         if (progressPercent >= finishedThreshold) {
-            userProgress.setReadStatus(ReadStatus.READ);
-            if (userProgress.getDateFinished() == null) {
-                userProgress.setDateFinished(Instant.now());
-            }
+            progressBasedStatus = ReadStatus.READ;
         } else if (progressPercent >= readingThreshold) {
-            userProgress.setReadStatus(ReadStatus.READING);
+            progressBasedStatus = ReadStatus.READING;
         } else {
-            userProgress.setReadStatus(ReadStatus.UNREAD);
+            progressBasedStatus = ReadStatus.UNREAD;
+        }
+        
+        Instant statusModifiedTime = userProgress.getReadStatusModifiedTime();
+        Instant statusSentTime = userProgress.getKoboStatusSentTime();
+        
+        if (statusModifiedTime != null) {
+            if (statusSentTime == null || statusModifiedTime.isAfter(statusSentTime)) {
+                log.debug("Preserving manually-set status {} for book {}", userProgress.getReadStatus(), userProgress.getBook().getId());
+                return;
+            }
+            
+            if (Instant.now().isBefore(statusSentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS))) {
+                log.debug("Preserving status {} for book {} (within sync buffer)", userProgress.getReadStatus(), userProgress.getBook().getId());
+                return;
+            }
+        }
+        
+        userProgress.setReadStatus(progressBasedStatus);
+        if (progressBasedStatus == ReadStatus.READ && userProgress.getDateFinished() == null) {
+            userProgress.setDateFinished(Instant.now());
         }
     }
 }

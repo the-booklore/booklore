@@ -2,6 +2,8 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -14,4 +16,23 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
     Optional<UserBookProgressEntity> findByUserIdAndBookId(Long userId, Long bookId);
 
     List<UserBookProgressEntity> findByUserIdAndBookIdIn(Long userId, Set<Long> bookIds);
+
+    @Query("""
+        SELECT ubp FROM UserBookProgressEntity ubp
+        WHERE ubp.user.id = :userId
+          AND ubp.readStatusModifiedTime IS NOT NULL
+          AND ubp.book.id IN (
+              SELECT ksb.bookId FROM KoboSnapshotBookEntity ksb
+              WHERE ksb.snapshot.id = :snapshotId
+          )
+          AND (
+              ubp.koboStatusSentTime IS NULL
+              OR ubp.readStatusModifiedTime > ubp.koboStatusSentTime
+          )
+        ORDER BY ubp.readStatusModifiedTime ASC
+    """)
+    List<UserBookProgressEntity> findAllBooksWithUnsyncedReadingStatus(
+            @Param("userId") Long userId,
+            @Param("snapshotId") String snapshotId
+    );
 }
