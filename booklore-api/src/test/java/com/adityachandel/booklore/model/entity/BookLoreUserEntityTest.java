@@ -11,10 +11,14 @@ class BookLoreUserEntityTest {
 
         assertThat(user.getShelves())
                 .isNotNull()
-                .isEmpty();
-
+                .isEmpty(); 
         assertThat(user.getSettings())
                 .isNotNull()
                 .isEmpty();
+
+        assertThat(user.isDefaultPassword()).isFalse();
+
+        BookLoreUserEntity defaultUser = BookLoreUserEntity.builder().build();
+        assertThat(defaultUser.isDefaultPassword()).isFalse();
     }
 }
