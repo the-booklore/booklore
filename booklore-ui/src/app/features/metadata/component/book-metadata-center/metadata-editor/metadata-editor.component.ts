@@ -208,7 +208,11 @@ export class MetadataEditorComponent implements OnInit {
       this.originalMetadata = structuredClone(metadata);
       this.populateFormFromMetadata(metadata);
     });
+    
+    this.prepareAutoComplete();
+  }
 
+  private prepareAutoComplete(): void {
     this.bookService.bookState$
       .pipe(
         filter((bookState) => bookState.loaded),
@@ -388,6 +392,7 @@ export class MetadataEditorComponent implements OnInit {
             summary: "Success",
             detail: "Book metadata updated",
           });
+          this.prepareAutoComplete();
         },
         error: (err) => {
           this.isSaving = false;

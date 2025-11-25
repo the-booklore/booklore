@@ -298,23 +298,21 @@
                             icon="pi pi-database">
                           </p-button>
                         }
-                        @if (entityType === EntityType.LIBRARY || entityType === EntityType.ALL_BOOKS || entityType === EntityType.UNSHELVED) {
-                          <p-button
-                            icon="pi pi-bookmark-fill"
-                            outlined="true"
-                            severity="info"
-                            (onClick)="openShelfAssigner()"
-                            pTooltip="Assign to shelf"
-                            tooltipPosition="top">
-                          </p-button>
-                        }
+                        <p-button
+                          icon="pi pi-bookmark-fill"
+                          outlined="true"
+                          severity="info"
+                          (onClick)="openShelfAssigner()"
+                          pTooltip="Assign to shelf"
+                          tooltipPosition="top">
+                        </p-button>
                         @if (entityType === EntityType.SHELF) {
                           <p-button
                             icon="pi pi-bookmark"
                             outlined="true"
                             severity="info"
                             (click)="unshelfBooks()"
-                            pTooltip="Remove from shelf"
+                            pTooltip="Remove from this shelf"
                             tooltipPosition="top">
                           </p-button>
                         }

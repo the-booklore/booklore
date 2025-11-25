@@ -11,8 +11,6 @@ import {AppConfigService} from './shared/service/app-config.service';
 import {MetadataBatchProgressNotification} from './shared/model/metadata-batch-progress.model';
 import {MetadataProgressService} from './shared/service/metadata-progress-service';
 import {BookdropFileNotification, BookdropFileService} from './features/bookdrop/service/bookdrop-file.service';
-import {DuplicateFileNotification} from './shared/websocket/model/duplicate-file-notification.model';
-import {DuplicateFileService} from './shared/websocket/duplicate-file.service';
 import {Subscription} from 'rxjs';
 import {DownloadProgressDialogComponent} from './shared/components/download-progress-dialog/download-progress-dialog.component';
 import {TaskService, TaskProgressPayload} from './features/settings/task-management/task.service';
@@ -35,7 +33,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private notificationEventService = inject(NotificationEventService);
   private metadataProgressService = inject(MetadataProgressService);
   private bookdropFileService = inject(BookdropFileService);
-  private duplicateFileService = inject(DuplicateFileService);
   private taskService = inject(TaskService);
   private appConfigService = inject(AppConfigService); // Keep it here to ensure the service is initialized
 
@@ -85,11 +82,6 @@ export class AppComponent implements OnInit, OnDestroy {
         const logNotification = parseLogNotification(msg.body);
         this.notificationEventService.handleNewNotification(logNotification);
       })
-    );
-    this.subscriptions.push(
-      this.rxStompService.watch('/user/queue/duplicate-file').subscribe(msg =>
-        this.duplicateFileService.addDuplicateFile(JSON.parse(msg.body) as DuplicateFileNotification)
-      )
     );
     this.subscriptions.push(
       this.rxStompService.watch('/user/queue/bookdrop-file').subscribe(msg => {

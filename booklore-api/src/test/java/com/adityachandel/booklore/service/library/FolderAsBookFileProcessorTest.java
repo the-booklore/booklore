@@ -120,7 +120,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(any(LibraryFile.class)))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
@@ -232,7 +232,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.EPUB))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.epub"))))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
@@ -277,7 +277,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.pdf"))))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))

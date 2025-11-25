@@ -2,18 +2,9 @@ package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
-import com.adityachandel.booklore.model.dto.Book;
-import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
-import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.mapper.BookMapper;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -32,15 +23,11 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Comparator;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -50,9 +37,6 @@ import java.util.stream.Stream;
 public class FileService {
 
     private final AppProperties appProperties;
-    private final BookRepository bookRepository;
-    private final BookAdditionalFileRepository bookAdditionalFileRepository;
-    private final BookMapper bookMapper;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -372,59 +356,6 @@ public class FileService {
     // ========================================
     // UTILITY METHODS
     // ========================================
-
-    @Transactional
-    public Optional<Book> checkForDuplicateAndUpdateMetadataIfNeeded(LibraryFile libraryFile, String hash) {
-        if (StringUtils.isBlank(hash)) {
-            log.warn("Skipping file due to missing hash: {}", libraryFile.getFullPath());
-            return Optional.empty();
-        }
-
-        // First check for soft-deleted books with the same hash
-        Optional<BookEntity> softDeletedBook = bookRepository.findByCurrentHashAndDeletedTrue(hash);
-        if (softDeletedBook.isPresent()) {
-            BookEntity book = softDeletedBook.get();
-            log.info("Found soft-deleted book with same hash, undeleting: bookId={} file='{}'",
-                    book.getId(), libraryFile.getFileName());
-
-            // Undelete the book
-            book.setDeleted(false);
-            book.setDeletedAt(null);
-
-            // Update file information
-            book.setFileName(libraryFile.getFileName());
-            book.setFileSubPath(libraryFile.getFileSubPath());
-            book.setLibraryPath(libraryFile.getLibraryPathEntity());
-            book.setLibrary(libraryFile.getLibraryEntity());
-
-            return Optional.of(bookMapper.toBook(book));
-        }
-
-        Optional<BookEntity> existingByHash = bookRepository.findByCurrentHash(hash);
-        if (existingByHash.isPresent()) {
-            BookEntity book = existingByHash.get();
-            String fileName = libraryFile.getFullPath().getFileName().toString();
-            if (!book.getFileName().equals(fileName)) {
-                book.setFileName(fileName);
-            }
-            if (!Objects.equals(book.getLibraryPath().getId(), libraryFile.getLibraryPathEntity().getId())) {
-                book.setLibraryPath(libraryFile.getLibraryPathEntity());
-                book.setFileSubPath(libraryFile.getFileSubPath());
-            }
-            return Optional.of(bookMapper.toBook(book));
-        }
-        Optional<BookAdditionalFileEntity> existingAdditionalFile = bookAdditionalFileRepository.findByAltFormatCurrentHash(hash);
-        if (existingAdditionalFile.isPresent()) {
-            BookAdditionalFileEntity additionalFile = existingAdditionalFile.get();
-            BookEntity book = additionalFile.getBook();
-
-            // Additional file might have a different name or path, so there is no need
-            // to update the file name or library path here
-            return Optional.of(bookMapper.toBook(book));
-        }
-
-        return Optional.empty();
-    }
 
     public static String truncate(String input, int maxLength) {
         if (input == null) return null;
