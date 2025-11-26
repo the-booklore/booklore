@@ -76,7 +76,7 @@ public class KoboLibrarySyncService {
             entitlements.addAll(entitlementService.generateChangedEntitlements(removedIds, token, true));
             
             if (!shouldContinueSync) {
-                entitlements.addAll(syncChangedReadingStates(user.getId(), currSnapshot.getId()));
+                entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
             }
         } else {
             int maxRemaining = 5;
@@ -92,7 +92,7 @@ public class KoboLibrarySyncService {
             entitlements.addAll(entitlementService.generateNewEntitlements(ids, token, false));
             
             if (!shouldContinueSync) {
-                entitlements.addAll(syncChangedReadingStates(user.getId(), currSnapshot.getId()));
+                entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
             }
         }
 
@@ -146,7 +146,7 @@ public class KoboLibrarySyncService {
                 .body(entitlements);
     }
 
-    private List<ChangedReadingState> syncChangedReadingStates(Long userId, String snapshotId) {
+    private List<ChangedReadingState> syncReadingStatesToKobo(Long userId, String snapshotId) {
         List<UserBookProgressEntity> unsyncedProgress = 
                 userBookProgressRepository.findAllBooksWithUnsyncedReadingStatus(userId, snapshotId);
         

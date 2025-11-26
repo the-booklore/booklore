@@ -162,7 +162,7 @@ public class KoboReadingStateService {
             progress.setLastReadTime(Instant.now());
             
             if (progress.getKoboProgressPercent() != null) {
-                updateKoboReadStatus(progress, progress.getKoboProgressPercent() / 100.0);
+                updateReadStatusFromKoboProgress(progress, progress.getKoboProgressPercent() / 100.0);
             }
             
             progressRepository.save(progress);
@@ -172,8 +172,8 @@ public class KoboReadingStateService {
         }
     }
     
-    private void updateKoboReadStatus(UserBookProgressEntity userProgress, double progressFraction) {
-        if (shouldPreserveManualStatus(userProgress)) {
+    private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, double progressFraction) {
+        if (hasUnsyncedStatusChange(userProgress)) {
             return;
         }
         
@@ -185,7 +185,7 @@ public class KoboReadingStateService {
         }
     }
     
-    private boolean shouldPreserveManualStatus(UserBookProgressEntity progress) {
+    private boolean hasUnsyncedStatusChange(UserBookProgressEntity progress) {
         Instant modifiedTime = progress.getReadStatusModifiedTime();
         if (modifiedTime == null) {
             return false;
