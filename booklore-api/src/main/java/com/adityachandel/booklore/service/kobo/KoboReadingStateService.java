@@ -196,7 +196,8 @@ public class KoboReadingStateService {
             return true;
         }
         
-        return Instant.now().isBefore(sentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
+        boolean withinBufferWindow = Instant.now().isBefore(sentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
+        return withinBufferWindow;
     }
     
     private ReadStatus calculateStatusFromProgress(double progressFraction) {
