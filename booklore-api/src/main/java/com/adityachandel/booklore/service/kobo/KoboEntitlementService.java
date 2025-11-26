@@ -91,44 +91,39 @@ public class KoboEntitlementService {
 
     public List<ChangedReadingState> generateChangedReadingStates(List<UserBookProgressEntity> progressEntries) {
         OffsetDateTime now = getCurrentUtc();
+        String timestamp = now.toString();
         
         return progressEntries.stream()
-                .map(progress -> {
-                    String entitlementId = String.valueOf(progress.getBook().getId());
-                    String lastModified = now.toString();
-                    
-                    KoboReadingState.StatusInfo statusInfo = readingStateBuilder.buildStatusInfoFromProgress(progress, lastModified);
-                    
-                    log.debug("Generating ChangedReadingState for book {} with status {}", entitlementId, statusInfo.getStatus());
-                    
-                    KoboReadingState.CurrentBookmark bookmark = progress.getKoboProgressPercent() != null
-                            ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
-                            : readingStateBuilder.buildEmptyBookmark(now);
-                    
-                    KoboReadingState readingState = KoboReadingState.builder()
-                            .entitlementId(entitlementId)
-                            .created(lastModified)
-                            .lastModified(lastModified)
-                            .priorityTimestamp(lastModified)
-                            .statusInfo(statusInfo)
-                            .currentBookmark(bookmark)
-                            .statistics(KoboReadingState.Statistics.builder()
-                                    .lastModified(lastModified)
-                                    .build())
-                            .build();
-                    
-                    return ChangedReadingState.builder()
-                            .changedReadingState(ChangedReadingState.WrappedReadingState.builder()
-                                    .readingState(readingState)
-                                    .build())
-                            .build();
-                })
+                .map(progress -> buildChangedReadingState(progress, timestamp, now))
                 .toList();
+    }
+    
+    private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {
+        String entitlementId = String.valueOf(progress.getBook().getId());
+        
+        KoboReadingState.CurrentBookmark bookmark = progress.getKoboProgressPercent() != null
+                ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
+                : readingStateBuilder.buildEmptyBookmark(now);
+        
+        KoboReadingState readingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .created(timestamp)
+                .lastModified(timestamp)
+                .priorityTimestamp(timestamp)
+                .statusInfo(readingStateBuilder.buildStatusInfoFromProgress(progress, timestamp))
+                .currentBookmark(bookmark)
+                .statistics(KoboReadingState.Statistics.builder().lastModified(timestamp).build())
+                .build();
+        
+        return ChangedReadingState.builder()
+                .changedReadingState(ChangedReadingState.WrappedReadingState.builder()
+                        .readingState(readingState)
+                        .build())
+                .build();
     }
 
     private KoboReadingState createInitialReadingState(BookEntity book) {
         OffsetDateTime now = getCurrentUtc();
-        OffsetDateTime createdOn = getCreatedOn(book);
         String entitlementId = String.valueOf(book.getId());
         
         KoboReadingState existingState = readingStateRepository.findByEntitlementId(entitlementId)
@@ -138,15 +133,12 @@ public class KoboEntitlementService {
         Optional<UserBookProgressEntity> userProgress = progressRepository
                 .findByUserIdAndBookId(authenticationService.getAuthenticatedUser().getId(), book.getId());
         
-        KoboReadingState.CurrentBookmark bookmark;
-        if (existingState != null && existingState.getCurrentBookmark() != null) {
-            bookmark = existingState.getCurrentBookmark();
-        } else {
-            bookmark = userProgress
-                    .filter(progress -> progress.getKoboProgressPercent() != null)
-                    .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
-                    .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
-        }
+        KoboReadingState.CurrentBookmark bookmark = existingState != null && existingState.getCurrentBookmark() != null
+                ? existingState.getCurrentBookmark()
+                : userProgress
+                        .filter(progress -> progress.getKoboProgressPercent() != null)
+                        .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
+                        .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
         
         KoboReadingState.StatusInfo statusInfo = userProgress
                 .map(progress -> readingStateBuilder.buildStatusInfoFromProgress(progress, now.toString()))
@@ -158,13 +150,11 @@ public class KoboEntitlementService {
 
         return KoboReadingState.builder()
                 .entitlementId(entitlementId)
-                .created(createdOn.toString())
+                .created(getCreatedOn(book).toString())
                 .lastModified(now.toString())
                 .statusInfo(statusInfo)
                 .currentBookmark(bookmark)
-                .statistics(KoboReadingState.Statistics.builder()
-                        .lastModified(now.toString())
-                        .build())
+                .statistics(KoboReadingState.Statistics.builder().lastModified(now.toString()).build())
                 .priorityTimestamp(now.toString())
                 .build();
     }

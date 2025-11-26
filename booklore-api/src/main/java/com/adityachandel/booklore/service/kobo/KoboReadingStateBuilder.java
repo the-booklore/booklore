@@ -26,8 +26,8 @@ public class KoboReadingStateBuilder {
 
     public KoboReadingState.CurrentBookmark buildBookmarkFromProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {
         KoboReadingState.CurrentBookmark.Location location = Optional.ofNullable(progress.getKoboLocation())
-                .map(loc -> KoboReadingState.CurrentBookmark.Location.builder()
-                        .value(loc)
+                .map(koboLocation -> KoboReadingState.CurrentBookmark.Location.builder()
+                        .value(koboLocation)
                         .type(progress.getKoboLocationType())
                         .source(progress.getKoboLocationSource())
                         .build())
@@ -63,19 +63,15 @@ public class KoboReadingStateBuilder {
 
     public KoboReadingState.StatusInfo buildStatusInfoFromProgress(UserBookProgressEntity progress, String lastModified) {
         KoboReadStatus koboStatus = mapReadStatusToKoboStatus(progress.getReadStatus());
+        int timesStartedReading = koboStatus == KoboReadStatus.READY_TO_READ ? 0 : 1;
         
         KoboReadingState.StatusInfo.StatusInfoBuilder builder = KoboReadingState.StatusInfo.builder()
                 .lastModified(lastModified)
-                .status(koboStatus);
+                .status(koboStatus)
+                .timesStartedReading(timesStartedReading);
         
         if (koboStatus == KoboReadStatus.FINISHED && progress.getDateFinished() != null) {
             builder.lastTimeFinished(formatTimestamp(progress.getDateFinished()));
-        }
-        
-        if (koboStatus == KoboReadStatus.READING || koboStatus == KoboReadStatus.FINISHED) {
-            builder.timesStartedReading(1);
-        } else {
-            builder.timesStartedReading(0);
         }
         
         return builder.build();

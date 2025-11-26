@@ -173,43 +173,43 @@ public class KoboReadingStateService {
     }
     
     private void updateKoboReadStatus(UserBookProgressEntity userProgress, double progressFraction) {
-        KoboSyncSettings settings = koboSettingsService.getCurrentUserSettings();
-        
-        double progressPercent = progressFraction * 100.0;
-        float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null 
-                ? settings.getProgressMarkAsFinishedThreshold() 
-                : 99f;
-        float readingThreshold = settings.getProgressMarkAsReadingThreshold() != null 
-                ? settings.getProgressMarkAsReadingThreshold() 
-                : 1f;
-        
-        ReadStatus progressBasedStatus;
-        if (progressPercent >= finishedThreshold) {
-            progressBasedStatus = ReadStatus.READ;
-        } else if (progressPercent >= readingThreshold) {
-            progressBasedStatus = ReadStatus.READING;
-        } else {
-            progressBasedStatus = ReadStatus.UNREAD;
+        if (shouldPreserveManualStatus(userProgress)) {
+            return;
         }
         
-        Instant statusModifiedTime = userProgress.getReadStatusModifiedTime();
-        Instant statusSentTime = userProgress.getKoboStatusSentTime();
-        
-        if (statusModifiedTime != null) {
-            if (statusSentTime == null || statusModifiedTime.isAfter(statusSentTime)) {
-                log.debug("Preserving manually-set status {} for book {}", userProgress.getReadStatus(), userProgress.getBook().getId());
-                return;
-            }
-            
-            if (Instant.now().isBefore(statusSentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS))) {
-                log.debug("Preserving status {} for book {} (within sync buffer)", userProgress.getReadStatus(), userProgress.getBook().getId());
-                return;
-            }
-        }
-        
+        ReadStatus progressBasedStatus = calculateStatusFromProgress(progressFraction);
         userProgress.setReadStatus(progressBasedStatus);
+        
         if (progressBasedStatus == ReadStatus.READ && userProgress.getDateFinished() == null) {
             userProgress.setDateFinished(Instant.now());
         }
+    }
+    
+    private boolean shouldPreserveManualStatus(UserBookProgressEntity progress) {
+        Instant modifiedTime = progress.getReadStatusModifiedTime();
+        if (modifiedTime == null) {
+            return false;
+        }
+        
+        Instant sentTime = progress.getKoboStatusSentTime();
+        if (sentTime == null || modifiedTime.isAfter(sentTime)) {
+            return true;
+        }
+        
+        return Instant.now().isBefore(sentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
+    }
+    
+    private ReadStatus calculateStatusFromProgress(double progressFraction) {
+        KoboSyncSettings settings = koboSettingsService.getCurrentUserSettings();
+        double progressPercent = progressFraction * 100.0;
+        
+        float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null 
+                ? settings.getProgressMarkAsFinishedThreshold() : 99f;
+        float readingThreshold = settings.getProgressMarkAsReadingThreshold() != null 
+                ? settings.getProgressMarkAsReadingThreshold() : 1f;
+        
+        if (progressPercent >= finishedThreshold) return ReadStatus.READ;
+        if (progressPercent >= readingThreshold) return ReadStatus.READING;
+        return ReadStatus.UNREAD;
     }
 }

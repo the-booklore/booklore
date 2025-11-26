@@ -147,27 +147,20 @@ public class KoboLibrarySyncService {
     }
 
     private List<ChangedReadingState> syncChangedReadingStates(Long userId, String snapshotId) {
-        List<UserBookProgressEntity> progressWithChangedStatus = 
+        List<UserBookProgressEntity> unsyncedProgress = 
                 userBookProgressRepository.findAllBooksWithUnsyncedReadingStatus(userId, snapshotId);
         
-        if (progressWithChangedStatus.isEmpty()) {
+        if (unsyncedProgress.isEmpty()) {
             return Collections.emptyList();
         }
         
-        log.debug("Found {} books with unsynchronized reading status for user {}", 
-                progressWithChangedStatus.size(), userId);
-        
-        List<ChangedReadingState> changedReadingStates = 
-                entitlementService.generateChangedReadingStates(progressWithChangedStatus);
+        List<ChangedReadingState> changedStates = entitlementService.generateChangedReadingStates(unsyncedProgress);
         
         Instant now = Instant.now();
-        for (UserBookProgressEntity progress : progressWithChangedStatus) {
-            progress.setKoboStatusSentTime(now);
-        }
-        userBookProgressRepository.saveAll(progressWithChangedStatus);
+        unsyncedProgress.forEach(progress -> progress.setKoboStatusSentTime(now));
+        userBookProgressRepository.saveAll(unsyncedProgress);
         
-        log.info("Synced {} reading status changes to Kobo for user {}", changedReadingStates.size(), userId);
-        
-        return changedReadingStates;
+        log.info("Synced {} reading status changes to Kobo", changedStates.size());
+        return changedStates;
     }
 }
