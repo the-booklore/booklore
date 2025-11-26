@@ -118,8 +118,7 @@ public class LibraryFileEventProcessor {
 
     private void handleFileCreate(LibraryEntity library, Path path) {
         log.info("[FILE_CREATE] '{}'", path);
-        String hash = FileFingerprint.generateHash(path);
-        bookFileTransactionalHandler.handleNewBookFile(library.getId(), path, hash);
+        bookFileTransactionalHandler.handleNewBookFile(library.getId(), path);
     }
 
     private void handleFileDelete(LibraryEntity library, Path path) {
@@ -153,8 +152,7 @@ public class LibraryFileEventProcessor {
                     .filter(p -> isBookFile(p.getFileName().toString()))
                     .forEach(p -> {
                         try {
-                            String hash = FileFingerprint.generateHash(p);
-                            bookFileTransactionalHandler.handleNewBookFile(library.getId(), p, hash);
+                            bookFileTransactionalHandler.handleNewBookFile(library.getId(), p);
                         } catch (Exception e) {
                             log.warn("[ERROR] Processing file '{}': {}", p, e.getMessage());
                         }

@@ -1,14 +1,10 @@
 package com.adityachandel.booklore.service.library;
 
-import com.adityachandel.booklore.model.DuplicateFileInfo;
 import com.adityachandel.booklore.model.FileProcessResult;
-import com.adityachandel.booklore.model.dto.DuplicateFileNotification;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
-import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
@@ -18,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.List;
 
 @AllArgsConstructor
@@ -44,28 +39,8 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
             FileProcessResult result = processLibraryFile(libraryFile);
 
             if (result != null) {
-                if (result.getDuplicate() != null) {
-                    DuplicateFileInfo dupe = result.getDuplicate();
-
-                    DuplicateFileNotification notification = DuplicateFileNotification.builder()
-                            .libraryId(libraryEntity.getId())
-                            .libraryName(libraryEntity.getName())
-                            .fileId(dupe.getBookId())
-                            .fileName(dupe.getFileName())
-                            .fullPath(dupe.getFullPath())
-                            .hash(dupe.getHash())
-                            .timestamp(Instant.now())
-                            .build();
-
-                    log.info("Duplicate file detected: {}", notification);
-
-                    notificationService.sendMessage(Topic.DUPLICATE_FILE, notification);
-                }
-
-                if (result.getStatus() != FileProcessStatus.DUPLICATE) {
-                    bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
-                    log.info("Processed file: {}", libraryFile.getFileName());
-                }
+                bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
+                log.info("Processed file: {}", libraryFile.getFileName());
             }
         }
 
