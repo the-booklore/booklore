@@ -76,7 +76,6 @@ public class BookMetadataUpdater {
 
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
-        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
@@ -91,26 +90,29 @@ public class BookMetadataUpdater {
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean writeToFile = settings.isSaveToOriginalFile();
-        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         BookFileType bookType = bookEntity.getBookType();
 
+        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
 
-        updateBasicFields(newMetadata, metadata, clearFlags, replaceMode);
-        updateAuthorsIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
-        updateCategoriesIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
-        updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
-        updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
-        bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
-        updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
+        if (hasValueChanges) {
+            updateBasicFields(newMetadata, metadata, clearFlags, replaceMode);
+            updateAuthorsIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
+            updateCategoriesIfNeeded(newMetadata, metadata, clearFlags, mergeCategories, replaceMode);
+            updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
+            updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
+            bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
+            updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
 
-        bookRepository.save(bookEntity);
+            bookEntity.setMetadataUpdatedAt(Instant.now());
+            bookRepository.save(bookEntity);
 
-        try {
-            Float score = metadataMatchService.calculateMatchScore(bookEntity);
-            bookEntity.setMetadataMatchScore(score);
-        } catch (Exception e) {
-            log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
+            try {
+                Float score = metadataMatchService.calculateMatchScore(bookEntity);
+                bookEntity.setMetadataMatchScore(score);
+            } catch (Exception e) {
+                log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
+            }
         }
 
         if ((writeToFile && hasValueChangesForFileWrite) || thumbnailRequiresUpdate) {
@@ -125,6 +127,7 @@ public class BookMetadataUpdater {
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setCurrentHash(newHash);
+                    bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }

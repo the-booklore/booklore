@@ -15,6 +15,8 @@ app:
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
 
 server:
+  tomcat:
+    relaxed-query-chars: "[,]"
   forward-headers-strategy: native
   port: 8080
 

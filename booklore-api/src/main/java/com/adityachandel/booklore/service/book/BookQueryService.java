@@ -33,11 +33,6 @@ public class BookQueryService {
         return bookRepository.findAllWithMetadataByIds(bookIds);
     }
 
-    public List<BookEntity> findWithMetadataByIdsWithPagination(Set<Long> bookIds, int offset, int limit) {
-        Pageable pageable = PageRequest.of(offset / limit, limit);
-        return bookRepository.findWithMetadataByIdsWithPagination(bookIds, pageable);
-    }
-
     public List<BookEntity> getAllFullBookEntities() {
         return bookRepository.findAllFullBooks();
     }

@@ -44,6 +44,12 @@ public class BookEntity {
     @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private BookMetadataEntity metadata;
 
+    @Column(name = "metadata_updated_at")
+    private Instant metadataUpdatedAt;
+
+    @Column(name = "metadata_for_write_updated_at")
+    private Instant metadataForWriteUpdatedAt;
+
     @ManyToOne
     @JoinColumn(name = "library_id", nullable = false)
     private LibraryEntity library;

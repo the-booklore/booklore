@@ -37,6 +37,21 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
     );
 
     @Query("""
+        SELECT curr
+        FROM KoboSnapshotBookEntity curr
+        JOIN KoboSnapshotBookEntity prev
+            ON curr.bookId = prev.bookId
+        WHERE curr.snapshot.id = :currSnapshotId
+          AND prev.snapshot.id = :prevSnapshotId
+          AND curr.fileHash = prev.fileHash
+          AND (curr.metadataUpdatedAt = prev.metadataUpdatedAt OR prev.metadataUpdatedAt IS NULL)
+    """)
+    List<KoboSnapshotBookEntity> findUnchangedBooksBetweenSnapshots(
+            @Param("prevSnapshotId") String prevSnapshotId,
+            @Param("currSnapshotId") String currSnapshotId
+    );
+
+    @Query("""
             SELECT curr
             FROM KoboSnapshotBookEntity curr
             WHERE curr.snapshot.id = :currSnapshotId
@@ -70,6 +85,25 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
           )
     """)
     Page<KoboSnapshotBookEntity> findRemovedBooks(
+            @Param("prevSnapshotId") String prevSnapshotId,
+            @Param("currSnapshotId") String currSnapshotId,
+            Pageable pageable
+    );
+
+    @Query("""
+                SELECT curr
+                FROM KoboSnapshotBookEntity curr
+                JOIN KoboSnapshotBookEntity prev
+                    ON curr.bookId = prev.bookId
+                WHERE curr.snapshot.id = :currSnapshotId
+                  AND prev.snapshot.id = :prevSnapshotId
+                  AND curr.synced = false
+                  AND (
+                      curr.fileHash <> prev.fileHash
+                      OR (curr.metadataUpdatedAt <> prev.metadataUpdatedAt AND prev.metadataUpdatedAt IS NOT NULL)
+                  )
+            """)
+    Page<KoboSnapshotBookEntity> findChangedBooks(
             @Param("prevSnapshotId") String prevSnapshotId,
             @Param("currSnapshotId") String currSnapshotId,
             Pageable pageable

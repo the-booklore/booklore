@@ -29,13 +29,13 @@ public class KoboBookMetadata {
     private String language = "en";
 
     private String isbn;
-    private String genre;
+    private String genre = "00000000-0000-0000-0000-000000000001";
     private String slug;
     private String coverImageId;
 
     @JsonProperty("IsSocialEnabled")
     @Builder.Default
-    private boolean isSocialEnabled = false;
+    private boolean socialEnabled = true;
 
     private String workId;
 
@@ -44,14 +44,14 @@ public class KoboBookMetadata {
 
     @JsonProperty("IsPreOrder")
     @Builder.Default
-    private boolean isPreOrder = false;
+    private boolean preOrder = false;
 
     @Builder.Default
     private List<ContributorRole> contributorRoles = new ArrayList<>();
 
     @JsonProperty("IsInternetArchive")
     @Builder.Default
-    private boolean isInternetArchive = false;
+    private boolean internetArchive = false;
 
     private String entitlementId;
     private String title;
@@ -81,7 +81,7 @@ public class KoboBookMetadata {
 
     @JsonProperty("IsEligibleForKoboLove")
     @Builder.Default
-    private boolean isEligibleForKoboLove = false;
+    private boolean eligibleForKoboLove = false;
 
     @Builder.Default
     private Map<String, String> phoneticPronunciations = Map.of();

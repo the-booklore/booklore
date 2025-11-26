@@ -62,13 +62,13 @@ public class KoboLibrarySnapshotService {
 
     @Transactional
     public void updateSyncedStatusForExistingBooks(String previousSnapshotId, String currentSnapshotId) {
-        List<KoboSnapshotBookEntity> list = koboSnapshotBookRepository.findExistingBooksBetweenSnapshots(previousSnapshotId, currentSnapshotId);
-        List<Long> existingBooks = list.stream()
+        List<KoboSnapshotBookEntity> list = koboSnapshotBookRepository.findUnchangedBooksBetweenSnapshots(previousSnapshotId, currentSnapshotId);
+        List<Long> unchangedBooks = list.stream()
                 .map(KoboSnapshotBookEntity::getBookId)
                 .toList();
 
-        if (!existingBooks.isEmpty()) {
-            koboSnapshotBookRepository.markBooksSynced(currentSnapshotId, existingBooks);
+        if (!unchangedBooks.isEmpty()) {
+            koboSnapshotBookRepository.markBooksSynced(currentSnapshotId, unchangedBooks);
         }
     }
 
@@ -108,6 +108,20 @@ public class KoboLibrarySnapshotService {
         return page;
     }
 
+    @Transactional
+    public Page<KoboSnapshotBookEntity> getChangedBooks(String previousSnapshotId, String currentSnapshotId, Pageable pageable) {
+        Page<KoboSnapshotBookEntity> page = koboSnapshotBookRepository.findChangedBooks(previousSnapshotId, currentSnapshotId, pageable);
+        List<Long> changedBookIds = page.getContent().stream()
+                .map(KoboSnapshotBookEntity::getBookId)
+                .toList();
+
+        if (!changedBookIds.isEmpty()) {
+            koboSnapshotBookRepository.markBooksSynced(currentSnapshotId, changedBookIds);
+        }
+
+        return page;
+    }
+
     private ShelfEntity getKoboShelf(Long userId) {
         return shelfRepository
                 .findByUserIdAndName(userId, ShelfType.KOBO.getName())
@@ -122,6 +136,8 @@ public class KoboLibrarySnapshotService {
                 .map(book -> {
                     KoboSnapshotBookEntity snapshotBook = mapper.toKoboSnapshotBook(book);
                     snapshotBook.setSnapshot(snapshot);
+                    snapshotBook.setFileHash(book.getCurrentHash());
+                    snapshotBook.setMetadataUpdatedAt(book.getMetadataUpdatedAt());
                     return snapshotBook;
                 })
                 .collect(Collectors.toList());
