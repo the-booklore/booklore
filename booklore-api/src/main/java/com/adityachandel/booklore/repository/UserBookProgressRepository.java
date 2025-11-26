@@ -20,18 +20,23 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
     @Query("""
         SELECT ubp FROM UserBookProgressEntity ubp
         WHERE ubp.user.id = :userId
-          AND ubp.readStatusModifiedTime IS NOT NULL
           AND ubp.book.id IN (
               SELECT ksb.bookId FROM KoboSnapshotBookEntity ksb
               WHERE ksb.snapshot.id = :snapshotId
           )
           AND (
-              ubp.koboStatusSentTime IS NULL
-              OR ubp.readStatusModifiedTime > ubp.koboStatusSentTime
+              (ubp.readStatusModifiedTime IS NOT NULL AND (
+                  ubp.koboStatusSentTime IS NULL
+                  OR ubp.readStatusModifiedTime > ubp.koboStatusSentTime
+              ))
+              OR
+              (ubp.koboProgressReceivedTime IS NOT NULL AND (
+                  ubp.koboProgressSentTime IS NULL
+                  OR ubp.koboProgressReceivedTime > ubp.koboProgressSentTime
+              ))
           )
-        ORDER BY ubp.readStatusModifiedTime ASC
     """)
-    List<UserBookProgressEntity> findAllBooksWithUnsyncedReadingStatus(
+    List<UserBookProgressEntity> findAllBooksNeedingKoboSync(
             @Param("userId") Long userId,
             @Param("snapshotId") String snapshotId
     );

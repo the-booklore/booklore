@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 public class KoboReadingStateService {
 
     private static final int STATUS_SYNC_BUFFER_SECONDS = 10;
-    
+
     private final KoboReadingStateRepository repository;
     private final KoboReadingStateMapper mapper;
     private final UserBookProgressRepository progressRepository;
@@ -158,11 +158,12 @@ public class KoboReadingStateService {
                 }
             }
             
-            progress.setKoboProgressReceivedTime(Instant.now());
-            progress.setLastReadTime(Instant.now());
+            Instant now = Instant.now();
+            progress.setKoboProgressReceivedTime(now);
+            progress.setLastReadTime(now);
             
             if (progress.getKoboProgressPercent() != null) {
-                updateReadStatusFromKoboProgress(progress, progress.getKoboProgressPercent() / 100.0);
+                updateReadStatusFromKoboProgress(progress, now);
             }
             
             progressRepository.save(progress);
@@ -172,37 +173,40 @@ public class KoboReadingStateService {
         }
     }
     
-    private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, double progressFraction) {
-        if (hasUnsyncedStatusChange(userProgress)) {
+    private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, Instant now) {
+        if (shouldPreserveCurrentStatus(userProgress, now)) {
             return;
         }
-        
-        ReadStatus progressBasedStatus = calculateStatusFromProgress(progressFraction);
-        userProgress.setReadStatus(progressBasedStatus);
-        
-        if (progressBasedStatus == ReadStatus.READ && userProgress.getDateFinished() == null) {
+
+        double koboProgressPercent = userProgress.getKoboProgressPercent();
+
+        ReadStatus derivedStatus = deriveStatusFromProgress(koboProgressPercent);
+        userProgress.setReadStatus(derivedStatus);
+
+        if (derivedStatus == ReadStatus.READ && userProgress.getDateFinished() == null) {
             userProgress.setDateFinished(Instant.now());
         }
     }
-    
-    private boolean hasUnsyncedStatusChange(UserBookProgressEntity progress) {
-        Instant modifiedTime = progress.getReadStatusModifiedTime();
-        if (modifiedTime == null) {
+
+    private boolean shouldPreserveCurrentStatus(UserBookProgressEntity progress, Instant now) {
+        Instant statusModifiedTime = progress.getReadStatusModifiedTime();
+        if (statusModifiedTime == null) {
             return false;
         }
-        
-        Instant sentTime = progress.getKoboStatusSentTime();
-        if (sentTime == null || modifiedTime.isAfter(sentTime)) {
+
+        Instant statusSentTime = progress.getKoboStatusSentTime();
+
+        boolean hasPendingStatusUpdate = statusSentTime == null || statusModifiedTime.isAfter(statusSentTime);
+        if (hasPendingStatusUpdate) {
             return true;
         }
-        
-        boolean withinBufferWindow = Instant.now().isBefore(sentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
-        return withinBufferWindow;
+
+        boolean withinSyncBufferWindow = now.isBefore(statusSentTime.plusSeconds(STATUS_SYNC_BUFFER_SECONDS));
+        return withinSyncBufferWindow;
     }
     
-    private ReadStatus calculateStatusFromProgress(double progressFraction) {
+    private ReadStatus deriveStatusFromProgress(double progressPercent) {
         KoboSyncSettings settings = koboSettingsService.getCurrentUserSettings();
-        double progressPercent = progressFraction * 100.0;
         
         float finishedThreshold = settings.getProgressMarkAsFinishedThreshold() != null 
                 ? settings.getProgressMarkAsFinishedThreshold() : 99f;

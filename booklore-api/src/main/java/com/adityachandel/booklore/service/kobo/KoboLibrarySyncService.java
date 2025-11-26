@@ -147,20 +147,45 @@ public class KoboLibrarySyncService {
     }
 
     private List<ChangedReadingState> syncReadingStatesToKobo(Long userId, String snapshotId) {
-        List<UserBookProgressEntity> unsyncedProgress = 
-                userBookProgressRepository.findAllBooksWithUnsyncedReadingStatus(userId, snapshotId);
-        
-        if (unsyncedProgress.isEmpty()) {
+        List<UserBookProgressEntity> booksNeedingSync = 
+                userBookProgressRepository.findAllBooksNeedingKoboSync(userId, snapshotId);
+
+        if (booksNeedingSync.isEmpty()) {
             return Collections.emptyList();
         }
-        
-        List<ChangedReadingState> changedStates = entitlementService.generateChangedReadingStates(unsyncedProgress);
-        
-        Instant now = Instant.now();
-        unsyncedProgress.forEach(progress -> progress.setKoboStatusSentTime(now));
-        userBookProgressRepository.saveAll(unsyncedProgress);
-        
-        log.info("Synced {} reading status changes to Kobo", changedStates.size());
+
+        List<ChangedReadingState> changedStates = entitlementService.generateChangedReadingStates(booksNeedingSync);
+
+        Instant sentTime = Instant.now();
+        for (UserBookProgressEntity progress : booksNeedingSync) {
+            if (needsStatusSync(progress)) {
+                progress.setKoboStatusSentTime(sentTime);
+            }
+            if (needsProgressSync(progress)) {
+                progress.setKoboProgressSentTime(sentTime);
+            }
+        }
+        userBookProgressRepository.saveAll(booksNeedingSync);
+
+        log.info("Synced {} reading states to Kobo", changedStates.size());
         return changedStates;
+    }
+
+    private boolean needsStatusSync(UserBookProgressEntity progress) {
+        Instant modifiedTime = progress.getReadStatusModifiedTime();
+        if (modifiedTime == null) {
+            return false;
+        }
+        Instant sentTime = progress.getKoboStatusSentTime();
+        return sentTime == null || modifiedTime.isAfter(sentTime);
+    }
+
+    private boolean needsProgressSync(UserBookProgressEntity progress) {
+        Instant receivedTime = progress.getKoboProgressReceivedTime();
+        if (receivedTime == null) {
+            return false;
+        }
+        Instant sentTime = progress.getKoboProgressSentTime();
+        return sentTime == null || receivedTime.isAfter(sentTime);
     }
 }
