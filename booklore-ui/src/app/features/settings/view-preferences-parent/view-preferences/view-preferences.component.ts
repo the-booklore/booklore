@@ -31,6 +31,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Title + Series', field: 'titleSeries'},
     {label: 'File Name', field: 'fileName'},
     {label: 'Author', field: 'author'},
+    {label: 'Author + Series', field: 'authorSeries'},
     {label: 'Last Read', field: 'lastReadTime'},
     {label: 'Added On', field: 'addedOn'},
     {label: 'File Size', field: 'fileSizeKb'},

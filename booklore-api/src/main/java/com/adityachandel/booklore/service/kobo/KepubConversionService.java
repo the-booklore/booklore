@@ -28,11 +28,11 @@ public class KepubConversionService {
     private static final String BIN_LINUX_ARM = "kepubify-linux-arm";
     private static final String BIN_LINUX_ARM64 = "kepubify-linux-arm64";
 
-    public File convertEpubToKepub(File epubFile, File tempDir) throws IOException, InterruptedException {
+    public File convertEpubToKepub(File epubFile, File tempDir, boolean forceEnableHyphenation) throws IOException, InterruptedException {
         validateInputs(epubFile);
 
         Path kepubifyBinary = setupKepubifyBinary();
-        File outputFile = executeKepubifyConversion(epubFile, tempDir, kepubifyBinary);
+        File outputFile = executeKepubifyConversion(epubFile, tempDir, kepubifyBinary, forceEnableHyphenation);
 
         log.info("Successfully converted {} to {} (size: {} bytes)", epubFile.getName(), outputFile.getName(), outputFile.length());
         return outputFile;
@@ -98,9 +98,14 @@ public class KepubConversionService {
         throw new IllegalStateException("Unsupported operating system or architecture: " + osName + " / " + osArch);
     }
 
-    private File executeKepubifyConversion(File epubFile, File tempDir, Path kepubifyBinary) throws IOException, InterruptedException {
+    private File executeKepubifyConversion(File epubFile, File tempDir, Path kepubifyBinary, boolean forceEnableHyphenation) throws IOException, InterruptedException {
+        ProcessBuilder pb;
 
-        ProcessBuilder pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
+        if (forceEnableHyphenation)
+            pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), "--hyphenate", "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
+        else
+            pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
+
         pb.directory(tempDir);
 
         log.info("Starting kepubify conversion for {} -> output dir: {}", epubFile.getAbsolutePath(), tempDir.getAbsolutePath());

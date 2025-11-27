@@ -47,7 +47,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     convertToKepub: false,
     conversionLimitInMb: 100,
     convertCbxToEpub: false,
-    conversionLimitInMbForCbx: 100
+    conversionLimitInMbForCbx: 100,
+    forceEnableHyphenation: false
   };
 
   koboSyncSettings: KoboSyncSettings = {
@@ -126,6 +127,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
         this.koboSettings.convertCbxToEpub = settings?.koboSettings?.convertCbxToEpub ?? false;
         this.koboSettings.conversionLimitInMbForCbx = settings?.koboSettings?.conversionLimitInMbForCbx ?? 100;
+        this.koboSettings.forceEnableHyphenation = settings?.koboSettings?.forceEnableHyphenation ?? false;
       });
   }
 

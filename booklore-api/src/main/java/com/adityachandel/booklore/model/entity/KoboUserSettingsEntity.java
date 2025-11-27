@@ -31,5 +31,6 @@ public class KoboUserSettingsEntity {
     private Float progressMarkAsReadingThreshold = 1f;
 
     @Column(name = "progress_mark_as_finished_threshold")
+    @Builder.Default
     private Float progressMarkAsFinishedThreshold = 99f;
 }

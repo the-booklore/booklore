@@ -107,93 +107,123 @@ public class BookMetadataEntity {
 
 
     @Column(name = "title_locked")
+    @Builder.Default
     private Boolean titleLocked = Boolean.FALSE;
 
     @Column(name = "subtitle_locked")
+    @Builder.Default
     private Boolean subtitleLocked = Boolean.FALSE;
 
     @Column(name = "publisher_locked")
+    @Builder.Default
     private Boolean publisherLocked = Boolean.FALSE;
 
     @Column(name = "published_date_locked")
+    @Builder.Default
     private Boolean publishedDateLocked = Boolean.FALSE;
 
     @Column(name = "description_locked")
+    @Builder.Default
     private Boolean descriptionLocked = Boolean.FALSE;
 
     @Column(name = "isbn_13_locked")
+    @Builder.Default
     private Boolean isbn13Locked = Boolean.FALSE;
 
     @Column(name = "isbn_10_locked")
+    @Builder.Default
     private Boolean isbn10Locked = Boolean.FALSE;
 
     @Column(name = "asin_locked")
+    @Builder.Default
     private Boolean asinLocked = Boolean.FALSE;
 
     @Column(name = "page_count_locked")
+    @Builder.Default
     private Boolean pageCountLocked = Boolean.FALSE;
 
     @Column(name = "language_locked")
+    @Builder.Default
     private Boolean languageLocked = Boolean.FALSE;
 
     @Column(name = "amazon_rating_locked")
+    @Builder.Default
     private Boolean amazonRatingLocked = Boolean.FALSE;
 
     @Column(name = "amazon_review_count_locked")
+    @Builder.Default
     private Boolean amazonReviewCountLocked = Boolean.FALSE;
 
     @Column(name = "goodreads_rating_locked")
+    @Builder.Default
     private Boolean goodreadsRatingLocked = Boolean.FALSE;
 
     @Column(name = "goodreads_review_count_locked")
+    @Builder.Default
     private Boolean goodreadsReviewCountLocked = Boolean.FALSE;
 
     @Column(name = "hardcover_rating_locked")
+    @Builder.Default
     private Boolean hardcoverRatingLocked = Boolean.FALSE;
 
     @Column(name = "hardcover_review_count_locked")
+    @Builder.Default
     private Boolean hardcoverReviewCountLocked = Boolean.FALSE;
 
     @Column(name = "personal_rating_locked")
+    @Builder.Default
     private Boolean personalRatingLocked = Boolean.FALSE;
 
     @Column(name = "cover_locked")
+    @Builder.Default
     private Boolean coverLocked = Boolean.FALSE;
 
     @Column(name = "series_name_locked")
+    @Builder.Default
     private Boolean seriesNameLocked = Boolean.FALSE;
 
     @Column(name = "series_number_locked")
+    @Builder.Default
     private Boolean seriesNumberLocked = Boolean.FALSE;
 
     @Column(name = "series_total_locked")
+    @Builder.Default
     private Boolean seriesTotalLocked = Boolean.FALSE;
 
     @Column(name = "authors_locked")
+    @Builder.Default
     private Boolean authorsLocked = Boolean.FALSE;
 
     @Column(name = "categories_locked")
+    @Builder.Default
     private Boolean categoriesLocked = Boolean.FALSE;
 
     @Column(name = "moods_locked")
+    @Builder.Default
     private Boolean moodsLocked = Boolean.FALSE;
 
     @Column(name = "tags_locked")
+    @Builder.Default
     private Boolean tagsLocked = Boolean.FALSE;
 
     @Column(name = "goodreads_id_locked")
+    @Builder.Default
     private Boolean goodreadsIdLocked = Boolean.FALSE;
 
     @Column(name = "hardcover_id_locked")
+    @Builder.Default
     private Boolean hardcoverIdLocked = Boolean.FALSE;
 
     @Column(name = "google_id_locked")
+    @Builder.Default
     private Boolean googleIdLocked = Boolean.FALSE;
 
     @Column(name = "comicvine_id_locked")
+    @Builder.Default
     private Boolean comicvineIdLocked = Boolean.FALSE;
 
     @Column(name = "reviews_locked")
+    @Builder.Default
     private Boolean reviewsLocked = Boolean.FALSE;
 
     @Column(name = "embedding_vector", columnDefinition = "TEXT")
@@ -245,6 +275,7 @@ public class BookMetadataEntity {
 
     @OneToMany(mappedBy = "bookMetadata", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Fetch(FetchMode.SUBSELECT)
+    @Builder.Default
     private Set<BookReviewEntity> reviews = new HashSet<>();
 
     public void applyLockToAllFields(boolean lock) {

@@ -9,38 +9,44 @@ assignees: ''
 
 # 🐛 Bug Report for Booklore
 
-Thank you for helping us improve Booklore! Please fill out the sections below.
+Thank you for taking the time to report this bug. Your feedback helps make Booklore better for everyone! 
+
+Let's squash this bug together! 🔨
 
 ---
 
 ## 📝 What happened?
-<!-- Describe the bug in a few sentences -->
+<!-- Describe what went wrong -->
 
 
 ## 🔄 Steps to Reproduce
-<!-- Walk us through the exact steps to see the bug -->
-1. Go to '...'
-2. Click on '...'
-3. Scroll down to '...'
-4. See error
+<!-- Provide detailed steps to reproduce the behavior. Be specific about what you clicked, typed, or configured -->
+1. 
+2. 
+3. 
+4. 
+
+**Result:** <!-- What happened after these steps? -->
 
 ## ✅ Expected Behavior
-<!-- What should have happened instead? -->
+<!-- Describe what should have happened instead -->
 
 
 ## 📸 Screenshots / Error Messages
-<!-- Add screenshots or paste error messages (drag & drop images here) -->
+<!-- Share any screenshots or error messages here (just drag & drop) -->
 
 
 ## 💻 Environment
-- **Version:** (e.g., v1.1.0)
+<!-- Provide details about your setup - every detail helps! -->
+- **Booklore Version:** (e.g., v1.1.0)
 - **OS:** (e.g., Windows 11, macOS Sonoma, Ubuntu 22.04)
 - **Browser:** (e.g., Chrome 120, Firefox 121, Safari 17)
 - **Installation:** (e.g., Docker, Unraid, Manual)
+- **Storage Type:** (e.g., Local HDD/SSD, Synology NAS, SMB Share, NFS Mount, S3 Bucket)
 
 ## 📌 Additional Context
-<!-- Recent changes? Specific books? Anything else that might help? -->
+<!-- Add any other relevant information: recent changes, specific books, configuration details, etc. -->
 
 
 ## ✨ Possible Solution _(Optional)_
-<!-- Have ideas on how to fix this? Share them here! -->
+<!-- Share any ideas on how to fix this issue -->

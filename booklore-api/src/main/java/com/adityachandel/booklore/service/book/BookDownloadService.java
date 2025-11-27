@@ -109,7 +109,8 @@ public class BookDownloadService {
             }
 
             if (convertEpubToKepub) {
-                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile());
+                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile(),
+                    koboSettings.isForceEnableHyphenation());
             }
 
             setResponseHeaders(response, fileToSend);

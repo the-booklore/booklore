@@ -10,4 +10,5 @@ public class KoboSettings {
     private int conversionLimitInMb;
     private boolean convertCbxToEpub;
     private int conversionLimitInMbForCbx;
+    private boolean forceEnableHyphenation;
 }
