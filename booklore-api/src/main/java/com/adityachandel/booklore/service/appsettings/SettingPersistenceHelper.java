@@ -253,6 +253,7 @@ public class SettingPersistenceHelper {
         return KoboSettings.builder()
                 .convertToKepub(false)
                 .conversionLimitInMb(100)
+                .forceEnableHyphenation(false)
                 .build();
     }
 }

@@ -8,4 +8,5 @@ import lombok.Data;
 public class KoboSettings {
     private boolean convertToKepub;
     private int conversionLimitInMb;
+    private boolean forceEnableHyphenation;
 }

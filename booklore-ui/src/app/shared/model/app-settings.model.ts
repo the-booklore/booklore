@@ -102,6 +102,7 @@ export interface PublicReviewSettings {
 export interface KoboSettings {
   convertToKepub: boolean;
   conversionLimitInMb: number;
+  forceEnableHyphenation: boolean;
 }
 
 export interface AppSettings {
