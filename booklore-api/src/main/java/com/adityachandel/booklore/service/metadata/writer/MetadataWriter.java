@@ -4,8 +4,9 @@ import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import org.springframework.web.multipart.MultipartFile;
+import com.adityachandel.booklore.service.FileFingerprint;
 
+import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 
 public interface MetadataWriter {
@@ -19,4 +20,6 @@ public interface MetadataWriter {
     }
 
     BookFileType getSupportedBookType();
+    
+
 }
