@@ -5,8 +5,9 @@ import com.adityachandel.booklore.model.dto.request.CreateEmailRecipientRequest;
 import com.adityachandel.booklore.model.entity.EmailRecipientV2Entity;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface EmailRecipientV2Mapper {
 
     EmailRecipientV2 toDTO(EmailRecipientV2Entity entity);

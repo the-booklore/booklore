@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class KoboAuthentication {
     private String accessToken;
     private String refreshToken;
+    @Builder.Default
     private String tokenType = "Bearer";
     private String trackingId;
     private String userKey;
