@@ -185,7 +185,9 @@ public class KoboReadingStateService {
         
         if (progressPercent >= finishedThreshold) {
             userProgress.setReadStatus(ReadStatus.READ);
-            userProgress.setDateFinished(Instant.now());
+            if (userProgress.getDateFinished() == null) {
+                userProgress.setDateFinished(Instant.now());
+            }
         } else if (progressPercent >= readingThreshold) {
             userProgress.setReadStatus(ReadStatus.READING);
         } else {

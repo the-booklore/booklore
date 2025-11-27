@@ -7,28 +7,46 @@ assignees: ''
 
 ---
 
-# Bug Report Template for Booklore
+# 🐛 Bug Report for Booklore
 
-**What happened?**  
-Please describe the problem or issue you encountered in Booklore.
+Thank you for taking the time to report this bug. Your feedback helps make Booklore better for everyone! 
 
-**How can we see it happen?**  
-Steps to reproduce the issue:  
-1. Open Booklore and go to ‘…’  
-2. Do ‘…’ (like adding a book, editing details, etc.)  
-3. Notice what goes wrong  
+Let's squash this bug together! 🔨
 
-**What did you expect to happen?**  
-Tell us what you thought should happen instead.
+---
 
-**Screenshots or Error Messages**  
-If you can, please share screenshots or any error messages you saw. It really helps!
+## 📝 What happened?
+<!-- Describe what went wrong -->
 
-**About your setup:**  
-- Booklore version (e.g., v0.35.0)  
-- What computer or device are you using? (Windows, Mac, Linux, etc.)  
-- Which browser and version? (Chrome, Firefox, Safari, etc.)  
-- How did you install Booklore? (Docker, manual install, etc.)
 
-**Anything else we should know?**  
-Any other info that might help us understand the issue better.
+## 🔄 Steps to Reproduce
+<!-- Provide detailed steps to reproduce the behavior. Be specific about what you clicked, typed, or configured -->
+1. 
+2. 
+3. 
+4. 
+
+**Result:** <!-- What happened after these steps? -->
+
+## ✅ Expected Behavior
+<!-- Describe what should have happened instead -->
+
+
+## 📸 Screenshots / Error Messages
+<!-- Share any screenshots or error messages here (just drag & drop) -->
+
+
+## 💻 Environment
+<!-- Provide details about your setup - every detail helps! -->
+- **Booklore Version:** (e.g., v1.1.0)
+- **OS:** (e.g., Windows 11, macOS Sonoma, Ubuntu 22.04)
+- **Browser:** (e.g., Chrome 120, Firefox 121, Safari 17)
+- **Installation:** (e.g., Docker, Unraid, Manual)
+- **Storage Type:** (e.g., Local HDD/SSD, Synology NAS, SMB Share, NFS Mount, S3 Bucket)
+
+## 📌 Additional Context
+<!-- Add any other relevant information: recent changes, specific books, configuration details, etc. -->
+
+
+## ✨ Possible Solution _(Optional)_
+<!-- Share any ideas on how to fix this issue -->

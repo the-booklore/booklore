@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
@@ -33,7 +34,10 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            BufferedImage originalImage;
+            try (InputStream inputStream = file.getInputStream()) {
+                originalImage = ImageIO.read(inputStream);
+            }
             if (originalImage == null) {
                 throw new IllegalArgumentException("Invalid image file");
             }
@@ -41,7 +45,7 @@ public class BackgroundUploadService {
             deleteExistingBackgroundFiles(userId);
             fileService.saveBackgroundImage(originalImage, filename, userId);
 
-            String fileUrl = fileService.getBackgroundUrl(filename, userId);
+            String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
         } catch (Exception e) {
             log.error("Failed to upload background file: {}", e.getMessage(), e);
@@ -56,12 +60,12 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
-            BufferedImage originalImage = fileService.downloadImageFromUrl(imageUrl);
+            BufferedImage originalImage = FileService.downloadImageFromUrl(imageUrl);
             deleteExistingBackgroundFiles(userId);
 
             fileService.saveBackgroundImage(originalImage, filename, userId);
 
-            String fileUrl = fileService.getBackgroundUrl(filename, userId);
+            String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
         } catch (Exception e) {
             log.error("Failed to upload background from URL: {}", e.getMessage(), e);

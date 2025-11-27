@@ -554,9 +554,6 @@ export class BookBrowserComponent implements OnInit {
 
   openShelfAssigner(): void {
     this.dynamicDialogRef = this.dialogHelperService.openShelfAssigner(this.selectedBooks);
-    this.dynamicDialogRef?.onClose.subscribe(() => {
-      this.selectedBooks = new Set<number>();
-    });
   }
 
   lockUnlockMetadata(): void {

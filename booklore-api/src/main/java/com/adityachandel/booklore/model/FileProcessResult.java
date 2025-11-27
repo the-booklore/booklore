@@ -14,6 +14,4 @@ import lombok.ToString;
 public class FileProcessResult {
     private final Book book;
     private final FileProcessStatus status;
-    @Builder.Default
-    private final DuplicateFileInfo duplicate = null;
 }

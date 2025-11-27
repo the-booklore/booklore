@@ -10,6 +10,8 @@ import {Button} from 'primeng/button';
 import {Menu} from 'primeng/menu';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
+import {ShelfCreatorComponent} from '../../../../features/book/components/shelf-creator/shelf-creator.component';
+import {BookDialogHelperService} from '../../../../features/book/components/book-browser/BookDialogHelperService';
 
 @Component({
   selector: '[app-menuitem]',
@@ -56,7 +58,8 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     public router: Router,
     private menuService: MenuService,
     private userService: UserService,
-    private dialogLauncher: DialogLauncherService
+    private dialogLauncher: DialogLauncherService,
+    private bookDialogHelperService: BookDialogHelperService
   ) {
     this.userService.userState$.subscribe(userState => {
       if (userState?.user) {
@@ -150,6 +153,9 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
     if (item.type === 'magicShelf') {
       this.dialogLauncher.openMagicShelfDialog();
+    }
+    if (item.type === 'shelf') {
+      this.bookDialogHelperService.openShelfCreator();
     }
   }
 
