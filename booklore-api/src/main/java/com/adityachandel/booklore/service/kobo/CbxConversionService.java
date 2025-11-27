@@ -25,11 +25,11 @@ import javax.imageio.stream.ImageOutputStream;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Service for converting comic book archive files (CBX) to EPUB format.
@@ -45,18 +45,9 @@ import java.util.stream.Collectors;
  * Supported image formats within archives: JPG, JPEG, PNG, WEBP, GIF, BMP
  * </p>
  * 
- * <h3>Memory Considerations</h3>
- * <p>
- * <b>Warning:</b> This conversion process loads all images from the comic archive into memory
- * simultaneously, which can consume significant heap space for large comics. Comics with more 
- * than 500 pages may cause memory issues on systems with limited heap space. Consider adjusting
- * JVM heap settings (-Xmx) if processing large comic collections.
- * </p>
- * 
  * <h3>Size Limits</h3>
  * <ul>
  *   <li>Maximum individual image size: 50 MB</li>
- *   <li>Comics with 500+ images will trigger a memory warning</li>
  * </ul>
  * 
  * @see KepubConversionService
@@ -74,7 +65,7 @@ public class CbxConversionService {
     private static final String COVER_IMAGE_PATH = "OEBPS/Images/cover.jpg";
     private static final String MIMETYPE_CONTENT = "application/epub+zip";
     private static final long MAX_IMAGE_SIZE_BYTES = 50L * 1024 * 1024;
-    private static final int WARNING_IMAGE_COUNT_THRESHOLD = 500;
+    private static final String EXTRACTED_IMAGES_SUBDIR = "cbx_extracted_images";
     
     private final Configuration freemarkerConfig;
 
@@ -90,15 +81,11 @@ public class CbxConversionService {
      * <p>
      * The conversion process:
      * <ol>
-     *   <li>Extracts all images from the archive</li>
-     *   <li>Creates an EPUB structure with one XHTML page per image, excluding the cover image</li>
+     *   <li>Extracts all images from the archive to a temporary directory</li>
+     *   <li>Creates an EPUB structure with one XHTML page per image</li>
      *   <li>Includes proper EPUB metadata from the book entity</li>
-     *   <li>Compresses images to JPEG format (85% quality)</li>
+     *   <li>JPEG images are passed through directly; other formats are converted to JPEG (85% quality)</li>
      * </ol>
-     * </p>
-     * <p>
-     * <b>Note:</b> All images are loaded into memory during conversion. Large comics
-     * (500+ pages) may require increased JVM heap space.
      * </p>
      * 
      * @param cbxFile the comic book archive file (must be CBZ, CBR, or CB7)
@@ -127,27 +114,25 @@ public class CbxConversionService {
     private File executeCbxConversion(File cbxFile, File tempDir, BookEntity bookEntity) 
             throws IOException, TemplateException, RarException {
         
-        Path epubFilePath = Paths.get(tempDir.getAbsolutePath(),
-                cbxFile.getName().replaceFirst("\\.[^.]+$", "") + ".epub");
+        Path epubFilePath = Paths.get(tempDir.getAbsolutePath(), cbxFile.getName() + ".epub");
         File epubFile = epubFilePath.toFile();
 
-        List<BufferedImage> images = extractImagesFromCbx(cbxFile);
-        if (images.isEmpty()) {
+        Path extractedImagesDir = Paths.get(tempDir.getAbsolutePath(), EXTRACTED_IMAGES_SUBDIR);
+        Files.createDirectories(extractedImagesDir);
+
+        List<Path> imagePaths = extractImagesFromCbx(cbxFile, extractedImagesDir);
+        if (imagePaths.isEmpty()) {
             throw new IllegalStateException("No valid images found in CBX file: " + cbxFile.getName());
         }
 
-        if (images.size() > WARNING_IMAGE_COUNT_THRESHOLD) {
-            log.warn("CBX file contains {} images, which may cause memory issues on systems with limited heap space", images.size());
-        }
-
-        log.debug("Extracted {} images from CBX file", images.size());
+        log.debug("Extracted {} images from CBX file to disk", imagePaths.size());
 
         try (ZipArchiveOutputStream zipOut = new ZipArchiveOutputStream(new FileOutputStream(epubFile))) {
             addMimetypeEntry(zipOut);
             addMetaInfContainer(zipOut);
             addStylesheet(zipOut);
             
-            List<EpubContentFileGroup> contentGroups = addImagesAndPages(zipOut, images);
+            List<EpubContentFileGroup> contentGroups = addImagesAndPages(zipOut, imagePaths);
             
             addContentOpf(zipOut, bookEntity, contentGroups);
             addTocNcx(zipOut, bookEntity, contentGroups);
@@ -182,141 +167,111 @@ public class CbxConversionService {
         return config;
     }
 
-    private List<BufferedImage> extractImagesFromCbx(File cbxFile) throws IOException, RarException {
+    private List<Path> extractImagesFromCbx(File cbxFile, Path extractedImagesDir) throws IOException, RarException {
         String fileName = cbxFile.getName().toLowerCase();
         
         if (fileName.endsWith(".cbz")) {
-            return extractImagesFromZip(cbxFile);
+            return extractImagesFromZip(cbxFile, extractedImagesDir);
         } else if (fileName.endsWith(".cbr")) {
-            return extractImagesFromRar(cbxFile);
+            return extractImagesFromRar(cbxFile, extractedImagesDir);
         } else if (fileName.endsWith(".cb7")) {
-            return extractImagesFrom7z(cbxFile);
+            return extractImagesFrom7z(cbxFile, extractedImagesDir);
         } else {
             throw new IllegalArgumentException("Unsupported archive format: " + fileName);
         }
     }
     
-    private List<BufferedImage> extractImagesFromZip(File cbzFile) throws IOException {
-        List<BufferedImage> images = new ArrayList<>();
+    private List<Path> extractImagesFromZip(File cbzFile, Path extractedImagesDir) throws IOException {
+        List<Path> imagePaths = new ArrayList<>();
         
         try (ZipFile zipFile = ZipFile.builder().setFile(cbzFile).get()) {
-            List<ZipArchiveEntry> imageEntries = Collections.list(zipFile.getEntries())
-                    .stream()
-                    .filter(entry -> !entry.isDirectory() && isImageFile(entry.getName()))
-                    .sorted(Comparator.comparing(entry -> entry.getName().toLowerCase()))
-                    .collect(Collectors.toList());
-
-            log.debug("Found {} image entries in CBZ file", imageEntries.size());
-
-            for (ZipArchiveEntry entry : imageEntries) {
-                long entrySize = entry.getSize();
-                if (entrySize > MAX_IMAGE_SIZE_BYTES) {
-                    throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
-                            entry.getName(), entrySize, MAX_IMAGE_SIZE_BYTES));
+            for (ZipArchiveEntry entry : Collections.list(zipFile.getEntries())) {
+                if (entry.isDirectory() || !isImageFile(entry.getName())) {
+                    continue;
                 }
+                
+                validateImageSize(entry.getName(), entry.getSize());
                 
                 try (InputStream inputStream = zipFile.getInputStream(entry)) {
-                    BufferedImage image = ImageIO.read(inputStream);
-                    if (image != null) {
-                        images.add(image);
-                        log.debug("Successfully loaded image: {}", entry.getName());
-                    } else {
-                        log.warn("Failed to load image (unsupported format?): {}", entry.getName());
-                    }
+                    Path outputPath = extractedImagesDir.resolve(extractFileName(entry.getName()));
+                    Files.copy(inputStream, outputPath);
+                    imagePaths.add(outputPath);
                 } catch (Exception e) {
-                    log.warn("Error reading image {}: {}", entry.getName(), e.getMessage());
+                    log.warn("Error extracting image {}: {}", entry.getName(), e.getMessage());
                 }
             }
         }
         
-        return images;
+        log.debug("Found {} image entries in CBZ file", imagePaths.size());
+        imagePaths.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
+        return imagePaths;
     }
     
-    private List<BufferedImage> extractImagesFromRar(File cbrFile) throws IOException, RarException {
-        List<BufferedImage> images = new ArrayList<>();
+    private List<Path> extractImagesFromRar(File cbrFile, Path extractedImagesDir) throws IOException, RarException {
+        List<Path> imagePaths = new ArrayList<>();
         
         try (Archive rarFile = new Archive(cbrFile)) {
-            List<FileHeader> imageHeaders = new ArrayList<>();
-            
             for (FileHeader fileHeader : rarFile) {
-                if (!fileHeader.isDirectory() && isImageFile(fileHeader.getFileName())) {
-                    imageHeaders.add(fileHeader);
-                }
-            }
-            
-            imageHeaders.sort(Comparator.comparing(FileHeader::getFileName, String.CASE_INSENSITIVE_ORDER));
-            
-            log.debug("Found {} image entries in CBR file", imageHeaders.size());
-            
-            for (FileHeader fileHeader : imageHeaders) {
-                long fileSize = fileHeader.getFullUnpackSize();
-                if (fileSize > MAX_IMAGE_SIZE_BYTES) {
-                    throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
-                            fileHeader.getFileName(), fileSize, MAX_IMAGE_SIZE_BYTES));
+                if (fileHeader.isDirectory() || !isImageFile(fileHeader.getFileName())) {
+                    continue;
                 }
                 
+                validateImageSize(fileHeader.getFileName(), fileHeader.getFullUnpackSize());
+                
                 try (InputStream inputStream = rarFile.getInputStream(fileHeader)) {
-                    BufferedImage image = ImageIO.read(inputStream);
-                    if (image != null) {
-                        images.add(image);
-                        log.debug("Successfully loaded image: {}", fileHeader.getFileName());
-                    } else {
-                        log.warn("Failed to load image (unsupported format?): {}", fileHeader.getFileName());
-                    }
+                    Path outputPath = extractedImagesDir.resolve(extractFileName(fileHeader.getFileName()));
+                    Files.copy(inputStream, outputPath);
+                    imagePaths.add(outputPath);
                 } catch (Exception e) {
-                    log.warn("Error reading image {}: {}", fileHeader.getFileName(), e.getMessage());
+                    log.warn("Error extracting image {}: {}", fileHeader.getFileName(), e.getMessage());
                 }
             }
         }
         
-        return images;
+        log.debug("Found {} image entries in CBR file", imagePaths.size());
+        imagePaths.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
+        return imagePaths;
     }
     
-    private List<BufferedImage> extractImagesFrom7z(File cb7File) throws IOException {
-        List<BufferedImage> images = new ArrayList<>();
-        Map<String, byte[]> imageDataMap = new HashMap<>();
+    private List<Path> extractImagesFrom7z(File cb7File, Path extractedImagesDir) throws IOException {
+        List<Path> imagePaths = new ArrayList<>();
         
         try (SevenZFile sevenZFile = SevenZFile.builder().setFile(cb7File).get()) {
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
-                if (!entry.isDirectory() && isImageFile(entry.getName())) {
-                    long entrySize = entry.getSize();
-                    if (entrySize > MAX_IMAGE_SIZE_BYTES) {
-                        throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
-                                entry.getName(), entrySize, MAX_IMAGE_SIZE_BYTES));
+                if (entry.isDirectory() || !isImageFile(entry.getName())) {
+                    continue;
+                }
+                
+                validateImageSize(entry.getName(), entry.getSize());
+                
+                try {
+                    Path outputPath = extractedImagesDir.resolve(extractFileName(entry.getName()));
+                    try (InputStream entryInputStream = sevenZFile.getInputStream(entry);
+                         OutputStream fileOutputStream = Files.newOutputStream(outputPath)) {
+                        entryInputStream.transferTo(fileOutputStream);
                     }
-                    if (entrySize > Integer.MAX_VALUE) {
-                        throw new IOException(String.format("Image '%s' is too large for processing: %d bytes",
-                                entry.getName(), entrySize));
-                    }
-                    byte[] imageData = new byte[(int) entrySize];
-                    sevenZFile.read(imageData);
-                    imageDataMap.put(entry.getName(), imageData);
+                    imagePaths.add(outputPath);
+                } catch (Exception e) {
+                    log.warn("Error extracting image {}: {}", entry.getName(), e.getMessage());
                 }
             }
         }
         
-        log.debug("Found {} image entries in CB7 file", imageDataMap.size());
-        
-        List<String> sortedImageNames = imageDataMap.keySet().stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
-        
-        for (String imageName : sortedImageNames) {
-            try (ByteArrayInputStream bis = new ByteArrayInputStream(imageDataMap.get(imageName))) {
-                BufferedImage image = ImageIO.read(bis);
-                if (image != null) {
-                    images.add(image);
-                    log.debug("Successfully loaded image: {}", imageName);
-                } else {
-                    log.warn("Failed to load image (unsupported format?): {}", imageName);
-                }
-            } catch (Exception e) {
-                log.warn("Error reading image {}: {}", imageName, e.getMessage());
-            }
+        log.debug("Found {} image entries in CB7 file", imagePaths.size());
+        imagePaths.sort(Comparator.comparing(path -> path.getFileName().toString().toLowerCase()));
+        return imagePaths;
+    }
+    
+    private String extractFileName(String entryPath) {
+        return Path.of(entryPath).getFileName().toString();
+    }
+    
+    private void validateImageSize(String imageName, long size) throws IOException {
+        if (size > MAX_IMAGE_SIZE_BYTES) {
+            throw new IOException(String.format("Image '%s' exceeds maximum size limit: %d bytes (max: %d bytes)",
+                    imageName, size, MAX_IMAGE_SIZE_BYTES));
         }
-        
-        return images;
     }
 
     private boolean isImageFile(String fileName) {
@@ -327,6 +282,17 @@ public class CbxConversionService {
                lowerName.endsWith(".gif") || lowerName.endsWith(".bmp");
         
         return isImage;
+    }
+
+    private boolean isJpegFile(Path path) {
+        Set<String> jpegExtensions = Set.of(".jpg", ".jpeg");
+        String fileName = path.getFileName().toString().toLowerCase();
+        int lastDot = fileName.lastIndexOf('.');
+        if (lastDot > 0) {
+            String extension = fileName.substring(lastDot);
+            return jpegExtensions.contains(extension);
+        }
+        return false;
     }
 
     private void addMimetypeEntry(ZipArchiveOutputStream zipOut) throws IOException {
@@ -362,17 +328,17 @@ public class CbxConversionService {
         zipOut.closeArchiveEntry();
     }
 
-    private List<EpubContentFileGroup> addImagesAndPages(ZipArchiveOutputStream zipOut, List<BufferedImage> images) 
+    private List<EpubContentFileGroup> addImagesAndPages(ZipArchiveOutputStream zipOut, List<Path> imagePaths) 
             throws IOException, TemplateException {
         
         List<EpubContentFileGroup> contentGroups = new ArrayList<>();
 
-        if (!images.isEmpty()) {
-            addImageToZip(zipOut, COVER_IMAGE_PATH, images.get(0));
+        if (!imagePaths.isEmpty()) {
+            addImageToZipFromPath(zipOut, COVER_IMAGE_PATH, imagePaths.get(0));
         }
 
-        for (int i = 0; i < images.size(); i++) {
-            BufferedImage image = images.get(i);
+        for (int i = 0; i < imagePaths.size(); i++) {
+            Path imageSourcePath = imagePaths.get(i);
             String contentKey = String.format("page-%04d", i + 1);
             String imageFileName = contentKey + ".jpg";
             String htmlFileName = contentKey + ".xhtml";
@@ -380,7 +346,7 @@ public class CbxConversionService {
             String imagePath = IMAGE_ROOT_PATH + imageFileName;
             String htmlPath = HTML_ROOT_PATH + htmlFileName;
 
-            addImageToZip(zipOut, imagePath, image);
+            addImageToZipFromPath(zipOut, imagePath, imageSourcePath);
 
             String htmlContent = generatePageHtml(imageFileName, i + 1);
             ZipArchiveEntry htmlEntry = new ZipArchiveEntry(htmlPath);
@@ -394,12 +360,28 @@ public class CbxConversionService {
         return contentGroups;
     }
 
-    private void addImageToZip(ZipArchiveOutputStream zipOut, String imagePath, BufferedImage image) 
+    private void addImageToZipFromPath(ZipArchiveOutputStream zipOut, String epubImagePath, Path sourceImagePath) 
             throws IOException {
-        ZipArchiveEntry imageEntry = new ZipArchiveEntry(imagePath);
+        ZipArchiveEntry imageEntry = new ZipArchiveEntry(epubImagePath);
         zipOut.putArchiveEntry(imageEntry);
         
-        writeJpegImage(image, zipOut, 0.85f);
+        if (isJpegFile(sourceImagePath)) {
+            try (InputStream fis = Files.newInputStream(sourceImagePath)) {
+                fis.transferTo(zipOut);
+            }
+        } else {
+            try (InputStream fis = Files.newInputStream(sourceImagePath)) {
+                BufferedImage image = ImageIO.read(fis);
+                if (image != null) {
+                    writeJpegImage(image, zipOut, 0.85f);
+                } else {
+                    log.warn("Could not decode image {}, copying raw bytes", sourceImagePath.getFileName());
+                    try (InputStream rawStream = Files.newInputStream(sourceImagePath)) {
+                        rawStream.transferTo(zipOut);
+                    }
+                }
+            }
+        }
         
         zipOut.closeArchiveEntry();
     }
