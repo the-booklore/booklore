@@ -97,7 +97,8 @@ public class BookDownloadService {
 
             if (asKepub) {
                 tempDir = Files.createTempDirectory("kepub-output");
-                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile());
+                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile(),
+                    koboSettings.isForceEnableHyphenation());
             }
 
             setResponseHeaders(response, fileToSend);

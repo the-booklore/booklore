@@ -23,6 +23,7 @@ public class CategoryEntity {
     private String name;
 
     @ManyToMany(mappedBy = "categories", fetch = FetchType.LAZY)
+    @Builder.Default
     private Set<BookMetadataEntity> bookMetadataEntityList = new HashSet<>();
 
     @Override

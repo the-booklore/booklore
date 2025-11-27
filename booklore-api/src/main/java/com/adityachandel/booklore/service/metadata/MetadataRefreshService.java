@@ -258,9 +258,6 @@ public class MetadataRefreshService {
     }
 
     private void saveProposal(MetadataFetchJobEntity job, Long bookId, BookMetadata metadata) throws JsonProcessingException {
-        if (job.getProposals() == null) {
-            job.setProposals(new ArrayList<>());
-        }
         MetadataFetchProposalEntity proposal = MetadataFetchProposalEntity.builder()
                 .job(job)
                 .bookId(bookId)

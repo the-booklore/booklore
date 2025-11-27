@@ -62,6 +62,7 @@ public class BookEntity {
     private String currentHash;
 
     @Column(name = "deleted")
+    @Builder.Default
     private Boolean deleted = Boolean.FALSE;
 
     @Column(name = "deleted_at")
