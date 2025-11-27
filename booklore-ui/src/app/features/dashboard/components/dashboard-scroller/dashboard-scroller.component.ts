@@ -1,9 +1,10 @@
-import {Component, ElementRef, Input, OnChanges, OnInit, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, ViewChild} from '@angular/core';
 import {BookCardComponent} from '../../../book/components/book-browser/book-card/book-card.component';
 import {InfiniteScrollDirective} from 'ngx-infinite-scroll';
 
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import {Book} from '../../../book/model/book.model';
+import {ScrollerType} from '../../models/dashboard-config.model';
 
 @Component({
   selector: 'app-dashboard-scroller',
@@ -18,9 +19,10 @@ import {Book} from '../../../book/model/book.model';
 })
 export class DashboardScrollerComponent {
 
-  @Input() bookListType: 'lastRead' | null = null;
-  @Input() title: string = 'Last Read Books';
+  @Input() bookListType: ScrollerType | null = null;
+  @Input() title!: string;
   @Input() books!: Book[] | null;
+  @Input() isMagicShelf: boolean = false;
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
 }

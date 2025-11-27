@@ -75,6 +75,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 log.debug("Username extracted from JWT is null or empty");
             }
 
+            if (!appSettingService.getAppSettings().isOidcEnabled()) {
+                log.debug("OIDC is disabled, skipping OIDC token validation");
+                return null;
+            }
+
             JWTClaimsSet claims = dynamicOidcJwtProcessor.getProcessor().process(token, null);
             if (claims == null) {
                 log.debug("OIDC token processing returned null claims");

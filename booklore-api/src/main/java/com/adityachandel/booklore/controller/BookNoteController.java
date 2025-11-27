@@ -2,11 +2,10 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.BookNote;
 import com.adityachandel.booklore.model.dto.CreateBookNoteRequest;
-import com.adityachandel.booklore.service.BookNoteService;
+import com.adityachandel.booklore.service.book.BookNoteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;

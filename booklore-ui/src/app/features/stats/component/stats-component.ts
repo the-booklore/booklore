@@ -10,6 +10,7 @@ import {Select} from 'primeng/select';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 import {Button} from 'primeng/button';
 import {MatrixController, MatrixElement} from 'chartjs-chart-matrix';
+import {PageTitleService} from "../../../shared/service/page-title.service";
 import {LibraryFilterService, LibraryOption} from '../service/library-filter.service';
 import {LibrariesSummaryService} from '../service/libraries-summary.service';
 import {ReadStatusChartService} from '../service/read-status-chart.service';
@@ -71,6 +72,8 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
   protected readonly readingHeatmapChartService = inject(ReadingHeatmapChartService);
+  private readonly pageTitle = inject(PageTitleService);
+
   private readonly destroy$ = new Subject<void>();
 
   public isLoading = true;
@@ -102,6 +105,7 @@ export class StatsComponent implements OnInit, OnDestroy {
       family: "'Inter', sans-serif",
       size: 11.5,
     };
+    this.pageTitle.setPageTitle('Statistics');
     this.loadLibraryOptions();
     this.loadChartConfig();
   }

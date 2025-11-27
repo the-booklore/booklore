@@ -8,7 +8,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookCreatorService;
+import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
 import com.adityachandel.booklore.util.FileService;
@@ -53,7 +53,7 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.PDF);
         if (generateCover(bookEntity)) {
-            fileService.setBookCoverPath(bookEntity.getMetadata());
+            FileService.setBookCoverPath(bookEntity.getMetadata());
         }
         extractAndSetMetadata(bookEntity);
         return bookEntity;

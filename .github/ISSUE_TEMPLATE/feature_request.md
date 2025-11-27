@@ -7,16 +7,34 @@ assignees: ''
 
 ---
 
-# Feature Request Template for Booklore
+# ✨ Feature Request for Booklore
 
-**What problem or limitation are you encountering?**  
-Describe the challenge or issue you’re facing that this feature would address.
+Thank you for contributing to Booklore's development. Your suggestions help shape the future of this project.
 
-**What solution or improvement do you propose?**  
-Explain clearly what you’d like Booklore to do or how it could work better.
+---
 
-**Have you found any workarounds or alternatives?**  
-Share any other solutions you’ve tried or considered, if any.
+## 📝 Description
+<!-- Describe the problem you're facing and the solution you're proposing -->
 
-**Additional details**  
-Add any extra context, examples, or screenshots that might help us understand your request.
+
+## 🌟 Benefits
+<!-- Explain the value this feature would bring and who would benefit from it -->
+
+
+## 💻 Use Cases
+<!-- Describe specific scenarios where this feature would be useful -->
+1. 
+2. 
+3. 
+
+
+## 📸 Visual References _(Optional)_
+<!-- Add screenshots, mockups, wireframes, or examples from other applications -->
+
+
+## 🎨 Technical Details _(Optional)_
+<!-- Share implementation ideas, alternative solutions, or related features -->
+
+
+## 📌 Additional Context
+<!-- Any other information, research, or context that would be helpful -->

@@ -38,21 +38,30 @@
             }
           </div>
         } @else {
-          <app-dashboard-scroller
-            [books]="lastReadBooks$ | async"
-            [bookListType]="'lastRead'"
-            [title]="'Continue Reading'">
-          </app-dashboard-scroller>
+          <div class="dashboard-settings-button">
+            <p-button
+              icon="pi pi-cog"
+              severity="info"
+              rounded
+              text
+              [pTooltip]="'Customize Dashboard'"
+              tooltipPosition="left"
+              (click)="openDashboardSettings()">
+            </p-button>
+          </div>
 
-          <app-dashboard-scroller
-            [books]="latestAddedBooks$ | async"
-            [title]="'Recently Added'">
-          </app-dashboard-scroller>
-
-          <app-dashboard-scroller
-            [books]="randomBooks$ | async"
-            [title]="'Discover Something New'">
-          </app-dashboard-scroller>
+          @if (dashboardConfig$ | async; as config) {
+            @for (scroller of config.scrollers; track scroller.id) {
+              @if (scroller.enabled) {
+                <app-dashboard-scroller
+                  [bookListType]="scroller.type"
+                  [title]="scroller.title"
+                  [isMagicShelf]="scroller.type === ScrollerType.MAGIC_SHELF"
+                  [books]="getBooksForScroller(scroller) | async">
+                </app-dashboard-scroller>
+              }
+            }
+          }
         }
       </div>
     </div>

@@ -15,6 +15,8 @@ public interface AuthorRepository extends JpaRepository<AuthorEntity, Long> {
 
     Optional<AuthorEntity> findByName(String name);
 
+    Optional<AuthorEntity> findByNameIgnoreCase(String name);
+
     @Query("SELECT a FROM AuthorEntity a JOIN a.bookMetadataEntityList bm WHERE bm.bookId = :bookId")
     List<AuthorEntity> findAuthorsByBookId(@Param("bookId") Long bookId);
 }

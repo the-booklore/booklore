@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.service.BookService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.opds.OpdsFeedService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

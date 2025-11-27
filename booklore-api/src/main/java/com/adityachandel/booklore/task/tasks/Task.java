@@ -9,5 +9,8 @@ public interface Task {
     TaskCreateResponse execute(TaskCreateRequest request);
 
     TaskType getTaskType();
-}
 
+    default String getMetadata() {
+        return null;
+    }
+}

@@ -31,8 +31,35 @@ public class FileMoveHelper {
         if (target.getParent() != null) {
             Files.createDirectories(target.getParent());
         }
+
         log.info("Moving file from {} to {}", source, target);
         Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public Path moveFileWithBackup(Path source, Path target) throws IOException {
+        Path tempPath = source.resolveSibling(source.getFileName().toString() + ".tmp_move");
+        log.info("Moving file from {} to temporary location {}", source, tempPath);
+        Files.move(source, tempPath, StandardCopyOption.REPLACE_EXISTING);
+        return tempPath;
+    }
+
+    public void commitMove(Path tempPath, Path target) throws IOException {
+        if (target.getParent() != null) {
+            Files.createDirectories(target.getParent());
+        }
+        log.info("Committing move from temporary location {} to {}", tempPath, target);
+        Files.move(tempPath, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    public void rollbackMove(Path tempPath, Path originalSource) {
+        if (Files.exists(tempPath)) {
+            try {
+                log.info("Rolling back move from {} to {}", tempPath, originalSource);
+                Files.move(tempPath, originalSource, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                log.error("Failed to rollback file move from {} to {}", tempPath, originalSource, e);
+            }
+        }
     }
 
     public String extractSubPath(Path filePath, LibraryPathEntity libraryPathEntity) {
@@ -80,24 +107,25 @@ public class FileMoveHelper {
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+        Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
-        currentDir = currentDir.toAbsolutePath().normalize();
+        dir = dir.toAbsolutePath().normalize();
         Set<Path> normalizedRoots = new HashSet<>();
         for (Path root : libraryRoots) {
             normalizedRoots.add(root.toAbsolutePath().normalize());
         }
-        while (currentDir != null) {
-            if (isLibraryRoot(currentDir, normalizedRoots)) {
+        while (dir != null) {
+            if (isLibraryRoot(dir, normalizedRoots)) {
                 break;
             }
-            File[] files = currentDir.toFile().listFiles();
+            File[] files = dir.toFile().listFiles();
             if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", currentDir);
+                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
                 break;
             }
             if (hasOnlyIgnoredFiles(files, ignoredFilenames)) {
-                deleteIgnoredFilesAndDirectory(files, currentDir);
-                currentDir = currentDir.getParent();
+                deleteIgnoredFilesAndDirectory(files, dir);
+                dir = dir.getParent();
             } else {
                 break;
             }

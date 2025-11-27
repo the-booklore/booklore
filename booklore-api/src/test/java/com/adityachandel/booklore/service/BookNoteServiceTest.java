@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.BookNoteEntity;
 import com.adityachandel.booklore.repository.BookNoteRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.book.BookNoteService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,7 +73,7 @@ class BookNoteServiceTest {
                 .build();
 
         BookEntity book = BookEntity.builder().id(bookId).build();
-        BookLoreUserEntity userEntity = BookLoreUserEntity.builder().id(userId).build();
+        BookLoreUserEntity userEntity = BookLoreUserEntity.builder().id(userId).isDefaultPassword(false).build();
         BookNoteEntity savedEntity = BookNoteEntity.builder().id(noteId).build();
         BookNote dto = BookNote.builder().id(noteId).build();
 
@@ -107,7 +108,7 @@ class BookNoteServiceTest {
         BookNote dto = BookNote.builder().id(noteId).title("new title").content("new content").build();
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(BookEntity.builder().id(bookId).build()));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(BookLoreUserEntity.builder().id(userId).build()));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(BookLoreUserEntity.builder().id(userId).isDefaultPassword(false).build()));
         when(bookNoteRepository.findByIdAndUserId(noteId, userId)).thenReturn(Optional.of(existing));
         when(bookNoteRepository.save(existing)).thenReturn(saved);
         when(mapper.toDto(saved)).thenReturn(dto);
@@ -161,7 +162,7 @@ class BookNoteServiceTest {
                 .build();
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(BookEntity.builder().id(bookId).build()));
-        when(userRepository.findById(userId)).thenReturn(Optional.of(BookLoreUserEntity.builder().id(userId).build()));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(BookLoreUserEntity.builder().id(userId).isDefaultPassword(false).build()));
         when(bookNoteRepository.findByIdAndUserId(noteId, userId)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> service.createOrUpdateNote(req));

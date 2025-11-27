@@ -6,11 +6,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring")
+import java.util.regex.Pattern;
+
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface KoboReadingStateMapper {
 
     ObjectMapper objectMapper = new ObjectMapper();
+    Pattern SURROUNDING_DOUBLE_QUOTES_PATTERN = Pattern.compile("^\"|\"$");
 
     @Mapping(target = "currentBookmarkJson", expression = "java(toJson(dto.getCurrentBookmark()))")
     @Mapping(target = "statisticsJson", expression = "java(toJson(dto.getStatistics()))")
@@ -48,6 +52,6 @@ public interface KoboReadingStateMapper {
 
     default String cleanString(String value) {
         if (value == null) return null;
-        return value.replaceAll("^\"|\"$", "");
+        return SURROUNDING_DOUBLE_QUOTES_PATTERN.matcher(value).replaceAll("");
     }
 }

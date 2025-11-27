@@ -45,7 +45,7 @@
             }
           </li>
           <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+            @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
               <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
                 <i class="pi pi-upload text-surface-100"></i>
               </a>
@@ -170,19 +170,21 @@
               <li>
                 <button
                   class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-                  (click)="openFileUploadDialog(); mobileMenu.hide()"
-                >
-                  <i class="pi pi-upload text-surface-100"></i>
-                  Upload Book
-                </button>
-              </li>
-              <li>
-                <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
                   (click)="navigateToBookdrop(); mobileMenu.hide()"
                 >
                   <i class="pi pi-inbox text-surface-100"></i>
                   Bookdrop
+                </button>
+              </li>
+            }
+            @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="openFileUploadDialog(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-upload text-surface-100"></i>
+                  Upload Book
                 </button>
               </li>
             }

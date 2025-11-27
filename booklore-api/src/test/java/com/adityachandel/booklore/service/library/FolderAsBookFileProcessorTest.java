@@ -12,7 +12,7 @@ import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.FileFingerprint;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
@@ -120,7 +120,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(any(LibraryFile.class)))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
@@ -232,7 +232,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.EPUB))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.epub"))))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
@@ -277,7 +277,7 @@ class FolderAsBookFileProcessorTest {
         when(bookFileProcessorRegistry.getProcessorOrThrow(BookFileType.PDF))
                 .thenReturn(mockBookFileProcessor);
         when(mockBookFileProcessor.processFile(argThat(file -> file.getFileName().equals("book.pdf"))))
-                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW, null));
+                .thenReturn(new FileProcessResult(createdBook, FileProcessStatus.NEW));
         when(bookRepository.getReferenceById(createdBook.getId()))
                 .thenReturn(bookEntity);
         when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
@@ -422,7 +422,7 @@ class FolderAsBookFileProcessorTest {
         book.setFileName(fileName);
         book.setFileSubPath(subPath);
         book.setBookType(BookFileType.PDF);
-        book.setAddedOn(Instant.now());
+        book.setAddedOn(Instant.parse("2025-01-01T12:00:00Z"));
 
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setId(1L);

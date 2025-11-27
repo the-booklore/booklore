@@ -3,7 +3,7 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.model.dto.AdditionalFile;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
-import com.adityachandel.booklore.service.AdditionalFileService;
+import com.adityachandel.booklore.service.file.AdditionalFileService;
 import com.adityachandel.booklore.service.upload.FileUploadService;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;

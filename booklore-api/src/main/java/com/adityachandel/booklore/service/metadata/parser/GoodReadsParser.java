@@ -39,6 +39,9 @@ public class GoodReadsParser implements BookParser {
     private static final String BASE_BOOK_URL = "https://www.goodreads.com/book/show/";
     private static final String BASE_ISBN_URL = "https://www.goodreads.com/book/isbn/";
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    // Pattern to extract numeric Goodreads id from book URL like /book/show/12345
+    private static final Pattern BOOK_SHOW_ID_PATTERN = Pattern.compile("/book/show/(\\d+)");
     private final AppSettingService appSettingService;
 
     @Override
@@ -62,7 +65,7 @@ public class GoodReadsParser implements BookParser {
                     .orElse(null);
 
             if (ogUrl != null && !ogUrl.isBlank()) {
-                String goodreadsId = ogUrl.substring(ogUrl.lastIndexOf("/") + 1);
+                String goodreadsId = ogUrl.substring(ogUrl.lastIndexOf('/') + 1);
                 if (!goodreadsId.isBlank()) {
                     BookMetadata metadata = parseBookDetails(doc, goodreadsId);
                     if (metadata != null) {
@@ -308,7 +311,7 @@ public class GoodReadsParser implements BookParser {
     }
 
     private String handleStringNull(String s) {
-        if (s != null && s.equals("null")) {
+        if (s != null && "null".equals(s)) {
             return null;
         }
         return s;
@@ -447,9 +450,9 @@ public class GoodReadsParser implements BookParser {
 
                 // Author fuzzy match if author provided
                 if (queryAuthor != null && !queryAuthor.isBlank()) {
-                    List<String> queryAuthorTokens = List.of(queryAuthor.toLowerCase().split("\\s+"));
+                    List<String> queryAuthorTokens = List.of(WHITESPACE_PATTERN.split(queryAuthor.toLowerCase()));
                     boolean matches = authors.stream()
-                            .flatMap(a -> Arrays.stream(a.toLowerCase().split("\\s+")))
+                            .flatMap(a -> Arrays.stream(WHITESPACE_PATTERN.split(a.toLowerCase())))
                             .anyMatch(actual -> {
                                 for (String query : queryAuthorTokens) {
                                     int score = fuzzyScore.fuzzyScore(actual, query);
@@ -494,9 +497,11 @@ public class GoodReadsParser implements BookParser {
     private Integer extractGoodReadsIdPreview(Element book) {
         try {
             Element bookTitle = book.select("a.bookTitle").first();
+            if (bookTitle == null) {
+                return null;
+            }
             String href = bookTitle.attr("href");
-            Pattern pattern = Pattern.compile("/book/show/(\\d+)");
-            Matcher matcher = pattern.matcher(href);
+            Matcher matcher = BOOK_SHOW_ID_PATTERN.matcher(href);
             if (matcher.find()) {
                 return Integer.valueOf(matcher.group(1));
             }

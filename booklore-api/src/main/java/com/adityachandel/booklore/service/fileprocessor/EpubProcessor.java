@@ -9,7 +9,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookCreatorService;
+import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
 import com.adityachandel.booklore.util.FileService;
@@ -54,7 +54,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.EPUB);
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
-            fileService.setBookCoverPath(bookEntity.getMetadata());
+            FileService.setBookCoverPath(bookEntity.getMetadata());
         }
         return bookEntity;
     }
@@ -63,7 +63,10 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     public boolean generateCover(BookEntity bookEntity) {
         try {
             File epubFile = new File(FileUtils.getBookFullPath(bookEntity));
-            io.documentnode.epub4j.domain.Book epub = new EpubReader().readEpub(new FileInputStream(epubFile));
+            io.documentnode.epub4j.domain.Book epub;
+            try (FileInputStream fis = new FileInputStream(epubFile)) {
+                epub = new EpubReader().readEpub(fis);
+            }
             Resource coverImage = epub.getCoverImage();
 
             if (coverImage == null) {
@@ -121,7 +124,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setPageCount(epubMetadata.getPageCount());
 
         String lang = epubMetadata.getLanguage();
-        metadata.setLanguage(truncate((lang == null || lang.equalsIgnoreCase("UND")) ? "en" : lang, 1000));
+        metadata.setLanguage(truncate((lang == null || "UND".equalsIgnoreCase(lang)) ? "en" : lang, 1000));
 
         metadata.setAsin(truncate(epubMetadata.getAsin(), 20));
         metadata.setPersonalRating(epubMetadata.getPersonalRating());

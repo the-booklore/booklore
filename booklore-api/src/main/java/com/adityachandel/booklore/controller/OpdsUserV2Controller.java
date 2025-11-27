@@ -1,9 +1,8 @@
 package com.adityachandel.booklore.controller;
 
-
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.dto.request.OpdsUserV2CreateRequest;
-import com.adityachandel.booklore.service.OpdsUserV2Service;
+import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

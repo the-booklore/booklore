@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.service.file.AdditionalFileService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,14 +55,13 @@ class AdditionalFileServiceTest {
     private BookAdditionalFileEntity fileEntity;
     private AdditionalFile additionalFile;
     private BookEntity bookEntity;
-    private LibraryPathEntity libraryPathEntity;
 
     @BeforeEach
     void setUp() throws IOException {
         Path testFile = tempDir.resolve("test-file.pdf");
         Files.createFile(testFile);
 
-        libraryPathEntity = new LibraryPathEntity();
+        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
         libraryPathEntity.setId(1L);
         libraryPathEntity.setPath(tempDir.toString());
 

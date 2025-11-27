@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.service.kobo;
 
-import com.adityachandel.booklore.service.BookService;
+import com.adityachandel.booklore.service.book.BookService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;

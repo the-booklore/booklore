@@ -8,6 +8,7 @@ import {AuthService} from './auth.service';
 
 export interface PublicAppSettings {
   oidcEnabled: boolean;
+  remoteAuthEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
 }
 
@@ -76,6 +77,7 @@ export class AppSettingsService {
   private syncPublicSettings(appSettings: AppSettings): void {
     const updatedPublicSettings: PublicAppSettings = {
       oidcEnabled: appSettings.oidcEnabled,
+      remoteAuthEnabled: appSettings.remoteAuthEnabled,
       oidcProviderDetails: appSettings.oidcProviderDetails
     };
     const current = this.publicAppSettingsSubject.value;
@@ -83,6 +85,7 @@ export class AppSettingsService {
     if (
       !current ||
       current.oidcEnabled !== updatedPublicSettings.oidcEnabled ||
+      current.remoteAuthEnabled !== updatedPublicSettings.remoteAuthEnabled ||
       JSON.stringify(current.oidcProviderDetails) !== JSON.stringify(updatedPublicSettings.oidcProviderDetails)
     ) {
       this.publicAppSettingsSubject.next(updatedPublicSettings);

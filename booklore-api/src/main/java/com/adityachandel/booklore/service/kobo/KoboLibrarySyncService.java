@@ -7,8 +7,6 @@ import com.adityachandel.booklore.model.dto.kobo.*;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.KoboLibrarySnapshotEntity;
 import com.adityachandel.booklore.repository.KoboDeletedBookProgressRepository;
-import com.adityachandel.booklore.service.KoboEntitlementService;
-import com.adityachandel.booklore.service.KoboLibrarySnapshotService;
 import com.adityachandel.booklore.util.RequestUtils;
 import com.adityachandel.booklore.util.kobo.BookloreSyncTokenGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,13 +47,12 @@ public class KoboLibrarySyncService {
 
         if (prevSnapshot.isPresent()) {
             int maxRemaining = 5;
-            List<KoboSnapshotBookEntity> addedAll = new ArrayList<>();
             List<KoboSnapshotBookEntity> removedAll = new ArrayList<>();
 
             koboLibrarySnapshotService.updateSyncedStatusForExistingBooks(prevSnapshot.get().getId(), currSnapshot.getId());
 
             Page<KoboSnapshotBookEntity> addedPage = koboLibrarySnapshotService.getNewlyAddedBooks(prevSnapshot.get().getId(), currSnapshot.getId(), PageRequest.of(0, maxRemaining), user.getId());
-            addedAll.addAll(addedPage.getContent());
+            List<KoboSnapshotBookEntity> addedAll = new ArrayList<>(addedPage.getContent());
             maxRemaining -= addedPage.getNumberOfElements();
             shouldContinueSync = addedPage.hasNext();
 

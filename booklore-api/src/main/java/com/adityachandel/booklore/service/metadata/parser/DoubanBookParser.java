@@ -38,6 +38,17 @@ public class DoubanBookParser implements BookParser {
 
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
     private static final String BASE_BOOK_URL = "https://book.douban.com/subject/";
+    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("[^\\d]");
+    private static final Pattern NON_ALPHANUMERIC_CJK_PATTERN = Pattern.compile("[^a-zA-Z0-9\\u4e00-\\u9fff]");
+    private static final Pattern SLASH_SEPARATOR_PATTERN = Pattern.compile(" / ");
+    // Regex to extract JSON assigned to window.__DATA__ in Douban pages (DOTALL to capture across lines)
+    private static final Pattern WINDOW_DATA_JSON_PATTERN = Pattern.compile("window\\.__DATA__\\s*=\\s*(\\{.*\\});", Pattern.DOTALL);
+    // Pattern to extract numeric Douban subject id from URLs like /subject/123456/
+    private static final Pattern SUBJECT_ID_PATTERN = Pattern.compile("/subject/(\\d+)/");
+    // Pattern to extract rating number from class names like 'rating40' -> 40
+    private static final Pattern RATING_NUMBER_PATTERN = Pattern.compile("rating(\\d+)");
+    // Pattern for yyyy-MM-dd (or yyyy/M/d) date formats
+    private static final Pattern DATE_YMD_PATTERN = Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})");
     private final AppSettingService appSettingService;
 
     @Override
@@ -46,7 +57,7 @@ public class DoubanBookParser implements BookParser {
         if (searchResults == null || searchResults.isEmpty()) {
             return null;
         }
-        BookMetadata topResult = searchResults.get(0);
+        BookMetadata topResult = searchResults.getFirst();
 
         // If Douban reviews are enabled, fetch detailed metadata including reviews
         if (topResult.getDoubanId() != null && areDoubanReviewsEnabled()) {
@@ -120,12 +131,11 @@ public class DoubanBookParser implements BookParser {
             String jsonData = null;
 
             // Use regex to find the JSON object in window.__DATA__
-            Pattern pattern = Pattern.compile("window\\.__DATA__\\s*=\\s*(\\{.*\\});", Pattern.DOTALL);
-            Matcher matcher = pattern.matcher(htmlContent);
-            if (matcher.find()) {
-                jsonData = matcher.group(1);
-                log.debug("Successfully extracted JSON data, length: {}", jsonData.length());
-            }
+            Matcher matcher = WINDOW_DATA_JSON_PATTERN.matcher(htmlContent);
+             if (matcher.find()) {
+                 jsonData = matcher.group(1);
+                 log.debug("Successfully extracted JSON data, length: {}", jsonData.length());
+             }
 
             if (jsonData == null) {
                 log.warn("No JSON data found in Douban search response");
@@ -153,7 +163,7 @@ public class DoubanBookParser implements BookParser {
                 return null;
             }
 
-            if (itemsNode.size() == 0) {
+            if (itemsNode.isEmpty()) {
                 log.info("No books found for the search query");
                 return null;
             }
@@ -173,7 +183,7 @@ public class DoubanBookParser implements BookParser {
 
                     if (abstractText != null && !abstractText.isEmpty()) {
                         // Parse abstract: "author0 / author1 / author 2 / ... / publisher / date (YYYY-MM or YYYY-MM-DD) / price"
-                        String[] parts = abstractText.split(" / ");
+                        String[] parts = SLASH_SEPARATOR_PATTERN.split(abstractText);
                         if (parts.length >= 4) {
                             // Authors are all parts except the last three (publisher, date, price)
                             authors = Arrays.stream(parts, 0, parts.length - 3)
@@ -241,12 +251,11 @@ public class DoubanBookParser implements BookParser {
         if (url == null || url.isEmpty()) {
             return null;
         }
-        Pattern pattern = Pattern.compile("/subject/(\\d+)/");
-        Matcher matcher = pattern.matcher(url);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        return null;
+        Matcher matcher = SUBJECT_ID_PATTERN.matcher(url);
+         if (matcher.find()) {
+             return matcher.group(1);
+         }
+         return null;
     }
 
     private BookMetadata getBookMetadata(String doubanBookId) {
@@ -297,7 +306,7 @@ public class DoubanBookParser implements BookParser {
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {
             String cleanedTitle = Arrays.stream(title.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedTitle);
@@ -305,7 +314,7 @@ public class DoubanBookParser implements BookParser {
             String filename = BookUtils.cleanAndTruncateSearchTerm(BookUtils.cleanFileName(book.getFileName()));
             if (!filename.isEmpty()) {
                 String cleanedFilename = Arrays.stream(filename.split(" "))
-                        .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                        .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                         .filter(word -> !word.isEmpty())
                         .collect(Collectors.joining(" "));
                 searchTerm.append(cleanedFilename);
@@ -318,7 +327,7 @@ public class DoubanBookParser implements BookParser {
                 searchTerm.append(" ");
             }
             String cleanedAuthor = Arrays.stream(author.split(" "))
-                    .map(word -> word.replaceAll("[^a-zA-Z0-9\\u4e00-\\u9fff]", "").trim())
+                    .map(word -> NON_ALPHANUMERIC_CJK_PATTERN.matcher(word).replaceAll("").trim())
                     .filter(word -> !word.isEmpty())
                     .collect(Collectors.joining(" "));
             searchTerm.append(cleanedAuthor);
@@ -408,7 +417,7 @@ public class DoubanBookParser implements BookParser {
                     Node next = span.nextSibling();
                     if (next instanceof TextNode) {
                         String isbn = ((TextNode) next).text().trim();
-                        String digits = isbn.replaceAll("[^\\d]", "");
+                        String digits = NON_DIGIT_PATTERN.matcher(isbn).replaceAll("");
                         if (digits.length() == 10) {
                             return digits;
                         }
@@ -431,7 +440,7 @@ public class DoubanBookParser implements BookParser {
                     Node next = span.nextSibling();
                     if (next instanceof TextNode) {
                         String isbn = ((TextNode) next).text().trim();
-                        String digits = isbn.replaceAll("[^\\d]", "");
+                        String digits = NON_DIGIT_PATTERN.matcher(isbn).replaceAll("");
                         if (digits.length() == 13) {
                             return digits;
                         }
@@ -577,11 +586,10 @@ public class DoubanBookParser implements BookParser {
                 Float ratingValue = null;
                 if (!ratingElements.isEmpty()) {
                     String ratingClass = ratingElements.first().className();
-                    Pattern pattern = Pattern.compile("rating(\\d+)");
-                    Matcher matcher = pattern.matcher(ratingClass);
-                    if (matcher.find()) {
-                        ratingValue = Float.parseFloat(matcher.group(1)) / 2.0f; // Convert 5-star scale to 10-star scale
-                    }
+                    Matcher matcher = RATING_NUMBER_PATTERN.matcher(ratingClass);
+                     if (matcher.find()) {
+                         ratingValue = Float.parseFloat(matcher.group(1)) / 2.0f; // Convert 5-star scale to 10-star scale
+                     }
                 }
 
                 Elements dateElements = reviewElement.select(".comment-info .comment-time");
@@ -623,7 +631,7 @@ public class DoubanBookParser implements BookParser {
         try {
             Element reviewCountElement = doc.selectFirst("#interest_sectl .rating_people span");
             if (reviewCountElement != null) {
-                String reviewCountRaw = reviewCountElement.text().replaceAll("[^\\d]", "");
+                String reviewCountRaw = NON_DIGIT_PATTERN.matcher(reviewCountElement.text()).replaceAll("");
                 if (!reviewCountRaw.isEmpty()) {
                     return Integer.parseInt(reviewCountRaw);
                 }
@@ -659,7 +667,7 @@ public class DoubanBookParser implements BookParser {
                         String pageText = ((TextNode) next).text().trim();
                         if (!pageText.isEmpty()) {
                             try {
-                                return Integer.parseInt(pageText.replaceAll("[^\\d]", ""));
+                                return Integer.parseInt(NON_DIGIT_PATTERN.matcher(pageText).replaceAll(""));
                             } catch (NumberFormatException e) {
                                 log.warn("Error parsing page count: {}", pageText);
                             }
@@ -712,13 +720,12 @@ public class DoubanBookParser implements BookParser {
         if (dateString == null || dateString.trim().isEmpty()) {
             return null;
         }
-        dateString = dateString.trim();
+        String trim = dateString.trim();
 
         // Try regex patterns first for more flexibility
         try {
             // Pattern for yyyy-MM-dd or yyyy-M-d or yyyy-MM-d or yyyy-M-dd
-            Pattern pattern = Pattern.compile("(\\d{4})[-/](\\d{1,2})[-/](\\d{1,2})");
-            Matcher matcher = pattern.matcher(dateString);
+            Matcher matcher = DATE_YMD_PATTERN.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 int month = Integer.parseInt(matcher.group(2));
@@ -727,8 +734,8 @@ public class DoubanBookParser implements BookParser {
             }
 
             // Pattern for yyyy-MM or yyyy-M
-            pattern = Pattern.compile("(\\d{4})[-/](\\d{1,2})");
-            matcher = pattern.matcher(dateString);
+            Pattern pattern = Pattern.compile("(\\d{4})[-/](\\d{1,2})");
+            matcher = pattern.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 int month = Integer.parseInt(matcher.group(2));
@@ -737,7 +744,7 @@ public class DoubanBookParser implements BookParser {
 
             // Pattern for yyyy
             pattern = Pattern.compile("(\\d{4})");
-            matcher = pattern.matcher(dateString);
+            matcher = pattern.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 return LocalDate.of(year, 1, 1);
@@ -746,7 +753,7 @@ public class DoubanBookParser implements BookParser {
             // Chinese patterns
             // Pattern for 年月日: 2011年1月10日
             pattern = Pattern.compile("(\\d{4})年(\\d{1,2})月(\\d{1,2})日");
-            matcher = pattern.matcher(dateString);
+            matcher = pattern.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 int month = Integer.parseInt(matcher.group(2));
@@ -756,7 +763,7 @@ public class DoubanBookParser implements BookParser {
 
             // Pattern for 年月: 2111年12月
             pattern = Pattern.compile("(\\d{4})年(\\d{1,2})月");
-            matcher = pattern.matcher(dateString);
+            matcher = pattern.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 int month = Integer.parseInt(matcher.group(2));
@@ -765,14 +772,14 @@ public class DoubanBookParser implements BookParser {
 
             // Pattern for 年: 2011年
             pattern = Pattern.compile("(\\d{4})年");
-            matcher = pattern.matcher(dateString);
+            matcher = pattern.matcher(trim);
             if (matcher.matches()) {
                 int year = Integer.parseInt(matcher.group(1));
                 return LocalDate.of(year, 1, 1);
             }
 
         } catch (Exception e) {
-            log.warn("Exception while parsing date '{}': {}", dateString, e.getMessage());
+            log.warn("Exception while parsing date '{}': {}", trim, e.getMessage());
         }
 
         return null;

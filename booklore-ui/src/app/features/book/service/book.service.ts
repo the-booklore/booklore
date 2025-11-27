@@ -355,14 +355,15 @@ export class BookService {
     );
   }
 
-  downloadFile(bookId: number): void {
-    const downloadUrl = `${this.url}/${bookId}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, `book_${bookId}`);
+  downloadFile(book: Book): void {
+    const downloadUrl = `${this.url}/${book.id}/download`;
+    this.fileDownloadService.downloadFile(downloadUrl, book.fileName!);
   }
 
-  downloadAdditionalFile(bookId: number, fileId: number): void {
-    const downloadUrl = `${this.url}/${bookId}/files/${fileId}/download`;
-    this.fileDownloadService.downloadFile(downloadUrl, `additional_file_${fileId}`);
+  downloadAdditionalFile(book: Book, fileId: number): void {
+    const additionalFile = book.alternativeFormats!.find((f: AdditionalFile) => f.id === fileId);
+    const downloadUrl = `${this.url}/${additionalFile!.id}/files/${fileId}/download`;
+    this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
 
   savePdfProgress(bookId: number, page: number, percentage: number): Observable<void> {

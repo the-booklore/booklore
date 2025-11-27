@@ -9,7 +9,7 @@ import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.*;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.FileFingerprint;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
 import com.adityachandel.booklore.util.FileUtils;
@@ -183,7 +183,7 @@ public class LibraryTestBuilder {
     }
 
     public LibraryTestBuilder addBook(String fileSubPath, String fileName) {
-        fileSubPath = removeLeadingSlash(fileSubPath);
+        String subPath = removeLeadingSlash(fileSubPath);
 
         long id = bookRepository.size() + 1L;
         BookMetadataEntity metadata = BookMetadataEntity.builder()
@@ -191,11 +191,11 @@ public class LibraryTestBuilder {
                 .bookId(id)
                 .build();
 
-        String hash = computeFileHash(Path.of(fileSubPath, fileName));
+        String hash = computeFileHash(Path.of(subPath, fileName));
         BookEntity bookEntity = BookEntity.builder()
                 .id(id)
                 .fileName(fileName)
-                .fileSubPath(fileSubPath)
+                .fileSubPath(subPath)
                 .bookType(getBookFileType(fileName))
                 .fileSizeKb(1024L)
                 .library(getLibraryEntity())

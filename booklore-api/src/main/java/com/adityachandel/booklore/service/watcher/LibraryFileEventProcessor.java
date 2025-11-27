@@ -7,7 +7,7 @@ import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.PermissionType;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.LibraryRepository;
-import com.adityachandel.booklore.service.FileFingerprint;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
@@ -18,7 +18,6 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.*;
@@ -119,8 +118,7 @@ public class LibraryFileEventProcessor {
 
     private void handleFileCreate(LibraryEntity library, Path path) {
         log.info("[FILE_CREATE] '{}'", path);
-        String hash = FileFingerprint.generateHash(path);
-        bookFileTransactionalHandler.handleNewBookFile(library.getId(), path, hash);
+        bookFileTransactionalHandler.handleNewBookFile(library.getId(), path);
     }
 
     private void handleFileDelete(LibraryEntity library, Path path) {
@@ -154,8 +152,7 @@ public class LibraryFileEventProcessor {
                     .filter(p -> isBookFile(p.getFileName().toString()))
                     .forEach(p -> {
                         try {
-                            String hash = FileFingerprint.generateHash(p);
-                            bookFileTransactionalHandler.handleNewBookFile(library.getId(), p, hash);
+                            bookFileTransactionalHandler.handleNewBookFile(library.getId(), p);
                         } catch (Exception e) {
                             log.warn("[ERROR] Processing file '{}': {}", p, e.getMessage());
                         }

@@ -28,8 +28,8 @@ public class KoboDeviceAuthService {
         log.info("Kobo device authentication request received: {}", requestBody);
 
         KoboAuthentication auth = new KoboAuthentication();
-        auth.setAccessToken(RandomStringUtils.randomAlphanumeric(24));
-        auth.setRefreshToken(RandomStringUtils.randomAlphanumeric(24));
+        auth.setAccessToken(RandomStringUtils.secure().nextAlphanumeric(24));
+        auth.setRefreshToken(RandomStringUtils.secure().nextAlphanumeric(24));
         auth.setTrackingId(UUID.randomUUID().toString());
         auth.setUserKey(requestBody.get("UserKey").asText());
 

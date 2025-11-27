@@ -30,31 +30,6 @@
   margin: 0;
 }
 
-.migration-notice {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background-color: var(--p-yellow-50);
-  border-left: 4px solid var(--p-yellow-500);
-  color: var(--p-yellow-900);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  border-radius: 0 4px 4px 0;
-
-  @media (prefers-color-scheme: dark) {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: var(--p-yellow-200);
-    border-left-color: var(--p-yellow-400);
-  }
-
-  strong {
-    color: var(--p-yellow-800);
-
-    @media (prefers-color-scheme: dark) {
-      color: var(--p-yellow-100);
-    }
-  }
-}
-
 .access-denied-card {
   display: flex;
   align-items: center;

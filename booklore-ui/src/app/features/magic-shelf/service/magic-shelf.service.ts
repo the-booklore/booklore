@@ -13,6 +13,7 @@ export interface MagicShelf {
   name: string;
   icon?: string;
   filterJson: string;
+  isPublic?: boolean;
 }
 
 export interface MagicShelfState {
@@ -92,12 +93,13 @@ export class MagicShelfService {
     );
   }
 
-  saveShelf(data: { id?: number; name: string | null; icon: string | null; group: any }): Observable<MagicShelf> {
+  saveShelf(data: { id?: number; name: string | null; icon: string | null; group: any, isPublic?: boolean | null }): Observable<MagicShelf> {
     const payload: MagicShelf = {
       id: data.id,
       name: data.name ?? '',
       icon: data.icon ?? 'pi pi-book',
       filterJson: JSON.stringify(data.group),
+      isPublic: data.isPublic ?? false
     };
 
     return this.http.post<MagicShelf>(this.url, payload).pipe(

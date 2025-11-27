@@ -15,6 +15,7 @@ import {MagicShelfComponent} from '../../magic-shelf/component/magic-shelf-compo
 import {TaskCreateRequest, TaskType} from '../../settings/task-management/task.service';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {TaskHelperService} from '../../settings/task-management/task-helper.service';
+import {UserService} from "../../settings/user-management/user.service";
 
 @Injectable({
   providedIn: 'root',
@@ -29,6 +30,7 @@ export class LibraryShelfMenuService {
   private router = inject(Router);
   private dialogService = inject(DialogService);
   private magicShelfService = inject(MagicShelfService);
+  private userService = inject(UserService);
 
   initializeLibraryMenuItems(entity: Library | Shelf | MagicShelf | null): MenuItem[] {
     return [
@@ -50,39 +52,6 @@ export class LibraryShelfMenuService {
                 data: {
                   mode: 'edit',
                   libraryId: entity?.id
-                }
-              });
-            }
-          },
-          {
-            label: 'Delete Library',
-            icon: 'pi pi-trash',
-            command: () => {
-              this.confirmationService.confirm({
-                message: `Are you sure you want to delete library: ${entity?.name}?`,
-                header: 'Confirmation',
-                rejectButtonProps: {
-                  label: 'Cancel',
-                  severity: 'secondary',
-                },
-                acceptButtonProps: {
-                  label: 'Yes',
-                  severity: 'success',
-                },
-                accept: () => {
-                  this.libraryService.deleteLibrary(entity?.id!).subscribe({
-                    complete: () => {
-                      this.router.navigate(['/']);
-                      this.messageService.add({severity: 'info', summary: 'Success', detail: 'Library was deleted'});
-                    },
-                    error: () => {
-                      this.messageService.add({
-                        severity: 'error',
-                        summary: 'Failed',
-                        detail: 'Failed to delete library',
-                      });
-                    }
-                  });
                 }
               });
             }
@@ -143,6 +112,42 @@ export class LibraryShelfMenuService {
                 libraryId: entity?.id ?? undefined
               }).subscribe();
             }
+          },
+          {
+            separator: true
+          },
+          {
+            label: 'Delete Library',
+            icon: 'pi pi-trash',
+            command: () => {
+              this.confirmationService.confirm({
+                message: `Are you sure you want to delete library: ${entity?.name}?`,
+                header: 'Confirmation',
+                rejectButtonProps: {
+                  label: 'Cancel',
+                  severity: 'secondary',
+                },
+                acceptButtonProps: {
+                  label: 'Yes',
+                  severity: 'danger',
+                },
+                accept: () => {
+                  this.libraryService.deleteLibrary(entity?.id!).subscribe({
+                    complete: () => {
+                      this.router.navigate(['/']);
+                      this.messageService.add({severity: 'info', summary: 'Success', detail: 'Library was deleted'});
+                    },
+                    error: () => {
+                      this.messageService.add({
+                        severity: 'error',
+                        summary: 'Failed',
+                        detail: 'Failed to delete library',
+                      });
+                    }
+                  });
+                }
+              });
+            }
           }
         ]
       }
@@ -173,12 +178,18 @@ export class LibraryShelfMenuService {
             }
           },
           {
+            separator: true
+          },
+          {
             label: 'Delete Shelf',
             icon: 'pi pi-trash',
             command: () => {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptButtonProps: {
+                  severity: 'danger'
+                },
                 accept: () => {
                   this.shelfService.deleteShelf(entity?.id!).subscribe({
                     complete: () => {
@@ -203,13 +214,18 @@ export class LibraryShelfMenuService {
   }
 
   initializeMagicShelfMenuItems(entity: any): MenuItem[] {
+    const isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
+    const isPublicShelf = entity?.isPublic ?? false;
+    const disableOptions = isPublicShelf && !isAdmin;
+
     return [
       {
-        label: 'Options',
+        label: (isPublicShelf ? 'Public Shelf - ' : '') + (disableOptions ? 'Read only' : 'Options'),
         items: [
           {
             label: 'Edit Magic Shelf',
             icon: 'pi pi-pen-to-square',
+            disabled: disableOptions,
             command: () => {
               this.dialogService.open(MagicShelfComponent, {
                 header: 'Edit Magic Shelf',
@@ -222,12 +238,19 @@ export class LibraryShelfMenuService {
             }
           },
           {
+            separator: true
+          },
+          {
             label: 'Delete Magic Shelf',
             icon: 'pi pi-trash',
+            disabled: disableOptions,
             command: () => {
               this.confirmationService.confirm({
                 message: `Are you sure you want to delete magic shelf: ${entity?.name}?`,
                 header: 'Confirmation',
+                acceptButtonProps: {
+                  severity: 'danger'
+                },
                 accept: () => {
                   this.magicShelfService.deleteShelf(entity?.id!).subscribe({
                     complete: () => {

@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.service.BookService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import com.adityachandel.booklore.service.reader.PdfReaderService;
@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,13 +20,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 @Tag(name = "Book Media", description = "Endpoints for retrieving book media such as covers, thumbnails, and pages")
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/v1/media")
 public class BookMediaController {
+
+    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
 
     private final BookService bookService;
     private final PdfReaderService pdfReaderService;
@@ -78,10 +81,7 @@ public class BookMediaController {
     public ResponseEntity<Resource> getBookdropCover(
             @Parameter(description = "ID of the bookdrop file") @PathVariable long bookdropId) {
         Resource file = bookDropService.getBookdropCover(bookdropId);
-        String contentDisposition = ContentDisposition.builder("inline")
-                .filename("cover.jpg", StandardCharsets.UTF_8)
-                .build()
-                .toString();
+        String contentDisposition = "inline; filename=\"cover.jpg\"; filename*=UTF-8''cover.jpg";
         return (file != null)
                 ? ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
@@ -105,11 +105,10 @@ public class BookMediaController {
                     ? MediaType.IMAGE_PNG
                     : MediaType.IMAGE_JPEG;
 
-            String contentDisposition = ContentDisposition.builder("inline")
-                    .filename(filename, StandardCharsets.UTF_8)
-                    .build()
-                    .toString();
-
+            String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
+            String fallbackFilename = NON_ASCII_PATTERN.matcher(filename).replaceAll("_");
+            String contentDisposition = String.format("inline; filename=\"%s\"; filename*=UTF-8''%s",
+                    fallbackFilename, encodedFilename);
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
                     .contentType(mediaType)

@@ -9,7 +9,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.BookCreatorService;
+import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.util.FileService;
@@ -28,6 +28,7 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 
 import static com.adityachandel.booklore.util.FileService.truncate;
 
@@ -36,6 +37,10 @@ import static com.adityachandel.booklore.util.FileService.truncate;
 @Service
 public class CbxProcessor extends AbstractFileProcessor implements BookFileProcessor {
 
+    private static final Pattern UNDERSCORE_HYPHEN_PATTERN = Pattern.compile("[_\\-]");
+    private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
+    private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
+    private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
     private final BookMetadataRepository bookMetadataRepository;
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
@@ -56,7 +61,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
         if (generateCover(bookEntity)) {
-            fileService.setBookCoverPath(bookEntity.getMetadata());
+            FileService.setBookCoverPath(bookEntity.getMetadata());
         }
         
         extractAndSetMetadata(bookEntity);
@@ -102,9 +107,9 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
-        try (ZipFile zipFile = new ZipFile(file)) {
+        try (ZipFile zipFile = ZipFile.builder().setFile(file).get()) {
             return Collections.list(zipFile.getEntries()).stream()
-                    .filter(e -> !e.isDirectory() && e.getName().matches("(?i).*\\.(jpg|jpeg|png|webp)"))
+                    .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
                     .min(Comparator.comparing(ZipArchiveEntry::getName))
                     .map(entry -> {
                         try (InputStream is = zipFile.getInputStream(entry)) {
@@ -121,17 +126,17 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFrom7z(File file) {
-        try (SevenZFile sevenZFile = new SevenZFile(file)) {
+        try (SevenZFile sevenZFile = SevenZFile.builder().setFile(file).get()) {
             List<SevenZArchiveEntry> imageEntries = new ArrayList<>();
             SevenZArchiveEntry entry;
             while ((entry = sevenZFile.getNextEntry()) != null) {
-                if (!entry.isDirectory() && entry.getName().matches("(?i).*\\.(jpg|jpeg|png|webp)")) {
+                if (!entry.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(entry.getName()).matches()) {
                     imageEntries.add(entry);
                 }
             }
             imageEntries.sort(Comparator.comparing(SevenZArchiveEntry::getName));
 
-            try (SevenZFile sevenZFileReset = new SevenZFile(file)) {
+            try (SevenZFile sevenZFileReset = SevenZFile.builder().setFile(file).get()) {
                 for (SevenZArchiveEntry imgEntry : imageEntries) {
                     SevenZArchiveEntry current;
                     while ((current = sevenZFileReset.getNextEntry()) != null) {
@@ -157,8 +162,8 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private Optional<BufferedImage> extractFirstImageFromRar(File file) {
         try (Archive archive = new Archive(file)) {
             List<FileHeader> imageHeaders = archive.getFileHeaders().stream()
-                    .filter(h -> !h.isDirectory() && h.getFileNameString().toLowerCase().matches(".*\\.(jpg|jpeg|png|webp)"))
-                    .sorted(Comparator.comparing(FileHeader::getFileNameString))
+                    .filter(h -> !h.isDirectory() && IMAGE_EXTENSION_PATTERN.matcher(h.getFileName().toLowerCase()).matches())
+                    .sorted(Comparator.comparing(FileHeader::getFileName))
                     .toList();
 
             for (FileHeader header : imageHeaders) {
@@ -166,7 +171,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     archive.extractFile(header, baos);
                     return Optional.ofNullable(ImageIO.read(new ByteArrayInputStream(baos.toByteArray())));
                 } catch (Exception e) {
-                    log.warn("Error reading RAR entry {}: {}", header.getFileNameString(), e.getMessage());
+                    log.warn("Error reading RAR entry {}: {}", header.getFileName(), e.getMessage());
                 }
             }
         } catch (Exception e) {
@@ -210,9 +215,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
-        String title = baseName
-                .replaceAll("(?i)\\.cb[rz7]$", "")
-                .replaceAll("[_\\-]", " ")
+        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(CBX_FILE_EXTENSION_PATTERN.matcher(baseName).replaceAll("")).replaceAll(" ")
                 .trim();
         bookEntity.getMetadata().setTitle(truncate(title, 1000));
     }

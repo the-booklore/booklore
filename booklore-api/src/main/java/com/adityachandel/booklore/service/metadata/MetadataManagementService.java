@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MergeMetadataType;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.file.FileMoveService;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriter;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
@@ -56,21 +57,30 @@ public class MetadataManagementService {
     private void writeMetadataToFile(List<BookMetadataEntity> metadataList, boolean moveFile) {
         for (BookMetadataEntity metadata : metadataList) {
             if (metadata.getBook() != null) {
-                BookFileType bookType = metadata.getBook().getBookType();
+                BookEntity book = metadata.getBook();
+                boolean bookModified = false;
+
+                BookFileType bookType = book.getBookType();
                 Optional<MetadataWriter> writerOpt = metadataWriterFactory.getWriter(bookType);
-                writerOpt.ifPresent(writer -> {
-                    File file = metadata.getBook().getFullFilePath().toFile();
-                    writer.writeMetadataToFile(file, metadata, null, null);
-                });
+                if (writerOpt.isPresent()) {
+                    File file = book.getFullFilePath().toFile();
+                    writerOpt.get().writeMetadataToFile(file, metadata, null, null);
+                    String newHash = FileFingerprint.generateHash(book.getFullFilePath());
+                    book.setCurrentHash(newHash);
+                    bookModified = true;
+                }
 
                 if (moveFile) {
-                    BookEntity book = metadata.getBook();
                     FileMoveResult result = fileMoveService.moveSingleFile(book);
                     if (result.isMoved()) {
                         book.setFileName(result.getNewFileName());
                         book.setFileSubPath(result.getNewFileSubPath());
-                        bookRepository.saveAndFlush(book);
+                        bookModified = true;
                     }
+                }
+
+                if (bookModified) {
+                    bookRepository.saveAndFlush(book);
                 }
             }
         }
@@ -78,7 +88,11 @@ public class MetadataManagementService {
 
     private void consolidateAuthors(List<String> targetValues, List<String> valuesToMerge, boolean writeToFile, boolean moveFile) {
         List<AuthorEntity> targetAuthors = targetValues.stream()
-                .map(name -> authorRepository.findByName(name)
+                .map(name -> authorRepository.findByNameIgnoreCase(name)
+                        .map(existing -> {
+                            existing.setName(name);
+                            return authorRepository.save(existing);
+                        })
                         .orElseGet(() -> {
                             AuthorEntity author = new AuthorEntity();
                             author.setName(name);
@@ -87,7 +101,7 @@ public class MetadataManagementService {
                 .toList();
 
         List<AuthorEntity> authorsToMerge = valuesToMerge.stream()
-                .map(authorRepository::findByName)
+                .map(authorRepository::findByNameIgnoreCase)
                 .filter(java.util.Optional::isPresent)
                 .map(java.util.Optional::get)
                 .toList();
@@ -256,7 +270,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Series merge requires exactly one target value");
         }
-        String targetSeriesName = targetValues.get(0);
+        String targetSeriesName = targetValues.getFirst();
 
         for (String oldSeriesName : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldSeries = bookMetadataRepository.findAllBySeriesNameIgnoreCase(oldSeriesName);
@@ -279,7 +293,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Publisher merge requires exactly one target value");
         }
-        String targetPublisher = targetValues.get(0);
+        String targetPublisher = targetValues.getFirst();
 
         for (String oldPublisher : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldPublisher = bookMetadataRepository.findAllByPublisherIgnoreCase(oldPublisher);
@@ -302,7 +316,7 @@ public class MetadataManagementService {
         if (targetValues.size() != 1) {
             throw new IllegalArgumentException("Language merge requires exactly one target value");
         }
-        String targetLanguage = targetValues.get(0);
+        String targetLanguage = targetValues.getFirst();
 
         for (String oldLanguage : valuesToMerge) {
             List<BookMetadataEntity> booksWithOldLanguage = bookMetadataRepository.findAllByLanguageIgnoreCase(oldLanguage);

@@ -2,16 +2,21 @@ package com.adityachandel.booklore.util.kobo;
 
 import com.adityachandel.booklore.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.regex.Pattern;
+
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class KoboUrlBuilder {
 
+    private static final Pattern IP_ADDRESS_PATTERN = Pattern.compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
     @Value("${server.port}")
     private int serverPort;
 
@@ -32,7 +37,7 @@ public class KoboUrlBuilder {
         try {
             int port = Integer.parseInt(xfPort);
 
-            if (host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+") || "localhost".equals(host)) {
+            if (IP_ADDRESS_PATTERN.matcher(host).matches() || "localhost".equals(host)) {
                 builder.port(port);
             }
             log.info("Applied X-Forwarded-Port: {}", port);

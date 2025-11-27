@@ -14,6 +14,7 @@ import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookReviewRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.book.BookReviewService;
 import com.adityachandel.booklore.service.metadata.BookReviewUpdateService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import jakarta.persistence.EntityNotFoundException;
@@ -99,10 +100,10 @@ class BookReviewServiceTest {
         Set<MetadataPublicReviewsSettings.ReviewProviderConfig> configs = new HashSet<>();
         for (MetadataProvider provider : providers) {
             MetadataPublicReviewsSettings.ReviewProviderConfig config =
-                MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
-                    .provider(provider)
-                    .enabled(true)
-                    .build();
+                    MetadataPublicReviewsSettings.ReviewProviderConfig.builder()
+                            .provider(provider)
+                            .enabled(true)
+                            .maxReviews(10).build();
             configs.add(config);
         }
 
@@ -192,7 +193,7 @@ class BookReviewServiceTest {
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(mapper.toDto(savedEntity)).thenReturn(freshReview);
 
-        Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();
+        Map<MetadataProvider, BookMetadata> metadataMap = new EnumMap<>(MetadataProvider.class);
         metadataMap.put(MetadataProvider.Amazon, BookMetadata.builder()
             .bookReviews(Collections.singletonList(freshReview))
             .build());
@@ -203,7 +204,7 @@ class BookReviewServiceTest {
         List<BookReview> result = service.getByBookId(bookId);
 
         assertEquals(1, result.size());
-        assertEquals(freshReview, result.get(0));
+        assertEquals(freshReview, result.getFirst());
         verify(bookReviewUpdateService).addReviewsToBook(
             Collections.singletonList(freshReview), bookEntity.getMetadata());
         verify(bookRepository).save(bookEntity);
@@ -228,7 +229,7 @@ class BookReviewServiceTest {
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(mapper.toDto(savedEntity)).thenReturn(freshReview);
 
-        Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();
+        Map<MetadataProvider, BookMetadata> metadataMap = new EnumMap<>(MetadataProvider.class);
         metadataMap.put(MetadataProvider.GoodReads, BookMetadata.builder()
             .bookReviews(Collections.singletonList(freshReview))
             .build());
@@ -304,7 +305,7 @@ class BookReviewServiceTest {
         BookReview amazonReview = createBookReview(MetadataProvider.Amazon);
         BookReview goodreadsReview = createBookReview(MetadataProvider.GoodReads);
 
-        Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();
+        Map<MetadataProvider, BookMetadata> metadataMap = new EnumMap<>(MetadataProvider.class);
         metadataMap.put(MetadataProvider.Amazon, BookMetadata.builder()
             .bookReviews(Collections.singletonList(amazonReview))
             .build());
@@ -329,7 +330,7 @@ class BookReviewServiceTest {
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPublicReviewsSettings(createReviewSettings(true, MetadataProvider.Amazon));
 
-        Map<MetadataProvider, BookMetadata> metadataMap = new HashMap<>();
+        Map<MetadataProvider, BookMetadata> metadataMap = new EnumMap<>(MetadataProvider.class);
         metadataMap.put(MetadataProvider.Amazon, BookMetadata.builder()
             .bookReviews(null)
             .build());

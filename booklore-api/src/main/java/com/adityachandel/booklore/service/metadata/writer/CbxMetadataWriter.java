@@ -31,6 +31,7 @@ import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -38,6 +39,8 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 @Component
 public class CbxMetadataWriter implements MetadataWriter {
+
+    private static final Pattern VALID_FILENAME_PATTERN = Pattern.compile("^[\\w./\\\\-]+$");
 
     @Override
     public void writeMetadataToFile(File file, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clearFlags) {
@@ -77,7 +80,7 @@ public class CbxMetadataWriter implements MetadataWriter {
                     }
                 }
             } else if (isCb7) {
-                try (SevenZFile sevenZ = new SevenZFile(file)) {
+                try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
                     SevenZArchiveEntry existing = null;
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e != null && !e.isDirectory() && isComicInfoName(e.getName())) {
@@ -158,7 +161,7 @@ public class CbxMetadataWriter implements MetadataWriter {
             if (isCb7) {
                 // Convert to CBZ with updated ComicInfo.xml
                 tempFile = Files.createTempFile("cbx_edit", ".cbz");
-                try (SevenZFile sevenZ = new SevenZFile(file);
+                try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get();
                      ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(tempFile))) {
                     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
                         if (e.isDirectory()) continue;
@@ -394,7 +397,7 @@ public class CbxMetadataWriter implements MetadataWriter {
         String n = name.replace('\\', '/');
         if (n.endsWith("/")) return false;
         String lower = n.toLowerCase(Locale.ROOT);
-        return lower.equals("comicinfo.xml") || lower.endsWith("/comicinfo.xml");
+        return "comicinfo.xml".equals(lower) || lower.endsWith("/comicinfo.xml");
     }
 
     private static boolean isSafeEntryName(String name) {
@@ -462,7 +465,7 @@ public class CbxMetadataWriter implements MetadataWriter {
     private boolean isSafeExecutable(String exec) {
         if (exec == null || exec.isBlank()) return false;
         // allow word chars, dot, slash, backslash, dash and underscore (no spaces or shell metas)
-        return exec.matches("^[\\w./\\\\-]+$");
+        return VALID_FILENAME_PATTERN.matcher(exec).matches();
     }
 
     private static String stripExtension(String filename) {

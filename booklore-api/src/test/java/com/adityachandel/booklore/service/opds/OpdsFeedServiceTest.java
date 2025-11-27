@@ -8,7 +8,6 @@ import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.service.OpdsBookService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class OpdsFeedServiceTest {
+
+    private static final Instant FIXED_INSTANT = Instant.parse("2025-01-01T12:00:00Z");
 
     private AuthenticationService authenticationService;
     private OpdsBookService opdsBookService;
@@ -56,7 +57,7 @@ class OpdsFeedServiceTest {
         OpdsUserDetails userDetails = mock(OpdsUserDetails.class);
         when(authenticationService.getOpdsUser()).thenReturn(userDetails);
 
-        Library lib = Library.builder().id(1L).name("Test Library").build();
+        Library lib = Library.builder().id(1L).name("Test Library").watch(false).build();
         when(opdsBookService.getAccessibleLibraries(userDetails)).thenReturn(List.of(lib));
 
         String xml = opdsFeedService.generateLibrariesNavigation(request);
@@ -129,7 +130,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(10L)
                 .bookType(BookFileType.EPUB)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder()
                         .title("Book Title")
                         .authors(Set.of("Author A"))
@@ -184,7 +185,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(11L)
                 .bookType(BookFileType.PDF)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Recent Book").build())
                 .build();
 
@@ -221,7 +222,7 @@ class OpdsFeedServiceTest {
         Book book = Book.builder()
                 .id(12L)
                 .bookType(BookFileType.EPUB)
-                .addedOn(Instant.now())
+                .addedOn(FIXED_INSTANT)
                 .metadata(BookMetadata.builder().title("Surprise Book").build())
                 .build();
 

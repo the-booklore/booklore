@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.KoreaderUser;
-import com.adityachandel.booklore.service.KoreaderUserService;
+import com.adityachandel.booklore.service.koreader.KoreaderUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;

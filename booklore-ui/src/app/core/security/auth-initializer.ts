@@ -94,6 +94,18 @@ export function initializeAuthFactory() {
 
                 resolve();
               });
+          } else if (publicSettings.remoteAuthEnabled) {
+            authService.remoteLogin().subscribe({
+              next: () => {
+                authInitService.markAsInitialized();
+                resolve();
+              },
+              error: err => {
+                console.error('[Remote Login] failed:', err);
+                authInitService.markAsInitialized();
+                resolve();
+              }
+            });
           } else {
             if (forceLocalOnly) {
               console.warn('[OIDC] Forced local-only login via ?localOnly=true');

@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.List;
@@ -39,7 +40,10 @@ import org.w3c.dom.NodeList;
 @Component
 public class CbxMetadataExtractor implements FileMetadataExtractor {
 
-  @Override
+    private static final Pattern LEADING_ZEROS_PATTERN = Pattern.compile("^0+");
+    private static final Pattern COMMA_SEMICOLON_PATTERN = Pattern.compile("[,;]");
+
+    @Override
   public BookMetadata extractMetadata(File file) {
     String baseName = FilenameUtils.getBaseName(file.getName());
     String lowerName = file.getName().toLowerCase();
@@ -68,7 +72,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
 
     // CB7 path (7z)
     if (lowerName.endsWith(".cb7")) {
-      try (SevenZFile sevenZ = new SevenZFile(file)) {
+      try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
         SevenZArchiveEntry entry = findSevenZComicInfoEntry(sevenZ);
         if (entry == null) {
           return BookMetadata.builder().title(baseName).build();
@@ -88,27 +92,27 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
 
     // CBR path (RAR)
-    Archive archive = null;
-    try {
-      archive = new Archive(file);
-      FileHeader header = findComicInfoHeader(archive);
-      if (header == null) {
+        try (Archive archive = new Archive(file)) {
+            try {
+                FileHeader header = findComicInfoHeader(archive);
+                if (header == null) {
+                    return BookMetadata.builder().title(baseName).build();
+                }
+                byte[] xmlBytes = readRarEntryBytes(archive, header);
+                if (xmlBytes == null) {
+                    return BookMetadata.builder().title(baseName).build();
+                }
+                try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+                    Document document = buildSecureDocument(is);
+                    return mapDocumentToMetadata(document, baseName);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to extract metadata from CBR", e);
+                return BookMetadata.builder().title(baseName).build();
+            }
+        } catch (Exception ignore) {
+        }
         return BookMetadata.builder().title(baseName).build();
-      }
-      byte[] xmlBytes = readRarEntryBytes(archive, header);
-      if (xmlBytes == null) {
-        return BookMetadata.builder().title(baseName).build();
-      }
-      try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
-        Document document = buildSecureDocument(is);
-        return mapDocumentToMetadata(document, baseName);
-      }
-    } catch (Exception e) {
-      log.warn("Failed to extract metadata from CBR", e);
-      return BookMetadata.builder().title(baseName).build();
-      } finally {
-      try { if (archive != null) archive.close(); } catch (Exception ignore) {}
-    }
   }
 
   private ZipEntry findComicInfoEntry(ZipFile zipFile) {
@@ -215,7 +219,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     if (value == null) {
       return new HashSet<>();
     }
-    return Arrays.stream(value.split("[,;]"))
+    return Arrays.stream(COMMA_SEMICOLON_PATTERN.split(value))
       .map(String::trim)
       .filter(s -> !s.isEmpty())
       .collect(Collectors.toSet());
@@ -317,7 +321,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
 
     // CB7 path
     if (lowerName.endsWith(".cb7")) {
-      try (SevenZFile sevenZ = new SevenZFile(file)) {
+      try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
         // Try via ComicInfo.xml first
         SevenZArchiveEntry ci = findSevenZComicInfoEntry(sevenZ);
         if (ci != null) {
@@ -370,61 +374,60 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
 
     // CBR path
-    Archive archive = null;
-    try {
-      archive = new Archive(file);
+      try (Archive archive = new Archive(file)) {
+          try {
 
-      // Try via ComicInfo.xml first
-      FileHeader comicInfo = findComicInfoHeader(archive);
-      if (comicInfo != null) {
-        byte[] xmlBytes = readRarEntryBytes(archive, comicInfo);
-        if (xmlBytes != null) {
-          try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
-            Document document = buildSecureDocument(is);
-            String imageName = findFrontCoverImageName(document);
-            if (imageName != null) {
-              FileHeader byName = findRarHeaderByName(archive, imageName);
-              if (byName != null) {
-                byte[] bytes = readRarEntryBytes(archive, byName);
-                if (canDecode(bytes)) return bytes;
-              }
-              try {
-                int index = Integer.parseInt(imageName);
-                FileHeader byIndex = findRarImageHeaderByIndex(archive, index);
-                if (byIndex != null) {
-                  byte[] bytes = readRarEntryBytes(archive, byIndex);
-                  if (canDecode(bytes)) return bytes;
-                }
-                if (index > 0) {
-                  FileHeader offByOne = findRarImageHeaderByIndex(archive, index - 1);
-                  if (offByOne != null) {
-                    byte[] bytes = readRarEntryBytes(archive, offByOne);
-                    if (canDecode(bytes)) return bytes;
+              // Try via ComicInfo.xml first
+              FileHeader comicInfo = findComicInfoHeader(archive);
+              if (comicInfo != null) {
+                  byte[] xmlBytes = readRarEntryBytes(archive, comicInfo);
+                  if (xmlBytes != null) {
+                      try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
+                          Document document = buildSecureDocument(is);
+                          String imageName = findFrontCoverImageName(document);
+                          if (imageName != null) {
+                              FileHeader byName = findRarHeaderByName(archive, imageName);
+                              if (byName != null) {
+                                  byte[] bytes = readRarEntryBytes(archive, byName);
+                                  if (canDecode(bytes)) return bytes;
+                              }
+                              try {
+                                  int index = Integer.parseInt(imageName);
+                                  FileHeader byIndex = findRarImageHeaderByIndex(archive, index);
+                                  if (byIndex != null) {
+                                      byte[] bytes = readRarEntryBytes(archive, byIndex);
+                                      if (canDecode(bytes)) return bytes;
+                                  }
+                                  if (index > 0) {
+                                      FileHeader offByOne = findRarImageHeaderByIndex(archive, index - 1);
+                                      if (offByOne != null) {
+                                          byte[] bytes = readRarEntryBytes(archive, offByOne);
+                                          if (canDecode(bytes)) return bytes;
+                                      }
+                                  }
+                              } catch (NumberFormatException ignore) {
+                                  // ignore and continue fallback
+                              }
+                          }
+                      }
                   }
-                }
-              } catch (NumberFormatException ignore) {
-                // ignore and continue fallback
               }
-            }
-          }
-        }
-      }
 
-      // Fallback: iterate images alphabetically until a decodable one is found
-      FileHeader firstImage = findFirstAlphabeticalImageHeader(archive);
-      if (firstImage != null) {
-        java.util.List<FileHeader> images = listRarImageHeaders(archive);
-        for (FileHeader fh : images) {
-          byte[] bytes = readRarEntryBytes(archive, fh);
-          if (canDecode(bytes)) return bytes;
-        }
+              // Fallback: iterate images alphabetically until a decodable one is found
+              FileHeader firstImage = findFirstAlphabeticalImageHeader(archive);
+              if (firstImage != null) {
+                  List<FileHeader> images = listRarImageHeaders(archive);
+                  for (FileHeader fh : images) {
+                      byte[] bytes = readRarEntryBytes(archive, fh);
+                      if (canDecode(bytes)) return bytes;
+                  }
+              }
+          } catch (Exception e) {
+              log.warn("Failed to extract cover image from CBR", e);
+              return generatePlaceholderCover(250, 350);
+          }
+      } catch (Exception ignore) {
       }
-    } catch (Exception e) {
-      log.warn("Failed to extract cover image from CBR", e);
-      return generatePlaceholderCover(250, 350);
-    } finally {
-      try { if (archive != null) archive.close(); } catch (Exception ignore) {}
-    }
 
     return generatePlaceholderCover(250, 350);
   }
@@ -504,10 +507,9 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     NodeList pages = document.getElementsByTagName("Page");
     for (int i = 0; i < pages.getLength(); i++) {
       org.w3c.dom.Node node = pages.item(i);
-      if (node instanceof org.w3c.dom.Element) {
-        org.w3c.dom.Element page = (org.w3c.dom.Element) node;
-        String type = page.getAttribute("Type");
-        if (type != null && type.equalsIgnoreCase("FrontCover")) {
+      if (node instanceof org.w3c.dom.Element page) {
+          String type = page.getAttribute("Type");
+        if (type != null && "FrontCover".equalsIgnoreCase(type)) {
           String imageFile = page.getAttribute("ImageFile");
           if (imageFile != null && !imageFile.isBlank()) {
             return imageFile.trim();
@@ -541,7 +543,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     if (norm.startsWith("__MACOSX/") || norm.contains("/__MACOSX/")) return false;
     String base = baseName(norm);
     if (base.startsWith(".")) return false;
-    if (base.equalsIgnoreCase(".ds_store")) return false;
+    if (".ds_store".equalsIgnoreCase(base)) return false;
     return true;
   }
 
@@ -652,7 +654,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
     if (images.isEmpty()) return null;
     images.sort((a, b) -> naturalCompare(a.getFileName(), b.getFileName()));
-    return images.get(0);
+    return images.getFirst();
   }
 
   private ZipEntry findFirstAlphabeticalImageEntry(ZipFile zipFile) {
@@ -666,7 +668,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
     if (images.isEmpty()) return null;
     images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
-    return images.get(0);
+    return images.getFirst();
   }
   
   // ==== 7z (.cb7) helpers ====
@@ -674,7 +676,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (e == null || e.isDirectory()) continue;
       String name = e.getName();
-      if (name != null && name.equalsIgnoreCase("ComicInfo.xml")) {
+      if (name != null && "ComicInfo.xml".equalsIgnoreCase(name)) {
         return e;
       }
     }
@@ -714,7 +716,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
     if (images.isEmpty()) return null;
     images.sort((a, b) -> naturalCompare(a.getName(), b.getName()));
-    return images.get(0);
+    return images.getFirst();
   }
 
   private byte[] readSevenZEntryBytes(SevenZFile sevenZ, SevenZArchiveEntry entry) throws IOException {
@@ -762,7 +764,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
   private boolean likelyCoverName(String base) {
     if (base == null) return false;
     String n = base.toLowerCase();
-    return n.startsWith("cover") || n.equals("folder") || n.startsWith("front");
+    return n.startsWith("cover") || "folder".equals(n) || n.startsWith("front");
   }
 
   private int naturalCompare(String a, String b) {
@@ -777,8 +779,8 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       if (Character.isDigit(c1) && Character.isDigit(c2)) {
         int i1 = i; while (i1 < n1 && Character.isDigit(s1.charAt(i1))) i1++;
         int j1 = j; while (j1 < n2 && Character.isDigit(s2.charAt(j1))) j1++;
-        String num1 = s1.substring(i, i1).replaceFirst("^0+", "");
-        String num2 = s2.substring(j, j1).replaceFirst("^0+", "");
+        String num1 = LEADING_ZEROS_PATTERN.matcher(s1.substring(i, i1)).replaceFirst("");
+        String num2 = LEADING_ZEROS_PATTERN.matcher(s2.substring(j, j1)).replaceFirst("");
         int cmp = Integer.compare(num1.isEmpty() ? 0 : Integer.parseInt(num1), num2.isEmpty() ? 0 : Integer.parseInt(num2));
         if (cmp != 0) return cmp;
         i = i1; j = j1;

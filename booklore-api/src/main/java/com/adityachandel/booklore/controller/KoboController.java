@@ -7,6 +7,8 @@ import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.dto.kobo.KoboResources;
 import com.adityachandel.booklore.model.dto.kobo.KoboTestResponse;
 import com.adityachandel.booklore.service.*;
+import com.adityachandel.booklore.service.book.BookDownloadService;
+import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.kobo.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,10 +28,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -38,6 +39,7 @@ import java.util.Set;
 @Tag(name = "Kobo Integration", description = "Endpoints for Kobo device and library integration")
 public class KoboController {
 
+    private static final Pattern KOBO_V1_PRODUCTS_NEXTREAD_PATTERN = Pattern.compile(".*/v1/products/\\d+/nextread.*");
     private String token;
     private final KoboServerProxy koboServerProxy;
     private final KoboInitializationService koboInitializationService;
@@ -195,7 +197,7 @@ public class KoboController {
         if (path.contains("/v1/analytics/event")) {
             return ResponseEntity.ok().build();
         }
-        if (path.matches(".*/v1/products/\\d+/nextread.*")) {
+        if (KOBO_V1_PRODUCTS_NEXTREAD_PATTERN.matcher(path).matches()) {
             return ResponseEntity.ok().build();
         }
         return koboServerProxy.proxyCurrentRequest(body, false);

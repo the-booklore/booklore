@@ -12,6 +12,7 @@ import {Book, BulkMetadataUpdateRequest} from '../../../book/model/book.model';
 import {Checkbox} from 'primeng/checkbox';
 import {AutoComplete} from 'primeng/autocomplete';
 import {ProgressSpinner} from 'primeng/progressspinner';
+import {filter, take} from "rxjs/operators";
 
 @Component({
   selector: 'app-bulk-metadata-update-component',
@@ -60,6 +61,61 @@ export class BulkMetadataUpdateComponent implements OnInit {
   private readonly bookService = inject(BookService);
   private readonly messageService = inject(MessageService);
 
+  allAuthors!: string[];
+  allGenres!: string[];
+  allMoods!: string[];
+  allTags!: string[];
+  allPublishers!: string[];
+  allSeries!: string[];
+  filteredGenres: string[] = [];
+  filteredAuthors: string[] = [];
+  filteredMoods: string[] = [];
+  filteredTags: string[] = [];
+  filteredPublishers: string[] = [];
+  filteredSeries: string[] = [];
+
+  filterGenres(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredGenres = this.allGenres.filter((cat) =>
+      cat.toLowerCase().includes(query)
+    );
+  }
+
+  filterAuthors(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredAuthors = this.allAuthors.filter((author) =>
+      author.toLowerCase().includes(query)
+    );
+  }
+
+  filterMoods(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredMoods = this.allMoods.filter((mood) =>
+      mood.toLowerCase().includes(query)
+    );
+  }
+
+  filterTags(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredTags = this.allTags.filter((tag) =>
+      tag.toLowerCase().includes(query)
+    );
+  }
+
+  filterPublishers(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredPublishers = this.allPublishers.filter((publisher) =>
+      publisher.toLowerCase().includes(query)
+    );
+  }
+
+  filterSeries(event: { query: string }) {
+    const query = event.query.toLowerCase();
+    this.filteredSeries = this.allSeries.filter((seriesName) =>
+      seriesName.toLowerCase().includes(query)
+    );
+  }
+
   ngOnInit(): void {
     this.bookIds = this.config.data?.bookIds ?? [];
     this.books = this.bookService.getBooksByIdsFromState(this.bookIds);
@@ -75,6 +131,42 @@ export class BulkMetadataUpdateComponent implements OnInit {
       moods: [],
       tags: []
     });
+
+    this.bookService.bookState$
+      .pipe(
+        filter((bookState) => bookState.loaded),
+        take(1)
+      )
+      .subscribe((bookState) => {
+        const authors = new Set<string>();
+        const categories = new Set<string>();
+        const moods = new Set<string>();
+        const tags = new Set<string>();
+        const publishers = new Set<string>();
+        const series = new Set<string>();
+
+        (bookState.books ?? []).forEach((book) => {
+          book.metadata?.authors?.forEach((author) => authors.add(author));
+          book.metadata?.categories?.forEach((category) =>
+            categories.add(category)
+          );
+          book.metadata?.moods?.forEach((mood) => moods.add(mood));
+          book.metadata?.tags?.forEach((tag) => tags.add(tag));
+          if (book.metadata?.publisher) {
+            publishers.add(book.metadata.publisher);
+          }
+          if (book.metadata?.seriesName) {
+            series.add(book.metadata.seriesName);
+          }
+        });
+
+        this.allAuthors = Array.from(authors);
+        this.allGenres = Array.from(categories);
+        this.allMoods = Array.from(moods);
+        this.allTags = Array.from(tags);
+        this.allPublishers = Array.from(publishers);
+        this.allSeries = Array.from(series);
+      });
   }
 
   onFieldClearToggle(field: keyof typeof this.clearFields): void {
@@ -89,21 +181,25 @@ export class BulkMetadataUpdateComponent implements OnInit {
     }
   }
 
-  // Handle blur event for AutoComplete to add custom values
-  onAutoCompleteBlur(fieldName: string, event: any) {
-    const inputValue = event.target.value?.trim();
-    if (inputValue) {
-      const currentValue = this.metadataForm.get(fieldName)?.value || [];
-      const values = Array.isArray(currentValue) ? currentValue :
-        typeof currentValue === 'string' && currentValue ? currentValue.split(',').map((v: string) => v.trim()) : [];
+  onAutoCompleteSelect(fieldName: string, event: any) {
+    const values = this.metadataForm.get(fieldName)?.value || [];
+    if (!values.includes(event.value)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+    }
+    (event.originalEvent.target as HTMLInputElement).value = "";
+  }
 
-      // Add the new value if it's not already in the array
-      if (!values.includes(inputValue)) {
-        values.push(inputValue);
-        this.metadataForm.get(fieldName)?.setValue(values);
+  onAutoCompleteKeyUp(fieldName: string, event: KeyboardEvent) {
+    if (event.key === "Enter") {
+      const input = event.target as HTMLInputElement;
+      const value = input.value?.trim();
+      if (value) {
+        const values = this.metadataForm.get(fieldName)?.value || [];
+        if (!values.includes(value)) {
+          this.metadataForm.get(fieldName)?.setValue([...values, value]);
+        }
+        input.value = "";
       }
-      // Clear the input
-      event.target.value = '';
     }
   }
 

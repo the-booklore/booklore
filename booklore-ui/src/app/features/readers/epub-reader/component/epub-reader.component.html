@@ -15,7 +15,10 @@
           <p-drawer [(visible)]="isDrawerVisible" [modal]="true" [position]="'left'" header="Chapters">
             <ul class="chapter-list">
               @for (chapter of chapters; track chapter) {
-                <li (click)="navigateToChapter(chapter); $event.stopPropagation()" class="chapter-item">
+                <li (click)="navigateToChapter(chapter); $event.stopPropagation()"
+                    class="chapter-item"
+                    [class.current-chapter]="chapter.href === currentChapterHref"
+                    [style.padding-left.rem]="chapter.level * 1.5 + 0.75">
                   {{ chapter.label }}
                 </li>
               }

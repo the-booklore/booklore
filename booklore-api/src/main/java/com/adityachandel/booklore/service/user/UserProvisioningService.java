@@ -18,12 +18,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
 @AllArgsConstructor
 public class UserProvisioningService {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final AppProperties appProperties;
     private final UserRepository userRepository;
     private final LibraryRepository libraryRepository;
@@ -132,16 +134,19 @@ public class UserProvisioningService {
         return createUser(user);
     }
 
-    @Deprecated
+    /**
+     * Create and persist a remote-provisioned user based on incoming headers.
+     * This is the preferred (non-deprecated) entry point for remote provisioning.
+     */
     @Transactional
-    public BookLoreUserEntity provisionRemoteUser(String name, String username, String email, String groups) {
+    public BookLoreUserEntity provisionRemoteUserFromHeaders(String name, String username, String email, String groups) {
         boolean isAdmin = false;
         if (groups != null && appProperties.getRemoteAuth().getAdminGroup() != null) {
             String groupsContent = groups.trim();
-            if (groupsContent.startsWith("[") && groupsContent.endsWith("]")) {
+            if (groupsContent.length() >= 2 && groupsContent.charAt(0) == '[' && groupsContent.charAt(groupsContent.length() - 1) == ']') {
                 groupsContent = groupsContent.substring(1, groupsContent.length() - 1);
             }
-            List<String> groupsList = Arrays.asList(groupsContent.split("\\s+"));
+            List<String> groupsList = Arrays.asList(WHITESPACE_PATTERN.split(groupsContent));
             isAdmin = groupsList.contains(appProperties.getRemoteAuth().getAdminGroup());
             log.debug("Remote-Auth: user {} will be admin: {}", username, isAdmin);
         }
@@ -197,9 +202,9 @@ public class UserProvisioningService {
     }
 
     protected BookLoreUserEntity createUser(BookLoreUserEntity user) {
-        user = userRepository.save(user);
-        userDefaultsService.addDefaultShelves(user);
-        userDefaultsService.addDefaultSettings(user);
-        return user;
+        BookLoreUserEntity save = userRepository.save(user);
+        userDefaultsService.addDefaultShelves(save);
+        userDefaultsService.addDefaultSettings(save);
+        return save;
     }
 }

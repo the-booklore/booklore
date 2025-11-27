@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.RefreshTokenEntity;
+import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.RefreshTokenRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.user.DefaultSettingInitializer;
@@ -20,7 +21,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,14 +41,48 @@ public class AuthenticationService {
 
     public BookLoreUser getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return null;
+        }
         Object principal = authentication.getPrincipal();
-        if (principal instanceof BookLoreUser) {
-            defaultSettingInitializer.ensureDefaultSettings((BookLoreUser) principal);
-            return (BookLoreUser) principal;
+        if (principal instanceof BookLoreUser user) {
+            if (user.getId() != null && user.getId() != -1L) {
+                defaultSettingInitializer.ensureDefaultSettings(user);
+            }
+            return user;
         }
         throw new IllegalStateException("Authenticated principal is not of type BookLoreUser");
     }
 
+    public BookLoreUser getSystemUser() {
+        return createSystemUser();
+    }
+
+    private BookLoreUser createSystemUser() {
+        BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
+        permissions.setAdmin(true);
+        permissions.setCanUpload(true);
+        permissions.setCanDownload(true);
+        permissions.setCanEditMetadata(true);
+        permissions.setCanManipulateLibrary(true);
+        permissions.setCanSyncKoReader(true);
+        permissions.setCanSyncKobo(true);
+        permissions.setCanEmailBook(true);
+        permissions.setCanDeleteBook(true);
+        permissions.setCanAccessOpds(true);
+
+        return BookLoreUser.builder()
+                .id(-1L)
+                .username("system")
+                .name("System User")
+                .email("system@booklore.internal")
+                .provisioningMethod(ProvisioningMethod.LOCAL)
+                .isDefaultPassword(false)
+                .permissions(permissions)
+                .assignedLibraries(List.of())
+                .userSettings(new BookLoreUser.UserSettings())
+                .build();
+    }
 
     public OpdsUserDetails getOpdsUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -73,7 +109,7 @@ public class AuthenticationService {
 
         Optional<BookLoreUserEntity> user = userRepository.findByUsername(username);
         if (user.isEmpty() && appProperties.getRemoteAuth().isCreateNewUsers()) {
-            user = Optional.of(userProvisioningService.provisionRemoteUser(name, username, email, groups));
+            user = Optional.of(userProvisioningService.provisionRemoteUserFromHeaders(name, username, email, groups));
         }
 
         if (user.isEmpty()) {
@@ -90,7 +126,7 @@ public class AuthenticationService {
         RefreshTokenEntity refreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(refreshToken)
-                .expiryDate(new Date(System.currentTimeMillis() + jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
                 .revoked(false)
                 .build();
 
@@ -106,21 +142,21 @@ public class AuthenticationService {
     public ResponseEntity<Map<String, String>> refreshToken(String token) {
         RefreshTokenEntity storedToken = refreshTokenRepository.findByToken(token).orElseThrow(() -> ApiError.INVALID_CREDENTIALS.createException("Refresh token not found"));
 
-        if (storedToken.isRevoked() || storedToken.getExpiryDate().before(new Date()) || !jwtUtils.validateToken(token)) {
+        if (storedToken.isRevoked() || storedToken.getExpiryDate().isBefore(Instant.now()) || !jwtUtils.validateToken(token)) {
             throw ApiError.INVALID_CREDENTIALS.createException("Invalid or expired refresh token");
         }
 
         BookLoreUserEntity user = storedToken.getUser();
 
         storedToken.setRevoked(true);
-        storedToken.setRevocationDate(new Date());
+        storedToken.setRevocationDate(Instant.now());
         refreshTokenRepository.save(storedToken);
 
         String newRefreshToken = jwtUtils.generateRefreshToken(user);
         RefreshTokenEntity newRefreshTokenEntity = RefreshTokenEntity.builder()
                 .user(user)
                 .token(newRefreshToken)
-                .expiryDate(new Date(System.currentTimeMillis() + jwtUtils.getRefreshTokenExpirationMs()))
+                .expiryDate(Instant.now().plusMillis(jwtUtils.getRefreshTokenExpirationMs()))
                 .revoked(false)
                 .build();
 

@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.response.GoogleBooksApiResponse;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.BookUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -30,7 +32,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GoogleParser implements BookParser {
 
+    private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
     private final ObjectMapper objectMapper;
+    private final AppSettingService appSettingService;
+    private final HttpClient httpClient = HttpClient.newHttpClient();
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
 
     @Override
@@ -50,20 +57,19 @@ public class GoogleParser implements BookParser {
 
     private List<BookMetadata> getMetadataListByIsbn(String isbn) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", "isbn:" + isbn.replace("-", ""))
                     .build()
                     .toUri();
 
             log.info("Google Books API URL (ISBN): {}", uri);
 
-            HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
                 return parseGoogleBooksApiResponse(response.body());
@@ -80,20 +86,19 @@ public class GoogleParser implements BookParser {
 
     public List<BookMetadata> getMetadataListByTerm(String term) {
         try {
-            URI uri = UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", term)
                     .build()
                     .toUri();
 
             log.info("Google Books API URL: {}", uri);
 
-            HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
                     .GET()
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
                 return parseGoogleBooksApiResponse(response.body());
@@ -171,19 +176,19 @@ public class GoogleParser implements BookParser {
                         .orElse(null));
 
         if (searchTerm != null) {
-            searchTerm = searchTerm.replaceAll("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]", "").trim();
-            searchTerm = truncateToMaxLength(searchTerm, 60);
+            searchTerm = SPECIAL_CHARACTERS_PATTERN.matcher(searchTerm).replaceAll("").trim();
+            searchTerm = "intitle:" + truncateToMaxLength(searchTerm, 60);
         }
 
         if (searchTerm != null && request.getAuthor() != null && !request.getAuthor().isEmpty()) {
-            searchTerm += " " + request.getAuthor();
+            searchTerm += " inauthor:" + request.getAuthor();
         }
 
         return searchTerm;
     }
 
     private String truncateToMaxLength(String input, int maxLength) {
-        String[] words = input.split("\\s+");
+        String[] words = WHITESPACE_PATTERN.split(input);
         StringBuilder truncated = new StringBuilder();
 
         for (String word : words) {
@@ -197,7 +202,7 @@ public class GoogleParser implements BookParser {
 
     public LocalDate parseDate(String input) {
         try {
-            if (input.matches("\\d{4}")) {
+            if (FOUR_DIGIT_YEAR_PATTERN.matcher(input).matches()) {
                 return LocalDate.of(Integer.parseInt(input), 1, 1);
             }
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -205,5 +210,19 @@ public class GoogleParser implements BookParser {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private String getApiUrl() {
+        String language = appSettingService.getAppSettings().getMetadataProviderSettings().getGoogle().getLanguage();
+
+        if (language == null || language.isEmpty()) {
+            return GOOGLE_BOOKS_API_URL;
+        }
+
+        return UriComponentsBuilder.fromUriString(GOOGLE_BOOKS_API_URL)
+            .queryParam("langRestrict", language)
+            .build()
+            .toUri()
+            .toString();
     }
 }

@@ -1,6 +1,7 @@
 import {Component, DestroyRef, inject, OnInit, QueryList, ViewChildren} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
+import {PageTitleService} from "../../../../shared/service/page-title.service";
 
 import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService} from '../../service/bookdrop.service';
 import {LibraryService} from '../../../book/service/library.service';
@@ -68,6 +69,7 @@ export class BookdropFileReviewComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly urlHelper = inject(UrlHelperService);
   private readonly activatedRoute = inject(ActivatedRoute);
+  private readonly pageTitle = inject(PageTitleService);
 
   @ViewChildren('metadataPicker') metadataPickers!: QueryList<BookdropFileMetadataPickerComponent>;
 
@@ -93,6 +95,8 @@ export class BookdropFileReviewComponent implements OnInit {
   excludedFiles = new Set<number>();
 
   ngOnInit(): void {
+    this.pageTitle.setPageTitle('Review Bookdrop Files');
+
     this.activatedRoute.queryParams
       .pipe(startWith({}), tap(() => {
         this.loading = true;

@@ -60,6 +60,7 @@ export interface Amazon {
 
 export interface Google {
   enabled: boolean;
+  language: string;
 }
 
 export interface Goodreads {
@@ -101,6 +102,7 @@ export interface PublicReviewSettings {
 export interface KoboSettings {
   convertToKepub: boolean;
   conversionLimitInMb: number;
+  forceEnableHyphenation: boolean;
 }
 
 export interface AppSettings {

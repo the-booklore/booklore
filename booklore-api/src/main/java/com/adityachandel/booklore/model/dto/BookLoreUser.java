@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BookLoreUser {
     private Long id;
     private String username;
@@ -49,6 +52,7 @@ public class BookLoreUser {
         public String filterSortingMode;
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
+        public DashboardConfig dashboardConfig;
 
         @Data
         @Builder
@@ -158,6 +162,30 @@ public class BookLoreUser {
             public enum GlobalOrIndividual {
                 Global, Individual
             }
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class DashboardConfig {
+            private List<ScrollerConfig> scrollers;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class ScrollerConfig {
+            private String id;
+            private String type;
+            private String title;
+            private boolean enabled;
+            private int order;
+            private int maxItems;
+            private Long magicShelfId;
+            private String sortField;
+            private String sortDirection;
         }
     }
 }
