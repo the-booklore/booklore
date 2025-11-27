@@ -73,7 +73,10 @@ jobs:
         run: |
           branch="${GITHUB_REF#refs/heads/}"
           short_sha=$(git rev-parse --short HEAD)
-          image_tag="${branch}-${short_sha}"
+          # Sanitize branch name: replace slashes, special chars with hyphens, convert to lowercase
+          sanitized_branch=$(echo "$branch" | sed 's/[^a-zA-Z0-9._-]/-/g' | tr '[:upper:]' '[:lower:]')
+          image_tag="${sanitized_branch}-${short_sha}"
+
           echo "image_tag=$image_tag" >> $GITHUB_ENV
           echo "Image tag: $image_tag"
 
