@@ -105,7 +105,6 @@ public class KepubConversionService {
             pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), "--hyphenate", "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
         else
             pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
-//        ProcessBuilder pb = new ProcessBuilder(kepubifyBinary.toAbsolutePath().toString(), forceEnableHyphenation ? "--hyphenate" : "", "-o", tempDir.getAbsolutePath(), epubFile.getAbsolutePath());
 
         pb.directory(tempDir);
 
