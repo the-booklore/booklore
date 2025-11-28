@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -124,10 +125,12 @@ public class BookDownloadService {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
     }
 
-    private void streamFileToResponse(File file, HttpServletResponse response) throws IOException {
+    private void streamFileToResponse(File file, HttpServletResponse response) {
         try (InputStream in = Files.newInputStream(file.toPath())) {
             in.transferTo(response.getOutputStream());
             response.getOutputStream().flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to stream file to response", e);
         }
     }
 

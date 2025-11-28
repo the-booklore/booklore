@@ -33,7 +33,7 @@ public class FileUploadController {
     public ResponseEntity<?> uploadFile(
             @Parameter(description = "File to upload") @RequestParam("file") MultipartFile file,
             @Parameter(description = "Library ID") @RequestParam("libraryId") long libraryId,
-            @Parameter(description = "Path ID") @RequestParam("pathId") long pathId) throws IOException {
+            @Parameter(description = "Path ID") @RequestParam("pathId") long pathId) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Uploaded file is missing.");
         }

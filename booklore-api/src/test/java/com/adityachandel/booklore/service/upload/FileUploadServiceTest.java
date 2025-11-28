@@ -196,7 +196,7 @@ class FileUploadServiceTest {
     }
 
     @Test
-    void uploadFile_succeeds_and_processes() throws IOException {
+    void uploadFile_succeeds_and_processes() {
         byte[] data = "content".getBytes();
         MockMultipartFile file = new MockMultipartFile("file", "book.cbz", "application/octet-stream", data);
 
@@ -216,7 +216,7 @@ class FileUploadServiceTest {
     }
 
     @Test
-    void uploadAdditionalFile_successful_and_saves_entity() throws Exception {
+    void uploadAdditionalFile_successful_and_saves_entity() {
         long bookId = 5L;
         MockMultipartFile file = new MockMultipartFile("file", "add.pdf", "application/pdf", "payload".getBytes());
 

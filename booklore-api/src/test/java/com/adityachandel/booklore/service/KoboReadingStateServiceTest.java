@@ -404,7 +404,7 @@ class KoboReadingStateServiceTest {
         assertNotNull(result.getReadingStates());
         assertEquals(1, result.getReadingStates().size());
         
-        KoboReadingState state = result.getReadingStates().get(0);
+        KoboReadingState state = result.getReadingStates().getFirst();
         assertEquals(entitlementId, state.getEntitlementId());
         assertNotNull(state.getCurrentBookmark());
         assertEquals(75, state.getCurrentBookmark().getProgressPercent());
@@ -467,7 +467,7 @@ class KoboReadingStateServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getReadingStates().size());
-        assertEquals(entitlementId, result.getReadingStates().get(0).getEntitlementId());
+        assertEquals(entitlementId, result.getReadingStates().getFirst().getEntitlementId());
         verify(progressRepository, never()).findByUserIdAndBookId(anyLong(), anyLong());
     }
 

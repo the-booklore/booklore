@@ -501,11 +501,7 @@ public class BookService {
         List<ShelfEntity> shelvesToAssign = shelfRepository.findAllById(shelfIdsToAssign);
         for (BookEntity bookEntity : bookEntities) {
             bookEntity.getShelves().removeIf(shelf -> shelfIdsToUnassign.contains(shelf.getId()));
-            for (ShelfEntity shelf : shelvesToAssign) {
-                if (!bookEntity.getShelves().contains(shelf)) {
-                    bookEntity.getShelves().add(shelf);
-                }
-            }
+            bookEntity.getShelves().addAll(shelvesToAssign);
         }
         bookRepository.saveAll(bookEntities);
 
@@ -605,7 +601,7 @@ public class BookService {
                 : ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
     }
 
-    public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+    public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) {
         Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
         dir = dir.toAbsolutePath().normalize();

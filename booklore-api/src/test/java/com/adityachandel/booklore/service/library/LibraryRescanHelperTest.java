@@ -85,7 +85,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldProcessAllBooks_whenLibraryHasBooks() throws Exception {
+    void handleRescanOptions_shouldProcessAllBooks_whenLibraryHasBooks() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         library.getBookEntities().add(book1);
@@ -110,7 +110,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldSkipDeletedBooks() throws Exception {
+    void handleRescanOptions_shouldSkipDeletedBooks() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         book2.setDeleted(true);
@@ -132,7 +132,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldSkipNullBooks() throws Exception {
+    void handleRescanOptions_shouldSkipNullBooks() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         library.getBookEntities().add(book1);
         library.getBookEntities().add(null);
@@ -149,7 +149,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldContinue_whenMetadataExtractionReturnsNull() throws Exception {
+    void handleRescanOptions_shouldContinue_whenMetadataExtractionReturnsNull() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         library.getBookEntities().add(book1);
@@ -169,7 +169,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldContinue_whenMetadataUpdateThrowsException() throws Exception {
+    void handleRescanOptions_shouldContinue_whenMetadataUpdateThrowsException() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         library.getBookEntities().add(book1);
@@ -192,7 +192,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldCancel_whenTaskCancellationRequested() throws Exception {
+    void handleRescanOptions_shouldCancel_whenTaskCancellationRequested() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         library.getBookEntities().add(book1);
@@ -211,7 +211,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldSendProgressNotifications() throws Exception {
+    void handleRescanOptions_shouldSendProgressNotifications() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         library.getBookEntities().add(book1);
 
@@ -250,7 +250,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldSetCorrectMetadataUpdateContext() throws Exception {
+    void handleRescanOptions_shouldSetCorrectMetadataUpdateContext() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         library.getBookEntities().add(book);
 
@@ -274,7 +274,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldHandleNullTaskId() throws Exception {
+    void handleRescanOptions_shouldHandleNullTaskId() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         library.getBookEntities().add(book);
 
@@ -292,7 +292,7 @@ class LibraryRescanHelperTest {
     }
 
     @Test
-    void handleRescanOptions_shouldContinue_whenNotificationFails() throws Exception {
+    void handleRescanOptions_shouldContinue_whenNotificationFails() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         library.getBookEntities().add(book);
 

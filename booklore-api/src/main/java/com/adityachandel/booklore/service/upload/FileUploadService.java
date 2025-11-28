@@ -86,7 +86,7 @@ public class FileUploadService {
     }
 
     @Transactional
-    public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) throws IOException {
+    public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
 
@@ -225,7 +225,7 @@ public class FileUploadService {
         }
     }
 
-    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) throws IOException {
+    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) {
         return metadataExtractorFactory.extractMetadata(fileExt, file);
     }
 
