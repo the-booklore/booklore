@@ -5,7 +5,6 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
-import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
@@ -23,7 +22,6 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
 
     private final BookEventBroadcaster bookEventBroadcaster;
     private final BookFileProcessorRegistry processorRegistry;
-    private final NotificationService notificationService;
 
     @Override
     public LibraryScanMode getScanMode() {
@@ -40,7 +38,7 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
 
             if (result != null) {
                 bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
-                log.info("Processed file: {}", libraryFile.getFileName());
+                log.debug("Processed file: {}", libraryFile.getFileName());
             }
         }
 

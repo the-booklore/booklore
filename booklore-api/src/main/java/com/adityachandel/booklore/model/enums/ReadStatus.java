@@ -8,5 +8,6 @@ public enum ReadStatus {
     PARTIALLY_READ,
     PAUSED,
     WONT_READ,
-    ABANDONED
+    ABANDONED,
+    UNSET
 }
