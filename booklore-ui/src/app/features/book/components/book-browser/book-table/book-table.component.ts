@@ -42,6 +42,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   @Input() books: Book[] = [];
   @Input() sortOption: SortOption | null = null;
   @Input() visibleColumns: any[] = [];
+  @Input() preselectedBookIds = new Set<number>();
 
   protected urlHelper = inject(UrlHelperService);
   private bookService = inject(BookService);
@@ -89,6 +90,8 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
         this.metadataCenterViewMode = userState?.user?.userSettings.metadataCenterViewMode ?? 'route';
       });
 
+    this.selectedBookIds = this.preselectedBookIds;
+    this.selectedBooks = this.bookService.getBooksByIdsFromState([...this.selectedBookIds]);
     this.setScrollHeight();
     window.addEventListener('resize', this.setScrollHeight.bind(this));
   }
