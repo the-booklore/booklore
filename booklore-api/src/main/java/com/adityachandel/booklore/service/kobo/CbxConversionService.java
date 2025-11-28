@@ -16,6 +16,7 @@ import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
 import com.github.junrar.exception.RarException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -139,7 +140,17 @@ public class CbxConversionService {
             addNavXhtml(zipOut, bookEntity, contentGroups);
         }
 
+        deleteDirectory(extractedImagesDir);
+
         return epubFile;
+    }
+    
+    private void deleteDirectory(Path directory) {
+        try {
+            FileSystemUtils.deleteRecursively(directory);
+        } catch (IOException e) {
+            log.warn("Failed to delete directory {}: {}", directory, e.getMessage());
+        }
     }
 
     private void validateInputs(File cbxFile, File tempDir) {
