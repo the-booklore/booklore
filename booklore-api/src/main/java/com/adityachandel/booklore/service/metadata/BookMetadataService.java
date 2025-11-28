@@ -165,7 +165,9 @@ public class BookMetadataService {
 
     private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+        Instant now = Instant.now();
+        bookEntity.getMetadata().setCoverUpdatedOn(now);
+        bookEntity.setMetadataUpdatedAt(now);
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean saveToOriginalFile = settings.isSaveToOriginalFile();
         boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
@@ -224,6 +226,11 @@ public class BookMetadataService {
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
         processor.generateCover(book);
+
+        Instant now = Instant.now();
+        book.getMetadata().setCoverUpdatedOn(now);
+        book.setMetadataUpdatedAt(now);
+        bookRepository.save(book);
 
         log.info("{}Successfully regenerated cover for book ID {} ({})", progress, book.getId(), title);
     }

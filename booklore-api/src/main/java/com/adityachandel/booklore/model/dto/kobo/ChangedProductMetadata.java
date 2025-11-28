@@ -15,6 +15,5 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.UpperCamelCaseStrategy.class)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ChangedProductMetadata implements Entitlement {
-    private KoboBookMetadata changedProductMetadata;
+    private BookEntitlementContainer changedProductMetadata;
 }
-

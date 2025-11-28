@@ -73,25 +73,27 @@ public class KoboController {
 
     @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a book.")
     @ApiResponse(responseCode = "200", description = "Thumbnail returned successfully")
-    @GetMapping("/v1/books/{imageId}/thumbnail/{width}/{height}/false/image.jpg")
+    @GetMapping("/v1/books/{bookId}/{version}/thumbnail/{width}/{height}/false/image.jpg")
     public ResponseEntity<Resource> getThumbnail(
-            @Parameter(description = "Image ID") @PathVariable String imageId,
+            @Parameter(description = "Book ID") @PathVariable String bookId,
+            @Parameter(description = "Cover version (timestamp)") @PathVariable String version,
             @Parameter(description = "Width of the thumbnail") @PathVariable int width,
             @Parameter(description = "Height of the thumbnail") @PathVariable int height) {
 
-        if (StringUtils.isNumeric(imageId)) {
-            return koboThumbnailService.getThumbnail(Long.valueOf(imageId));
+        if (StringUtils.isNumeric(bookId)) {
+            return koboThumbnailService.getThumbnail(Long.valueOf(bookId));
         } else {
-            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/image.jpg", imageId, width, height);
+            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%s/%d/%d/image.jpg", bookId, version, width, height);
             return koboServerProxy.proxyExternalUrl(cdnUrl);
         }
     }
 
     @Operation(summary = "Get greyscale book thumbnail", description = "Retrieve a greyscale thumbnail image for a book.")
     @ApiResponse(responseCode = "200", description = "Greyscale thumbnail returned successfully")
-    @GetMapping("/v1/books/{bookId}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
+    @GetMapping("/v1/books/{bookId}/{version}/thumbnail/{width}/{height}/{quality}/{isGreyscale}/image.jpg")
     public ResponseEntity<Resource> getGreyThumbnail(
             @Parameter(description = "Book ID") @PathVariable String bookId,
+            @Parameter(description = "Cover version (timestamp)") @PathVariable String version,
             @Parameter(description = "Width of the thumbnail") @PathVariable int width,
             @Parameter(description = "Height of the thumbnail") @PathVariable int height,
             @Parameter(description = "Quality of the thumbnail") @PathVariable int quality,
@@ -100,7 +102,7 @@ public class KoboController {
         if (StringUtils.isNumeric(bookId)) {
             return koboThumbnailService.getThumbnail(Long.valueOf(bookId));
         } else {
-            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%d/%d/%d/%b/image.jpg", bookId, width, height, quality, isGreyscale);
+            String cdnUrl = String.format("https://cdn.kobo.com/book-images/%s/%s/%d/%d/%d/%b/image.jpg", bookId, version, width, height, quality, isGreyscale);
             return koboServerProxy.proxyExternalUrl(cdnUrl);
         }
     }

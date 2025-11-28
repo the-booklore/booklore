@@ -44,7 +44,7 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
         WHERE curr.snapshot.id = :currSnapshotId
           AND prev.snapshot.id = :prevSnapshotId
           AND curr.fileHash = prev.fileHash
-          AND (curr.metadataUpdatedAt = prev.metadataUpdatedAt OR prev.metadataUpdatedAt IS NULL)
+          AND (curr.metadataUpdatedAt = prev.metadataUpdatedAt OR (curr.metadataUpdatedAt IS NULL AND prev.metadataUpdatedAt IS NULL))
     """)
     List<KoboSnapshotBookEntity> findUnchangedBooksBetweenSnapshots(
             @Param("prevSnapshotId") String prevSnapshotId,
@@ -100,7 +100,8 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
                   AND curr.synced = false
                   AND (
                       curr.fileHash <> prev.fileHash
-                      OR (curr.metadataUpdatedAt <> prev.metadataUpdatedAt AND prev.metadataUpdatedAt IS NOT NULL)
+                      OR (curr.metadataUpdatedAt <> prev.metadataUpdatedAt AND curr.metadataUpdatedAt IS NOT NULL AND prev.metadataUpdatedAt IS NOT NULL)
+                      OR (curr.metadataUpdatedAt IS NOT NULL AND prev.metadataUpdatedAt IS NULL)
                   )
             """)
     Page<KoboSnapshotBookEntity> findChangedBooks(

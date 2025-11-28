@@ -7,7 +7,6 @@ import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.KoboBookFormat;
 import com.adityachandel.booklore.model.enums.KoboReadStatus;
@@ -25,15 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @AllArgsConstructor
 @Service
 public class KoboEntitlementService {
-
-    private static final Pattern NON_ALPHANUMERIC_LOWERCASE_PATTERN = Pattern.compile("[^a-z0-9]");
     private final KoboUrlBuilder koboUrlBuilder;
     private final BookQueryService bookQueryService;
     private final AppSettingService appSettingService;
@@ -86,28 +81,12 @@ public class KoboEntitlementService {
 
         return books.stream()
                 .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
-                .flatMap(book -> {
-                    KoboBookMetadata metadata = mapToKoboMetadata(book, token);
-                    KoboReadingState readingState = getReadingStateForBook(book);
-
-                    return Stream.of(
-                            NewEntitlement.builder()
-                                    .newEntitlement(BookEntitlementContainer.builder()
-                                            .bookEntitlement(buildBookEntitlement(book, false))
-                                            .bookMetadata(metadata)
-                                            .readingState(readingState)
-                                            .build())
-                                    .build(),
-                            ChangedProductMetadata.builder()
-                                    .changedProductMetadata(metadata)
-                                    .build(),
-                            ChangedReadingState.builder()
-                                    .readingState(ChangedReadingState.ReadingStateWrapper.builder()
-                                            .readingState(readingState)
-                                            .build())
-                                    .build()
-                    );
-                })
+                .map(book -> ChangedProductMetadata.builder()
+                        .changedProductMetadata(BookEntitlementContainer.builder()
+                                .bookEntitlement(buildBookEntitlement(book, false))
+                                .bookMetadata(mapToKoboMetadata(book, token))
+                                .build())
+                        .build())
                 .collect(Collectors.toList());
     }
 
@@ -198,10 +177,6 @@ public class KoboEntitlementService {
                 .map(list -> list.stream().map(AuthorEntity::getName).toList())
                 .orElse(Collections.emptyList());
 
-        List<String> categories = Optional.ofNullable(metadata.getCategories())
-                .map(list -> list.stream().map(CategoryEntity::getName).toList())
-                .orElse(Collections.emptyList());
-
         KoboBookMetadata.Series series = null;
         if (metadata.getSeriesName() != null) {
             series = KoboBookMetadata.Series.builder()
@@ -220,6 +195,11 @@ public class KoboEntitlementService {
             bookFormat = KoboBookFormat.KEPUB;
         }
 
+        String coverVersion = metadata.getCoverUpdatedOn() != null
+                ? String.valueOf(metadata.getCoverUpdatedOn().getEpochSecond())
+                : "0";
+        String coverImageId = book.getId() + "/" + coverVersion;
+
         return KoboBookMetadata.builder()
                 .crossRevisionId(String.valueOf(book.getId()))
                 .revisionId(String.valueOf(book.getId()))
@@ -232,7 +212,7 @@ public class KoboEntitlementService {
                 /*.slug(metadata.getTitle() != null
                         ? NON_ALPHANUMERIC_LOWERCASE_PATTERN.matcher(metadata.getTitle().toLowerCase()).replaceAll("-")
                         : null)*/
-                .coverImageId(String.valueOf(metadata.getBookId()))
+                .coverImageId(coverImageId)
                 .workId(String.valueOf(book.getId()))
                 .preOrder(false)
                 .contributorRoles(metadata.getAuthors().stream()
