@@ -242,6 +242,7 @@
             @if (currentViewMode === 'table' && books.length > 0) {
               <app-book-table
                 [books]="books"
+                [preselectedBookIds]="selectedBooks"
                 (selectedBooksChange)="onSelectedBooksChange($event)"
                 [sortOption]="this.bookSorter.selectedSort!"
                 [visibleColumns]="visibleColumns"

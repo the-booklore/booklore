@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 public class FileService {
 
     private final AppProperties appProperties;
+    private final RestTemplate restTemplate;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -114,7 +115,11 @@ public class FileService {
             throw new IllegalArgumentException("Uploaded file is empty");
         }
         String contentType = file.getContentType();
-        if (!(JPEG_MIME_TYPE.equalsIgnoreCase(contentType) || PNG_MIME_TYPE.equalsIgnoreCase(contentType))) {
+        if (contentType == null) {
+            throw new IllegalArgumentException("Content type is required");
+        }
+        String lowerType = contentType.toLowerCase();
+        if (!lowerType.startsWith(JPEG_MIME_TYPE) && !lowerType.startsWith(PNG_MIME_TYPE)) {
             throw new IllegalArgumentException("Only JPEG and PNG files are allowed");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
@@ -146,7 +151,7 @@ public class FileService {
         log.info("Image saved successfully to: {}", filePath);
     }
 
-    public static BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
+    public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Metadata Fetcher)");
@@ -154,7 +159,7 @@ public class FileService {
 
             HttpEntity<String> entity = new HttpEntity<>(headers);
 
-            ResponseEntity<byte[]> response = new RestTemplate().exchange(
+            ResponseEntity<byte[]> response = restTemplate.exchange(
                     imageUrl,
                     HttpMethod.GET,
                     entity,
@@ -175,7 +180,7 @@ public class FileService {
             }
         } catch (Exception e) {
             log.error("Failed to download image from URL: {} - {}", imageUrl, e.getMessage());
-            throw new IOException("Failed to download image from URL: " + imageUrl, e);
+            throw new IOException("Failed to download image from URL: " + imageUrl + " - " + e.getMessage(), e);
         }
     }
 
