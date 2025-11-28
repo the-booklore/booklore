@@ -17,7 +17,7 @@ public enum ApiError {
     DEFAULT_EMAIL_RECIPIENT_NOT_FOUND(HttpStatus.NOT_FOUND, " Default Email recipient not found"),
     UNSUPPORTED_BOOK_TYPE(HttpStatus.BAD_REQUEST, "Unsupported book type for viewer settings"),
     INVALID_VIEWER_SETTING(HttpStatus.BAD_REQUEST, "Invalid viewer setting for the book"),
-    FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading files from path"),
+    FILE_READ_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Error reading files from path: %s"),
     IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "Image not found or not readable"),
     INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "Invalid file format, only pdf and epub are supported"),
     LIBRARY_NOT_FOUND(HttpStatus.NOT_FOUND, "Library not found with ID: %d"),

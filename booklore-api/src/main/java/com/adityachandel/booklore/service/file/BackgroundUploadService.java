@@ -60,7 +60,7 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
-            BufferedImage originalImage = FileService.downloadImageFromUrl(imageUrl);
+            BufferedImage originalImage = fileService.downloadImageFromUrl(imageUrl);
             deleteExistingBackgroundFiles(userId);
 
             fileService.saveBackgroundImage(originalImage, filename, userId);

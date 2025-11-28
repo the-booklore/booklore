@@ -3,14 +3,25 @@ package com.adityachandel.booklore.util;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class PathPatternResolverTest {
+
+    public static final Set<String> LONG_AUTHOR_LIST = new LinkedHashSet<>(List.of(
+        "梁思成", "叶嘉莹", "厉以宁", "萧乾", "冯友兰", "费孝通", "李济", "侯仁之", "汤一介", "温源宁",
+        "胡适", "吴青", "李照国", "蒋梦麟", "汪荣祖", "邢玉瑞", "《中华思想文化术语》编委会",
+        "北京大学政策法规研究室", "（美）艾恺（Guy S. Alitto）", "顾毓琇", "陈从周",
+        "（加拿大）伊莎白（Isabel Crook）（美）柯临清（Christina Gilmartin）", "傅莹"
+    ));
 
     @Test
     void testResolvePattern_nullPattern() {
@@ -310,5 +321,150 @@ class PathPatternResolverTest {
         // Authors from a Set may be in any order
         assertTrue(result.equals("John Doe, Jane Smith - The Great Book [Awesome Series #3] (2023).pdf") ||
                    result.equals("Jane Smith, John Doe - The Great Book [Awesome Series #3] (2023).pdf"));
+    }
+
+    @Test
+    @DisplayName("Should truncate long author lists to prevent filesystem errors")
+    void testResolvePattern_truncatesLongAuthorList() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("中国文化合集")
+                .authors(LONG_AUTHOR_LIST)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{title}", "original.epub");
+
+        assertTrue(result.contains("中国文化合集"), "Should contain the title");
+        assertTrue(result.endsWith(".epub"), "Should end with file extension");
+
+        String[] pathComponents = result.split("/");
+        for (String component : pathComponents) {
+            int byteLength = component.getBytes(StandardCharsets.UTF_8).length;
+            assertTrue(byteLength <= 245,
+                "Component '" + component + "' byte length should not exceed filesystem limits: " + byteLength);
+        }
+
+        // Verify the authors part is properly truncated by bytes
+        String authorsPart = pathComponents[0];
+        int authorsBytes = authorsPart.getBytes(StandardCharsets.UTF_8).length;
+        assertTrue(authorsBytes <= 180, "Authors part should be truncated to <= 180 bytes: " + authorsBytes);
+    }
+
+    @Test
+    void testResolvePattern_authorsWithinLimit() {
+        Set<String> authors = Set.of("John Doe", "Jane Smith", "Bob Wilson");
+
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Test Book")
+                .authors(authors)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}", "original.pdf");
+
+        assertTrue(result.contains("John Doe") && result.contains("Jane Smith") && result.contains("Bob Wilson"));
+        assertTrue(result.endsWith(".pdf"));
+    }
+
+    @Test
+    @DisplayName("Should apply author truncation in various pattern contexts")
+    void testResolvePattern_appliesAuthorTruncation() {
+        Set<String> shortAuthorList = new LinkedHashSet<>(List.of("John Doe", "Jane Smith"));
+
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Test")
+                .authors(shortAuthorList)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}", "test.epub");
+
+        assertTrue(result.endsWith(".epub"));
+        String authorsPart = result.replace(".epub", "");
+        int authorsBytes = authorsPart.getBytes(StandardCharsets.UTF_8).length;
+        assertTrue(authorsBytes <= 180, "Authors should be <= 180 bytes: " + authorsBytes);
+
+        BookMetadata longMetadata = BookMetadata.builder()
+                .title("Test")
+                .authors(LONG_AUTHOR_LIST)
+                .build();
+
+        String longResult = PathPatternResolver.resolvePattern(longMetadata, "{authors}", "test.epub");
+
+        String longAuthorsPart = longResult.replace(".epub", "");
+        int longAuthorsBytes = longAuthorsPart.getBytes(StandardCharsets.UTF_8).length;
+        assertTrue(longAuthorsBytes <= 180, "Long authors should be truncated to <= 180 bytes, got: " + longAuthorsBytes);
+
+        assertTrue(longAuthorsBytes < LONG_AUTHOR_LIST.toString().getBytes(StandardCharsets.UTF_8).length,
+            "Truncated result should be shorter than original long author list");
+    }
+
+    @Test
+    @DisplayName("Should handle single author that exceeds byte limits")
+    void testResolvePattern_truncatesSingleVeryLongAuthor() {
+        String veryLongAuthor = "某某某某某某某某某某".repeat(10); // ~300 bytes in UTF-8
+
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Test")
+                .authors(Set.of(veryLongAuthor))
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}", "test.epub");
+
+        String authorsPart = result.replace(".epub", "");
+        int authorsBytes = authorsPart.getBytes(StandardCharsets.UTF_8).length;
+
+        assertTrue(authorsBytes <= 180,
+            "Single long author should be truncated to <= 180 bytes: " + authorsBytes);
+        assertFalse(authorsPart.isEmpty(), "Should not be empty after truncation");
+        assertTrue(authorsBytes < veryLongAuthor.getBytes(StandardCharsets.UTF_8).length,
+            "Truncated result should be shorter than original single long author");
+    }
+
+    @Test
+    @DisplayName("Should add 'et al.' when authors are truncated")
+    void testResolvePattern_addsEtAlWhenTruncated() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Test")
+                .authors(LONG_AUTHOR_LIST)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}", "test.epub");
+
+        assertTrue(result.contains("et al."), "Should contain truncation indicator when authors are truncated");
+    }
+
+    @Test
+    @DisplayName("Should truncate combined long components in final validation")
+    void testResolvePattern_validatesFinalPathWithCombinedLongComponents() {
+        String longTitle = "某".repeat(70); // ~210 bytes
+
+        BookMetadata metadata = BookMetadata.builder()
+                .title(longTitle)
+                .authors(LONG_AUTHOR_LIST)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title} - {authors}", "test.epub");
+
+        String[] components = result.split("/");
+        for (String component : components) {
+            if (!component.contains(".")) { // Skip filename with extension
+                int byteLength = component.getBytes(StandardCharsets.UTF_8).length;
+                assertTrue(byteLength <= 245, "Path component should be <= 245 bytes: " + byteLength + " for component: " + component);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Should preserve file extension when truncating very long filenames")
+    void testResolvePattern_preservesExtensionOnTruncation() {
+        String longTitle = "A".repeat(300); // 300 bytes
+
+        BookMetadata metadata = BookMetadata.builder().title(longTitle).build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title}", "original.pdf");
+
+        assertTrue(result.endsWith(".pdf"), "Extension must be preserved");
+        assertTrue(result.length() < 300, "Filename must be truncated");
+
+        int byteLen = result.getBytes(StandardCharsets.UTF_8).length;
+        assertTrue(byteLen <= 245, "Total filename bytes " + byteLen + " should be <= 245");
     }
 }

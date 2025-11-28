@@ -17,21 +17,29 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
+import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.MockitoAnnotations;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -39,6 +47,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FileUploadServiceTest {
+
+    public static final Set<String> LONG_AUTHOR_LIST = new LinkedHashSet<>(List.of(
+        "梁思成", "叶嘉莹", "厉以宁", "萧乾", "冯友兰", "费孝通", "李济", "侯仁之", "汤一介", "温源宁",
+        "胡适", "吴青", "李照国", "蒋梦麟", "汪荣祖", "邢玉瑞", "《中华思想文化术语》编委会",
+        "北京大学政策法规研究室", "（美）艾恺（Guy S. Alitto）", "顾毓琇", "陈从周",
+        "（加拿大）伊莎白（Isabel Crook）（美）柯临清（Christina Gilmartin）", "傅莹"
+    ));
 
     @TempDir
     Path tempDir;
@@ -262,5 +277,31 @@ class FileUploadServiceTest {
             assertThatExceptionOfType(IllegalArgumentException.class)
                     .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, null));
         }
+    }
+
+    @Test
+    @DisplayName("Should upload files with long authors without filesystem errors")
+    void uploadFile_withLongAuthors_doesNotThrowFilesystemError() {
+        byte[] data = "content".getBytes();
+        MockMultipartFile file = new MockMultipartFile("file", "long-authors.epub", "application/epub+zip", data);
+
+        LibraryEntity lib = new LibraryEntity();
+        lib.setId(10L);
+        String defaultPattern = "{authors}/<{series}/><{seriesIndex}. >{title}< - {authors}>< ({year})>";
+        lib.setFileNamingPattern(defaultPattern);
+        LibraryPathEntity path = new LibraryPathEntity();
+        path.setId(3L);
+        path.setPath(tempDir.toString());
+        lib.setLibraryPaths(List.of(path));
+        when(libraryRepository.findById(10L)).thenReturn(Optional.of(lib));
+
+        BookMetadata metadata = BookMetadata.builder()
+                .title("中国文化合集")
+                .authors(LONG_AUTHOR_LIST)
+                .build();
+
+        when(metadataExtractorFactory.extractMetadata(any(BookFileExtension.class), any(File.class))).thenReturn(metadata);
+
+        assertDoesNotThrow(() -> service.uploadFile(file, 10L, 3L));
     }
 }
