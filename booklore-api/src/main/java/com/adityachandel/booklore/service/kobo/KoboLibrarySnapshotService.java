@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.mapper.BookEntityToKoboSnapshotBookMapper;
-
 import com.adityachandel.booklore.model.entity.KoboDeletedBookProgressEntity;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;

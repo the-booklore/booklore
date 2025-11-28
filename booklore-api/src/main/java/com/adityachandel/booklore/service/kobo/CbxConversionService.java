@@ -1,6 +1,9 @@
 package com.adityachandel.booklore.service.kobo;
 
+import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.CategoryEntity;
+import com.adityachandel.booklore.model.entity.TagEntity;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -547,19 +550,19 @@ public class CbxConversionService {
             
             if (metadata.getAuthors() != null && !metadata.getAuthors().isEmpty()) {
                 model.put("authors", metadata.getAuthors().stream()
-                        .map(author -> author.getName())
+                        .map(AuthorEntity::getName)
                         .toList());
             }
             
             if (metadata.getCategories() != null && !metadata.getCategories().isEmpty()) {
                 model.put("categories", metadata.getCategories().stream()
-                        .map(category -> category.getName())
+                        .map(CategoryEntity::getName)
                         .toList());
             }
             
             if (metadata.getTags() != null && !metadata.getTags().isEmpty()) {
                 model.put("tags", metadata.getTags().stream()
-                        .map(tag -> tag.getName())
+                        .map(TagEntity::getName)
                         .toList());
             }
             
