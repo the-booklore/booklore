@@ -205,6 +205,7 @@ public class KoboEntitlementService {
                 .description(metadata.getDescription())
                 .contributors(authors)
                 .series(series)
+                .language(metadata.getLanguage())
                 .downloadUrls(List.of(
                         KoboBookMetadata.DownloadUrl.builder()
                                 .url(downloadUrl)
