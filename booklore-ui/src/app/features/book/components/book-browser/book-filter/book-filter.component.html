@@ -1,7 +1,7 @@
 <div class="h-[calc(100dvh-6.1rem)] rounded-xl overflow-hidden bg-[var(--card-background)] flex flex-col border-[1px] border-solid border-[var(--p-content-border-color)]">
 
-  <div class="flex items-center justify-between px-4 py-4">
-    <span class="text font-semibold">Filter Mode</span>
+  <div class="flex items-center justify-between px-4 py-4" style="border-bottom:1px solid var(--p-content-border-color)">
+    <span class="text font-semibold">Filters</span>
     <p-selectButton
       [options]="filterModeOptions"
       [(ngModel)]="selectedFilterMode"
@@ -9,7 +9,8 @@
       optionValue="value"
       class="text-sm"
       allowEmpty="false"
-      styleClass="h-8"></p-selectButton>
+      styleClass="h-8"
+      pTooltip="Filter selection mode: AND / OR / Single">></p-selectButton>
   </div>
 
   <div class="flex-1 overflow-y-auto pb-4 pr-1" style="overscroll-behavior: contain;">
