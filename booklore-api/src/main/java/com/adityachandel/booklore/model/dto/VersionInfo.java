@@ -1,8 +1,6 @@
 package com.adityachandel.booklore.model.dto;
 
-
 import lombok.Getter;
-
 
 @Getter
 public class VersionInfo {

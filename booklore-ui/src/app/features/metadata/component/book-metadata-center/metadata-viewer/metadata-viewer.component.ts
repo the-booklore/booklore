@@ -570,6 +570,43 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.handleMetadataClick('publisher', publisher);
   }
 
+  goToLibrary(libraryId: number): void {
+    if (this.metadataCenterViewMode === 'dialog') {
+      this.dialogRef?.close();
+      setTimeout(() => this.router.navigate(['/library', libraryId, 'books']), 200);
+    } else {
+      this.router.navigate(['/library', libraryId, 'books']);
+    }
+  }
+
+  goToPublishedYear(publishedDate: string): void {
+    const year = this.extractYear(publishedDate);
+    if (year) {
+      this.handleMetadataClick('publishedYear', year);
+    }
+  }
+
+  goToLanguage(language: string): void {
+    this.handleMetadataClick('language', language);
+  }
+
+  goToFileType(filePath: string | undefined): void {
+    const fileType = this.getFileExtension(filePath);
+    if (fileType) {
+      this.handleMetadataClick('bookType', fileType.toUpperCase());
+    }
+  }
+
+  goToReadStatus(status: ReadStatus): void {
+    this.handleMetadataClick('readStatus', status);
+  }
+
+  private extractYear(dateString: string | null | undefined): string | null {
+    if (!dateString) return null;
+    const yearMatch = dateString.match(/\d{4}/);
+    return yearMatch ? yearMatch[0] : null;
+  }
+
   private navigateToFilteredBooks(filterKey: string, filterValue: string): void {
     this.router.navigate(['/all-books'], {
       queryParams: {

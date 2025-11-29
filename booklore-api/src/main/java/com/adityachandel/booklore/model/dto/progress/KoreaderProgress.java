@@ -1,11 +1,11 @@
 package com.adityachandel.booklore.model.dto.progress;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @ToString
 public class KoreaderProgress {
     private Long timestamp;

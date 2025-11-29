@@ -74,6 +74,8 @@ public class BookMetadataUpdater {
         MetadataClearFlags clearFlags = wrapper.getClearFlags();
         BookMetadataEntity metadata = bookEntity.getMetadata();
 
+        updateLocks(newMetadata, metadata);
+
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
         boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
@@ -81,8 +83,6 @@ public class BookMetadataUpdater {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
         }
-
-        updateLocks(newMetadata, metadata);
 
         if (metadata.areAllFieldsLocked()) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);

@@ -16,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -26,7 +24,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -138,7 +135,7 @@ public class KoboServerProxy {
                 }
             });
 
-            if (responseHeaders.containsKey(KoboHeaders.X_KOBO_SYNCTOKEN) && includeSyncToken && syncToken != null) {
+            if (responseHeaders.containsHeader(KoboHeaders.X_KOBO_SYNCTOKEN) && includeSyncToken && syncToken != null) {
                 String koboToken = responseHeaders.getFirst(KoboHeaders.X_KOBO_SYNCTOKEN);
                 if (koboToken != null) {
                     BookloreSyncToken updated = BookloreSyncToken.builder()

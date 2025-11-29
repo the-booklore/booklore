@@ -5,10 +5,15 @@ import com.adityachandel.booklore.model.dto.progress.EpubProgress;
 import com.adityachandel.booklore.model.dto.progress.PdfProgress;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.Instant;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReadProgressRequest {
     @NotNull
     private Long bookId;

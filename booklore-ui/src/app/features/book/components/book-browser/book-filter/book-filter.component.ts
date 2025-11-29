@@ -15,6 +15,7 @@ import {UserService} from '../../../../settings/user-management/user.service';
 import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
+import {Tooltip} from 'primeng/tooltip';
 
 type Filter<T> = { value: T; bookCount: number };
 
@@ -148,14 +149,15 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AsyncPipe,
     TitleCasePipe,
     FormsModule,
-    SelectButton
+    SelectButton,
+    Tooltip,
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {
   private filterChangeSubject = new Subject<Record<string, any> | null>();
 
   @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
-  @Output() filterModeChanged = new EventEmitter<'and' | 'or'>();
+  @Output() filterModeChanged = new EventEmitter<'and' | 'or' | 'single'>();
 
   @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
   @Input() entityType$!: Observable<EntityType> | undefined;
@@ -168,9 +170,11 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   filterTypes: string[] = [];
   filterModeOptions = [
     {label: 'AND', value: 'and'},
-    {label: 'OR', value: 'or'}
+    {label: 'OR', value: 'or'},
+    {label: '1', value: 'single'},
   ];
-  private _selectedFilterMode: 'and' | 'or' = 'and';
+  singleSelect: boolean = false;
+  private _selectedFilterMode: 'and' | 'or' | 'single' = 'and';
   expandedPanels: number = 0;
   readonly filterLabels: Record<string, string> = {
     author: 'Author',
@@ -319,11 +323,11 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     );
   }
 
-  get selectedFilterMode(): 'and' | 'or' {
+  get selectedFilterMode(): 'and' | 'or' | 'single' {
     return this._selectedFilterMode;
   }
 
-  set selectedFilterMode(mode: 'and' | 'or') {
+  set selectedFilterMode(mode: 'and' | 'or' | 'single') {
     this._selectedFilterMode = mode;
     this.filterModeChanged.emit(mode);
     this.filterChangeSubject.next(
@@ -360,12 +364,19 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
     const index = this.activeFilters[filterType].indexOf(value);
     if (index > -1) {
-      this.activeFilters[filterType].splice(index, 1);
-      if (this.activeFilters[filterType].length === 0) {
-        delete this.activeFilters[filterType];
+      if (this._selectedFilterMode == 'single') {
+        this.activeFilters = {};
+      } else {
+        this.activeFilters[filterType].splice(index, 1);
+        if (this.activeFilters[filterType].length === 0) {
+          delete this.activeFilters[filterType];
+        }
       }
     } else {
-      this.activeFilters[filterType].push(value);
+      if (this._selectedFilterMode == 'single') {
+        this.activeFilters = {[filterType]: []};
+      }
+      this.activeFilters[filterType].push(value);      
     }
 
     this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);

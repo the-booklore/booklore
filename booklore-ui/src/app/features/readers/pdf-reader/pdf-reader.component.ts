@@ -1,6 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
-import {NgxExtendedPdfViewerModule} from 'ngx-extended-pdf-viewer';
+import {NgxExtendedPdfViewerModule, ZoomType} from 'ngx-extended-pdf-viewer';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {BookService} from '../../book/service/book.service';
 import {forkJoin, Subscription} from 'rxjs';
@@ -24,7 +24,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
 
   page!: number;
   spread!: 'off' | 'even' | 'odd';
-  zoom!: number | string;
+  zoom!: ZoomType;
 
   showDownloadButton = false;
   showPrintButton = false;
@@ -88,7 +88,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  onZoomChange(zoom: string | number): void {
+  onZoomChange(zoom: ZoomType): void {
     if (zoom !== this.zoom) {
       this.zoom = zoom;
       this.updateViewerSetting();

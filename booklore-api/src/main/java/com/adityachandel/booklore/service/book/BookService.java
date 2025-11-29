@@ -72,7 +72,7 @@ public class BookService {
                     .percentage(progress.getKoboProgressPercent())
                     .build());
         }
-        
+
         switch (book.getBookType()) {
             case EPUB -> {
                 book.setEpubProgress(EpubProgress.builder()
@@ -98,7 +98,7 @@ public class BookService {
         if (progress != null) {
             setBookProgress(book, progress);
             book.setLastReadTime(progress.getLastReadTime());
-            book.setReadStatus(String.valueOf(progress.getReadStatus()));
+            book.setReadStatus(progress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(progress.getReadStatus()));
             book.setDateFinished(progress.getDateFinished());
         }
     }
@@ -189,7 +189,7 @@ public class BookService {
                     .build());
         }
         book.setFilePath(FileUtils.getBookFullPath(bookEntity));
-        book.setReadStatus(String.valueOf(userProgress.getReadStatus()));
+        book.setReadStatus(userProgress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(userProgress.getReadStatus()));
         book.setDateFinished(userProgress.getDateFinished());
 
         if (!withDescription) {
@@ -432,7 +432,7 @@ public class BookService {
                     if (progress != null) {
                         setBookProgress(book, progress);
                         book.setLastReadTime(progress.getLastReadTime());
-                        book.setReadStatus(String.valueOf(progress.getReadStatus()));
+                        book.setReadStatus(progress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(progress.getReadStatus()));
                         book.setDateFinished(progress.getDateFinished());
                     }
 
