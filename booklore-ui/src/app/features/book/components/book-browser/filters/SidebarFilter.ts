@@ -45,7 +45,7 @@ export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean
 
 export class SideBarFilter implements BookFilter {
 
-  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<'and' | 'or'>) {
+  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<'and' | 'or' | 'single'>) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
