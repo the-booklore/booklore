@@ -335,6 +335,18 @@
 
           <div class="flex flex-col md:flex-row w-full gap-4 mt-2 pb-1">
             <div class="flex flex-col gap-1 md:w-1/6">
+              <label class="text-sm" for="reviews">Public Reviews</label>
+              <div class="flex justify-between items-center gap-2">
+                <input pSize="small" pInputText class="w-full" [disabled]="true" value="No Value"/>
+                @if (!book.metadata!['reviewsLocked']) {
+                  <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('reviews')" severity="success"></p-button>
+                }
+                @if (book.metadata!['reviewsLocked']) {
+                  <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('reviews')" severity="warn"></p-button>
+                }
+              </div>
+            </div>
+            <div class="flex flex-col gap-1 md:w-1/6">
               <label class="text-sm" for="isbn10">ISBN 10</label>
               <div class="flex justify-between items-center gap-2">
                 <input pSize="small" pInputText id="isbn10" formControlName="isbn10" class="w-full"/>
@@ -481,7 +493,7 @@
                 }
               </div>
             </div>
-            <div class="flex flex-col gap-1 w-1/6">
+            <div class="flex flex-col gap-1 md:w-1/6">
               <label class="text-sm" for="comicvineId">Comicvine ID</label>
               <div class="flex justify-between items-center gap-2">
                 <input pSize="small" pInputText id="comicvineId" formControlName="comicvineId" class="w-full"/>
