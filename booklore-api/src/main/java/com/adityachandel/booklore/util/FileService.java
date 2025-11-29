@@ -150,6 +150,7 @@ public class FileService {
             throw new IOException("Failed to create directory: " + parentDir);
         }
         ImageIO.write(originalImage, IMAGE_FORMAT, outputFile);
+        originalImage.flush(); // Release native resources
         log.info("Image saved successfully to: {}", filePath);
     }
 
