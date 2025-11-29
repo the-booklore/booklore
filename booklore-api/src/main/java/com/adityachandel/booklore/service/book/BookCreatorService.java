@@ -4,9 +4,11 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.*;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -23,8 +25,26 @@ public class BookCreatorService {
     private final BookMetadataRepository bookMetadataRepository;
 
     public BookEntity createShellBook(LibraryFile libraryFile, BookFileType bookFileType) {
+        Optional<BookEntity> existingBookOpt = bookRepository.findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
+                libraryFile.getLibraryEntity().getId(),
+                libraryFile.getLibraryPathEntity().getId(),
+                libraryFile.getFileSubPath(),
+                libraryFile.getFileName());
+
+        if (existingBookOpt.isPresent()) {
+            log.warn("Book already exists for file: {}", libraryFile.getFileName());
+            String newHash = FileFingerprint.generateHash(libraryFile.getFullPath());
+            long fileSizeKb = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
+            BookEntity existingBook = existingBookOpt.get();
+            existingBook.setCurrentHash(newHash);
+            existingBook.setInitialHash(newHash);
+            existingBook.setDeleted(false);
+            existingBook.setFileSizeKb(fileSizeKb);
+            return existingBook;
+        }
+
         long fileSizeKb = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
-        BookMetadataEntity metadata = BookMetadataEntity.builder().build();
+
         BookEntity bookEntity = BookEntity.builder()
                 .library(libraryFile.getLibraryEntity())
                 .libraryPath(libraryFile.getLibraryPathEntity())
@@ -33,8 +53,13 @@ public class BookCreatorService {
                 .bookType(bookFileType)
                 .fileSizeKb(fileSizeKb)
                 .addedOn(Instant.now())
-                .metadata(metadata)
                 .build();
+
+        BookMetadataEntity metadata = BookMetadataEntity.builder()
+                .book(bookEntity)
+                .build();
+        bookEntity.setMetadata(metadata);
+
         return bookRepository.saveAndFlush(bookEntity);
     }
 

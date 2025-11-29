@@ -193,6 +193,7 @@ export class MetadataEditorComponent implements OnInit {
       seriesNumberLocked: new FormControl(false),
       seriesTotalLocked: new FormControl(false),
       coverLocked: new FormControl(false),
+      reviewsLocked: new FormControl(false),
     });
   }
 
@@ -208,7 +209,7 @@ export class MetadataEditorComponent implements OnInit {
       this.originalMetadata = structuredClone(metadata);
       this.populateFormFromMetadata(metadata);
     });
-    
+
     this.prepareAutoComplete();
   }
 
@@ -311,6 +312,7 @@ export class MetadataEditorComponent implements OnInit {
       seriesNumberLocked: metadata.seriesNumberLocked ?? false,
       seriesTotalLocked: metadata.seriesTotalLocked ?? false,
       coverLocked: metadata.coverLocked ?? false,
+      reviewsLocked: metadata.reviewsLocked ?? false,
     });
 
     const lockableFields: { key: keyof BookMetadata; control: string }[] = [
@@ -343,6 +345,7 @@ export class MetadataEditorComponent implements OnInit {
       {key: "seriesNumberLocked", control: "seriesNumber"},
       {key: "seriesTotalLocked", control: "seriesTotal"},
       {key: "coverLocked", control: "thumbnailUrl"},
+      {key: "reviewsLocked", control: "reviews"},
     ];
 
     for (const {key, control} of lockableFields) {
@@ -442,10 +445,6 @@ export class MetadataEditorComponent implements OnInit {
     this.updateMetadata(false);
   }
 
-  quillDisabled(): boolean {
-    return this.metadataForm.get("descriptionLocked")?.value === true;
-  }
-
   private buildMetadataWrapper(
     shouldLockAllFields?: boolean
   ): MetadataUpdateWrapper {
@@ -515,6 +514,7 @@ export class MetadataEditorComponent implements OnInit {
       seriesNumberLocked: form.get("seriesNumberLocked")?.value,
       seriesTotalLocked: form.get("seriesTotalLocked")?.value,
       coverLocked: form.get("coverLocked")?.value,
+      reviewsLocked: form.get("reviewsLocked")?.value,
 
       ...(shouldLockAllFields !== undefined && {
         allFieldsLocked: shouldLockAllFields,
@@ -549,7 +549,7 @@ export class MetadataEditorComponent implements OnInit {
       language: wasCleared("language"),
       asin: wasCleared("asin"),
       personalRating: wasCleared("personalRating"),
-      amazonRating: wasCleared("personalRating"),
+      amazonRating: wasCleared("amazonRating"),
       amazonReviewCount: wasCleared("amazonReviewCount"),
       goodreadsId: wasCleared("goodreadsId"),
       comicvineId: wasCleared("comicvineId"),

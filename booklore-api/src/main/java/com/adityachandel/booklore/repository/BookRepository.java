@@ -19,8 +19,6 @@ import java.util.Set;
 public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpecificationExecutor<BookEntity> {
     Optional<BookEntity> findBookByIdAndLibraryId(long id, long libraryId);
 
-    Optional<BookEntity> findBookByFileNameAndLibraryId(String fileName, long libraryId);
-
     Optional<BookEntity> findByCurrentHash(String currentHash);
 
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
@@ -126,4 +124,19 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             @Param("fileName") String fileName,
             @Param("libraryId") Long libraryId,
             @Param("libraryPath") LibraryPathEntity libraryPath);
+
+    @Query(value = """
+        SELECT *
+        FROM book
+        WHERE library_id = :libraryId
+          AND library_path_id = :libraryPathId
+          AND file_sub_path = :fileSubPath
+          AND file_name = :fileName
+        LIMIT 1
+    """, nativeQuery = true)
+    Optional<BookEntity> findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
+            @Param("libraryId") Long libraryId,
+            @Param("libraryPathId") Long libraryPathId,
+            @Param("fileSubPath") String fileSubPath,
+            @Param("fileName") String fileName);
 }

@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, OnInit, Optional} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {UserService} from '../../../settings/user-management/user.service';
 import {Book, BookRecommendation} from '../../../book/model/book.model';
 import {BehaviorSubject, Observable, Subject} from 'rxjs';
@@ -31,6 +31,7 @@ import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.c
 })
 export class BookMetadataCenterComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private bookService = inject(BookService);
   private userService = inject(UserService);
   private appSettingsService = inject(AppSettingsService);
@@ -39,12 +40,29 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
 
   book$!: Observable<Book>;
   recommendedBooks: BookRecommendation[] = [];
-  tab: string = 'view';
+  private _tab: string = 'view';
   canEditMetadata: boolean = false;
   admin: boolean = false;
 
   private appSettings$ = this.appSettingsService.appSettings$;
   private currentBookId$ = new BehaviorSubject<number | null>(null);
+  private validTabs = ['view', 'edit', 'match'];
+
+  get tab(): string {
+    return this._tab;
+  }
+
+  set tab(value: string) {
+    this._tab = value;
+
+    if (!this.config) {
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: value },
+        queryParamsHandling: 'merge'
+      });
+    }
+  }
 
   constructor(
     @Optional() private config?: DynamicDialogConfig,
@@ -105,9 +123,8 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
         distinctUntilChanged(),
         takeUntil(this.destroy$)
       )
-      .subscribe(tab => {
-        const validTabs = ['view', 'edit', 'match'];
-        this.tab = validTabs.includes(tab) ? tab : 'view';
+      .subscribe(tabParam => {
+        this._tab = this.validTabs.includes(tabParam) ? tabParam : 'view';
       });
 
     this.userService.userState$

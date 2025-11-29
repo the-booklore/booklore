@@ -125,7 +125,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   searchTerm$ = new BehaviorSubject<string>('');
   parsedFilters: Record<string, string[]> = {};
   selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
-  selectedFilterMode = new BehaviorSubject<'and' | 'or'>('and');
+  selectedFilterMode = new BehaviorSubject<'and' | 'or' | 'single'>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
   entityType: EntityType | undefined;
@@ -244,7 +244,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       });
 
       const parsedFilters: Record<string, string[]> = {};
-      
+
       this.currentFilterLabel = 'All Books';
 
       if (filterParams) {
@@ -384,7 +384,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onFilterModeChanged(mode: 'and' | 'or'): void {
+  onFilterModeChanged(mode: 'and' | 'or' | 'single'): void {
     this.selectedFilterMode.next(mode);
   }
 
