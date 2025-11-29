@@ -45,10 +45,6 @@ export class LibraryShelfMenuService {
                 header: 'Edit Library',
                 modal: true,
                 closable: true,
-                style: {
-                  position: 'absolute',
-                  top: '15%',
-                },
                 data: {
                   mode: 'edit',
                   libraryId: entity?.id

@@ -28,6 +28,7 @@
                 [options]="sortingOptions"
                 [(ngModel)]="selectedLibrarySorting"
                 (ngModelChange)="onLibrarySortingChange()"
+                appendTo="body"
                 placeholder="Select Sorting">
               </p-select>
             </div>
@@ -53,6 +54,7 @@
                 [options]="sortingOptions"
                 [(ngModel)]="selectedShelfSorting"
                 (ngModelChange)="onShelfSortingChange()"
+                appendTo="body"
                 placeholder="Select Sorting">
               </p-select>
             </div>
