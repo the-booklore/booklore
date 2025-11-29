@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 public class AppProperties {
     private String pathConfig;
     private String bookdropFolder;
+    private String angularPath;
     private String version;
     private RemoteAuth remoteAuth;
     private Swagger swagger = new Swagger();

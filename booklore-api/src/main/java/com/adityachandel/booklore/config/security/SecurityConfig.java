@@ -139,6 +139,7 @@ public class SecurityConfig {
             publicEndpoints.addAll(Arrays.asList(SWAGGER_ENDPOINTS));
         }
         http
+                .securityMatcher("/api/**")
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

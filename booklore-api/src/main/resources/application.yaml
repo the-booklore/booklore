@@ -1,6 +1,7 @@
 app:
   path-config: '/app/data'
   bookdrop-folder: '/bookdrop'
+  angular-path: ${ANGULAR_APP:/app/angular}
   version: 'development'
   swagger:
     enabled: ${SWAGGER_ENABLED:false}
@@ -19,6 +20,8 @@ server:
   port: 8080
   tomcat:
     relaxed-query-chars: '[,],%,{,},|'
+  mime-mappings:
+    mjs: text/javascript
 
 spring:
   servlet:
