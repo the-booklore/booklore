@@ -169,7 +169,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   truncatedFilters: Record<string, boolean> = {};
   filterTypes: string[] = [];
   filterModeOptions = [
-    {label: '&', value: 'and'},
+    {label: 'AND', value: 'and'},
     {label: 'OR', value: 'or'},
     {label: '1', value: 'single'},
   ];
