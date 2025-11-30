@@ -109,7 +109,8 @@ function getPageCountRangeFilters(pageCount?: number): { id: string; name: strin
 
 function getMatchScoreRangeFilters(score?: number | null): { id: string; name: string; sortIndex?: number }[] {
   if (score == null) return [];
-  const match = matchScoreRanges.find(r => score >= r.min && score < r.max);
+  const normalizedScore = score > 1 ? score / 100 : score;
+  const match = matchScoreRanges.find(r => normalizedScore >= r.min && normalizedScore < r.max);
   return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
 }
 
@@ -173,7 +174,6 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     {label: 'OR', value: 'or'},
     {label: '1', value: 'single'},
   ];
-  singleSelect: boolean = false;
   private _selectedFilterMode: 'and' | 'or' | 'single' = 'and';
   expandedPanels: number = 0;
   readonly filterLabels: Record<string, string> = {
@@ -376,9 +376,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       if (this._selectedFilterMode == 'single') {
         this.activeFilters = {[filterType]: []};
       }
-      this.activeFilters[filterType].push(value);      
+      this.activeFilters[filterType].push(value);
     }
-
     this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);
   }
 

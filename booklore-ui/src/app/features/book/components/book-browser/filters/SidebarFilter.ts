@@ -33,9 +33,10 @@ export function isPageCountInRange(pageCount: number | undefined, rangeId: strin
 
 export function isMatchScoreInRange(score: number | undefined | null, rangeId: string): boolean {
   if (score == null) return false;
+  const normalizedScore = score > 1 ? score / 100 : score;
   const range = matchScoreRanges.find(r => r.id === rangeId);
   if (!range) return false;
-  return score >= range.min && score < range.max;
+  return normalizedScore >= range.min && normalizedScore < range.max;
 }
 
 export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean {
