@@ -212,6 +212,7 @@ public class KoboEntitlementService {
                 .description(metadata.getDescription())
                 .contributors(authors)
                 .series(series)
+                .language(metadata.getLanguage())
                 .downloadUrls(List.of(
                         KoboBookMetadata.DownloadUrl.builder()
                                 .url(downloadUrl)
@@ -229,5 +230,4 @@ public class KoboEntitlementService {
     private OffsetDateTime getCreatedOn(BookEntity book) {
         return book.getAddedOn() != null ? book.getAddedOn().atOffset(ZoneOffset.UTC) : getCurrentUtc();
     }
-
 }

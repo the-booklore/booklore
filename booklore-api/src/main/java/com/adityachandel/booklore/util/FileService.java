@@ -49,6 +49,8 @@ public class FileService {
     private static final long   MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
     private static final int    THUMBNAIL_WIDTH     = 250;
     private static final int    THUMBNAIL_HEIGHT    = 350;
+    private static final int    MAX_ORIGINAL_WIDTH  = 1000;
+    private static final int    MAX_ORIGINAL_HEIGHT = 1500;
     private static final String IMAGE_FORMAT        = "JPEG";
     // @formatter:on
 
@@ -148,6 +150,7 @@ public class FileService {
             throw new IOException("Failed to create directory: " + parentDir);
         }
         ImageIO.write(originalImage, IMAGE_FORMAT, outputFile);
+        originalImage.flush(); // Release native resources
         log.info("Image saved successfully to: {}", filePath);
     }
 
@@ -237,6 +240,18 @@ public class FileService {
         Graphics2D g = rgbImage.createGraphics();
         g.drawImage(coverImage, 0, 0, Color.WHITE, null);
         g.dispose();
+        coverImage.flush(); // Original input no longer needed after conversion
+
+        // Resize original image if too large to prevent OOM
+        double scale = Math.min(
+                (double) MAX_ORIGINAL_WIDTH / rgbImage.getWidth(),
+                (double) MAX_ORIGINAL_HEIGHT / rgbImage.getHeight()
+        );
+        if (scale < 1.0) {
+            BufferedImage resized = resizeImage(rgbImage, (int) (rgbImage.getWidth() * scale), (int) (rgbImage.getHeight() * scale));
+            rgbImage.flush(); // Release resources of the original large image
+            rgbImage = resized;
+        }
 
         File originalFile = new File(folder, COVER_FILENAME);
         boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
@@ -244,6 +259,10 @@ public class FileService {
         BufferedImage thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
         File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
         boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+
+        // Cleanup resources
+        rgbImage.flush();
+        thumb.flush();
 
         return originalSaved && thumbnailSaved;
     }

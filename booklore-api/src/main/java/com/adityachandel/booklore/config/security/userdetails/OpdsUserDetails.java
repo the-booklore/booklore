@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.config.security.userdetails;
 
-import com.adityachandel.booklore.model.dto.OpdsUser;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -15,20 +14,15 @@ import java.util.List;
 public class OpdsUserDetails implements UserDetails {
 
     private final OpdsUserV2 opdsUserV2;
-    private final OpdsUser opdsUser;
 
     @Override
     public String getUsername() {
-        if (opdsUserV2 != null) return opdsUserV2.getUsername();
-        if (opdsUser != null) return opdsUser.getUsername();
-        throw new IllegalStateException("No username available");
+        return opdsUserV2.getUsername();
     }
 
     @Override
     public String getPassword() {
-        if (opdsUserV2 != null) return opdsUserV2.getPasswordHash();
-        if (opdsUser != null) return opdsUser.getPassword();
-        throw new IllegalStateException("No password available");
+        return opdsUserV2.getPasswordHash();
     }
 
     @Override
