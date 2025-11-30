@@ -464,7 +464,11 @@ public class BookDropService {
                 .mergeTags(true)
                 .build();
 
-        metadataRefreshService.updateBookMetadata(context);
+        try {
+            metadataRefreshService.updateBookMetadata(context);
+        } catch (Exception e) {
+            log.warn("Failed to update metadata for book id={} after import: {}", bookEntity.getId(), e.getMessage(), e);
+        }
 
         cleanupBookdropData(bookdropFile);
 
@@ -507,7 +511,7 @@ public class BookDropService {
     private void cleanupTempFile(Path tempPath) {
         if (tempPath != null) {
             try {
-                Files.delete(tempPath);
+                Files.deleteIfExists(tempPath);
             } catch (Exception e) {
                 log.warn("Failed to cleanup temp file: {}", tempPath, e);
             }

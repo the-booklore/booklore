@@ -353,9 +353,14 @@ public class BookMetadataUpdater {
             return; // Locked — do nothing
         }
         if (!set) return;
-        if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
-        e.setCoverUpdatedOn(Instant.now());
+        if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl()))
+            return;
+        try {
+            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+            e.setCoverUpdatedOn(Instant.now());
+        } catch (Exception exception) {
+            log.warn("Failed to update thumbnail for book id={} after import: {}", bookId, exception.getMessage(), exception);
+        }
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {
