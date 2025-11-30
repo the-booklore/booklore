@@ -9,7 +9,7 @@ import {Dialog} from 'primeng/dialog';
 import {FormsModule} from '@angular/forms';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {ConfirmationService, MessageService} from 'primeng/api';
-import {OpdsUserV2, OpdsUserV2CreateRequest, OpdsService} from './opds.service';
+import {OpdsUserV2, OpdsUserV2CreateRequest, OpdsService, OpdsSortOption, OpdsUserV2UpdateRequest} from './opds.service';
 import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
 import {of, Subject} from 'rxjs';
@@ -18,6 +18,7 @@ import {ToggleSwitch} from 'primeng/toggleswitch';
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {AppSettingKey} from '../../../shared/model/app-settings.model';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {Select} from 'primeng/select';
 
 @Component({
   selector: 'app-opds-settings',
@@ -32,7 +33,8 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     TableModule,
     Password,
     ToggleSwitch,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    Select
   ],
   providers: [ConfirmationService],
   templateUrl: './opds-settings.html',
@@ -52,12 +54,21 @@ export class OpdsSettings implements OnInit, OnDestroy {
   users: OpdsUserV2[] = [];
   loading = false;
   showCreateUserDialog = false;
-  newUser: OpdsUserV2CreateRequest = {username: '', password: ''};
+  newUser: OpdsUserV2CreateRequest = {username: '', password: '', sortOption: OpdsSortOption.ADDED_ON_DESC};
   passwordVisibility: boolean[] = [];
   hasPermission = false;
 
   private readonly destroy$ = new Subject<void>();
   dummyPassword: string = "***********************";
+
+  // Sort options
+  readonly OpdsSortOption = OpdsSortOption;
+  readonly sortOptions = [
+    { label: 'Newest First (Default)', value: OpdsSortOption.ADDED_ON_DESC },
+    { label: 'Oldest First', value: OpdsSortOption.ADDED_ON_ASC },
+    { label: 'Author A-Z', value: OpdsSortOption.AUTHOR_ASC },
+    { label: 'Author Z-A', value: OpdsSortOption.AUTHOR_DESC }
+  ];
 
   ngOnInit(): void {
     this.loading = true;
@@ -187,9 +198,29 @@ export class OpdsSettings implements OnInit, OnDestroy {
     });
   }
 
+  updateUserSortOption(user: OpdsUserV2): void {
+    if (!user.id) return;
+
+    const updateRequest: OpdsUserV2UpdateRequest = {
+      sortOption: user.sortOption
+    };
+
+    this.opdsService.updateUser(user.id, updateRequest).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: () => {
+        this.showMessage('success', 'Success', 'Sort preference updated successfully');
+      },
+      error: err => {
+        console.error('Error updating user:', err);
+        this.showMessage('error', 'Error', 'Failed to update sort preference');
+      }
+    });
+  }
+
   private resetCreateUserDialog(): void {
     this.showCreateUserDialog = false;
-    this.newUser = {username: '', password: ''};
+    this.newUser = {username: '', password: '', sortOption: OpdsSortOption.ADDED_ON_DESC};
   }
 
   private showMessage(severity: string, summary: string, detail: string): void {

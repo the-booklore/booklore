@@ -4,8 +4,6 @@ import com.adityachandel.booklore.model.enums.OpdsSortOption;
 import lombok.Data;
 
 @Data
-public class OpdsUserV2CreateRequest {
-    private String username;
-    private String password;
+public class OpdsUserV2UpdateRequest {
     private OpdsSortOption sortOption;
 }

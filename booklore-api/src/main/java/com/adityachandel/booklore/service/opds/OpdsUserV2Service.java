@@ -45,6 +45,7 @@ public class OpdsUserV2Service {
                     .user(userEntity)
                     .username(request.getUsername())
                     .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .sortOption(request.getSortOption())
                     .build();
 
             return mapper.toDto(opdsUserV2Repository.save(opdsUserV2));
@@ -63,5 +64,21 @@ public class OpdsUserV2Service {
             throw new AccessDeniedException("You are not allowed to delete this user");
         }
         opdsUserV2Repository.delete(user);
+    }
+
+    public OpdsUserV2 updateOpdsUser(Long userId, com.adityachandel.booklore.model.dto.request.OpdsUserV2UpdateRequest request) {
+        BookLoreUser bookLoreUser = authenticationService.getAuthenticatedUser();
+        OpdsUserV2Entity user = opdsUserV2Repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        if (!user.getUser().getId().equals(bookLoreUser.getId())) {
+            throw new AccessDeniedException("You are not allowed to update this user");
+        }
+        
+        if (request.getSortOption() != null) {
+            user.setSortOption(request.getSortOption());
+        }
+        
+        return mapper.toDto(opdsUserV2Repository.save(user));
     }
 }

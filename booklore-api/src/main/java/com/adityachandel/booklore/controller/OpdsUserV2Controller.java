@@ -46,4 +46,14 @@ public class OpdsUserV2Controller {
             @Parameter(description = "ID of the OPDS user to delete") @PathVariable Long id) {
         service.deleteOpdsUser(id);
     }
+
+    @Operation(summary = "Update OPDS user", description = "Update an OPDS user's settings (e.g., sort preference).")
+    @ApiResponse(responseCode = "200", description = "OPDS user updated successfully")
+    @PatchMapping("/{id}")
+    @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canAccessOpds()")
+    public OpdsUserV2 updateUser(
+            @Parameter(description = "ID of the OPDS user to update") @PathVariable Long id,
+            @Parameter(description = "OPDS user update request") @RequestBody com.adityachandel.booklore.model.dto.request.OpdsUserV2UpdateRequest updateRequest) {
+        return service.updateOpdsUser(id, updateRequest);
+    }
 }

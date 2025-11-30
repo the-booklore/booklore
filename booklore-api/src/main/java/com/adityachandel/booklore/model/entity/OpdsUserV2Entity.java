@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.model.enums.OpdsSortOption;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -27,6 +28,11 @@ public class OpdsUserV2Entity {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sort_option", nullable = false)
+    @Builder.Default
+    private OpdsSortOption sortOption = OpdsSortOption.ADDED_ON_DESC;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
