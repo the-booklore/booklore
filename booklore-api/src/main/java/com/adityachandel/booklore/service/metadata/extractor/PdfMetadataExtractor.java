@@ -47,14 +47,20 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
     @Override
     public byte[] extractCover(File file) {
+        BufferedImage coverImage = null;
         try (PDDocument pdf = Loader.loadPDF(file)) {
-            BufferedImage coverImage = new PDFRenderer(pdf).renderImageWithDPI(0, 300, ImageType.RGB);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(coverImage, "jpg", baos);
-            return baos.toByteArray();
+            coverImage = new PDFRenderer(pdf).renderImageWithDPI(0, 300, ImageType.RGB);
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                ImageIO.write(coverImage, "jpg", baos);
+                return baos.toByteArray();
+            }
         } catch (Exception e) {
             log.warn("Failed to extract cover from PDF: {}", file.getAbsolutePath(), e);
             return null;
+        } finally {
+            if (coverImage != null) {
+                coverImage.flush(); // Release native resources
+            }
         }
     }
 

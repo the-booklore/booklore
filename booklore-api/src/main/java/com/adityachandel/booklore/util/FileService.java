@@ -143,15 +143,24 @@ public class FileService {
     }
 
     public static void saveImage(byte[] imageData, String filePath) throws IOException {
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(imageData));
-        File outputFile = new File(filePath);
-        File parentDir = outputFile.getParentFile();
-        if (!parentDir.exists() && !parentDir.mkdirs()) {
-            throw new IOException("Failed to create directory: " + parentDir);
+        BufferedImage originalImage = null;
+        try {
+            originalImage = ImageIO.read(new ByteArrayInputStream(imageData));
+            if (originalImage == null) {
+                throw new IOException("Invalid image data: unable to decode image");
+            }
+            File outputFile = new File(filePath);
+            File parentDir = outputFile.getParentFile();
+            if (!parentDir.exists() && !parentDir.mkdirs()) {
+                throw new IOException("Failed to create directory: " + parentDir);
+            }
+            ImageIO.write(originalImage, IMAGE_FORMAT, outputFile);
+            log.info("Image saved successfully to: {}", filePath);
+        } finally {
+            if (originalImage != null) {
+                originalImage.flush(); // Release native resources
+            }
         }
-        ImageIO.write(originalImage, IMAGE_FORMAT, outputFile);
-        originalImage.flush(); // Release native resources
-        log.info("Image saved successfully to: {}", filePath);
     }
 
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
@@ -205,6 +214,7 @@ public class FileService {
             if (!success) {
                 throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
             }
+            originalImage.flush(); // Release resources after processing
             log.info("Cover images created and saved for book ID: {}", bookId);
         } catch (Exception e) {
             log.error("An error occurred while creating the thumbnail: {}", e.getMessage(), e);
@@ -219,6 +229,7 @@ public class FileService {
             if (!success) {
                 throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
             }
+            originalImage.flush(); // Release resources after processing
             log.info("Cover images created and saved from URL for book ID: {}", bookId);
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
@@ -227,44 +238,58 @@ public class FileService {
     }
 
     public boolean saveCoverImages(BufferedImage coverImage, long bookId) throws IOException {
-        String folderPath = getImagesFolder(bookId);
-        File folder = new File(folderPath);
-        if (!folder.exists() && !folder.mkdirs()) {
-            throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
+        BufferedImage rgbImage = null;
+        BufferedImage resized = null;
+        BufferedImage thumb = null;
+        try {
+            String folderPath = getImagesFolder(bookId);
+            File folder = new File(folderPath);
+            if (!folder.exists() && !folder.mkdirs()) {
+                throw new IOException("Failed to create directory: " + folder.getAbsolutePath());
+            }
+
+            rgbImage = new BufferedImage(
+                    coverImage.getWidth(),
+                    coverImage.getHeight(),
+                    BufferedImage.TYPE_INT_RGB
+            );
+            Graphics2D g = rgbImage.createGraphics();
+            g.drawImage(coverImage, 0, 0, Color.WHITE, null);
+            g.dispose();
+            // Note: coverImage is not flushed here - caller is responsible for its lifecycle
+
+            // Resize original image if too large to prevent OOM
+            double scale = Math.min(
+                    (double) MAX_ORIGINAL_WIDTH / rgbImage.getWidth(),
+                    (double) MAX_ORIGINAL_HEIGHT / rgbImage.getHeight()
+            );
+            if (scale < 1.0) {
+                resized = resizeImage(rgbImage, (int) (rgbImage.getWidth() * scale), (int) (rgbImage.getHeight() * scale));
+                rgbImage.flush(); // Release resources of the original large image
+                rgbImage = resized;
+            }
+
+            File originalFile = new File(folder, COVER_FILENAME);
+            boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
+
+            thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+            File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
+            boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+
+            return originalSaved && thumbnailSaved;
+        } finally {
+            // Cleanup resources created within this method
+            // Note: resized may equal rgbImage after reassignment, avoid double-flush
+            if (rgbImage != null) {
+                rgbImage.flush();
+            }
+            if (resized != null && resized != rgbImage) {
+                resized.flush();
+            }
+            if (thumb != null) {
+                thumb.flush();
+            }
         }
-        BufferedImage rgbImage = new BufferedImage(
-                coverImage.getWidth(),
-                coverImage.getHeight(),
-                BufferedImage.TYPE_INT_RGB
-        );
-        Graphics2D g = rgbImage.createGraphics();
-        g.drawImage(coverImage, 0, 0, Color.WHITE, null);
-        g.dispose();
-        coverImage.flush(); // Original input no longer needed after conversion
-
-        // Resize original image if too large to prevent OOM
-        double scale = Math.min(
-                (double) MAX_ORIGINAL_WIDTH / rgbImage.getWidth(),
-                (double) MAX_ORIGINAL_HEIGHT / rgbImage.getHeight()
-        );
-        if (scale < 1.0) {
-            BufferedImage resized = resizeImage(rgbImage, (int) (rgbImage.getWidth() * scale), (int) (rgbImage.getHeight() * scale));
-            rgbImage.flush(); // Release resources of the original large image
-            rgbImage = resized;
-        }
-
-        File originalFile = new File(folder, COVER_FILENAME);
-        boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
-
-        BufferedImage thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
-        File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
-        boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
-
-        // Cleanup resources
-        rgbImage.flush();
-        thumb.flush();
-
-        return originalSaved && thumbnailSaved;
     }
 
     public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {
@@ -313,9 +338,8 @@ public class FileService {
         }
 
         log.info("Background image saved successfully for user {}: {}", userId, filename);
-    }
-
-    public void deleteBackgroundFile(String filename, Long userId) {
+        // Note: input image is not flushed here - caller is responsible for its lifecycle
+    }    public void deleteBackgroundFile(String filename, Long userId) {
         try {
             String backgroundsFolder = getBackgroundsFolder(userId);
             File file = new File(backgroundsFolder, filename);
