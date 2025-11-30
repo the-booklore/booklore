@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Map;
 
@@ -16,6 +17,7 @@ import java.util.Map;
 public class MonitoringRegistrationService {
 
     private final MonitoringService monitoringService;
+    private static final Duration UNREGISTER_TIMEOUT = Duration.ofSeconds(5);
 
     public boolean isPathMonitored(Path path) {
         return monitoringService.isPathMonitored(path);
@@ -35,6 +37,19 @@ public class MonitoringRegistrationService {
 
     public void unregisterLibrary(Long libraryId) {
         monitoringService.unregisterLibrary(libraryId);
+    }
+
+    public void unregisterLibraryAndWait(Long libraryId) {
+        monitoringService.unregisterLibrary(libraryId);
+        monitoringService.awaitLibraryUnregistered(libraryId, UNREGISTER_TIMEOUT);
+    }
+
+    public void pauseLibraryMonitoring(Long libraryId) {
+        monitoringService.pauseLibraryMonitoring(libraryId);
+    }
+
+    public void resumeLibraryMonitoring(Long libraryId) {
+        monitoringService.resumeLibraryMonitoring(libraryId);
     }
 
     public void registerLibraryPaths(Long libraryId, Path libraryRoot) {

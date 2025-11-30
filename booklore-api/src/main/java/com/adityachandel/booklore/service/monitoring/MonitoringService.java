@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ public class MonitoringService {
     private final Map<Path, Long> pathToLibraryIdMap = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> libraryWatchStatusMap = new ConcurrentHashMap<>();
     private final Map<Long, List<Path>> libraryIdToPaths = new ConcurrentHashMap<>();
+    private final Set<Long> pausedLibraryIds = ConcurrentHashMap.newKeySet();
 
     public MonitoringService(LibraryFileEventProcessor libraryFileEventProcessor, WatchService watchService, MonitoringTask monitoringTask) {
         this.libraryFileEventProcessor = libraryFileEventProcessor;
@@ -199,6 +201,11 @@ public class MonitoringService {
         Long libraryId = pathToLibraryIdMap.get(watchedFolder);
 
         if (libraryId != null) {
+            if (isLibraryPaused(libraryId)) {
+                log.debug("Skipping event {} for paused library {} on path {}", event.getEventKind().name(), libraryId, filePath);
+                return;
+            }
+
             try {
                 libraryFileEventProcessor.processFile(event.getEventKind(), libraryId, watchedFolder.toString(), filePath.toString());
             } catch (InvalidDataAccessApiUsageException e) {
@@ -240,5 +247,37 @@ public class MonitoringService {
 
     public boolean isPathMonitored(Path path) {
         return monitoredPaths.contains(path.toAbsolutePath().normalize());
+    }
+
+    public void awaitLibraryUnregistered(Long libraryId, Duration timeout) {
+        long deadline = System.nanoTime() + timeout.toNanos();
+        while (hasActivePathsForLibrary(libraryId)) {
+            if (System.nanoTime() >= deadline) {
+                log.warn("Timed out waiting for library {} to unregister from monitoring", libraryId);
+                break;
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Interrupted while waiting for library to unregister", e);
+            }
+        }
+    }
+
+    private boolean hasActivePathsForLibrary(Long libraryId) {
+        return pathToLibraryIdMap.containsValue(libraryId);
+    }
+
+    public void pauseLibraryMonitoring(Long libraryId) {
+        pausedLibraryIds.add(libraryId);
+    }
+
+    public void resumeLibraryMonitoring(Long libraryId) {
+        pausedLibraryIds.remove(libraryId);
+    }
+
+    public boolean isLibraryPaused(Long libraryId) {
+        return pausedLibraryIds.contains(libraryId);
     }
 }

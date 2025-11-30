@@ -274,7 +274,8 @@ public class BookDropService {
 
     private void unregisterAffectedLibraries(Set<Long> libraryIds) {
         for (Long libraryId : libraryIds) {
-            monitoringRegistrationService.unregisterLibrary(libraryId);
+            monitoringRegistrationService.pauseLibraryMonitoring(libraryId);
+            monitoringRegistrationService.unregisterLibraryAndWait(libraryId);
             log.debug("Unregistered library {} from monitoring", libraryId);
         }
         log.info("Unregistered {} libraries from monitoring", libraryIds.size());
@@ -293,6 +294,9 @@ public class BookDropService {
                 }
             } catch (Exception e) {
                 log.warn("Failed to re-register library {} for monitoring: {}", libraryId, e.getMessage());
+            } finally {
+                monitoringRegistrationService.resumeLibraryMonitoring(libraryId);
+                log.debug("Resumed monitoring for library {}", libraryId);
             }
         }
         log.info("Re-registered {} libraries for monitoring", libraryIds.size());
