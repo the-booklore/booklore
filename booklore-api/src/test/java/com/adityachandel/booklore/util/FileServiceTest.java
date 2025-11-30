@@ -449,7 +449,7 @@ class FileServiceTest {
                 byte[] invalidData = "not an image".getBytes();
                 Path outputPath = tempDir.resolve("invalid.jpg");
 
-                assertThrows(IllegalArgumentException.class, () ->
+                assertThrows(IOException.class, () ->
                     fileService.saveImage(invalidData, outputPath.toString()));
             }
 
@@ -458,7 +458,7 @@ class FileServiceTest {
                 byte[] emptyData = new byte[0];
                 Path outputPath = tempDir.resolve("empty.jpg");
 
-                assertThrows(IllegalArgumentException.class, () ->
+                assertThrows(IOException.class, () ->
                     fileService.saveImage(emptyData, outputPath.toString()));
             }
 
@@ -534,7 +534,6 @@ class FileServiceTest {
                 
                 assertTrue(result);
                 
-                // Verify the saved image has no transparency
                 BufferedImage saved = ImageIO.read(
                     new File(fileService.getCoverFile(3L)));
                 assertFalse(saved.getColorModel().hasAlpha(), "Saved image should not have transparency");
@@ -564,6 +563,54 @@ class FileServiceTest {
                     () -> assertEquals(800, saved.getWidth()),
                     () -> assertEquals(1200, saved.getHeight())
                 );
+            }
+
+            @Test
+            void largeImage_isScaledDownToMaxDimensions() throws IOException {
+                // Create a very large image that will trigger scaling
+                int largeWidth = 2000;  // > MAX_ORIGINAL_WIDTH (1000)
+                int largeHeight = 3000; // > MAX_ORIGINAL_HEIGHT (1500)
+
+                BufferedImage largeImage = createTestImage(largeWidth, largeHeight);
+                boolean result = fileService.saveCoverImages(largeImage, 5L);
+
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(
+                    new File(fileService.getCoverFile(5L)));
+
+                assertNotNull(savedCover);
+
+                assertTrue(savedCover.getWidth() <= 1000,
+                    "Cover width should be <= MAX_ORIGINAL_WIDTH (1000), was: " + savedCover.getWidth());
+                assertTrue(savedCover.getHeight() <= 1500,
+                    "Cover height should be <= MAX_ORIGINAL_HEIGHT (1500), was: " + savedCover.getHeight());
+
+                double originalRatio = (double) largeWidth / largeHeight;
+                double savedRatio = (double) savedCover.getWidth() / savedCover.getHeight();
+                assertEquals(originalRatio, savedRatio, 0.01, "Aspect ratio should be preserved");
+            }
+
+            @Test
+            void smallImage_maintainsOriginalDimensions() throws IOException {
+                // Create a small image that should NOT be scaled down
+                int smallWidth = 400;   // < MAX_ORIGINAL_WIDTH (1000)
+                int smallHeight = 600;  // < MAX_ORIGINAL_HEIGHT (1500)
+
+                BufferedImage smallImage = createTestImage(smallWidth, smallHeight);
+                boolean result = fileService.saveCoverImages(smallImage, 6L);
+
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(
+                    new File(fileService.getCoverFile(6L)));
+
+                assertNotNull(savedCover);
+
+                assertEquals(smallWidth, savedCover.getWidth(),
+                    "Small image width should be preserved");
+                assertEquals(smallHeight, savedCover.getHeight(),
+                    "Small image height should be preserved");
             }
         }
 
