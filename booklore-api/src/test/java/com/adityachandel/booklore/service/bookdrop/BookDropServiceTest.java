@@ -557,7 +557,7 @@ class BookDropServiceTest {
     }
 
     @Test
-    void finalizeImport_WhenMetadataRefreshFails_ShouldPreserveSourceFileInBookdrop() throws Exception {
+    void finalizeImport_WhenMetadataRefreshFails_ShouldStillSucceedAndCleanup() throws Exception {
         Path sourceFile = tempDir.resolve("metadata-failure-test-book.pdf");
         Files.createFile(sourceFile);
         assertTrue(Files.exists(sourceFile), "Source file should exist");
@@ -606,10 +606,10 @@ class BookDropServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getTotalFiles());
-        assertEquals(0, result.getSuccessfullyImported());
-        assertEquals(1, result.getFailed());
+        assertEquals(1, result.getSuccessfullyImported());
+        assertEquals(0, result.getFailed());
 
-        assertTrue(Files.exists(sourceFile), "Source file should be preserved on failure");
-        assertFalse(Files.exists(targetDir.resolve("moved-book.pdf")), "Target file should be cleaned up on failure");
+        assertFalse(Files.exists(sourceFile), "Source file should be removed after successful import even if metadata refresh fails");
+        assertTrue(Files.exists(targetDir.resolve("moved-book.pdf")), "Target file should exist after import");
     }
 }
