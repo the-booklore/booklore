@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -30,11 +31,11 @@ public class TagEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof TagEntity that)) return false;
-        return name != null && name.equalsIgnoreCase(that.name);
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override
     public int hashCode() {
-        return name != null ? name.toLowerCase().hashCode() : 0;
+        return getClass().hashCode();
     }
 }
