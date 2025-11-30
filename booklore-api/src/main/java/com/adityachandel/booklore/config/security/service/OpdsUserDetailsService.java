@@ -24,6 +24,6 @@ public class OpdsUserDetailsService implements UserDetailsService {
         OpdsUserV2Entity userV2 = opdsUserV2Repository.findByUsername(username)
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(username));
         OpdsUserV2 mappedCredential = opdsUserV2Mapper.toDto(userV2);
-        return new OpdsUserDetails(mappedCredential, null);
+        return new OpdsUserDetails(mappedCredential);
     }
 }

@@ -38,8 +38,7 @@ public class OpdsController {
         @ApiResponse(responseCode = "404", description = "Book not found")
     })
     @GetMapping("/{bookId}/download")
-    public ResponseEntity<Resource> downloadBook(
-            @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
+    public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
         return bookService.downloadBook(bookId);
     }
 
@@ -49,8 +48,7 @@ public class OpdsController {
         @ApiResponse(responseCode = "404", description = "Book or cover not found")
     })
     @GetMapping("/{bookId}/cover")
-    public ResponseEntity<Resource> getBookCover(
-            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+    public ResponseEntity<Resource> getBookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         Resource coverImage = bookService.getBookThumbnail(bookId);
         String contentType = "image/jpeg";
         return ResponseEntity.ok()
@@ -62,8 +60,7 @@ public class OpdsController {
     @Operation(summary = "Get OPDS root catalog", description = "Retrieve the OPDS root navigation feed.")
     @ApiResponse(responseCode = "200", description = "Root OPDS catalog returned successfully")
     @GetMapping(produces = OPDS_CATALOG_MEDIA_TYPE)
-    public ResponseEntity<String> getRootCatalog(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getRootCatalog(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateRootNavigation(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
@@ -73,8 +70,7 @@ public class OpdsController {
     @Operation(summary = "Get OPDS libraries navigation", description = "Retrieve the OPDS libraries navigation feed.")
     @ApiResponse(responseCode = "200", description = "Libraries navigation feed returned successfully")
     @GetMapping(value = "/libraries", produces = OPDS_CATALOG_MEDIA_TYPE)
-    public ResponseEntity<String> getLibrariesNavigation(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getLibrariesNavigation(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateLibrariesNavigation(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
@@ -84,9 +80,18 @@ public class OpdsController {
     @Operation(summary = "Get OPDS shelves navigation", description = "Retrieve the OPDS shelves navigation feed.")
     @ApiResponse(responseCode = "200", description = "Shelves navigation feed returned successfully")
     @GetMapping(value = "/shelves", produces = OPDS_CATALOG_MEDIA_TYPE)
-    public ResponseEntity<String> getShelvesNavigation(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getShelvesNavigation(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateShelvesNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get OPDS magic shelves navigation", description = "Retrieve the OPDS magic shelves navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Magic shelves navigation feed returned successfully")
+    @GetMapping(value = "/magic-shelves", produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getMagicShelvesNavigation(@Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateMagicShelvesNavigation(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
                 .body(feed);
@@ -95,8 +100,7 @@ public class OpdsController {
     @Operation(summary = "Get OPDS catalog feed", description = "Retrieve the OPDS acquisition catalog feed.")
     @ApiResponse(responseCode = "200", description = "Catalog feed returned successfully")
     @GetMapping(value = "/catalog", produces = OPDS_ACQUISITION_MEDIA_TYPE)
-    public ResponseEntity<String> getCatalog(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getCatalog(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateCatalogFeed(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))
@@ -106,8 +110,7 @@ public class OpdsController {
     @Operation(summary = "Get recent books feed", description = "Retrieve the OPDS feed for recently added books.")
     @ApiResponse(responseCode = "200", description = "Recent books feed returned successfully")
     @GetMapping(value = "/recent", produces = OPDS_ACQUISITION_MEDIA_TYPE)
-    public ResponseEntity<String> getRecentBooks(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getRecentBooks(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateRecentFeed(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))
@@ -117,8 +120,7 @@ public class OpdsController {
     @Operation(summary = "Get surprise feed", description = "Retrieve the OPDS feed for surprise/random books.")
     @ApiResponse(responseCode = "200", description = "Surprise feed returned successfully")
     @GetMapping(value = "/surprise", produces = OPDS_ACQUISITION_MEDIA_TYPE)
-    public ResponseEntity<String> getSurpriseFeed(
-            @Parameter(hidden = true) HttpServletRequest request) {
+    public ResponseEntity<String> getSurpriseFeed(@Parameter(hidden = true) HttpServletRequest request) {
         String feed = opdsFeedService.generateSurpriseFeed(request);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(OPDS_ACQUISITION_MEDIA_TYPE))

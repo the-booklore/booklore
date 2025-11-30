@@ -3,7 +3,6 @@ package com.adityachandel.booklore.model.entity;
 import com.adityachandel.booklore.convertor.BookRecommendationIdsListConverter;
 import com.adityachandel.booklore.model.dto.BookRecommendationLite;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.ReadStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -82,6 +81,9 @@ public class BookEntity {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<BookAdditionalFileEntity> additionalFiles;
+
+    @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
+    private List<UserBookProgressEntity> userBookProgress;
 
     public Path getFullFilePath() {
         if (libraryPath == null || libraryPath.getPath() == null || fileSubPath == null || fileName == null) {

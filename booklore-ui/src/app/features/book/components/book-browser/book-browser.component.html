@@ -9,7 +9,7 @@
               @if (currentFilterLabel && rawFilterParamFromUrl) {
                 {{ currentFilterLabel }}
               } @else if (hasSidebarFilters || hasSearchTerm) {
-                All Books (Filtered)
+                {{ computedFilterLabel }}
               } @else {
                 All Books
               }
