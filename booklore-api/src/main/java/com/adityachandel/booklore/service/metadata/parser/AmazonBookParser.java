@@ -76,7 +76,7 @@ public class AmazonBookParser implements BookParser {
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
         LinkedList<String> amazonBookIds = getAmazonBookIds(book, fetchMetadataRequest);
-        if (amazonBookIds == null || amazonBookIds.isEmpty()) {
+        if (amazonBookIds == null || ((amazonBookIds.size() == 1) && (amazonBookIds.get(0) == "null")) || amazonBookIds.isEmpty()) {
             return null;
         }
         return getBookMetadata(amazonBookIds.getFirst());
@@ -94,7 +94,7 @@ public class AmazonBookParser implements BookParser {
         }
         List<BookMetadata> fetchedBookMetadata = new ArrayList<>();
         for (String amazonBookId : amazonBookIds) {
-            if (amazonBookId == null || amazonBookId.isBlank()) {
+            if (amazonBookId == null || amazonBookId.isBlank() || amazonBookId == "null") {
                 log.debug("Skipping null or blank Amazon book ID.");
                 continue;
             }
