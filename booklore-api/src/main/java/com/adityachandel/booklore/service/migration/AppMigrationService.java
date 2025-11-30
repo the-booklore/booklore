@@ -130,9 +130,11 @@ public class AppMigrationService {
                 try (var stream = Files.walk(thumbsDir)) {
                     stream.filter(Files::isRegularFile)
                             .forEach(path -> {
+                                BufferedImage originalImage = null;
+                                BufferedImage resized = null;
                                 try {
                                     // Load original image
-                                    BufferedImage originalImage = ImageIO.read(path.toFile());
+                                    originalImage = ImageIO.read(path.toFile());
                                     if (originalImage == null) {
                                         log.warn("Skipping non-image file: {}", path);
                                         return;
@@ -150,7 +152,7 @@ public class AppMigrationService {
                                     ImageIO.write(originalImage, "jpg", coverFile.toFile());
 
                                     // Resize and save thumbnail.jpg
-                                    BufferedImage resized = FileService.resizeImage(originalImage, 250, 350);
+                                    resized = FileService.resizeImage(originalImage, 250, 350);
                                     Path thumbnailFile = bookDir.resolve("thumbnail.jpg");
                                     ImageIO.write(resized, "jpg", thumbnailFile.toFile());
 
@@ -158,6 +160,13 @@ public class AppMigrationService {
                                 } catch (IOException e) {
                                     log.error("Error processing file {}", path, e);
                                     throw new UncheckedIOException(e);
+                                } finally {
+                                    if (originalImage != null) {
+                                        originalImage.flush();
+                                    }
+                                    if (resized != null) {
+                                        resized.flush();
+                                    }
                                 }
                             });
                 }

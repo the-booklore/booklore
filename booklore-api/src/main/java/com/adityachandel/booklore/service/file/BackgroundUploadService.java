@@ -44,6 +44,7 @@ public class BackgroundUploadService {
 
             deleteExistingBackgroundFiles(userId);
             fileService.saveBackgroundImage(originalImage, filename, userId);
+            originalImage.flush(); // Release resources after saving
 
             String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
@@ -64,6 +65,7 @@ public class BackgroundUploadService {
             deleteExistingBackgroundFiles(userId);
 
             fileService.saveBackgroundImage(originalImage, filename, userId);
+            originalImage.flush(); // Release resources after saving
 
             String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);

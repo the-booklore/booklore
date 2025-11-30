@@ -82,6 +82,15 @@ public class UserBookProgressEntity {
     @Column(name = "koreader_last_sync_time")
     private Instant koreaderLastSyncTime;
 
-    @Column(name = "kobo_last_sync_time")
-    private Instant koboLastSyncTime;
+    @Column(name = "kobo_progress_received_time")
+    private Instant koboProgressReceivedTime;
+
+    @Column(name = "kobo_status_sent_time")
+    private Instant koboStatusSentTime;
+
+    @Column(name = "kobo_progress_sent_time")
+    private Instant koboProgressSentTime;
+
+    @Column(name = "read_status_modified_time")
+    private Instant readStatusModifiedTime;
 }

@@ -38,6 +38,11 @@ import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.c
 import {MetadataFetchOptionsComponent} from '../../metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {
+  fileSizeRanges,
+  matchScoreRanges,
+  pageCountRanges
+} from '../../../../book/components/book-browser/book-filter/book-filter.component';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -599,6 +604,28 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   goToReadStatus(status: ReadStatus): void {
     this.handleMetadataClick('readStatus', status);
+  }
+
+  goToPageCountRange(pageCount: number): void {
+    const range = pageCountRanges.find(r => pageCount >= r.min && pageCount < r.max);
+    if (range) {
+      this.handleMetadataClick('pageCount', range.id);
+    }
+  }
+
+  goToFileSizeRange(fileSizeKb: number): void {
+    const range = fileSizeRanges.find(r => fileSizeKb >= r.min && fileSizeKb < r.max);
+    if (range) {
+      this.handleMetadataClick('fileSize', range.id);
+    }
+  }
+
+  goToMatchScoreRange(score: number): void {
+    const normalizedScore = score > 1 ? score / 100 : score;
+    const range = matchScoreRanges.find(r => normalizedScore >= r.min && normalizedScore < r.max);
+    if (range) {
+      this.handleMetadataClick('matchScore', range.id);
+    }
   }
 
   private extractYear(dateString: string | null | undefined): string | null {

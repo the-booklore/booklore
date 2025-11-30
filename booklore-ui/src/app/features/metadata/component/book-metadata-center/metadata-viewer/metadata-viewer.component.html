@@ -315,9 +315,11 @@
             <div class="metadata-item">
               <span class="metadata-key">Metadata Match:</span>
               @if (book?.metadataMatchScore != null) {
-                <app-tag size="3xs" variant="pill" [color]="getMatchScoreColor(book?.metadataMatchScore!)">
-                  {{ (book?.metadataMatchScore!) | number:'1.0-0' }}%
-                </app-tag>
+                <span (click)="goToMatchScoreRange(book?.metadataMatchScore!)" style="cursor: pointer;">
+                  <app-tag size="3xs" variant="pill" [color]="getMatchScoreColor(book?.metadataMatchScore!)">
+                    {{ (book?.metadataMatchScore!) | number:'1.0-0' }}%
+                  </app-tag>
+                </span>
               } @else {
                 <span class="metadata-value">-</span>
               }
@@ -420,12 +422,24 @@
 
             <div class="metadata-item">
               <span class="metadata-key">Page Count:</span>
-              <span class="metadata-value">{{ book?.metadata!.pageCount || '-' }}</span>
+              @if (book?.metadata!.pageCount) {
+                <span class="metadata-value metadata-link" (click)="goToPageCountRange(book?.metadata!.pageCount!)">
+                  {{ book?.metadata!.pageCount }}
+                </span>
+              } @else {
+                <span class="metadata-value">-</span>
+              }
             </div>
 
             <div class="metadata-item">
               <span class="metadata-key">File Size:</span>
-              <span class="metadata-value">{{ getFileSizeInMB(book) }}</span>
+              @if (book?.fileSizeKb) {
+                <span class="metadata-value metadata-link" (click)="goToFileSizeRange(book?.fileSizeKb!)">
+                  {{ getFileSizeInMB(book) }}
+                </span>
+              } @else {
+                <span class="metadata-value">-</span>
+              }
             </div>
           </div>
 

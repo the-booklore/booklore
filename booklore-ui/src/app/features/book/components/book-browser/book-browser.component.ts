@@ -180,6 +180,35 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     return this.selectedFilter.value !== null;
   }
 
+  get computedFilterLabel(): string {
+    const filters = this.selectedFilter.value;
+
+    if (!filters || Object.keys(filters).length === 0) {
+      return 'All Books';
+    }
+
+    const filterEntries = Object.entries(filters);
+
+    if (filterEntries.length === 1) {
+      const [filterType, values] = filterEntries[0];
+      const filterName = this.capitalize(filterType);
+
+      if (values.length === 1) {
+        return `${filterName}: ${values[0]}`;
+      }
+
+      return `${filterName} (${values.length})`;
+    }
+
+    const filterSummary = filterEntries
+      .map(([type, values]) => `${this.capitalize(type)} (${values.length})`)
+      .join(', ');
+
+    return filterSummary.length > 50
+      ? `${filterEntries.length} Active Filters`
+      : filterSummary;
+  }
+
   ngOnInit(): void {
     this.pageTitle.setPageTitle('')
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
@@ -263,9 +292,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           this.bookFilterComponent.setFilters?.(parsedFilters);
           this.bookFilterComponent.onFiltersChanged?.();
         }
-
+        
         if (Object.keys(parsedFilters).length > 0) {
-          this.currentFilterLabel = 'All Books (Filtered)';
+          this.currentFilterLabel = this.computedFilterLabel;
         }
 
         this.rawFilterParamFromUrl = filterParams;
@@ -357,7 +386,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     });
   }
 
-  ngAfterViewInit(){
+  ngAfterViewInit() {
     if (this.bookFilterComponent) {
       this.bookFilterComponent.setFilters?.(this.parsedFilters);
       this.bookFilterComponent.onFiltersChanged?.();
@@ -371,7 +400,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.rawFilterParamFromUrl = null;
 
     const hasSidebarFilters = !!filters && Object.keys(filters).length > 0;
-    this.currentFilterLabel = hasSidebarFilters ? 'All Books (Filtered)' : 'All Books';
+    this.currentFilterLabel = hasSidebarFilters ? this.computedFilterLabel : 'All Books';
 
     const queryParam = hasSidebarFilters ? Object.entries(filters).map(([k, v]) => `${k}:${v.join('|')}`).join(',') : null;
     if (queryParam !== this.activatedRoute.snapshot.queryParamMap.get(QUERY_PARAMS.FILTER)) {

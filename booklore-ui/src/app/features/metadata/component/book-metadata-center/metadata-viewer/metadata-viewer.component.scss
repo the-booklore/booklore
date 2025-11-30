@@ -126,14 +126,14 @@
 }
 
 .series-link {
-  color: var(--primary-text-color);
+  color: #3e9aee;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 500;
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--primary-hover-color);
+    color: #72b3ee;
     text-decoration: underline;
   }
 }
@@ -197,13 +197,13 @@
 }
 
 .author-link {
-  color: var(--primary-text-color);
+  color: #3e9aee;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 
 .author-link:hover {
-  color: var(--primary-hover-color);
+  color: #72b3ee;
   text-decoration: underline;
 }
 
@@ -236,7 +236,7 @@
 }
 
 .rating-icon {
-  color: cornflowerblue;
+  color: orange;
   font-size: 1rem;
 }
 

@@ -81,6 +81,8 @@ booklore:
 server:
   forward-headers-strategy: native
   port: 8080
+  tomcat:
+    relaxed-query-chars: '[,],%,{,},|'
 
 spring:
   servlet:

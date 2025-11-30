@@ -78,7 +78,7 @@ class BookloreSyncTokenGeneratorTest {
     }
 
     @Test
-    void testFromBase64_withDot() throws Exception {
+    void testFromBase64_withDot() {
         String rawToken = "some.raw.token";
 
         BookloreSyncToken result = generator.fromBase64(rawToken);

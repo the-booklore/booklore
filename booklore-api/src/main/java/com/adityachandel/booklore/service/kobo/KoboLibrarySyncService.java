@@ -6,7 +6,9 @@ import com.adityachandel.booklore.model.dto.BookloreSyncToken;
 import com.adityachandel.booklore.model.dto.kobo.*;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.KoboLibrarySnapshotEntity;
+import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.repository.KoboDeletedBookProgressRepository;
+import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.util.RequestUtils;
 import com.adityachandel.booklore.util.kobo.BookloreSyncTokenGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,9 +19,11 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -32,9 +36,11 @@ public class KoboLibrarySyncService {
     private final KoboLibrarySnapshotService koboLibrarySnapshotService;
     private final KoboEntitlementService entitlementService;
     private final KoboDeletedBookProgressRepository koboDeletedBookProgressRepository;
+    private final UserBookProgressRepository userBookProgressRepository;
     private final KoboServerProxy koboServerProxy;
     private final ObjectMapper objectMapper;
 
+    @Transactional
     public ResponseEntity<?> syncLibrary(BookLoreUser user, String token) {
         HttpServletRequest request = RequestUtils.getCurrentRequest();
         BookloreSyncToken syncToken = Optional.ofNullable(tokenGenerator.fromRequestHeaders(request)).orElse(new BookloreSyncToken());
@@ -68,6 +74,10 @@ public class KoboLibrarySyncService {
 
             entitlements.addAll(entitlementService.generateNewEntitlements(addedIds, token, false));
             entitlements.addAll(entitlementService.generateChangedEntitlements(removedIds, token, true));
+            
+            if (!shouldContinueSync) {
+                entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
+            }
         } else {
             int maxRemaining = 5;
             List<KoboSnapshotBookEntity> all = new ArrayList<>();
@@ -80,6 +90,10 @@ public class KoboLibrarySyncService {
             }
             Set<Long> ids = all.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
             entitlements.addAll(entitlementService.generateNewEntitlements(ids, token, false));
+            
+            if (!shouldContinueSync) {
+                entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
+            }
         }
 
         if (!shouldContinueSync) {
@@ -130,5 +144,48 @@ public class KoboLibrarySyncService {
                 .header(KoboHeaders.X_KOBO_SYNC, shouldContinueSync ? "continue" : "")
                 .header(KoboHeaders.X_KOBO_SYNCTOKEN, tokenGenerator.toBase64(syncToken))
                 .body(entitlements);
+    }
+
+    private List<ChangedReadingState> syncReadingStatesToKobo(Long userId, String snapshotId) {
+        List<UserBookProgressEntity> booksNeedingSync = 
+                userBookProgressRepository.findAllBooksNeedingKoboSync(userId, snapshotId);
+
+        if (booksNeedingSync.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<ChangedReadingState> changedStates = entitlementService.generateChangedReadingStates(booksNeedingSync);
+
+        Instant sentTime = Instant.now();
+        for (UserBookProgressEntity progress : booksNeedingSync) {
+            if (needsStatusSync(progress)) {
+                progress.setKoboStatusSentTime(sentTime);
+            }
+            if (needsProgressSync(progress)) {
+                progress.setKoboProgressSentTime(sentTime);
+            }
+        }
+        userBookProgressRepository.saveAll(booksNeedingSync);
+
+        log.info("Synced {} reading states to Kobo", changedStates.size());
+        return changedStates;
+    }
+
+    private boolean needsStatusSync(UserBookProgressEntity progress) {
+        Instant modifiedTime = progress.getReadStatusModifiedTime();
+        if (modifiedTime == null) {
+            return false;
+        }
+        Instant sentTime = progress.getKoboStatusSentTime();
+        return sentTime == null || modifiedTime.isAfter(sentTime);
+    }
+
+    private boolean needsProgressSync(UserBookProgressEntity progress) {
+        Instant receivedTime = progress.getKoboProgressReceivedTime();
+        if (receivedTime == null) {
+            return false;
+        }
+        Instant sentTime = progress.getKoboProgressSentTime();
+        return sentTime == null || receivedTime.isAfter(sentTime);
     }
 }
