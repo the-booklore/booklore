@@ -53,10 +53,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-  jackson:
-    deserialization:
-      fail-on-null-for-primitives: false
-      fail-on-unknown-properties: false
 
 springdoc:
   swagger-ui:
