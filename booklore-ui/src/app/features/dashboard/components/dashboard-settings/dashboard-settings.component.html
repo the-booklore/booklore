@@ -29,7 +29,7 @@
         </div>
 
         <div class="scroller-fields">
-          <div class="scroller-field">
+          <div class="scroller-field" [class.expanded]="scroller.type !== 'magicShelf'">
             <label>Type</label>
             <p-select
               fluid
@@ -41,49 +41,51 @@
             </p-select>
           </div>
 
-          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
-            <label>Magic Shelf</label>
-            <p-select
-              fluid
-              [options]="(magicShelves$ | async)!"
-              [(ngModel)]="scroller.magicShelfId"
-              placeholder="Select magic shelf"
-              appendTo="body">
-            </p-select>
-          </div>
+          @if (scroller.type === 'magicShelf') {
+            <div class="scroller-field">
+              <label>Magic Shelf</label>
+              <p-select
+                fluid
+                [options]="(magicShelves$ | async)!"
+                [(ngModel)]="scroller.magicShelfId"
+                placeholder="Select magic shelf"
+                appendTo="body">
+              </p-select>
+            </div>
 
-          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
-            <label>Sort Field</label>
-            <p-select
-              fluid
-              [options]="sortFieldOptions"
-              [(ngModel)]="scroller.sortField"
-              placeholder="Select field"
-              appendTo="body">
-            </p-select>
-          </div>
+            <div class="scroller-field">
+              <label>Sort Field</label>
+              <p-select
+                fluid
+                [options]="sortFieldOptions"
+                [(ngModel)]="scroller.sortField"
+                placeholder="Select field"
+                appendTo="body">
+              </p-select>
+            </div>
 
-          <div class="scroller-field" [style.visibility]="scroller.type === 'magicShelf' ? 'visible' : 'hidden'">
-            <label>Direction</label>
-            <p-select
-              fluid
-              [options]="sortDirectionOptions"
-              [(ngModel)]="scroller.sortDirection"
-              placeholder="Select direction"
-              appendTo="body">
-            </p-select>
-          </div>
+            <div class="scroller-field">
+              <label>Direction</label>
+              <p-select
+                fluid
+                [options]="sortDirectionOptions"
+                [(ngModel)]="scroller.sortDirection"
+                placeholder="Select direction"
+                appendTo="body">
+              </p-select>
+            </div>
+          }
+        </div>
 
-          <div class="scroller-field">
-            <label>Max Items</label>
-            <p-inputNumber
-              fluid
-              [(ngModel)]="scroller.maxItems"
-              [min]="MIN_ITEMS"
-              [max]="MAX_ITEMS"
-              [showButtons]="true">
-            </p-inputNumber>
-          </div>
+        <div class="scroller-field max-items-field">
+          <label>Max Items</label>
+          <p-inputNumber
+            fluid
+            [(ngModel)]="scroller.maxItems"
+            [min]="MIN_ITEMS"
+            [max]="MAX_ITEMS"
+            [showButtons]="true">
+          </p-inputNumber>
         </div>
 
         <div class="scroller-controls-right">
