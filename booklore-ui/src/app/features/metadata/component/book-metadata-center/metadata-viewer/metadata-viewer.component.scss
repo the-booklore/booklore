@@ -126,14 +126,15 @@
 }
 
 .series-link {
-  color: #3e9aee;
+  color: var(--primary-color);
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 500;
+  font-style: italic;
   transition: color 0.2s ease;
 
   &:hover {
-    color: #72b3ee;
+    color: var(--primary-hover-color);
     text-decoration: underline;
   }
 }
@@ -197,13 +198,14 @@
 }
 
 .author-link {
-  color: #3e9aee;
+  color: cornflowerblue;
   cursor: pointer;
   transition: color 0.2s ease;
+  font-weight: 400;
 }
 
 .author-link:hover {
-  color: #72b3ee;
+  color: dodgerblue;
   text-decoration: underline;
 }
 
@@ -216,7 +218,6 @@
   flex-direction: column;
   gap: 0.75rem;
   align-items: center;
-  padding: 0.5rem 0;
 
   @media (min-width: 640px) {
     flex-direction: row;
@@ -302,7 +303,7 @@
 .tags-section {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .tag-row {
@@ -367,7 +368,7 @@
 @media (min-width: 768px) {
   .metadata-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 0.625rem;
+    gap: 0.5rem;
   }
 }
 
@@ -403,11 +404,12 @@
   color: var(--primary-text-color);
   cursor: pointer;
   transition: color 0.2s ease;
-}
+  font-weight: 500;
 
-.metadata-link:hover {
-  color: var(--primary-hover-color);
-  text-decoration: underline;
+  &:hover {
+    color: var(--primary-hover-color);
+    text-decoration: underline;
+  }
 }
 
 .edit-icon {

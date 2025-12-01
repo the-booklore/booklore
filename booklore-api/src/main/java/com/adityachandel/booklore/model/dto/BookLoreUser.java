@@ -25,9 +25,6 @@ public class BookLoreUser {
     private UserSettings userSettings;
 
     @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class UserPermissions {
         private boolean isAdmin;
         private boolean canUpload;
@@ -42,9 +39,6 @@ public class BookLoreUser {
     }
 
     @Data
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class UserSettings {
         public PerBookSetting perBookSetting;
         public PdfReaderSetting pdfReaderSetting;

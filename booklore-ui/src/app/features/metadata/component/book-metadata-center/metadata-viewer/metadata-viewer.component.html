@@ -78,9 +78,7 @@
 
               <p class="authors">
                 @for (author of book?.metadata!.authors; track $index; let isLast = $last) {
-                  <a class="author-link" (click)="goToAuthorBooks(author)">
-                    {{ author }}
-                  </a>
+                  <a class="author-link" (click)="goToAuthorBooks(author)">{{ author }}</a>
                   @if (!isLast) {
                     <span class="author-separator">, </span>
                   }
@@ -192,7 +190,7 @@
                   <div class="tag-container">
                     @for (category of book.metadata!.categories; track category) {
                       <a (click)="goToCategory(category)" class="tag-clickable">
-                        <app-tag color="rose" size="xs">{{ category }}</app-tag>
+                        <app-tag color="red" size="xs">{{ category }}</app-tag>
                       </a>
                     }
                   </div>
@@ -222,7 +220,7 @@
                   <div class="tag-container">
                     @for (tag of book.metadata!.tags; track tag) {
                       <a (click)="goToTag(tag)" class="tag-clickable">
-                        <app-tag color="cyan" size="xs">{{ tag }}</app-tag>
+                        <app-tag color="green" size="xs">{{ tag }}</app-tag>
                       </a>
                     }
                   </div>

@@ -1,13 +1,9 @@
 package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.entity.BookdropFileEntity.Status;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class BookdropFile {
     private Long id;
     private String fileName;
