@@ -35,6 +35,7 @@ FROM eclipse-temurin:21.0.9_10-jre-alpine
 
 ARG APP_VERSION
 ARG APP_REVISION
+ARG BOOKLORE_PORT=8080
 
 # Set OCI labels
 LABEL org.opencontainers.image.title="BookLore" \
@@ -47,12 +48,19 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
-RUN apk update && apk add su-exec
+ENV BOOKLORE_PORT=${BOOKLORE_PORT}
+
+# Install su-exec (a lightweight alternative to sudo/gosu)
+RUN apk add --no-cache su-exec
+
+RUN mkdir -p /app
 
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
 
-EXPOSE 8080
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-CMD ["/start.sh"]
+EXPOSE ${BOOKLORE_PORT}
+
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["java", "-jar", "/app/app.jar"]
