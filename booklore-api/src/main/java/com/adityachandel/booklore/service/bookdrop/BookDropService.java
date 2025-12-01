@@ -507,7 +507,7 @@ public class BookDropService {
     private void cleanupTempFile(Path tempPath) {
         if (tempPath != null) {
             try {
-                Files.delete(tempPath);
+                Files.deleteIfExists(tempPath);
             } catch (Exception e) {
                 log.warn("Failed to cleanup temp file: {}", tempPath, e);
             }
