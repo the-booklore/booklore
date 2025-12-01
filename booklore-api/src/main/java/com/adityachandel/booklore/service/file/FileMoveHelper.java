@@ -106,7 +106,7 @@ public class FileMoveHelper {
         return Paths.get(path, newRelativePathStr);
     }
 
-    public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) throws IOException {
+    public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) {
         Path dir = currentDir;
         Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
         dir = dir.toAbsolutePath().normalize();

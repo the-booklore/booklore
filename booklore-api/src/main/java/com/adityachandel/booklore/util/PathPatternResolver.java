@@ -5,20 +5,35 @@ import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @UtilityClass
+@Slf4j
 public class PathPatternResolver {
+
+    private final int MAX_COMPONENT_BYTES = 200;
+    private final int MAX_FILESYSTEM_COMPONENT_BYTES = 245; // Left 10 bytes buffer
+    private final int MAX_AUTHOR_BYTES = 180;
+
+    private final String TRUNCATION_SUFFIX = " et al.";
+    private final int SUFFIX_BYTES = TRUNCATION_SUFFIX.getBytes(StandardCharsets.UTF_8).length;
 
     private final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final Pattern FILE_EXTENSION_PATTERN = Pattern.compile(".*\\.[a-zA-Z0-9]+$");
-    private final Pattern CONTROL_CHARACTER_PATTERN = Pattern.compile("[\\p{Cntrl}]");
+    private final Pattern CONTROL_CHARACTER_PATTERN = Pattern.compile("\\p{Cntrl}");
     private final Pattern INVALID_CHARS_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]");
     private final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(.*?)}");
+    private final Pattern COMMA_SPACE_PATTERN = Pattern.compile(", ");
+    private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
         String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
@@ -48,7 +63,7 @@ public class PathPatternResolver {
 
         String authors = sanitize(
                 metadata != null
-                        ? String.join(", ", metadata.getAuthors())
+                        ? truncateAuthorsForFilesystem(String.join(", ", metadata.getAuthors()))
                         : ""
         );
         String year = sanitize(
@@ -79,13 +94,13 @@ public class PathPatternResolver {
 
         Map<String, String> values = new LinkedHashMap<>();
         values.put("authors", authors);
-        values.put("title", title);
-        values.put("subtitle", subtitle);
+        values.put("title", truncatePathComponent(title, MAX_COMPONENT_BYTES));
+        values.put("subtitle", truncatePathComponent(subtitle, MAX_COMPONENT_BYTES));
         values.put("year", year);
-        values.put("series", series);
+        values.put("series", truncatePathComponent(series, MAX_COMPONENT_BYTES));
         values.put("seriesIndex", seriesIndex);
         values.put("language", language);
-        values.put("publisher", publisher);
+        values.put("publisher", truncatePathComponent(publisher, MAX_COMPONENT_BYTES));
         values.put("isbn", isbn);
         values.put("currentFilename", filename);
 
@@ -164,13 +179,132 @@ public class PathPatternResolver {
             result += "." + extension;
         }
 
-        return result;
+        return validateFinalPath(result);
     }
 
     private String sanitize(String input) {
         if (input == null) return "";
         return WHITESPACE_PATTERN.matcher(CONTROL_CHARACTER_PATTERN.matcher(INVALID_CHARS_PATTERN.matcher(input).replaceAll("")).replaceAll("")).replaceAll(" ")
                 .trim();
+    }
+
+    private String truncateAuthorsForFilesystem(String authors) {
+        if (authors == null || authors.isEmpty()) {
+            return authors;
+        }
+
+        byte[] originalBytes = authors.getBytes(StandardCharsets.UTF_8);
+        if (originalBytes.length <= MAX_AUTHOR_BYTES) {
+            return authors;
+        }
+
+        String[] authorArray = COMMA_SPACE_PATTERN.split(authors);
+        StringBuilder result = new StringBuilder();
+        int currentBytes = 0;
+        int truncationLimit = MAX_AUTHOR_BYTES - SUFFIX_BYTES;
+
+        for (int i = 0; i < authorArray.length; i++) {
+            String author = authorArray[i];
+
+            int separatorBytes = (i > 0) ? 2 : 0;
+            int authorBytes = author.getBytes(StandardCharsets.UTF_8).length;
+
+            if (currentBytes + separatorBytes + authorBytes > MAX_AUTHOR_BYTES) {
+                if (result.isEmpty()) {
+                     return truncatePathComponent(author, truncationLimit) + TRUNCATION_SUFFIX;
+                }
+                return result + TRUNCATION_SUFFIX;
+            }
+
+            if (i > 0) {
+                result.append(", ");
+                currentBytes += 2;
+            }
+            result.append(author);
+            currentBytes += authorBytes;
+        }
+
+        return result.toString();
+    }
+
+    private String truncatePathComponent(String component, int maxBytes) {
+        if (component == null || component.isEmpty()) {
+            return component;
+        }
+
+        byte[] bytes = component.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length <= maxBytes) {
+            return component;
+        }
+
+        CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
+        ByteBuffer buffer = ByteBuffer.allocate(maxBytes);
+        CharBuffer charBuffer = CharBuffer.wrap(component);
+
+        encoder.encode(charBuffer, buffer, true);
+
+        String truncated = component.substring(0, charBuffer.position());
+        if (!truncated.equals(component)) {
+            log.debug("Truncated path component from {} to {} bytes for filesystem safety",
+                bytes.length, truncated.getBytes(StandardCharsets.UTF_8).length);
+        }
+        return truncated;
+    }
+
+
+    private String validateFinalPath(String path) {
+        String[] components = SLASH_PATTERN.split(path);
+        StringBuilder result = new StringBuilder();
+
+        for (int i = 0; i < components.length; i++) {
+            String component = components[i];
+            boolean isLastComponent = (i == components.length - 1);
+
+            if (isLastComponent && component.contains(".")) {
+                component = truncateFilenameWithExtension(component);
+            } else {
+                if (component.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
+                    component = truncatePathComponent(component, MAX_FILESYSTEM_COMPONENT_BYTES);
+                }
+            }
+
+            if (i > 0) result.append("/");
+            result.append(component);
+        }
+        return result.toString();
+    }
+
+    private String truncateFilenameWithExtension(String filename) {
+        int lastDotIndex = filename.lastIndexOf('.');
+        if (lastDotIndex == -1 || lastDotIndex == 0) {
+            // No extension or dot is at start (hidden file), treat as normal component
+            if (filename.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
+                return truncatePathComponent(filename, MAX_FILESYSTEM_COMPONENT_BYTES);
+            }
+            return filename;
+        }
+
+        String extension = filename.substring(lastDotIndex); // includes dot
+        String name = filename.substring(0, lastDotIndex);
+
+        int extBytes = extension.getBytes(StandardCharsets.UTF_8).length;
+
+        if (extBytes > 50) {
+            log.warn("Unusually long extension detected: {}", extension);
+            if (filename.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
+                 return truncatePathComponent(filename, MAX_FILESYSTEM_COMPONENT_BYTES);
+            }
+            return filename;
+        }
+
+        int maxNameBytes = MAX_FILESYSTEM_COMPONENT_BYTES - extBytes;
+
+        if (name.getBytes(StandardCharsets.UTF_8).length > maxNameBytes) {
+            String truncatedName = truncatePathComponent(name, maxNameBytes);
+            return truncatedName + extension;
+        }
+
+        return filename;
     }
 
     private interface MetadataProvider {

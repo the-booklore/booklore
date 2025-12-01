@@ -151,6 +151,12 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
 
     private boolean saveCoverImage(Resource coverImage, long bookId) throws IOException {
         BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(coverImage.getData()));
-        return fileService.saveCoverImages(originalImage, bookId);
+        try {
+            return fileService.saveCoverImages(originalImage, bookId);
+        } finally {
+            if (originalImage != null) {
+                originalImage.flush(); // Release resources after processing
+            }
+        }
     }
 }

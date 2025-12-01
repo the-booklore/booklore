@@ -1,31 +1,43 @@
 package com.adityachandel.booklore.convertor;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Map;
 
 @Converter(autoApply = true)
-public class MapToStringConverter implements AttributeConverter<Map, String> {
+@Slf4j
+public class MapToStringConverter implements AttributeConverter<Map<String, Object>, String> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {};
 
     @Override
-    public String convertToDatabaseColumn(Map attribute) {
+    public String convertToDatabaseColumn(Map<String, Object> attribute) {
+        if (attribute == null) {
+            return null;
+        }
         try {
             return objectMapper.writeValueAsString(attribute);
         } catch (IOException e) {
+            log.error("Failed to convert map to JSON string: {}", attribute, e);
             throw new IllegalArgumentException("Error converting Map to String", e);
         }
     }
 
     @Override
-    public Map convertToEntityAttribute(String dbData) {
+    public Map<String, Object> convertToEntityAttribute(String dbData) {
+        if (dbData == null || dbData.trim().isEmpty()) {
+            return null;
+        }
         try {
-            return objectMapper.readValue(dbData, Map.class);
+            return objectMapper.readValue(dbData, MAP_TYPE_REF);
         } catch (IOException e) {
+            log.error("Failed to convert JSON string to map: {}", dbData, e);
             throw new IllegalArgumentException("Error converting String to Map", e);
         }
     }

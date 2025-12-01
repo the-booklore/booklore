@@ -225,6 +225,46 @@
               </div>
             </div>
 
+            <p-divider></p-divider>
+            
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">Convert CBX to EPUB</label>
+                  <p-toggle-switch
+                    id="convertCbxToEpub"
+                    [(ngModel)]="koboSettings.convertCbxToEpub"
+                    (ngModelChange)="onToggleChange()">
+                  </p-toggle-switch>
+                </div>
+                <p class="setting-description">
+                  Converts CBX files to EPUB during Kobo sync, allowing CBX files to be downloaded and read on Kobo devices.
+                </p>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">CBX Conversion Size Limit: {{ koboSettings.conversionLimitInMbForCbx }} MB</label>
+                  <div class="slider-container">
+                    <p-slider
+                      id="conversionLimitForCbx"
+                      [(ngModel)]="koboSettings.conversionLimitInMbForCbx"
+                      [min]="1"
+                      [max]="500"
+                      [step]="1"
+                      (ngModelChange)="onSliderChange()">
+                    </p-slider>
+                  </div>
+                </div>
+                <p class="setting-description">
+                  Comic book archives can be very large due to high-resolution images. Set a reasonable limit to prevent server overload during conversion.
+                  <br>
+                  <strong>Recommended:</strong> 100-200MB for most comic libraries. CBX files over this limit will not be converted or synced to the device.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       }

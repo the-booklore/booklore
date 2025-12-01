@@ -1,4 +1,4 @@
-import {Component, inject, OnInit, ViewChild} from '@angular/core';
+import {Component, inject, OnInit, ViewChild, AfterViewInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
@@ -48,6 +48,7 @@ import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pr
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
+import {FilterLabelHelper} from './filter-label.helper';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -96,7 +97,7 @@ const SORT_DIRECTION = {
     ])
   ]
 })
-export class BookBrowserComponent implements OnInit {
+export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
   protected columnPreferenceService = inject(TableColumnPreferenceService);
@@ -123,8 +124,9 @@ export class BookBrowserComponent implements OnInit {
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
   entityType$: Observable<EntityType> | undefined;
   searchTerm$ = new BehaviorSubject<string>('');
+  parsedFilters: Record<string, string[]> = {};
   selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
-  selectedFilterMode = new BehaviorSubject<'and' | 'or'>('and');
+  selectedFilterMode = new BehaviorSubject<'and' | 'or' | 'single'>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
   entityType: EntityType | undefined;
@@ -178,6 +180,37 @@ export class BookBrowserComponent implements OnInit {
   get isFilterActive(): boolean {
     return this.selectedFilter.value !== null;
   }
+
+  get computedFilterLabel(): string {
+    const filters = this.selectedFilter.value;
+
+    if (!filters || Object.keys(filters).length === 0) {
+      return 'All Books';
+    }
+
+    const filterEntries = Object.entries(filters);
+
+    if (filterEntries.length === 1) {
+      const [filterType, values] = filterEntries[0];
+      const filterName = FilterLabelHelper.getFilterTypeName(filterType);
+
+      if (values.length === 1) {
+        const displayValue = FilterLabelHelper.getFilterDisplayValue(filterType, values[0]);
+        return `${filterName}: ${displayValue}`;
+      }
+
+      return `${filterName} (${values.length})`;
+    }
+
+    const filterSummary = filterEntries
+      .map(([type, values]) => `${FilterLabelHelper.getFilterTypeName(type)} (${values.length})`)
+      .join(', ');
+
+    return filterSummary.length > 50
+      ? `${filterEntries.length} Active Filters`
+      : filterSummary;
+  }
+
 
   ngOnInit(): void {
     this.pageTitle.setPageTitle('')
@@ -244,6 +277,8 @@ export class BookBrowserComponent implements OnInit {
 
       const parsedFilters: Record<string, string[]> = {};
 
+      this.currentFilterLabel = 'All Books';
+
       if (filterParams) {
         this.settingFiltersFromUrl = true;
 
@@ -261,21 +296,18 @@ export class BookBrowserComponent implements OnInit {
           this.bookFilterComponent.onFiltersChanged?.();
         }
 
-        const firstFilter = filterParams.split(',')[0];
-        const [key, ...values] = firstFilter.split(':');
-        const firstValue = values.join(':').split('|')[0];
-        if (key && firstValue) {
-          this.currentFilterLabel = this.capitalize(key) + ': ' + firstValue;
-        } else {
-          this.currentFilterLabel = 'All Books';
+        if (Object.keys(parsedFilters).length > 0) {
+          this.currentFilterLabel = this.computedFilterLabel;
         }
 
         this.rawFilterParamFromUrl = filterParams;
         this.settingFiltersFromUrl = false;
       } else {
+        this.clearFilter();
         this.rawFilterParamFromUrl = null;
-        this.currentFilterLabel = 'All Books';
       }
+
+      this.parsedFilters = parsedFilters;
 
       this.entityViewPreferences = user.user?.userSettings?.entityViewPreferences;
       const globalPrefs = this.entityViewPreferences?.global;
@@ -357,6 +389,13 @@ export class BookBrowserComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit() {
+    if (this.bookFilterComponent) {
+      this.bookFilterComponent.setFilters?.(this.parsedFilters);
+      this.bookFilterComponent.onFiltersChanged?.();
+    }
+  }
+
   onFilterSelected(filters: Record<string, any> | null): void {
     if (this.settingFiltersFromUrl) return;
 
@@ -364,10 +403,20 @@ export class BookBrowserComponent implements OnInit {
     this.rawFilterParamFromUrl = null;
 
     const hasSidebarFilters = !!filters && Object.keys(filters).length > 0;
-    this.currentFilterLabel = hasSidebarFilters ? 'All Books (Filtered)' : 'All Books';
+    this.currentFilterLabel = hasSidebarFilters ? this.computedFilterLabel : 'All Books';
+
+    const queryParam = hasSidebarFilters ? Object.entries(filters).map(([k, v]) => `${k}:${v.join('|')}`).join(',') : null;
+    if (queryParam !== this.activatedRoute.snapshot.queryParamMap.get(QUERY_PARAMS.FILTER)) {
+      this.router.navigate([], {
+        relativeTo: this.activatedRoute,
+        queryParams: {[QUERY_PARAMS.FILTER]: queryParam},
+        queryParamsHandling: 'merge',
+        replaceUrl: false
+      });
+    }
   }
 
-  onFilterModeChanged(mode: 'and' | 'or'): void {
+  onFilterModeChanged(mode: 'and' | 'or' | 'single'): void {
     this.selectedFilterMode.next(mode);
   }
 
@@ -766,9 +815,5 @@ export class BookBrowserComponent implements OnInit {
         );
       })
     );
-  }
-
-  private capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

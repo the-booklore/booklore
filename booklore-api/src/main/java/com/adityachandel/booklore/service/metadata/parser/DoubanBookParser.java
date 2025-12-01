@@ -236,7 +236,6 @@ public class DoubanBookParser implements BookParser {
                     }
                 } catch (Exception e) {
                     log.warn("Error parsing search result item: {}", e.getMessage());
-                    continue;
                 }
             }
 

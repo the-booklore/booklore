@@ -137,14 +137,14 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if ("calibre:pages".equals(name) || "pagecount".equals(name) || "schema:pagecount".equals(prop) || "media:pagecount".equals(prop) || "booklore:page_count".equals(prop)) {
                                     safeParseInt(content, builderMeta::pageCount);
-                                } else if (name.equals("calibre:user_metadata:#pagecount")) {
+                                } else if ("calibre:user_metadata:#pagecount".equals(name)) {
                                     try {
                                         JSONObject jsonroot = new JSONObject(content);
                                         Object value = jsonroot.opt("#value#");
                                         safeParseInt(String.valueOf(value), builderMeta::pageCount);
                                     } catch (JSONException ignored) {
                                     }
-                                } else if (prop.equals("calibre:user_metadata")) {
+                                } else if ("calibre:user_metadata".equals(prop)) {
                                     try {
                                         JSONObject jsonroot = new JSONObject(content);
                                         JSONObject pages = jsonroot.getJSONObject("#pagecount");

@@ -337,7 +337,7 @@ class BookDropServiceTest {
     }
 
     @Test
-    void discardSelectedFiles_WhenSelectAllFalse_ShouldDeleteOnlySelected() throws IOException {
+    void discardSelectedFiles_WhenSelectAllFalse_ShouldDeleteOnlySelected() {
         List<Long> selectedIds = List.of(1L);
         when(bookdropFileRepository.findAllById(selectedIds)).thenReturn(List.of(bookdropFileEntity));
         when(appProperties.getBookdropFolder()).thenReturn(tempDir.toString());

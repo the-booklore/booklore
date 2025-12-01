@@ -57,10 +57,8 @@ class OpdsBookServiceTest {
     }
 
     private OpdsUserDetails legacyUserDetails() {
-        OpdsUser opdsUser = new OpdsUser();
-        opdsUser.setUsername("legacy");
-        opdsUser.setPassword(null);
-        return new OpdsUserDetails(null, opdsUser);
+        OpdsUserV2 v2 = OpdsUserV2.builder().userId(999L).username("legacy").build();
+        return new OpdsUserDetails(v2);
     }
 
     private OpdsUserDetails v2UserDetails(Long userId, boolean isAdmin, Set<Long> libraryIds) {
@@ -81,17 +79,14 @@ class OpdsBookServiceTest {
         }
         when(user.getAssignedLibraries()).thenReturn(libraries);
 
-        return new OpdsUserDetails(v2, null);
+        return new OpdsUserDetails(v2);
     }
 
     @Test
-    void getAccessibleLibraries_returnsAllLibraries_whenNoUserDetails() {
-        List<Library> libraries = List.of(Library.builder().id(1L).name("Lib1").watch(false).build());
-        when(libraryService.getAllLibraries()).thenReturn(libraries);
-
+    void getAccessibleLibraries_returnsEmptyList_whenUserIdIsNull() {
         List<Library> result = opdsBookService.getAccessibleLibraries(null);
 
-        assertThat(result).isEqualTo(libraries);
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -107,7 +102,7 @@ class OpdsBookServiceTest {
         List<Library> assigned = List.of(Library.builder().id(2L).watch(false).build());
         when(user.getAssignedLibraries()).thenReturn(assigned);
 
-        List<Library> result = opdsBookService.getAccessibleLibraries(details);
+        List<Library> result = opdsBookService.getAccessibleLibraries(details.getOpdsUserV2().getUserId());
 
         assertThat(result).isEqualTo(assigned);
     }
@@ -118,7 +113,7 @@ class OpdsBookServiceTest {
         List<Library> allLibs = List.of(Library.builder().id(1L).watch(false).build());
         when(libraryService.getAllLibraries()).thenReturn(allLibs);
 
-        List<Library> result = opdsBookService.getAccessibleLibraries(details);
+        List<Library> result = opdsBookService.getAccessibleLibraries(details.getOpdsUserV2().getUserId());
 
         assertThat(result).isEqualTo(allLibs);
     }
@@ -126,18 +121,41 @@ class OpdsBookServiceTest {
     @Test
     void getBooksPage_legacyUser_delegatesToLegacyMethod() {
         OpdsUserDetails details = legacyUserDetails();
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(999L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+        when(user.getId()).thenReturn(999L);
+
+        // Mock shelf access
+        ShelfEntity shelf = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(999L);
+        when(shelf.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(2L)).thenReturn(Optional.of(shelf));
+
         when(bookOpdsRepository.findBookIds(any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findRecentBookIds(any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByLibraryIds(anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByShelfId(anyLong(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByMetadataSearch(anyString(), any())).thenReturn(Page.empty());
+        when(bookOpdsRepository.findBookIdsByMetadataSearchAndLibraryIds(anyString(), anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findAllWithMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfId(anyList(), anyLong())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
 
-        opdsBookService.getBooksPage(details, "q", 1L, 2L, 0, 10);
+        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, 2L, 0, 10);
     }
 
     @Test
@@ -165,6 +183,7 @@ class OpdsBookServiceTest {
         when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
         when(user.getPermissions()).thenReturn(perms);
         when(perms.isAdmin()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
 
         ShelfEntity shelf = mock(ShelfEntity.class);
         BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
@@ -172,16 +191,24 @@ class OpdsBookServiceTest {
         when(shelf.getUser()).thenReturn(shelfUser);
         when(shelfRepository.findById(anyLong())).thenReturn(Optional.of(shelf));
 
-        opdsBookService.getBooksPage(details, "q", 1L, 2L, 0, 10);
+        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, 2L, 0, 10);
     }
 
     @Test
     void getRecentBooksPage_returnsRecentBooks_forLegacyUser() {
         OpdsUserDetails details = legacyUserDetails();
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        when(userRepository.findById(999L)).thenReturn(Optional.of(entity));
+        BookLoreUser user = mock(BookLoreUser.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(true);
+
         when(bookOpdsRepository.findRecentBookIds(any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findAllWithMetadataByIds(anyList())).thenReturn(List.of());
 
-        opdsBookService.getRecentBooksPage(details, 0, 10);
+        opdsBookService.getRecentBooksPage(details.getOpdsUserV2().getUserId(), 0, 10);
     }
 
     @Test
@@ -205,7 +232,7 @@ class OpdsBookServiceTest {
         when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of(bookEntity));
         when(bookMapper.toBook(bookEntity)).thenReturn(book);
 
-        Page<Book> result = opdsBookService.getRecentBooksPage(details, 0, 10);
+        Page<Book> result = opdsBookService.getRecentBooksPage(details.getOpdsUserV2().getUserId(), 0, 10);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().getFirst().getShelves()).allMatch(shelf -> shelf.getUserId().equals(2L));
@@ -265,7 +292,7 @@ class OpdsBookServiceTest {
         OpdsUserDetails details = v2UserDetails(1L, true, Set.of(1L));
         OpdsBookService spy = Mockito.spy(opdsBookService);
         List<Library> libs = List.of(Library.builder().id(1L).watch(false).build());
-        doReturn(libs).when(spy).getAccessibleLibraries(details);
+        doReturn(libs).when(spy).getAccessibleLibraries(details.getOpdsUserV2().getUserId());
 
         when(bookOpdsRepository.findRandomBookIdsByLibraryIds(anyList())).thenReturn(List.of(1L, 2L));
         BookEntity entity = mock(BookEntity.class);
@@ -273,7 +300,7 @@ class OpdsBookServiceTest {
         Book book = Book.builder().id(1L).build();
         when(bookMapper.toBook(entity)).thenReturn(book);
 
-        List<Book> result = spy.getRandomBooks(details, 1);
+        List<Book> result = spy.getRandomBooks(details.getOpdsUserV2().getUserId(), 1);
 
         assertThat(result).hasSize(1);
     }
@@ -282,9 +309,9 @@ class OpdsBookServiceTest {
     void getRandomBooks_returnsEmpty_whenNoLibraries() {
         OpdsUserDetails details = v2UserDetails(1L, false, Set.of());
         OpdsBookService spy = Mockito.spy(opdsBookService);
-        doReturn(List.of()).when(spy).getAccessibleLibraries(details);
+        doReturn(List.of()).when(spy).getAccessibleLibraries(details.getOpdsUserV2().getUserId());
 
-        List<Book> result = spy.getRandomBooks(details, 1);
+        List<Book> result = spy.getRandomBooks(details.getOpdsUserV2().getUserId(), 1);
 
         assertThat(result).isEmpty();
     }
@@ -300,7 +327,7 @@ class OpdsBookServiceTest {
         when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
 
         assertThatThrownBy(() ->
-                opdsBookService.getBooksPage(v2UserDetails(1L, false, Set.of()), null, null, null, 0, 10)
+                opdsBookService.getBooksPage(1L, null, null, null, 0, 10)
         ).hasMessageContaining("You are not allowed to access this resource");
     }
 

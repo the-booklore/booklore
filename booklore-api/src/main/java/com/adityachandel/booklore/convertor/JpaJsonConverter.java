@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.convertor;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
@@ -10,12 +11,13 @@ import java.util.Map;
 
 @Converter
 @Slf4j
-public class JpaJsonConverter implements AttributeConverter<Map, String> {
+public class JpaJsonConverter implements AttributeConverter<Map<String, Object>, String> {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {};
 
     @Override
-    public String convertToDatabaseColumn(Map attribute) {
+    public String convertToDatabaseColumn(Map<String, Object> attribute) {
         if (attribute == null) {
             return null;
         }
@@ -28,12 +30,12 @@ public class JpaJsonConverter implements AttributeConverter<Map, String> {
     }
 
     @Override
-    public Map convertToEntityAttribute(String dbData) {
+    public Map<String, Object> convertToEntityAttribute(String dbData) {
         if (dbData == null || dbData.isEmpty()) {
             return null;
         }
         try {
-            return objectMapper.readValue(dbData, Map.class);
+            return objectMapper.readValue(dbData, MAP_TYPE_REF);
         } catch (JsonProcessingException e) {
             log.error("Error converting JSON to map", e);
             return null;

@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -59,7 +60,8 @@ public class HardcoverParser implements BookParser {
                     if (doc.getAuthorNames() == null || doc.getAuthorNames().isEmpty()) return false;
 
                     List<String> actualAuthorTokens = doc.getAuthorNames().stream()
-                            .flatMap(name -> List.of(WHITESPACE_PATTERN.split(name.toLowerCase())).stream())
+                            .map(String::toLowerCase)
+                            .flatMap(WHITESPACE_PATTERN::splitAsStream)
                             .toList();
                     List<String> searchAuthorTokens = List.of(WHITESPACE_PATTERN.split(searchAuthor.toLowerCase()));
 

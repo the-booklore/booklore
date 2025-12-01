@@ -162,7 +162,7 @@ class AdditionalFileServiceTest {
     }
 
     @Test
-    void deleteAdditionalFile_WhenFileExists_ShouldDeleteSuccessfully() throws IOException {
+    void deleteAdditionalFile_WhenFileExists_ShouldDeleteSuccessfully() {
         Long fileId = 1L;
         Path parentPath = fileEntity.getFullFilePath().getParent();
 
@@ -181,7 +181,7 @@ class AdditionalFileServiceTest {
     }
 
     @Test
-    void deleteAdditionalFile_WhenIOExceptionOccurs_ShouldStillDeleteFromRepository() throws IOException {
+    void deleteAdditionalFile_WhenIOExceptionOccurs_ShouldStillDeleteFromRepository() {
         Long fileId = 1L;
         Path parentPath = fileEntity.getFullFilePath().getParent();
 
@@ -255,7 +255,7 @@ class AdditionalFileServiceTest {
     }
 
     @Test
-    void downloadAdditionalFile_WhenFileExists_ShouldReturnFileResource() throws IOException {
+    void downloadAdditionalFile_WhenFileExists_ShouldReturnFileResource() throws Exception {
         Long fileId = 1L;
         when(additionalFileRepository.findById(fileId)).thenReturn(Optional.of(fileEntity));
 
@@ -276,7 +276,7 @@ class AdditionalFileServiceTest {
     }
 
     @Test
-    void downloadAdditionalFile_WhenEntityRelationshipsMissing_ShouldThrowIllegalStateException() throws IOException {
+    void downloadAdditionalFile_WhenEntityRelationshipsMissing_ShouldThrowIllegalStateException() {
         Long fileId = 1L;
         BookAdditionalFileEntity invalidEntity = new BookAdditionalFileEntity();
         invalidEntity.setId(fileId);

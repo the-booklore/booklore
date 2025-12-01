@@ -63,11 +63,13 @@ class MetadataManagementServiceTest {
         String oldName = "Old Author";
 
         AuthorEntity oldAuthor = new AuthorEntity();
+        oldAuthor.setId(1L);
         oldAuthor.setName(oldName);
 
         when(authorRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
         when(authorRepository.save(any(AuthorEntity.class))).thenAnswer(invocation -> {
             AuthorEntity a = invocation.getArgument(0);
+            a.setId(2L);
             a.setName(a.getName());
             return a;
         });
@@ -99,10 +101,15 @@ class MetadataManagementServiceTest {
         String oldName = "Old Category";
 
         CategoryEntity oldCategory = new CategoryEntity();
+        oldCategory.setId(1L);
         oldCategory.setName(oldName);
 
         when(categoryRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
-        when(categoryRepository.save(any(CategoryEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(categoryRepository.save(any(CategoryEntity.class))).thenAnswer(invocation -> {
+            CategoryEntity c = invocation.getArgument(0);
+            c.setId(2L);
+            return c;
+        });
 
         when(categoryRepository.findByNameIgnoreCase(oldName)).thenReturn(Optional.of(oldCategory));
 
@@ -149,10 +156,15 @@ class MetadataManagementServiceTest {
         String oldName = "Old Tag";
 
         TagEntity oldTag = new TagEntity();
+        oldTag.setId(1L);
         oldTag.setName(oldName);
 
         when(tagRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(tagRepository.save(any(TagEntity.class))).thenAnswer(invocation -> {
+            TagEntity t = invocation.getArgument(0);
+            t.setId(2L);
+            return t;
+        });
         when(tagRepository.findByNameIgnoreCase(oldName)).thenReturn(Optional.of(oldTag));
 
         BookMetadataEntity metadata = mock(BookMetadataEntity.class);
@@ -198,10 +210,15 @@ class MetadataManagementServiceTest {
         String oldName = "Old Mood";
 
         MoodEntity oldMood = new MoodEntity();
+        oldMood.setId(1L);
         oldMood.setName(oldName);
 
         when(moodRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
-        when(moodRepository.save(any(MoodEntity.class))).thenAnswer(i -> i.getArgument(0));
+        when(moodRepository.save(any(MoodEntity.class))).thenAnswer(invocation -> {
+            MoodEntity m = invocation.getArgument(0);
+            m.setId(2L);
+            return m;
+        });
         when(moodRepository.findByNameIgnoreCase(oldName)).thenReturn(Optional.of(oldMood));
 
         BookMetadataEntity metadata = mock(BookMetadataEntity.class);
@@ -284,13 +301,16 @@ class MetadataManagementServiceTest {
         String old2 = "OldTag2";
 
         TagEntity oldTag1 = new TagEntity();
+        oldTag1.setId(1L);
         oldTag1.setName(old1);
         TagEntity oldTag2 = new TagEntity();
+        oldTag2.setId(2L);
         oldTag2.setName(old2);
 
         when(tagRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.empty());
-        when(tagRepository.save(any(TagEntity.class))).thenAnswer(i -> {
-            TagEntity t = i.getArgument(0);
+        when(tagRepository.save(any(TagEntity.class))).thenAnswer(invocation -> {
+            TagEntity t = invocation.getArgument(0);
+            t.setId(3L);
             return t;
         });
         when(tagRepository.findByNameIgnoreCase(old1)).thenReturn(Optional.of(oldTag1));
@@ -320,8 +340,10 @@ class MetadataManagementServiceTest {
         String oldName = "OldCat";
 
         CategoryEntity target = new CategoryEntity();
+        target.setId(1L);
         target.setName(targetName);
         CategoryEntity old = new CategoryEntity();
+        old.setId(2L);
         old.setName(oldName);
 
         when(categoryRepository.findByNameIgnoreCase(targetName)).thenReturn(Optional.of(target));

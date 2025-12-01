@@ -165,7 +165,7 @@ public class KoboController {
     @ApiResponse(responseCode = "200", description = "Book downloaded successfully")
     @GetMapping("/v1/books/{bookId}/download")
     public void downloadBook(
-            @Parameter(description = "Book ID") @PathVariable String bookId, HttpServletResponse response) throws IOException {
+            @Parameter(description = "Book ID") @PathVariable String bookId, HttpServletResponse response) {
         if (StringUtils.isNumeric(bookId)) {
             bookDownloadService.downloadKoboBook(Long.parseLong(bookId), response);
         } else {
