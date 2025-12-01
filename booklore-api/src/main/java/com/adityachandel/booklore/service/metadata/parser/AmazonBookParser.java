@@ -38,10 +38,11 @@ public class AmazonBookParser implements BookParser {
     private static final Pattern SERIES_FORMAT_PATTERN = Pattern.compile("Book \\d+ of \\d+");
     private static final Pattern SERIES_FORMAT_WITH_DECIMAL_PATTERN = Pattern.compile("Book \\d+(\\.\\d+)? of \\d+");
     private static final Pattern PARENTHESES_WITH_WHITESPACE_PATTERN = Pattern.compile("\\s*\\(.*?\\)");
-    private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-zA-Z0-9]");
+    private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^\\p{L}\\p{M}0-9]");
     private static final Pattern DP_SEPARATOR_PATTERN = Pattern.compile("/dp/");
-    // Pattern to extract country and date from strings like "Reviewed in ... on ..."
-    private static final Pattern REVIEWED_IN_ON_PATTERN = Pattern.compile("Reviewed in (.+?) on (.+)");
+    // Pattern to extract country and date from strings like "Reviewed in ... on ..." or Japanese format
+    private static final Pattern REVIEWED_IN_ON_PATTERN = Pattern.compile("(?i)(?:Reviewed in|Rezension aus|Beoordeeld in|Recensie uit|Commenté en|Recensito in|Revisado en)\\s+(.+?)\\s+(?:on|vom|op|le|il|el)\\s+(.+)");
+    private static final Pattern JAPANESE_REVIEW_DATE_PATTERN = Pattern.compile("(\\d{4}年\\d{1,2}月\\d{1,2}日).+");
 
     private static final Map<String, LocaleInfo> DOMAIN_LOCALE_MAP = Map.ofEntries(
             Map.entry("com", new LocaleInfo("en-US,en;q=0.9", Locale.US)),
@@ -568,6 +569,13 @@ public class AmazonBookParser implements BookParser {
                                 country = country.substring(4).trim();
                             }
                             datePart = matcher.group(2).trim();
+                        } else {
+                            // Try Japanese format
+                            Matcher japaneseMatcher = JAPANESE_REVIEW_DATE_PATTERN.matcher(fullDateText);
+                            if (japaneseMatcher.find()) {
+                                datePart = japaneseMatcher.group(1);
+                                country = "日本"; 
+                            }
                         }
 
                         LocalDate localDate = parseReviewDate(datePart, localeInfo);
@@ -735,7 +743,11 @@ public class AmazonBookParser implements BookParser {
             "MMM. d, yyyy",
             "d MMM yyyy",
             "d MMM. yyyy",
-            "d. MMM yyyy"
+            "d. MMM yyyy",
+            // Japanese date patterns
+            "yyyy/M/d",
+            "yyyy/MM/dd",
+            "yyyy年M月d日"
         };
 
         for (String pattern : patterns) {
