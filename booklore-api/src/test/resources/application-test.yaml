@@ -1,0 +1,9 @@
+booklore:
+  security:
+    oidc:
+      jwks:
+        connect-timeout: 500ms
+        read-timeout: 500ms
+        cache-ttl: 1s
+      jwt:
+        clock-skew: 60s

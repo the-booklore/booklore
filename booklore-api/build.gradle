@@ -83,6 +83,7 @@ dependencies {
 
     // --- Test Dependencies ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
     testImplementation 'org.springframework.cloud:spring-cloud-contract-wiremock:4.3.0'

@@ -91,17 +91,30 @@ public class DynamicOidcJwtProcessor {
         String clientId = providerDetails.getClientId();
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
+        
+        // Check if update is needed
         if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-            // Acquire write lock for configuration changes
+            
+            log.info("OIDC configuration change detected (Old Issuer: {}, New Issuer: {}). Fetching configuration...", currentIssuerUri, normalizedIssuerUri);
+            
+            // 1. Perform heavy network operation OUTSIDE the lock
+            // This prevents blocking all auth threads if the IdP is slow
+            ConfigurableJWTProcessor<SecurityContext> newProcessor = buildProcessor(providerDetails, normalizedIssuerUri);
+
+            // 2. Acquire write lock only to swap the reference
             writeLock.lock();
             try {
-                localRef = jwtProcessor;
-                if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-                    log.info("OIDC configuration change detected (Old Issuer: {}, New Issuer: {}). Rebuilding JWT Processor.", currentIssuerUri, normalizedIssuerUri);
-                    this.jwtProcessor = buildProcessor(providerDetails, normalizedIssuerUri);
+                // 3. Double-check: Did another thread update it while we were building?
+                if (this.jwtProcessor == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
+                    this.jwtProcessor = newProcessor;
                     this.currentIssuerUri = normalizedIssuerUri;
                     this.currentClientId = clientId;
                     localRef = this.jwtProcessor;
+                    log.info("OIDC Processor updated successfully.");
+                } else {
+                    // Another thread beat us to it. Use the already updated one.
+                    localRef = this.jwtProcessor;
+                    log.debug("OIDC configuration already updated by another thread. Discarding redundant build.");
                 }
             } finally {
                 writeLock.unlock();
