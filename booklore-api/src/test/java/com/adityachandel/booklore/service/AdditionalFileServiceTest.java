@@ -266,7 +266,7 @@ class AdditionalFileServiceTest {
 
             assertEquals(HttpStatus.OK, result.getStatusCode());
             assertNotNull(result.getBody());
-            assertTrue(result.getHeaders().containsHeader(HttpHeaders.CONTENT_DISPOSITION));
+            assertTrue(result.getHeaders().containsKey(HttpHeaders.CONTENT_DISPOSITION));
             assertTrue(result.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).contains("test-file.pdf"));
             assertEquals(MediaType.APPLICATION_OCTET_STREAM, result.getHeaders().getContentType());
 

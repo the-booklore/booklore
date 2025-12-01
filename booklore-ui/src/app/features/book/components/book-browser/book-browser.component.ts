@@ -48,6 +48,7 @@ import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pr
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
+import {FilterLabelHelper} from './filter-label.helper';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -191,23 +192,25 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
     if (filterEntries.length === 1) {
       const [filterType, values] = filterEntries[0];
-      const filterName = this.capitalize(filterType);
+      const filterName = FilterLabelHelper.getFilterTypeName(filterType);
 
       if (values.length === 1) {
-        return `${filterName}: ${values[0]}`;
+        const displayValue = FilterLabelHelper.getFilterDisplayValue(filterType, values[0]);
+        return `${filterName}: ${displayValue}`;
       }
 
       return `${filterName} (${values.length})`;
     }
 
     const filterSummary = filterEntries
-      .map(([type, values]) => `${this.capitalize(type)} (${values.length})`)
+      .map(([type, values]) => `${FilterLabelHelper.getFilterTypeName(type)} (${values.length})`)
       .join(', ');
 
     return filterSummary.length > 50
       ? `${filterEntries.length} Active Filters`
       : filterSummary;
   }
+
 
   ngOnInit(): void {
     this.pageTitle.setPageTitle('')
@@ -292,7 +295,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           this.bookFilterComponent.setFilters?.(parsedFilters);
           this.bookFilterComponent.onFiltersChanged?.();
         }
-        
+
         if (Object.keys(parsedFilters).length > 0) {
           this.currentFilterLabel = this.computedFilterLabel;
         }
@@ -812,9 +815,5 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         );
       })
     );
-  }
-
-  private capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }
