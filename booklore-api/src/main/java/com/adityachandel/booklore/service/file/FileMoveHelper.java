@@ -74,6 +74,7 @@ public class FileMoveHelper {
     }
 
     public void registerLibraryPaths(Long libraryId, Path libraryRoot) {
+        log.debug("Registering library paths for library {} with root {}", libraryId, libraryRoot);
         monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
     }
 
