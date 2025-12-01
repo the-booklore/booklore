@@ -21,6 +21,8 @@ WORKDIR /springboot-app
 COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle /springboot-app/
 COPY ./booklore-api/src /springboot-app/src
 
+COPY --from=angular-build /angular-app/dist/booklore/browser /springboot-app/src/main/resources/static
+
 # Inject version into application.yaml using yq
 ARG APP_VERSION
 RUN apk add --no-cache yq && \
@@ -45,14 +47,12 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
-RUN apk update && apk add nginx gettext su-exec
+RUN apk update && apk add su-exec
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 8080 80
+EXPOSE 8080
 
 CMD ["/start.sh"]

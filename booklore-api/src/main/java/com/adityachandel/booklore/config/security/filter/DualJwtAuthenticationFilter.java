@@ -44,23 +44,13 @@ public class DualJwtAuthenticationFilter extends OncePerRequestFilter {
     private static final ConcurrentMap<String, Object> userLocks = new ConcurrentHashMap<>();
     private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
 
-    private static final List<String> WHITELISTED_PATHS = List.of(
-            "/api/v1/opds/",
-            "/api/v2/opds/",
-            "/api/v1/auth/refresh",
-            "/api/v1/setup/",
-            "/api/kobo/"
-    );
-
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws IOException, ServletException {
         String token = extractToken(request);
 
         String path = request.getRequestURI();
 
-        boolean isWhitelisted = WHITELISTED_PATHS.stream().anyMatch(path::startsWith);
-
-        if (isWhitelisted) {
+        if (!path.startsWith("/api/")) {
             chain.doFilter(request, response);
             return;
         }

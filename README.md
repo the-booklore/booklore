@@ -84,10 +84,9 @@ Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 ```ini
 # BookLore Application Settings
-APP_USER_ID=0
-APP_GROUP_ID=0
+APP_USER_ID=1000
+APP_GROUP_ID=1000
 TZ=Etc/UTC
-BOOKLORE_PORT=6060
 
 # Database Connection (BookLore)
 DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
@@ -117,12 +116,11 @@ services:
       - DATABASE_URL=${DATABASE_URL}
       - DATABASE_USERNAME=${DB_USER}
       - DATABASE_PASSWORD=${DB_PASSWORD}
-      - BOOKLORE_PORT=${BOOKLORE_PORT}
     depends_on:
       mariadb:
         condition: service_healthy
     ports:
-      - "${BOOKLORE_PORT}:${BOOKLORE_PORT}"
+      - "8080:8080"
     volumes:
       - ./data:/app/data
       - ./books:/books

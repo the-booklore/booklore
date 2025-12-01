@@ -16,7 +16,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -25,7 +24,6 @@ import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
-@Component
 public class KoboAuthFilter extends OncePerRequestFilter {
 
     private final KoboUserSettingsRepository koboUserSettingsRepository;
@@ -34,13 +32,7 @@ public class KoboAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-
         String path = request.getRequestURI();
-
-        if (!path.startsWith("/api/kobo/")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         String[] parts = path.split("/");
         if (parts.length < 4) {

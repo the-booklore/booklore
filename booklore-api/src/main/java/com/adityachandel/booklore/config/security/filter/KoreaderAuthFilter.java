@@ -12,14 +12,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
 
 @RequiredArgsConstructor
-@Component
 @Slf4j
 public class KoreaderAuthFilter extends OncePerRequestFilter {
 
@@ -27,13 +25,6 @@ public class KoreaderAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
-
-        String path = request.getRequestURI();
-        if (!path.startsWith("/api/koreader/")) {
-            chain.doFilter(request, response);
-            return;
-        }
-
         String username = request.getHeader("x-auth-user");
         String key = request.getHeader("x-auth-key");
 

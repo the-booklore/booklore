@@ -16,7 +16,7 @@ app:
 
 server:
   forward-headers-strategy: native
-  port: 8080
+  port: ${BOOKLORE_PORT:8080}
   tomcat:
     relaxed-query-chars: '[,],%,{,},|'
 

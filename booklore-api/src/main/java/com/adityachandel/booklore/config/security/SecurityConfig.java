@@ -5,7 +5,13 @@ import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
 import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
+import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
+import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
+import com.adityachandel.booklore.repository.KoboUserSettingsRepository;
+import com.adityachandel.booklore.repository.KoreaderUserRepository;
+import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +45,13 @@ public class SecurityConfig {
     private final OpdsUserDetailsService opdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
     private final AppProperties appProperties;
+    private final KoboUserSettingsRepository koboUserSettingsRepository;
+    private final UserRepository userRepository;
+    private final BookLoreUserTransformer bookLoreUserTransformer;
+    private final KoreaderUserRepository koreaderUserRepository;
+    private final JwtUtils jwtUtils;
+    private final AppSettingService appSettingService;
+    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
 
     private static final String[] SWAGGER_ENDPOINTS = {
             "/api/v1/swagger-ui.html",
@@ -90,31 +103,31 @@ public class SecurityConfig {
 
     @Bean
     @Order(2)
-    public SecurityFilterChain koreaderSecurityChain(HttpSecurity http, KoreaderAuthFilter koreaderAuthFilter) throws Exception {
+    public SecurityFilterChain koreaderSecurityChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/koreader/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .addFilterBefore(koreaderAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new KoreaderAuthFilter(koreaderUserRepository), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
     @Order(3)
-    public SecurityFilterChain koboSecurityChain(HttpSecurity http, KoboAuthFilter koboAuthFilter) throws Exception {
+    public SecurityFilterChain koboSecurityChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/kobo/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
-                .addFilterBefore(koboAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new KoboAuthFilter(koboUserSettingsRepository, userRepository, bookLoreUserTransformer), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
     @Bean
     @Order(4)
-    public SecurityFilterChain coverJwtApiSecurityChain(HttpSecurity http, CoverJwtFilter coverJwtFilter) throws Exception {
+    public SecurityFilterChain coverJwtApiSecurityChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/api/v1/media/**")
                 .csrf(AbstractHttpConfigurer::disable)
@@ -125,7 +138,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .anyRequest().permitAll()
                 )
-                .addFilterBefore(coverJwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new CoverJwtFilter(jwtUtils, userRepository, bookLoreUserTransformer, appSettingService, dynamicOidcJwtProcessor), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(dualJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -133,6 +146,19 @@ public class SecurityConfig {
 
     @Bean
     @Order(5)
+    public SecurityFilterChain staticResourcesSecurityChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher(request -> {
+                    String path = request.getRequestURI();
+                    return !path.startsWith("/api/");
+                })
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        return http.build();
+    }
+
+    @Bean
+    @Order(6)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
         if (appProperties.getSwagger().isEnabled()) {
@@ -152,7 +178,6 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        // Configure the shared AuthenticationManagerBuilder with the UserDetailsService and PasswordEncoder
         AuthenticationManagerBuilder auth = http.getSharedObject(AuthenticationManagerBuilder.class);
         auth.userDetailsService(opdsUserDetailsService).passwordEncoder(passwordEncoder());
         return auth.build();
