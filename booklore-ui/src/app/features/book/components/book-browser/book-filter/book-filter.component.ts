@@ -19,6 +19,8 @@ import {Tooltip} from 'primeng/tooltip';
 
 type Filter<T> = { value: T; bookCount: number };
 
+export type BookFilterMode = 'and' | 'or' | 'single';
+
 export const ratingRanges = [
   {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
   {id: '1to2', label: '1 to 2', min: 1, max: 2, sortIndex: 1},
@@ -158,7 +160,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   private filterChangeSubject = new Subject<Record<string, any> | null>();
 
   @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
-  @Output() filterModeChanged = new EventEmitter<'and' | 'or' | 'single'>();
+  @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
 
   @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
   @Input() entityType$!: Observable<EntityType> | undefined;
@@ -174,8 +176,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     {label: 'OR', value: 'or'},
     {label: '1', value: 'single'},
   ];
-  private _selectedFilterMode: 'and' | 'or' | 'single' = 'and';
-  expandedPanels: number = 0;
+  private _selectedFilterMode: BookFilterMode = 'and';
+  expandedPanels: number[] = [0];
   readonly filterLabels: Record<string, string> = {
     author: 'Author',
     category: 'Genre',
@@ -323,16 +325,18 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     );
   }
 
-  get selectedFilterMode(): 'and' | 'or' | 'single' {
+  get selectedFilterMode(): BookFilterMode {
     return this._selectedFilterMode;
   }
 
-  set selectedFilterMode(mode: 'and' | 'or' | 'single') {
-    this._selectedFilterMode = mode;
-    this.filterModeChanged.emit(mode);
-    this.filterChangeSubject.next(
-      Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
-    );
+  set selectedFilterMode(mode: BookFilterMode) {
+    if (mode !== this._selectedFilterMode) {
+      this._selectedFilterMode = mode;
+      this.filterModeChanged.emit(mode);
+      this.filterChangeSubject.next(
+        Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
+      );
+    }
   }
 
   private filterBooksByEntityType(books: Book[], entity: any, entityType: EntityType): Book[] {
@@ -396,14 +400,18 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   clearActiveFilter() {
     this.activeFilters = {};
+    this.setExpandedPanels();
     this.filterChangeSubject.next(null);
   }
 
   setExpandedPanels(): void {
-    const firstActiveIndex = this.filterTypes.findIndex(
-      type => this.activeFilters[type]?.length
-    );
-    this.expandedPanels = firstActiveIndex !== -1 ? firstActiveIndex : 0;
+    const indexes = [];
+    for (let i = 0; i < this.filterTypes.length; i++) {
+      if (this.activeFilters[this.filterTypes[i]]?.length) {
+        indexes.push(i);
+      }
+    }
+    this.expandedPanels = indexes.length > 0 ? indexes : [0];
   }
 
   onFiltersChanged(): void {

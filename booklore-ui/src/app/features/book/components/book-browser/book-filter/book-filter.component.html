@@ -14,7 +14,7 @@
   </div>
 
   <div class="filter-content">
-    <p-accordion [value]="expandedPanels">
+    <p-accordion [value]="expandedPanels" [multiple]="true">
       @for (filterType of filterTypes; track trackByFilterType(i, filterType); let i = $index) {
         <p-accordion-panel [value]="i">
           <p-accordion-header>
