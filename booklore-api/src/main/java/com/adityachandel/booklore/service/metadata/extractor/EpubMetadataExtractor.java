@@ -169,6 +169,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             }
                             case "creator" -> authors.add(text);
                             case "subject" -> categories.add(text);
+                            case "description" -> builderMeta.description(text);
                             case "publisher" -> builderMeta.publisher(text);
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
