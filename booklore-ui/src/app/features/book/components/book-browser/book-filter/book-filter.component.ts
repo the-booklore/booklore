@@ -89,11 +89,11 @@ function getRatingRangeFilters10(rating?: number): { id: string; name: string; s
   return idx ? [{id: idx.id, name: idx.label, sortIndex: idx.sortIndex}] : [];
 }
 
-function extractPublishedYearFilter(book: Book): { id: number; name: string }[] {
+function extractPublishedYearFilter(book: Book): { id: string; name: string }[] {
   const date = book.metadata?.publishedDate;
   if (!date) return [];
   const year = new Date(date).getFullYear();
-  return [{id: year, name: year.toString()}];
+  return [{id: year.toString(), name: year.toString()}];
 }
 
 function getShelfStatusFilter(book: Book): { id: string; name: string }[] {
