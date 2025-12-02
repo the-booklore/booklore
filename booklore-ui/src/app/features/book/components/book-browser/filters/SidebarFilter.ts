@@ -93,13 +93,11 @@ export class SideBarFilter implements BookFilter {
                 return filterValues.some(range => isRatingInRange(book.metadata?.hardcoverRating, range));
               case 'personalRating':
                 return filterValues.some(range => isRatingInRange10(book.metadata?.personalRating, range));
-              case 'publishedYear':
-                const bookYear = book.metadata?.publishedDate
-                  ? new Date(book.metadata.publishedDate).getFullYear().toString()
-                  : null;
-                return bookYear ? filterValues.includes(bookYear) : false;
               case 'publishedDate':
-                return filterValues.includes(new Date(book.metadata?.publishedDate || '').getFullYear());
+                const bookYear = book.metadata?.publishedDate
+                  ? new Date(book.metadata.publishedDate).getFullYear()
+                  : null;
+                return bookYear ? filterValues.some(val => val == bookYear || val == bookYear.toString()) : false;
               case 'fileSize':
                 return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range));
               case 'shelfStatus':

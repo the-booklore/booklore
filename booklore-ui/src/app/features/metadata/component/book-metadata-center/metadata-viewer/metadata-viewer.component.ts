@@ -587,7 +587,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   goToPublishedYear(publishedDate: string): void {
     const year = this.extractYear(publishedDate);
     if (year) {
-      this.handleMetadataClick('publishedYear', year);
+      this.handleMetadataClick('publishedDate', year);
     }
   }
 

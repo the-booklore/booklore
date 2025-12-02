@@ -79,7 +79,7 @@
 
 .scroller-fields {
   display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(150px, 1.5fr) minmax(120px, 1fr) minmax(100px, 1fr) 90px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 0.75rem;
   flex: 1;
 
@@ -97,6 +97,23 @@
   label {
     display: block;
     margin-bottom: 0.5rem;
+  }
+
+  &.expanded {
+    flex: 1;
+
+    @media (max-width: 768px) {
+      flex: unset;
+    }
+  }
+}
+
+.max-items-field {
+  max-width: 9rem;
+  flex-shrink: 0;
+
+  @media (max-width: 768px) {
+    max-width: none;
   }
 }
 
