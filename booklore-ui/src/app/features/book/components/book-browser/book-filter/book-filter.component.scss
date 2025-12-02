@@ -2,6 +2,91 @@
   --p-accordion-header-padding: 0.6rem 1rem;
 }
 
+:host ::ng-deep .p-togglebutton {
+  --p-togglebutton-content-padding: 0.25rem 0.5rem;
+}
+
+.book-filter-container {
+  height: calc(100dvh - 6.1rem);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--card-background);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--p-content-border-color);
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.filter-title {
+  font-weight: 600;
+}
+
+.filter-mode-select {
+  font-size: 0.875rem;
+}
+
+.filter-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+  padding-right: 0.25rem;
+  overscroll-behavior: contain;
+}
+
+.filter-type-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.active-filter-count {
+  font-size: 0.875rem;
+  color: var(--primary-color);
+}
+
+.filter-list {
+  max-height: 27.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+}
+
 .filter-row {
-  align-items: flex-start;
+  cursor: pointer;
+  transition: colors 200ms ease-in-out;
+  padding-bottom: 0.25rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  &.active {
+    color: var(--primary-color);
+  }
+}
+
+.truncation-notice {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.footer-notice {
+  font-size: 0.75rem;
+  color: #6b7280;
+  text-align: center;
+  padding-top: 1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  margin-top: 0.5rem;
 }
