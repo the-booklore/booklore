@@ -41,39 +41,41 @@ public class MetadataMatchService {
 
         float score = 0f;
 
-        if (isPresent(metadata.getTitle())) score += weights.getTitle();
-        if (isPresent(metadata.getSubtitle())) score += weights.getSubtitle();
-        if (isPresent(metadata.getDescription())) score += weights.getDescription();
-        if (hasContent(metadata.getAuthors())) score += weights.getAuthors();
-        if (isPresent(metadata.getPublisher())) score += weights.getPublisher();
-        if (metadata.getPublishedDate() != null) score += weights.getPublishedDate();
-        if (isPresent(metadata.getSeriesName())) score += weights.getSeriesName();
-        if (metadata.getSeriesNumber() != null && metadata.getSeriesNumber() > 0) score += weights.getSeriesNumber();
-        if (metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) score += weights.getSeriesTotal();
-        if (isPresent(metadata.getIsbn13())) score += weights.getIsbn13();
-        if (isPresent(metadata.getIsbn10())) score += weights.getIsbn10();
-        if (isPresent(metadata.getLanguage())) score += weights.getLanguage();
-        if (metadata.getPageCount() != null && metadata.getPageCount() > 0) score += weights.getPageCount();
-        if (hasContent(metadata.getCategories())) score += weights.getCategories();
-        if (isPositive(metadata.getAmazonRating())) score += weights.getAmazonRating();
-        if (isPositive(metadata.getAmazonReviewCount())) score += weights.getAmazonReviewCount();
-        if (isPositive(metadata.getGoodreadsRating())) score += weights.getGoodreadsRating();
-        if (isPositive(metadata.getGoodreadsReviewCount())) score += weights.getGoodreadsReviewCount();
-        if (isPositive(metadata.getHardcoverRating())) score += weights.getHardcoverRating();
-        if (isPositive(metadata.getHardcoverReviewCount())) score += weights.getHardcoverReviewCount();
+
+
+        if (isPresent(metadata.getTitle(), metadata.getTitleLocked())) score += weights.getTitle();
+        if (isPresent(metadata.getSubtitle(), metadata.getSubtitleLocked())) score += weights.getSubtitle();
+        if (isPresent(metadata.getDescription(), metadata.getDescriptionLocked())) score += weights.getDescription();
+        if (hasContent(metadata.getAuthors(), metadata.getAuthorsLocked())) score += weights.getAuthors();
+        if (isPresent(metadata.getPublisher(), metadata.getPublisherLocked())) score += weights.getPublisher();
+        if (metadata.getPublishedDate() != null || Boolean.TRUE.equals(metadata.getPublishedDateLocked())) score += weights.getPublishedDate();
+        if (isPresent(metadata.getSeriesName(), metadata.getSeriesNameLocked())) score += weights.getSeriesName();
+        if ((metadata.getSeriesNumber() != null && metadata.getSeriesNumber() > 0) || Boolean.TRUE.equals(metadata.getSeriesNumberLocked())) score += weights.getSeriesNumber();
+        if ((metadata.getSeriesTotal() != null && metadata.getSeriesTotal() > 0) || Boolean.TRUE.equals(metadata.getSeriesTotalLocked())) score += weights.getSeriesTotal();
+        if (isPresent(metadata.getIsbn13(), metadata.getIsbn13Locked())) score += weights.getIsbn13();
+        if (isPresent(metadata.getIsbn10(), metadata.getIsbn10Locked())) score += weights.getIsbn10();
+        if (isPresent(metadata.getLanguage(), metadata.getLanguageLocked())) score += weights.getLanguage();
+        if ((metadata.getPageCount() != null && metadata.getPageCount() > 0) || Boolean.TRUE.equals(metadata.getPageCountLocked())) score += weights.getPageCount();
+        if (hasContent(metadata.getCategories(), metadata.getCategoriesLocked())) score += weights.getCategories();
+        if (isPositive(metadata.getAmazonRating(), metadata.getAmazonRatingLocked())) score += weights.getAmazonRating();
+        if (isPositive(metadata.getAmazonReviewCount(), metadata.getAmazonReviewCountLocked())) score += weights.getAmazonReviewCount();
+        if (isPositive(metadata.getGoodreadsRating(), metadata.getGoodreadsRatingLocked())) score += weights.getGoodreadsRating();
+        if (isPositive(metadata.getGoodreadsReviewCount(), metadata.getGoodreadsReviewCountLocked())) score += weights.getGoodreadsReviewCount();
+        if (isPositive(metadata.getHardcoverRating(), metadata.getHardcoverRatingLocked())) score += weights.getHardcoverRating();
+        if (isPositive(metadata.getHardcoverReviewCount(), metadata.getHardcoverReviewCountLocked())) score += weights.getHardcoverReviewCount();
 
         return (score / totalWeight) * 100f;
     }
 
-    private boolean isPresent(String value) {
-        return value != null && !value.isBlank();
+    private boolean isPresent(String value, Boolean locked) {
+        return (value != null && !value.isBlank()) || Boolean.TRUE.equals(locked);
     }
 
-    private boolean hasContent(Iterable<?> iterable) {
-        return iterable != null && iterable.iterator().hasNext();
+    private boolean hasContent(Iterable<?> iterable, Boolean locked) {
+        return (iterable != null && iterable.iterator().hasNext()) || Boolean.TRUE.equals(locked);
     }
 
-    private boolean isPositive(Number number) {
-        return number != null && number.doubleValue() > 0;
+    private boolean isPositive(Number number, Boolean locked) {
+        return (number != null && number.doubleValue() > 0) || Boolean.TRUE.equals(locked);
     }
 }
