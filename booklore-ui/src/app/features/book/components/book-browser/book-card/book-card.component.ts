@@ -495,11 +495,16 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       });
     } else {
       this.dialogService.open(BookMetadataCenterComponent, {
-        width: '85%',
+        width: '90%',
         data: {bookId: book.id},
         modal: true,
-        dismissableMask: true,
-        showHeader: false
+        dismissableMask: false,
+        showHeader: true,
+        closable: true,
+        closeOnEscape: true,
+        maximizable: true,
+        header: 'Book Details',
+        styleClass: 'book-details-dialog'
       });
     }
   }

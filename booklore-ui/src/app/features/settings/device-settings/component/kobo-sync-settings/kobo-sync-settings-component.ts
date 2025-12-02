@@ -11,6 +11,7 @@ import {Subject} from 'rxjs';
 import {debounceTime, filter, take, takeUntil} from 'rxjs/operators';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Slider} from 'primeng/slider';
+import {Divider} from 'primeng/divider';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {SettingsHelperService} from '../../../../../shared/service/settings-helper.service';
 import {AppSettingKey, KoboSettings} from '../../../../../shared/model/app-settings.model';
@@ -22,7 +23,7 @@ import {ExternalDocLinkComponent} from '../../../../../shared/components/externa
   standalone: true,
   templateUrl: './kobo-sync-settings-component.html',
   styleUrl: './kobo-sync-settings-component.scss',
-  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, ExternalDocLinkComponent],
+  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, Divider, ExternalDocLinkComponent],
   providers: [MessageService, ConfirmationService]
 })
 export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
@@ -46,6 +47,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   koboSettings: KoboSettings = {
     convertToKepub: false,
     conversionLimitInMb: 100,
+    convertCbxToEpub: false,
+    conversionLimitInMbForCbx: 100,
     forceEnableHyphenation: false
   };
 
@@ -123,6 +126,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.koboSettings.convertToKepub = settings?.koboSettings?.convertToKepub ?? true;
         this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
+        this.koboSettings.convertCbxToEpub = settings?.koboSettings?.convertCbxToEpub ?? false;
+        this.koboSettings.conversionLimitInMbForCbx = settings?.koboSettings?.conversionLimitInMbForCbx ?? 100;
         this.koboSettings.forceEnableHyphenation = settings?.koboSettings?.forceEnableHyphenation ?? false;
       });
   }

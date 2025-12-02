@@ -37,7 +37,7 @@ class MonitoringServiceTest {
     }
 
     @AfterEach
-    void teardown() throws Exception {
+    void teardown() {
         try {
             service.stopMonitoring();
         } catch (Exception ignored) {}

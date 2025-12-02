@@ -33,9 +33,10 @@ export function isPageCountInRange(pageCount: number | undefined, rangeId: strin
 
 export function isMatchScoreInRange(score: number | undefined | null, rangeId: string): boolean {
   if (score == null) return false;
+  const normalizedScore = score > 1 ? score / 100 : score;
   const range = matchScoreRanges.find(r => r.id === rangeId);
   if (!range) return false;
-  return score >= range.min && score < range.max;
+  return normalizedScore >= range.min && normalizedScore < range.max;
 }
 
 export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean {
@@ -45,7 +46,7 @@ export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean
 
 export class SideBarFilter implements BookFilter {
 
-  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<'and' | 'or'>) {
+  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<'and' | 'or' | 'single'>) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
@@ -93,7 +94,10 @@ export class SideBarFilter implements BookFilter {
               case 'personalRating':
                 return filterValues.some(range => isRatingInRange10(book.metadata?.personalRating, range));
               case 'publishedDate':
-                return filterValues.includes(new Date(book.metadata?.publishedDate || '').getFullYear());
+                const bookYear = book.metadata?.publishedDate
+                  ? new Date(book.metadata.publishedDate).getFullYear()
+                  : null;
+                return bookYear ? filterValues.some(val => val == bookYear || val == bookYear.toString()) : false;
               case 'fileSize':
                 return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range));
               case 'shelfStatus':

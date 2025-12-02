@@ -34,7 +34,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.PathResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -97,7 +97,7 @@ public class BookDropService {
         String coverPath = Paths.get(appProperties.getPathConfig(), "bookdrop_temp", bookdropId + ".jpg").toString();
         File coverFile = new File(coverPath);
         if (coverFile.exists() && coverFile.isFile()) {
-            return new PathResource(coverFile.toPath());
+            return new FileSystemResource(coverFile.toPath());
         } else {
             return null;
         }
@@ -442,7 +442,7 @@ public class BookDropService {
                                                 File targetFile,
                                                 LibraryEntity library,
                                                 LibraryPathEntity path,
-                                                BookMetadata metadata) throws Exception {
+                                                BookMetadata metadata) {
         FileProcessResult fileProcessResult = processFileInLibrary(targetFile.getName(), library, path, targetFile,
                 BookFileExtension.fromFileName(bookdropFile.getFileName())
                         .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"))

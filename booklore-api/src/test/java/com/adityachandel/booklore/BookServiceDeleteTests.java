@@ -8,6 +8,7 @@ import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.user.UserProgressService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
+import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import com.adityachandel.booklore.util.FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,7 @@ class BookServiceDeleteTests {
         UserProgressService userProgressService = Mockito.mock(UserProgressService.class);
         BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
         MonitoringRegistrationService monitoringRegistrationService = Mockito.mock(MonitoringRegistrationService.class);
+        KoboReadingStateService koboReadingStateService = Mockito.mock(KoboReadingStateService.class);
 
         bookService = new BookService(
                 bookRepository,
@@ -66,7 +68,8 @@ class BookServiceDeleteTests {
                 bookQueryService,
                 userProgressService,
                 bookDownloadService,
-                monitoringRegistrationService
+                monitoringRegistrationService,
+                koboReadingStateService
         );
     }
 

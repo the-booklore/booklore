@@ -94,9 +94,16 @@ public class PdfReaderService {
         try (PDDocument document = Loader.loadPDF(new File(pdfPath.toFile().toURI()))) {
             PDFRenderer renderer = new PDFRenderer(document);
             for (int i = 0; i < document.getNumberOfPages(); i++) {
-                BufferedImage image = renderer.renderImageWithDPI(i, 200, ImageType.RGB);
-                Path outputFile = targetDir.resolve(String.format("%04d.jpg", i + 1));
-                ImageIO.write(image, "JPEG", outputFile.toFile());
+                BufferedImage image = null;
+                try {
+                    image = renderer.renderImageWithDPI(i, 200, ImageType.RGB);
+                    Path outputFile = targetDir.resolve(String.format("%04d.jpg", i + 1));
+                    ImageIO.write(image, "JPEG", outputFile.toFile());
+                } finally {
+                    if (image != null) {
+                        image.flush(); // Release native resources
+                    }
+                }
             }
         } catch (IOException e) {
             log.error("Failed to render PDF pages from {}", pdfPath, e);

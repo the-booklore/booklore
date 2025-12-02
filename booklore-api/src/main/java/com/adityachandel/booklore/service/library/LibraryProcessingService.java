@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,13 +40,19 @@ public class LibraryProcessingService {
     private final EntityManager entityManager;
 
     @Transactional
-    public void processLibrary(long libraryId) throws IOException {
+    public void processLibrary(long libraryId) {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started processing library: " + libraryEntity.getName()));
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
-        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-        processor.processLibraryFiles(libraryFiles, libraryEntity);
-        notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
+        try {
+            List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
+            processor.processLibraryFiles(libraryFiles, libraryEntity);
+            notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
+        } catch (IOException e) {
+            log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
+            notificationService.sendMessage(Topic.LOG, LogNotification.error("Failed to process library: " + libraryEntity.getName() + " - " + e.getMessage()));
+            throw new UncheckedIOException("Library processing failed", e);
+        }
     }
 
     @Transactional

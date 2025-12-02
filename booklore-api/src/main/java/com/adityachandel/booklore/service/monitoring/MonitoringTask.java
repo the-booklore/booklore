@@ -46,7 +46,6 @@ public class MonitoringTask {
                     log.warn("WatchKey is no longer valid: {}", directory);
                     // Clean up but DO NOT break
                     eventPublisher.publishEvent(new WatchKeyInvalidatedEvent(this, directory));
-                    continue;
                 }
             }
         } catch (InterruptedException e) {

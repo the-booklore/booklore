@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +34,10 @@ class PathPatternResolverTest {
         if (authors == null) {
             when(metadata.getAuthors()).thenReturn(null);
         } else {
+            AtomicLong idCounter = new AtomicLong(1);
             LinkedHashSet<AuthorEntity> authorEntities = authors.stream().map(name -> {
                 AuthorEntity a = new AuthorEntity();
+                a.setId(idCounter.getAndIncrement());
                 a.setName(name);
                 return a;
             }).collect(Collectors.toCollection(LinkedHashSet::new));

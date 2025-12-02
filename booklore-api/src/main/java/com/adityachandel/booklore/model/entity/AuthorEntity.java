@@ -28,13 +28,12 @@ public class AuthorEntity {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AuthorEntity authorEntity = (AuthorEntity) o;
-        return Objects.equals(name, authorEntity.name);
+        if (!(o instanceof AuthorEntity that)) return false;
+        return getId() != null && Objects.equals(getId(), that.getId());
     }
 
     @Override
     public int hashCode() {
-        return name != null ? name.hashCode() : 0;
+        return getClass().hashCode();
     }
 }

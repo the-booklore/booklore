@@ -66,6 +66,19 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
             bookMetadataRepository.save(bookEntity.getMetadata());
             return saved;
+        } catch (OutOfMemoryError e) {
+            // Note: Catching OOM is generally discouraged, but for batch processing
+            // of potentially large/corrupted PDFs, we prefer graceful degradation
+            // over crashing the entire service.
+            log.error("Out of memory (heap space exhausted) while generating cover for '{}'. Skipping cover generation.", bookEntity.getFileName());
+            System.gc(); // Hint to JVM to reclaim memory
+            return false;
+        } catch (NegativeArraySizeException e) {
+            // This can appear on corrupted PDF, or PDF with such large images that the
+            // initial memory buffer is already bigger than the entire JVM heap, therefore
+            // it leads to NegativeArrayException (basically run out of memory, and overflows)
+            log.warn("Corrupted PDF structure for '{}'. Skipping cover generation.", bookEntity.getFileName());
+            return false;
         } catch (Exception e) {
             log.warn("Failed to generate cover for '{}': {}", bookEntity.getFileName(), e.getMessage());
             return false;
@@ -139,7 +152,18 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private boolean generateCoverImageAndSave(Long bookId, PDDocument document) throws IOException {
-        BufferedImage coverImage = new PDFRenderer(document).renderImageWithDPI(0, 300, ImageType.RGB);
-        return fileService.saveCoverImages(coverImage, bookId);
+        BufferedImage coverImage = null;
+        try {
+            coverImage = new PDFRenderer(document).renderImageWithDPI(0, 150, ImageType.RGB);
+            return fileService.saveCoverImages(coverImage, bookId);
+        } catch (OutOfMemoryError e) {
+            log.error("Out of memory (heap space exhausted) while generating cover for bookId {}. Skipping cover generation.", bookId);
+            System.gc(); // Hint to JVM to reclaim memory
+            return false;
+        } finally {
+            if (coverImage != null) {
+                coverImage.flush(); // Release native resources
+            }
+        }
     }
 }
