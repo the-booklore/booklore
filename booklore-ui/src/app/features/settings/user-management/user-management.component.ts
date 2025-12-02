@@ -107,9 +107,9 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   openCreateUserDialog() {
     this.ref = this.dialogService.open(CreateUserDialogComponent, {
       header: 'Create New User',
+      showHeader: false,
       modal: true,
       closable: true,
-      style: {position: 'absolute', top: '15%'},
     });
     this.ref?.onClose.subscribe((result) => {
       if (result) {

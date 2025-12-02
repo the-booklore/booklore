@@ -41,6 +41,7 @@ export class DialogLauncherService {
     this.open({
       component: GithubSupportDialog,
       header: 'Support Booklore',
+      showHeader: true,
       top: '15%'
     });
   }
@@ -48,7 +49,8 @@ export class DialogLauncherService {
   openLibraryCreatorDialog(): void {
     this.open({
       component: LibraryCreatorComponent,
-      header: 'Create New Library'
+      header: 'Create New Library',
+      showHeader: false
     });
   }
 
@@ -56,7 +58,7 @@ export class DialogLauncherService {
     this.open({
       component: BookUploaderComponent,
       header: 'Book Uploader',
-      top: '10%'
+      showHeader: false
     });
   }
 
@@ -64,14 +66,15 @@ export class DialogLauncherService {
     this.open({
       component: UserProfileDialogComponent,
       header: 'User Profile Information',
-      top: '10%'
+      showHeader: false
     });
   }
 
   openMagicShelfDialog(): void {
     this.open({
       component: MagicShelfComponent,
-      header: 'Magic Shelf Creator'
+      header: 'Magic Shelf Creator',
+      showHeader: false
     });
   }
 }

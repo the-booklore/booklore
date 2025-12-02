@@ -73,9 +73,14 @@ export class LibraryCreatorComponent implements OnInit {
     }
   }
 
+  closeDialog(): void {
+    this.dynamicDialogRef.close();
+  }
+
   openDirectoryPicker(): void {
     this.directoryPickerDialogRef = this.dialogService.open(DirectoryPickerComponent, {
       header: 'Select Media Directory',
+      showHeader: false,
       modal: true,
       closable: true,
       contentStyle: {overflow: 'hidden'},

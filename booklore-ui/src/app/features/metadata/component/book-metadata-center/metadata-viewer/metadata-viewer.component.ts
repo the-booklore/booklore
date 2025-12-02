@@ -427,6 +427,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   assignShelf(bookId: number) {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
+      dismissableMask: true,
       modal: true,
       closable: true,
       contentStyle: {overflow: 'auto'},

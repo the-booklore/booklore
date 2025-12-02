@@ -12,11 +12,12 @@
 }
 
 .panel-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
-  background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.1) 0%, rgba(var(--primary-color-rgb), 0.05) 100%);
+  padding: 1.25rem 3.5rem 1.25rem 1.25rem;
+
   border-radius: 10px 10px 0 0;
   border: 1px solid var(--border-color);
   border-bottom: none;
@@ -30,7 +31,7 @@
     height: 48px;
     background: var(--primary-color);
     border-radius: 10px;
-    box-shadow: 0 3px 8px rgba(var(--primary-color-rgb), 0.3);
+
 
     .header-icon {
       font-size: 1.5rem;
@@ -56,7 +57,7 @@
   }
 
   @media (max-width: 480px) {
-    padding: 1rem;
+    padding: 1rem 3rem 1rem 1rem;
 
     .header-icon-wrapper {
       width: 40px;
@@ -74,6 +75,16 @@
 
       .panel-description {
         font-size: 0.8rem;
+      }
+    }
+
+    ::ng-deep .close-button {
+      top: 0.5rem;
+      right: 0.5rem;
+
+      .p-button {
+        width: 2rem;
+        height: 2rem;
       }
     }
   }
@@ -188,7 +199,6 @@
   }
 
   &.selected {
-    background: rgba(var(--primary-color-rgb), 0.08);
     border-color: var(--primary-color);
 
     .shelf-icon-wrapper {
@@ -332,7 +342,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem 1.5rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-top: none;

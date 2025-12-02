@@ -10,7 +10,6 @@ import {BookService} from '../../../service/book.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
-import {MetadataRefreshRequest} from '../../../../metadata/model/request/metadata-refresh-request.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -27,7 +26,6 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
-import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -464,7 +462,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private openShelfDialog(): void {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
       modal: true,
+      dismissableMask: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
       baseZIndex: 10,
