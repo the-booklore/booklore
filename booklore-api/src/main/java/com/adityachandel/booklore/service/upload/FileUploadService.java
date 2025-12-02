@@ -3,10 +3,10 @@ package com.adityachandel.booklore.service.upload;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -86,7 +86,7 @@ public class FileUploadService {
     }
 
     @Transactional
-    public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
+    public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
         final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
@@ -105,8 +105,9 @@ public class FileUploadService {
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, additionalFileType, file.getSize(), fileHash, description);
-            final BookAdditionalFileEntity savedEntity = additionalFileRepository.save(entity);
+
+            final BookFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, additionalFileType, file.getSize(), fileHash, description);
+            final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
@@ -197,7 +198,7 @@ public class FileUploadService {
 
     private void validateAlternativeFormatDuplicate(AdditionalFileType additionalFileType, String fileHash) {
         if (additionalFileType == AdditionalFileType.ALTERNATIVE_FORMAT) {
-            final Optional<BookAdditionalFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
+            final Optional<BookFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
             if (existingAltFormat.isPresent()) {
                 throw new IllegalArgumentException("Alternative format file already exists with same content");
             }
@@ -208,8 +209,8 @@ public class FileUploadService {
         return Paths.get(book.getLibraryPath().getPath(), book.getFileSubPath(), fileName);
     }
 
-    private BookAdditionalFileEntity createAdditionalFileEntity(BookEntity book, String fileName, AdditionalFileType additionalFileType, long fileSize, String fileHash, String description) {
-        return BookAdditionalFileEntity.builder()
+    private BookFileEntity createAdditionalFileEntity(BookEntity book, String fileName, AdditionalFileType additionalFileType, long fileSize, String fileHash, String description) {
+        return BookFileEntity.builder()
                 .book(book)
                 .fileName(fileName)
                 .fileSubPath(book.getFileSubPath())

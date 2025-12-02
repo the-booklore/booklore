@@ -2,7 +2,7 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -213,7 +213,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     }
 
     private void createAdditionalFileIfNotExists(BookEntity bookEntity, LibraryFile file, AdditionalFileType fileType) {
-        Optional<BookAdditionalFileEntity> existingFile = bookAdditionalFileRepository
+        Optional<BookFileEntity> existingFile = bookAdditionalFileRepository
                 .findByLibraryPath_IdAndFileSubPathAndFileName(
                         file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
 
@@ -223,7 +223,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
 
         String hash = FileFingerprint.generateHash(file.getFullPath());
-        BookAdditionalFileEntity additionalFile = BookAdditionalFileEntity.builder()
+        BookFileEntity additionalFile = BookFileEntity.builder()
                 .book(bookEntity)
                 .fileName(file.getFileName())
                 .fileSubPath(file.getFileSubPath())
@@ -240,7 +240,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
 
             log.debug("Successfully created additional file: {}", file.getFileName());
         } catch (Exception e) {
-            bookEntity.getAdditionalFiles().removeIf(a -> a.equals(additionalFile));
+            bookEntity.getBookFiles().removeIf(a -> a.equals(additionalFile));
 
             log.error("Error creating additional file {}: {}", file.getFileName(), e.getMessage(), e);
         }

@@ -20,6 +20,10 @@ import java.util.Set;
 public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpecificationExecutor<BookEntity> {
     Optional<BookEntity> findBookByIdAndLibraryId(long id, long libraryId);
 
+    @EntityGraph(attributePaths = { "metadata", "shelves", "libraryPath", "bookFiles" })
+    @Query("SELECT b FROM BookEntity b LEFT JOIN FETCH b.bookFiles bf WHERE b.id = :id AND (b.deleted IS NULL OR b.deleted = false) AND (bf.isBook = true)")
+    Optional<BookEntity> findByIdWithBookFiles(@Param("id") Long id);
+
     Optional<BookEntity> findByCurrentHash(String currentHash);
 
     Optional<BookEntity> findByBookCoverHash(String bookCoverHash);
@@ -37,31 +41,31 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT b.id FROM BookEntity b WHERE b.libraryPath.id IN :libraryPathIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<Long> findAllBookIdsByLibraryPathIdIn(@Param("libraryPathIds") Collection<Long> libraryPathIds);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadata();
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByIds(@Param("bookIds") Set<Long> bookIds);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findWithMetadataByIdsWithPagination(@Param("bookIds") Set<Long> bookIds, Pageable pageable);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByLibraryId(@Param("libraryId") Long libraryId);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
     @Query("SELECT b FROM BookEntity b WHERE b.fileSizeKb IS NULL AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByFileSizeKbIsNull();
 

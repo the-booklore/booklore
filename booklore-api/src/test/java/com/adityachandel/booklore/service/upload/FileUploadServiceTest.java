@@ -4,9 +4,9 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -237,20 +237,20 @@ class FileUploadServiceTest {
 
             when(bookAdditionalFileRepository.findByAltFormatCurrentHash("hash-123")).thenReturn(Optional.empty());
 
-            when(bookAdditionalFileRepository.save(any(BookAdditionalFileEntity.class))).thenAnswer(inv -> {
-                BookAdditionalFileEntity e = inv.getArgument(0);
+            when(bookAdditionalFileRepository.save(any(BookFileEntity.class))).thenAnswer(inv -> {
+                BookFileEntity e = inv.getArgument(0);
                 e.setId(99L);
                 return e;
             });
 
-            AdditionalFile dto = mock(AdditionalFile.class);
-            when(additionalFileMapper.toAdditionalFile(any(BookAdditionalFileEntity.class))).thenReturn(dto);
+            BookFile dto = mock(BookFile.class);
+            when(additionalFileMapper.toAdditionalFile(any(BookFileEntity.class))).thenReturn(dto);
 
-            AdditionalFile result = service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+            BookFile result = service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
 
             assertThat(result).isEqualTo(dto);
-            verify(bookAdditionalFileRepository).save(any(BookAdditionalFileEntity.class));
-            verify(additionalFileMapper).toAdditionalFile(any(BookAdditionalFileEntity.class));
+            verify(bookAdditionalFileRepository).save(any(BookFileEntity.class));
+            verify(additionalFileMapper).toAdditionalFile(any(BookFileEntity.class));
         }
     }
 
@@ -272,7 +272,7 @@ class FileUploadServiceTest {
         try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
             fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("dup-hash");
 
-            BookAdditionalFileEntity existing = new BookAdditionalFileEntity();
+            BookFileEntity existing = new BookFileEntity();
             existing.setId(1L);
             when(bookAdditionalFileRepository.findByAltFormatCurrentHash("dup-hash")).thenReturn(Optional.of(existing));
 

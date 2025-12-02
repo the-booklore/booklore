@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.mapper;
 
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
@@ -23,8 +23,8 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "additionalFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
-    @Mapping(source = "additionalFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
+    @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
+    @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBook(BookEntity bookEntity);
 
     @Mapping(source = "library.id", target = "libraryId")
@@ -32,8 +32,8 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "additionalFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
-    @Mapping(source = "additionalFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
+    @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
+    @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
 
     default Set<String> mapAuthors(Set<AuthorEntity> authors) {
@@ -73,26 +73,26 @@ public interface BookMapper {
     }
 
     @Named("mapAlternativeFormats")
-    default List<AdditionalFile> mapAlternativeFormats(List<BookAdditionalFileEntity> additionalFiles) {
-        if (additionalFiles == null) return null;
-        return additionalFiles.stream()
+    default List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null) return null;
+        return bookFiles.stream()
                 .filter(af -> AdditionalFileType.ALTERNATIVE_FORMAT.equals(af.getAdditionalFileType()))
                 .map(this::toAdditionalFile)
                 .toList();
     }
 
     @Named("mapSupplementaryFiles")
-    default List<AdditionalFile> mapSupplementaryFiles(List<BookAdditionalFileEntity> additionalFiles) {
-        if (additionalFiles == null) return null;
-        return additionalFiles.stream()
+    default List<BookFile> mapSupplementaryFiles(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null) return null;
+        return bookFiles.stream()
                 .filter(af -> AdditionalFileType.SUPPLEMENTARY.equals(af.getAdditionalFileType()))
                 .map(this::toAdditionalFile)
                 .toList();
     }
 
-    default AdditionalFile toAdditionalFile(BookAdditionalFileEntity entity) {
+    default BookFile toAdditionalFile(BookFileEntity entity) {
         if (entity == null) return null;
-        return AdditionalFile.builder()
+        return BookFile.builder()
                 .id(entity.getId())
                 .bookId(entity.getBook().getId())
                 .fileName(entity.getFileName())

@@ -9,7 +9,13 @@ import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
+import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
+import com.adityachandel.booklore.model.entity.CbxViewerPreferencesEntity;
+import com.adityachandel.booklore.model.entity.EpubViewerPreferencesEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.NewPdfViewerPreferencesEntity;
+import com.adityachandel.booklore.model.entity.PdfViewerPreferencesEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
@@ -20,10 +26,9 @@ import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
+import org.apache.commons.lang3.EnumUtils;
+import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
+import org.springframework.core.io.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +42,7 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -146,7 +152,7 @@ public class BookService {
 
     public Book getBook(long bookId, boolean withDescription) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId).orElse(new UserBookProgressEntity());
 
@@ -160,30 +166,35 @@ public class BookService {
                     .build());
         }
 
-        if (bookEntity.getBookType() == BookFileType.PDF) {
-            book.setPdfProgress(PdfProgress.builder()
-                    .page(userProgress.getPdfProgress())
-                    .percentage(userProgress.getPdfProgressPercent())
-                    .build());
-        }
-        if (bookEntity.getBookType() == BookFileType.EPUB) {
-            book.setEpubProgress(EpubProgress.builder()
-                    .cfi(userProgress.getEpubProgress())
-                    .percentage(userProgress.getEpubProgressPercent())
-                    .build());
-            if (userProgress.getKoreaderProgressPercent() != null) {
-                if (book.getKoreaderProgress() == null) {
-                    book.setKoreaderProgress(KoProgress.builder().build());
-                }
-                book.getKoreaderProgress().setPercentage(userProgress.getKoreaderProgressPercent() * 100);
+        bookEntity.getBookFiles().iterator().forEachRemaining(bookFile -> {
+            if (bookFile.getBookType() == BookFileType.PDF) {
+                book.setPdfProgress(PdfProgress.builder()
+                        .page(userProgress.getPdfProgress())
+                        .percentage(userProgress.getPdfProgressPercent())
+                        .build());
             }
-        }
-        if (bookEntity.getBookType() == BookFileType.CBX) {
-            book.setCbxProgress(CbxProgress.builder()
-                    .page(userProgress.getCbxProgress())
-                    .percentage(userProgress.getCbxProgressPercent())
-                    .build());
-        }
+
+            if (bookFile.getBookType() == BookFileType.EPUB) {
+                book.setEpubProgress(EpubProgress.builder()
+                        .cfi(userProgress.getEpubProgress())
+                        .percentage(userProgress.getEpubProgressPercent())
+                        .build());
+                if (userProgress.getKoreaderProgressPercent() != null) {
+                    if (book.getKoreaderProgress() == null) {
+                        book.setKoreaderProgress(KoProgress.builder().build());
+                    }
+                    book.getKoreaderProgress().setPercentage(userProgress.getKoreaderProgressPercent() * 100);
+                }
+            }
+
+            if (bookFile.getBookType() == BookFileType.CBX) {
+                book.setCbxProgress(CbxProgress.builder()
+                        .page(userProgress.getCbxProgress())
+                        .percentage(userProgress.getCbxProgressPercent())
+                        .build());
+            }
+        });
+
         book.setFilePath(FileUtils.getBookFullPath(bookEntity));
         book.setReadStatus(userProgress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(userProgress.getReadStatus()));
         book.setDateFinished(userProgress.getDateFinished());
@@ -197,11 +208,13 @@ public class BookService {
     }
 
     public BookViewerSettings getBookViewerSetting(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
-        if (bookEntity.getBookType() == BookFileType.EPUB) {
+        BookFileEntity bookFileEntity = bookEntity.getPrimaryBookFile();
+
+        if (bookFileEntity.getBookType() == BookFileType.EPUB) {
             epubViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
                     .ifPresent(epubPref -> settingsBuilder.epubSettings(EpubViewerPreferences.builder()
                             .bookId(bookId)
@@ -213,7 +226,7 @@ public class BookService {
                             .letterSpacing(epubPref.getLetterSpacing())
                             .lineHeight(epubPref.getLineHeight())
                             .build()));
-        } else if (bookEntity.getBookType() == BookFileType.PDF) {
+        } else if (bookFileEntity.getBookType() == BookFileType.PDF) {
             pdfViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
                     .ifPresent(pdfPref -> settingsBuilder.pdfSettings(PdfViewerPreferences.builder()
                             .bookId(bookId)
@@ -226,7 +239,7 @@ public class BookService {
                             .pageViewMode(pdfPref.getPageViewMode())
                             .pageSpread(pdfPref.getPageSpread())
                             .build()));
-        } else if (bookEntity.getBookType() == BookFileType.CBX) {
+        } else if (bookFileEntity.getBookType() == BookFileType.CBX) {
             cbxViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
                     .ifPresent(cbxPref -> settingsBuilder.cbxSettings(CbxViewerPreferences.builder()
                             .bookId(bookId)
@@ -312,16 +325,17 @@ public class BookService {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
         for (BookEntity book : books) {
-            Path fullFilePath = book.getFullFilePath();
+            List<Path> fullFilePaths = book.getFullFilePaths();
             try {
-                if (Files.exists(fullFilePath)) {
-                    try {
+                for (Path fullFilePath : fullFilePaths) {
+                    if (Files.exists(fullFilePath)) {
+                        try {
                         monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
-                    } catch (Exception ex) {
+                        } catch (Exception ex) {
                         log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
-                    }
-                    Files.delete(fullFilePath);
-                    log.info("Deleted book file: {}", fullFilePath);
+                        }
+                        Files.delete(fullFilePath);
+                        log.info("Deleted book file: {}", fullFilePath);
 
                     Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
                             .map(LibraryPathEntity::getPath)

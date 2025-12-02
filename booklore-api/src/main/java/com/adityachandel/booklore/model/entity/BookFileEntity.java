@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -15,7 +15,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "book_additional_file")
-public class BookAdditionalFileEntity {
+public class BookFileEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,9 +31,12 @@ public class BookAdditionalFileEntity {
     @Column(name = "file_sub_path", length = 512, nullable = false)
     private String fileSubPath;
 
+    @Column(name = "is_book", nullable = false)
+    private boolean isBook;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "additional_file_type", nullable = false)
-    private AdditionalFileType additionalFileType;
+    @Column(name = "book_type", nullable = false)
+    private BookFileType bookType;
 
     @Column(name = "file_size_kb")
     private Long fileSizeKb;

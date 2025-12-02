@@ -58,7 +58,7 @@ class FolderAsBookFileProcessorTest {
     private FolderAsBookFileProcessor processor;
 
     @Captor
-    private ArgumentCaptor<BookAdditionalFileEntity> additionalFileCaptor;
+    private ArgumentCaptor<BookFileEntity> additionalFileCaptor;
 
     private MockedStatic<FileUtils> fileUtilsMock;
     private MockedStatic<FileFingerprint> fileFingerprintMock;
@@ -134,11 +134,11 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.epub", "cover.jpg");
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
+        assertThat(capturedFiles).extracting(BookFileEntity::getAdditionalFileType)
                 .containsExactly(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
     }
 
@@ -167,9 +167,9 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.epub", "cover.jpg");
     }
 
@@ -200,9 +200,9 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
+        assertThat(capturedFiles).extracting(BookFileEntity::getAdditionalFileType)
                 .containsOnly(AdditionalFileType.SUPPLEMENTARY);
     }
 
@@ -246,8 +246,8 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.pdf", "book.cbz");
     }
 
@@ -301,7 +301,7 @@ class FolderAsBookFileProcessorTest {
                 .toList();
 
         BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
-        BookAdditionalFileEntity existingAdditionalFile = BookAdditionalFileEntity.builder()
+        BookFileEntity existingAdditionalFile = BookFileEntity.builder()
                 .id(1L)
                 .book(existingBook)
                 .fileName("book.epub")
@@ -324,7 +324,7 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(1)).save(additionalFileCaptor.capture());
 
-        BookAdditionalFileEntity capturedFile = additionalFileCaptor.getValue();
+        BookFileEntity capturedFile = additionalFileCaptor.getValue();
         assertThat(capturedFile.getFileName()).isEqualTo("cover.jpg");
     }
 

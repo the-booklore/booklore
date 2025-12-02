@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
@@ -44,7 +44,7 @@ public class BookDeletionService {
             return;
         }
 
-        List<BookAdditionalFileEntity> additionalFiles = bookAdditionalFileRepository.findAllById(additionalFileIds);
+        List<BookFileEntity> additionalFiles = bookAdditionalFileRepository.findAllById(additionalFileIds);
         bookAdditionalFileRepository.deleteAll(additionalFiles);
         entityManager.flush();
         entityManager.clear();
@@ -97,13 +97,13 @@ public class BookDeletionService {
     }
 
     private boolean tryPromoteAlternativeFormatToBook(BookEntity book, List<LibraryFile> libraryFiles) {
-        List<BookAdditionalFileEntity> existingAlternativeFormats = findExistingAlternativeFormats(book, libraryFiles);
+        List<BookFileEntity> existingAlternativeFormats = findExistingAlternativeFormats(book, libraryFiles);
 
         if (existingAlternativeFormats.isEmpty()) {
             return false;
         }
 
-        BookAdditionalFileEntity promotedFormat = existingAlternativeFormats.getFirst();
+        BookFileEntity promotedFormat = existingAlternativeFormats.getFirst();
         promoteAlternativeFormatToBook(book, promotedFormat);
 
         bookAdditionalFileRepository.delete(promotedFormat);
@@ -112,23 +112,23 @@ public class BookDeletionService {
         return true;
     }
 
-    private List<BookAdditionalFileEntity> findExistingAlternativeFormats(BookEntity book, List<LibraryFile> libraryFiles) {
+    private List<BookFileEntity> findExistingAlternativeFormats(BookEntity book, List<LibraryFile> libraryFiles) {
         Set<String> currentFileNames = libraryFiles.stream()
                 .map(LibraryFile::getFileName)
                 .collect(Collectors.toSet());
 
-        if (book.getAdditionalFiles() == null) {
+        if (book.getBookFiles() == null) {
             return Collections.emptyList();
         }
 
-        return book.getAdditionalFiles().stream()
+        return book.getBookFiles().stream()
                 .filter(additionalFile -> AdditionalFileType.ALTERNATIVE_FORMAT.equals(additionalFile.getAdditionalFileType()))
                 .filter(additionalFile -> currentFileNames.contains(additionalFile.getFileName()))
                 .filter(additionalFile -> BookFileExtension.fromFileName(additionalFile.getFileName()).isPresent())
                 .collect(Collectors.toList());
     }
 
-    private void promoteAlternativeFormatToBook(BookEntity book, BookAdditionalFileEntity alternativeFormat) {
+    private void promoteAlternativeFormatToBook(BookEntity book, BookFileEntity alternativeFormat) {
         book.setFileName(alternativeFormat.getFileName());
         book.setFileSubPath(alternativeFormat.getFileSubPath());
         BookFileExtension.fromFileName(alternativeFormat.getFileName())

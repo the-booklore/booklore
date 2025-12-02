@@ -10,7 +10,7 @@ import java.time.Instant;
 @Builder
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class AdditionalFile {
+public class BookFile {
     private Long id;
     private Long bookId;
     private String fileName;

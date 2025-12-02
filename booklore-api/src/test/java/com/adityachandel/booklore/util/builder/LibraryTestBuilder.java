@@ -51,7 +51,7 @@ public class LibraryTestBuilder {
     private final Map<Path, String> libraryFileHashes = new HashMap<>();
     private final Map<Long, BookEntity> bookRepository = new HashMap<>();
     private final Map<String, BookEntity> bookMap = new HashMap<>();
-    private final Map<Long, BookAdditionalFileEntity> bookAdditionalFileRepository = new HashMap<>();
+    private final Map<Long, BookFileEntity> bookAdditionalFileRepository = new HashMap<>();
 
     public LibraryTestBuilder(MockedStatic<FileUtils> fileUtilsMock,
                               MockedStatic<FileFingerprint> fileFingerprintMock,
@@ -91,9 +91,9 @@ public class LibraryTestBuilder {
 
         // lenient is used to avoid strict stubbing issues,
         // the builder does not know when the save method will be called
-        lenient().when(bookAdditionalFileRepositoryMock.save(any(BookAdditionalFileEntity.class)))
+        lenient().when(bookAdditionalFileRepositoryMock.save(any(BookFileEntity.class)))
                 .thenAnswer(invocation -> {
-                    BookAdditionalFileEntity additionalFile = invocation.getArgument(0);
+                    BookFileEntity additionalFile = invocation.getArgument(0);
                     return saveBookAdditionalFile(additionalFile);
                 });
     }
@@ -154,7 +154,7 @@ public class LibraryTestBuilder {
         return bookMap.get(bookTitle);
     }
 
-    public List<BookAdditionalFileEntity> getBookAdditionalFiles() {
+    public List<BookFileEntity> getBookAdditionalFiles() {
         return new ArrayList<>(bookAdditionalFileRepository.values());
     }
 
@@ -316,7 +316,7 @@ public class LibraryTestBuilder {
         return bookRepository.get(bookId);
     }
 
-    private @NotNull BookAdditionalFileEntity saveBookAdditionalFile(BookAdditionalFileEntity additionalFile) {
+    private @NotNull BookFileEntity saveBookAdditionalFile(BookFileEntity additionalFile) {
         if (additionalFile.getId() != null) {
             throw new IllegalArgumentException("ID must be null for new additional files");
         }

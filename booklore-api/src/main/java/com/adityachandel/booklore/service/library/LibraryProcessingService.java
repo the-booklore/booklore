@@ -2,7 +2,7 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
@@ -134,11 +134,11 @@ public class LibraryProcessingService {
                 .map(LibraryFile::getFileName)
                 .collect(Collectors.toSet());
 
-        List<BookAdditionalFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
+        List<BookFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
 
         return allAdditionalFiles.stream()
                 .filter(additionalFile -> !currentFileNames.contains(additionalFile.getFileName()))
-                .map(BookAdditionalFileEntity::getId)
+                .map(BookFileEntity::getId)
                 .collect(Collectors.toList());
     }
 }

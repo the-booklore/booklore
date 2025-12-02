@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.service.file.AdditionalFileService;
 import com.adityachandel.booklore.service.upload.FileUploadService;
@@ -25,29 +25,29 @@ public class AdditionalFileController {
 
     @GetMapping
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<List<AdditionalFile>> getAdditionalFiles(@PathVariable Long bookId) {
-        List<AdditionalFile> files = additionalFileService.getAdditionalFilesByBookId(bookId);
+    public ResponseEntity<List<BookFile>> getAdditionalFiles(@PathVariable Long bookId) {
+        List<BookFile> files = additionalFileService.getAdditionalFilesByBookId(bookId);
         return ResponseEntity.ok(files);
     }
 
     @GetMapping(params = "type")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<List<AdditionalFile>> getAdditionalFilesByType(
+    public ResponseEntity<List<BookFile>> getAdditionalFilesByType(
             @PathVariable Long bookId,
             @RequestParam AdditionalFileType type) {
-        List<AdditionalFile> files = additionalFileService.getAdditionalFilesByBookIdAndType(bookId, type);
+        List<BookFile> files = additionalFileService.getAdditionalFilesByBookIdAndType(bookId, type);
         return ResponseEntity.ok(files);
     }
 
     @PostMapping(consumes = "multipart/form-data")
     @CheckBookAccess(bookIdParam = "bookId")
     @PreAuthorize("@securityUtil.canUpload() or @securityUtil.isAdmin()")
-    public ResponseEntity<AdditionalFile> uploadAdditionalFile(
+    public ResponseEntity<BookFile> uploadAdditionalFile(
             @PathVariable Long bookId,
             @RequestParam("file") MultipartFile file,
             @RequestParam AdditionalFileType additionalFileType,
             @RequestParam(required = false) String description) {
-        AdditionalFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, additionalFileType, description);
+        BookFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, additionalFileType, description);
         return ResponseEntity.ok(additionalFile);
     }
 
