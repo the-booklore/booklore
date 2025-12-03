@@ -8,15 +8,15 @@
             @if (entityType === EntityType.ALL_BOOKS) {
               @if (currentFilterLabel && rawFilterParamFromUrl) {
                 {{ currentFilterLabel }}
-              } @else if (hasSidebarFilters || hasSearchTerm) {
+              } @else if (isFilterActive || hasSearchTerm) {
                 {{ computedFilterLabel }}
               } @else {
                 All Books
               }
             } @else if (entityType === EntityType.UNSHELVED) {
-              {{ (hasSidebarFilters || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
+              {{ (isFilterActive || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
             } @else {
-              {{ entityType }}: {{ (entity$ | async)?.name }}{{ (hasSidebarFilters || hasSearchTerm) ? ' (Filtered)' : '' }}
+              {{ entityType }}: {{ (entity$ | async)?.name }}{{ (isFilterActive || hasSearchTerm) ? ' (Filtered)' : '' }}
             }
           </p>
 

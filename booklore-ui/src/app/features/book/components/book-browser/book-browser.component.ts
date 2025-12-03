@@ -174,12 +174,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table';
   }
 
-  get hasSidebarFilters(): boolean {
-    return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0;
-  }
-
   get isFilterActive(): boolean {
-    return this.selectedFilter.value !== null;
+    return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0;
   }
 
   get computedFilterLabel(): string {
@@ -401,14 +397,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   ngAfterViewInit() {
     if (this.bookFilterComponent) {
-      this.bookFilterComponent.selectedFilterMode = this.selectedFilterMode.getValue();
       this.bookFilterComponent.setFilters?.(this.parsedFilters);
       this.bookFilterComponent.onFiltersChanged?.();
+      this.bookFilterComponent.selectedFilterMode = this.selectedFilterMode.getValue();
     }
   }
 
   onFilterSelected(filters: Record<string, any> | null): void {
-    if (this.settingFiltersFromUrl || filters === null) return;
+    if (this.settingFiltersFromUrl) return;
 
     this.selectedFilter.next(filters);
     this.rawFilterParamFromUrl = null;
