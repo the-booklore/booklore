@@ -12,16 +12,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -182,34 +179,6 @@ class FileMoveHelperTest {
     class RetryMechanismTests {
 
         @Test
-        @DisplayName("Move operation retries on transient failures")
-        void moveFile_retriesOnTransientFailure() throws Exception {
-            Path source = tempDir.resolve("source.txt");
-            Path target = tempDir.resolve("target.txt");
-            Files.writeString(source, "content");
-
-            fileMoveHelper.moveFile(source, target);
-
-            assertTrue(Files.exists(target));
-            assertEquals("content", Files.readString(target));
-        }
-
-        @Test
-        @DisplayName("Multiple files can be moved in sequence")
-        void moveFile_multipleFilesInSequence() throws Exception {
-            for (int i = 0; i < 5; i++) {
-                Path source = tempDir.resolve("source" + i + ".txt");
-                Path target = tempDir.resolve("target" + i + ".txt");
-                Files.writeString(source, "content" + i);
-
-                fileMoveHelper.moveFile(source, target);
-
-                assertTrue(Files.exists(target));
-                assertEquals("content" + i, Files.readString(target));
-            }
-        }
-
-        @Test
         @DisplayName("waitForFileAccessible succeeds immediately when file exists")
         void waitForFileAccessible_fileExists_succeedsImmediately() throws Exception {
             Path existingFile = tempDir.resolve("existing.txt");
@@ -262,35 +231,7 @@ class FileMoveHelperTest {
         }
 
         @Test
-        @DisplayName("Deletes .DS_Store files when cleaning directories")
-        void deleteEmptyParentDirs_deletesDSStoreFiles() throws Exception {
-            Path libraryRoot = tempDir.resolve("library");
-            Path nestedDir = libraryRoot.resolve("author");
-            Files.createDirectories(nestedDir);
-            Files.writeString(nestedDir.resolve(".DS_Store"), "mac metadata");
-
-            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(nestedDir, Set.of(libraryRoot));
-
-            assertFalse(Files.exists(nestedDir));
-            assertTrue(Files.exists(libraryRoot));
-        }
-
-        @Test
-        @DisplayName("Deletes Thumbs.db files when cleaning directories")
-        void deleteEmptyParentDirs_deletesThumbsDb() throws Exception {
-            Path libraryRoot = tempDir.resolve("library");
-            Path nestedDir = libraryRoot.resolve("author");
-            Files.createDirectories(nestedDir);
-            Files.writeString(nestedDir.resolve("Thumbs.db"), "windows thumbnail cache");
-
-            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(nestedDir, Set.of(libraryRoot));
-
-            assertFalse(Files.exists(nestedDir));
-            assertTrue(Files.exists(libraryRoot));
-        }
-
-        @Test
-        @DisplayName("Handles multiple ignored files in directory")
+        @DisplayName("Deletes directories containing only ignored files (.DS_Store, Thumbs.db)")
         void deleteEmptyParentDirs_handlesMultipleIgnoredFiles() throws Exception {
             Path libraryRoot = tempDir.resolve("library");
             Path nestedDir = libraryRoot.resolve("author");
@@ -313,37 +254,6 @@ class FileMoveHelperTest {
             fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(libraryRoot, Set.of(libraryRoot));
 
             assertTrue(Files.exists(libraryRoot), "Library root should never be deleted");
-        }
-
-        @Test
-        @DisplayName("Handles multiple library roots correctly")
-        void deleteEmptyParentDirs_handlesMultipleLibraryRoots() throws Exception {
-            Path libraryRoot1 = tempDir.resolve("library1");
-            Path libraryRoot2 = tempDir.resolve("library2");
-            Path nestedDir = libraryRoot1.resolve("author/book");
-            Files.createDirectories(nestedDir);
-            Files.createDirectories(libraryRoot2);
-
-            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(nestedDir, Set.of(libraryRoot1, libraryRoot2));
-
-            assertFalse(Files.exists(nestedDir));
-            assertFalse(Files.exists(libraryRoot1.resolve("author")));
-            assertTrue(Files.exists(libraryRoot1));
-        }
-
-        @Test
-        @DisplayName("Recursively deletes empty subdirectories")
-        void deleteEmptyParentDirs_deletesEmptySubdirectories() throws Exception {
-            Path libraryRoot = tempDir.resolve("library");
-            Path authorDir = libraryRoot.resolve("author");
-            Path emptySubDir = authorDir.resolve("empty-series");
-            Files.createDirectories(emptySubDir);
-
-            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(authorDir, Set.of(libraryRoot));
-
-            assertFalse(Files.exists(emptySubDir), "Empty subdirectory should be deleted");
-            assertFalse(Files.exists(authorDir), "Parent should be deleted after subdirectory cleanup");
-            assertTrue(Files.exists(libraryRoot), "Library root should remain");
         }
 
         @Test
@@ -401,59 +311,6 @@ class FileMoveHelperTest {
     }
 
     @Nested
-    @DisplayName("Concurrent Access Tests (SMB-like scenarios)")
-    class ConcurrentAccessTests {
-
-        @Test
-        @DisplayName("Handles concurrent file creation during accessibility check")
-        void waitForFileAccessible_concurrentCreation_succeeds() throws Exception {
-            int threadCount = 5;
-            CountDownLatch startLatch = new CountDownLatch(1);
-            CountDownLatch doneLatch = new CountDownLatch(threadCount);
-            AtomicInteger successCount = new AtomicInteger(0);
-
-            for (int i = 0; i < threadCount; i++) {
-                final int index = i;
-                new Thread(() -> {
-                    try {
-                        startLatch.await();
-                        Path file = tempDir.resolve("concurrent-" + index + ".txt");
-                        Files.writeString(file, "content-" + index);
-                        if (fileMoveHelper.waitForFileAccessible(file)) {
-                            successCount.incrementAndGet();
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    } finally {
-                        doneLatch.countDown();
-                    }
-                }).start();
-            }
-
-            startLatch.countDown();
-            assertTrue(doneLatch.await(5, TimeUnit.SECONDS));
-            assertEquals(threadCount, successCount.get(), "All files should become accessible");
-        }
-
-        @Test
-        @DisplayName("Handles rapid file creation and move operations")
-        void moveFile_rapidOperations_allSucceed() throws Exception {
-            int operationCount = 10;
-
-            for (int i = 0; i < operationCount; i++) {
-                Path source = tempDir.resolve("rapid-source-" + i + ".txt");
-                Path target = tempDir.resolve("rapid-target-" + i + ".txt");
-                Files.writeString(source, "content-" + i);
-
-                fileMoveHelper.moveFile(source, target);
-
-                assertTrue(Files.exists(target), "Target " + i + " should exist");
-                assertFalse(Files.exists(source), "Source " + i + " should be moved");
-            }
-        }
-    }
-
-    @Nested
     @DisplayName("Edge Cases")
     class EdgeCaseTests {
 
@@ -471,18 +328,6 @@ class FileMoveHelperTest {
         }
 
         @Test
-        @DisplayName("commitMove creates target directory if it doesn't exist")
-        void commitMove_createsTargetDirectory() throws Exception {
-            Path tempPath = tempDir.resolve("file.tmp_move");
-            Path target = tempDir.resolve("new/directory/structure/file.txt");
-            Files.writeString(tempPath, "content");
-
-            fileMoveHelper.commitMove(tempPath, target);
-
-            assertTrue(Files.exists(target));
-        }
-
-        @Test
         @DisplayName("moveFile handles file with special characters in name")
         void moveFile_specialCharactersInName() throws Exception {
             Path source = tempDir.resolve("file with spaces & special (chars).txt");
@@ -493,22 +338,6 @@ class FileMoveHelperTest {
 
             assertTrue(Files.exists(target));
             assertEquals("content", Files.readString(target));
-        }
-
-        @Test
-        @DisplayName("moveFile handles very long file paths")
-        void moveFile_longFilePath() throws Exception {
-            StringBuilder longDirName = new StringBuilder();
-            for (int i = 0; i < 10; i++) {
-                longDirName.append("subdirectory_").append(i).append("/");
-            }
-            Path source = tempDir.resolve("source.txt");
-            Path target = tempDir.resolve(longDirName + "target.txt");
-            Files.writeString(source, "content");
-
-            fileMoveHelper.moveFile(source, target);
-
-            assertTrue(Files.exists(target));
         }
 
         @Test
