@@ -25,9 +25,9 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {Menu} from 'primeng/menu';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
-import {BookFilterComponent, BookFilterMode} from './book-filter/book-filter.component';
+import {BookFilterComponent} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
-import {EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
+import {BookFilterMode, EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
 import {SideBarFilter} from './filters/SidebarFilter';
 import {HeaderFilter} from './filters/HeaderFilter';
@@ -267,12 +267,12 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
       const directionParam = queryParamMap.get(QUERY_PARAMS.DIRECTION);
       const filterParams = queryParamMap.get(QUERY_PARAMS.FILTER);
-      const filterMode = <BookFilterMode>queryParamMap.get(QUERY_PARAMS.FMODE);
+      const filterMode = queryParamMap.get(QUERY_PARAMS.FMODE) || user.user?.userSettings?.filterMode;
 
       if (filterMode && filterMode !== this.selectedFilterMode.getValue()) {
-        this.selectedFilterMode.next(filterMode);
+        this.selectedFilterMode.next(<BookFilterMode>filterMode);
         if (this.bookFilterComponent) {
-          this.bookFilterComponent.selectedFilterMode = filterMode;
+          this.bookFilterComponent.selectedFilterMode = <BookFilterMode>filterMode;
         }
       }
 

@@ -67,6 +67,7 @@ public class BookLoreUserTransformer {
                     }
                 } else {
                     switch (settingKey) {
+                        case FILTER_MODE -> userSettings.setFilterMode(value);
                         case FILTER_SORTING_MODE -> userSettings.setFilterSortingMode(value);
                         case METADATA_CENTER_VIEW_MODE -> userSettings.setMetadataCenterViewMode(value);
                     }

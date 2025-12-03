@@ -11,15 +11,12 @@ import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
-import {UserService} from '../../../../settings/user-management/user.service';
+import {BookFilterMode, UserService} from '../../../../settings/user-management/user.service';
 import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
-import {Tooltip} from 'primeng/tooltip';
 
 type Filter<T> = { value: T; bookCount: number };
-
-export type BookFilterMode = 'and' | 'or' | 'single';
 
 export const ratingRanges = [
   {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
@@ -153,7 +150,6 @@ function getReadStatusName(status?: ReadStatus | null): string {
     TitleCasePipe,
     FormsModule,
     SelectButton,
-    Tooltip,
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {

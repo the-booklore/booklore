@@ -49,6 +49,7 @@ public class BookLoreUser {
         public SidebarSortOption sidebarShelfSorting;
         public EntityViewPreferences entityViewPreferences;
         public List<TableColumnPreference> tableColumnPreference;
+        public String filterMode;
         public String filterSortingMode;
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
