@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -35,7 +36,8 @@ public class FileMoveHelper {
     private static final Set<Class<? extends Exception>> RETRYABLE_EXCEPTIONS = Set.of(
             NoSuchFileException.class,
             AccessDeniedException.class,
-            FileSystemException.class
+            FileSystemException.class,
+            DirectoryNotEmptyException.class
     );
     private static final Set<String> IGNORED_FILENAMES = Set.of(".DS_Store", "Thumbs.db");
 
@@ -186,7 +188,11 @@ public class FileMoveHelper {
             return false;
         }
 
-        recursivelyDeleteEmptySubdirectories(contents, libraryRoots);
+        boolean deletedAnySubdirectory = recursivelyDeleteEmptySubdirectories(contents, libraryRoots);
+        
+        if (deletedAnySubdirectory) {
+            sleep();
+        }
 
         File[] remainingContents = dir.toFile().listFiles();
         if (remainingContents == null) {
@@ -202,12 +208,16 @@ public class FileMoveHelper {
         return false;
     }
 
-    private void recursivelyDeleteEmptySubdirectories(File[] contents, Set<Path> libraryRoots) {
+    private boolean recursivelyDeleteEmptySubdirectories(File[] contents, Set<Path> libraryRoots) {
+        boolean deletedAny = false;
         for (File file : contents) {
             if (isNonSymlinkDirectory(file)) {
-                deleteIfEffectivelyEmpty(file.toPath(), libraryRoots);
+                if (deleteIfEffectivelyEmpty(file.toPath(), libraryRoots)) {
+                    deletedAny = true;
+                }
             }
         }
+        return deletedAny;
     }
 
     private boolean isNonSymlinkDirectory(File file) {
@@ -248,7 +258,7 @@ public class FileMoveHelper {
             }
         }
         try {
-            Files.delete(currentDir);
+            executeWithRetry(() -> Files.delete(currentDir));
             log.info("Deleted empty directory: {}", currentDir);
         } catch (IOException e) {
             log.warn("Failed to delete directory: {}", currentDir, e);
