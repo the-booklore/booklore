@@ -1,8 +1,92 @@
 .plus-icon {
   color: var(--p-primary-color);
   transition: color 0.2s ease;
+  font-size: 0.8rem;
+  cursor: pointer;
 
   &:hover {
     color: var(--p-green-400);
   }
+}
+
+.root-item-with-dropdown {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding-top: 1rem;
+}
+
+.root-item-label-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.expand-icon {
+  color: var(--p-surface-500);
+  padding-right: 0.75rem;
+
+  &:hover {
+    color: var(--p-surface-200);
+  }
+}
+
+.root-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-item-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--p-surface-700);
+    border-radius: 8px;
+  }
+}
+
+:host(.active-menuitem) .menu-item-container {
+  background-color: var(--p-surface-800);
+  border-radius: 8px;
+}
+
+.menu-item-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.menu-item-text {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-item-end-content {
+  display: flex;
+}
+
+.entity-menu-button {
+  height: 30px;
+  display: flex;
+}
+
+.book-count {
+  color: var(--primary-color);
+  padding-right: 0.75rem;
+}
+
+.submenu-container {
+  overflow: hidden;
 }
