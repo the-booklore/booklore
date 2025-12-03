@@ -167,18 +167,51 @@ public class FileMoveHelper {
             if (isLibraryRoot(dir, normalizedRoots)) {
                 break;
             }
-            File[] files = dir.toFile().listFiles();
-            if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
-                break;
-            }
-            if (hasOnlyIgnoredFiles(files)) {
-                deleteIgnoredFilesAndDirectory(files, dir);
+            if (deleteIfEffectivelyEmpty(dir, normalizedRoots)) {
                 dir = dir.getParent();
             } else {
                 break;
             }
         }
+    }
+
+    private boolean deleteIfEffectivelyEmpty(Path dir, Set<Path> libraryRoots) {
+        if (isLibraryRoot(dir, libraryRoots)) {
+            return false;
+        }
+
+        File[] contents = dir.toFile().listFiles();
+        if (contents == null) {
+            log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
+            return false;
+        }
+
+        recursivelyDeleteEmptySubdirectories(contents, libraryRoots);
+
+        File[] remainingContents = dir.toFile().listFiles();
+        if (remainingContents == null) {
+            log.warn("Cannot read directory after subdirectory cleanup: {}", dir);
+            return false;
+        }
+
+        if (isSafeToDelete(remainingContents)) {
+            deleteIgnoredFilesAndDirectory(remainingContents, dir);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void recursivelyDeleteEmptySubdirectories(File[] contents, Set<Path> libraryRoots) {
+        for (File file : contents) {
+            if (isNonSymlinkDirectory(file)) {
+                deleteIfEffectivelyEmpty(file.toPath(), libraryRoots);
+            }
+        }
+    }
+
+    private boolean isNonSymlinkDirectory(File file) {
+        return file.isDirectory() && !Files.isSymbolicLink(file.toPath());
     }
 
     private boolean isLibraryRoot(Path currentDir, Set<Path> normalizedRoots) {
@@ -194,9 +227,11 @@ public class FileMoveHelper {
         return false;
     }
 
-    private boolean hasOnlyIgnoredFiles(File[] files) {
+    private boolean isSafeToDelete(File[] files) {
         for (File file : files) {
-            if (!IGNORED_FILENAMES.contains(file.getName())) {
+            if (Files.isSymbolicLink(file.toPath()) 
+                    || file.isDirectory() 
+                    || !IGNORED_FILENAMES.contains(file.getName())) {
                 return false;
             }
         }
@@ -231,10 +266,7 @@ public class FileMoveHelper {
                 operation.execute();
                 return;
             } catch (IOException e) {
-                boolean isRetryable = RETRYABLE_EXCEPTIONS.stream()
-                        .anyMatch(exceptionType -> exceptionType.isInstance(e));
-
-                if (!isRetryable || attempt == MAX_ATTEMPTS) {
+                if (!isRetryableException(e) || attempt == MAX_ATTEMPTS) {
                     throw e;
                 }
 
@@ -244,6 +276,10 @@ public class FileMoveHelper {
                 sleep();
             }
         }
+    }
+
+    private boolean isRetryableException(IOException e) {
+        return RETRYABLE_EXCEPTIONS.stream().anyMatch(type -> type.isInstance(e));
     }
 
     private void sleep() {

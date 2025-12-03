@@ -330,6 +330,74 @@ class FileMoveHelperTest {
             assertFalse(Files.exists(libraryRoot1.resolve("author")));
             assertTrue(Files.exists(libraryRoot1));
         }
+
+        @Test
+        @DisplayName("Recursively deletes empty subdirectories")
+        void deleteEmptyParentDirs_deletesEmptySubdirectories() throws Exception {
+            Path libraryRoot = tempDir.resolve("library");
+            Path authorDir = libraryRoot.resolve("author");
+            Path emptySubDir = authorDir.resolve("empty-series");
+            Files.createDirectories(emptySubDir);
+
+            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(authorDir, Set.of(libraryRoot));
+
+            assertFalse(Files.exists(emptySubDir), "Empty subdirectory should be deleted");
+            assertFalse(Files.exists(authorDir), "Parent should be deleted after subdirectory cleanup");
+            assertTrue(Files.exists(libraryRoot), "Library root should remain");
+        }
+
+        @Test
+        @DisplayName("Recursively deletes nested empty subdirectories")
+        void deleteEmptyParentDirs_deletesNestedEmptySubdirectories() throws Exception {
+            Path libraryRoot = tempDir.resolve("library");
+            Path authorDir = libraryRoot.resolve("author");
+            Path seriesDir = authorDir.resolve("series");
+            Path deepEmptyDir = seriesDir.resolve("volume/chapter");
+            Files.createDirectories(deepEmptyDir);
+
+            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(authorDir, Set.of(libraryRoot));
+
+            assertFalse(Files.exists(deepEmptyDir), "Deep empty directory should be deleted");
+            assertFalse(Files.exists(seriesDir), "Series directory should be deleted");
+            assertFalse(Files.exists(authorDir), "Author directory should be deleted");
+            assertTrue(Files.exists(libraryRoot), "Library root should remain");
+        }
+
+        @Test
+        @DisplayName("Does not delete subdirectories containing real files")
+        void deleteEmptyParentDirs_preservesSubdirectoriesWithFiles() throws Exception {
+            Path libraryRoot = tempDir.resolve("library");
+            Path authorDir = libraryRoot.resolve("author");
+            Path seriesWithBook = authorDir.resolve("series-with-book");
+            Path emptySeriesDir = authorDir.resolve("empty-series");
+            Files.createDirectories(seriesWithBook);
+            Files.createDirectories(emptySeriesDir);
+            Files.writeString(seriesWithBook.resolve("book.epub"), "ebook content");
+
+            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(authorDir, Set.of(libraryRoot));
+
+            assertFalse(Files.exists(emptySeriesDir), "Empty subdirectory should be deleted");
+            assertTrue(Files.exists(seriesWithBook), "Subdirectory with files should remain");
+            assertTrue(Files.exists(seriesWithBook.resolve("book.epub")), "File should remain");
+            assertTrue(Files.exists(authorDir), "Parent should remain because it has non-empty subdirectory");
+        }
+
+        @Test
+        @DisplayName("Deletes subdirectories containing only ignored files")
+        void deleteEmptyParentDirs_deletesSubdirectoriesWithOnlyIgnoredFiles() throws Exception {
+            Path libraryRoot = tempDir.resolve("library");
+            Path authorDir = libraryRoot.resolve("author");
+            Path subDirWithIgnored = authorDir.resolve("series");
+            Files.createDirectories(subDirWithIgnored);
+            Files.writeString(subDirWithIgnored.resolve(".DS_Store"), "mac metadata");
+            Files.writeString(subDirWithIgnored.resolve("Thumbs.db"), "windows cache");
+
+            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(authorDir, Set.of(libraryRoot));
+
+            assertFalse(Files.exists(subDirWithIgnored), "Subdirectory with only ignored files should be deleted");
+            assertFalse(Files.exists(authorDir), "Parent should be deleted");
+            assertTrue(Files.exists(libraryRoot), "Library root should remain");
+        }
     }
 
     @Nested
