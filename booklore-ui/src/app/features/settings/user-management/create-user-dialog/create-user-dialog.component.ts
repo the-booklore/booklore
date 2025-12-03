@@ -92,4 +92,8 @@ export class CreateUserDialogComponent implements OnInit {
       }
     });
   }
+
+  closeDialog(): void {
+    this.ref.close();
+  }
 }

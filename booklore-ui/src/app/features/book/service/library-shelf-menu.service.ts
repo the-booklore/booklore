@@ -45,6 +45,7 @@ export class LibraryShelfMenuService {
                 header: 'Edit Library',
                 modal: true,
                 closable: true,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
                   mode: 'edit',
                   libraryId: entity?.id

@@ -25,7 +25,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {Menu} from 'primeng/menu';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
-import {BookFilterComponent} from './book-filter/book-filter.component';
+import {BookFilterComponent, BookFilterMode} from './book-filter/book-filter.component';
 import {Tooltip} from 'primeng/tooltip';
 import {EntityViewPreferences, UserService} from '../../../settings/user-management/user.service';
 import {SeriesCollapseFilter} from './filters/SeriesCollapseFilter';
@@ -63,6 +63,7 @@ const QUERY_PARAMS = {
   SORT: 'sort',
   DIRECTION: 'direction',
   FILTER: 'filter',
+  FMODE: 'fmode',
   SIDEBAR: 'sidebar',
   FROM: 'from',
 };
@@ -126,7 +127,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   searchTerm$ = new BehaviorSubject<string>('');
   parsedFilters: Record<string, string[]> = {};
   selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
-  selectedFilterMode = new BehaviorSubject<'and' | 'or' | 'single'>('and');
+  selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
   entityType: EntityType | undefined;
@@ -173,12 +174,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     return this.currentViewMode === VIEW_MODES.GRID ? 'pi pi-objects-column' : 'pi pi-table';
   }
 
-  get hasSidebarFilters(): boolean {
-    return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0;
-  }
-
   get isFilterActive(): boolean {
-    return this.selectedFilter.value !== null;
+    return !!this.selectedFilter.value && Object.keys(this.selectedFilter.value).length > 0;
   }
 
   get computedFilterLabel(): string {
@@ -270,6 +267,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
       const directionParam = queryParamMap.get(QUERY_PARAMS.DIRECTION);
       const filterParams = queryParamMap.get(QUERY_PARAMS.FILTER);
+      const filterMode = <BookFilterMode>queryParamMap.get(QUERY_PARAMS.FMODE);
+
+      if (filterMode && filterMode !== this.selectedFilterMode.getValue()) {
+        this.selectedFilterMode.next(filterMode);
+        if (this.bookFilterComponent) {
+          this.bookFilterComponent.selectedFilterMode = filterMode;
+        }
+      }
 
       this.sidebarFilterTogglePrefService.showFilter$.subscribe(value => {
         this.showFilter = value;
@@ -366,7 +371,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const queryParams: any = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
         [QUERY_PARAMS.SORT]: this.bookSorter.selectedSort.field,
-        [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING
+        [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING,
+        [QUERY_PARAMS.FMODE]: this.selectedFilterMode.getValue(),
       };
 
       if (Object.keys(parsedFilters).length > 0) {
@@ -393,6 +399,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (this.bookFilterComponent) {
       this.bookFilterComponent.setFilters?.(this.parsedFilters);
       this.bookFilterComponent.onFiltersChanged?.();
+      this.bookFilterComponent.selectedFilterMode = this.selectedFilterMode.getValue();
     }
   }
 
@@ -416,8 +423,26 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onFilterModeChanged(mode: 'and' | 'or' | 'single'): void {
+  onFilterModeChanged(mode: BookFilterMode): void {
+    if (this.settingFiltersFromUrl || mode === this.selectedFilterMode.getValue()) return;
+
     this.selectedFilterMode.next(mode);
+
+    // Clear filters if switching from multiple selected to single mode
+    const params: any = {[QUERY_PARAMS.FMODE]: mode};
+    if (mode === 'single') {
+      const categories = Object.keys(this.parsedFilters);
+      if (categories.length > 1 || (categories.length == 1 && this.parsedFilters[categories[0]].length > 1)) {
+        params[QUERY_PARAMS.FILTER] = null;
+      }
+    }
+
+    this.router.navigate([], {
+      relativeTo: this.activatedRoute,
+      queryParams: params,
+      queryParamsHandling: 'merge',
+      replaceUrl: false
+    });
   }
 
   toggleSidebar(): void {

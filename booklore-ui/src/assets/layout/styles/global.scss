@@ -3,3 +3,19 @@
 .hidden {
   display: none;
 }
+
+.dynamic-dialog-minimal.p-dialog {
+  border: none;
+
+  .p-dialog-content {
+    padding: 0;
+  }
+}
+
+.gradient-divider {
+  min-height: 1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 0.25rem 0;
+  flex-shrink: 0;
+}

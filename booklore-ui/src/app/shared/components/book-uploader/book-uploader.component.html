@@ -1,141 +1,189 @@
 @if ((libraryState$ | async)?.libraries; as libraries) {
-  <div
-    class="flex flex-col gap-8 p-4 items-center justify-center w-full max-w-[700px]">
-    <div class="flex flex-col items-center gap-2 w-full">
-      <label class="text-sm text-stone-400">Upload Destination</label>
-      <p-selectbutton
-        [options]="stateOptions"
-        [(ngModel)]="value"
-        [allowEmpty]="false"
-        optionLabel="label"
-        optionValue="value">
-      </p-selectbutton>
+  <div class="book-uploader">
+    <div class="panel-header">
+      <div class="header-icon-wrapper">
+        <i class="pi pi-cloud-upload header-icon"></i>
+      </div>
+      <div class="header-text">
+        <h2 class="panel-title">Upload Books</h2>
+        <p class="panel-description">
+          Upload your books to library or bookdrop folder
+        </p>
+      </div>
+      <p-button
+        icon="pi pi-times"
+        (click)="closeDialog()"
+        severity="secondary"
+        [text]="true"
+        [rounded]="true"
+        class="close-button"/>
     </div>
-    @if (value === 'library') {
-      <p-select
-        [options]="libraries"
-        optionLabel="name"
-        placeholder="Select Library"
-        [(ngModel)]="selectedLibrary"
-        class="w-full"></p-select>
-      <p-select
-        [options]="selectedLibrary?.paths"
-        optionLabel="path"
-        placeholder="Select Subpath"
-        [(ngModel)]="selectedPath"
-        [disabled]="!selectedLibrary"
-        class="w-full"></p-select>
-    }
-    <p-fileupload class="w-full" name="file"
-                  [maxFileSize]="maxFileSizeBytes"
-                  [customUpload]="true"
-                  [multiple]="true" accept=".pdf,.epub,.cbz,.cbr,.cb7"
-                  (onSelect)="onFilesSelect($event)"
-                  (uploadHandler)="uploadFiles($event)"
-                  [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
-      <ng-template #header let-files let-chooseCallback="chooseCallback" let-clearCallback="clearCallback" let-uploadCallback="uploadCallback">
-        <div class="flex flex-col items-center justify-center flex-1 gap-4">
-          <div class="flex gap-4">
-            <p-button
-              (onClick)="choose($event, chooseCallback)"
-              icon="pi pi-images"
-              [rounded]="true"
-              [outlined]="true"
-              [disabled]="isChooseDisabled()"
-              pTooltip="Choose files to upload"
-              tooltipPosition="top"/>
 
-            <p-button
-              (onClick)="uploadEvent(uploadCallback)"
-              icon="pi pi-cloud-upload"
-              [rounded]="true"
-              [outlined]="true"
-              severity="success"
-              [disabled]="isUploadDisabled()"
-              pTooltip="Start uploading selected files"
-              tooltipPosition="top"/>
-
-            <p-button
-              (onClick)="onClear(clearCallback)"
-              icon="pi pi-times"
-              [rounded]="true"
-              [outlined]="true"
-              severity="danger"
-              [disabled]="!filesPresent() || isUploading"
-              pTooltip="Clear selected files"
-              tooltipPosition="top"/>
-          </div>
-          <div>Click the upload icon to upload the files.</div>
+    <div class="upload-container">
+      <div class="destination-section">
+        <div class="section-header">
+          <span class="section-title">
+            <i class="pi pi-map-marker"></i>
+            Upload Destination
+          </span>
         </div>
-      </ng-template>
-      <ng-template #content let-files let-removeFileCallback="removeFileCallback">
-        <div class="flex flex-col gap-8 px-4">
-          @if (files?.length > 0) {
-            <div>
-              <div class="max-h-96 max-w-[22rem] md:max-w-none overflow-y-auto pr-2">
-                <div class="flex flex-wrap">
-                  @for (uploadFile of this.files; track uploadFile; let i = $index) {
-                    <div class="flex justify-between items-center w-full gap-4">
-                      <div class="flex items-center gap-4 overflow-hidden flex-1">
-                        <p-badge [value]="uploadFile.status === 'Pending' ? 'Ready to Upload' : uploadFile.status" [severity]="getBadgeSeverity(uploadFile.status)"
-                                 class="shrink-0"/>
-                        <span class="font-semibold text-ellipsis whitespace-nowrap overflow-hidden flex-1">
-                          {{ uploadFile.file.name }}
-                        </span>
-                        <div class="shrink-0">{{ formatSize(uploadFile.file.size) }}</div>
-                      </div>
+        <div class="destination-selector">
+          <p-selectbutton
+            [options]="stateOptions"
+            [(ngModel)]="value"
+            [allowEmpty]="false"
+            optionLabel="label"
+            optionValue="value">
+          </p-selectbutton>
+        </div>
+      </div>
+
+      @if (value === 'library') {
+        <div class="gradient-divider"></div>
+        <div class="library-selection">
+          <div class="section-header">
+            <span class="section-title">
+              <i class="pi pi-building"></i>
+              Library Selection
+            </span>
+          </div>
+          <div class="selection-fields">
+            <div class="field-group">
+              <label for="library-select" class="field-label">Library</label>
+              <p-select
+                inputId="library-select"
+                [options]="libraries"
+                optionLabel="name"
+                placeholder="Select Library"
+                [(ngModel)]="selectedLibrary"
+                class="w-full">
+              </p-select>
+            </div>
+            <div class="field-group">
+              <label for="subpath-select" class="field-label">Subpath</label>
+              <p-select
+                inputId="subpath-select"
+                [options]="selectedLibrary?.paths"
+                optionLabel="path"
+                placeholder="Select Subpath"
+                [(ngModel)]="selectedPath"
+                [disabled]="!selectedLibrary"
+                class="w-full">
+              </p-select>
+            </div>
+          </div>
+        </div>
+      }
+
+      <div class="gradient-divider"></div>
+
+      <div class="file-upload-section">
+        <div class="section-header">
+          <span class="section-title">
+            <i class="pi pi-file"></i>
+            Select Files
+          </span>
+        </div>
+        <p-fileupload
+          name="file"
+          [maxFileSize]="maxFileSizeBytes"
+          [customUpload]="true"
+          [multiple]="true"
+          accept=".pdf,.epub,.cbz,.cbr,.cb7"
+          (onSelect)="onFilesSelect($event)"
+          (uploadHandler)="uploadFiles($event)"
+          [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
+          <ng-template #header let-files let-chooseCallback="chooseCallback" let-clearCallback="clearCallback" let-uploadCallback="uploadCallback">
+            <div class="upload-actions">
+              <div class="action-buttons">
+                <p-button
+                  severity="info"
+                  (onClick)="choose($event, chooseCallback)"
+                  icon="pi pi-images"
+                  label="Choose"
+                  [outlined]="true"
+                  [disabled]="isChooseDisabled()"
+                  pTooltip="Choose files to upload"
+                  tooltipPosition="top"/>
+                <p-button
+                  (onClick)="uploadEvent(uploadCallback)"
+                  icon="pi pi-cloud-upload"
+                  label="Upload"
+                  severity="success"
+                  [disabled]="isUploadDisabled()"
+                  pTooltip="Start uploading selected files"
+                  tooltipPosition="top"/>
+                <p-button
+                  (onClick)="onClear(clearCallback)"
+                  icon="pi pi-times"
+                  label="Clear"
+                  severity="danger"
+                  [outlined]="true"
+                  [disabled]="!filesPresent() || isUploading"
+                  pTooltip="Clear selected files"
+                  tooltipPosition="top"/>
+              </div>
+              <small class="upload-hint">Click "Choose" to select files or drag and drop them below</small>
+            </div>
+          </ng-template>
+          <ng-template #content let-files let-removeFileCallback="removeFileCallback">
+            @if (files?.length > 0) {
+              <div class="files-list">
+                @for (uploadFile of this.files; track uploadFile; let i = $index) {
+                  <div class="file-item">
+                    <div class="file-info">
+                      <p-badge
+                        [value]="uploadFile.status === 'Pending' ? 'Ready' : uploadFile.status"
+                        [severity]="getBadgeSeverity(uploadFile.status)"/>
+                      <span class="file-name">{{ uploadFile.file.name }}</span>
+                      <span class="file-size">{{ formatSize(uploadFile.file.size) }}</span>
+                    </div>
+                    <div class="file-actions">
                       @switch (uploadFile.status) {
                         @case ('Pending') {
                           <p-button
                             icon="pi pi-times"
                             (click)="onRemoveTemplatingFile($event, uploadFile.file, removeFileCallback, i)"
                             severity="danger"
-                            [text]="true"/>
+                            [text]="true"
+                            [rounded]="true"/>
                         }
                         @case ('Uploading') {
-                          <i
-                            class="pi pi-spin pi-spinner p-3"
-                            style="color: slateblue"
-                            pTooltip="Uploading"
-                            tooltipPosition="top">
-                          </i>
+                          <i class="pi pi-spin pi-spinner status-icon uploading"></i>
                         }
                         @case ('Uploaded') {
-                          <i
-                            class="pi pi-check p-3"
-                            style="color: green"
-                            pTooltip="Uploaded"
-                            tooltipPosition="top">
-                          </i>
+                          <i class="pi pi-check status-icon success"></i>
                         }
                         @case ('Failed') {
                           <i
-                            class="pi pi-exclamation-triangle p-3"
-                            style="color: darkred"
-                            pTooltip="{{ uploadFile.errorMessage || 'Upload failed' }}"
+                            class="pi pi-exclamation-triangle status-icon error"
+                            [pTooltip]="uploadFile.errorMessage || 'Upload failed'"
                             tooltipPosition="top">
                           </i>
                         }
                       }
                     </div>
-                  }
-                </div>
+                  </div>
+                }
               </div>
+            }
+          </ng-template>
+          <ng-template #file></ng-template>
+          <ng-template #empty>
+            <div class="empty-state">
+              <div class="empty-icon-wrapper">
+                <i class="pi pi-cloud-upload empty-icon"></i>
+              </div>
+              <h3 class="empty-title">Drag and Drop Files</h3>
+              <p class="empty-description">
+                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>
+                <br/>
+                Maximum file size: 100 MB per file
+              </p>
             </div>
-          }
-        </div>
-      </ng-template>
-      <ng-template #file></ng-template>
-      <ng-template #empty>
-        <div class="flex items-center justify-center flex-col text-center">
-          <i class="pi pi-cloud-upload !border-2 !rounded-full !p-8 !text-4xl"></i>
-          <p class="mt-6 mb-2">Drag and drop files here to upload.</p>
-          <p class="mt-2 mb-2">
-            Only <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, and <strong>.cb7</strong> files are supported (max size: 100 MB per
-            file).
-          </p>
-        </div>
-      </ng-template>
-    </p-fileupload>
+          </ng-template>
+        </p-fileupload>
+      </div>
+    </div>
   </div>
 }

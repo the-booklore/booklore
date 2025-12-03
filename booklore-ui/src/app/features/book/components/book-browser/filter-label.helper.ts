@@ -14,7 +14,7 @@ export class FilterLabelHelper {
     publisher: 'Publisher',
     readStatus: 'Read Status',
     personalRating: 'Personal Rating',
-    publishedYear: 'Year Published',
+    publishedDate: 'Year Published',
     matchScore: 'Metadata Match Score',
     language: 'Language',
     bookType: 'Book Type',

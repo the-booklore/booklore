@@ -11,7 +11,7 @@ import {LibraryService} from '../../book/service/library.service';
 import {Library} from '../../book/model/library.model';
 import {MagicShelfService} from '../service/magic-shelf.service';
 import {MessageService} from 'primeng/api';
-import {DynamicDialogConfig} from 'primeng/dynamicdialog';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
@@ -142,6 +142,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
 @Component({
   selector: 'app-magic-shelf',
   templateUrl: './magic-shelf-component.html',
+  styleUrl: './magic-shelf-component.scss',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -202,6 +203,7 @@ export class MagicShelfComponent implements OnInit {
 
   libraryService = inject(LibraryService);
   magicShelfService = inject(MagicShelfService);
+  ref = inject(DynamicDialogRef);
   messageService = inject(MessageService);
   config = inject(DynamicDialogConfig);
   userService = inject(UserService);
@@ -481,5 +483,9 @@ export class MagicShelfComponent implements OnInit {
         });
       }
     });
+  }
+
+  cancel() {
+    this.ref.close();
   }
 }

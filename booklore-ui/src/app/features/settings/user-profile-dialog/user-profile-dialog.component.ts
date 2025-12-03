@@ -1,26 +1,33 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
-import {Divider} from 'primeng/divider';
-import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators} from '@angular/forms';
+import {AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-
 import {Password} from 'primeng/password';
 import {User, UserService} from '../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Subject} from 'rxjs';
-import {Message} from 'primeng/message';
 import {filter, takeUntil} from 'rxjs/operators';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
+
+export const passwordMatchValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
+  const newPassword = control.get('newPassword');
+  const confirmNewPassword = control.get('confirmNewPassword');
+
+  if (!newPassword || !confirmNewPassword) {
+    return null;
+  }
+
+  return newPassword.value === confirmNewPassword.value ? null : {passwordMismatch: true};
+};
 
 @Component({
   selector: 'app-user-profile-dialog',
   imports: [
     Button,
-    Divider,
     FormsModule,
     ReactiveFormsModule,
     InputText,
-    Password,
-    Message
+    Password
   ],
   templateUrl: './user-profile-dialog.component.html',
   styleUrls: ['./user-profile-dialog.component.scss']
@@ -37,17 +44,16 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
   protected readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly fb = inject(FormBuilder);
+  private readonly dialogRef = inject(DynamicDialogRef);
 
   constructor() {
     this.changePasswordForm = this.fb.group(
       {
         currentPassword: ['', Validators.required],
         newPassword: ['', [Validators.required, Validators.minLength(6)]],
-        confirmNewPassword: ['', [Validators.required, Validators.minLength(6)]]
+        confirmNewPassword: ['', Validators.required]
       },
-      {
-        validators: [UserProfileDialogComponent.passwordsMatchValidator]
-      }
+      {validators: passwordMatchValidator}
     );
   }
 
@@ -64,17 +70,6 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
-  }
-
-  static passwordsMatchValidator(form: FormGroup) {
-    const newPassword = form.get('newPassword')?.value;
-    const confirmPassword = form.get('confirmNewPassword')?.value;
-    return newPassword === confirmPassword ? null : {mismatch: true};
-  }
-
-  get passwordsMismatch() {
-    return this.changePasswordForm.hasError('mismatch') &&
-      this.changePasswordForm.get('confirmNewPassword')?.touched;
   }
 
   toggleEdit(): void {
@@ -114,7 +109,6 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Success', detail: 'Profile updated successfully'});
         this.isEditing = false;
-        this.resetEditForm();
       },
       error: (err) => {
         this.messageService.add({
@@ -151,5 +145,9 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
 
   resetPasswordForm(): void {
     this.changePasswordForm.reset();
+  }
+
+  closeDialog(): void {
+    this.dialogRef.close();
   }
 }
