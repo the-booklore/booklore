@@ -49,7 +49,7 @@ public class FileMoveHelper {
             if (attempt < MAX_ATTEMPTS) {
                 log.debug("File not accessible on attempt {}/{}, waiting {}ms: {}",
                         attempt, MAX_ATTEMPTS, RETRY_DELAY_MS, path);
-                sleep();
+                waitBeforeRetry();
             }
         }
         return false;
@@ -109,7 +109,7 @@ public class FileMoveHelper {
                     return;
                 }
                 log.warn("Rollback attempt {}/{} failed, retrying: {}", attempt, MAX_ATTEMPTS, e.getMessage());
-                sleep();
+                waitBeforeRetry();
             }
         }
     }
@@ -191,7 +191,7 @@ public class FileMoveHelper {
         boolean deletedAnySubdirectory = recursivelyDeleteEmptySubdirectories(contents, libraryRoots);
         
         if (deletedAnySubdirectory) {
-            sleep();
+            waitBeforeRetry();
         }
 
         File[] remainingContents = dir.toFile().listFiles();
@@ -283,7 +283,7 @@ public class FileMoveHelper {
                 log.warn("File operation failed (attempt {}/{}), retrying in {}ms: {}",
                         attempt, MAX_ATTEMPTS, RETRY_DELAY_MS, e.getMessage());
 
-                sleep();
+                waitBeforeRetry();
             }
         }
     }
@@ -292,7 +292,7 @@ public class FileMoveHelper {
         return RETRYABLE_EXCEPTIONS.stream().anyMatch(type -> type.isInstance(e));
     }
 
-    private void sleep() {
+    private void waitBeforeRetry() {
         try {
             Thread.sleep(RETRY_DELAY_MS);
         } catch (InterruptedException e) {
