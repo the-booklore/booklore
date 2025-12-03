@@ -467,6 +467,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       dismissableMask: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
+      styleClass: 'dynamic-dialog-minimal',
       baseZIndex: 10,
       style: {
         position: 'absolute',

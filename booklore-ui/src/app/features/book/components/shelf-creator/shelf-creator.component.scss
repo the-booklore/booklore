@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   min-width: 600px;
-  padding-top: 20px;
 
   @media (max-width: 640px) {
     min-width: auto;
@@ -15,7 +14,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1.5rem 1.5rem 1.25rem 1.5rem;
   border-radius: 10px 10px 0 0;
   border: 1px solid var(--border-color);
 
@@ -300,18 +299,12 @@
   }
 }
 
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
-  margin: 0.25rem 0;
-}
-
 .dialog-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-top: none;

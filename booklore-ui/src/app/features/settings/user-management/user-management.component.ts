@@ -110,6 +110,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       showHeader: false,
       modal: true,
       closable: true,
+      styleClass: 'dynamic-dialog-minimal',
     });
     this.ref?.onClose.subscribe((result) => {
       if (result) {

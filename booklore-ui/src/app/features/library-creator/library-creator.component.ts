@@ -83,6 +83,7 @@ export class LibraryCreatorComponent implements OnInit {
       showHeader: false,
       modal: true,
       closable: true,
+      styleClass: 'dynamic-dialog-minimal',
       contentStyle: {overflow: 'hidden'},
       baseZIndex: 10
     });

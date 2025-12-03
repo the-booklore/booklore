@@ -8,7 +8,6 @@
   border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  margin-top: 20px;
 
   @media (max-width: 768px) {
     width: 100%;
@@ -29,7 +28,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem;
+  padding: 1.75rem 1.75rem 1.25rem 1.75rem;
   background: var(--overlay-background);
   border-bottom: 1px solid var(--border-color);
   border-radius: 10px 10px 0 0;
@@ -254,7 +253,7 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.5rem;
+  padding: 1rem 2rem;
   flex: 1;
   overflow-y: auto;
 

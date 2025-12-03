@@ -3,7 +3,6 @@
   max-width: 550px;
   display: flex;
   flex-direction: column;
-  padding-top: 20px;
 
   @media (max-width: 640px) {
     width: 100%;
@@ -16,8 +15,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.25rem 3.5rem 1.25rem 1.25rem;
-
+  padding: 1.5rem 1.5rem 1.25rem 1.5rem;
   border-radius: 10px 10px 0 0;
   border: 1px solid var(--border-color);
   border-bottom: none;
@@ -94,7 +92,7 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.75rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
@@ -342,7 +340,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
   border-top: none;

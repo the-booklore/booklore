@@ -6,6 +6,7 @@ import {Checkbox} from 'primeng/checkbox';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {EmailV2RecipientService} from '../email-v2-recipient/email-v2-recipient.service';
+import {Tooltip} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-create-email-recipient-dialog',
@@ -13,7 +14,8 @@ import {EmailV2RecipientService} from '../email-v2-recipient/email-v2-recipient.
     Checkbox,
     ReactiveFormsModule,
     Button,
-    InputText
+    InputText,
+    Tooltip
   ],
   templateUrl: './create-email-recipient-dialog.component.html',
   styleUrls: ['./create-email-recipient-dialog.component.scss']
@@ -31,6 +33,10 @@ export class CreateEmailRecipientDialogComponent {
       email: ['', [Validators.required, Validators.email]],
       defaultRecipient: [false]
     });
+  }
+
+  closeDialog(): void {
+    this.ref.close();
   }
 
   createEmailRecipient(): void {
