@@ -4,7 +4,7 @@ import {BookFilter} from './BookFilter';
 import {BookState} from '../../../model/state/book-state.model';
 import {fileSizeRanges, matchScoreRanges, pageCountRanges, ratingRanges} from '../book-filter/book-filter.component';
 import {Book, ReadStatus} from '../../../model/book.model';
-import { BookFilterMode } from '../../../../settings/user-management/user.service';
+import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 export function isRatingInRange(rating: number | undefined | null, rangeId: string): boolean {
   if (rating == null) return false;

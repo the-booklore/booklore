@@ -44,6 +44,7 @@ export interface PerBookSetting {
 
 export type PageSpread = 'off' | 'even' | 'odd';
 export type BookFilterMode = 'and' | 'or' | 'single';
+export type FilterSortingMode = 'alphabetical' | 'count';
 
 export enum CbxBackgroundColor {
   GRAY = 'GRAY',
@@ -129,7 +130,7 @@ export interface UserSettings {
   sidebarLibrarySorting: SidebarLibrarySorting;
   sidebarShelfSorting: SidebarShelfSorting;
   filterMode: BookFilterMode;
-  filterSortingMode: 'alphabetical' | 'count';
+  filterSortingMode: FilterSortingMode;
   metadataCenterViewMode: 'route' | 'dialog';
   entityViewPreferences: EntityViewPreferences;
   tableColumnPreference?: TableColumnPreference[];
