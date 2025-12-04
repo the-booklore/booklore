@@ -1,0 +1,67 @@
+<div class="main-container enclosing-container">
+  <div class="settings-header">
+    <h2 class="settings-title">
+      <i class="pi pi-sort-alt"></i>
+      Filter Preferences
+    </h2>
+    <p class="settings-description">
+      Configure default options for filter controls shown in the sidebar.
+    </p>
+  </div>
+
+  <div class="settings-content">
+    <div class="preferences-section">
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">
+                Filter Mode
+                <i class="pi pi-info-circle text-sky-600"
+                   pTooltip="Choose the default mode for combining filters selected from the filter sidebar."
+                   tooltipPosition="right"
+                   style="cursor: pointer;">
+                </i>
+              </label>
+              <p-select
+                size="small"
+                [options]="filterModes"
+                [(ngModel)]="selectedFilterMode"
+                (ngModelChange)="onFilterModeChange()"
+                appendTo="body">
+              </p-select>
+            </div>
+            <p class="setting-description">
+              Choose the default mode for combining filters selected from the right filter sidebar.
+            </p>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">
+                Sorting Mode
+                <i class="pi pi-info-circle text-sky-600"
+                   pTooltip="Choose how filter options are sorted in the sidebar."
+                   tooltipPosition="right"
+                   style="cursor: pointer;">
+                </i>
+              </label>
+              <p-select
+                size="small"
+                [options]="filterSortingModes"
+                [(ngModel)]="selectedFilterSortingMode"
+                (ngModelChange)="onFilterSortingModeChange()"
+                appendTo="body">
+              </p-select>
+            </div>
+            <p class="setting-description">
+              Choose how filter options are sorted in the sidebar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

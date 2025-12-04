@@ -4,7 +4,9 @@
       <i class="pi pi-book"></i>
     </div>
     <div class="main-header-content">
-      <h1 class="main-header-title">Library Creator</h1>
+      <h1 class="main-header-title">
+        {{ mode === 'edit' ? 'Edit Library' : 'Create New Library' }}
+      </h1>
       <p class="main-header-subtitle">Set up a new library to organize and manage your book collection</p>
     </div>
     <p-button

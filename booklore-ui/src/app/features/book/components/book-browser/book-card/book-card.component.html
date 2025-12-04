@@ -4,11 +4,11 @@
      (mouseout)="isHovered = false"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'shimmer': !isImageLoaded, 'center-info-btn': readButtonHidden }">
+  <div class="cover-container" [ngClass]="{ 'shimmer': !isImageLoaded, 'center-info-btn': isSeriesViewActive() }">
     <div
       class="cover-container"
       [ngClass]="{
-        'center-info-btn': readButtonHidden,
+        'center-info-btn': isSeriesViewActive(),
         'loaded': isImageLoaded
       }">
       <img
@@ -32,13 +32,13 @@
       </div>
     }
 
-    @if (book.seriesCount && book.seriesCount! >= 1) {
+    @if (isSeriesViewActive()) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
     } @else {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
     }
 
-    <p-button [hidden]="readButtonHidden" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
+    <p-button [hidden]="isSeriesViewActive()" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
 
     @if (isCheckboxEnabled) {
       <p-checkbox
