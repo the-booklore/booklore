@@ -16,6 +16,7 @@ import com.adityachandel.booklore.service.metadata.*;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -60,6 +61,7 @@ public class MetadataController {
     @PutMapping("/{bookId}/metadata")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
+    @Transactional
     public ResponseEntity<BookMetadata> updateMetadata(
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
@@ -77,7 +79,9 @@ public class MetadataController {
                 .build();
 
         bookMetadataUpdater.setBookMetadata(context);
-        bookRepository.save(bookEntity);
+        
+        bookEntity = bookRepository.saveAndFlush(bookEntity);
+        
         BookMetadata bookMetadata = bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
         return ResponseEntity.ok(bookMetadata);
     }

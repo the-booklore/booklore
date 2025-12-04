@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.util.List;
-import java.util.Objects;
 
 @Entity
 @Getter
@@ -12,6 +11,7 @@ import java.util.Objects;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Table(name = "author")
 public class AuthorEntity {
 
@@ -19,21 +19,10 @@ public class AuthorEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name")
+    @EqualsAndHashCode.Include
+    @Column(name = "name", unique = true)
     private String name;
 
     @ManyToMany(mappedBy = "authors", fetch = FetchType.LAZY)
     private List<BookMetadataEntity> bookMetadataEntityList;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AuthorEntity that)) return false;
-        return getId() != null && Objects.equals(getId(), that.getId());
-    }
-
-    @Override
-    public int hashCode() {
-        return getClass().hashCode();
-    }
 }
