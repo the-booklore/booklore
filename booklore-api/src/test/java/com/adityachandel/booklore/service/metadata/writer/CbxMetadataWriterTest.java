@@ -75,16 +75,20 @@ class CbxMetadataWriterTest {
 
         Set<AuthorEntity> authors = new HashSet<>();
         AuthorEntity aliceAuthor = new AuthorEntity();
+        aliceAuthor.setId(1L);
         aliceAuthor.setName("Alice");
         AuthorEntity bobAuthor = new AuthorEntity();
+        bobAuthor.setId(2L);
         bobAuthor.setName("Bob");
         authors.add(aliceAuthor);
         authors.add(bobAuthor);
         meta.setAuthors(authors);
         Set<CategoryEntity> cats = new HashSet<>();
         CategoryEntity actionCat = new CategoryEntity();
+        actionCat.setId(1L);
         actionCat.setName("action");
         CategoryEntity adventureCat = new CategoryEntity();
+        adventureCat.setId(2L);
         adventureCat.setName("adventure");
         cats.add(actionCat);
         cats.add(adventureCat);

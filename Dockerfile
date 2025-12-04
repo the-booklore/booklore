@@ -14,7 +14,7 @@ COPY ./booklore-ui /angular-app/
 RUN npm run build --configuration=production
 
 # Stage 2: Build the Spring Boot app with Gradle
-FROM gradle:9.1-jdk25-alpine AS springboot-build
+FROM gradle:8.14.3-jdk21-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
@@ -29,7 +29,21 @@ RUN apk add --no-cache yq && \
 RUN gradle clean build -x test
 
 # Stage 3: Final image
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:21.0.9_10-jre-alpine
+
+ARG APP_VERSION
+ARG APP_REVISION
+
+# Set OCI labels
+LABEL org.opencontainers.image.title="BookLore" \
+      org.opencontainers.image.description="BookLore: A self-hosted, multi-user digital library with smart shelves, auto metadata, Kobo & KOReader sync, BookDrop imports, OPDS support, and a built-in reader for EPUB, PDF, and comics." \
+      org.opencontainers.image.source="https://github.com/booklore-app/booklore" \
+      org.opencontainers.image.url="https://github.com/booklore-app/booklore" \
+      org.opencontainers.image.documentation="https://booklore-app.github.io/booklore-docs/docs/getting-started" \
+      org.opencontainers.image.version=$APP_VERSION \
+      org.opencontainers.image.revision=$APP_REVISION \
+      org.opencontainers.image.licenses="GPL-3.0" \
+      org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
 RUN apk update && apk add nginx gettext su-exec
 

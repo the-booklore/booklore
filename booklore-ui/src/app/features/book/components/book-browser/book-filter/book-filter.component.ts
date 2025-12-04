@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
+import {combineLatest, filter, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {BookService} from '../../../service/book.service';
 import {Library} from '../../../model/library.model';
@@ -11,7 +11,7 @@ import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
-import {UserService} from '../../../../settings/user-management/user.service';
+import {BookFilterMode, FilterSortingMode, UserService, UserState} from '../../../../settings/user-management/user.service';
 import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
@@ -88,11 +88,11 @@ function getRatingRangeFilters10(rating?: number): { id: string; name: string; s
   return idx ? [{id: idx.id, name: idx.label, sortIndex: idx.sortIndex}] : [];
 }
 
-function extractPublishedYearFilter(book: Book): { id: number; name: string }[] {
+function extractPublishedYearFilter(book: Book): { id: string; name: string }[] {
   const date = book.metadata?.publishedDate;
   if (!date) return [];
   const year = new Date(date).getFullYear();
-  return [{id: year, name: year.toString()}];
+  return [{id: year.toString(), name: year.toString()}];
 }
 
 function getShelfStatusFilter(book: Book): { id: string; name: string }[] {
@@ -108,7 +108,8 @@ function getPageCountRangeFilters(pageCount?: number): { id: string; name: strin
 
 function getMatchScoreRangeFilters(score?: number | null): { id: string; name: string; sortIndex?: number }[] {
   if (score == null) return [];
-  const match = matchScoreRanges.find(r => score >= r.min && score < r.max);
+  const normalizedScore = score > 1 ? score / 100 : score;
+  const match = matchScoreRanges.find(r => normalizedScore >= r.min && normalizedScore < r.max);
   return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
 }
 
@@ -155,7 +156,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   private filterChangeSubject = new Subject<Record<string, any> | null>();
 
   @Output() filterSelected = new EventEmitter<Record<string, any> | null>();
-  @Output() filterModeChanged = new EventEmitter<'and' | 'or'>();
+  @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
 
   @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
   @Input() entityType$!: Observable<EntityType> | undefined;
@@ -168,10 +169,11 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   filterTypes: string[] = [];
   filterModeOptions = [
     {label: 'AND', value: 'and'},
-    {label: 'OR', value: 'or'}
+    {label: 'OR', value: 'or'},
+    {label: '1', value: 'single'},
   ];
-  private _selectedFilterMode: 'and' | 'or' = 'and';
-  expandedPanels: number = 0;
+  private _selectedFilterMode: BookFilterMode = 'and';
+  expandedPanels: number[] = [0];
   readonly filterLabels: Record<string, string> = {
     author: 'Author',
     category: 'Genre',
@@ -196,14 +198,23 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   bookService = inject(BookService);
   userService = inject(UserService);
   bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  userData$: Observable<UserState> = this.userService.userState$;
+  filterSortingMode: FilterSortingMode = 'alphabetical';
 
   ngOnInit(): void {
+    this.userData$.pipe(
+      filter(userState => !!userState?.user && userState.loaded),
+      takeUntil(this.destroy$)
+    ).subscribe(userState => {
+      this.filterSortingMode = userState.user!.userSettings.filterSortingMode ?? 'alphabetical';
+    });
+
     combineLatest([
       this.entity$ ?? of(null),
       this.entityType$ ?? of(EntityType.ALL_BOOKS)
     ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([sortMode]) => {
+      .subscribe(() => {
         this.filterStreams = {
           author: this.getFilterStream(
             (book: Book) => Array.isArray(book.metadata?.authors) ? book.metadata.authors.map(name => ({id: name, name})) : [],
@@ -266,7 +277,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     extractor: (book: Book) => T[] | undefined,
     idKey: keyof T,
     nameKey: keyof T,
-    sortMode: 'count' | 'alphabetical' | 'sortIndex' = 'count'
+    sortMode: FilterSortingMode | 'sortIndex' = this.filterSortingMode
   ): Observable<Filter<T[keyof T]>[]> {
     return combineLatest([
       this.bookService.bookState$,
@@ -292,11 +303,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         const sorted = result.sort((a, b) => {
           if (sortMode === 'sortIndex') {
             return (a.value.sortIndex ?? 999) - (b.value.sortIndex ?? 999);
+          } else if (sortMode === 'count' && b.bookCount !== a.bookCount) {
+            return b.bookCount - a.bookCount;
           }
-          return (
-            b.bookCount - a.bookCount ||
-            a.value[nameKey].toString().localeCompare(b.value[nameKey].toString())
-          );
+          return a.value[nameKey].toString().localeCompare(b.value[nameKey].toString());
         });
 
         const isTruncated = sorted.length > 500;
@@ -319,16 +329,18 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     );
   }
 
-  get selectedFilterMode(): 'and' | 'or' {
+  get selectedFilterMode(): BookFilterMode {
     return this._selectedFilterMode;
   }
 
-  set selectedFilterMode(mode: 'and' | 'or') {
-    this._selectedFilterMode = mode;
-    this.filterModeChanged.emit(mode);
-    this.filterChangeSubject.next(
-      Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
-    );
+  set selectedFilterMode(mode: BookFilterMode) {
+    if (mode !== this._selectedFilterMode) {
+      this._selectedFilterMode = mode;
+      this.filterModeChanged.emit(mode);
+      this.filterChangeSubject.next(
+        Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
+      );
+    }
   }
 
   private filterBooksByEntityType(books: Book[], entity: any, entityType: EntityType): Book[] {
@@ -360,14 +372,20 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
     const index = this.activeFilters[filterType].indexOf(value);
     if (index > -1) {
-      this.activeFilters[filterType].splice(index, 1);
-      if (this.activeFilters[filterType].length === 0) {
-        delete this.activeFilters[filterType];
+      if (this._selectedFilterMode == 'single') {
+        this.activeFilters = {};
+      } else {
+        this.activeFilters[filterType].splice(index, 1);
+        if (this.activeFilters[filterType].length === 0) {
+          delete this.activeFilters[filterType];
+        }
       }
     } else {
+      if (this._selectedFilterMode == 'single') {
+        this.activeFilters = {[filterType]: []};
+      }
       this.activeFilters[filterType].push(value);
     }
-
     this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);
   }
 
@@ -386,14 +404,18 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   clearActiveFilter() {
     this.activeFilters = {};
+    this.setExpandedPanels();
     this.filterChangeSubject.next(null);
   }
 
   setExpandedPanels(): void {
-    const firstActiveIndex = this.filterTypes.findIndex(
-      type => this.activeFilters[type]?.length
-    );
-    this.expandedPanels = firstActiveIndex !== -1 ? firstActiveIndex : 0;
+    const indexes = [];
+    for (let i = 0; i < this.filterTypes.length; i++) {
+      if (this.activeFilters[this.filterTypes[i]]?.length) {
+        indexes.push(i);
+      }
+    }
+    this.expandedPanels = indexes.length > 0 ? indexes : [0];
   }
 
   onFiltersChanged(): void {

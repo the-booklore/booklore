@@ -1,6 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {ConfirmationService, MessageService} from 'primeng/api';
-import {Clipboard} from '@angular/cdk/clipboard';
 import {KoboService, KoboSyncSettings} from './kobo.service';
 import {FormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
@@ -11,25 +10,26 @@ import {Subject} from 'rxjs';
 import {debounceTime, filter, take, takeUntil} from 'rxjs/operators';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Slider} from 'primeng/slider';
+import {Divider} from 'primeng/divider';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {SettingsHelperService} from '../../../../../shared/service/settings-helper.service';
 import {AppSettingKey, KoboSettings} from '../../../../../shared/model/app-settings.model';
 import {ShelfService} from '../../../../book/service/shelf.service';
 import {ExternalDocLinkComponent} from '../../../../../shared/components/external-doc-link/external-doc-link.component';
+import {ToastModule} from 'primeng/toast';
 
 @Component({
   selector: 'app-kobo-sync-setting-component',
   standalone: true,
   templateUrl: './kobo-sync-settings-component.html',
   styleUrl: './kobo-sync-settings-component.scss',
-  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, ExternalDocLinkComponent],
+  imports: [FormsModule, Button, InputText, ConfirmDialog, ToggleSwitch, Slider, Divider, ExternalDocLinkComponent, ToastModule],
   providers: [MessageService, ConfirmationService]
 })
 export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   private koboService = inject(KoboService);
   private messageService = inject(MessageService);
   private confirmationService = inject(ConfirmationService);
-  private clipboard = inject(Clipboard);
   protected userService = inject(UserService);
   protected appSettingsService = inject(AppSettingsService);
   protected settingsHelperService = inject(SettingsHelperService);
@@ -45,7 +45,10 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   koboSettings: KoboSettings = {
     convertToKepub: false,
-    conversionLimitInMb: 100
+    conversionLimitInMb: 100,
+    convertCbxToEpub: false,
+    conversionLimitInMbForCbx: 100,
+    forceEnableHyphenation: false
   };
 
   koboSyncSettings: KoboSyncSettings = {
@@ -122,12 +125,30 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.koboSettings.convertToKepub = settings?.koboSettings?.convertToKepub ?? true;
         this.koboSettings.conversionLimitInMb = settings?.koboSettings?.conversionLimitInMb ?? 100;
+        this.koboSettings.convertCbxToEpub = settings?.koboSettings?.convertCbxToEpub ?? false;
+        this.koboSettings.conversionLimitInMbForCbx = settings?.koboSettings?.conversionLimitInMbForCbx ?? 100;
+        this.koboSettings.forceEnableHyphenation = settings?.koboSettings?.forceEnableHyphenation ?? false;
       });
   }
 
-  copyText(text: string) {
-    this.clipboard.copy(text);
-    this.messageService.add({severity: 'success', summary: 'Copied', detail: 'Token copied to clipboard'});
+  copyText(text: string, label: string = 'Text') {
+    if (!text) {
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Copied',
+        detail: `${label} copied to clipboard`
+      });
+    }).catch(err => {
+      console.error('Copy failed', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Copy Failed',
+        detail: `Unable to copy ${label.toLowerCase()} to clipboard`
+      });
+    });
   }
 
   toggleShowToken() {

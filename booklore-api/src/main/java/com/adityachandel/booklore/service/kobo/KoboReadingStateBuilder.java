@@ -2,6 +2,8 @@ package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.model.dto.kobo.KoboReadingState;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
+import com.adityachandel.booklore.model.enums.KoboReadStatus;
+import com.adityachandel.booklore.model.enums.ReadStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -24,14 +26,14 @@ public class KoboReadingStateBuilder {
 
     public KoboReadingState.CurrentBookmark buildBookmarkFromProgress(UserBookProgressEntity progress, OffsetDateTime defaultTime) {
         KoboReadingState.CurrentBookmark.Location location = Optional.ofNullable(progress.getKoboLocation())
-                .map(loc -> KoboReadingState.CurrentBookmark.Location.builder()
-                        .value(loc)
+                .map(koboLocation -> KoboReadingState.CurrentBookmark.Location.builder()
+                        .value(koboLocation)
                         .type(progress.getKoboLocationType())
                         .source(progress.getKoboLocationSource())
                         .build())
                 .orElse(null);
 
-        String lastModified = Optional.ofNullable(progress.getKoboLastSyncTime())
+        String lastModified = Optional.ofNullable(progress.getKoboProgressReceivedTime())
                 .map(this::formatTimestamp)
                 .or(() -> Optional.ofNullable(defaultTime).map(OffsetDateTime::toString))
                 .orElse(null);
@@ -48,13 +50,43 @@ public class KoboReadingStateBuilder {
     public KoboReadingState buildReadingStateFromProgress(String entitlementId, UserBookProgressEntity progress) {
         KoboReadingState.CurrentBookmark bookmark = buildBookmarkFromProgress(progress);
         String lastModified = bookmark.getLastModified();
+        KoboReadingState.StatusInfo statusInfo = buildStatusInfoFromProgress(progress, lastModified);
 
         return KoboReadingState.builder()
                 .entitlementId(entitlementId)
                 .currentBookmark(bookmark)
+                .statusInfo(statusInfo)
                 .created(lastModified)
                 .lastModified(lastModified)
                 .build();
+    }
+
+    public KoboReadingState.StatusInfo buildStatusInfoFromProgress(UserBookProgressEntity progress, String lastModified) {
+        KoboReadStatus koboStatus = mapReadStatusToKoboStatus(progress.getReadStatus());
+        int timesStartedReading = koboStatus == KoboReadStatus.READY_TO_READ ? 0 : 1;
+        
+        KoboReadingState.StatusInfo.StatusInfoBuilder builder = KoboReadingState.StatusInfo.builder()
+                .lastModified(lastModified)
+                .status(koboStatus)
+                .timesStartedReading(timesStartedReading);
+        
+        if (koboStatus == KoboReadStatus.FINISHED && progress.getDateFinished() != null) {
+            builder.lastTimeFinished(formatTimestamp(progress.getDateFinished()));
+        }
+        
+        return builder.build();
+    }
+    
+    public KoboReadStatus mapReadStatusToKoboStatus(ReadStatus readStatus) {
+        if (readStatus == null) {
+            return KoboReadStatus.READY_TO_READ;
+        }
+        
+        return switch (readStatus) {
+            case READ -> KoboReadStatus.FINISHED;
+            case PARTIALLY_READ, READING, RE_READING, PAUSED -> KoboReadStatus.READING;
+            case UNREAD, WONT_READ, ABANDONED, UNSET -> KoboReadStatus.READY_TO_READ;
+        };
     }
 
     private String formatTimestamp(Instant instant) {

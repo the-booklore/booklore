@@ -672,7 +672,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
   }
   
   // ==== 7z (.cb7) helpers ====
-  private SevenZArchiveEntry findSevenZComicInfoEntry(SevenZFile sevenZ) throws IOException {
+  private SevenZArchiveEntry findSevenZComicInfoEntry(SevenZFile sevenZ) {
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (e == null || e.isDirectory()) continue;
       String name = e.getName();
@@ -683,7 +683,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return null;
   }
 
-  private SevenZArchiveEntry findSevenZEntryByName(SevenZFile sevenZ, String imageName) throws IOException {
+  private SevenZArchiveEntry findSevenZEntryByName(SevenZFile sevenZ, String imageName) {
     if (imageName == null) return null;
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (e == null || e.isDirectory()) continue;
@@ -696,7 +696,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return null;
   }
 
-  private SevenZArchiveEntry findSevenZImageEntryByIndex(SevenZFile sevenZ, int index) throws IOException {
+  private SevenZArchiveEntry findSevenZImageEntryByIndex(SevenZFile sevenZ, int index) {
     int count = 0;
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (!e.isDirectory() && isImageEntry(e.getName())) {
@@ -707,7 +707,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return null;
   }
 
-  private SevenZArchiveEntry findFirstAlphabeticalSevenZImageEntry(SevenZFile sevenZ) throws IOException {
+  private SevenZArchiveEntry findFirstAlphabeticalSevenZImageEntry(SevenZFile sevenZ) {
     List<SevenZArchiveEntry> images = new ArrayList<>();
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (!e.isDirectory() && isImageEntry(e.getName())) {
@@ -741,7 +741,7 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return images;
   }
 
-  private java.util.List<SevenZArchiveEntry> listSevenZImageEntries(SevenZFile sevenZ) throws IOException {
+  private java.util.List<SevenZArchiveEntry> listSevenZImageEntries(SevenZFile sevenZ) {
     java.util.List<SevenZArchiveEntry> images = new java.util.ArrayList<>();
     for (SevenZArchiveEntry e : sevenZ.getEntries()) {
       if (!e.isDirectory() && isImageEntry(e.getName())) images.add(e);

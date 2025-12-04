@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.kobo.KepubConversionService;
+import com.adityachandel.booklore.service.kobo.CbxConversionService;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -39,6 +41,7 @@ public class BookDownloadService {
 
     private final BookRepository bookRepository;
     private final KepubConversionService kepubConversionService;
+    private final CbxConversionService cbxConversionService;
     private final AppSettingService appSettingService;
 
     public ResponseEntity<Resource> downloadBook(Long bookId) {
@@ -77,9 +80,12 @@ public class BookDownloadService {
 
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        
+        boolean isEpub = bookEntity.getBookType() == BookFileType.EPUB;
+        boolean isCbx = bookEntity.getBookType() == BookFileType.CBX;
 
-        if (bookEntity.getBookType() != BookFileType.EPUB) {
-            throw ApiError.GENERIC_BAD_REQUEST.createException("The requested book is not an EPUB file.");
+        if (!isEpub && !isCbx) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("The requested book is not an EPUB or CBX file.");
         }
 
         KoboSettings koboSettings = appSettingService.getAppSettings().getKoboSettings();
@@ -87,17 +93,25 @@ public class BookDownloadService {
             throw ApiError.GENERIC_BAD_REQUEST.createException("Kobo settings not found.");
         }
 
-
-        boolean asKepub = koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
+        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
+        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
 
         Path tempDir = null;
         try {
             File inputFile = new File(FileUtils.getBookFullPath(bookEntity));
             File fileToSend = inputFile;
 
-            if (asKepub) {
-                tempDir = Files.createTempDirectory("kepub-output");
-                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile());
+            if (convertCbxToEpub || convertEpubToKepub) {
+                tempDir = Files.createTempDirectory("kobo-conversion");
+            }
+
+            if (convertCbxToEpub) {
+                fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity);
+            }
+
+            if (convertEpubToKepub) {
+                fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile(),
+                    koboSettings.isForceEnableHyphenation());
             }
 
             setResponseHeaders(response, fileToSend);
@@ -123,10 +137,12 @@ public class BookDownloadService {
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION, contentDisposition);
     }
 
-    private void streamFileToResponse(File file, HttpServletResponse response) throws IOException {
+    private void streamFileToResponse(File file, HttpServletResponse response) {
         try (InputStream in = Files.newInputStream(file.toPath())) {
             in.transferTo(response.getOutputStream());
             response.getOutputStream().flush();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to stream file to response", e);
         }
     }
 

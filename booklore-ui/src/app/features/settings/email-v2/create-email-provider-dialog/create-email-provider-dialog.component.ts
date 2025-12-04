@@ -72,4 +72,8 @@ export class CreateEmailProviderDialogComponent implements OnInit {
       }
     });
   }
+
+  closeDialog(): void {
+    this.ref.close();
+  }
 }

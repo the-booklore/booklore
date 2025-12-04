@@ -13,6 +13,7 @@ import java.util.Set;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode(of = "id")
 @Entity
 @Table(name = "shelf")
 public class ShelfEntity {
@@ -39,5 +40,6 @@ public class ShelfEntity {
             joinColumns = {@JoinColumn(name = "shelf_id")},
             inverseJoinColumns = {@JoinColumn(name = "book_id")}
     )
+    @Builder.Default
     private Set<BookEntity> bookEntities = new HashSet<>();
 }

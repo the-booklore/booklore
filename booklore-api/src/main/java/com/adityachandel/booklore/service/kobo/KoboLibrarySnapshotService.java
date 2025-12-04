@@ -5,7 +5,6 @@ import com.adityachandel.booklore.model.entity.KoboDeletedBookProgressEntity;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.model.entity.KoboLibrarySnapshotEntity;
-import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ShelfType;
 import com.adityachandel.booklore.repository.KoboDeletedBookProgressRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
@@ -29,6 +28,7 @@ public class KoboLibrarySnapshotService {
     private final ShelfRepository shelfRepository;
     private final BookEntityToKoboSnapshotBookMapper mapper;
     private final KoboDeletedBookProgressRepository koboDeletedBookProgressRepository;
+    private final KoboCompatibilityService koboCompatibilityService;
 
     @Transactional(readOnly = true)
     public Optional<KoboLibrarySnapshotEntity> findByIdAndUserId(String id, Long userId) {
@@ -118,7 +118,7 @@ public class KoboLibrarySnapshotService {
 
     private List<KoboSnapshotBookEntity> mapBooksToKoboSnapshotBook(ShelfEntity shelf, KoboLibrarySnapshotEntity snapshot) {
         return shelf.getBookEntities().stream()
-                .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
+                .filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(book -> {
                     KoboSnapshotBookEntity snapshotBook = mapper.toKoboSnapshotBook(book);
                     snapshotBook.setSnapshot(snapshot);
@@ -130,4 +130,5 @@ public class KoboLibrarySnapshotService {
     public void deleteById(String id) {
         koboLibrarySnapshotRepository.deleteById(id);
     }
+
 }

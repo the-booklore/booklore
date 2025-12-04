@@ -111,11 +111,7 @@ public class MetadataManagementService {
 
             for (BookMetadataEntity metadata : booksWithOldAuthor) {
                 metadata.getAuthors().remove(oldAuthor);
-                for (AuthorEntity targetAuthor : targetAuthors) {
-                    if (!metadata.getAuthors().contains(targetAuthor)) {
-                        metadata.getAuthors().add(targetAuthor);
-                    }
-                }
+                metadata.getAuthors().addAll(targetAuthors);
             }
 
             bookMetadataRepository.saveAll(booksWithOldAuthor);
@@ -156,11 +152,7 @@ public class MetadataManagementService {
 
             for (BookMetadataEntity metadata : booksWithOldCategory) {
                 metadata.getCategories().remove(oldCategory);
-                for (CategoryEntity targetCategory : targetCategories) {
-                    if (!metadata.getCategories().contains(targetCategory)) {
-                        metadata.getCategories().add(targetCategory);
-                    }
-                }
+                metadata.getCategories().addAll(targetCategories);
             }
 
             bookMetadataRepository.saveAll(booksWithOldCategory);
@@ -201,11 +193,7 @@ public class MetadataManagementService {
 
             for (BookMetadataEntity metadata : booksWithOldMood) {
                 metadata.getMoods().remove(oldMood);
-                for (MoodEntity targetMood : targetMoods) {
-                    if (!metadata.getMoods().contains(targetMood)) {
-                        metadata.getMoods().add(targetMood);
-                    }
-                }
+                metadata.getMoods().addAll(targetMoods);
             }
 
             bookMetadataRepository.saveAll(booksWithOldMood);
@@ -246,11 +234,7 @@ public class MetadataManagementService {
 
             for (BookMetadataEntity metadata : booksWithOldTag) {
                 metadata.getTags().remove(oldTag);
-                for (TagEntity targetTag : targetTags) {
-                    if (!metadata.getTags().contains(targetTag)) {
-                        metadata.getTags().add(targetTag);
-                    }
-                }
+                metadata.getTags().addAll(targetTags);
             }
 
             bookMetadataRepository.saveAll(booksWithOldTag);

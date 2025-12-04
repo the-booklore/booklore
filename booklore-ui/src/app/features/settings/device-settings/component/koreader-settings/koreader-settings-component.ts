@@ -120,12 +120,23 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
       });
   }
 
-  copyText(text: string) {
+  copyText(text: string, label: string = 'Text') {
     if (!text) {
       return;
     }
-    navigator.clipboard.writeText(text).catch(err => {
+    navigator.clipboard.writeText(text).then(() => {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Copied',
+        detail: `${label} copied to clipboard`
+      });
+    }).catch(err => {
       console.error('Copy failed', err);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Copy Failed',
+        detail: `Unable to copy ${label.toLowerCase()} to clipboard`
+      });
     });
   }
 

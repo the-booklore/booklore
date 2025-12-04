@@ -8,15 +8,15 @@
             @if (entityType === EntityType.ALL_BOOKS) {
               @if (currentFilterLabel && rawFilterParamFromUrl) {
                 {{ currentFilterLabel }}
-              } @else if (hasSidebarFilters || hasSearchTerm) {
-                All Books (Filtered)
+              } @else if (isFilterActive || hasSearchTerm) {
+                {{ computedFilterLabel }}
               } @else {
                 All Books
               }
             } @else if (entityType === EntityType.UNSHELVED) {
-              {{ (hasSidebarFilters || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
+              {{ (isFilterActive || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
             } @else {
-              {{ entityType }}: {{ (entity$ | async)?.name }}{{ (hasSidebarFilters || hasSearchTerm) ? ' (Filtered)' : '' }}
+              {{ entityType }}: {{ (entity$ | async)?.name }}{{ (isFilterActive || hasSearchTerm) ? ' (Filtered)' : '' }}
             }
           </p>
 
@@ -242,6 +242,7 @@
             @if (currentViewMode === 'table' && books.length > 0) {
               <app-book-table
                 [books]="books"
+                [preselectedBookIds]="selectedBooks"
                 (selectedBooksChange)="onSelectedBooksChange($event)"
                 [sortOption]="this.bookSorter.selectedSort!"
                 [visibleColumns]="visibleColumns"
@@ -261,7 +262,7 @@
                         [index]="books.indexOf(book)"
                         [book]="book"
                         [isCheckboxEnabled]="true"
-                        [readButtonHidden]="!!book.seriesCount"
+                        [seriesViewEnabled]="seriesViewEnabled"
                         [onBookSelect]="handleBookSelect.bind(this)"
                         [isSeriesCollapsed]="seriesCollapseFilter.isSeriesCollapsed"
                         (checkboxClick)="onCheckboxClicked($event)"

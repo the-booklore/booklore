@@ -64,7 +64,7 @@ public class AdditionalFileController {
     @PreAuthorize("@securityUtil.canDeleteBook() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> deleteAdditionalFile(
             @PathVariable Long bookId,
-            @PathVariable Long fileId) throws IOException {
+            @PathVariable Long fileId) {
         additionalFileService.deleteAdditionalFile(fileId);
         return ResponseEntity.noContent().build();
     }

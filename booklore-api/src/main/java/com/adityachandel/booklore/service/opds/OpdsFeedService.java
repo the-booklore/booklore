@@ -4,6 +4,8 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.Library;
+import com.adityachandel.booklore.model.dto.MagicShelf;
+import com.adityachandel.booklore.service.MagicShelfService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,8 @@ public class OpdsFeedService {
 
     private final AuthenticationService authenticationService;
     private final OpdsBookService opdsBookService;
+    private final MagicShelfService magicShelfService;
+    private final MagicShelfBookService magicShelfBookService;
 
     public String generateRootNavigation(HttpServletRequest request) {
         var feed = new StringBuilder("""
@@ -78,6 +82,16 @@ public class OpdsFeedService {
 
         feed.append("""
                   <entry>
+                    <title>Magic Shelves</title>
+                    <id>urn:booklore:navigation:magic-shelves</id>
+                    <updated>%s</updated>
+                    <link rel="subsection" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                    <content type="text">Browse your smart, dynamic shelves</content>
+                  </entry>
+                """.formatted(now()));
+
+        feed.append("""
+                  <entry>
                     <title>Surprise Me</title>
                     <id>urn:booklore:catalog:surprise</id>
                     <updated>%s</updated>
@@ -91,8 +105,8 @@ public class OpdsFeedService {
     }
 
     public String generateLibrariesNavigation(HttpServletRequest request) {
-        OpdsUserDetails details = authenticationService.getOpdsUser();
-        List<Library> libraries = opdsBookService.getAccessibleLibraries(details);
+        Long userId = getUserId();
+        List<Library> libraries = opdsBookService.getAccessibleLibraries(userId);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -128,7 +142,7 @@ public class OpdsFeedService {
     }
 
     public String generateShelvesNavigation(HttpServletRequest request) {
-        OpdsUserDetails details = authenticationService.getOpdsUser();
+        Long userId = getUserId();
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -141,8 +155,7 @@ public class OpdsFeedService {
                   <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
                 """.formatted(now()));
 
-        if (details != null && details.getOpdsUserV2() != null) {
-            Long userId = details.getOpdsUserV2().getUserId();
+        if (userId != null) {
             var shelves = opdsBookService.getUserShelves(userId);
 
             if (shelves != null) {
@@ -169,18 +182,66 @@ public class OpdsFeedService {
         return feed.toString();
     }
 
+    public String generateMagicShelvesNavigation(HttpServletRequest request) {
+        Long userId = getUserId();
+
+        var feed = new StringBuilder("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog">
+                  <id>urn:booklore:navigation:magic-shelves</id>
+                  <title>Magic Shelves</title>
+                  <updated>%s</updated>
+                  <link rel="self" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                  <link rel="start" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                  <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
+                """.formatted(now()));
+
+        if (userId != null) {
+            var magicShelves = magicShelfService.getUserShelvesForOpds(userId);
+
+            if (magicShelves != null) {
+                for (var shelf : magicShelves) {
+                    feed.append("""
+                              <entry>
+                                <title>%s</title>
+                                <id>urn:booklore:magic-shelf:%d</id>
+                                <updated>%s</updated>
+                                <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                                <content type="text">Smart, dynamic shelf collection</content>
+                              </entry>
+                            """.formatted(
+                            escapeXml(shelf.getName()),
+                            shelf.getId(),
+                            now(),
+                            escapeXml("/api/v1/opds/catalog?magicShelfId=" + shelf.getId())
+                    ));
+                }
+            }
+        }
+
+        feed.append("</feed>");
+        return feed.toString();
+    }
+
     public String generateCatalogFeed(HttpServletRequest request) {
         Long libraryId = parseLongParam(request, "libraryId", null);
         Long shelfId = parseLongParam(request, "shelfId", null);
+        Long magicShelfId = parseLongParam(request, "magicShelfId", null);
         String query = request.getParameter("q");
         int page = Math.max(1, parseLongParam(request, "page", 1L).intValue());
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
-        OpdsUserDetails details = authenticationService.getOpdsUser();
-        Page<Book> booksPage = opdsBookService.getBooksPage(details, query, libraryId, shelfId, page - 1, size);
+        Long userId = getUserId();
+        Page<Book> booksPage;
 
-        String feedTitle = determineFeedTitle(libraryId, shelfId);
-        String feedId = determineFeedId(libraryId, shelfId);
+        if (magicShelfId != null) {
+            booksPage = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelfId, page - 1, size);
+        } else {
+            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfId, page - 1, size);
+        }
+
+        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId);
+        String feedId = determineFeedId(libraryId, shelfId, magicShelfId);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -213,11 +274,11 @@ public class OpdsFeedService {
     }
 
     public String generateRecentFeed(HttpServletRequest request) {
-        OpdsUserDetails details = authenticationService.getOpdsUser();
+        Long userId = getUserId();
         int page = Math.max(1, parseLongParam(request, "page", 1L).intValue());
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
-        Page<Book> booksPage = opdsBookService.getRecentBooksPage(details, page - 1, size);
+        Page<Book> booksPage = opdsBookService.getRecentBooksPage(userId, page - 1, size);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -242,9 +303,9 @@ public class OpdsFeedService {
     }
 
     public String generateSurpriseFeed(HttpServletRequest request) {
-        OpdsUserDetails details = authenticationService.getOpdsUser();
+        Long userId = getUserId();
         int count = 25;
-        List<Book> books = opdsBookService.getRandomBooks(details, count);
+        List<Book> books = opdsBookService.getRandomBooks(userId, count);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -382,7 +443,10 @@ public class OpdsFeedService {
         }
     }
 
-    private String determineFeedTitle(Long libraryId, Long shelfId) {
+    private String determineFeedTitle(Long libraryId, Long shelfId, Long magicShelfId) {
+        if (magicShelfId != null) {
+            return magicShelfBookService.getMagicShelfName(magicShelfId);
+        }
         if (shelfId != null) {
             return opdsBookService.getShelfName(shelfId);
         }
@@ -392,7 +456,10 @@ public class OpdsFeedService {
         return "Booklore Catalog";
     }
 
-    private String determineFeedId(Long libraryId, Long shelfId) {
+    private String determineFeedId(Long libraryId, Long shelfId, Long magicShelfId) {
+        if (magicShelfId != null) {
+            return "urn:booklore:magic-shelf:" + magicShelfId;
+        }
         if (shelfId != null) {
             return "urn:booklore:shelf:" + shelfId;
         }
@@ -434,5 +501,12 @@ public class OpdsFeedService {
         } catch (Exception e) {
             return defaultValue;
         }
+    }
+
+    private Long getUserId() {
+        OpdsUserDetails details = authenticationService.getOpdsUser();
+        return details != null && details.getOpdsUserV2() != null
+                ? details.getOpdsUserV2().getUserId()
+                : null;
     }
 }

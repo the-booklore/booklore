@@ -4,11 +4,12 @@ import com.adityachandel.booklore.model.entity.OpdsUserV2Entity;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface OpdsUserV2Mapper {
 
     OpdsUserV2Mapper INSTANCE = Mappers.getMapper(OpdsUserV2Mapper.class);

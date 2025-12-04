@@ -140,6 +140,7 @@
       align-items: center;
       gap: 0.75rem;
       flex: 1;
+      max-width: 600px;
 
       @media (max-width: 768px) {
         flex-direction: column;

@@ -8,11 +8,12 @@ import com.adityachandel.booklore.model.entity.*;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring", uses = ShelfMapper.class)
+@Mapper(componentModel = "spring", uses = ShelfMapper.class, unmappedTargetPolicy = ReportingPolicy.IGNORE)
 public interface BookMapperV2 {
 
     @Mapping(source = "library.id", target = "libraryId")

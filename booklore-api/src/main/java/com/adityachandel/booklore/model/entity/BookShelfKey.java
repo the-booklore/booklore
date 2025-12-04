@@ -3,6 +3,7 @@ package com.adityachandel.booklore.model.entity;
 import jakarta.persistence.Embeddable;
 import lombok.*;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -12,6 +13,9 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookShelfKey implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
 
     private Long bookId;
     private Long shelfId;

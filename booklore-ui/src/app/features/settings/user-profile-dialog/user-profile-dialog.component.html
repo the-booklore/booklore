@@ -1,105 +1,172 @@
-<p-divider></p-divider>
+<div class="user-profile-dialog min-w-[300px] md:min-w-[500px]">
 
-<div class="min-w-[300px] md:min-w-[500px]">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-user header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">User Profile</h2>
+      <p class="panel-description">
+        Manage your account information and security settings
+      </p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+      (onClick)="closeDialog()"
+      styleClass="close-button">
+    </p-button>
+  </div>
 
-  <section>
-    <div class="flex flex-col gap-4 py-4">
-      <h2 class="text-xl font-semibold">User Profile</h2>
-      <div class="px-4 py-2">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label class="block text-sm font-medium mb-1">Username</label>
-            @if (!isEditing) {
-              <p class="text-lg">{{ currentUser?.username || 'N/A' }}</p>
-            }
-            @if (isEditing) {
-              <input disabled id="username" type="text" pInputText [(ngModel)]="editUserData.username" class="w-full"/>
-            }
+  <div class="form-container">
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="pi pi-id-card"></i>
+        Basic Information
+      </h3>
+
+      <div class="form-field">
+        <label class="field-label">Username</label>
+        <input
+          disabled
+          id="username"
+          type="text"
+          pInputText
+          [(ngModel)]="editUserData.username"
+          class="field-input"
+          placeholder="Username..."/>
+      </div>
+
+      <div class="form-field">
+        <label class="field-label">Full Name</label>
+        <input
+          [disabled]="!isEditing"
+          id="fullname"
+          type="text"
+          pInputText
+          [(ngModel)]="editUserData.name"
+          class="field-input"
+          placeholder="Enter full name..."/>
+      </div>
+
+      <div class="form-field">
+        <label class="field-label">Email</label>
+        <input
+          [disabled]="!isEditing"
+          id="email"
+          type="email"
+          pInputText
+          [(ngModel)]="editUserData.email"
+          class="field-input"
+          placeholder="Enter email..."/>
+      </div>
+
+      <div class="edit-actions">
+        @if (!isEditing) {
+          <p-button label="Edit Profile" severity="info" icon="pi pi-pencil" [outlined]="true" (onClick)="toggleEdit()"></p-button>
+        }
+        @if (isEditing) {
+          <div class="edit-buttons">
+            <p-button label="Cancel" severity="secondary" [outlined]="true" icon="pi pi-times" (onClick)="toggleEdit()"></p-button>
+            <p-button label="Save Changes" severity="success" [outlined]="true" icon="pi pi-check" (onClick)="updateProfile()"></p-button>
           </div>
-
-          <div>
-            <label class="block text-sm font-medium mb-1">Full Name</label>
-            @if (!isEditing) {
-              <p class="text-lg">{{ currentUser?.name || 'N/A' }}</p>
-            }
-            @if (isEditing) {
-              <input id="fullname" type="text" pInputText [(ngModel)]="editUserData.name" class="w-full"/>
-            }
-          </div>
-
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium mb-1">Email</label>
-            @if (!isEditing) {
-              <p class="text-lg">{{ currentUser?.email || 'N/A' }}</p>
-            }
-            @if (isEditing) {
-              <input id="email" type="email" pInputText [(ngModel)]="editUserData.email" class="w-full"/>
-            }
-          </div>
-        </div>
-
-        <div class="flex justify-start mt-6">
-          @if (!isEditing) {
-            <div>
-              <p-button label="Edit" severity="info" icon="pi pi-pencil" (onClick)="toggleEdit()"></p-button>
-            </div>
-          }
-          @if (isEditing) {
-            <div class="flex gap-2">
-              <p-button label="Cancel" severity="secondary" icon="pi pi-times" (onClick)="toggleEdit()"></p-button>
-              <p-button label="Save" severity="success" icon="pi pi-check" (onClick)="updateProfile()"></p-button>
-            </div>
-          }
-        </div>
+        }
       </div>
     </div>
-  </section>
 
-  <p-divider></p-divider>
+    <div class="gradient-divider"></div>
 
-  <section class="space-y-6 pt-4">
-    <div class="flex flex-col gap-4">
-      <h2 class="text-xl font-semibold">Change Password</h2>
-      <div class="change-password-wrapper">
-        <div class="px-4 py-2">
-          <form [formGroup]="changePasswordForm" (ngSubmit)="submitPasswordChange()">
-            <div class="p-field mb-4">
-              <label for="currentPassword">Current Password</label>
-              <p-password id="currentPassword" formControlName="currentPassword" [feedback]="false" fluid></p-password>
-              @if (changePasswordForm.get('currentPassword')?.invalid && changePasswordForm.get('currentPassword')?.touched) {
-                <p-message severity="error" text="Current password is required."></p-message>
+    <div class="form-section">
+      <h3 class="section-title">
+        <i class="pi pi-shield"></i>
+        Security Settings
+      </h3>
+
+      <form [formGroup]="changePasswordForm" (ngSubmit)="submitPasswordChange()">
+        <div class="form-field">
+          <label class="field-label" for="currentPassword">Current Password</label>
+          <p-password
+            id="currentPassword"
+            formControlName="currentPassword"
+            [feedback]="false"
+            class="field-input"
+            [inputStyle]="{'width': '100%'}">
+          </p-password>
+          @if (changePasswordForm.get('currentPassword')?.invalid &&
+                (changePasswordForm.get('currentPassword')?.dirty || changePasswordForm.get('currentPassword')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              @if (changePasswordForm.get('currentPassword')?.errors?.['required']) {
+                <span>Current password is required.</span>
               }
-            </div>
-
-            <div class="p-field mb-4">
-              <label for="newPassword">New Password (at least 6 characters)</label>
-              <p-password id="newPassword" formControlName="newPassword" [feedback]="false" fluid></p-password>
-              @if (changePasswordForm.get('newPassword')?.errors?.['minlength'] && changePasswordForm.get('newPassword')?.touched) {
-                <p-message severity="error" text="Password must be at least 6 characters long."></p-message>
-              }
-            </div>
-
-            <div class="p-field mb-4">
-              <label for="confirmNewPassword">Confirm New Password</label>
-              <p-password id="confirmNewPassword" formControlName="confirmNewPassword" [feedback]="false" fluid></p-password>
-              @if (passwordsMismatch) {
-                <p-message severity="error" text="Passwords do not match."></p-message>
-              }
-            </div>
-
-            <div class="flex justify-start pt-4">
-              <p-button type="submit" severity="info" label="Change Password" icon="pi pi-key" [disabled]="changePasswordForm.invalid" class="p-fluid"></p-button>
-            </div>
-          </form>
+            </small>
+          }
         </div>
-      </div>
+
+        <div class="form-field">
+          <label class="field-label" for="newPassword">New Password</label>
+          <p-password
+            id="newPassword"
+            formControlName="newPassword"
+            [feedback]="false"
+            class="field-input"
+            [inputStyle]="{'width': '100%'}">
+          </p-password>
+          @if (changePasswordForm.get('newPassword')?.invalid &&
+                (changePasswordForm.get('newPassword')?.dirty || changePasswordForm.get('newPassword')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              @if (changePasswordForm.get('newPassword')?.errors?.['required']) {
+                <span>New password is required.</span>
+              }
+              @if (changePasswordForm.get('newPassword')?.errors?.['minlength']) {
+                <span>Password must be at least 6 characters long.</span>
+              }
+            </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="field-label" for="confirmNewPassword">Confirm New Password</label>
+          <p-password
+            id="confirmNewPassword"
+            formControlName="confirmNewPassword"
+            [feedback]="false"
+            styleClass="field-input"
+            [inputStyle]="{'width': '100%'}">
+          </p-password>
+          @if (changePasswordForm.get('confirmNewPassword')?.invalid &&
+                (changePasswordForm.get('confirmNewPassword')?.dirty || changePasswordForm.get('confirmNewPassword')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              @if (changePasswordForm.get('confirmNewPassword')?.errors?.['required']) {
+                <span>Please confirm your new password.</span>
+              }
+            </small>
+          }
+          @if (changePasswordForm.errors?.['passwordMismatch'] &&
+                changePasswordForm.get('confirmNewPassword')?.touched) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              <span>Passwords do not match.</span>
+            </small>
+          }
+        </div>
+
+        <div class="password-actions">
+          <p-button type="submit" severity="info" [outlined]="true" label="Change Password" icon="pi pi-key" [disabled]="changePasswordForm.invalid"></p-button>
+        </div>
+      </form>
     </div>
-  </section>
+  </div>
 
 </div>
 
 @if (!currentUser) {
-  <div class="flex items-center justify-center min-h-[50vh] text-lg">
-    Loading user data...
+  <div class="loading-state">
+    <i class="pi pi-spin pi-spinner loading-icon"></i>
+    <p>Loading user data...</p>
   </div>
 }
