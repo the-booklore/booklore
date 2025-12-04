@@ -10,7 +10,7 @@
 }
 
 .settings-header {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
   margin-bottom: 1rem;
 }
 
@@ -64,6 +64,11 @@
   gap: 2rem;
   padding: 0.25rem 0;
 
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1rem;
@@ -94,16 +99,14 @@
     .setting-label {
       margin-bottom: 0;
       flex-shrink: 0;
-      min-width: 150px;
+      min-width: 120px;
     }
 
-    .radio-group {
-      display: flex;
-      gap: 1.5rem;
+    p-select {
+      min-width: 200px;
 
       @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 0.75rem;
+        min-width: 180px;
       }
     }
   }
@@ -126,27 +129,5 @@
   @media (max-width: 768px) {
     align-items: flex-start;
     width: 100%;
-  }
-}
-
-.radio-group {
-  display: flex;
-  gap: 1.5rem;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-
-  label {
-    font-size: 0.875rem;
-    color: var(--p-text-color);
-    cursor: pointer;
   }
 }

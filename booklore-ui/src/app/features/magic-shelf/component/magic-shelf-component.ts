@@ -200,6 +200,7 @@ export class MagicShelfComponent implements OnInit {
 
   shelfId: number | null = null;
   isAdmin: boolean = false;
+  editMode!: boolean;
 
   libraryService = inject(LibraryService);
   magicShelfService = inject(MagicShelfService);
@@ -216,6 +217,7 @@ export class MagicShelfComponent implements OnInit {
   ngOnInit(): void {
     this.isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const id = this.config?.data?.id;
+    this.editMode = !!this.config?.data?.editMode;
 
     if (id) {
       this.shelfId = id;

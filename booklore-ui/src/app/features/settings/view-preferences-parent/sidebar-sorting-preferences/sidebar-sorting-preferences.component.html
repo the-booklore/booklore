@@ -5,7 +5,7 @@
       Sidebar Library and Shelf Sorting Preference
     </h2>
     <p class="settings-description">
-      Configure sorting options for your library and shelves shown in the sidebar.
+      Configure sorting options for your library and shelves names shown in the left menu sidebar.
     </p>
   </div>
 
@@ -17,11 +17,6 @@
             <div class="setting-label-row">
               <label class="setting-label">
                 Library
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Choose how books are sorted and displayed in the library sidebar."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
               </label>
               <p-select
                 size="small"
@@ -33,7 +28,7 @@
               </p-select>
             </div>
             <p class="setting-description">
-              Choose how books are sorted and displayed in the library sidebar.
+              Choose how library names are sorted and displayed in the sidebar.
             </p>
           </div>
         </div>
@@ -43,11 +38,6 @@
             <div class="setting-label-row">
               <label class="setting-label">
                 Shelf
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Choose how books are sorted and displayed in the shelf sidebar."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
               </label>
               <p-select
                 size="small"
@@ -59,7 +49,28 @@
               </p-select>
             </div>
             <p class="setting-description">
-              Choose how books are sorted and displayed in the shelf sidebar.
+              Choose how shelf names are sorted and displayed in the sidebar.
+            </p>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">
+                Magic Shelf
+              </label>
+              <p-select
+                size="small"
+                [options]="sortingOptions"
+                [(ngModel)]="selectedMagicShelfSorting"
+                (ngModelChange)="onMagicShelfSortingChange()"
+                appendTo="body"
+                placeholder="Select Sorting">
+              </p-select>
+            </div>
+            <p class="setting-description">
+              Choose how magic shelf names are sorted and displayed in the sidebar.
             </p>
           </div>
         </div>

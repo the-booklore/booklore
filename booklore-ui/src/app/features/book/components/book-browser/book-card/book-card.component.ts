@@ -45,7 +45,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
-  @Input() readButtonHidden: boolean = false;
+  @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
@@ -767,5 +767,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   shouldShowStatusIcon(): boolean {
     return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
+  }
+
+  isSeriesViewActive(): boolean {
+    return this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount! >= 1;
   }
 }
