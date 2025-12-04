@@ -28,6 +28,7 @@ public class DefaultUserSettingsProvider {
         defaultSettings.put(UserSettingKey.NEW_PDF_READER_SETTING, this::buildDefaultNewPdfReaderSetting);
         defaultSettings.put(UserSettingKey.SIDEBAR_LIBRARY_SORTING, this::buildDefaultSidebarLibrarySorting);
         defaultSettings.put(UserSettingKey.SIDEBAR_SHELF_SORTING, this::buildDefaultSidebarShelfSorting);
+        defaultSettings.put(UserSettingKey.SIDEBAR_MAGIC_SHELF_SORTING, this::buildDefaultSidebarMagicShelfSorting);
         defaultSettings.put(UserSettingKey.ENTITY_VIEW_PREFERENCES, this::buildDefaultEntityViewPreferences);
         defaultSettings.put(UserSettingKey.TABLE_COLUMN_PREFERENCE, () -> null);
         defaultSettings.put(UserSettingKey.FILTER_MODE, () -> "and");
@@ -96,6 +97,10 @@ public class DefaultUserSettingsProvider {
     }
 
     private SidebarSortOption buildDefaultSidebarShelfSorting() {
+        return SidebarSortOption.builder().field("id").order("asc").build();
+    }
+
+    private SidebarSortOption buildDefaultSidebarMagicShelfSorting() {
         return SidebarSortOption.builder().field("id").order("asc").build();
     }
 

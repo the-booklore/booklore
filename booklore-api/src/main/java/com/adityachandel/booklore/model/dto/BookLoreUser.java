@@ -47,6 +47,7 @@ public class BookLoreUser {
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
+        public SidebarSortOption sidebarMagicShelfSorting;
         public EntityViewPreferences entityViewPreferences;
         public List<TableColumnPreference> tableColumnPreference;
         public String filterMode;

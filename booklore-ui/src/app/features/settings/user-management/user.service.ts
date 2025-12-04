@@ -36,6 +36,11 @@ export interface SidebarShelfSorting {
   order: string;
 }
 
+export interface SidebarMagicShelfSorting {
+  field: string;
+  order: string;
+}
+
 export interface PerBookSetting {
   pdf: string;
   epub: string;
@@ -129,6 +134,7 @@ export interface UserSettings {
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;
   sidebarShelfSorting: SidebarShelfSorting;
+  sidebarMagicShelfSorting: SidebarMagicShelfSorting;
   filterMode: BookFilterMode;
   filterSortingMode: FilterSortingMode;
   metadataCenterViewMode: 'route' | 'dialog';

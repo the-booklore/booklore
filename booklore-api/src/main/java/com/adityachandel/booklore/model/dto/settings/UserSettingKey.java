@@ -11,6 +11,7 @@ public enum UserSettingKey {
     CBX_READER_SETTING("cbxReaderSetting", true),
     SIDEBAR_LIBRARY_SORTING("sidebarLibrarySorting", true),
     SIDEBAR_SHELF_SORTING("sidebarShelfSorting", true),
+    SIDEBAR_MAGIC_SHELF_SORTING("sidebarMagicShelfSorting", true),
     ENTITY_VIEW_PREFERENCES("entityViewPreferences", true),
     TABLE_COLUMN_PREFERENCE("tableColumnPreference", true),
     DASHBOARD_CONFIG("dashboardConfig", true),
