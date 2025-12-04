@@ -268,8 +268,7 @@ public class MonitoringService {
             boolean hasPendingEvents = eventQueue.stream()
                     .anyMatch(event -> {
                         Path watchedFolder = event.getWatchedFolder();
-                        return libraryPaths.stream().anyMatch(libPath -> 
-                                watchedFolder.startsWith(libPath) || watchedFolder.equals(libPath));
+                        return libraryPaths.stream().anyMatch(watchedFolder::startsWith);
                     });
 
             if (!hasPendingEvents) {
