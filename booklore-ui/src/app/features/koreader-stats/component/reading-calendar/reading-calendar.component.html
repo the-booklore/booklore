@@ -1,0 +1,125 @@
+<div class="reading-calendar">
+  <!-- Header with navigation -->
+  <div class="calendar-header">
+    <div class="calendar-nav">
+      <p-button
+        icon="pi pi-angle-double-left"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="previousMonth(); previousMonth()"
+        pTooltip="Previous year"
+      />
+      <p-button
+        icon="pi pi-angle-left"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="previousMonth()"
+        pTooltip="Previous month"
+      />
+      <span class="calendar-title">{{ monthName }} {{ currentYear }}</span>
+      <p-button
+        icon="pi pi-angle-right"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="nextMonth()"
+        pTooltip="Next month"
+      />
+      <p-button
+        icon="pi pi-angle-double-right"
+        [rounded]="true"
+        [text]="true"
+        severity="secondary"
+        (onClick)="nextMonth(); nextMonth()"
+        pTooltip="Next year"
+      />
+    </div>
+    <div class="calendar-stats">
+      @if (monthTotalDuration > 0) {
+        <span class="month-stat">
+          <i class="pi pi-clock"></i>
+          {{ formatDuration(monthTotalDuration) }}
+        </span>
+        <span class="month-stat">
+          <i class="pi pi-file"></i>
+          {{ monthTotalPages }} pages
+        </span>
+      }
+    </div>
+    <div class="calendar-controls">
+      <label class="toggle-label">
+        <p-toggleswitch [(ngModel)]="showDurationBars" />
+        <span>Show daily breakdown</span>
+      </label>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="calendar-loading">
+      <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+    </div>
+  } @else {
+    <!-- Weekday headers -->
+    <div class="weekday-header">
+      @for (day of weekdayLabels; track $index) {
+        <div class="weekday-cell">{{ day }}</div>
+      }
+    </div>
+
+    <!-- Calendar grid -->
+    <div class="calendar-body">
+      @for (week of weeks; track $index; let weekIndex = $index) {
+        <div class="calendar-week">
+          <!-- Day cells -->
+          <div class="week-days">
+            @for (cell of week.cells; track $index) {
+              <div
+                class="day-cell"
+                [class.empty]="!cell.isCurrentMonth"
+                [class.has-data]="cell.dayData"
+                [class.today]="isToday(cell)"
+              >
+                @if (cell.isCurrentMonth) {
+                  <div class="day-number" [class.today-number]="isToday(cell)">{{ cell.dayNumber }}</div>
+                  @if (cell.dayData && showDurationBars) {
+                    <div class="day-books">
+                      @for (book of cell.dayData.books; track book.bookId) {
+                        <div
+                          class="day-book-entry clickable"
+                          [title]="book.title"
+                          (click)="navigateToBook(book.bookId)"
+                        >
+                          <span class="book-title">{{ book.title }}</span>
+                          <span class="book-duration">{{ formatDuration(book.durationSeconds) }}</span>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Book spans for this week -->
+          @if (!showDurationBars) {
+            <div class="week-spans" [style.height.px]="maxRowsInMonth * 26 + 4">
+              @for (span of getSpansForWeek(weekIndex); track span.bookId) {
+                <div
+                  class="book-span"
+                  [class]="getBookColorClass(span.colorIndex)"
+                  [style]="getSpanStyle(span, weekIndex)"
+                  [title]="span.title + ' - ' + formatDuration(span.totalDurationSeconds) + ', ' + span.totalPagesRead + ' pages'"
+                  (click)="navigateToBook(span.bookId)"
+                >
+                  <span class="span-title">{{ span.title }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

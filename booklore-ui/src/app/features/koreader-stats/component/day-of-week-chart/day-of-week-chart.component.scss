@@ -1,0 +1,184 @@
+.day-of-week-chart {
+  background: var(--p-surface-card);
+  border: 1px solid var(--p-surface-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.chart-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+}
+
+.chart-container {
+  height: 220px;
+}
+
+.bars-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  height: 100%;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 60px;
+  height: 100%;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--p-primary-500), transparent 92%);
+  }
+
+  &.selected {
+    background: color-mix(in srgb, var(--p-primary-500), transparent 85%);
+
+    .bar-label {
+      color: var(--p-primary-500);
+    }
+
+    .bar-value {
+      color: var(--p-primary-500);
+    }
+  }
+}
+
+.bar-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  min-height: 1.2rem;
+  transition: color 0.15s ease;
+}
+
+.bar-track {
+  flex: 1;
+  width: 100%;
+  max-width: 40px;
+  background: var(--p-surface-ground);
+  border-radius: 4px 4px 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.bar-fill {
+  width: 100%;
+  background: var(--p-primary-500);
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  min-height: 2px;
+}
+
+.bar-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--p-text-color);
+  margin-top: 0.5rem;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+}
+
+// Selected day details panel
+.selected-details {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--p-surface-ground);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.detail-day {
+  font-weight: 600;
+  color: var(--p-text-color);
+}
+
+.detail-separator {
+  color: var(--p-text-muted-color);
+}
+
+.detail-duration {
+  font-weight: 600;
+  color: var(--p-primary-500);
+}
+
+.detail-pages {
+  color: var(--p-text-muted-color);
+}
+
+// Dark mode adjustments
+:host-context(.dark) {
+  .bar-fill {
+    background: var(--p-primary-400);
+  }
+
+  .bar-wrapper {
+    &:hover {
+      background: color-mix(in srgb, var(--p-primary-400), transparent 88%);
+    }
+
+    &.selected {
+      background: color-mix(in srgb, var(--p-primary-400), transparent 80%);
+
+      .bar-label,
+      .bar-value {
+        color: var(--p-primary-400);
+      }
+    }
+  }
+
+  .detail-duration {
+    color: var(--p-primary-400);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .day-of-week-chart {
+    padding: 0.75rem;
+  }
+
+  .chart-container {
+    height: 180px;
+  }
+
+  .bar-value {
+    font-size: 0.65rem;
+  }
+
+  .bar-label {
+    font-size: 0.7rem;
+  }
+
+  .bar-track {
+    max-width: 30px;
+  }
+
+  .bar-wrapper {
+    padding: 0.15rem;
+  }
+
+  .selected-details {
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+}

@@ -1,0 +1,198 @@
+<div class="koreader-stats-container p-4">
+  <div class="header-section mb-4">
+    <div class="header-content">
+      <div>
+        <h1 class="text-3xl font-bold">KOReader Reading Stats</h1>
+        <p class="text-surface-500 mt-2">Track your reading progress from your KOReader devices. These charts reflect only the books in your Booklore library.</p>
+      </div>
+      @if (stats) {
+        <button type="button" class="config-btn" (click)="toggleConfigPanel()" title="Configure charts">
+          <i class="pi pi-cog"></i>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Chart Configuration Modal -->
+  @if (showConfigPanel) {
+    <div class="config-modal-overlay" (click)="closeConfigPanel()">
+      <div class="config-modal" (click)="$event.stopPropagation()">
+        <div class="config-modal-header">
+          <h3><i class="pi pi-cog"></i> Chart Configuration</h3>
+          <button type="button" class="close-btn" (click)="closeConfigPanel()" title="Close">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="config-modal-actions">
+          <button type="button" class="config-action-btn enable-all" (click)="enableAllCharts()">
+            <i class="pi pi-check"></i> Enable All
+          </button>
+          <button type="button" class="config-action-btn disable-all" (click)="disableAllCharts()">
+            <i class="pi pi-times"></i> Disable All
+          </button>
+          <button type="button" class="config-action-btn reset-positions" (click)="resetChartPositions()">
+            <i class="pi pi-refresh"></i> Reset Positions
+          </button>
+        </div>
+
+        <div class="config-modal-content">
+          <div class="chart-toggles">
+            @for (chart of chartsConfig$ | async; track chart.id) {
+              <div class="chart-toggle">
+                <input
+                  type="checkbox"
+                  [id]="'chart-' + chart.id"
+                  [checked]="chart.enabled"
+                  (change)="toggleChart(chart.id)">
+                <label [for]="'chart-' + chart.id">{{ chart.name }}</label>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (isLoading) {
+    <div class="flex justify-center items-center h-64">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else if (hasError) {
+    <div class="flex justify-center items-center h-64">
+      <div class="text-center">
+        <i class="pi pi-exclamation-triangle text-4xl text-red-500 mb-4"></i>
+        <p class="text-xl">Failed to load reading statistics</p>
+        <p class="text-surface-500 mt-2">Please try again later</p>
+      </div>
+    </div>
+  } @else if (!stats) {
+    <div class="flex justify-center items-center h-64">
+      <div class="text-center">
+        <i class="pi pi-inbox text-4xl text-surface-400 mb-4"></i>
+        <p class="text-xl">No reading statistics available</p>
+        <p class="text-surface-500 mt-2">Start syncing your KOReader device to see your stats</p>
+      </div>
+    </div>
+  } @else {
+    <div class="charts-container"
+         cdkDropList
+         (cdkDropListDropped)="onChartReorder($event)"
+         [cdkDropListData]="getEnabledChartsSorted()">
+
+      @for (chartConfig of getEnabledChartsSorted(); track chartConfig.id) {
+        <div class="chart-section"
+             cdkDrag
+             [cdkDragData]="chartConfig">
+
+          <div class="drag-handle" cdkDragHandle title="Drag to reorder">
+            <i class="pi pi-bars"></i>
+          </div>
+
+          @switch (chartConfig.id) {
+            @case ('summaryCards') {
+              <h2 class="chart-title">Summary</h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Total Reading Time -->
+                <p-card>
+                  <div class="flex flex-col items-center text-center">
+                    <h3 class="text-lg font-semibold text-surface-600 dark:text-surface-300">Total Reading Time</h3>
+                    <p class="text-3xl font-bold mt-2">{{ formatDuration(stats.totalReadingTimeSeconds) }}</p>
+                  </div>
+                </p-card>
+
+                <!-- Total Pages Read -->
+                <p-card>
+                  <div class="flex flex-col items-center text-center">
+                    <h3 class="text-lg font-semibold text-surface-600 dark:text-surface-300">Total Pages Read</h3>
+                    <p class="text-3xl font-bold mt-2">{{ stats.totalPagesRead | number }}</p>
+                  </div>
+                </p-card>
+
+                <!-- Longest Reading Day -->
+                <p-card>
+                  <div class="flex flex-col items-center text-center">
+                    <h3 class="text-lg font-semibold text-surface-600 dark:text-surface-300">Longest Reading Day</h3>
+                    <p class="text-3xl font-bold mt-2">{{ formatDuration(stats.longestDaySeconds) }}</p>
+                    <p class="text-sm text-surface-500 mt-1">{{ formatDate(stats.longestDayDate) }}</p>
+                  </div>
+                </p-card>
+
+                <!-- Most Pages in a Day -->
+                <p-card>
+                  <div class="flex flex-col items-center text-center">
+                    <h3 class="text-lg font-semibold text-surface-600 dark:text-surface-300">Most Pages in a Day</h3>
+                    <p class="text-3xl font-bold mt-2">{{ stats.mostPagesInDay | number }}</p>
+                    <p class="text-sm text-surface-500 mt-1">{{ formatDate(stats.mostPagesDate) }}</p>
+                  </div>
+                </p-card>
+              </div>
+            }
+
+            @case ('readingCalendar') {
+              <h2 class="chart-title">Reading Calendar</h2>
+              <app-reading-calendar />
+            }
+
+            @case ('dayOfWeek') {
+              <h2 class="chart-title">Reading by Day of Week</h2>
+              <app-day-of-week-chart />
+            }
+
+            @case ('readingActivity') {
+              @if (monthsData.length > 0) {
+                <h2 class="chart-title">Reading Activity</h2>
+
+                <!-- Legend -->
+                <div class="flex items-center gap-2 mb-4 text-sm text-surface-500">
+                  <span>Less</span>
+                  <div class="heatmap-cell intensity-0"></div>
+                  <div class="heatmap-cell intensity-1"></div>
+                  <div class="heatmap-cell intensity-2"></div>
+                  <div class="heatmap-cell intensity-3"></div>
+                  <div class="heatmap-cell intensity-4"></div>
+                  <span>More</span>
+                </div>
+
+                <!-- Month calendars grid -->
+                <div class="months-grid">
+                  @for (monthData of monthsData; track monthData.label) {
+                    <div class="month-card">
+                      <div class="month-header">
+                        <span class="month-label">{{ monthData.label }}</span>
+                        <span class="month-stats">{{ formatDuration(monthData.totalMinutes * 60) }} · {{ monthData.totalPages }} pages</span>
+                      </div>
+                      <div class="calendar-grid">
+                        <!-- Weekday labels -->
+                        <div class="weekday-labels">
+                          @for (label of weekdayLabels; track $index) {
+                            <div class="weekday-label">{{ label }}</div>
+                          }
+                        </div>
+                        <!-- Calendar weeks -->
+                        @for (week of monthData.weeks; track $index) {
+                          <div class="week-row">
+                            @for (day of week.days; track $index) {
+                              @if (day.date) {
+                                <div
+                                  class="heatmap-cell {{ getIntensityClass(day.intensity) }}"
+                                  [title]="formatDayDate(day.date) + (day.durationSeconds > 0 ? ': ' + formatDuration(day.durationSeconds) + ', ' + day.pagesRead + ' pages' : ': No reading')"
+                                ></div>
+                              } @else {
+                                <div class="heatmap-cell empty"></div>
+                              }
+                            }
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -147,6 +147,10 @@ export class AppTopBarComponent implements OnDestroy {
     this.router.navigate(['/stats']);
   }
 
+  navigateToKoreaderStats() {
+    this.router.navigate(['/koreader-stats']);
+  }
+
   logout() {
     this.authService.logout();
   }

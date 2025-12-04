@@ -57,6 +57,11 @@
             <i class="pi pi-chart-bar text-surface-100"></i>
           </a>
         </li>
+        <li>
+          <a class="topbar-item" (click)="navigateToKoreaderStats()" pTooltip="KOReader Reading Stats" tooltipPosition="bottom">
+            <i class="pi pi-mobile text-surface-100"></i>
+          </a>
+        </li>
         @if (userService.userState$ | async; as userState) {
           <li>
             @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
@@ -196,6 +201,15 @@
             >
               <i class="pi pi-chart-bar text-surface-100"></i>
               Charts
+            </button>
+          </li>
+          <li>
+            <button
+              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              (click)="navigateToKoreaderStats(); mobileMenu.hide()"
+            >
+              <i class="pi pi-mobile text-surface-100"></i>
+              KOReader Stats
             </button>
           </li>
           <li>

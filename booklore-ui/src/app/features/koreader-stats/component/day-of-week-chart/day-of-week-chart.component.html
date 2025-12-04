@@ -1,0 +1,39 @@
+<div class="day-of-week-chart">
+  @if (isLoading) {
+    <div class="chart-loading">
+      <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+    </div>
+  } @else {
+    <div class="chart-container">
+      <div class="bars-container">
+        @for (day of stats; track day.dayIndex) {
+          <div
+            class="bar-wrapper"
+            [class.selected]="isSelected(day)"
+            (click)="selectDay(day)"
+          >
+            <div class="bar-value">{{ formatDuration(day.totalDurationSeconds) }}</div>
+            <div class="bar-track">
+              <div
+                class="bar-fill"
+                [style.height.%]="getBarHeight(day.totalDurationSeconds)"
+              ></div>
+            </div>
+            <div class="bar-label">{{ getShortDayName(day.dayName) }}</div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Selected day details (for mobile) -->
+    @if (selectedDay) {
+      <div class="selected-details">
+        <span class="detail-day">{{ selectedDay.dayName }}</span>
+        <span class="detail-separator">·</span>
+        <span class="detail-duration">{{ formatDuration(selectedDay.totalDurationSeconds) }}</span>
+        <span class="detail-separator">·</span>
+        <span class="detail-pages">{{ selectedDay.totalPagesRead }} pages</span>
+      </div>
+    }
+  }
+</div>
