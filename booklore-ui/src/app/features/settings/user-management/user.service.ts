@@ -132,6 +132,7 @@ export interface UserSettings {
   filterMode: BookFilterMode;
   filterSortingMode: FilterSortingMode;
   metadataCenterViewMode: 'route' | 'dialog';
+  enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;
   tableColumnPreference?: TableColumnPreference[];
   dashboardConfig?: DashboardConfig;
@@ -176,7 +177,7 @@ export class UserService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
 
-  private userStateSubject = new BehaviorSubject<UserState>({
+  userStateSubject = new BehaviorSubject<UserState>({
     user: null,
     loaded: false,
     error: null,

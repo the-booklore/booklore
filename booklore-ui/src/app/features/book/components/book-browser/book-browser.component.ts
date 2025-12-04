@@ -841,4 +841,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       })
     );
   }
+
+  get seriesViewEnabled(): boolean {
+    return Boolean(this.userService.getCurrentUser()?.userSettings?.enableSeriesView);
+  }
 }

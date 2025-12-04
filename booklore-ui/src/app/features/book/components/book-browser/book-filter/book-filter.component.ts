@@ -149,7 +149,7 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AsyncPipe,
     TitleCasePipe,
     FormsModule,
-    SelectButton,
+    SelectButton
   ]
 })
 export class BookFilterComponent implements OnInit, OnDestroy {

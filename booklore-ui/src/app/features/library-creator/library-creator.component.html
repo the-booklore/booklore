@@ -4,7 +4,9 @@
       <i class="pi pi-book"></i>
     </div>
     <div class="main-header-content">
-      <h1 class="main-header-title">Library Creator</h1>
+      <h1 class="main-header-title">
+        {{ mode === 'edit' ? 'Edit Library' : 'Create New Library' }}
+      </h1>
       <p class="main-header-subtitle">Set up a new library to organize and manage your book collection</p>
     </div>
     <p-button
@@ -73,7 +75,7 @@
                     </div>
                   </div>
 
-                  <div class="divider"></div>
+                  <div class="gradient-divider"></div>
 
                   <div class="form-group highlight-group">
                     <label class="form-label">
@@ -113,7 +115,7 @@
                   </div>
                 </div>
 
-                <div class="divider"></div>
+                <div class="gradient-divider"></div>
 
                 <div class="form-section">
                   <div class="form-group">
@@ -170,7 +172,7 @@
                   }
                 </div>
 
-                <div class="divider"></div>
+                <div class="gradient-divider"></div>
 
                 <div class="form-section">
                   <div class="form-group">

@@ -21,7 +21,7 @@ import {CreateEmailRecipientDialogComponent} from '../create-email-recipient-dia
     TableModule,
     Tooltip,
     FormsModule
-],
+  ],
   templateUrl: './email-v2-recipient.component.html',
   styleUrl: './email-v2-recipient.component.scss'
 })
@@ -115,7 +115,8 @@ export class EmailV2RecipientComponent implements OnInit {
       header: 'Add New Recipient',
       modal: true,
       closable: true,
-      style: {position: 'absolute', top: '15%'},
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
     });
     this.ref?.onClose.subscribe((result) => {
       if (result) {

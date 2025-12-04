@@ -13,14 +13,15 @@ export class DialogLauncherService {
 
   dialogService = inject(DialogService);
 
-  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean }): DynamicDialogRef | null {
+  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean; styleClass?: string }): DynamicDialogRef | null {
     const isMobile = window.innerWidth <= 768;
-    const {component, header, top, width, showHeader = true} = options;
+    const {component, header, top, width, showHeader = true, styleClass} = options;
     return this.dialogService.open(component, {
       header,
       showHeader,
       modal: true,
       closable: true,
+      styleClass: styleClass,
       style: {
         position: 'absolute',
         ...(top ? {top} : {}),
@@ -50,6 +51,7 @@ export class DialogLauncherService {
     this.open({
       component: LibraryCreatorComponent,
       header: 'Create New Library',
+      styleClass: 'dynamic-dialog-minimal',
       showHeader: false
     });
   }
@@ -58,7 +60,8 @@ export class DialogLauncherService {
     this.open({
       component: BookUploaderComponent,
       header: 'Book Uploader',
-      showHeader: false
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal'
     });
   }
 
@@ -66,6 +69,7 @@ export class DialogLauncherService {
     this.open({
       component: UserProfileDialogComponent,
       header: 'User Profile Information',
+      styleClass: 'dynamic-dialog-minimal',
       showHeader: false
     });
   }
@@ -74,6 +78,7 @@ export class DialogLauncherService {
     this.open({
       component: MagicShelfComponent,
       header: 'Magic Shelf Creator',
+      styleClass: 'dynamic-dialog-minimal',
       showHeader: false
     });
   }
