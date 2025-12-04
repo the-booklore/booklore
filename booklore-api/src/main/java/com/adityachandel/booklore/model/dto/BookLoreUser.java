@@ -52,6 +52,7 @@ public class BookLoreUser {
         public String filterSortingMode;
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
+        public boolean enableSeriesView;
         public DashboardConfig dashboardConfig;
 
         @Data

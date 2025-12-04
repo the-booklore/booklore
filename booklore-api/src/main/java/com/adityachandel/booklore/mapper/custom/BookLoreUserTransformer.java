@@ -69,6 +69,7 @@ public class BookLoreUserTransformer {
                     switch (settingKey) {
                         case FILTER_SORTING_MODE -> userSettings.setFilterSortingMode(value);
                         case METADATA_CENTER_VIEW_MODE -> userSettings.setMetadataCenterViewMode(value);
+                        case ENABLE_SERIES_VIEW -> userSettings.setEnableSeriesView(Boolean.parseBoolean(value));
                     }
                 }
             } catch (IllegalArgumentException e) {

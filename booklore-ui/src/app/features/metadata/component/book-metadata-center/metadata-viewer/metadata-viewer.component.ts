@@ -348,7 +348,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 0 ? 1 : 2;
+    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
   }
 
   toggleExpand(): void {

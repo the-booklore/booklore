@@ -16,7 +16,8 @@ public enum UserSettingKey {
     DASHBOARD_CONFIG("dashboardConfig", true),
 
     FILTER_SORTING_MODE("filterSortingMode", false),
-    METADATA_CENTER_VIEW_MODE("metadataCenterViewMode", false);
+    METADATA_CENTER_VIEW_MODE("metadataCenterViewMode", false),
+    ENABLE_SERIES_VIEW("enableSeriesView", false);
 
 
     private final String dbKey;
