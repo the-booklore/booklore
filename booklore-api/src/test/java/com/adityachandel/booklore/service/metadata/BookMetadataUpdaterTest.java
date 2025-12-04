@@ -263,20 +263,14 @@ class BookMetadataUpdaterTest {
         assertTrue(bookEntity.getMetadata().getMoods().stream().anyMatch(m -> m.getName().equals("Mood3")));
     }
 
-    /**
-     * Bug reproduction test: Adding 3 or more tags at once should preserve all tags.
-     * Issue: Sometimes when adding 3+ tags/authors/categories, only one shows after save.
-     */
     @Test
     void setBookMetadata_withThreeOrMoreNewTags_shouldPreserveAllTags() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
         metadataEntity.setTags(new HashSet<>());
         bookEntity.setMetadata(metadataEntity);
 
-        // Adding 3 new tags at once (the reported bug trigger)
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Set.of("Tag1", "Tag2", "Tag3"));
 
@@ -291,15 +285,12 @@ class BookMetadataUpdaterTest {
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .build();
 
-        // Simulate repository behavior - creating new entities with IDs
         when(tagRepository.findByName("Tag1")).thenReturn(Optional.of(TagEntity.builder().id(1L).name("Tag1").build()));
         when(tagRepository.findByName("Tag2")).thenReturn(Optional.of(TagEntity.builder().id(2L).name("Tag2").build()));
         when(tagRepository.findByName("Tag3")).thenReturn(Optional.of(TagEntity.builder().id(3L).name("Tag3").build()));
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
 
-        // Assert - all 3 tags should be present
         Set<TagEntity> resultTags = bookEntity.getMetadata().getTags();
         assertEquals(3, resultTags.size(), "All 3 tags should be preserved");
         
@@ -309,12 +300,8 @@ class BookMetadataUpdaterTest {
         assertTrue(tagNames.contains("Tag3"), "Tag3 should be present");
     }
 
-    /**
-     * Bug reproduction test: Adding 3 or more authors at once should preserve all authors.
-     */
     @Test
     void setBookMetadata_withThreeOrMoreNewAuthors_shouldPreserveAllAuthors() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
@@ -340,10 +327,8 @@ class BookMetadataUpdaterTest {
         when(authorRepository.findByName("Author3")).thenReturn(Optional.of(AuthorEntity.builder().id(3L).name("Author3").build()));
         when(authorRepository.findByName("Author4")).thenReturn(Optional.of(AuthorEntity.builder().id(4L).name("Author4").build()));
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
 
-        // Assert - all 4 authors should be present
         Set<AuthorEntity> resultAuthors = bookEntity.getMetadata().getAuthors();
         assertEquals(4, resultAuthors.size(), "All 4 authors should be preserved");
         
@@ -354,12 +339,8 @@ class BookMetadataUpdaterTest {
         assertTrue(authorNames.contains("Author4"), "Author4 should be present");
     }
 
-    /**
-     * Bug reproduction test: Adding 3 or more categories at once should preserve all categories.
-     */
     @Test
     void setBookMetadata_withThreeOrMoreNewCategories_shouldPreserveAllCategories() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
@@ -384,10 +365,7 @@ class BookMetadataUpdaterTest {
         when(categoryRepository.findByName("Category2")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.CategoryEntity.builder().id(2L).name("Category2").build()));
         when(categoryRepository.findByName("Category3")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.CategoryEntity.builder().id(3L).name("Category3").build()));
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
-
-        // Assert - all 3 categories should be present
         Set<CategoryEntity> resultCategories = bookEntity.getMetadata().getCategories();
         assertEquals(3, resultCategories.size(), "All 3 categories should be preserved");
         
@@ -397,13 +375,8 @@ class BookMetadataUpdaterTest {
         assertTrue(categoryNames.contains("Category3"), "Category3 should be present");
     }
 
-    /**
-     * Test that simulates the scenario where tags are created on-the-fly (not found in repo).
-     * This is a critical test for the bug because new entities don't have IDs initially.
-     */
     @Test
     void setBookMetadata_withNewTagsCreatedOnTheFly_shouldPreserveAllTags() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
@@ -429,7 +402,6 @@ class BookMetadataUpdaterTest {
         when(tagRepository.findByName("NewTag2")).thenReturn(Optional.empty());
         when(tagRepository.findByName("NewTag3")).thenReturn(Optional.empty());
         
-        // Mock save to return entity with ID assigned using any() matcher to avoid NPE
         when(tagRepository.save(org.mockito.ArgumentMatchers.any(TagEntity.class)))
                 .thenAnswer(invocation -> {
                     TagEntity tag = invocation.getArgument(0);
@@ -440,10 +412,8 @@ class BookMetadataUpdaterTest {
                             .build();
                 });
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
 
-        // Assert - all 3 new tags should be present
         Set<TagEntity> resultTags = bookEntity.getMetadata().getTags();
         assertEquals(3, resultTags.size(), "All 3 new tags should be preserved");
         
@@ -453,12 +423,8 @@ class BookMetadataUpdaterTest {
         assertTrue(tagNames.contains("NewTag3"), "NewTag3 should be present");
     }
 
-    /**
-     * Test updating existing tags while adding new ones (mixed scenario).
-     */
     @Test
     void setBookMetadata_withMixedExistingAndNewTags_shouldPreserveAll() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
@@ -487,7 +453,6 @@ class BookMetadataUpdaterTest {
         when(tagRepository.findByName("NewTag2")).thenReturn(Optional.of(TagEntity.builder().id(2L).name("NewTag2").build()));
         when(tagRepository.findByName("NewTag3")).thenReturn(Optional.of(TagEntity.builder().id(3L).name("NewTag3").build()));
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
 
         // Assert - all 4 tags should be present
@@ -501,13 +466,8 @@ class BookMetadataUpdaterTest {
         assertTrue(tagNames.contains("NewTag3"), "NewTag3 should be present");
     }
 
-    /**
-     * Test that verifies tags with same hashCode but different IDs are handled correctly.
-     * This specifically tests the entity equals/hashCode implementation.
-     */
     @Test
     void setBookMetadata_withTagsHavingDifferentIds_shouldPreserveAllTags() {
-        // Arrange
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
@@ -528,14 +488,12 @@ class BookMetadataUpdaterTest {
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .build();
 
-        // All tags exist with different IDs
         when(tagRepository.findByName("A")).thenReturn(Optional.of(TagEntity.builder().id(1L).name("A").build()));
         when(tagRepository.findByName("B")).thenReturn(Optional.of(TagEntity.builder().id(2L).name("B").build()));
         when(tagRepository.findByName("C")).thenReturn(Optional.of(TagEntity.builder().id(3L).name("C").build()));
         when(tagRepository.findByName("D")).thenReturn(Optional.of(TagEntity.builder().id(4L).name("D").build()));
         when(tagRepository.findByName("E")).thenReturn(Optional.of(TagEntity.builder().id(5L).name("E").build()));
 
-        // Act
         bookMetadataUpdater.setBookMetadata(context);
 
         // Assert - all 5 tags should be present
