@@ -77,7 +77,13 @@ jobs:
       - name: Copy frontend to backend
         run: |
           mkdir -p booklore-api/src/main/resources/static
-          cp -r booklore-ui/dist/booklore-ui/browser/* booklore-api/src/main/resources/static/
+          if [ -d "booklore-ui/dist/booklore" ]; then
+            cp -r booklore-ui/dist/booklore/* booklore-api/src/main/resources/static/
+            echo "Frontend copied successfully"
+          else
+            echo "Warning: Frontend dist not found at booklore-ui/dist/booklore"
+            ls -la booklore-ui/dist/ || echo "dist directory doesn't exist"
+          fi
 
       - name: Build Backend
         working-directory: booklore-api
