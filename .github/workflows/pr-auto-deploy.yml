@@ -210,9 +210,12 @@ jobs:
 
       - name: Set up SSH
         run: |
-          mkdir -p ~/.ssh/
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private.key
+          mkdir -p ~/.ssh
+          cat > ~/.ssh/private.key << 'SSHKEY'
+          ${{ secrets.VPS_SSH_KEY }}
+          SSHKEY
           chmod 600 ~/.ssh/private.key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Deploy to VPS
         id: deploy
@@ -221,8 +224,10 @@ jobs:
           COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
           DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
+          # Use correct VPS username
+          VPS_USERNAME="ubuntu"
+          
           # Calculate port based on PR number (e.g., PR #8 -> port 8080, PR #15 -> port 8015)
           APP_PORT=$((8000 + PR_NUMBER))
           DB_PORT=$((13300 + PR_NUMBER))
@@ -272,10 +277,11 @@ jobs:
             booklore-books-pr-${PR_NUMBER}:
           EOF
 
-          # Deploy to VPS
-          scp -i ~/.ssh/private.key -o StrictHostKeyChecking=no docker-compose.yml ${VPS_USERNAME}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml
+          # Deploy to VPS with verbose SSH output for debugging
+          echo "Deploying to ${VPS_USERNAME}@${VPS_HOST}..."
+          scp -v -i ~/.ssh/private.key -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new docker-compose.yml "${VPS_USERNAME}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml"
 
-          ssh -i ~/.ssh/private.key -o StrictHostKeyChecking=no -T ${VPS_USERNAME}@${VPS_HOST} << ENDSSH
+          ssh -v -i ~/.ssh/private.key -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T "${VPS_USERNAME}@${VPS_HOST}" << 'ENDSSH'
             # Create PR-specific directory
             mkdir -p /opt/booklore/pr-${PR_NUMBER}
 
@@ -452,8 +458,8 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
         run: |
+          VPS_USERNAME="ubuntu"
           ssh -i ~/.ssh/private.key -o StrictHostKeyChecking=no -T ${VPS_USERNAME}@${VPS_HOST} << ENDSSH
             if [ -d "/opt/booklore/pr-${PR_NUMBER}" ]; then
               echo "Found PR directory, proceeding with cleanup..."
