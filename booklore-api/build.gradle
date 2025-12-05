@@ -5,6 +5,7 @@ plugins {
     id 'org.hibernate.orm' version '6.6.36.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
     id 'org.flywaydb.flyway' version '11.18.0'
+    id 'jacoco'
 }
 
 group = 'com.adityachandel'
@@ -93,5 +94,25 @@ hibernate {
 test {
     useJUnitPlatform()
     jvmArgs("-XX:+EnableDynamicAgentLoading")
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/config/**',
+                '**/dto/**',
+                '**/entity/**',
+                '**/model/**'
+            ])
+        }))
+    }
 }
 

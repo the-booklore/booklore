@@ -250,6 +250,7 @@ jobs:
                 DATABASE_USERNAME: booklore
                 DATABASE_PASSWORD: booklore_pr_${PR_NUMBER}
                 SWAGGER_ENABLED: "true"
+                SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
               volumes:
                 - booklore-data-pr-${PR_NUMBER}:/app/data
                 - booklore-books-pr-${PR_NUMBER}:/books

@@ -51,6 +51,7 @@ jobs:
       - name: Run Tests with Coverage
         working-directory: ./booklore-api
         run: ./gradlew test jacocoTestReport --no-daemon
+        continue-on-error: false
 
       - name: Generate JaCoCo Badge
         id: jacoco
@@ -62,11 +63,17 @@ jobs:
           coverage-badge-filename: jacoco.svg
           generate-branches-badge: true
           branches-badge-filename: branches.svg
+        continue-on-error: true
 
       - name: Log coverage percentage
         run: |
-          echo "Coverage: ${{ steps.jacoco.outputs.coverage }}%"
-          echo "Branches: ${{ steps.jacoco.outputs.branches }}%"
+          if [ -f "booklore-api/build/reports/jacoco/test/jacocoTestReport.csv" ]; then
+            echo "Coverage: ${{ steps.jacoco.outputs.coverage }}%"
+            echo "Branches: ${{ steps.jacoco.outputs.branches }}%"
+          else
+            echo "⚠ JaCoCo report not found at expected path"
+            find booklore-api/build/reports -name "*.csv" -o -name "*.xml" | head -20
+          fi
 
       - name: Upload Coverage Report
         uses: actions/upload-artifact@v4
