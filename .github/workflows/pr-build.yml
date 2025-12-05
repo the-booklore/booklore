@@ -36,5 +36,9 @@ jobs:
           tags: |
             booklore:pr-${{ github.event.number }}-arm64
             booklore:pr-${{ github.event.number }}-amd64
-          cache-from: type=gha
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/${{ github.repository }}:buildcache
           cache-to: type=gha,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1

@@ -172,20 +172,25 @@ jobs:
             
             const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
             
-            // Build the table rows
+            // Build the table rows with Result column
             let tableRows = '';
             for (const check of defaultChecks) {
               const c = statusMap[check.key];
               const statusLink = c.url ? '[' + c.status + '](' + c.url + ')' : c.status;
-              tableRows += '| ' + c.name + ' | ' + statusLink + ' ' + c.statusText + ' | ' + c.duration + ' |\n';
+              let result = '-';
+              if (c.statusText === 'Passed') result = '✅ SUCCESS';
+              else if (c.statusText === 'Failed') result = '❌ FAIL';
+              else if (c.statusText === 'Cancelled') result = '⏹️ CANCELLED';
+              else if (c.statusText === 'Skipped') result = '⏭️ SKIPPED';
+              tableRows += '| ' + c.name + ' | ' + statusLink + ' ' + c.statusText + ' | ' + result + ' | ' + c.duration + ' |\n';
             }
             
             // Build comment body
             const commentBody = '## 🔄 PR Status Dashboard\n\n' +
               '**PR #' + prNumber + '** | `' + headRef + '` → `' + baseRef + '` | ' + overallStatus + '\n\n' +
               '### 📊 Quality Checks\n\n' +
-              '| Check | Status | Duration |\n' +
-              '|-------|--------|----------|\n' +
+              '| Check | Status | Result | Duration |\n' +
+              '|-------|--------|--------|----------|\n' +
               tableRows + '\n' +
               '### 🚀 Deployment Commands\n\n' +
               'After all checks pass, authorized users can:\n\n' +

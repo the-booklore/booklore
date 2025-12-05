@@ -2,6 +2,7 @@ name: PR Validation
 
 on:
   pull_request:
+    types: [opened, reopened]  # Only on open/reopen, NOT on synchronize
     branches: [main, develop]
 
 # Cancel in-progress runs when a new run is triggered
