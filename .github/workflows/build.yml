@@ -5,14 +5,23 @@ on:
     branches: ["main", "develop"]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
+  # ============================================
+  # Frontend Tests
+  # ============================================
   test-frontend:
+    name: Frontend Tests
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: ./booklore-ui
     steps:
       - uses: actions/checkout@v4
+      
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -20,24 +29,83 @@ jobs:
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
 
-      - run: npm install
-      - run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
-      - run: npm run build
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint || true
+        
+      - name: Run unit tests
+        run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless --code-coverage
+        
+      - name: Build frontend
+        run: npm run build -- --configuration=production
 
+  # ============================================
+  # Backend Tests
+  # ============================================
   test-backend:
+    name: Backend Tests (JDK ${{ matrix.java-version }})
     runs-on: ubuntu-latest
-    needs: test-frontend # Wait for frontend to pass
+    strategy:
+      matrix:
+        java-version: ['21']
+      fail-fast: false
     defaults:
-        run:
-          working-directory: ./booklore-api
+      run:
+        working-directory: ./booklore-api
     steps:
       - uses: actions/checkout@v4
-      - name: Setup JDK 21
+      
+      - name: Setup JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ matrix.java-version }}
           distribution: 'temurin'
+          
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-      - name: Test with Gradle
-        run: ./gradlew test
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
+          
+      - name: Run tests with Gradle
+        run: ./gradlew test --no-daemon
+        
+      - name: Generate test report
+        if: always()
+        run: ./gradlew jacocoTestReport --no-daemon || true
+        
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-java-${{ matrix.java-version }}
+          path: |
+            booklore-api/build/reports/tests/
+            booklore-api/build/reports/jacoco/
+          retention-days: 7
+
+  # ============================================
+  # Docker Build Test (no push)
+  # ============================================
+  docker-build:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build Docker image (amd64 only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: false
+          platforms: linux/amd64
+          tags: booklore:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+

@@ -5,7 +5,7 @@ FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Increase Node memory limit for ARM64 builds
-ENV NODE_OPTIONS="--max_old_space_size=2048"
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 # Copy package files and install dependencies
 COPY booklore-ui/package*.json ./
@@ -13,7 +13,7 @@ RUN npm ci --prefer-offline --no-audit
 
 # Copy source code and build
 COPY booklore-ui/ ./
-RUN npm run build -- --configuration=production --poll=5000
+RUN npm run build -- --configuration=production
 
 # ==========================================
 # Stage 2: Build Java Backend
@@ -59,6 +59,10 @@ COPY --from=backend-builder /build/build/libs/*.jar app.jar
 
 # Expose the configured port
 EXPOSE 6060
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:6060/actuator/health || exit 1
 
 # Switch to user (using the IDs passed or default 1000)
 USER ${APP_USER_ID}:${APP_GROUP_ID}
