@@ -1,0 +1,239 @@
+name: PR Preview - Deploy
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  authorize-and-deploy:
+    name: Authorize and Deploy
+    if: |
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '/deploy-pr')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      # Check if commenter is authorized
+      - name: Check Authorization
+        id: auth
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const authorizedUsers = ['balazs-szucs', 'adityachandel'];
+            const commenter = context.payload.comment.user.login;
+            
+            if (!authorizedUsers.includes(commenter)) {
+              core.setFailed(`User ${commenter} is not authorized to deploy PR previews.`);
+              
+              // Reply to the comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ @${commenter} is not authorized to deploy PR previews.\n\nAuthorized users: ${authorizedUsers.map(u => '@' + u).join(', ')}`
+              });
+              
+              return;
+            }
+            
+            core.info(`User ${commenter} is authorized to deploy.`);
+            return true;
+
+      # Add eyes reaction to acknowledge the command
+      - name: Add Eyes Reaction
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      # Reply that deployment is starting
+      - name: Reply - Deployment Starting
+        id: deploy-comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const comment = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `⏳ **Deployment in progress...**\n\nStarted by @${context.payload.comment.user.login}\n\nPlease wait while the preview environment is being set up.`
+            });
+            core.setOutput('comment_id', comment.data.id);
+
+      # Get PR details
+      - name: Get PR Branch
+        uses: xt0rted/pull-request-comment-branch@v2
+        id: comment-branch
+
+      - name: Set PR Number
+        run: echo "PR_NUM=${{ github.event.issue.number }}" >> $GITHUB_ENV
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.comment-branch.outputs.head_ref }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      # Deploy to VPS
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Calculate Dynamic Ports based on PR Number
+            PR_NUM=${{ env.PR_NUM }}
+            APP_PORT=$((6000 + PR_NUM))
+            
+            # Create Directory for this PR
+            mkdir -p ~/deployments/pr-${PR_NUM}
+            cd ~/deployments/pr-${PR_NUM}
+
+            # Create docker-compose.yml
+            cat > docker-compose.yml << 'COMPOSE_EOF'
+            services:
+              booklore:
+                image: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${PR_NUM}
+                container_name: booklore-pr-${PR_NUM}
+                environment:
+                  - TZ=Etc/UTC
+                  - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+                  - SPRING_DATASOURCE_USERNAME=booklore
+                  - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUM}
+                  - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+                  - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
+                depends_on:
+                  mariadb:
+                    condition: service_healthy
+                ports:
+                  - "${APP_PORT}:6060"
+                volumes:
+                  - ./data:/app/data
+                  - ./books:/books
+                  - ./bookdrop:/bookdrop
+                restart: unless-stopped
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 60s
+
+              mariadb:
+                image: lscr.io/linuxserver/mariadb:11.4.5
+                container_name: mariadb-pr-${PR_NUM}
+                environment:
+                  - PUID=1000
+                  - PGID=1000
+                  - TZ=Etc/UTC
+                  - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
+                  - MYSQL_DATABASE=booklore
+                  - MYSQL_USER=booklore
+                  - MYSQL_PASSWORD=pr_pass_${PR_NUM}
+                volumes:
+                  - ./mariadb_data:/config
+                healthcheck:
+                  test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 10
+            COMPOSE_EOF
+
+            # Pull and Restart
+            docker compose pull
+            docker compose up -d --remove-orphans
+            
+            # Wait for app to be healthy
+            echo "Waiting for application to be ready..."
+            for i in {1..30}; do
+              if curl -s http://localhost:${APP_PORT}/actuator/health | grep -q '"status":"UP"'; then
+                echo "Application is ready!"
+                exit 0
+              fi
+              echo "Waiting... ($i/30)"
+              sleep 10
+            done
+            
+            echo "Application may still be starting. Check logs:"
+            docker compose logs booklore | tail -30
+
+      # Update the deployment comment with success info
+      - name: Update Comment - Success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNum = parseInt(process.env.PR_NUM);
+            const port = 6000 + prNum;
+            
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.deploy-comment.outputs.comment_id }},
+              body: `🚀 **PR Preview Deployed Successfully!**\n\n` +
+                    `| Resource | URL |\n` +
+                    `|----------|-----|\n` +
+                    `| 📚 BookLore | http://${{ secrets.VPS_HOST }}:${port} |\n\n` +
+                    `**Details:**\n` +
+                    `- Image: \`${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${prNum}\`\n` +
+                    `- Deployed by: @${context.payload.comment.user.login}\n\n` +
+                    `⚠️ **Note:** Files uploaded to this preview instance will be lost when the PR is closed.`
+            });
+        env:
+          PR_NUM: ${{ env.PR_NUM }}
+
+      # Add thumbs-up reaction on success
+      - name: Add Thumbs-up Reaction
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '+1'
+            });
+
+      # Update comment on failure
+      - name: Update Comment - Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.updateComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: ${{ steps.deploy-comment.outputs.comment_id }},
+              body: `❌ **Deployment Failed!**\n\n` +
+                    `Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n` +
+                    `cc: @${context.payload.comment.user.login}`
+            });
+
+      # Add thumbs-down reaction on failure
+      - name: Add Thumbs-down Reaction
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '-1'
+            });

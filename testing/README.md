@@ -37,6 +37,40 @@ Tests that all expected application routes return valid HTTP responses.
 ./testing/test-webpages.sh --timeout 30
 ```
 
+### Swagger/OpenAPI Endpoint Tests (`swagger_endpoint_test.py`)
+
+Tests all API endpoints documented in the OpenAPI specification. The script fetches the API spec from the running server and attempts to call each endpoint with appropriate test data.
+
+**Prerequisites:**
+```bash
+pip install -r testing/requirements.txt
+```
+
+**Usage:**
+```bash
+# Basic usage (tests public endpoints only)
+python testing/swagger_endpoint_test.py
+
+# With custom URL
+python testing/swagger_endpoint_test.py --base-url http://localhost:6060
+
+# With authentication (tests protected endpoints)
+python testing/swagger_endpoint_test.py --enable-auth --username admin --password admin
+
+# Verbose output
+python testing/swagger_endpoint_test.py --verbose
+
+# Include destructive endpoints (DELETE, etc.)
+python testing/swagger_endpoint_test.py --include-destructive
+```
+
+**Environment Variables:**
+- `BOOKLORE_URL` - Base URL of the BookLore server
+- `BOOKLORE_USER` - Username for authentication
+- `BOOKLORE_PASSWORD` - Password for authentication
+
+**Note:** Swagger must be enabled on the server (`SWAGGER_ENABLED=true`) for these tests to work.
+
 ## Test Categories
 
 ### 1. Backend Unit Tests (Java)
@@ -67,9 +101,25 @@ npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
 ### 3. Docker Integration Tests
 
 Run the Docker integration test script to verify container health:
+
 ```bash
 chmod +x testing/docker-integration-test.sh
 ./testing/docker-integration-test.sh
+```
+
+### 4. API Endpoint Tests (Swagger/OpenAPI)
+
+Run the Swagger endpoint tests to validate all API endpoints:
+
+```bash
+pip install -r testing/requirements.txt
+python testing/swagger_endpoint_test.py --verbose
+```
+
+Or with authentication for protected endpoints:
+
+```bash
+python testing/swagger_endpoint_test.py --enable-auth --username admin --password admin
 ```
 
 ## CI/CD Integration
@@ -95,8 +145,16 @@ See `.github/workflows/build.yml` for the full CI configuration.
 4. Mock HTTP calls with `HttpClientTestingModule`
 
 ### Integration Tests
+
 1. Add new test endpoints to `test-webpages.sh`
 2. Add new container tests to `docker-integration-test.sh`
+3. Add API endpoint patterns to `swagger_endpoint_test.py` (in the EndpointClassifier class)
+
+### API Tests (Swagger)
+
+1. Update `swagger_endpoint_test.py` with new endpoint classifications
+2. Add special request body handling for new endpoints in `SPECIAL_ENDPOINTS`
+3. Add new BookLore-specific parameter defaults in `BOOKLORE_PARAMS`
 
 ## Code Coverage
 
