@@ -288,7 +288,7 @@ jobs:
       - name: Run Docker integration tests
         run: |
           chmod +x testing/docker-integration-test.sh
-          ./testing/docker-integration-test.sh booklore
+          ./testing/docker-integration-test.sh --image booklore
 
       - name: Container logs on failure
         if: failure()

@@ -1,90 +1,44 @@
-name: PR Preview - Publish to Docker Hub
+name: Publish PR Image
 
-# ⚠️ IMPORTANT: This workflow ONLY runs when an authorized user comments /publish-pr
-# It does NOT run automatically
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  publish-pr-image:
-    name: Publish Multi-Arch Image
-    # Strict conditions: must be a PR, must have /publish-pr comment, must be issue_comment event
-    if: |
+  publish:
+    # Only run if it's a PR and comment contains /publish-pr
+    if: >
       github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/publish-pr') &&
-      github.event_name == 'issue_comment'
+      contains(github.event.comment.body, '/publish-pr')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
       issues: write
-
     steps:
-      # Check if commenter is authorized
-      - name: Check Authorization
-        id: auth
+      - name: Add Reaction
         uses: actions/github-script@v7
         with:
           script: |
-            const authorizedUsers = ['balazs-szucs', 'adityachandel'];
-            const commenter = context.payload.comment.user.login;
-            
-            if (!authorizedUsers.includes(commenter)) {
-              core.setFailed(`User ${commenter} is not authorized to publish PR images.`);
-              
-              // Reply to the comment
-              await github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: `❌ @${commenter} is not authorized to publish PR images to Docker Hub.\n\nAuthorized users: ${authorizedUsers.map(u => '@' + u).join(', ')}`
-              });
-              
-              return;
-            }
-            
-            core.info(`User ${commenter} is authorized to publish.`);
-            return true;
-
-      # Add eyes reaction
-      - name: Add Eyes Reaction
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
+            github.rest.reactions.createForIssueComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               comment_id: context.payload.comment.id,
-              content: 'eyes'
+              content: 'rocket'
             });
 
-      # Get PR branch and details
+      # CRITICAL: Get the branch name of the PR, not the default branch
       - name: Get PR Branch
         uses: xt0rted/pull-request-comment-branch@v2
         id: comment-branch
+
+      - name: Set PR Environment Variables
+        run: echo "PR_NUM=${{ github.event.issue.number }}" >> $GITHUB_ENV
 
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.comment-branch.outputs.head_ref }}
-
-      - name: Set PR Number
-        run: echo "PR_NUM=${{ github.event.issue.number }}" >> $GITHUB_ENV
-
-      # Reply with publishing started
-      - name: Reply - Publishing Started
-        id: publish-comment
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const comment = await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `⏳ **Publishing to Docker Hub...**\n\nStarted by @${context.payload.comment.user.login}\n\nBuilding and pushing multi-arch image (ARM64 + AMD64)...`
-            });
-            core.setOutput('comment_id', comment.data.id);
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -98,83 +52,30 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push Multi-Arch Image
-        timeout-minutes: 60
+      - name: Build and Push (ARM64)
+        id: docker_build
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/Dockerfile
           push: true
-          platforms: linux/arm64,linux/amd64
-          tags: |
-            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}
-            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-arm64
-            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-amd64
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          platforms: linux/arm64
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
 
-      # Update comment on success with image details
-      - name: Update Comment - Success
-        if: success()
+      - name: Comment Image Location
         uses: actions/github-script@v7
         with:
           script: |
-            const prNum = parseInt(process.env.PR_NUM);
+            const prNum = process.env.PR_NUM;
+            const user = '${{ secrets.DOCKER_HUB_USERNAME }}';
+            const tag = `pr-${prNum}`;
+            const image = `${user}/booklore:${tag}`;
             
-            await github.rest.issues.updateComment({
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              comment_id: ${{ steps.publish-comment.outputs.comment_id }},
-              body: `🚀 **Published to Docker Hub Successfully!**\n\n` +
-                    `| Tag | Platform |\n` +
-                    `|-----|----------|\n` +
-                    `| \`${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${prNum}\` | Multi-Arch (ARM64 + AMD64) |\n` +
-                    `| \`${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${prNum}-arm64\` | ARM64 |\n` +
-                    `| \`${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${prNum}-amd64\` | AMD64 |\n\n` +
-                    `✅ Image published and available on Docker Hub\n\n` +
-                    `**Published by:** @${context.payload.comment.user.login}\n` +
-                    `**Branch:** \`${{ steps.comment-branch.outputs.head_ref }}\``
-            });
-        env:
-          PR_NUM: ${{ env.PR_NUM }}
-
-      # Add thumbs-up reaction on success
-      - name: Add Thumbs-up Reaction
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: '+1'
-            });
-
-      # Update comment on failure
-      - name: Update Comment - Failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.issues.updateComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: ${{ steps.publish-comment.outputs.comment_id }},
-              body: `❌ **Publishing Failed!**\n\n` +
-                    `Please check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.\n\n` +
-                    `cc: @${context.payload.comment.user.login}`
-            });
-
-      # Add thumbs-down reaction on failure
-      - name: Add Thumbs-down Reaction
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: '-1'
-            });
+              body: `📦 **Docker Image Published!**\n\n\`\`\`bash\ndocker pull ${image}\n\`\`\`\n\n- **Tag**: \`${tag}\`\n- **Platform**: \`linux/arm64\``
+            })
