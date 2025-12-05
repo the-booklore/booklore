@@ -2,6 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
@@ -87,12 +88,12 @@ public class MobileOidcController {
 
         // Verify OIDC is enabled
         if (!appSettingService.getAppSettings().isOidcEnabled()) {
-            throw ApiError.GENERIC_FORBIDDEN.createException("OIDC is not enabled on this server");
+            throw ApiError.FORBIDDEN.createException("OIDC is not enabled on this server");
         }
 
         OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
         if (providerDetails == null || providerDetails.getIssuerUri() == null) {
-            throw ApiError.GENERIC_FORBIDDEN.createException("OIDC is not properly configured");
+            throw ApiError.FORBIDDEN.createException("OIDC is not properly configured");
         }
 
         try {
@@ -142,7 +143,7 @@ public class MobileOidcController {
             // Generate Booklore JWT tokens
             return authenticationService.loginUser(userEntity);
 
-        } catch (ApiError.ApiException e) {
+        } catch (APIException e) {
             throw e;
         } catch (Exception e) {
             log.error("Mobile OIDC authentication failed", e);
@@ -196,7 +197,7 @@ public class MobileOidcController {
             log.info("Mobile OIDC: Redirecting to app with tokens");
             return new ResponseEntity<>(headers, HttpStatus.FOUND);
 
-        } catch (ApiError.ApiException e) {
+        } catch (APIException e) {
             // Redirect to app with error
             String errorRedirect = appRedirectUri +
                 (appRedirectUri.contains("?") ? "&" : "?") +
