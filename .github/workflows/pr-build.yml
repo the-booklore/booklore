@@ -1,12 +1,12 @@
-name: PR Preview - Build Image
+name: PR Preview - Build Multi-Arch Image
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-pr-image:
-    name: Build ARM64 Image
+  build-pr-multiarch:
+    name: Build Multi-Arch Image (ARM64 + AMD64)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -16,29 +16,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_API }}
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push PR Image
-        timeout-minutes: 45
+      - name: Build Docker Image (Multi-Arch)
+        timeout-minutes: 60
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./docker/Dockerfile
-          push: true
-          platforms: linux/arm64
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ github.event.number }}
-          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
+          push: false
+          platforms: linux/arm64,linux/amd64
+          tags: |
+            booklore:pr-${{ github.event.number }}-arm64
+            booklore:pr-${{ github.event.number }}-amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Comment Build Success
         uses: actions/github-script@v7
@@ -48,8 +44,13 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🐳 **Docker Image Built Successfully!**\n\n` +
-                    `Image: \`${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ github.event.number }}\`\n\n` +
-                    `To deploy this preview, an authorized user can comment:\n` +
-                    `\`\`\`\n/deploy-pr\n\`\`\``
+              body: `🐳 **Multi-Arch Docker Image Built Successfully!**\n\n` +
+                    `Platforms:\n` +
+                    `- \`linux/arm64\`\n` +
+                    `- \`linux/amd64\`\n\n` +
+                    `PR Number: \`${{ github.event.number }}\`\n\n` +
+                    `✅ Image built and cached (not yet published to Docker Hub)\n\n` +
+                    `**To publish this image to Docker Hub**, an authorized user can comment:\n` +
+                    `\`\`\`\n/publish-pr\n\`\`\`\n\n` +
+                    `Authorized publishers: @balazs-szucs, @adityachandel`
             });
