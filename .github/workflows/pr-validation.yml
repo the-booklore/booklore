@@ -1,0 +1,113 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr-description:
+    name: PR Description Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR Description
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const body = pr.body || '';
+            
+            // Check if description is meaningful
+            if (body.trim().length < 50) {
+              core.setFailed('PR description is too short (minimum 50 characters)');
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ **PR Description Too Short**\n\nPlease provide a more detailed description of your changes (minimum 50 characters).\n\nInclude:\n- What changes were made\n- Why were they made\n- Any breaking changes or migrations`
+              });
+            } else {
+              core.info('PR description is valid');
+            }
+
+  conventional-commits:
+    name: Conventional Commits Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate Commit Messages
+        uses: wagoid/commitlint-github-action@v5
+        with:
+          configFile: .commitlintrc.json
+        continue-on-error: true
+
+  auto-labeler:
+    name: Auto Label PR
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Auto-label Based on Files Changed
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const labels = new Set();
+
+            for (const file of files) {
+              if (file.filename.startsWith('booklore-ui/')) {
+                labels.add('frontend');
+              } else if (file.filename.startsWith('booklore-api/')) {
+                labels.add('backend');
+              }
+
+              if (file.filename.includes('Dockerfile') || file.filename.includes('docker/')) {
+                labels.add('docker');
+              }
+
+              if (file.filename.includes('migration') || file.filename.includes('db/')) {
+                labels.add('database');
+              }
+
+              if (file.filename.includes('.yml') || file.filename.includes('.yaml')) {
+                labels.add('configuration');
+              }
+
+              if (file.filename.includes('README') || file.filename.includes('docs/')) {
+                labels.add('documentation');
+              }
+            }
+
+            if (labels.size > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: Array.from(labels),
+              });
+              
+              core.info(`Added labels: ${Array.from(labels).join(', ')}`);
+            }
