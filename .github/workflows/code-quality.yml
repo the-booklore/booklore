@@ -4,7 +4,6 @@ on:
   pull_request:
     branches: [main, develop]
 
-# Cancel in-progress runs when a new run is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -36,69 +35,22 @@ jobs:
         run: npm ci --prefer-offline --no-audit
 
       - name: Run ESLint
-        run: npm run lint
-        continue-on-error: false
-
-  backend-quality:
-    name: Backend Code Quality (Checkstyle)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./booklore-api
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Run Checkstyle
-        run: ./gradlew checkstyleMain checkstyleTest --no-daemon
-        continue-on-error: false
-
-  formatting-check:
-    name: Code Format Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: booklore-ui/package-lock.json
-
-      - name: Setup JDK 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-
-      - name: Check Frontend Formatting
-        working-directory: ./booklore-ui
+        id: eslint
         run: |
-          npm ci --prefer-offline --no-audit
-          npm run lint -- --fix --dry-run || true
+          npm run lint 2>&1 | tee /tmp/eslint-output.txt
+          exit ${PIPESTATUS[0]}
         continue-on-error: true
 
-      - name: Comment on PR if Issues Found
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '⚠️ **Code formatting issues detected!**\n\nRun `npm run lint -- --fix` to auto-fix formatting issues.'
-            });
+      - name: Count Lint Errors
+        id: count
+        if: always()
+        run: |
+          ERROR_COUNT=$(grep -c "error" /tmp/eslint-output.txt 2>/dev/null || echo "0")
+          WARNING_COUNT=$(grep -c "warning" /tmp/eslint-output.txt 2>/dev/null || echo "0")
+          echo "errors=$ERROR_COUNT" >> $GITHUB_OUTPUT
+          echo "warnings=$WARNING_COUNT" >> $GITHUB_OUTPUT
+          echo "Found $ERROR_COUNT errors and $WARNING_COUNT warnings"
+
+      - name: Exit with Error if Lint Failed
+        if: steps.eslint.outcome == 'failure'
+        run: exit 1

@@ -1,0 +1,241 @@
+name: PR Status Dashboard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: 
+      - "Build and Test"
+      - "Code Quality & Linting"
+      - "Type Checking & Compilation"
+      - "Database Migration Validation"
+      - "PR Validation"
+      - "Security Scan"
+      - "API Tests"
+      - "PR Preview - Build Multi-Arch Image"
+    types: [completed]
+
+concurrency:
+  group: pr-status-${{ github.event.pull_request.number || github.event.workflow_run.pull_requests[0].number }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+  checks: read
+
+jobs:
+  update-status:
+    name: Update PR Status Dashboard
+    runs-on: ubuntu-latest
+    if: github.event.pull_request || (github.event.workflow_run && github.event.workflow_run.pull_requests[0])
+
+    steps:
+      - name: Get PR Number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "head_ref=${{ github.head_ref }}" >> $GITHUB_OUTPUT
+            echo "base_ref=${{ github.base_ref }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ github.event.workflow_run.pull_requests[0].number }}" >> $GITHUB_OUTPUT
+            echo "head_ref=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_OUTPUT
+            echo "base_ref=${{ github.event.workflow_run.pull_requests[0].base.ref }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get Check Status and Update Comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          HEAD_REF: ${{ steps.pr.outputs.head_ref }}
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER);
+            const headRef = process.env.HEAD_REF;
+            const baseRef = process.env.BASE_REF;
+            
+            // Get the PR details to find the head SHA
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            const headSha = pr.head.sha;
+            
+            // Get workflow runs for this PR
+            const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head_sha: headSha,
+              per_page: 50
+            });
+            
+            // Map workflow names to display names
+            const workflowMapping = {
+              'Build and Test': { key: 'build', name: '🏗️ Build & Tests' },
+              'Code Quality & Linting': { key: 'lint', name: '🔍 Linting (ESLint)' },
+              'Type Checking & Compilation': { key: 'types', name: '📝 Type Checking' },
+              'Database Migration Validation': { key: 'migrations', name: '🗄️ DB Migrations' },
+              'PR Validation': { key: 'pr_validation', name: '📋 PR Validation' },
+              'Security Scan': { key: 'security', name: '🔒 Security Scan' },
+              'API Tests': { key: 'api_tests', name: '🧪 API Tests' },
+              'PR Preview - Build Multi-Arch Image': { key: 'docker', name: '🐳 Docker Build' }
+            };
+            
+            // Create status map
+            const statusMap = {};
+            
+            // Process workflow runs
+            for (const run of workflowRuns.workflow_runs) {
+              const mapping = workflowMapping[run.name];
+              if (mapping) {
+                let status = '🔄';
+                let statusText = 'Running';
+                
+                if (run.status === 'completed') {
+                  if (run.conclusion === 'success') {
+                    status = '✅';
+                    statusText = 'Passed';
+                  } else if (run.conclusion === 'failure') {
+                    status = '❌';
+                    statusText = 'Failed';
+                  } else if (run.conclusion === 'cancelled') {
+                    status = '⏹️';
+                    statusText = 'Cancelled';
+                  } else if (run.conclusion === 'skipped') {
+                    status = '⏭️';
+                    statusText = 'Skipped';
+                  } else {
+                    status = '⚠️';
+                    statusText = run.conclusion || 'Unknown';
+                  }
+                } else if (run.status === 'queued') {
+                  status = '⏳';
+                  statusText = 'Queued';
+                }
+                
+                // Calculate duration
+                let duration = '-';
+                if (run.status === 'completed') {
+                  const seconds = Math.round((new Date(run.updated_at) - new Date(run.created_at)) / 1000);
+                  if (seconds < 60) {
+                    duration = seconds + 's';
+                  } else {
+                    const mins = Math.floor(seconds / 60);
+                    const secs = seconds % 60;
+                    duration = mins + 'm ' + secs + 's';
+                  }
+                }
+                
+                // Only update if we don't have a status yet or this run is newer
+                if (!statusMap[mapping.key] || new Date(run.updated_at) > new Date(statusMap[mapping.key].updated_at)) {
+                  statusMap[mapping.key] = {
+                    name: mapping.name,
+                    status,
+                    statusText,
+                    url: run.html_url,
+                    duration,
+                    updated_at: run.updated_at
+                  };
+                }
+              }
+            }
+            
+            // Set defaults for missing checks
+            const defaultChecks = [
+              { key: 'build', name: '🏗️ Build & Tests' },
+              { key: 'lint', name: '🔍 Linting (ESLint)' },
+              { key: 'types', name: '📝 Type Checking' },
+              { key: 'migrations', name: '🗄️ DB Migrations' },
+              { key: 'pr_validation', name: '📋 PR Validation' },
+              { key: 'security', name: '🔒 Security Scan' },
+              { key: 'api_tests', name: '🧪 API Tests' },
+              { key: 'docker', name: '🐳 Docker Build' }
+            ];
+            
+            for (const check of defaultChecks) {
+              if (!statusMap[check.key]) {
+                statusMap[check.key] = {
+                  name: check.name,
+                  status: '⏳',
+                  statusText: 'Pending',
+                  url: null,
+                  duration: '-'
+                };
+              }
+            }
+            
+            // Count passed/failed/pending
+            const allChecks = Object.values(statusMap);
+            const passed = allChecks.filter(c => c.statusText === 'Passed').length;
+            const failed = allChecks.filter(c => c.statusText === 'Failed').length;
+            const running = allChecks.filter(c => ['Running', 'Queued', 'Pending'].includes(c.statusText)).length;
+            
+            let overallStatus = '🔄 Checks Running';
+            if (failed > 0) {
+              overallStatus = '❌ ' + failed + ' Check' + (failed > 1 ? 's' : '') + ' Failed';
+            } else if (running === 0 && passed === allChecks.length) {
+              overallStatus = '✅ All Checks Passed';
+            }
+            
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            
+            // Build the table rows
+            let tableRows = '';
+            for (const check of defaultChecks) {
+              const c = statusMap[check.key];
+              const statusLink = c.url ? '[' + c.status + '](' + c.url + ')' : c.status;
+              tableRows += '| ' + c.name + ' | ' + statusLink + ' ' + c.statusText + ' | ' + c.duration + ' |\n';
+            }
+            
+            // Build comment body
+            const commentBody = '## 🔄 PR Status Dashboard\n\n' +
+              '**PR #' + prNumber + '** | `' + headRef + '` → `' + baseRef + '` | ' + overallStatus + '\n\n' +
+              '### 📊 Quality Checks\n\n' +
+              '| Check | Status | Duration |\n' +
+              '|-------|--------|----------|\n' +
+              tableRows + '\n' +
+              '### 🚀 Deployment Commands\n\n' +
+              'After all checks pass, authorized users can:\n\n' +
+              '| Command | Description |\n' +
+              '|---------|-------------|\n' +
+              '| `/publish-pr` | Publish Docker image to Docker Hub |\n' +
+              '| `/deploy-pr` | Deploy preview environment |\n\n' +
+              '*Authorized: @balazs-szucs, @adityachandel*\n\n' +
+              '---\n' +
+              '📅 **Last Updated:** ' + timestamp + ' UTC\n' +
+              '*This comment auto-updates as checks complete*';
+            
+            // Find existing status comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('PR Status Dashboard')
+            );
+            
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+              console.log('Updated status dashboard comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log('Created new status dashboard comment');
+            }
