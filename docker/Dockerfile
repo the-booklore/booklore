@@ -57,11 +57,14 @@ RUN mkdir -p /app/data /books /bookdrop \
 # Copy JAR from builder
 COPY --from=backend-builder /build/build/libs/*.jar app.jar
 
+# Set the server port to match what we expose
+ENV SERVER_PORT=6060
+
 # Expose the configured port
 EXPOSE 6060
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check - increased start-period for database migrations
+HEALTHCHECK --interval=10s --timeout=10s --start-period=120s --retries=5 \
     CMD curl -f http://localhost:6060/actuator/health || exit 1
 
 # Switch to user (using the IDs passed or default 1000)

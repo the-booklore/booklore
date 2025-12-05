@@ -3,11 +3,11 @@ name: PR Status Dashboard
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+    branches: [main, develop]
   workflow_run:
     workflows: 
       - "Build and Test"
       - "Database Migration Validation"
-      - "Swagger API Tests"
       - "PR Preview - Build Multi-Arch Image"
     types: [completed]
 

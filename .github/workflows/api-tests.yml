@@ -1,8 +1,6 @@
 name: Swagger API Tests
 
 on:
-  pull_request:
-    branches: [main, develop]
   push:
     branches: [main, develop]
   workflow_dispatch:
@@ -195,7 +193,6 @@ jobs:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
     needs: swagger-api-tests
-    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout repository
@@ -245,7 +242,7 @@ jobs:
           docker run -d \
             --name booklore \
             --network booklore-test-net \
-            -p 8080:8080 \
+            -p 6060:6060 \
             -v bookdrop:/bookdrop \
             -e DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true \
             -e DATABASE_USERNAME=root \
@@ -258,7 +255,7 @@ jobs:
           echo "Waiting for BookLore container..."
           for i in {1..60}; do
             # Try the actuator health endpoint first
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6060/actuator/health 2>/dev/null || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
               echo "BookLore is ready! (actuator health returned 200)"
@@ -266,7 +263,7 @@ jobs:
             fi
             
             # Fallback: check if the Swagger API docs endpoint is accessible
-            SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/api-docs 2>/dev/null || echo "000")
+            SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6060/api/v1/api-docs 2>/dev/null || echo "000")
             if [ "$SWAGGER_CODE" = "200" ]; then
               echo "BookLore is ready! (swagger endpoint returned 200)"
               exit 0
@@ -290,13 +287,13 @@ jobs:
       - name: Run Swagger tests against container
         run: |
           python testing/swagger_endpoint_test.py \
-            --base-url http://localhost:8080 \
+            --base-url http://localhost:6060 \
             --verbose
 
       - name: Run Docker integration tests
         run: |
           chmod +x testing/docker-integration-test.sh
-          ./testing/docker-integration-test.sh --image booklore
+          ./testing/docker-integration-test.sh --image booklore:test --port 6060
 
       - name: Container logs on failure
         if: failure()

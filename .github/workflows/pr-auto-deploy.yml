@@ -64,6 +64,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           STATE: ${{ steps.resolve.outputs.state }}
           PR_AUTHOR: ${{ steps.resolve.outputs.author }}
+          ACTOR: ${{ github.actor }}
         run: |
           set -e
           should=false
@@ -76,11 +77,18 @@ jobs:
             [ "$u" = "$PR_AUTHOR" ] && is_auth=true && break
           done
 
+          # For workflow_dispatch, also check if the actor is authorized
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            is_auth=false
+            for u in "${auth_users[@]}"; do 
+              [ "$u" = "$ACTOR" ] && is_auth=true && break
+            done
             if [ "$STATE" != "open" ]; then
               echo "PR not open -> skip"
-            else
+            elif [ "$is_auth" = true ]; then
               should=true
+            else
+              echo "Unauthorized user attempted deployment via workflow_dispatch"
             fi
           else
             if [ "$is_auth" = true ]; then

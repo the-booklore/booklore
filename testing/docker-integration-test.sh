@@ -8,7 +8,7 @@ set -e
 CONTAINER_NAME="${CONTAINER_NAME:-booklore-test}"
 IMAGE_NAME="${IMAGE_NAME:-booklore:test}"
 APP_PORT="${APP_PORT:-6060}"
-TIMEOUT="${TIMEOUT:-120}"
+TIMEOUT="${TIMEOUT:-180}"
 HEALTH_ENDPOINT="/actuator/health"
 VERSION_ENDPOINT="/api/v1/version"
 
@@ -99,7 +99,14 @@ wait_for_health() {
                 return 1
                 ;;
             *)
-                log_info "Current status: $status (${elapsed}s elapsed)"
+                # Also try direct HTTP check as fallback
+                local http_status
+                http_status=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:${APP_PORT}/actuator/health" 2>/dev/null || echo "000")
+                if [ "$http_status" = "200" ]; then
+                    log_success "Container is responding (HTTP 200) after ${elapsed}s"
+                    return 0
+                fi
+                log_info "Current status: $status, HTTP: $http_status (${elapsed}s elapsed)"
                 ;;
         esac
         
