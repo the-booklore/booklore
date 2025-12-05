@@ -200,13 +200,9 @@ jobs:
               '| Check | Status | Result | Duration |\n' +
               '|-------|--------|--------|----------|\n' +
               tableRows + '\n' +
-              '### 🚀 Deployment Commands\n\n' +
-              'After all checks pass, authorized users can:\n\n' +
-              '| Command | Description |\n' +
-              '|---------|-------------|\n' +
-              '| `/publish-pr` | Publish Docker image to Docker Hub |\n' +
-              '| `/deploy-pr` | Deploy preview environment |\n\n' +
-              '*Authorized: balazs-szucs, adityachandel*\n\n' +
+              '### 🚀 Auto-Deployment Status\n\n' +
+              'PRs from **balazs-szucs** are automatically deployed to a preview environment on every push.\n' +
+              'Check for a deployment comment with the preview URL below.\n\n' +
               '---\n' +
               '📅 **Last Updated:** ' + timestamp + ' UTC\n' +
               '*This comment auto-updates as checks complete*';

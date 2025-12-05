@@ -1,0 +1,223 @@
+name: Auto-Deploy PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+
+concurrency:
+  group: auto-deploy-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  auto-deploy:
+    name: Auto-Deploy for Authorized Users
+    runs-on: ubuntu-latest
+    # Only run for PRs from balazs-szucs
+    if: github.event.pull_request.user.login == 'balazs-szucs'
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Set PR Environment Variables
+        id: pr-env
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
+          APP_PORT=$((6000 + PR_NUMBER))
+          echo "app_port=$APP_PORT" >> $GITHUB_OUTPUT
+
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Get commit hash for cache key
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Commit hash: $COMMIT_HASH"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Check if image exists
+        id: check-image
+        env:
+          IMAGE_TAG: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}-${{ steps.commit-hash.outputs.short }}
+        run: |
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image needs to be built"
+          fi
+
+      - name: Set up QEMU
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push (ARM64)
+        if: steps.check-image.outputs.exists == 'false'
+        timeout-minutes: 40
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}-${{ steps.commit-hash.outputs.short }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: PR_NUMBER,APP_PORT,DOCKER_USER,COMMIT_HASH
+          script: |
+            mkdir -p ~/deployments/pr-${PR_NUMBER}
+            cd ~/deployments/pr-${PR_NUMBER}
+
+            # Create .env file
+            cat > .env <<EOF
+            PR_NUM=${PR_NUMBER}
+            APP_PORT=${APP_PORT}
+            DOCKER_USER=${DOCKER_USER}
+            COMMIT_HASH=${COMMIT_HASH}
+            EOF
+
+            # Create docker-compose.yml
+            cat > docker-compose.yml << 'COMPOSE_EOF'
+            services:
+              booklore:
+                image: ${DOCKER_USER}/booklore:pr-${PR_NUM}-${COMMIT_HASH}
+                container_name: booklore-pr-${PR_NUM}
+                ports:
+                  - "${APP_PORT}:8080"
+                environment:
+                  - SPRING_PROFILES_ACTIVE=dev
+                  - SERVER_PORT=8080
+                volumes:
+                  - booklore-data:/app/data
+                restart: unless-stopped
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 40s
+
+            volumes:
+              booklore-data:
+                name: booklore-pr-${PR_NUM}-data
+            COMPOSE_EOF
+
+            # Pull latest image and restart
+            docker compose pull
+            docker compose down
+            docker compose up -d
+
+            # Wait for health check
+            echo "Waiting for application to be healthy..."
+            sleep 10
+
+      - name: Post Deployment URL to PR
+        uses: actions/github-script@v7
+        env:
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+        with:
+          script: |
+            const appPort = process.env.APP_PORT;
+            const vpsHost = process.env.VPS_HOST;
+            const prNumber = process.env.PR_NUMBER;
+            const commitHash = process.env.COMMIT_HASH;
+
+            const deploymentUrl = `http://${vpsHost}:${appPort}`;
+
+            // Find and delete old deployment comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const deployComments = comments.filter(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('🚀 Preview Environment Deployed')
+            );
+
+            for (const comment of deployComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+
+            // Create new deployment comment
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            const commentBody = '## 🚀 Preview Environment Deployed\n\n' +
+              `**PR #${prNumber}** has been automatically deployed!\n\n` +
+              `🔗 **Preview URL:** ${deploymentUrl}\n` +
+              `📦 **Commit:** \`${commitHash}\`\n` +
+              `⏱️ **Deployed:** ${timestamp} UTC\n\n` +
+              '### 🔄 Auto-Deployment\n' +
+              'This PR is from an authorized user and is automatically deployed on every push.\n\n' +
+              '---\n' +
+              '*This preview environment will be automatically cleaned up when the PR is closed.*';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });
+
+      - name: Report Failure
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## ❌ Auto-Deployment Failed\n\n` +
+                    `The automatic deployment for PR #${prNumber} encountered an error.\n\n` +
+                    `Please check the [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`
+            });
