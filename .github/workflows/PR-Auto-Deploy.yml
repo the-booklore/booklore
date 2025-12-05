@@ -86,41 +86,24 @@ jobs:
             # Calculate Dynamic Ports based on PR Number
             PR_NUM=${{ env.PR_NUM }}
             APP_PORT=$((6000 + PR_NUM))
-            DB_PORT=$((13000 + PR_NUM))
             
             # Create Directory for this PR
             mkdir -p ~/deployments/pr-${PR_NUM}
             cd ~/deployments/pr-${PR_NUM}
 
-            # Create .env file dynamically
-            cat > .env << EOF
-            APP_USER_ID=1000
-            APP_GROUP_ID=1000
-            TZ=Etc/UTC
-            BOOKLORE_PORT=6060
-            DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
-            DB_USER=booklore
-            DB_PASSWORD=pr_pass_${PR_NUM}
-            DB_USER_ID=1000
-            DB_GROUP_ID=1000
-            MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
-            MYSQL_DATABASE=booklore
-            EOF
-
-            # Create docker-compose.yml dynamically
-            cat > docker-compose.yml << EOF
+            # Create docker-compose.yml dynamically with proper environment substitution
+            cat > docker-compose.yml << 'COMPOSE_EOF'
             services:
               booklore:
                 image: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${PR_NUM}
                 container_name: booklore-pr-${PR_NUM}
                 environment:
-                  - USER_ID=${APP_USER_ID}
-                  - GROUP_ID=${APP_GROUP_ID}
-                  - TZ=${TZ}
-                  - SPRING_DATASOURCE_URL=${DATABASE_URL}
-                  - SPRING_DATASOURCE_USERNAME=${DB_USER}
-                  - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
-                  - BOOKLORE_PORT=${BOOKLORE_PORT}
+                  - TZ=Etc/UTC
+                  - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+                  - SPRING_DATASOURCE_USERNAME=booklore
+                  - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUM}
+                  - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+                  - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
                 depends_on:
                   mariadb:
                     condition: service_healthy
@@ -131,30 +114,41 @@ jobs:
                   - ./books:/books
                   - ./bookdrop:/bookdrop
                 restart: unless-stopped
+                healthcheck:
+                  test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+                  interval: 30s
+                  timeout: 10s
+                  retries: 3
+                  start_period: 60s
 
               mariadb:
                 image: lscr.io/linuxserver/mariadb:11.4.5
                 container_name: mariadb-pr-${PR_NUM}
                 environment:
-                  - PUID=${DB_USER_ID}
-                  - PGID=${DB_GROUP_ID}
-                  - TZ=${TZ}
-                  - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-                  - MYSQL_DATABASE=${MYSQL_DATABASE}
-                  - MYSQL_USER=${DB_USER}
-                  - MYSQL_PASSWORD=${DB_PASSWORD}
+                  - PUID=1000
+                  - PGID=1000
+                  - TZ=Etc/UTC
+                  - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
+                  - MYSQL_DATABASE=booklore
+                  - MYSQL_USER=booklore
+                  - MYSQL_PASSWORD=pr_pass_${PR_NUM}
                 volumes:
                   - ./mariadb_data:/config
                 healthcheck:
-                  test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
+                  test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
                   interval: 5s
                   timeout: 5s
                   retries: 10
-            EOF
+            COMPOSE_EOF
 
             # Pull and Restart
             docker compose pull
             docker compose up -d --remove-orphans
+            
+            # Wait for app to be healthy
+            echo "Waiting for application to be ready..."
+            sleep 30
+            docker compose logs booklore | tail -20
 
       - name: Comment on PR
         uses: actions/github-script@v7
