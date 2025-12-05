@@ -1,14 +1,15 @@
-name: PR Auto-Deploy
+name: PR Deploy on Comment
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches: [main, develop]
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       pr:
         description: "PR number to deploy"
         required: true
+  pull_request:
+    types: [closed]
 
 concurrency:
   group: pr-deploy-${{ github.event.pull_request.number || github.event.inputs.pr }}
@@ -20,88 +21,77 @@ permissions:
 
 jobs:
   check-pr:
-    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'issue_comment' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
-      should_deploy: ${{ steps.decide.outputs.should_deploy }}
-      pr_number: ${{ steps.resolve.outputs.pr_number }}
-      pr_repository: ${{ steps.resolve.outputs.repository }}
-      pr_ref: ${{ steps.resolve.outputs.ref }}
+      should_deploy: ${{ steps.comment-or-dispatch.outputs.should_deploy }}
+      pr_number: ${{ steps.comment-or-dispatch.outputs.pr_number }}
+      pr_repository: ${{ steps.comment-or-dispatch.outputs.repository }}
+      pr_ref: ${{ steps.comment-or-dispatch.outputs.ref }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
         with:
           egress-policy: audit
 
-      - name: Resolve PR info
-        id: resolve
+      - name: Check comment or dispatch
+        id: comment-or-dispatch
         uses: actions/github-script@v7
+        env:
+          INPUT_PR: ${{ github.event.inputs.pr }}
         with:
           script: |
-            const { owner, repo } = context.repo;
-            let prNumber = context.eventName === 'workflow_dispatch'
-              ? parseInt(process.env.INPUT_PR, 10)
-              : context.payload.number;
+            const isDispatch = context.eventName === 'workflow_dispatch';
+            const authUsers = ['balazs-szucs'];
+            let prNumber, author, shouldDeploy = false;
 
-            console.log('Event name:', context.eventName);
-            console.log('INPUT_PR env:', process.env.INPUT_PR);
-            console.log('Parsed PR number:', prNumber);
-
-            if (!Number.isInteger(prNumber) || prNumber <= 0) { 
-              core.setFailed(`Invalid PR number: ${prNumber}`); 
-              return; 
+            if (isDispatch) {
+              // Workflow dispatch
+              prNumber = parseInt(process.env.INPUT_PR, 10);
+              author = context.actor;
+              console.log(`Dispatch by ${author} for PR #${prNumber}`);
+            } else if (context.eventName === 'issue_comment') {
+              // Comment trigger
+              const issue = context.payload.issue;
+              const comment = context.payload.comment;
+              
+              // Check if it's a PR comment
+              if (!issue.pull_request) {
+                core.setFailed('Comment is not on a pull request');
+                process.exit(1);
+              }
+              
+              // Check for /deploy or /preview command
+              const body = comment.body.toLowerCase().trim();
+              if (!body.includes('/deploy') && !body.includes('/preview')) {
+                core.info('Comment does not contain /deploy or /preview command');
+                process.exit(0);
+              }
+              
+              prNumber = issue.number;
+              author = comment.user.login;
+              console.log(`Deploy command from ${author} on PR #${prNumber}`);
             }
 
-            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
-            console.log('Resolved PR number:', prNumber, 'State:', pr.state);
+            // Check authorization
+            if (!authUsers.includes(author)) {
+              core.setFailed(`User ${author} is not authorized to deploy`);
+              process.exit(1);
+            }
+
+            // Fetch PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            console.log(`PR #${prNumber} state: ${pr.state}`);
+            
+            core.setOutput('should_deploy', 'true');
             core.setOutput('pr_number', String(prNumber));
             core.setOutput('repository', pr.head.repo.full_name);
             core.setOutput('ref', pr.head.ref);
-            core.setOutput('author', pr.user.login);
-            core.setOutput('state', pr.state);
-        env:
-          INPUT_PR: ${{ github.event.inputs.pr }}
-
-      - name: Decide deploy
-        id: decide
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          STATE: ${{ steps.resolve.outputs.state }}
-          PR_AUTHOR: ${{ steps.resolve.outputs.author }}
-          ACTOR: ${{ github.actor }}
-        run: |
-          set -e
-          should=false
-
-          # Authorized users who can trigger auto-deployment
-          auth_users=("balazs-szucs")
-          
-          is_auth=false
-          for u in "${auth_users[@]}"; do 
-            [ "$u" = "$PR_AUTHOR" ] && is_auth=true && break
-          done
-
-          # For workflow_dispatch, also check if the actor is authorized
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            is_auth=false
-            for u in "${auth_users[@]}"; do 
-              [ "$u" = "$ACTOR" ] && is_auth=true && break
-            done
-            if [ "$STATE" != "open" ]; then
-              echo "PR not open -> skip"
-            elif [ "$is_auth" = true ]; then
-              should=true
-            else
-              echo "Unauthorized user attempted deployment via workflow_dispatch"
-            fi
-          else
-            if [ "$is_auth" = true ]; then
-              should=true
-            fi
-          fi
-
-          echo "should_deploy=$should" >> $GITHUB_OUTPUT
 
   build-and-deploy:
     needs: check-pr
@@ -451,7 +441,7 @@ jobs:
         run: rm -f ~/.ssh/private.key
 
   cleanup-deployment:
-    if: github.event.action == 'closed'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     permissions:
       contents: read
