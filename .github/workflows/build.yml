@@ -107,6 +107,7 @@ jobs:
           files: booklore-api/build/test-results/**/*.xml
           check_name: Backend Test Results (JDK ${{ matrix.java-version }})
           comment_mode: off
+          check_run: false
 
   # ============================================
   # Docker Build Test (no push)
