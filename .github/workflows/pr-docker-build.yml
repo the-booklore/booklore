@@ -1,0 +1,170 @@
+name: PR Docker Build & Publish
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main, develop]
+
+concurrency:
+  group: pr-docker-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-and-publish:
+    name: Build & Publish Docker Image
+    runs-on: ubuntu-latest
+    # Only run for PRs from balazs-szucs
+    if: github.event.pull_request.user.login == 'balazs-szucs'
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Set PR Environment Variables
+        id: pr-env
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
+
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+
+      - name: Get commit hash for cache key
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Commit hash: $COMMIT_HASH"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Check if image exists
+        id: check-image
+        env:
+          IMAGE_TAG: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}-${{ steps.commit-hash.outputs.short }}
+        run: |
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image needs to be built"
+          fi
+
+      - name: Set up QEMU
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Build and Push (ARM64)
+        if: steps.check-image.outputs.exists == 'false'
+        timeout-minutes: 40
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}-${{ steps.commit-hash.outputs.short }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ steps.pr-env.outputs.pr_num }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Post Build Status to PR
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          IMAGE_EXISTS: ${{ steps.check-image.outputs.exists }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            const commitHash = process.env.COMMIT_HASH;
+            const dockerUser = process.env.DOCKER_USER;
+            const imageExists = process.env.IMAGE_EXISTS === 'true';
+
+            const dockerImage = `${dockerUser}/booklore:pr-${prNumber}-${commitHash}`;
+            const dockerImageLatest = `${dockerUser}/booklore:pr-${prNumber}`;
+
+            // Find and delete old build comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+
+            const buildComments = comments.filter(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('🐳 Docker Image Published')
+            );
+
+            for (const comment of buildComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+
+            // Create new build comment
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+            const statusNote = imageExists 
+              ? '*(Image already existed, build skipped)*'
+              : '*(Freshly built)*';
+            
+            const commentBody = '## 🐳 Docker Image Published\n\n' +
+              `**PR #${prNumber}** Docker image is ready! ${statusNote}\n\n` +
+              `📦 **Commit:** \`${commitHash}\`\n` +
+              `⏱️ **Published:** ${timestamp} UTC\n\n` +
+              '### Pull Commands\n' +
+              `\`\`\`bash\n` +
+              `# Latest for this PR\n` +
+              `docker pull ${dockerImageLatest}\n\n` +
+              `# Specific commit\n` +
+              `docker pull ${dockerImage}\n` +
+              `\`\`\`\n\n` +
+              '---\n' +
+              '*Built automatically for authorized users.*';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });
+
+      - name: Report Failure
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## ❌ Docker Build Failed\n\n` +
+                    `The Docker build for PR #${prNumber} encountered an error.\n\n` +
+                    `Please check the [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`
+            });
