@@ -332,14 +332,36 @@ jobs:
         run: |
           echo "Waiting for application to start..."
           for i in {1..20}; do
-            if curl -s "http://${VPS_HOST}:${APP_PORT}/actuator/health" | grep -q "UP"; then
-              echo "Application is healthy!"
+            # Try multiple health check endpoints
+            # First try /api/actuator/health (common Spring Boot prefix)
+            if curl -s -f "http://${VPS_HOST}:${APP_PORT}/api/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; then
+              echo "✓ Application is healthy at /api/actuator/health"
               exit 0
             fi
+            
+            # Try /actuator/health directly
+            if curl -s -f "http://${VPS_HOST}:${APP_PORT}/actuator/health" 2>/dev/null | grep -q '"status":"UP"'; then
+              echo "✓ Application is healthy at /actuator/health"
+              exit 0
+            fi
+            
+            # Try /management/health (alternative Spring endpoint)
+            if curl -s -f "http://${VPS_HOST}:${APP_PORT}/management/health" 2>/dev/null | grep -q '"status":"UP"'; then
+              echo "✓ Application is healthy at /management/health"
+              exit 0
+            fi
+            
+            # Fallback: check if root responds (indicates nginx/app is running)
+            if curl -s -f -I "http://${VPS_HOST}:${APP_PORT}/" 2>/dev/null | grep -q "200"; then
+              echo "⚠ Application responding at root (frontend may be masking health check)"
+              echo "Note: Deployment successful but health endpoint not found. Check app logs."
+              exit 0
+            fi
+            
             echo "Waiting... ($i/20)"
             sleep 5
           done
-          echo "Warning: Health check timed out, but deployment may still be in progress"
+          echo "⚠ Health check timed out, but application may still be initializing. Check deployment logs at http://${VPS_HOST}:${APP_PORT}"
 
       - name: Delete deployment started comment
         if: always()
