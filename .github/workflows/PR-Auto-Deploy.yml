@@ -1,0 +1,142 @@
+name: Deploy PR Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+jobs:
+  deploy-pr:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      # 1. Build the PR Image
+      - name: Build and Push PR Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./docker/Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ github.event.number }}
+
+      # 2. Deploy to VPS
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Calculate Dynamic Ports based on PR Number
+            PR_NUM=${{ github.event.number }}
+            APP_PORT=$((6000 + PR_NUM))
+            DB_PORT=$((13000 + PR_NUM))
+            
+            # Create Directory for this PR
+            mkdir -p ~/deployments/pr-${PR_NUM}
+            cd ~/deployments/pr-${PR_NUM}
+
+            # Create .env file dynamically
+            cat > .env << EOF
+            APP_USER_ID=1000
+            APP_GROUP_ID=1000
+            TZ=Etc/UTC
+            BOOKLORE_PORT=6060
+            DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore
+            DB_USER=booklore
+            DB_PASSWORD=pr_pass_${PR_NUM}
+            DB_USER_ID=1000
+            DB_GROUP_ID=1000
+            MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
+            MYSQL_DATABASE=booklore
+            EOF
+
+            # Create docker-compose.yml dynamically
+            cat > docker-compose.yml << EOF
+            services:
+              booklore:
+                image: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${PR_NUM}
+                container_name: booklore-pr-${PR_NUM}
+                environment:
+                  - USER_ID=${APP_USER_ID}
+                  - GROUP_ID=${APP_GROUP_ID}
+                  - TZ=${TZ}
+                  - DATABASE_URL=${DATABASE_URL}
+                  - DATABASE_USERNAME=${DB_USER}
+                  - DATABASE_PASSWORD=${DB_PASSWORD}
+                  - BOOKLORE_PORT=${BOOKLORE_PORT}
+                depends_on:
+                  mariadb:
+                    condition: service_healthy
+                ports:
+                  - "${APP_PORT}:6060"
+                volumes:
+                  - ./data:/app/data
+                  - ./books:/books
+                  - ./bookdrop:/bookdrop
+                restart: unless-stopped
+
+              mariadb:
+                image: lscr.io/linuxserver/mariadb:11.4.5
+                container_name: mariadb-pr-${PR_NUM}
+                environment:
+                  - PUID=${DB_USER_ID}
+                  - PGID=${DB_GROUP_ID}
+                  - TZ=${TZ}
+                  - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+                  - MYSQL_DATABASE=${MYSQL_DATABASE}
+                  - MYSQL_USER=${DB_USER}
+                  - MYSQL_PASSWORD=${DB_PASSWORD}
+                volumes:
+                  - ./mariadb_data:/config
+                healthcheck:
+                  test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost" ]
+                  interval: 5s
+                  timeout: 5s
+                  retries: 10
+            EOF
+
+            # Pull and Restart
+            docker compose pull
+            docker compose up -d --remove-orphans
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNum = context.payload.number;
+            const port = 6000 + prNum;
+            github.rest.issues.createComment({
+              issue_number: prNum,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **PR Preview Deployed!**\n\n- **BookLore**: http://${{ secrets.VPS_HOST }}:${port}\n- **DB Port**: 3306 (Internal)\n\nFiles uploaded to this preview instance will be lost when the PR is closed.`
+            })
+
+  cleanup-pr:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cleanup VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            PR_NUM=${{ github.event.number }}
+            cd ~/deployments/pr-${PR_NUM} || exit 0
+            docker compose down -v
+            cd ..
+            rm -rf pr-${PR_NUM}
+            echo "Cleaned up PR ${PR_NUM}"

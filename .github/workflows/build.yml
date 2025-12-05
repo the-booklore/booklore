@@ -1,0 +1,42 @@
+name: Build and Test BookLore
+
+on:
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_dispatch:
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./booklore-ui
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+      - run: npm ci
+      - run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
+      - run: npm run build
+
+  test-backend:
+    runs-on: ubuntu-latest
+    needs: test-frontend # Wait for frontend to pass
+    defaults:
+        run:
+          working-directory: ./booklore-api
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Test with Gradle
+        run: ./gradlew test
