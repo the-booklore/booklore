@@ -164,11 +164,14 @@ jobs:
           exit 1
 
       - name: Run Swagger Endpoint Tests
+        env:
+          VERBOSE: ${{ inputs.verbose && '--verbose' || '' }}
+          AUTH: ${{ inputs.enable_auth && '--enable-auth' || '' }}
         run: |
           python testing/swagger_endpoint_test.py \
             --base-url http://localhost:8080 \
-            ${{ inputs.verbose && '--verbose' || '' }} \
-            ${{ inputs.enable_auth && '--enable-auth' || '' }}
+            "$VERBOSE" \
+            "$AUTH"
 
       - name: Show logs on failure
         if: failure()

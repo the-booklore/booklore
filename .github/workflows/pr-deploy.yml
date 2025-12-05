@@ -4,6 +4,11 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 concurrency:
   group: deploy-pr-${{ github.event.issue.number }}
   cancel-in-progress: true
@@ -15,11 +20,13 @@ jobs:
       github.event.issue.pull_request != null &&
       contains(github.event.comment.body, '/deploy-pr')
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      issues: write
+
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
       - name: Add Reaction
         uses: actions/github-script@v7
         with:
@@ -36,12 +43,29 @@ jobs:
         id: comment-branch
 
       - name: Set PR Environment Variables
-        run: echo "PR_NUM=${{ github.event.issue.number }}" >> $GITHUB_ENV
+        id: pr-env
+        env:
+          PR_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          echo "PR_NUM=$PR_NUMBER" >> $GITHUB_ENV
+          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
+          APP_PORT=$((6000 + PR_NUMBER))
+          echo "app_port=$APP_PORT" >> $GITHUB_OUTPUT
 
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.comment-branch.outputs.head_ref }}
+
+      - name: Get commit hash for cache key
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Commit hash: $COMMIT_HASH"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -49,109 +73,182 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_API }}
 
+      - name: Check if image exists
+        id: check-image
+        env:
+          IMAGE_TAG: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-${{ steps.commit-hash.outputs.short }}
+        run: |
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image needs to be built"
+          fi
+
+      # Required for Cross-Platform Builds (AMD64 -> ARM64)
       - name: Set up QEMU
+        if: steps.check-image.outputs.exists == 'false'
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build and Push (ARM64)
-        uses: docker/build-push-action@v5
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/Dockerfile
           push: true
           platforms: linux/arm64
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-${{ steps.commit-hash.outputs.short }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
 
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          script: |
-            PR_NUM=${{ env.PR_NUM }}
-            APP_PORT=$((6000 + PR_NUM))
-            DOCKER_USER=${{ secrets.DOCKER_HUB_USERNAME }}
-            
-            mkdir -p ~/deployments/pr-${PR_NUM}
+        env:
+          PR_NUM: ${{ env.PR_NUM }}
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          COMMIT_SHORT: ${{ steps.commit-hash.outputs.short }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          UNIQUE_NAME="docker-compose-pr-${PR_NUM}-${GITHUB_RUN_ID}.yml"
+          
+          cat > "$UNIQUE_NAME" << EOF
+          services:
+            booklore:
+              image: ${DOCKER_USER}/booklore:pr-${PR_NUM}-${COMMIT_SHORT}
+              container_name: booklore-pr-${PR_NUM}
+              environment:
+                - TZ=Etc/UTC
+                - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&allowPublicKeyRetrieval=true
+                - SPRING_DATASOURCE_USERNAME=booklore
+                - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUM}
+                - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+                - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+              depends_on:
+                mariadb:
+                  condition: service_healthy
+              ports:
+                - "${APP_PORT}:6060"
+              volumes:
+                - ./data:/app/data
+                - ./books:/books
+                - ./bookdrop:/bookdrop
+              restart: on-failure:5
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 90s
+
+            mariadb:
+              image: lscr.io/linuxserver/mariadb:11.4.5
+              container_name: mariadb-pr-${PR_NUM}
+              environment:
+                - PUID=1000
+                - PGID=1000
+                - TZ=Etc/UTC
+                - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
+                - MYSQL_DATABASE=booklore
+                - MYSQL_USER=booklore
+                - MYSQL_PASSWORD=pr_pass_${PR_NUM}
+              volumes:
+                - ./mariadb_data:/config
+              healthcheck:
+                test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+                interval: 5s
+                timeout: 5s
+                retries: 10
+          EOF
+          
+          # Copy to remote with unique name to avoid race conditions
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$UNIQUE_NAME" "${VPS_USER}@${VPS_HOST}:/tmp/${UNIQUE_NAME}"
+          
+          # SSH and deploy atomically
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "${VPS_USER}@${VPS_HOST}" << ENDSSH
+            mkdir -p ~/deployments/pr-${PR_NUM}/{data,books,bookdrop,mariadb_data}
+            mv /tmp/${UNIQUE_NAME} ~/deployments/pr-${PR_NUM}/docker-compose.yml
             cd ~/deployments/pr-${PR_NUM}
-
-            # Create .env file
-            cat > .env <<EOF
-            PR_NUM=${PR_NUM}
-            APP_PORT=${APP_PORT}
-            DOCKER_USER=${DOCKER_USER}
-            EOF
-
-            # Create docker-compose.yml
-            cat > docker-compose.yml << 'EOF'
-            services:
-              booklore:
-                image: ${DOCKER_USER}/booklore:pr-${PR_NUM}
-                container_name: booklore-pr-${PR_NUM}
-                environment:
-                  - TZ=Etc/UTC
-                  - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&allowPublicKeyRetrieval=true
-                  - SPRING_DATASOURCE_USERNAME=booklore
-                  - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUM}
-                  - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
-                  - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-                depends_on:
-                  mariadb:
-                    condition: service_healthy
-                ports:
-                  - "${APP_PORT}:6060"
-                volumes:
-                  - ./data:/app/data
-                  - ./books:/books
-                  - ./bookdrop:/bookdrop
-                restart: unless-stopped
-                healthcheck:
-                  test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
-                  interval: 30s
-                  timeout: 10s
-                  retries: 3
-                  start_period: 90s
-
-              mariadb:
-                image: lscr.io/linuxserver/mariadb:11.4.5
-                container_name: mariadb-pr-${PR_NUM}
-                environment:
-                  - PUID=1000
-                  - PGID=1000
-                  - TZ=Etc/UTC
-                  - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
-                  - MYSQL_DATABASE=booklore
-                  - MYSQL_USER=booklore
-                  - MYSQL_PASSWORD=pr_pass_${PR_NUM}
-                volumes:
-                  - ./mariadb_data:/config
-                healthcheck:
-                  test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
-                  interval: 5s
-                  timeout: 5s
-                  retries: 10
-            EOF
-
+            docker compose down || true
             docker compose pull
-            docker compose up -d --remove-orphans
-            docker image prune -f
+            docker compose up -d
+            # Cleanup old images but keep recent ones
+            docker image prune -af --filter "until=168h" || true
+          ENDSSH
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
 
       - name: Comment Deploy URL
         uses: actions/github-script@v7
+        env:
+          PR_NUM: ${{ env.PR_NUM }}
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          COMMIT_SHORT: ${{ steps.commit-hash.outputs.short }}
+          IMAGE_EXISTS: ${{ steps.check-image.outputs.exists }}
         with:
           script: |
             const prNum = process.env.PR_NUM;
-            const port = 6000 + parseInt(prNum);
+            const port = process.env.APP_PORT;
+            const host = process.env.VPS_HOST;
+            const commit = process.env.COMMIT_SHORT;
+            const cached = process.env.IMAGE_EXISTS === 'true';
+            
+            const buildNote = cached ? '📦 *Used cached image*' : '🔨 *Built new image*';
+            
             github.rest.issues.createComment({
               issue_number: parseInt(prNum),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 **PR Preview Deployed!**\n\n- **URL**: http://${{ secrets.VPS_HOST }}:${port}\n\n*Note: Firewall port ${port} must be open.*`
-            })
-        env:
-          PR_NUM: ${{ env.PR_NUM }}
+              body: `🚀 **PR Preview Deployed!**\n\n` +
+                    `| Resource | Value |\n` +
+                    `|----------|-------|\n` +
+                    `| 📚 **URL** | http://${host}:${port} |\n` +
+                    `| 🏷️ **Commit** | \`${commit}\` |\n` +
+                    `| 🐳 **Port** | ${port} |\n\n` +
+                    `${buildNote}\n\n` +
+                    `⚠️ *Firewall port ${port} must be open. Data is ephemeral.*`
+            });
+
+      - name: Add Success Reaction
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
+      - name: Add Failure Reaction
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: '-1'
+            });
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `❌ **Deployment Failed!**\n\nCheck the [workflow logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.`
+            });
