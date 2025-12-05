@@ -168,10 +168,15 @@ jobs:
           VERBOSE: ${{ inputs.verbose && '--verbose' || '' }}
           AUTH: ${{ inputs.enable_auth && '--enable-auth' || '' }}
         run: |
-          python testing/swagger_endpoint_test.py \
-            --base-url http://localhost:8080 \
-            "$VERBOSE" \
-            "$AUTH"
+          CMD="python testing/swagger_endpoint_test.py --base-url http://localhost:8080"
+          if [ -n "$VERBOSE" ]; then
+            CMD="$CMD $VERBOSE"
+          fi
+          if [ -n "$AUTH" ]; then
+            CMD="$CMD $AUTH"
+          fi
+          echo "Running: $CMD"
+          eval "$CMD"
 
       - name: Show logs on failure
         if: failure()
