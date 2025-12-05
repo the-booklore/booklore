@@ -6,7 +6,7 @@ WORKDIR /app/frontend
 
 # Copy package files and install dependencies
 COPY booklore-ui/package*.json ./
-RUN npm ci
+RUN npm ci --verbose
 
 # Copy source code and build
 COPY booklore-ui/ ./
