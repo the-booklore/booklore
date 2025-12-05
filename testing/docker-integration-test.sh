@@ -18,6 +18,27 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Helper functions - MUST be defined BEFORE they are used
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[PASS]${NC} $1"
+}
+
+log_fail() {
+    echo -e "${RED}[FAIL]${NC} $1"
+}
+
 # Start MariaDB container for testing
 start_mariadb() {
     log_info "Starting MariaDB container..."
@@ -45,22 +66,6 @@ start_mariadb() {
     
     log_error "MariaDB failed to start"
     return 1
-}
-
-log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[PASS]${NC} $1"
-}
-
-log_fail() {
-    echo -e "${RED}[FAIL]${NC} $1"
 }
 
 # Cleanup function
