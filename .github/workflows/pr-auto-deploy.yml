@@ -236,8 +236,8 @@ jobs:
           # Use correct VPS username
           VPS_USERNAME="ubuntu"
           
-          # Calculate port based on PR number (e.g., PR #8 -> port 8080, PR #15 -> port 8015)
-          APP_PORT=$((8000 + PR_NUMBER))
+          # Calculate port based on PR number (e.g., PR #8 -> port 6008, PR #14 -> port 6014)
+          APP_PORT=$((6000 + PR_NUMBER))
           DB_PORT=$((13300 + PR_NUMBER))
           
           # Create docker-compose for deployment
