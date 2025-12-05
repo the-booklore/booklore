@@ -24,6 +24,7 @@ public class BackgroundUploadService {
 
     private static final String JPEG_MIME_TYPE = "image/jpeg";
     private static final String PNG_MIME_TYPE = "image/png";
+    private static final String WEBP_MIME_TYPE = "image/webp";
     private static final long MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024; // 5MB
 
     public UploadResponse uploadBackgroundFile(MultipartFile file, Long userId) {
@@ -90,6 +91,7 @@ public class BackgroundUploadService {
             fileService.deleteBackgroundFile("1.jpg", userId);
             fileService.deleteBackgroundFile("1.jpeg", userId);
             fileService.deleteBackgroundFile("1.png", userId);
+            fileService.deleteBackgroundFile("1.webp", userId);
         } catch (Exception e) {
             log.warn("Failed to delete existing background files: {}", e.getMessage());
         }
@@ -100,8 +102,8 @@ public class BackgroundUploadService {
             throw new IllegalArgumentException("Background image file is empty");
         }
         String contentType = file.getContentType();
-        if (!(JPEG_MIME_TYPE.equalsIgnoreCase(contentType) || PNG_MIME_TYPE.equalsIgnoreCase(contentType))) {
-            throw new IllegalArgumentException("Background image must be JPEG or PNG format");
+        if (!(JPEG_MIME_TYPE.equalsIgnoreCase(contentType) || PNG_MIME_TYPE.equalsIgnoreCase(contentType) || WEBP_MIME_TYPE.equalsIgnoreCase(contentType))) {
+            throw new IllegalArgumentException("Background image must be JPEG, PNG or WEBP format");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             throw new IllegalArgumentException("Background image size must not exceed 5 MB");

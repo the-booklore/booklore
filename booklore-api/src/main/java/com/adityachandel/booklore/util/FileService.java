@@ -46,6 +46,7 @@ public class FileService {
     private static final String COVER_FILENAME      = "cover.jpg";
     private static final String JPEG_MIME_TYPE      = "image/jpeg";
     private static final String PNG_MIME_TYPE       = "image/png";
+    private static final String WEBP_MIME_TYPE      = "image/webp";
     private static final long   MAX_FILE_SIZE_BYTES = 5L * 1024 * 1024;
     private static final int    THUMBNAIL_WIDTH     = 250;
     private static final int    THUMBNAIL_HEIGHT    = 350;
@@ -121,8 +122,8 @@ public class FileService {
             throw new IllegalArgumentException("Content type is required");
         }
         String lowerType = contentType.toLowerCase();
-        if (!lowerType.startsWith(JPEG_MIME_TYPE) && !lowerType.startsWith(PNG_MIME_TYPE)) {
-            throw new IllegalArgumentException("Only JPEG and PNG files are allowed");
+        if (!lowerType.startsWith(JPEG_MIME_TYPE) && !lowerType.startsWith(PNG_MIME_TYPE) && !lowerType.startsWith(WEBP_MIME_TYPE)) {
+            throw new IllegalArgumentException("Only JPEG, PNG and WEBP files are allowed");
         }
         if (file.getSize() > MAX_FILE_SIZE_BYTES) {
             throw new IllegalArgumentException("File size must not exceed 5 MB");
@@ -380,7 +381,7 @@ public class FileService {
     }
 
     public Resource getBackgroundResource(Long userId) {
-        String[] possibleFiles = {"1.jpg", "1.jpeg", "1.png"};
+        String[] possibleFiles = {"1.jpg", "1.jpeg", "1.png", "1.webp"};
 
         if (userId != null) {
             String userBackgroundsFolder = getBackgroundsFolder(userId);

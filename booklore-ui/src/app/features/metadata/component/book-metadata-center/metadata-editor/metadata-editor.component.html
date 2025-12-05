@@ -44,23 +44,23 @@
               tooltipPosition="top"
               severity="info">
             </p-button>
-            <p-fileupload
-              [chooseStyleClass]="'p-button-sm p-button-outlined'"
-              pTooltip="Upload cover"
-              tooltipPosition="top"
-              [disabled]="book.metadata!['coverLocked']"
+          <p-fileupload
               name="file"
-              [url]="getUploadCoverUrl()"
               mode="basic"
               chooseIcon="pi pi-upload"
-              accept="image/jpeg,image/png"
+              accept="image/jpeg,image/png,image/webp"
               maxFileSize="5000000"
+              pTooltip="Upload cover"
+              tooltipPosition="top"
               chooseLabel="Upload"
               (onUpload)="onUpload($event)"
               (onError)="onUploadError($event)"
-              [auto]="true"
-              (onBeforeUpload)="onBeforeSend()">
-            </p-fileupload>
+              (onBeforeUpload)="onBeforeSend()"
+              [chooseStyleClass]="'p-button-sm p-button-outlined'"
+              [disabled]="book.metadata!['coverLocked']"
+              [url]="getUploadCoverUrl()"
+              [auto]="true">
+          </p-fileupload>
             @if (!book.metadata!['coverLocked']) {
               <p-button pTooltip="Lock Cover" tooltipPosition="top" size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('thumbnailUrl')" severity="success"></p-button>
             }
