@@ -1,13 +1,9 @@
 name: PR Preview - Build Multi-Arch Image
 
-# This workflow ONLY builds Docker images when PRs are opened/updated
-# It does NOT deploy automatically
-# To deploy, authorized users must comment /deploy-pr
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-# Cancel in-progress runs when a new run is triggered
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -44,21 +40,100 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Comment Build Success
+      - name: Create Status Comment Body
+        run: |
+          cat > /tmp/comment.md << 'EOF'
+          ## 🔄 PR Preview Status Dashboard
+          
+          **PR #${{ github.event.number }}** | **Branch:** `${{ github.head_ref }}` → `${{ github.base_ref }}`
+          
+          ### ✅ Build Status
+          - Multi-Arch Docker Build: **IN PROGRESS**
+            - `linux/arm64` ⏳
+            - `linux/amd64` ⏳
+          
+          ### 📊 Quality Checks Status
+          
+          | Check | Status | Notes |
+          |-------|--------|-------|
+          | Build & Tests | 🔄 Queued | Frontend, Backend, Docker |
+          | Security Scan | 🔄 Queued | Dependencies, Secrets, SAST |
+          | Code Quality | 🔄 Queued | ESLint, Checkstyle |
+          | Type Checking | 🔄 Queued | TypeScript, Java |
+          | DB Migrations | 🔄 Queued | Flyway validation |
+          | PR Validation | 🔄 Queued | Description, Commits |
+          | API Tests | 🔄 Queued | Swagger endpoints |
+          
+          ### 🚀 Next Steps
+          
+          After build completes, authorized users can:
+          
+          **Publish to Docker Hub:**
+          ```
+          /publish-pr
+          ```
+          
+          **Deploy Preview:**
+          ```
+          /deploy-pr
+          ```
+          
+          Authorized: balazs-szucs, adityachandel
+          
+          ---
+          
+          *Status auto-updates as checks complete*
+          EOF
+          cat /tmp/comment.md
+
+      - name: Find or Create Status Comment
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const fs = require('fs');
+            const commentBody = fs.readFileSync('/tmp/comment.md', 'utf8');
+            const prNumber = context.issue.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🐳 **Multi-Arch Docker Image Built Successfully!**\n\n` +
-                    `Platforms:\n` +
-                    `- \`linux/arm64\`\n` +
-                    `- \`linux/amd64\`\n\n` +
-                    `PR Number: \`${{ github.event.number }}\`\n\n` +
-                    `✅ Image built and cached (not yet published to Docker Hub)\n\n` +
-                    `**To publish this image to Docker Hub**, an authorized user can comment:\n` +
-                    `\`\`\`\n/publish-pr\n\`\`\`\n\n` +
-                    `Authorized publishers: @balazs-szucs, @adityachandel`
+              issue_number: prNumber
             });
+
+            const botComment = comments.find(c =>
+              c.user.type === 'Bot' &&
+              c.body.includes('PR Preview Status Dashboard')
+            );
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+              console.log('Updated status comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: commentBody
+              });
+              console.log('Created new status comment');
+            }
+
+      - name: Add Eyes Reaction
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.reactions.createForIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                content: 'eyes'
+              });
+            } catch (e) {
+              console.log('Reaction exists');
+            }
