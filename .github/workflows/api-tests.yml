@@ -201,6 +201,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Verify Context
+        run: |
+          pwd
+          ls -la
+          ls -la docker/ || echo "❌ docker/ missing!"
+          cat .dockerignore
+          docker buildx build --platform linux/arm64 --file docker/Dockerfile -t test . --dry-run 2>&1 || true
+
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
