@@ -117,9 +117,9 @@ jobs:
                   - USER_ID=${APP_USER_ID}
                   - GROUP_ID=${APP_GROUP_ID}
                   - TZ=${TZ}
-                  - DATABASE_URL=${DATABASE_URL}
-                  - DATABASE_USERNAME=${DB_USER}
-                  - DATABASE_PASSWORD=${DB_PASSWORD}
+                  - SPRING_DATASOURCE_URL=${DATABASE_URL}
+                  - SPRING_DATASOURCE_USERNAME=${DB_USER}
+                  - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
                   - BOOKLORE_PORT=${BOOKLORE_PORT}
                 depends_on:
                   mariadb:
