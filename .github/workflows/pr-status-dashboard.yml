@@ -6,11 +6,7 @@ on:
   workflow_run:
     workflows: 
       - "Build and Test"
-      - "Code Quality & Linting"
-      - "Type Checking & Compilation"
       - "Database Migration Validation"
-      - "PR Validation"
-      - "Security Scan"
       - "Swagger API Tests"
       - "PR Preview - Build Multi-Arch Image"
     types: [completed]
@@ -77,11 +73,7 @@ jobs:
             // Map workflow names to display names
             const workflowMapping = {
               'Build and Test': { key: 'build', name: '🏗️ Build & Tests' },
-              'Code Quality & Linting': { key: 'lint', name: '🔍 Linting (ESLint)' },
-              'Type Checking & Compilation': { key: 'types', name: '📝 Type Checking' },
               'Database Migration Validation': { key: 'migrations', name: '🗄️ DB Migrations' },
-              'PR Validation': { key: 'pr_validation', name: '📋 PR Validation' },
-              'Security Scan': { key: 'security', name: '🔒 Security Scan' },
               'Swagger API Tests': { key: 'api_tests', name: '🧪 API Tests' },
               'PR Preview - Build Multi-Arch Image': { key: 'docker', name: '🐳 Docker Build' }
             };
@@ -148,11 +140,7 @@ jobs:
             // Set defaults for missing checks
             const defaultChecks = [
               { key: 'build', name: '🏗️ Build & Tests' },
-              { key: 'lint', name: '🔍 Linting (ESLint)' },
-              { key: 'types', name: '📝 Type Checking' },
               { key: 'migrations', name: '🗄️ DB Migrations' },
-              { key: 'pr_validation', name: '📋 PR Validation' },
-              { key: 'security', name: '🔒 Security Scan' },
               { key: 'api_tests', name: '🧪 API Tests' },
               { key: 'docker', name: '🐳 Docker Build' }
             ];

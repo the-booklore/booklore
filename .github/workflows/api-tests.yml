@@ -106,8 +106,10 @@ jobs:
           JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
           echo "Starting JAR: $JAR_FILE"
           
-          # Start with logging to file
-          java -jar "$JAR_FILE" > /tmp/booklore.log 2>&1 &
+          # Start with logging to file and custom bookdrop folder
+          java -jar "$JAR_FILE" \
+            --app.bookdrop-folder=/tmp/bookdrop \
+            > /tmp/booklore.log 2>&1 &
           echo $! > /tmp/booklore.pid
           
           # Give it a moment to start
@@ -120,7 +122,6 @@ jobs:
           DATABASE_PASSWORD: rootpassword
           SWAGGER_ENABLED: "true"
           SPRING_PROFILES_ACTIVE: default
-          APP_BOOKDROP-FOLDER: /tmp/bookdrop
 
       - name: Wait for BookLore to be ready
         run: |
