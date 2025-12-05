@@ -64,6 +64,7 @@ jobs:
 
       # 1. Build the PR Image
       - name: Build and Push PR Image
+        timeout-minutes: 30
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -71,6 +72,8 @@ jobs:
           push: true
           platforms: linux/arm64 
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
 
       # 2. Deploy to VPS
       - name: Deploy to VPS
