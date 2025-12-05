@@ -673,6 +673,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'epub':
       case 'mobi':
       case 'azw3':
+      case 'fb2':
         return 'pi pi-book';
       case 'cbz':
       case 'cbr':
@@ -694,6 +695,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   private hasEditMetadataPermission(): boolean {
     return this.isAdmin() || (this.userPermissions?.canEditMetadata ?? false);
+  }
+
+  canReadBook(): boolean {
+    return this.book?.bookType !== 'FB2';
   }
 
   private hasDownloadPermission(): boolean {

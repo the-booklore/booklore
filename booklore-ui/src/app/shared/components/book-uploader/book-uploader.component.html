@@ -89,7 +89,7 @@
           [maxFileSize]="maxFileSizeBytes"
           [customUpload]="true"
           [multiple]="true"
-          accept=".pdf,.epub,.cbz,.cbr,.cb7"
+          accept=".pdf,.epub,.cbz,.cbr,.cb7,.fb2"
           (onSelect)="onFilesSelect($event)"
           (uploadHandler)="uploadFiles($event)"
           [disabled]="value === 'library' ? (!selectedLibrary || !selectedPath) : false">
@@ -176,7 +176,7 @@
               </div>
               <h3 class="empty-title">Drag and Drop Files</h3>
               <p class="empty-description">
-                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>
+                Supported formats: <strong>.pdf</strong>, <strong>.epub</strong>, <strong>.cbz</strong>, <strong>.cbr</strong>, <strong>.cb7</strong>, <strong>.fb2</strong>
                 <br/>
                 Maximum file size: 100 MB per file
               </p>
