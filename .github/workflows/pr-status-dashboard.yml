@@ -11,7 +11,7 @@ on:
       - "Database Migration Validation"
       - "PR Validation"
       - "Security Scan"
-      - "API Tests"
+      - "Swagger API Tests"
       - "PR Preview - Build Multi-Arch Image"
     types: [completed]
 
@@ -82,7 +82,7 @@ jobs:
               'Database Migration Validation': { key: 'migrations', name: '🗄️ DB Migrations' },
               'PR Validation': { key: 'pr_validation', name: '📋 PR Validation' },
               'Security Scan': { key: 'security', name: '🔒 Security Scan' },
-              'API Tests': { key: 'api_tests', name: '🧪 API Tests' },
+              'Swagger API Tests': { key: 'api_tests', name: '🧪 API Tests' },
               'PR Preview - Build Multi-Arch Image': { key: 'docker', name: '🐳 Docker Build' }
             };
             

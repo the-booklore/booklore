@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BOOKLORE_URL: http://localhost:6060
+  BOOKLORE_URL: http://localhost:8080
 
 jobs:
   swagger-api-tests:
@@ -40,10 +40,10 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="mysqladmin ping -h localhost -u root -prootpassword"
           --health-interval=10s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
     steps:
       - name: Checkout repository
@@ -102,35 +102,63 @@ jobs:
           # Find the bootJar (not the plain jar)
           JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
           echo "Starting JAR: $JAR_FILE"
-          java -jar "$JAR_FILE" &
+          
+          # Start with logging to file
+          java -jar "$JAR_FILE" > /tmp/booklore.log 2>&1 &
           echo $! > /tmp/booklore.pid
+          
+          # Give it a moment to start
+          sleep 5
+          echo "=== Initial startup logs ==="
+          head -50 /tmp/booklore.log || true
         env:
           DATABASE_URL: jdbc:mariadb://localhost:3306/booklore?createDatabaseIfNotExist=true
           DATABASE_USERNAME: root
           DATABASE_PASSWORD: rootpassword
-          SWAGGER_ENABLED: true
-          SERVER_PORT: 6060
+          SWAGGER_ENABLED: "true"
+          SPRING_PROFILES_ACTIVE: default
 
       - name: Wait for BookLore to be ready
         run: |
-          echo "Waiting for BookLore to start..."
+          echo "Waiting for BookLore to start on port 8080..."
           for i in {1..60}; do
-            if curl -s http://localhost:6060/actuator/health | grep -q '"status":"UP"'; then
+            if curl -s http://localhost:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; then
               echo "BookLore is ready!"
               exit 0
             fi
+            
+            # Check if process is still running
+            if [ -f /tmp/booklore.pid ]; then
+              PID=$(cat /tmp/booklore.pid)
+              if ! kill -0 $PID 2>/dev/null; then
+                echo "ERROR: BookLore process died!"
+                echo "=== Application logs ==="
+                cat /tmp/booklore.log
+                exit 1
+              fi
+            fi
+            
             echo "Attempt $i/60 - waiting..."
             sleep 5
           done
-          echo "BookLore failed to start"
+          
+          echo "BookLore failed to start within timeout"
+          echo "=== Full application logs ==="
+          cat /tmp/booklore.log
           exit 1
 
       - name: Run Swagger Endpoint Tests
         run: |
           python testing/swagger_endpoint_test.py \
-            --base-url http://localhost:6060 \
+            --base-url http://localhost:8080 \
             ${{ inputs.verbose && '--verbose' || '' }} \
             ${{ inputs.enable_auth && '--enable-auth' || '' }}
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          echo "=== Application logs ==="
+          cat /tmp/booklore.log || true
 
       - name: Stop BookLore
         if: always()
@@ -177,7 +205,7 @@ jobs:
           
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if docker exec mariadb healthcheck.sh --connect --innodb_initialized 2>/dev/null; then
+            if docker exec mariadb mysqladmin ping -h localhost -u root -prootpassword 2>/dev/null; then
               echo "MariaDB is ready!"
               break
             fi
@@ -190,7 +218,7 @@ jobs:
           docker run -d \
             --name booklore \
             --network booklore-test-net \
-            -p 6060:6060 \
+            -p 8080:8080 \
             -e DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=rootpassword \
@@ -201,7 +229,7 @@ jobs:
         run: |
           echo "Waiting for BookLore container..."
           for i in {1..60}; do
-            if curl -s http://localhost:6060/actuator/health | grep -q '"status":"UP"'; then
+            if curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
               echo "BookLore is ready!"
               exit 0
             fi
@@ -223,7 +251,7 @@ jobs:
       - name: Run Swagger tests against container
         run: |
           python testing/swagger_endpoint_test.py \
-            --base-url http://localhost:6060 \
+            --base-url http://localhost:8080 \
             --verbose
 
       - name: Run Docker integration tests
