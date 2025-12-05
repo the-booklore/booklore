@@ -1,0 +1,386 @@
+name: PR Deploy on Comment
+
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to deploy'
+        required: true
+
+concurrency:
+  group: pr-deploy-${{ github.event.issue.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-deploy-command:
+    name: Check Deploy Command
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request != null &&
+        (
+          contains(github.event.comment.body, '/deploy') ||
+          contains(github.event.comment.body, '/preview')
+        )
+      )
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+      pr_number: ${{ steps.check.outputs.pr_number }}
+      pr_ref: ${{ steps.check.outputs.pr_ref }}
+      commit_hash: ${{ steps.check.outputs.commit_hash }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Check authorization and get PR info
+        id: check
+        uses: actions/github-script@v7
+        env:
+          INPUT_PR: ${{ github.event.inputs.pr_number }}
+        with:
+          script: |
+            const authorizedUsers = ['balazs-szucs'];
+            let prNumber, author;
+            
+            if (context.eventName === 'workflow_dispatch') {
+              prNumber = parseInt(process.env.INPUT_PR, 10);
+              author = context.actor;
+              console.log(`Manual dispatch by ${author} for PR #${prNumber}`);
+            } else {
+              prNumber = context.payload.issue.number;
+              author = context.payload.comment.user.login;
+              console.log(`Comment trigger by ${author} on PR #${prNumber}`);
+            }
+            
+            // Check authorization
+            if (!authorizedUsers.includes(author)) {
+              core.warning(`User ${author} is not authorized to deploy`);
+              core.setOutput('should_deploy', 'false');
+              return;
+            }
+            
+            // Get PR details
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+            
+            if (pr.state !== 'open') {
+              core.warning(`PR #${prNumber} is not open`);
+              core.setOutput('should_deploy', 'false');
+              return;
+            }
+            
+            const commitHash = pr.head.sha.substring(0, 8);
+            
+            core.setOutput('should_deploy', 'true');
+            core.setOutput('pr_number', String(prNumber));
+            core.setOutput('pr_ref', pr.head.ref);
+            core.setOutput('commit_hash', commitHash);
+            
+            console.log(`✓ Authorized: ${author}`);
+            console.log(`✓ PR #${prNumber} is open`);
+            console.log(`✓ Commit: ${commitHash}`);
+
+      - name: Add reaction to comment
+        if: github.event_name == 'issue_comment' && steps.check.outputs.should_deploy == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+  deploy-to-vps:
+    name: Deploy to VPS
+    needs: check-deploy-command
+    if: needs.check-deploy-command.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Post deployment started comment
+        id: start-comment
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER);
+            
+            // Delete previous deployment comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const oldComments = comments.filter(comment => 
+              (comment.body.includes('🚀 **Deploying PR') ||
+               comment.body.includes('## 🚀 PR Deployed!') ||
+               comment.body.includes('## ❌ Deployment Failed')) &&
+              comment.user.type === 'Bot'
+            );
+
+            for (const comment of oldComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+            
+            const { data: newComment } = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🚀 **Deploying PR #${prNumber}** to preview environment...\n\n` +
+                    `⏳ This usually takes 1-2 minutes.`
+            });
+            
+            return newComment.id;
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-deploy-command.outputs.pr_ref }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Check if image exists
+        id: check-image
+        env:
+          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
+          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+        run: |
+          IMAGE_TAG="${DOCKER_USER}/booklore:pr-${PR_NUMBER}-${COMMIT_HASH}"
+          IMAGE_LATEST="${DOCKER_USER}/booklore:pr-${PR_NUMBER}"
+          
+          # Try commit-specific tag first, then latest PR tag
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✓ Found image: ${IMAGE_TAG}"
+          elif docker manifest inspect "$IMAGE_LATEST" >/dev/null 2>&1; then
+            echo "image=${IMAGE_LATEST}" >> $GITHUB_OUTPUT
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "✓ Found image: ${IMAGE_LATEST}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "❌ No image found for PR #${PR_NUMBER}"
+          fi
+
+      - name: Fail if no image
+        if: steps.check-image.outputs.exists != 'true'
+        run: |
+          echo "No Docker image found. Please wait for the build workflow to complete first."
+          exit 1
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private.key
+          chmod 600 ~/.ssh/private.key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+
+      - name: Deploy to VPS
+        id: deploy
+        env:
+          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
+          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
+          IMAGE: ${{ steps.check-image.outputs.image }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          VPS_USER="ubuntu"
+          APP_PORT=$((6000 + PR_NUMBER))
+          
+          # Create docker-compose file
+          cat > docker-compose.yml << EOF
+          version: '3.8'
+          services:
+            mariadb:
+              container_name: booklore-db-pr-${PR_NUMBER}
+              image: mariadb:10.11
+              environment:
+                MYSQL_ROOT_PASSWORD: booklore_pr_${PR_NUMBER}
+                MYSQL_DATABASE: booklore
+                MYSQL_USER: booklore
+                MYSQL_PASSWORD: booklore_pr_${PR_NUMBER}
+              volumes:
+                - booklore-db-pr-${PR_NUMBER}:/var/lib/mysql
+              healthcheck:
+                test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+                interval: 5s
+                timeout: 3s
+                retries: 10
+              restart: unless-stopped
+
+            booklore:
+              container_name: booklore-app-pr-${PR_NUMBER}
+              image: ${IMAGE}
+              ports:
+                - "${APP_PORT}:6060"
+              environment:
+                DATABASE_URL: jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true
+                DATABASE_USERNAME: booklore
+                DATABASE_PASSWORD: booklore_pr_${PR_NUMBER}
+                SWAGGER_ENABLED: "true"
+              volumes:
+                - booklore-data-pr-${PR_NUMBER}:/app/data
+                - booklore-books-pr-${PR_NUMBER}:/books
+              depends_on:
+                mariadb:
+                  condition: service_healthy
+              restart: unless-stopped
+
+          volumes:
+            booklore-db-pr-${PR_NUMBER}:
+            booklore-data-pr-${PR_NUMBER}:
+            booklore-books-pr-${PR_NUMBER}:
+          EOF
+
+          # Deploy
+          scp -i ~/.ssh/private.key docker-compose.yml "${VPS_USER}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml"
+
+          ssh -i ~/.ssh/private.key -T "${VPS_USER}@${VPS_HOST}" << ENDSSH
+            set -e
+            sudo mkdir -p /opt/booklore/pr-${PR_NUMBER}
+            sudo chown -R ubuntu:ubuntu /opt/booklore
+            mv /tmp/docker-compose-pr-${PR_NUMBER}.yml /opt/booklore/pr-${PR_NUMBER}/docker-compose.yml
+            cd /opt/booklore/pr-${PR_NUMBER}
+            docker compose down --remove-orphans 2>/dev/null || true
+            docker compose pull
+            docker compose up -d
+            docker image prune -af --filter "until=168h" || true
+            echo "✓ Deployed PR #${PR_NUMBER} on port ${APP_PORT}"
+          ENDSSH
+
+          echo "app_port=${APP_PORT}" >> $GITHUB_OUTPUT
+
+      - name: Wait for application
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          APP_PORT: ${{ steps.deploy.outputs.app_port }}
+        run: |
+          echo "Waiting for application to start..."
+          for i in {1..30}; do
+            if curl -sf "http://${VPS_HOST}:${APP_PORT}/" >/dev/null 2>&1; then
+              echo "✓ Application is responding"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 5
+          done
+          echo "⚠ Health check timed out, but deployment may still be initializing"
+
+      - name: Delete start comment and post success
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          COMMENT_ID: ${{ steps.start-comment.outputs.result }}
+          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
+          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          APP_PORT: ${{ steps.deploy.outputs.app_port }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+        with:
+          script: |
+            // Delete the "deploying" comment
+            const commentId = process.env.COMMENT_ID;
+            if (commentId) {
+              try {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: commentId
+                });
+              } catch (e) { console.log('Could not delete comment'); }
+            }
+            
+            const prNumber = process.env.PR_NUMBER;
+            const commitHash = process.env.COMMIT_HASH;
+            const vpsHost = process.env.VPS_HOST;
+            const appPort = process.env.APP_PORT;
+            const dockerUser = process.env.DOCKER_USER;
+            const url = `http://${vpsHost}:${appPort}`;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(prNumber),
+              body: `## 🚀 PR Deployed!\n\n` +
+                    `**Preview URL:** [${url}](${url})\n\n` +
+                    `| Detail | Value |\n` +
+                    `|--------|-------|\n` +
+                    `| 📦 Commit | \`${commitHash}\` |\n` +
+                    `| 🐳 Image | \`${dockerUser}/booklore:pr-${prNumber}\` |\n` +
+                    `| 🌐 Port | \`${appPort}\` |\n\n` +
+                    `_Deployment will be cleaned up when PR is closed._`
+            });
+            
+            // Add rocket reaction to original comment
+            if (context.eventName === 'issue_comment') {
+              await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'rocket'
+              });
+            }
+
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          COMMENT_ID: ${{ steps.start-comment.outputs.result }}
+          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
+        with:
+          script: |
+            // Delete the "deploying" comment
+            const commentId = process.env.COMMENT_ID;
+            if (commentId) {
+              try {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: commentId
+                });
+              } catch (e) {}
+            }
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: parseInt(process.env.PR_NUMBER),
+              body: `## ❌ Deployment Failed\n\n` +
+                    `Check the [workflow logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`
+            });
+
+      - name: Cleanup SSH
+        if: always()
+        run: rm -f ~/.ssh/private.key

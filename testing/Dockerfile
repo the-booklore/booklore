@@ -7,8 +7,10 @@ WORKDIR /app/frontend
 # Increase Node memory limit for ARM64 builds
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-# Copy package files and install dependencies
-COPY booklore-ui/package*.json ./
+# Copy package files first for better layer caching
+COPY booklore-ui/package.json booklore-ui/package-lock.json ./
+
+# Install dependencies (cached layer if package*.json unchanged)
 RUN npm ci --prefer-offline --no-audit
 
 # Copy source code and build
@@ -21,19 +23,22 @@ RUN npm run build -- --configuration=production
 FROM eclipse-temurin:21-jdk-alpine AS backend-builder
 WORKDIR /build
 
-# Copy Gradle wrapper and settings
-COPY booklore-api/gradlew booklore-api/gradlew.bat booklore-api/build.gradle booklore-api/settings.gradle ./
+# Copy Gradle wrapper and config first for dependency caching
 COPY booklore-api/gradle/ gradle/
+COPY booklore-api/gradlew booklore-api/gradlew.bat ./
+COPY booklore-api/build.gradle booklore-api/settings.gradle ./
 
-# Copy Java Source
+# Download dependencies (cached layer if build.gradle unchanged)
+RUN chmod +x ./gradlew && ./gradlew dependencies --no-daemon || true
+
+# Copy Java source
 COPY booklore-api/src/ src/
 
-# Copy Built Frontend Assets into Java Static Resources
-# The Angular output path is dist/booklore based on angular.json
+# Copy built frontend assets into Java static resources
 COPY --from=frontend-builder /app/frontend/dist/booklore /build/src/main/resources/static/
 
-# Build the JAR (Skip tests here to save time, we test in CI)
-RUN ./gradlew clean build -x test --no-daemon
+# Build the JAR (skip tests - run separately in CI)
+RUN ./gradlew bootJar -x test --no-daemon
 
 # ==========================================
 # Stage 3: Final Runtime Image

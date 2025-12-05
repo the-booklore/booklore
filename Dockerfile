@@ -1,26 +1,39 @@
-# Stage 1: Build the Angular app
+# ==========================================
+# Stage 1: Build the Angular Frontend
+# ==========================================
 FROM node:22-alpine AS angular-build
 
 WORKDIR /angular-app
 
+# Copy dependency files first for better layer caching
 COPY ./booklore-ui/package.json ./booklore-ui/package-lock.json ./
-RUN npm config set registry http://registry.npmjs.org/ \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm install --force
-COPY ./booklore-ui /angular-app/
 
-RUN npm run build --configuration=production
+# Increase Node memory for ARM64 builds
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
-# Stage 2: Build the Spring Boot app with Gradle
+# Install dependencies (cached layer if package*.json unchanged)
+RUN npm ci --prefer-offline --no-audit
+
+# Copy source code and build
+COPY ./booklore-ui/ ./
+RUN npm run build -- --configuration=production
+
+# ==========================================
+# Stage 2: Build the Spring Boot Backend
+# ==========================================
 FROM gradle:8.14.3-jdk21-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
-COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle ./
+# Copy Gradle wrapper and config first for dependency caching
 COPY ./booklore-api/gradle ./gradle
 COPY ./booklore-api/gradlew ./booklore-api/gradlew.bat ./
+COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle ./
+
+# Download dependencies (cached layer if build.gradle unchanged)
+RUN chmod +x ./gradlew && ./gradlew dependencies --no-daemon || true
+
+# Copy source code
 COPY ./booklore-api/src ./src
 
 # Inject version into application.yaml using yq
@@ -28,9 +41,12 @@ ARG APP_VERSION
 RUN apk add --no-cache yq && \
     yq eval '.app.version = strenv(APP_VERSION)' -i ./src/main/resources/application.yaml
 
-RUN chmod +x ./gradlew && ./gradlew clean build -x test --no-daemon
+# Build the JAR (skip tests - run separately in CI)
+RUN ./gradlew clean bootJar -x test --no-daemon
 
-# Stage 3: Final image
+# ==========================================
+# Stage 3: Final Runtime Image
+# ==========================================
 FROM eclipse-temurin:21.0.9_10-jre-alpine
 
 ARG APP_VERSION

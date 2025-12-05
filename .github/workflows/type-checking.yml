@@ -22,6 +22,11 @@ jobs:
         working-directory: ./booklore-ui
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
@@ -51,6 +56,11 @@ jobs:
         working-directory: ./booklore-api
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
       - name: Checkout Code
         uses: actions/checkout@v4
 
