@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS email_recipient
 ALTER TABLE user_permissions
     ADD COLUMN permission_email_book BOOLEAN NOT NULL DEFAULT TRUE;
 
-UPDATE user_permissions up
-    JOIN users u ON up.user_id = u.id
-SET up.permission_email_book = TRUE
-WHERE u.name = 'admin';
+UPDATE user_permissions 
+SET permission_email_book = TRUE 
+WHERE user_id IN (SELECT id FROM users WHERE name = 'admin');

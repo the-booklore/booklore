@@ -1,0 +1,483 @@
+name: PR Auto-Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "PR number to deploy"
+        required: true
+
+concurrency:
+  group: pr-deploy-${{ github.event.pull_request.number || github.event.inputs.pr }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-pr:
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+      pr_number: ${{ steps.resolve.outputs.pr_number }}
+      pr_repository: ${{ steps.resolve.outputs.repository }}
+      pr_ref: ${{ steps.resolve.outputs.ref }}
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Resolve PR info
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            let prNumber = context.eventName === 'workflow_dispatch'
+              ? parseInt(process.env.INPUT_PR, 10)
+              : context.payload.number;
+
+            if (!Number.isInteger(prNumber)) { 
+              core.setFailed('Invalid PR number'); 
+              return; 
+            }
+
+            const { data: pr } = await github.rest.pulls.get({ owner, repo, pull_number: prNumber });
+            core.setOutput('pr_number', String(prNumber));
+            core.setOutput('repository', pr.head.repo.full_name);
+            core.setOutput('ref', pr.head.ref);
+            core.setOutput('author', pr.user.login);
+            core.setOutput('state', pr.state);
+        env:
+          INPUT_PR: ${{ github.event.inputs.pr }}
+
+      - name: Decide deploy
+        id: decide
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          STATE: ${{ steps.resolve.outputs.state }}
+          PR_AUTHOR: ${{ steps.resolve.outputs.author }}
+        run: |
+          set -e
+          should=false
+
+          # Authorized users who can trigger auto-deployment
+          auth_users=("balazs-szucs")
+          
+          is_auth=false
+          for u in "${auth_users[@]}"; do 
+            [ "$u" = "$PR_AUTHOR" ] && is_auth=true && break
+          done
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if [ "$STATE" != "open" ]; then
+              echo "PR not open -> skip"
+            else
+              should=true
+            fi
+          else
+            if [ "$is_auth" = true ]; then
+              should=true
+            fi
+          fi
+
+          echo "should_deploy=$should" >> $GITHUB_OUTPUT
+
+  build-and-deploy:
+    needs: check-pr
+    runs-on: ubuntu-latest
+    if: needs.check-pr.outputs.should_deploy == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Add deployment started comment
+        id: deployment-started
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.check-pr.outputs.pr_number }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            
+            // Delete previous deployment comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const deployComments = comments.filter(comment => 
+              comment.body.includes('🚀 **Auto-deploying BookLore**') ||
+              comment.body.includes('## 🚀 BookLore Auto-Deployment Complete!') ||
+              comment.body.includes('❌ **Auto-deployment failed**') ||
+              comment.body.includes('🐳 Docker Image Published')
+            );
+
+            for (const comment of deployComments) {
+              console.log(`Deleting old deployment comment: ${comment.id}`);
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+            
+            // Create new deployment started comment
+            const { data: newComment } = await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `🚀 **Auto-deploying BookLore** for PR #${prNumber}...\n\n_This is an automated deployment._\n\n⚠️ **Note:** If new commits are pushed during deployment, this build will be cancelled and replaced with the latest version.`
+            });
+            return newComment.id;
+
+      - name: Checkout PR Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.check-pr.outputs.pr_ref }}
+          repository: ${{ needs.check-pr.outputs.pr_repository }}
+          fetch-depth: 0
+
+      - name: Get commit hash
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
+          echo "Commit hash: $COMMIT_HASH"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Check if image exists
+        id: check-image
+        env:
+          IMAGE_TAG: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ needs.check-pr.outputs.pr_number }}-${{ steps.commit-hash.outputs.short }}
+        run: |
+          if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Image already exists, skipping build"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "Image needs to be built"
+          fi
+
+      - name: Build and Push Docker Image (ARM64)
+        if: steps.check-image.outputs.exists == 'false'
+        timeout-minutes: 45
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ needs.check-pr.outputs.pr_number }}-${{ steps.commit-hash.outputs.short }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ needs.check-pr.outputs.pr_number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private.key
+          chmod 600 ~/.ssh/private.key
+
+      - name: Deploy to VPS
+        id: deploy
+        env:
+          PR_NUMBER: ${{ needs.check-pr.outputs.pr_number }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          # Calculate port based on PR number (e.g., PR #8 -> port 8080, PR #15 -> port 8015)
+          APP_PORT=$((8000 + PR_NUMBER))
+          DB_PORT=$((13300 + PR_NUMBER))
+          
+          # Create docker-compose for deployment
+          cat > docker-compose.yml << EOF
+          version: '3.8'
+          services:
+            mariadb:
+              container_name: booklore-db-pr-${PR_NUMBER}
+              image: mariadb:10.11
+              environment:
+                MYSQL_ROOT_PASSWORD: booklore_pr_${PR_NUMBER}
+                MYSQL_DATABASE: booklore
+                MYSQL_USER: booklore
+                MYSQL_PASSWORD: booklore_pr_${PR_NUMBER}
+              volumes:
+                - booklore-db-pr-${PR_NUMBER}:/var/lib/mysql
+              healthcheck:
+                test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+                interval: 10s
+                timeout: 5s
+                retries: 5
+              restart: unless-stopped
+
+            booklore:
+              container_name: booklore-app-pr-${PR_NUMBER}
+              image: ${DOCKER_USER}/booklore:pr-${PR_NUMBER}-${COMMIT_HASH}
+              ports:
+                - "${APP_PORT}:6060"
+              environment:
+                DATABASE_URL: jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true
+                DATABASE_USERNAME: booklore
+                DATABASE_PASSWORD: booklore_pr_${PR_NUMBER}
+                SWAGGER_ENABLED: "true"
+              volumes:
+                - booklore-data-pr-${PR_NUMBER}:/app/data
+                - booklore-books-pr-${PR_NUMBER}:/books
+              depends_on:
+                mariadb:
+                  condition: service_healthy
+              restart: unless-stopped
+
+          volumes:
+            booklore-db-pr-${PR_NUMBER}:
+            booklore-data-pr-${PR_NUMBER}:
+            booklore-books-pr-${PR_NUMBER}:
+          EOF
+
+          # Deploy to VPS
+          scp -i ~/.ssh/private.key -o StrictHostKeyChecking=no docker-compose.yml ${VPS_USERNAME}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml
+
+          ssh -i ~/.ssh/private.key -o StrictHostKeyChecking=no -T ${VPS_USERNAME}@${VPS_HOST} << ENDSSH
+            # Create PR-specific directory
+            mkdir -p /opt/booklore/pr-${PR_NUMBER}
+
+            # Move docker-compose file
+            mv /tmp/docker-compose-pr-${PR_NUMBER}.yml /opt/booklore/pr-${PR_NUMBER}/docker-compose.yml
+
+            # Stop existing containers and start new ones
+            cd /opt/booklore/pr-${PR_NUMBER}
+            docker-compose down --remove-orphans 2>/dev/null || true
+            docker-compose pull
+            docker-compose up -d
+
+            # Clean up old images (older than 1 week)
+            docker image prune -af --filter "until=168h" || true
+
+            echo "Deployment completed for PR #${PR_NUMBER}"
+          ENDSSH
+
+          echo "app_port=${APP_PORT}" >> $GITHUB_OUTPUT
+
+      - name: Wait for application to be ready
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          APP_PORT: ${{ steps.deploy.outputs.app_port }}
+        run: |
+          echo "Waiting for application to start..."
+          for i in {1..30}; do
+            if curl -s "http://${VPS_HOST}:${APP_PORT}/actuator/health" | grep -q "UP"; then
+              echo "Application is healthy!"
+              exit 0
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 10
+          done
+          echo "Warning: Health check timed out, but deployment may still be in progress"
+
+      - name: Delete deployment started comment
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          COMMENT_ID: ${{ steps.deployment-started.outputs.result }}
+        with:
+          script: |
+            const commentId = process.env.COMMENT_ID;
+            if (commentId) {
+              try {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: commentId
+                });
+              } catch (error) {
+                console.log(`Could not delete deployment started comment: ${error.message}`);
+              }
+            }
+
+      - name: Post deployment success to PR
+        if: success()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.check-pr.outputs.pr_number }}
+          COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          APP_PORT: ${{ steps.deploy.outputs.app_port }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            const commitHash = process.env.COMMIT_HASH;
+            const dockerUser = process.env.DOCKER_USER;
+            const vpsHost = process.env.VPS_HOST;
+            const appPort = process.env.APP_PORT;
+
+            const dockerImage = `${dockerUser}/booklore:pr-${prNumber}-${commitHash}`;
+            const dockerImageLatest = `${dockerUser}/booklore:pr-${prNumber}`;
+            const deploymentUrl = `http://${vpsHost}:${appPort}`;
+            const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+            const commentBody = `## 🚀 BookLore Auto-Deployment Complete!\n\n` +
+              `**PR #${prNumber}** has been deployed and is ready for testing!\n\n` +
+              `### 🔗 Test URL\n` +
+              `**[${deploymentUrl}](${deploymentUrl})**\n\n` +
+              `### 🐳 Docker Images\n` +
+              `\`\`\`bash\n` +
+              `# Latest for this PR\n` +
+              `docker pull ${dockerImageLatest}\n\n` +
+              `# Specific commit\n` +
+              `docker pull ${dockerImage}\n` +
+              `\`\`\`\n\n` +
+              `📦 **Commit:** \`${commitHash}\`\n` +
+              `⏱️ **Deployed:** ${timestamp} UTC\n\n` +
+              `---\n` +
+              `_This deployment will be automatically cleaned up when the PR is closed._`;
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: commentBody
+            });
+
+      - name: Post deployment failure to PR
+        if: failure()
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.check-pr.outputs.pr_number }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## ❌ Auto-deployment failed\n\n` +
+                    `The deployment for PR #${prNumber} encountered an error.\n\n` +
+                    `Please check the [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`
+            });
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/private.key
+
+  cleanup-deployment:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Clean up deployment comments
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        with:
+          script: |
+            const prNumber = process.env.PR_NUMBER;
+            
+            // Find and delete deployment comments
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const deployComments = comments.filter(c =>
+              (c.body?.includes("## 🚀 BookLore Auto-Deployment Complete!") ||
+               c.body?.includes("🐳 Docker Image Published")) &&
+              c.user?.type === "Bot"
+            );
+            
+            for (const comment of deployComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+              console.log(`Deleted deployment comment (ID: ${comment.id})`);
+            }
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private.key
+          chmod 600 ~/.ssh/private.key
+
+      - name: Cleanup VPS deployment
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USERNAME: ${{ secrets.VPS_USERNAME }}
+        run: |
+          ssh -i ~/.ssh/private.key -o StrictHostKeyChecking=no -T ${VPS_USERNAME}@${VPS_HOST} << ENDSSH
+            if [ -d "/opt/booklore/pr-${PR_NUMBER}" ]; then
+              echo "Found PR directory, proceeding with cleanup..."
+
+              # Stop and remove containers
+              cd /opt/booklore/pr-${PR_NUMBER}
+              docker-compose down -v || true
+
+              # Go back to root before removal
+              cd /
+
+              # Remove PR-specific directory
+              rm -rf /opt/booklore/pr-${PR_NUMBER}
+
+              # Clean up containers by name (in case compose cleanup missed them)
+              docker rm -f booklore-app-pr-${PR_NUMBER} 2>/dev/null || true
+              docker rm -f booklore-db-pr-${PR_NUMBER} 2>/dev/null || true
+
+              # Remove PR-specific volumes
+              docker volume rm booklore-db-pr-${PR_NUMBER} 2>/dev/null || true
+              docker volume rm booklore-data-pr-${PR_NUMBER} 2>/dev/null || true
+              docker volume rm booklore-books-pr-${PR_NUMBER} 2>/dev/null || true
+
+              echo "Cleanup completed for PR #${PR_NUMBER}"
+            else
+              echo "PR directory not found, nothing to clean up"
+            fi
+            
+            # Clean up old unused images
+            docker image prune -af --filter "until=168h" || true
+          ENDSSH
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/private.key
