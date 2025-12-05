@@ -99,15 +99,15 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
       .subscribe(() => {
         const currentState = this.bookService.getCurrentBookState();
         const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
-        
+
         if (!currentState?.loaded || !currentState?.books) {
           return;
         }
-        
+
         const filteredBooks = selectedLibraryId
           ? currentState.books.filter(book => book.libraryId === selectedLibraryId)
           : currentState.books;
-        
+
         const stats = this.processFinishedBooksStats(filteredBooks);
         const chartData = this.createChartData(stats);
         this.chartDataSubject.next(chartData);

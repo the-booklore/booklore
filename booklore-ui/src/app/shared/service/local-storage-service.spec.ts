@@ -106,7 +106,7 @@ describe('LocalStorageService', () => {
     it('should remove a stored value', () => {
       localStorage.setItem('keyToRemove', '"value"');
       expect(localStorage.getItem('keyToRemove')).not.toBeNull();
-      
+
       service.remove('keyToRemove');
       expect(localStorage.getItem('keyToRemove')).toBeNull();
     });
@@ -132,7 +132,7 @@ describe('LocalStorageService', () => {
 
       service.set('complexKey', complexObj);
       const retrieved = service.get<typeof complexObj>('complexKey');
-      
+
       expect(retrieved).toEqual(complexObj);
     });
 

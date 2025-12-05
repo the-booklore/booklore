@@ -127,8 +127,19 @@ jobs:
         run: |
           echo "Waiting for BookLore to start on port 8080..."
           for i in {1..60}; do
-            if curl -s http://localhost:8080/actuator/health 2>/dev/null | grep -q '"status":"UP"'; then
-              echo "BookLore is ready!"
+            # Try the actuator health endpoint first, then fall back to checking if swagger UI is accessible
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "BookLore is ready! (actuator health returned 200)"
+              curl -s http://localhost:8080/actuator/health || true
+              exit 0
+            fi
+            
+            # Fallback: check if the Swagger API docs endpoint is accessible
+            SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/api-docs 2>/dev/null || echo "000")
+            if [ "$SWAGGER_CODE" = "200" ]; then
+              echo "BookLore is ready! (swagger endpoint returned 200)"
               exit 0
             fi
             
@@ -143,7 +154,7 @@ jobs:
               fi
             fi
             
-            echo "Attempt $i/60 - waiting..."
+            echo "Attempt $i/60 - actuator: $HTTP_CODE, swagger: $SWAGGER_CODE - waiting..."
             sleep 5
           done
           
@@ -238,11 +249,22 @@ jobs:
         run: |
           echo "Waiting for BookLore container..."
           for i in {1..60}; do
-            if curl -s http://localhost:8080/actuator/health | grep -q '"status":"UP"'; then
-              echo "BookLore is ready!"
+            # Try the actuator health endpoint first
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "BookLore is ready! (actuator health returned 200)"
               exit 0
             fi
-            echo "Attempt $i/60 - waiting..."
+            
+            # Fallback: check if the Swagger API docs endpoint is accessible
+            SWAGGER_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/api-docs 2>/dev/null || echo "000")
+            if [ "$SWAGGER_CODE" = "200" ]; then
+              echo "BookLore is ready! (swagger endpoint returned 200)"
+              exit 0
+            fi
+            
+            echo "Attempt $i/60 - actuator: $HTTP_CODE, swagger: $SWAGGER_CODE - waiting..."
             sleep 5
           done
           echo "BookLore container failed to start"

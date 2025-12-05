@@ -40,7 +40,7 @@ describe('LoadingService', () => {
 
     it('should emit true multiple times when show() is called multiple times', (done) => {
       const values: boolean[] = [];
-      
+
       service.loading$.pipe(take(3), toArray()).subscribe(vals => {
         values.push(...vals);
         expect(values).toEqual([false, true, true]);
@@ -64,7 +64,7 @@ describe('LoadingService', () => {
 
     it('should handle show then hide sequence', (done) => {
       const values: boolean[] = [];
-      
+
       service.loading$.pipe(take(3), toArray()).subscribe(vals => {
         values.push(...vals);
         expect(values).toEqual([false, true, false]);
