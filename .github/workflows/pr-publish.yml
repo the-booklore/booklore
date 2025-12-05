@@ -1,5 +1,7 @@
 name: PR Preview - Publish to Docker Hub
 
+# ⚠️ IMPORTANT: This workflow ONLY runs when an authorized user comments /publish-pr
+# It does NOT run automatically
 on:
   issue_comment:
     types: [created]
@@ -7,9 +9,11 @@ on:
 jobs:
   publish-pr-image:
     name: Publish Multi-Arch Image
+    # Strict conditions: must be a PR, must have /publish-pr comment, must be issue_comment event
     if: |
       github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/publish-pr')
+      contains(github.event.comment.body, '/publish-pr') &&
+      github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
     permissions:
       contents: read

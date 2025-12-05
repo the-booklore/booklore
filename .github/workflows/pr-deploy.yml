@@ -1,5 +1,7 @@
 name: PR Preview - Deploy
 
+# ⚠️ IMPORTANT: This workflow ONLY runs when an authorized user comments /deploy-pr
+# It does NOT run automatically on PR open, sync, or reopen events
 on:
   issue_comment:
     types: [created]
@@ -7,9 +9,11 @@ on:
 jobs:
   authorize-and-deploy:
     name: Authorize and Deploy
+    # Strict conditions: must be a PR, must have /deploy-pr comment, must be issue_comment event
     if: |
       github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/deploy-pr')
+      contains(github.event.comment.body, '/deploy-pr') &&
+      github.event_name == 'issue_comment'
     runs-on: ubuntu-latest
     permissions:
       contents: read

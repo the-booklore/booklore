@@ -1,5 +1,8 @@
 name: PR Preview - Build Multi-Arch Image
 
+# This workflow ONLY builds Docker images when PRs are opened/updated
+# It does NOT deploy automatically
+# To deploy, authorized users must comment /deploy-pr
 on:
   pull_request:
     types: [opened, synchronize, reopened]
