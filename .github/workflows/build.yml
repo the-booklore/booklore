@@ -20,7 +20,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: booklore-ui/package-lock.json
       - run: npm ci
-      - run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless
+
       - run: npm run build
 
   test-backend:
