@@ -96,6 +96,9 @@ jobs:
           chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
 
+      - name: Create bookdrop directory
+        run: mkdir -p /tmp/bookdrop && chmod 777 /tmp/bookdrop
+
       - name: Start BookLore
         working-directory: booklore-api
         run: |
@@ -117,6 +120,7 @@ jobs:
           DATABASE_PASSWORD: rootpassword
           SWAGGER_ENABLED: "true"
           SPRING_PROFILES_ACTIVE: default
+          APP_BOOKDROP-FOLDER: /tmp/bookdrop
 
       - name: Wait for BookLore to be ready
         run: |
@@ -194,6 +198,9 @@ jobs:
       - name: Create test network
         run: docker network create booklore-test-net
 
+      - name: Create bookdrop volume
+        run: docker volume create bookdrop || true
+
       - name: Start MariaDB
         run: |
           docker run -d \
@@ -219,6 +226,7 @@ jobs:
             --name booklore \
             --network booklore-test-net \
             -p 8080:8080 \
+            -v bookdrop:/bookdrop \
             -e DATABASE_URL=jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=rootpassword \

@@ -205,7 +205,7 @@ jobs:
               '|---------|-------------|\n' +
               '| `/publish-pr` | Publish Docker image to Docker Hub |\n' +
               '| `/deploy-pr` | Deploy preview environment |\n\n' +
-              '*Authorized: balazs-szucs*\n\n' +
+              '*Authorized: balazs-szucs, adityachandel*\n\n' +
               '---\n' +
               '📅 **Last Updated:** ' + timestamp + ' UTC\n' +
               '*This comment auto-updates as checks complete*';
