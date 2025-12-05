@@ -290,7 +290,7 @@ jobs:
           scp -v -i ~/.ssh/private.key -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new docker-compose.yml "${VPS_USERNAME}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml"
 
           # Prepare VPS environment and deploy
-          ssh -v -i ~/.ssh/private.key -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T "${VPS_USERNAME}@${VPS_HOST}" << 'ENDSSH'
+          ssh -v -i ~/.ssh/private.key -o ConnectTimeout=10 -o StrictHostKeyChecking=accept-new -T "${VPS_USERNAME}@${VPS_HOST}" << ENDSSH
             set -e
             
             # Ensure docker-compose v2 is installed
