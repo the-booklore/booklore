@@ -36,7 +36,7 @@ jobs:
         startsWith(github.event.comment.body, '/deploy') &&
         github.event.comment.user.type != 'Bot'
       )
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Harden Runner
@@ -125,10 +125,6 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
-
-      - name: Set up QEMU
-        if: steps.check-image.outputs.exists == 'false'
-        uses: docker/setup-qemu-action@v3
 
       - name: Build and Push (ARM64)
         if: steps.check-image.outputs.exists == 'false'
