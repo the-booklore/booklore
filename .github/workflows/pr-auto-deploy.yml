@@ -116,15 +116,42 @@ jobs:
 
             # Create docker-compose.yml
             cat > docker-compose.yml << 'COMPOSE_EOF'
+            version: '3.8'
             services:
+              mariadb:
+                image: mariadb:10.11
+                container_name: booklore-db-pr-${PR_NUM}
+                environment:
+                  MYSQL_ROOT_PASSWORD: booklore_root_pass
+                  MYSQL_DATABASE: booklore
+                  MYSQL_USER: booklore_user
+                  MYSQL_PASSWORD: booklore_pass
+                volumes:
+                  - booklore-db:/var/lib/mysql
+                restart: unless-stopped
+                healthcheck:
+                  test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pbooklore_root_pass"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+
               booklore:
                 image: ${DOCKER_USER}/booklore:pr-${PR_NUM}-${COMMIT_HASH}
                 container_name: booklore-pr-${PR_NUM}
+                depends_on:
+                  mariadb:
+                    condition: service_healthy
                 ports:
                   - "${APP_PORT}:8080"
                 environment:
-                  - SPRING_PROFILES_ACTIVE=dev
+                  - SPRING_PROFILES_ACTIVE=prod
                   - SERVER_PORT=8080
+                  - DATABASE_HOST=mariadb
+                  - DATABASE_PORT=3306
+                  - DATABASE_NAME=booklore
+                  - DATABASE_USERNAME=booklore_user
+                  - DATABASE_PASSWORD=booklore_pass
+                  - MYSQL_ROOT_PASSWORD=booklore_root_pass
                 volumes:
                   - booklore-data:/app/data
                 restart: unless-stopped
@@ -132,12 +159,14 @@ jobs:
                   test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
                   interval: 30s
                   timeout: 10s
-                  retries: 3
-                  start_period: 40s
+                  retries: 5
+                  start_period: 60s
 
             volumes:
               booklore-data:
                 name: booklore-pr-${PR_NUM}-data
+              booklore-db:
+                name: booklore-db-pr-${PR_NUM}-data
             COMPOSE_EOF
 
             # Pull latest image and restart
@@ -145,9 +174,45 @@ jobs:
             docker compose down
             docker compose up -d
 
-            # Wait for health check
-            echo "Waiting for application to be healthy..."
-            sleep 10
+            # Wait for MariaDB to be healthy (longer wait for first startup)
+            echo "Waiting for MariaDB to be ready..."
+            max_attempts=60
+            attempt=0
+            while [ $attempt -lt $max_attempts ]; do
+              if docker compose exec -T mariadb mysqladmin ping -h localhost -u root -pbooklore_root_pass >/dev/null 2>&1; then
+                echo "MariaDB is ready!"
+                break
+              fi
+              attempt=$((attempt + 1))
+              echo "Attempt $attempt/$max_attempts: Waiting for MariaDB..."
+              sleep 2
+            done
+
+            if [ $attempt -ge $max_attempts ]; then
+              echo "ERROR: MariaDB failed to start after 2 minutes"
+              docker compose logs
+              exit 1
+            fi
+
+            # Wait for application to be healthy
+            echo "Waiting for BookLore application to be healthy..."
+            max_attempts=120
+            attempt=0
+            while [ $attempt -lt $max_attempts ]; do
+              if docker compose exec -T booklore curl -f http://localhost:8080/actuator/health >/dev/null 2>&1; then
+                echo "BookLore is healthy!"
+                break
+              fi
+              attempt=$((attempt + 1))
+              echo "Attempt $attempt/$max_attempts: Waiting for BookLore..."
+              sleep 2
+            done
+
+            if [ $attempt -ge $max_attempts ]; then
+              echo "ERROR: BookLore failed to start after 4 minutes"
+              docker compose logs
+              exit 1
+            fi
 
       - name: Post Deployment URL to PR
         uses: actions/github-script@v7
@@ -156,14 +221,18 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           PR_NUMBER: ${{ steps.pr-env.outputs.pr_num }}
           COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
         with:
           script: |
             const appPort = process.env.APP_PORT;
             const vpsHost = process.env.VPS_HOST;
             const prNumber = process.env.PR_NUMBER;
             const commitHash = process.env.COMMIT_HASH;
+            const dockerUser = process.env.DOCKER_USER;
 
             const deploymentUrl = `http://${vpsHost}:${appPort}`;
+            const dockerImage = `${dockerUser}/booklore:pr-${prNumber}-${commitHash}`;
+            const dockerImageLatest = `${dockerUser}/booklore:pr-${prNumber}`;
 
             // Find and delete old deployment comments
             const { data: comments } = await github.rest.issues.listComments({
@@ -192,6 +261,11 @@ jobs:
               `🔗 **Preview URL:** ${deploymentUrl}\n` +
               `📦 **Commit:** \`${commitHash}\`\n` +
               `⏱️ **Deployed:** ${timestamp} UTC\n\n` +
+              '### 🐳 Docker Images\n' +
+              `\`\`\`\n` +
+              `Latest:  ${dockerImageLatest}\n` +
+              `Commit:  ${dockerImage}\n` +
+              `\`\`\`\n\n` +
               '### 🔄 Auto-Deployment\n' +
               'This PR is from an authorized user and is automatically deployed on every push.\n\n' +
               '---\n' +

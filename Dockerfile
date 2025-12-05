@@ -18,15 +18,17 @@ FROM gradle:8.14.3-jdk21-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
-COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle /springboot-app/
-COPY ./booklore-api/src /springboot-app/src
+COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle ./
+COPY ./booklore-api/gradle ./gradle
+COPY ./booklore-api/gradlew ./booklore-api/gradlew.bat ./
+COPY ./booklore-api/src ./src
 
 # Inject version into application.yaml using yq
 ARG APP_VERSION
 RUN apk add --no-cache yq && \
-    yq eval '.app.version = strenv(APP_VERSION)' -i /springboot-app/src/main/resources/application.yaml
+    yq eval '.app.version = strenv(APP_VERSION)' -i ./src/main/resources/application.yaml
 
-RUN gradle clean build -x test
+RUN chmod +x ./gradlew && ./gradlew clean build -x test --no-daemon
 
 # Stage 3: Final image
 FROM eclipse-temurin:21.0.9_10-jre-alpine
