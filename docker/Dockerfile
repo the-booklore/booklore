@@ -4,13 +4,16 @@
 FROM node:20-alpine AS frontend-builder
 WORKDIR /app/frontend
 
+# Increase Node memory limit for ARM64 builds
+ENV NODE_OPTIONS="--max_old_space_size=2048"
+
 # Copy package files and install dependencies
 COPY booklore-ui/package*.json ./
-RUN npm ci --verbose
+RUN npm ci --prefer-offline --no-audit
 
 # Copy source code and build
 COPY booklore-ui/ ./
-RUN npm run build -- --configuration=production
+RUN npm run build -- --configuration=production --poll=5000
 
 # ==========================================
 # Stage 2: Build Java Backend
