@@ -8,4 +8,3 @@
 **/out
 **/.gradle
 # docker
-!docker/Dockerfile
