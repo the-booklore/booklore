@@ -1,33 +1,72 @@
 name: Deploy PR Preview
 
 on:
+  # 1. The Standard Trigger (Requires file to be in default branch)
   issue_comment:
     types: [created]
+
+  # 2. The TEST Trigger (Allows you to run this MANUALLY from your PR branch)
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR Number to Deploy (e.g., 54)'
+        required: true
 
 permissions:
   contents: read
   pull-requests: write
   issues: write
+  statuses: write
 
+# Prevent concurrent deploys for the same PR
 concurrency:
-  group: deploy-pr-${{ github.event.issue.number }}
+  group: deploy-pr-${{ github.event.issue.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
   deploy:
-    # Only run if it's a PR and comment contains /deploy-pr
+    # Run if:
+    # 1. It is a manual run (workflow_dispatch)
+    # OR
+    # 2. It is a comment containing '/deploy' AND not from a bot
     if: >
-      github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '/deploy-pr')
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.issue.pull_request != null &&
+        startsWith(github.event.comment.body, '/deploy') &&
+        github.event.comment.user.type != 'Bot'
+      )
     runs-on: ubuntu-latest
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
 
-      - name: Add Reaction
+      # --- SETUP ENV VARS (Handles both Manual & Comment triggers) ---
+      - name: Set PR Environment Variables
+        id: pr-env
+        run: |
+          # Determine PR Number based on trigger type
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+            echo "Triggered Manually for PR: $PR_NUMBER"
+          else
+            PR_NUMBER="${{ github.event.issue.number }}"
+            echo "Triggered by Comment for PR: $PR_NUMBER"
+          fi
+
+          echo "PR_NUM=$PR_NUMBER" >> $GITHUB_ENV
+          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
+          
+          # Calculate Port (6000 + 54 = 6054)
+          APP_PORT=$((6000 + PR_NUMBER))
+          echo "app_port=$APP_PORT" >> $GITHUB_OUTPUT
+
+      # --- FEEDBACK (Only works for Comments) ---
+      - name: Add 'Eyes' Reaction
+        if: github.event_name == 'issue_comment'
         uses: actions/github-script@v7
         with:
           script: |
@@ -38,31 +77,34 @@ jobs:
               content: 'eyes'
             });
 
-      - name: Get PR Branch
+      # --- CHECKOUT LOGIC (The Tricky Part) ---
+
+      # Scenario A: Comment Trigger (Runs on default branch, need to fetch PR branch)
+      - name: Get PR Branch Info (Comment Trigger)
+        if: github.event_name == 'issue_comment'
         uses: xt0rted/pull-request-comment-branch@v2
         id: comment-branch
 
-      - name: Set PR Environment Variables
-        id: pr-env
-        env:
-          PR_NUMBER: ${{ github.event.issue.number }}
-        run: |
-          echo "PR_NUM=$PR_NUMBER" >> $GITHUB_ENV
-          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
-          APP_PORT=$((6000 + PR_NUMBER))
-          echo "app_port=$APP_PORT" >> $GITHUB_OUTPUT
-
-      - name: Checkout Code
+      # Scenario A Checkout
+      - name: Checkout Code (Comment Trigger)
+        if: github.event_name == 'issue_comment'
         uses: actions/checkout@v4
         with:
           ref: ${{ steps.comment-branch.outputs.head_ref }}
 
-      - name: Get commit hash for cache key
+      # Scenario B: Manual Trigger (Runs on the PR branch itself)
+      - name: Checkout Code (Manual Trigger)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+        # No 'ref' needed, it checks out the branch you selected in the UI
+
+      - name: Get commit hash
         id: commit-hash
         run: |
           COMMIT_HASH=$(git rev-parse --short=8 HEAD)
           echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
-          echo "Commit hash: $COMMIT_HASH"
+
+      # --- BUILD & DEPLOY (Same for both) ---
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -80,13 +122,10 @@ jobs:
         run: |
           if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Image already exists, skipping build"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Image needs to be built"
           fi
 
-      # Required for Cross-Platform Builds (AMD64 -> ARM64)
       - name: Set up QEMU
         if: steps.check-image.outputs.exists == 'false'
         uses: docker/setup-qemu-action@v3
@@ -122,6 +161,7 @@ jobs:
         run: |
           UNIQUE_NAME="docker-compose-pr-${PR_NUM}-${GITHUB_RUN_ID}.yml"
           
+          # Create Docker Compose file
           cat > "$UNIQUE_NAME" << EOF
           services:
             booklore:
@@ -171,10 +211,9 @@ jobs:
                 retries: 10
           EOF
           
-          # Copy to remote with unique name to avoid race conditions
+          # Transfer and Deploy
           scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$UNIQUE_NAME" "${VPS_USER}@${VPS_HOST}:/tmp/${UNIQUE_NAME}"
           
-          # SSH and deploy atomically
           ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "${VPS_USER}@${VPS_HOST}" << ENDSSH
             mkdir -p ~/deployments/pr-${PR_NUM}/{data,books,bookdrop,mariadb_data}
             mv /tmp/${UNIQUE_NAME} ~/deployments/pr-${PR_NUM}/docker-compose.yml
@@ -182,7 +221,6 @@ jobs:
             docker compose down || true
             docker compose pull
             docker compose up -d
-            # Cleanup old images but keep recent ones
             docker image prune -af --filter "until=168h" || true
           ENDSSH
 
@@ -190,7 +228,10 @@ jobs:
         if: always()
         run: rm -f ~/.ssh/deploy_key
 
-      - name: Comment Deploy URL
+      # --- NOTIFICATIONS (Works for both) ---
+
+      - name: Comment Success
+        if: success()
         uses: actions/github-script@v7
         env:
           PR_NUM: ${{ env.PR_NUM }}
@@ -200,55 +241,55 @@ jobs:
           IMAGE_EXISTS: ${{ steps.check-image.outputs.exists }}
         with:
           script: |
-            const prNum = process.env.PR_NUM;
-            const port = process.env.APP_PORT;
-            const host = process.env.VPS_HOST;
-            const commit = process.env.COMMIT_SHORT;
             const cached = process.env.IMAGE_EXISTS === 'true';
-            
             const buildNote = cached ? '📦 *Used cached image*' : '🔨 *Built new image*';
             
-            github.rest.issues.createComment({
-              issue_number: parseInt(prNum),
+            // Add emoji to request comment if it exists
+            if (context.eventName === 'issue_comment') {
+                await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: 'rocket'
+                });
+            }
+
+            // Post new comment with details
+            await github.rest.issues.createComment({
+              issue_number: parseInt(process.env.PR_NUM),
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: `🚀 **PR Preview Deployed!**\n\n` +
                     `| Resource | Value |\n` +
                     `|----------|-------|\n` +
-                    `| 📚 **URL** | http://${host}:${port} |\n` +
-                    `| 🏷️ **Commit** | \`${commit}\` |\n` +
-                    `| 🐳 **Port** | ${port} |\n\n` +
+                    `| 📚 **URL** | http://${process.env.VPS_HOST}:${process.env.APP_PORT} |\n` +
+                    `| 🏷️ **Commit** | \`${process.env.COMMIT_SHORT}\` |\n` +
+                    `| 🐳 **Port** | ${process.env.APP_PORT} |\n\n` +
                     `${buildNote}\n\n` +
-                    `⚠️ *Firewall port ${port} must be open. Data is ephemeral.*`
+                    `⚠️ *Firewall port ${process.env.APP_PORT} must be open.*`
             });
 
-      - name: Add Success Reaction
-        if: success()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: 'rocket'
-            });
-
-      - name: Add Failure Reaction
+      - name: Report Failure
         if: failure()
         uses: actions/github-script@v7
         with:
           script: |
-            github.rest.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id: context.payload.comment.id,
-              content: '-1'
-            });
+            if (context.eventName === 'issue_comment') {
+                await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '-1'
+                });
+            }
             
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: `❌ **Deployment Failed!**\n\nCheck the [workflow logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.`
-            });
+            // If manual trigger, we still want a comment on the PR
+            const prNum = parseInt(process.env.PR_NUM || 0);
+            if (prNum > 0) {
+                await github.rest.issues.createComment({
+                issue_number: prNum,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ **Deployment Failed!**\n\nCheck the [workflow logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.`
+                });
+            }
