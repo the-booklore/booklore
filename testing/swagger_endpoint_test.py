@@ -281,6 +281,8 @@ class EndpointClassifier:
         "/api/v1/koreader",
         # Additional files
         "/api/v1/additional-files",
+        # Remote auth endpoint - returns 203 (temporarily skip)
+        "/api/v1/auth/remote",
     ]
     
     # Endpoints requiring specific request body schemas
