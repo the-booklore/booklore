@@ -3,12 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "dev": "ng serve --open --watch --configuration development",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "lint": "ng lint"
+    "start": "npx ng serve",
+    "build": "npx ng build",
+    "dev": "npx ng serve --open --watch --configuration development",
+    "watch": "npx ng build --watch --configuration development",
+    "test": "npx ng test",
+    "lint": "npx ng lint"
   },
   "private": true,
   "dependencies": {
