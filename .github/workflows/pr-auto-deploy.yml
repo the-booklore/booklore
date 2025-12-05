@@ -18,6 +18,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: read
 
 jobs:
   check-pr:
@@ -33,6 +34,15 @@ jobs:
         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
         with:
           egress-policy: audit
+
+      - name: Debug Event Data
+        run: |
+          echo "Event Name: ${{ github.event_name }}"
+          echo "Is PR Comment: ${{ github.event.issue.pull_request != null }}"
+          echo "Comment Body: ${{ github.event.comment.body }}"
+          echo "Comment Author: ${{ github.event.comment.user.login }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Event Issue Number: ${{ github.event.issue.number }}"
 
       - name: Check comment or dispatch
         id: comment-or-dispatch
@@ -61,11 +71,21 @@ jobs:
                 process.exit(1);
               }
               
-              // Check for /deploy or /preview command
-              const body = comment.body.toLowerCase().trim();
-              if (!body.includes('/deploy') && !body.includes('/preview')) {
-                core.info('Comment does not contain /deploy or /preview command');
+              // Check for /deploy or /preview command (case-insensitive regex)
+              const body = comment.body;
+              const deployMatch = body.match(/\/(deploy|preview)/i);
+              if (!deployMatch) {
+                core.info(`Comment does not contain /deploy or /preview command. Body: ${body}`);
+                core.setOutput('should_deploy', 'false');
                 process.exit(0);
+              }
+              console.log(`✓ Found deploy command: /${deployMatch[1]}`);
+              console.log(`Body was: ${body}`);
+              console.log(`Match groups: ${deployMatch}`);
+              // Continue with deployment
+              if (!body.match(/\/(deploy|preview)/i)) {
+                core.setFailed('Unexpected: regex matched but validation failed');
+                process.exit(1);
               }
               
               prNumber = issue.number;
@@ -87,11 +107,30 @@ jobs:
             });
 
             console.log(`PR #${prNumber} state: ${pr.state}`);
+            console.log(`✓ Authorization passed for user: ${author}`);
             
             core.setOutput('should_deploy', 'true');
             core.setOutput('pr_number', String(prNumber));
             core.setOutput('repository', pr.head.repo.full_name);
             core.setOutput('ref', pr.head.ref);
+            console.log(`✓ Outputs set: PR #${prNumber} ready for deployment`);
+
+      - name: Post auth failure comment
+        if: failure() && github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const actor = context.actor;
+            
+            if (issue && issue.pull_request) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `❌ @${actor} Your \`/deploy\` command failed. Only authorized users can deploy. Check [workflow logs](${context.payload.repository.html_url}/actions/runs/${context.runId}) for details.`
+              });
+            }
 
   build-and-deploy:
     needs: check-pr
