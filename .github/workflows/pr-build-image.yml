@@ -34,16 +34,22 @@ jobs:
 
       - name: Get PR Info
         id: pr-info
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-            echo "ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-          elif [ -n "${{ github.event.inputs.pr_number }}" ]; then
-            echo "pr_number=${{ github.event.inputs.pr_number }}" >> $GITHUB_OUTPUT
-            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "ref=$PR_HEAD_REF" >> $GITHUB_OUTPUT
+          elif [ -n "$INPUT_PR_NUMBER" ]; then
+            echo "pr_number=$INPUT_PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
           else
             echo "pr_number=0" >> $GITHUB_OUTPUT
-            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+            echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout Code
