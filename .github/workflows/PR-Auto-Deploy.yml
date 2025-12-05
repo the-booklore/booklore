@@ -4,11 +4,13 @@ on:
   issue_comment:
     types: [created]
   pull_request:
-    types: [closed]
+    types: [opened, synchronize, reopened, closed]
 
 jobs:
   deploy-pr:
-    if: github.event_name == 'issue_comment' && github.event.issue.pull_request != null && contains(github.event.comment.body, '/deploy-pr')
+    if: >
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request != null && contains(github.event.comment.body, '/deploy-pr')) ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -16,6 +18,7 @@ jobs:
       issues: write
     steps:
       - name: React to Comment
+        if: github.event_name == 'issue_comment'
         uses: actions/github-script@v7
         with:
           script: |
@@ -27,13 +30,25 @@ jobs:
             });
 
       - name: Get PR Branch
+        if: github.event_name == 'issue_comment'
         uses: xt0rted/pull-request-comment-branch@v2
         id: comment-branch
+
+      - name: Determine Refs
+        id: refs
+        run: |
+          if [ "${{ github.event_name }}" == "issue_comment" ]; then
+            echo "PR_NUM=${{ github.event.issue.number }}" >> $GITHUB_ENV
+            echo "CHECKOUT_REF=${{ steps.comment-branch.outputs.head_ref }}" >> $GITHUB_ENV
+          else
+            echo "PR_NUM=${{ github.event.number }}" >> $GITHUB_ENV
+            echo "CHECKOUT_REF=${{ github.head_ref }}" >> $GITHUB_ENV
+          fi
 
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.comment-branch.outputs.head_ref }}
+          ref: ${{ env.CHECKOUT_REF }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -48,7 +63,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ github.event.issue.number }}
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}
 
       # 2. Deploy to VPS
       - name: Deploy to VPS
@@ -59,7 +74,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             # Calculate Dynamic Ports based on PR Number
-            PR_NUM=${{ github.event.issue.number }}
+            PR_NUM=${{ env.PR_NUM }}
             APP_PORT=$((6000 + PR_NUM))
             DB_PORT=$((13000 + PR_NUM))
             
@@ -135,7 +150,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const prNum = context.payload.issue.number;
+            const prNum = parseInt(process.env.PR_NUM);
             const port = 6000 + prNum;
             github.rest.issues.createComment({
               issue_number: prNum,
@@ -143,6 +158,8 @@ jobs:
               repo: context.repo.repo,
               body: `🚀 **PR Preview Deployed!**\n\n- **BookLore**: http://${{ secrets.VPS_HOST }}:${port}\n- **DB Port**: 3306 (Internal)\n\nFiles uploaded to this preview instance will be lost when the PR is closed.`
             })
+        env:
+          PR_NUM: ${{ env.PR_NUM }}
 
   cleanup-pr:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
