@@ -205,15 +205,15 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la docker/ || echo "❌ docker/ missing!"
+          ls -la testing/ || echo "❌ testing/ missing!"
           cat .dockerignore
-          docker buildx build --platform linux/arm64 --file docker/Dockerfile -t test . --dry-run 2>&1 || true
+          docker buildx build --platform linux/arm64 --file testing/Dockerfile -t test . --dry-run 2>&1 || true
 
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile
+          file: testing/Dockerfile
           push: false
           load: true
           tags: booklore:test
