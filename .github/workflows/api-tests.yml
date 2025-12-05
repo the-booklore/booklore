@@ -18,6 +18,11 @@ on:
         type: boolean
         default: false
 
+# Cancel in-progress runs when a new run is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   BOOKLORE_URL: http://localhost:6060
 
@@ -89,12 +94,15 @@ jobs:
         working-directory: booklore-api
         run: |
           chmod +x ./gradlew
-          ./gradlew build -x test --no-daemon
+          ./gradlew bootJar -x test --no-daemon
 
       - name: Start BookLore
         working-directory: booklore-api
         run: |
-          java -jar build/libs/booklore-api-*.jar &
+          # Find the bootJar (not the plain jar)
+          JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          echo "Starting JAR: $JAR_FILE"
+          java -jar "$JAR_FILE" &
           echo $! > /tmp/booklore.pid
         env:
           DATABASE_URL: jdbc:mariadb://localhost:3306/booklore?createDatabaseIfNotExist=true
