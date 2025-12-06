@@ -2,7 +2,7 @@ name: Auto Labeler
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
@@ -23,7 +23,7 @@ jobs:
           egress-policy: audit
 
       - name: Check out code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@v4
 
       - name: Label PR based on file paths
         uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
@@ -31,49 +31,6 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
           sync-labels: true
-
-  label-by-title:
-    name: Label by PR Title
-    runs-on: ubuntu-latest
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
-        with:
-          egress-policy: audit
-
-      - name: Label PR based on title
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const title = context.payload.pull_request.title;
-            const labels = [];
-            
-            // Conventional commit patterns
-            if (/^fix(\([^)]*\))?:|^fix:/.test(title)) labels.push('bugfix');
-            if (/^feat(\([^)]*\))?:|^feat:/.test(title)) labels.push('enhancement');
-            if (/^build(\([^)]*\))?:|^build:/.test(title)) labels.push('build');
-            if (/^chore(\([^)]*\))?:|^chore:/.test(title)) labels.push('chore');
-            if (/^ci(\([^)]*\))?:|^ci:|\(ci\):/.test(title)) labels.push('ci');
-            if (/^perf(\([^)]*\))?:|^perf:/.test(title)) labels.push('performance');
-            if (/^refactor(\([^)]*\))?:|^refactor:/.test(title)) labels.push('refactor');
-            if (/^revert(\([^)]*\))?:|^revert:/.test(title)) labels.push('revert');
-            if (/^style(\([^)]*\))?:|^style:/.test(title)) labels.push('style');
-            if (/^docs(\([^)]*\))?:|^docs:|\(docs\):/.test(title)) labels.push('documentation');
-            if (/^deps(\([^)]*\))?:|^deps:|\(deps\):/.test(title)) labels.push('dependencies');
-            
-            if (labels.length > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                labels: labels
-              });
-              core.info(`Added labels: ${labels.join(', ')}`);
-            } else {
-              core.info('No matching labels found for PR title');
-            }
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   label-size:
     name: Label by PR Size
@@ -95,8 +52,6 @@ jobs:
           m_label: "size/M"
           m_max_size: 500
           l_label: "size/L"
-          l_max_size: 1000
-          xl_label: "size/XL"
           fail_if_xl: false
           message_if_xl: >
             This PR is quite large. Consider splitting it into smaller PRs for easier review.

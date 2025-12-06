@@ -7,11 +7,10 @@ on:
       - "Test Coverage Report"
       - "Type Checking & Compilation"
       - "Security Scan"
-      - "Code Quality Metrics"
     types: [completed]
 
 concurrency:
-  group: final-summary-${{ github.event.workflow_run.pull_requests[0].number || github.run_id }}
+  group: final-summary-${{ github.event.workflow_run.head_sha }}
   cancel-in-progress: true
 
 permissions:
@@ -24,217 +23,145 @@ jobs:
   summary:
     name: 📊 PR Final Summary
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.event == 'pull_request' }}
+    if: github.event.workflow_run.event == 'pull_request'
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
-        with:
-          egress-policy: audit
-
-      - uses: actions/checkout@v4
+        uses: step-security/harden-runner@v2.13.1
 
       - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+        run: sudo apt-get install -y jq
 
-      - name: Get PR number
+      - name: Get PR Number (Fork-Safe)
         id: pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Get PR number from workflow_run
-          PR_NUMBER=$(echo "${{ toJson(github.event.workflow_run.pull_requests) }}" | jq -r '.[0].number // empty')
+          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+          
+          # Try workflow_run.pull_requests first
+          PR_NUMBER=$(echo '${{ toJson(github.event.workflow_run.pull_requests) }}' | jq -r '.[0].number // empty')
+          
+          # Fallback: Search PRs by head SHA (works for forks)
           if [ -z "$PR_NUMBER" ]; then
-            echo "::error::Could not determine PR number from workflow_run"
-            exit 1
+            PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --json number,headRefOid \
+              | jq -r --arg sha "$HEAD_SHA" '.[] | select(.headRefOid == $sha) | .number' | head -1)
           fi
+          
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::warning::No PR found for SHA $HEAD_SHA"
+            exit 0
+          fi
+          
           echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "PR Number: $PR_NUMBER"
+          echo "sha=$HEAD_SHA" >> $GITHUB_OUTPUT
+          echo "Found PR #$PR_NUMBER"
 
-      - name: Download All Artifacts
-        id: artifacts
+      - name: Check All Workflows Completed
+        id: all-done
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          mkdir -p /tmp/artifacts
+          HEAD_SHA="${{ steps.pr.outputs.sha }}"
           
-          # Download all artifacts from the workflow_run
-          gh run download ${{ github.event.workflow_run.id }} \
-            --dir /tmp/artifacts \
-            --repo ${{ github.repository }} || true
+          # Required workflows (must all be done)
+          REQUIRED=("Build and Test BookLore" "Test Coverage Report" "Type Checking & Compilation" "Security Scan")
           
-          # List downloaded artifacts
-          echo "=== Downloaded Artifacts ==="
-          find /tmp/artifacts -type f -name "*.json" -o -name "*.txt" | head -20
-          ls -la /tmp/artifacts/ || true
+          # Fetch all check runs for this SHA
+          CHECKS=$(gh api "/repos/${{ github.repository }}/commits/$HEAD_SHA/check-runs" --jq '.check_runs')
+          
+          ALL_DONE="true"
+          for WF in "${REQUIRED[@]}"; do
+            # Check if any job from this workflow is still running/queued
+            STATUS=$(echo "$CHECKS" | jq -r --arg wf "$WF" '
+              [.[] | select(.name | test($wf; "i")) | .status] | 
+              if any(. == "queued" or . == "in_progress") then "running" else "done" end
+            ')
+            echo "$WF: $STATUS"
+            if [ "$STATUS" = "running" ]; then
+              ALL_DONE="false"
+            fi
+          done
+          
+          echo "all_done=$ALL_DONE" >> $GITHUB_OUTPUT
+          echo "All workflows done: $ALL_DONE"
 
-      - name: Fetch Live Job Statuses
+      - name: Fetch Final Job Statuses
+        if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
         id: checks
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@v7.0.1
         with:
           script: |
-            try {
-              // Get the head SHA from the workflow_run
-              const headSha = '${{ github.event.workflow_run.head_commit.id }}';
+            const headSha = '${{ steps.pr.outputs.sha }}';
+            
+            const { data } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha
+            });
+            
+            const statusMap = {};
+            const jobLinks = {};
+            
+            data.check_runs.forEach(run => {
+              let icon = '⚪ Pending';
+              if (run.status === 'in_progress') icon = '🔄 Running';
+              else if (run.conclusion === 'success') icon = '✅ Pass';
+              else if (run.conclusion === 'failure') icon = '❌ Fail';
+              else if (run.conclusion === 'skipped') icon = '⏭️ Skip';
+              else if (run.conclusion === 'cancelled') icon = '⏹️ Cancelled';
               
-              const { data } = await github.rest.checks.listForRef({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: headSha
-              });
-              
-              const statusMap = {};
-              const jobLinks = {};
-              
-              data.check_runs.forEach(run => {
-                let icon = '⚪ Pending';
-                if (run.status === 'in_progress') icon = '🔄 Running';
-                else if (run.conclusion === 'success') icon = '✅ Pass';
-                else if (run.conclusion === 'failure') icon = '❌ Fail';
-                else if (run.conclusion === 'skipped') icon = '⏭️ Skip';
-                else if (run.conclusion === 'cancelled') icon = '⏹️ Cancelled';
-                else if (run.conclusion === 'neutral') icon = '⚠️ Neutral';
-                
-                statusMap[run.name] = icon;
-                jobLinks[run.name] = run.html_url;
-                core.info(`${run.name}: ${icon}`);
-              });
-              
-              const getStatus = (patterns) => {
-                for (const name of Object.keys(statusMap)) {
-                  if (patterns.some(p => name.toLowerCase().includes(p.toLowerCase()))) {
-                    return { status: statusMap[name], link: jobLinks[name] || '' };
-                  }
+              statusMap[run.name] = icon;
+              jobLinks[run.name] = run.html_url;
+              core.info(`${run.name}: ${icon}`);
+            });
+            
+            const getStatus = (patterns) => {
+              for (const name of Object.keys(statusMap)) {
+                if (patterns.some(p => name.toLowerCase().includes(p.toLowerCase()))) {
+                  return { status: statusMap[name], link: jobLinks[name] || '' };
                 }
-                return { status: '⚪ Pending', link: '' };
-              };
-              
-              const statusData = {
-                backend: getStatus(['backend tests']),
-                frontend: getStatus(['frontend tests']),
-                docker: getStatus(['docker', 'build', 'arm64']),
-                typecheck: getStatus(['typescript', 'type check']),
-                coverage: getStatus(['coverage']),
-                codeql: getStatus(['codeql']),
-                semgrep: getStatus(['semgrep']),
-                gitleaks: getStatus(['gitleaks'])
-              };
-              
-              require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData));
-              core.info('Check statuses written to /tmp/check_statuses.json');
-            } catch (error) {
-              core.error(`Failed to fetch checks: ${error.message}`);
-              const fallback = {
-                backend: { status: '⚪ Pending', link: '' },
-                frontend: { status: '⚪ Pending', link: '' },
-                docker: { status: '⚪ Pending', link: '' },
-                typecheck: { status: '⚪ Pending', link: '' },
-                coverage: { status: '⚪ Pending', link: '' },
-                codeql: { status: '⚪ Pending', link: '' },
-                semgrep: { status: '⚪ Pending', link: '' },
-                gitleaks: { status: '⚪ Pending', link: '' }
-              };
-              require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(fallback));
-            }
+              }
+              return { status: '⚪ N/A', link: '' };
+            };
+            
+            const statusData = {
+              backend: getStatus(['backend tests']),
+              frontend: getStatus(['frontend tests']),
+              docker: getStatus(['docker', 'arm64']),
+              typecheck: getStatus(['typescript', 'type check']),
+              coverage: getStatus(['coverage']),
+              codeql: getStatus(['codeql']),
+              semgrep: getStatus(['semgrep']),
+              gitleaks: getStatus(['gitleaks', 'secret'])
+            };
+            
+            require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData, null, 2));
 
-      - name: Debug check statuses
-        run: |
-          echo "=== Check Statuses JSON ==="
-          cat /tmp/check_statuses.json | jq .
-        continue-on-error: true
-
-      - name: Parse check statuses
-        id: status
-        run: |
-          echo "=== JSON Content Raw ==="
-          cat /tmp/check_statuses.json
-          
-          if [ -f /tmp/check_statuses.json ] && jq empty /tmp/check_statuses.json >/dev/null 2>&1; then
-            BACKEND_STATUS=$(jq -r '.backend.status // "⚪ Pending"' /tmp/check_statuses.json)
-            BACKEND_LINK=$(jq -r '.backend.link // ""' /tmp/check_statuses.json)
-            FRONTEND_STATUS=$(jq -r '.frontend.status // "⚪ Pending"' /tmp/check_statuses.json)
-            FRONTEND_LINK=$(jq -r '.frontend.link // ""' /tmp/check_statuses.json)
-            TYPECHECK_STATUS=$(jq -r '.typecheck.status // "⚪ Pending"' /tmp/check_statuses.json)
-            TYPECHECK_LINK=$(jq -r '.typecheck.link // ""' /tmp/check_statuses.json)
-            DOCKER_STATUS=$(jq -r '.docker.status // "⚪ Pending"' /tmp/check_statuses.json)
-            DOCKER_LINK=$(jq -r '.docker.link // ""' /tmp/check_statuses.json)
-            COVERAGE_STATUS=$(jq -r '.coverage.status // "⚪ Pending"' /tmp/check_statuses.json)
-            COVERAGE_LINK=$(jq -r '.coverage.link // ""' /tmp/check_statuses.json)
-            CODEQL_STATUS=$(jq -r '.codeql.status // "⚪ Pending"' /tmp/check_statuses.json)
-            CODEQL_LINK=$(jq -r '.codeql.link // ""' /tmp/check_statuses.json)
-            SEMGREP_STATUS=$(jq -r '.semgrep.status // "⚪ Pending"' /tmp/check_statuses.json)
-            SEMGREP_LINK=$(jq -r '.semgrep.link // ""' /tmp/check_statuses.json)
-            GITLEAKS_STATUS=$(jq -r '.gitleaks.status // "⚪ Pending"' /tmp/check_statuses.json)
-            GITLEAKS_LINK=$(jq -r '.gitleaks.link // ""' /tmp/check_statuses.json)
-          else
-            echo "JSON file missing or invalid, using fallbacks"
-            BACKEND_STATUS="⚪ Pending"
-            BACKEND_LINK=""
-            FRONTEND_STATUS="⚪ Pending"
-            FRONTEND_LINK=""
-            TYPECHECK_STATUS="⚪ Pending"
-            TYPECHECK_LINK=""
-            DOCKER_STATUS="⚪ Pending"
-            DOCKER_LINK=""
-            COVERAGE_STATUS="⚪ Pending"
-            COVERAGE_LINK=""
-            CODEQL_STATUS="⚪ Pending"
-            CODEQL_LINK=""
-            SEMGREP_STATUS="⚪ Pending"
-            SEMGREP_LINK=""
-            GITLEAKS_STATUS="⚪ Pending"
-            GITLEAKS_LINK=""
-          fi
-          
-          echo "backend_status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
-          echo "backend_link=$BACKEND_LINK" >> $GITHUB_OUTPUT
-          echo "frontend_status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
-          echo "frontend_link=$FRONTEND_LINK" >> $GITHUB_OUTPUT
-          echo "typecheck_status=$TYPECHECK_STATUS" >> $GITHUB_OUTPUT
-          echo "typecheck_link=$TYPECHECK_LINK" >> $GITHUB_OUTPUT
-          echo "docker_status=$DOCKER_STATUS" >> $GITHUB_OUTPUT
-          echo "docker_link=$DOCKER_LINK" >> $GITHUB_OUTPUT
-          echo "coverage_status=$COVERAGE_STATUS" >> $GITHUB_OUTPUT
-          echo "coverage_link=$COVERAGE_LINK" >> $GITHUB_OUTPUT
-          echo "codeql_status=$CODEQL_STATUS" >> $GITHUB_OUTPUT
-          echo "codeql_link=$CODEQL_LINK" >> $GITHUB_OUTPUT
-          echo "semgrep_status=$SEMGREP_STATUS" >> $GITHUB_OUTPUT
-          echo "semgrep_link=$SEMGREP_LINK" >> $GITHUB_OUTPUT
-          echo "gitleaks_status=$GITLEAKS_STATUS" >> $GITHUB_OUTPUT
-          echo "gitleaks_link=$GITLEAKS_LINK" >> $GITHUB_OUTPUT
-
-      - name: Debug parsed statuses
-        run: |
-          echo "=== Parsed Check Statuses ==="
-          echo "BACKEND_STATUS=$BACKEND_STATUS"
-          echo "FRONTEND_STATUS=$FRONTEND_STATUS"
-          echo "CODEQL_STATUS=$CODEQL_STATUS"
-        continue-on-error: true
-
-      - name: Generate PR Summary
+      - name: Generate Summary
+        if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
         id: summary
-        env:
-          BACKEND_STATUS: ${{ steps.status.outputs.backend_status }}
-          BACKEND_LINK: ${{ steps.status.outputs.backend_link }}
-          FRONTEND_STATUS: ${{ steps.status.outputs.frontend_status }}
-          FRONTEND_LINK: ${{ steps.status.outputs.frontend_link }}
-          TYPECHECK_STATUS: ${{ steps.status.outputs.typecheck_status }}
-          TYPECHECK_LINK: ${{ steps.status.outputs.typecheck_link }}
-          DOCKER_STATUS: ${{ steps.status.outputs.docker_status }}
-          DOCKER_LINK: ${{ steps.status.outputs.docker_link }}
-          COVERAGE_STATUS: ${{ steps.status.outputs.coverage_status }}
-          COVERAGE_LINK: ${{ steps.status.outputs.coverage_link }}
-          CODEQL_STATUS: ${{ steps.status.outputs.codeql_status }}
-          CODEQL_LINK: ${{ steps.status.outputs.codeql_link }}
-          SEMGREP_STATUS: ${{ steps.status.outputs.semgrep_status }}
-          SEMGREP_LINK: ${{ steps.status.outputs.semgrep_link }}
-          GITLEAKS_STATUS: ${{ steps.status.outputs.gitleaks_status }}
-          GITLEAKS_LINK: ${{ steps.status.outputs.gitleaks_link }}
         run: |
-          # Get timestamp
+          CHECKS=$(cat /tmp/check_statuses.json)
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
-          WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
           
-          # Generate summary markdown
+          # Extract statuses
+          BACKEND=$(echo "$CHECKS" | jq -r '.backend.status')
+          BACKEND_LINK=$(echo "$CHECKS" | jq -r '.backend.link')
+          FRONTEND=$(echo "$CHECKS" | jq -r '.frontend.status')
+          FRONTEND_LINK=$(echo "$CHECKS" | jq -r '.frontend.link')
+          TYPECHECK=$(echo "$CHECKS" | jq -r '.typecheck.status')
+          TYPECHECK_LINK=$(echo "$CHECKS" | jq -r '.typecheck.link')
+          DOCKER=$(echo "$CHECKS" | jq -r '.docker.status')
+          DOCKER_LINK=$(echo "$CHECKS" | jq -r '.docker.link')
+          COVERAGE=$(echo "$CHECKS" | jq -r '.coverage.status')
+          COVERAGE_LINK=$(echo "$CHECKS" | jq -r '.coverage.link')
+          CODEQL=$(echo "$CHECKS" | jq -r '.codeql.status')
+          CODEQL_LINK=$(echo "$CHECKS" | jq -r '.codeql.link')
+          SEMGREP=$(echo "$CHECKS" | jq -r '.semgrep.status')
+          SEMGREP_LINK=$(echo "$CHECKS" | jq -r '.semgrep.link')
+          GITLEAKS=$(echo "$CHECKS" | jq -r '.gitleaks.status')
+          GITLEAKS_LINK=$(echo "$CHECKS" | jq -r '.gitleaks.link')
+          
           cat > /tmp/pr_summary.md << EOF
           <!-- booklore-ci-pr-summary -->
           ## 📊 BookLore CI Summary
@@ -242,39 +169,32 @@ jobs:
           ### 🧪 Tests & Build
           | Component | Status | Link |
           |-----------|--------|------|
-          | Backend Tests (JDK21) | ${BACKEND_STATUS} | [Logs](${BACKEND_LINK}) |
-          | Frontend Tests | ${FRONTEND_STATUS} | [Logs](${FRONTEND_LINK}) |
-          | Type Checking (TS) | ${TYPECHECK_STATUS} | [Logs](${TYPECHECK_LINK}) |
-          | Docker Build (ARM64) | ${DOCKER_STATUS} | [Logs](${DOCKER_LINK}) |
-          | Test Coverage | ${COVERAGE_STATUS} | [Logs](${COVERAGE_LINK}) |
+          | Backend Tests (JDK21) | $BACKEND | [Logs]($BACKEND_LINK) |
+          | Frontend Tests | $FRONTEND | [Logs]($FRONTEND_LINK) |
+          | Type Checking (TS) | $TYPECHECK | [Logs]($TYPECHECK_LINK) |
+          | Docker Build (ARM64) | $DOCKER | [Logs]($DOCKER_LINK) |
+          | Test Coverage | $COVERAGE | [Logs]($COVERAGE_LINK) |
           
           ### 🔒 Security Checks
           | Check | Status | Link |
           |-------|--------|------|
-          | CodeQL | ${CODEQL_STATUS} | [Logs](${CODEQL_LINK}) |
-          | Semgrep | ${SEMGREP_STATUS} | [Logs](${SEMGREP_LINK}) |
-          | Gitleaks | ${GITLEAKS_STATUS} | [Logs](${GITLEAKS_LINK}) |
-          
-          ### 🏷️ PR Labels
-          - Size: Auto-assigned by \`CodelyTV/pr-size-labeler\`
-          - Type: Based on conventional commit prefixes
-          - Domain: Detected from file changes (backend/frontend/infra)
+          | CodeQL | $CODEQL | [Logs]($CODEQL_LINK) |
+          | Semgrep | $SEMGREP | [Logs]($SEMGREP_LINK) |
+          | Gitleaks | $GITLEAKS | [Logs]($GITLEAKS_LINK) |
           
           ### 📋 Quick Actions
-          - 🚀 **Deploy Preview**: Comment \`/deploy\` to trigger deployment
-          - 📖 **View Full CI**: [Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-          - 📦 **Artifacts**: Available after jobs complete (7-day retention)
+          - 🚀 **Deploy Preview**: Comment \`/deploy\`
+          - 📖 **Full CI**: [Actions](${{ github.server_url }}/${{ github.repository }}/actions)
           
-          **Last updated**: ${TIMESTAMP} (Workflow: ${WORKFLOW_CONCLUSION})
+          **Updated**: $TIMESTAMP ✅ *All checks complete*
           EOF
           
-          # Output summary
-          SUMMARY=$(cat /tmp/pr_summary.md)
-          echo "summary<<EOSUMMARY" >> $GITHUB_OUTPUT
-          echo "$SUMMARY" >> $GITHUB_OUTPUT
-          echo "EOSUMMARY" >> $GITHUB_OUTPUT
+          echo "summary<<EOF" >> $GITHUB_OUTPUT
+          cat /tmp/pr_summary.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Find existing comment
+      - name: Find Existing Comment
+        if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
         id: find-comment
         uses: peter-evans/find-comment@v3
         with:
@@ -282,24 +202,16 @@ jobs:
           comment-author: "github-actions[bot]"
           body-includes: "<!-- booklore-ci-pr-summary -->"
 
-      - name: Create or update PR comment
+      - name: Post/Update Comment
+        if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ steps.pr.outputs.number }}
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           edit-mode: replace
           body: ${{ steps.summary.outputs.summary }}
-          reactions: "eyes"
+          reactions: "rocket"
 
-      - name: Add summary to job summary
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 📊 BookLore CI Summary
-          
-          ✅ PR summary comment posted successfully
-          
-          - **PR Number**: ${{ steps.pr.outputs.number }}
-          - **Workflow Conclusion**: ${{ github.event.workflow_run.conclusion }}
-          - **Triggering Workflow**: ${{ github.event.workflow_run.name }}
-          - **Run ID**: ${{ github.run_id }}
-          EOF
+      - name: Skip (Not All Done)
+        if: steps.all-done.outputs.all_done != 'true'
+        run: echo "⏳ Waiting for other workflows to complete..."
