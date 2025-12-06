@@ -210,7 +210,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           VPS_USER="ubuntu"
-          PREVIEW_URL="https://pr-${PR_NUMBER}.pr.szucsb.eu"
+          PREVIEW_URL="https://pr.szucsb.eu/pr-${PR_NUMBER}"
           
           # Deploy via SSH - pass variables to remote script
           ssh -i ~/.ssh/private.key -T "${VPS_USER}@${VPS_HOST}" bash -s "${PR_NUMBER}" "${IMAGE}" <<'DEPLOY_EOF'
@@ -279,11 +279,11 @@ jobs:
                 - traefik.enable=true
                 - traefik.docker.network=proxy
                 - traefik.http.routers.booklore-pr-${PR_NUMBER}.entrypoints=http
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}.rule=Host(\`pr-${PR_NUMBER}.pr.szucsb.eu\`)
+                - traefik.http.routers.booklore-pr-${PR_NUMBER}.rule=Host(`pr.szucsb.eu`) && PathPrefix(`/pr-${PR_NUMBER}`)
                 - traefik.http.middlewares.booklore-pr-${PR_NUMBER}-https-redirect.redirectscheme.scheme=https
                 - traefik.http.routers.booklore-pr-${PR_NUMBER}.middlewares=booklore-pr-${PR_NUMBER}-https-redirect
                 - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.entrypoints=https
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.rule=Host(\`pr-${PR_NUMBER}.pr.szucsb.eu\`)
+                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.rule=Host(`pr.szucsb.eu`) && PathPrefix(`/pr-${PR_NUMBER}`)
                 - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.tls=true
                 - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.service=booklore-pr-${PR_NUMBER}
                 - traefik.http.services.booklore-pr-${PR_NUMBER}.loadbalancer.server.port=6060
@@ -361,7 +361,7 @@ jobs:
                     `|--------|-------|\n` +
                     `| 📦 Commit | \`${commitHash}\` |\n` +
                     `| 🐳 Image | \`${dockerUser}/booklore:pr-${prNumber}\` |\n` +
-                    `| 🌐 Domain | \`pr-${prNumber}.pr.szucsb.eu\` |\n\n` +
+                    `| 🌐 Domain | \`pr.szucsb.eu/pr-${prNumber}\` |\n\n` +
                     `_Deployment will be cleaned up when PR is closed._`
             });
             
