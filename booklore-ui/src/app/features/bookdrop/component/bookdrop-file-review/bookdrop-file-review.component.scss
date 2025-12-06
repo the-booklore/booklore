@@ -9,12 +9,8 @@
   border-radius: 0.75rem;
   overflow: hidden;
   background: var(--card-background);
-  min-width: 100rem;
+  min-width: 60rem;
   border: 1px solid var(--p-content-border-color);
-
-  > * + * {
-    margin: 0.25rem;
-  }
 }
 
 .header {
@@ -96,7 +92,9 @@
 }
 
 .controls-section {
-  padding: 0 1.5rem 0.5rem;
+  padding: 0 1.5rem 1.5rem;
+  margin: 0;
+  border-bottom: 1px solid var(--p-content-border-color);
 }
 
 .saving-overlay {
@@ -145,12 +143,6 @@
   gap: 1rem;
   align-items: center;
 
-  span {
-    font-size: 0.875rem;
-    color: rgb(209, 213, 219);
-    font-weight: 500;
-  }
-
   p-select {
     min-width: 8rem;
     max-width: 16rem;
@@ -160,19 +152,22 @@
 .action-buttons {
   display: flex;
   gap: 1rem;
+  align-items: center;
+
+  span {
+    font-size: 0.875rem;
+    color: rgb(209, 213, 219);
+    font-weight: 500;
+  }
 }
 
 .content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1rem 1rem;
+  padding: 1rem;
 
   > * + * {
     margin-top: 0.5rem;
-  }
-
-  @media (min-width: 768px) {
-    padding: 1rem 1.5rem 1rem;
   }
 }
 
@@ -249,7 +244,6 @@
 }
 
 .details-section {
-  padding: 2rem 3rem;
   border-left: 1px solid var(--border-color);
   border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
