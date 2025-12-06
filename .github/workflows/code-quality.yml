@@ -78,35 +78,8 @@ jobs:
           retention-days: 30
           if-no-files-found: ignore
 
-      - name: Comment bundle size on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const sizeKB = '${{ steps.bundle.outputs.size_kb }}';
-            const sizeMB = '${{ steps.bundle.outputs.size_mb }}';
-            
-            if (sizeKB === '0') return;
-            
-            const body = `## 📦 Frontend Bundle Size
-            
-            | Metric | Value |
-            |--------|-------|
-            | Total Size | ${sizeKB}KB (${sizeMB}MB) |
-            
-            <details>
-            <summary>Bundle breakdown</summary>
-            
-            Run \`npm run build -- --configuration=production --stats-json\` locally to analyze.
-            </details>
-            `;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
+      # Note: PR comment step removed to reduce PR noise
+      # Bundle size metrics available in artifacts and workflow summary
 
   # ============================================
   # Backend Code Metrics

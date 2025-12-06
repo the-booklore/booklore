@@ -178,72 +178,8 @@ jobs:
           path: frontend-coverage
         continue-on-error: true
 
-      - name: Post Coverage Comment
-        uses: actions/github-script@v7
-        env:
-          BACKEND_COVERAGE: ${{ needs.backend-coverage.outputs.coverage }}
-          FRONTEND_COVERAGE: ${{ needs.frontend-coverage.outputs.coverage }}
-        with:
-          script: |
-            const backendCoverage = process.env.BACKEND_COVERAGE || 'N/A';
-            const frontendCoverage = process.env.FRONTEND_COVERAGE || 'N/A';
-            
-            // Get coverage badge color
-            function getBadgeColor(coverage) {
-              const num = parseFloat(coverage);
-              if (isNaN(num)) return '⚪';
-              if (num >= 80) return '🟢';
-              if (num >= 60) return '🟡';
-              if (num >= 40) return '🟠';
-              return '🔴';
-            }
-            
-            const backendBadge = getBadgeColor(backendCoverage);
-            const frontendBadge = getBadgeColor(frontendCoverage);
-            
-            // Find and delete previous coverage comments
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              per_page: 100
-            });
-            
-            const coverageComments = comments.filter(c => 
-              c.body.includes('## 📊 Test Coverage Report') &&
-              c.user.type === 'Bot'
-            );
-            
-            for (const comment of coverageComments) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id
-              });
-            }
-            
-            // Post new comment
-            const body = `## 📊 Test Coverage Report\n\n` +
-              `| Component | Coverage | Status |\n` +
-              `|-----------|----------|--------|\n` +
-              `| **Backend (Java)** | ${backendCoverage}% | ${backendBadge} |\n` +
-              `| **Frontend (Angular)** | ${frontendCoverage}% | ${frontendBadge} |\n\n` +
-              `### Coverage Thresholds\n` +
-              `- 🟢 80%+ Excellent\n` +
-              `- 🟡 60-79% Good\n` +
-              `- 🟠 40-59% Needs Improvement\n` +
-              `- 🔴 <40% Critical\n\n` +
-              `<details>\n` +
-              `<summary>📁 View detailed reports</summary>\n\n` +
-              `Download the coverage artifacts from this workflow run for detailed HTML reports.\n` +
-              `</details>`;
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: body
-            });
+      # Note: PR comment step removed to reduce PR noise
+      # Coverage metrics available in artifacts and job summary below
 
       - name: Add Coverage to Job Summary
         env:
