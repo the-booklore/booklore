@@ -101,12 +101,16 @@
           <div class="flex items-center py-1">
             <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full items-center">
-              <div class="w-full"
-                   [ngClass]="{
-                    'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  }">
-                <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" (onBlur)="onAutoCompleteBlur(field.controlName, $event)"></p-autoComplete>
-              </div>
+              <p-autoComplete
+                size="small"
+                formControlName="{{field.controlName}}"
+                [multiple]="true"
+                [typeahead]="false"
+                [dropdown]="false"
+                [forceSelection]="false"
+                class="w-full"
+                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
+                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"/>
               <p-button
                 size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
@@ -120,15 +124,16 @@
                 (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
                 (mouseenter)="onMouseEnter(field.controlName)"
                 (mouseleave)="onMouseLeave(field.controlName)"/>
-
-              <div class="w-full">
-                <p-autoComplete
-                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                  [ngModelOptions]="{ standalone: true }"
-                  [disabled]="true"
-                  [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full">
-                </p-autoComplete>
-              </div>
+              <p-autoComplete
+                size="small"
+                [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
+                [ngModelOptions]="{standalone:true}"
+                [disabled]="true"
+                [multiple]="true"
+                [typeahead]="false"
+                [dropdown]="false"
+                [forceSelection]="false"
+                class="w-full"/>
             </div>
           </div>
         }
@@ -136,11 +141,15 @@
           <div class="flex items-center py-1">
             <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full items-center">
-            <textarea rows="2" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}" class="!w-1/2"
-                      [ngClass]="{
-                        'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                      }"
-            ></textarea>
+              <textarea
+                rows="2"
+                pSize="small"
+                pTextarea
+                id="{{field.controlName}}"
+                formControlName="{{field.controlName}}"
+                class="!w-1/2"
+                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
+              ></textarea>
               <p-button
                 size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
@@ -154,7 +163,13 @@
                 (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
                 (mouseenter)="onMouseEnter(field.controlName)"
                 (mouseleave)="onMouseLeave(field.controlName)"/>
-              <textarea rows="2" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="!w-1/2" readonly></textarea>
+              <textarea
+                rows="2"
+                pSize="small"
+                pInputText
+                [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                class="!w-1/2"
+                readonly></textarea>
             </div>
           </div>
         }
@@ -267,7 +282,6 @@
             </div>
           }
         </div>
-
       </div>  
     </div>
   </form>

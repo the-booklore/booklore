@@ -100,10 +100,10 @@ export class BookdropFileMetadataPickerComponent {
     });
   }
 
-  copyAll() {
+  copyAll(includeCover: boolean = true): void {
     if (this.fetchedMetadata) {
       Object.keys(this.fetchedMetadata).forEach((field) => {
-        if (this.fetchedMetadata[field] && field !== 'thumbnailUrl') {
+        if (this.fetchedMetadata[field] && (includeCover || field !== 'thumbnailUrl')) {
           this.copyFetchedToCurrent(field);
         }
       });

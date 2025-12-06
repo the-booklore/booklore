@@ -164,14 +164,10 @@
 .content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1rem 1rem;
+  padding: 1rem;
 
   > * + * {
     margin-top: 0.5rem;
-  }
-
-  @media (min-width: 768px) {
-    padding: 1rem 1.5rem 1rem;
   }
 }
 

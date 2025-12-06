@@ -252,8 +252,10 @@
             [totalRecords]="totalRecords"
             [first]="currentPage * pageSize"
             (onPageChange)="loadPage($event.page ?? 0)"
-            [showCurrentPageReport]="true"
-            currentPageReportTemplate="Files {first} - {last} of {totalRecords}">
+            [showJumpToPageDropdown]="true"
+            [showPageLinks]="false"
+            [showFirstLastIcon]="false"
+            currentPageReportTemplate="Page {currentPage} of {totalPages}">
           </p-paginator>
         </div>
 
