@@ -640,16 +640,4 @@ export class BookService {
     );
   }
 
-  getBackupMetadata(bookId: number): Observable<BookMetadata> {
-    return this.http.get<BookMetadata>(`${this.url}/${bookId}/metadata/backup`);
-  }
-
-  restoreMetadata(bookId: number): Observable<BookMetadata> {
-    return this.http.post<BookMetadata>(`${this.url}/${bookId}/metadata/restore`, {}).pipe(
-      tap(restoredMetadata => {
-        this.handleBookMetadataUpdate(bookId, restoredMetadata);
-      })
-    );
-  }
-
 }
