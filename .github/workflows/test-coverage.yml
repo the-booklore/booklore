@@ -1,0 +1,194 @@
+name: Test Coverage Report
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  # ============================================
+  # Backend Coverage (Java/Gradle)
+  # ============================================
+  backend-coverage:
+    name: Backend Test Coverage
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.jacoco.outputs.coverage }}
+      coverage_changed: ${{ steps.jacoco.outputs.coverage_changed }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
+
+      - name: Run Tests with Coverage
+        working-directory: ./booklore-api
+        run: ./gradlew test jacocoTestReport --no-daemon
+        continue-on-error: false
+
+      - name: Generate JaCoCo Badge
+        id: jacoco
+        uses: cicirello/jacoco-badge-generator@v2
+        with:
+          jacoco-csv-file: booklore-api/build/reports/jacoco/test/jacocoTestReport.csv
+          badges-directory: .github/badges
+          generate-coverage-badge: true
+          coverage-badge-filename: jacoco.svg
+          generate-branches-badge: true
+          branches-badge-filename: branches.svg
+        continue-on-error: true
+
+      - name: Log coverage percentage
+        run: |
+          if [ -f "booklore-api/build/reports/jacoco/test/jacocoTestReport.csv" ]; then
+            echo "Coverage: ${{ steps.jacoco.outputs.coverage }}%"
+            echo "Branches: ${{ steps.jacoco.outputs.branches }}%"
+          else
+            echo "⚠ JaCoCo report not found at expected path"
+            find booklore-api/build/reports -name "*.csv" -o -name "*.xml" | head -20
+          fi
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: booklore-api/build/reports/jacoco/
+          retention-days: 14
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: booklore-api/build/test-results/
+          retention-days: 14
+
+  # ============================================
+  # Frontend Coverage (Angular/Jest or Karma)
+  # ============================================
+  frontend-coverage:
+    name: Frontend Test Coverage
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.lines }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install Dependencies
+        working-directory: ./booklore-ui
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run Tests with Coverage
+        working-directory: ./booklore-ui
+        run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless --code-coverage
+        continue-on-error: true
+
+      - name: Extract Coverage
+        id: coverage
+        working-directory: ./booklore-ui
+        run: |
+          if [ -f coverage/lcov.info ]; then
+            # Extract line coverage from lcov
+            LINES=$(grep -E "^LF:|^LH:" coverage/lcov.info | awk -F: '
+              /^LF:/ { total += $2 }
+              /^LH:/ { hit += $2 }
+              END { if (total > 0) printf "%.1f", (hit/total)*100; else print "0" }
+            ')
+            echo "lines=${LINES}" >> $GITHUB_OUTPUT
+            echo "Frontend line coverage: ${LINES}%"
+          else
+            echo "lines=N/A" >> $GITHUB_OUTPUT
+            echo "No coverage report found"
+          fi
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: booklore-ui/coverage/
+          retention-days: 14
+
+  # ============================================
+  # Post Coverage Summary to PR
+  # ============================================
+  coverage-summary:
+    name: Post Coverage Summary
+    needs: [backend-coverage, frontend-coverage]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        with:
+          egress-policy: audit
+
+      - name: Download Backend Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: backend-coverage
+
+      - name: Download Frontend Coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-coverage-report
+          path: frontend-coverage
+        continue-on-error: true
+
+      # Note: PR comment step removed to reduce PR noise
+      # Coverage metrics available in artifacts and job summary below
+
+      - name: Add Coverage to Job Summary
+        env:
+          BACKEND_COVERAGE: ${{ needs.backend-coverage.outputs.coverage }}
+          FRONTEND_COVERAGE: ${{ needs.frontend-coverage.outputs.coverage }}
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Coverage |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend (Java) | ${BACKEND_COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend (Angular) | ${FRONTEND_COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
