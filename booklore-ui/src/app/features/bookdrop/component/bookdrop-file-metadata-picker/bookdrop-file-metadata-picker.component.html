@@ -1,11 +1,13 @@
-@if (fetchedMetadata) {
-  <form [formGroup]="metadataForm" class="flex flex-col h-[35rem] w-full">
+@if (fetchedMetadata && fetchedMetadata.title) {
+  <form [formGroup]="metadataForm" class="metapicker flex flex-col w-full">
     <div class="flex-grow overflow-auto">
-      <div class="relative flex items-center justify-between pb-3">
-        <div class="absolute left-1/2 transform -translate-x-1/2 flex items-center pl-24">
-          <p class="pr-6">Current Metadata</p>
-          <div>
+      <div class="metaheader relative flex items-center">
+        <label class="w-[12%]"></label>
+        <div class="flex w-full items-center">
+          <p class="!w-1/2 pr-3" style="text-align:right">Current Metadata</p>
+          <div class="midbuttons">
             <p-button
+              size="small"
               severity="success"
               icon="pi pi-angle-left"
               class="mx-2"
@@ -15,6 +17,7 @@
               (onClick)="copyMissing()"
             ></p-button>
             <p-button
+              size="small"
               severity="success"
               icon="pi pi-angle-double-left"
               class="mx-2"
@@ -24,27 +27,29 @@
               (onClick)="copyAll()"
             ></p-button>
           </div>
-          <p class="pl-6">Fetched Metadata</p>
+          <p class="!w-1/2 pl-3">Fetched Metadata</p>
         </div>
-        <div class="ml-auto">
+        <div class="ml-auto absolute" style="right:1rem">
           <p-button
-            severity="danger"
+            size="small"
+            severity="warn"
             icon="pi pi-refresh"
             label="Reset"
             [outlined]="true"
             pTooltip="Reset all fields to original values"
             tooltipPosition="bottom"
-            (onClick)="resetAll()"
+            (onClick)="confirmReset()"
           ></p-button>
         </div>
       </div>
-      <div>
+      <div class="metacontent">
         <div class="flex items-center py-1">
-          <label class="w-[6.5%]"></label>
+          <label class="w-[12%] text-sm">Cover</label>
           <div class="flex w-full items-center justify-center">
             <p-image class="thumbnail" [src]="metadataForm.get('thumbnailUrl')?.value" alt="Image" appendTo="body" lazyLoad [preview]="true"></p-image>
             <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl" class="!w-1/2"/>
             <p-button
+              size="small"
               [icon]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"
               [outlined]="true"
               [ngClass]="
@@ -62,7 +67,7 @@
         </div>
         @for (field of metadataFieldsTop; track field) {
           <div class="flex items-center py-1">
-            <label for="{{field.controlName}}" class="w-[6.5%]">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full">
               <input
                 pSize="small"
@@ -76,6 +81,7 @@
               }"
               />
               <p-button
+                size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
                 [outlined]="true"
                 [ngClass]="
@@ -93,15 +99,20 @@
         }
         @for (field of metadataChips; track field) {
           <div class="flex items-center py-1">
-            <label for="{{field.controlName}}" class="w-[6.5%]">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full items-center">
-              <div class="w-full"
-                   [ngClass]="{
-                    'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  }">
-                <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" (onBlur)="onAutoCompleteBlur(field.controlName, $event)"></p-autoComplete>
-              </div>
+              <p-autoComplete
+                size="small"
+                formControlName="{{field.controlName}}"
+                [multiple]="true"
+                [typeahead]="false"
+                [dropdown]="false"
+                [forceSelection]="false"
+                class="w-full"
+                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
+                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"/>
               <p-button
+                size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
                 [outlined]="true"
                 [ngClass]="
@@ -113,28 +124,34 @@
                 (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
                 (mouseenter)="onMouseEnter(field.controlName)"
                 (mouseleave)="onMouseLeave(field.controlName)"/>
-
-              <div class="w-full">
-                <p-autoComplete
-                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                  [ngModelOptions]="{ standalone: true }"
-                  [disabled]="true"
-                  [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full">
-                </p-autoComplete>
-              </div>
+              <p-autoComplete
+                size="small"
+                [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
+                [ngModelOptions]="{standalone:true}"
+                [disabled]="true"
+                [multiple]="true"
+                [typeahead]="false"
+                [dropdown]="false"
+                [forceSelection]="false"
+                class="w-full"/>
             </div>
           </div>
         }
         @for (field of metadataDescription; track field) {
           <div class="flex items-center py-1">
-            <label for="{{field.controlName}}" class="w-[6.5%]">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full items-center">
-            <textarea rows="2" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}" class="!w-1/2"
-                      [ngClass]="{
-                        'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                      }"
-            ></textarea>
+              <textarea
+                rows="2"
+                pSize="small"
+                pTextarea
+                id="{{field.controlName}}"
+                formControlName="{{field.controlName}}"
+                class="!w-1/2"
+                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
+              ></textarea>
               <p-button
+                size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
                 [outlined]="true"
                 [ngClass]="
@@ -146,13 +163,19 @@
                 (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
                 (mouseenter)="onMouseEnter(field.controlName)"
                 (mouseleave)="onMouseLeave(field.controlName)"/>
-              <textarea rows="2" pInputText [value]="fetchedMetadata[field.fetchedKey] ?? null" class="!w-1/2" readonly></textarea>
+              <textarea
+                rows="2"
+                pSize="small"
+                pInputText
+                [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                class="!w-1/2"
+                readonly></textarea>
             </div>
           </div>
         }
         @for (field of metadataFieldsBottom; track field) {
           <div class="flex items-center py-1">
-            <label for="{{field.controlName}}" class="w-[6.5%]">{{ field.label }}</label>
+            <label for="{{field.controlName}}" class="w-[12%] text-sm">{{ field.label }}</label>
             <div class="flex w-full">
               <input pInputText pSize="small" id="{{field.controlName}}" formControlName="{{field.controlName}}" class="!w-1/2"
                      [ngClass]="{
@@ -160,6 +183,7 @@
                 }"
               />
               <p-button
+                size="small"
                 [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
                 [outlined]="true"
                 [ngClass]="
@@ -179,68 +203,86 @@
     </div>
   </form>
 } @else {
-  <form [formGroup]="metadataForm" class="flex h-[30rem] w-full">
-    <div class="flex-grow overflow-auto pr-4">
-      <p class="pb-2">Current Metadata:</p>
-
-      @for (field of metadataFieldsTop; track field) {
-        <div class="flex items-center py-1">
-          <label for="{{field.controlName}}" class="w-[15%]">{{ field.label }}</label>
-          <div class="flex w-full">
-            <input
-              pSize="small"
-              fluid
-              pInputText
-              id="{{field.controlName}}"
-              formControlName="{{field.controlName}}"
-            />
-          </div>
-        </div>
-      }
-
-      @for (field of metadataChips; track field) {
-        <div class="flex items-center py-1">
-          <label for="{{field.controlName}}" class="w-[15%]">{{ field.label }}</label>
-          <div class="flex w-full">
-            <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" (onBlur)="onAutoCompleteBlur(field.controlName, $event)"></p-autoComplete>
-          </div>
-        </div>
-      }
-
-      @for (field of metadataDescription; track field) {
-        <div class="flex items-center py-1">
-          <label for="{{field.controlName}}" class="w-[15%]">{{ field.label }}</label>
-          <div class="flex w-full">
-            <textarea fluid rows="2" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}"></textarea>
-          </div>
-        </div>
-      }
-
-      @for (field of metadataFieldsBottom; track field) {
-        <div class="flex items-center py-1">
-          <label for="{{field.controlName}}" class="w-[15%]">{{ field.label }}</label>
-          <div class="flex w-full">
-            <input
-              fluid
-              pInputText
-              pSize="small"
-              id="{{field.controlName}}"
-              formControlName="{{field.controlName}}"
-            />
-          </div>
-        </div>
-      }
-    </div>
-
-    <div class="w-[20%] h-full flex items-start justify-center p-4">
-      <div class="w-full h-full">
-        <img
-          [src]="metadataForm.get('thumbnailUrl')?.value"
-          alt="Book Thumbnail"
-          class="w-full h-full object-contain"
-        />
-        <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
+  <form [formGroup]="metadataForm" class="metapicker flex w-full">
+    <div class="flex-grow overflow-auto">
+      <div class="metaheader relative flex items-center">
+        <p class="text-sm flex items-center" style="gap: 0.5rem">
+          <i class="pi metadata-status pi-exclamation-triangle not-applied"></i>
+          Unable to fetch new metadata for this file
+        </p>
+        <p-button
+          size="small"
+          severity="warn"
+          icon="pi pi-refresh"
+          label="Reset"
+          [outlined]="true"
+          pTooltip="Reset all fields to original values"
+          tooltipPosition="bottom"
+          (onClick)="confirmReset()"
+        ></p-button>
       </div>
+      <div class="flex flex-row">
+        <div class="w-[25%] h-full flex items-start justify-center pl-4">
+          <div class="w-full h-full">
+            <img
+              [src]="metadataForm.get('thumbnailUrl')?.value"
+              alt="Book Thumbnail"
+              class="w-full h-full object-contain"
+            />
+            <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
+          </div>
+        </div>
+
+        <div class="metacontent w-[75%]">
+          @for (field of metadataFieldsTop; track field) {
+            <div class="flex items-center py-1">
+              <label for="{{field.controlName}}" class="w-[15%] text-sm">{{ field.label }}</label>
+              <div class="flex w-full">
+                <input
+                  pSize="small"
+                  fluid
+                  pInputText
+                  id="{{field.controlName}}"
+                  formControlName="{{field.controlName}}"
+                />
+              </div>
+            </div>
+          }
+
+          @for (field of metadataChips; track field) {
+            <div class="flex items-center py-1">
+              <label for="{{field.controlName}}" class="w-[15%] text-sm">{{ field.label }}</label>
+              <div class="flex w-full">
+                <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" (onBlur)="onAutoCompleteBlur(field.controlName, $event)"></p-autoComplete>
+              </div>
+            </div>
+          }
+
+          @for (field of metadataDescription; track field) {
+            <div class="flex items-center py-1">
+              <label for="{{field.controlName}}" class="w-[15%] text-sm">{{ field.label }}</label>
+              <div class="flex w-full">
+                <textarea fluid rows="2" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}"></textarea>
+              </div>
+            </div>
+          }
+
+          @for (field of metadataFieldsBottom; track field) {
+            <div class="flex items-center py-1">
+              <label for="{{field.controlName}}" class="w-[15%] text-sm">{{ field.label }}</label>
+              <div class="flex w-full">
+                <input
+                  fluid
+                  pInputText
+                  pSize="small"
+                  id="{{field.controlName}}"
+                  formControlName="{{field.controlName}}"
+                />
+              </div>
+            </div>
+          }
+        </div>
+      </div>  
     </div>
   </form>
 }
