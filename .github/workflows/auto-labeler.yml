@@ -42,10 +42,36 @@ jobs:
           egress-policy: audit
 
       - name: Label PR based on title
-        uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5 # v6.1.0
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
-          config-name: pr-labeler.yml
-          disable-releaser: true
+          script: |
+            const title = context.payload.pull_request.title;
+            const labels = [];
+            
+            // Conventional commit patterns
+            if (/^fix(\([^)]*\))?:|^fix:/.test(title)) labels.push('bugfix');
+            if (/^feat(\([^)]*\))?:|^feat:/.test(title)) labels.push('enhancement');
+            if (/^build(\([^)]*\))?:|^build:/.test(title)) labels.push('build');
+            if (/^chore(\([^)]*\))?:|^chore:/.test(title)) labels.push('chore');
+            if (/^ci(\([^)]*\))?:|^ci:|\(ci\):/.test(title)) labels.push('ci');
+            if (/^perf(\([^)]*\))?:|^perf:/.test(title)) labels.push('performance');
+            if (/^refactor(\([^)]*\))?:|^refactor:/.test(title)) labels.push('refactor');
+            if (/^revert(\([^)]*\))?:|^revert:/.test(title)) labels.push('revert');
+            if (/^style(\([^)]*\))?:|^style:/.test(title)) labels.push('style');
+            if (/^docs(\([^)]*\))?:|^docs:|\(docs\):/.test(title)) labels.push('documentation');
+            if (/^deps(\([^)]*\))?:|^deps:|\(deps\):/.test(title)) labels.push('dependencies');
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: labels
+              });
+              core.info(`Added labels: ${labels.join(', ')}`);
+            } else {
+              core.info('No matching labels found for PR title');
+            }
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
