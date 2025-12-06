@@ -34,11 +34,9 @@ public class BookdropFileEntity {
     @Builder.Default
     private Status status = Status.PENDING_REVIEW;
 
-    @Lob
     @Column(name = "original_metadata", columnDefinition = "JSON")
     private String originalMetadata;
 
-    @Lob
     @Column(name = "fetched_metadata", columnDefinition = "JSON")
     private String fetchedMetadata;
 
