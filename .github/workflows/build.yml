@@ -100,6 +100,25 @@ jobs:
         if: always()
         run: ./gradlew jacocoTestReport --no-daemon || true
 
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v3.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectKey=balazs-szucs_booklore
+            -Dsonar.organization=your-org
+            -Dsonar.host.url=https://sonarcloud.io
+            -Dsonar.java.binaries=build/classes/java/main
+            -Dsonar.java.test.binaries=build/classes/java/test
+            -Dsonar.java.test.reportPaths=build/test-results/test
+            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml
+            -Dsonar.sources=src/main/java
+            -Dsonar.tests=src/test/java
+            -Dsonar.java.libraries=build/libs/*.jar
+            -Dsonar.qualitygate.wait=true
+
       - name: Upload backend JAR artifact
         uses: actions/upload-artifact@v4
         with:

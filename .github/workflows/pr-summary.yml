@@ -38,8 +38,17 @@ jobs:
       - name: Download all artifacts
         uses: dawidd6/action-download-artifact@v6
         with:
+          run_id: ${{ github.event.workflow_run.id }}
           skip_unpack: false
           path: artifacts
+        continue-on-error: true
+
+      - name: Debug artifacts
+        run: |
+          echo "=== Downloaded Artifacts ==="
+          find artifacts -type f | head -20
+          echo "=== Jacoco CSV ==="
+          find artifacts -name "*jacoco*.csv" -exec head -5 {} \;
         continue-on-error: true
 
       - name: Get PR details
@@ -102,7 +111,8 @@ jobs:
                 coverage: getStatus('coverage'),
                 codeql: getStatus('codeql'),
                 semgrep: getStatus('semgrep'),
-                gitleaks: getStatus('gitleaks')
+                gitleaks: getStatus('gitleaks'),
+                sonar: getStatus('sonar') || getStatus('sonarcloud')
               };
               
               require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData));
@@ -117,10 +127,17 @@ jobs:
                 coverage: { status: '❓', link: '' },
                 codeql: { status: '❓', link: '' },
                 semgrep: { status: '❓', link: '' },
-                gitleaks: { status: '❓', link: '' }
+                gitleaks: { status: '❓', link: '' },
+                sonar: { status: '❓', link: '' }
               };
               require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(fallback));
             }
+
+      - name: Debug check statuses
+        run: |
+          echo "=== Check Statuses JSON ==="
+          cat /tmp/check_statuses.json | jq .
+        continue-on-error: true
 
       - name: Parse check statuses
         id: status
@@ -144,6 +161,8 @@ jobs:
             SEMGREP_LINK=$(echo "$CHECKS" | jq -r '.semgrep.link // ""')
             GITLEAKS_STATUS=$(echo "$CHECKS" | jq -r '.gitleaks.status // "❓"')
             GITLEAKS_LINK=$(echo "$CHECKS" | jq -r '.gitleaks.link // ""')
+            SONAR_STATUS=$(echo "$CHECKS" | jq -r '.sonar.status // "❓"')
+            SONAR_LINK=$(echo "$CHECKS" | jq -r '.sonar.link // ""')
           else
             BACKEND_STATUS="❓"
             BACKEND_LINK=""
@@ -161,6 +180,8 @@ jobs:
             SEMGREP_LINK=""
             GITLEAKS_STATUS="❓"
             GITLEAKS_LINK=""
+            SONAR_STATUS="❓"
+            SONAR_LINK=""
           fi
           
           echo "backend_status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
@@ -179,6 +200,16 @@ jobs:
           echo "semgrep_link=$SEMGREP_LINK" >> $GITHUB_OUTPUT
           echo "gitleaks_status=$GITLEAKS_STATUS" >> $GITHUB_OUTPUT
           echo "gitleaks_link=$GITLEAKS_LINK" >> $GITHUB_OUTPUT
+          echo "sonar_status=$SONAR_STATUS" >> $GITHUB_OUTPUT
+          echo "sonar_link=$SONAR_LINK" >> $GITHUB_OUTPUT
+
+      - name: Debug parsed statuses
+        run: |
+          echo "=== Parsed Statuses ==="
+          echo "BACKEND_STATUS=$BACKEND_STATUS"
+          echo "FRONTEND_STATUS=$FRONTEND_STATUS"
+          echo "SONAR_STATUS=$SONAR_STATUS"
+        continue-on-error: true
 
       - name: Merge check statuses
         id: merged-checks
@@ -198,7 +229,9 @@ jobs:
           echo "semgrep_status=${{ steps.status.outputs.semgrep_status }}" >> $GITHUB_OUTPUT
           echo "semgrep_link=${{ steps.status.outputs.semgrep_link }}" >> $GITHUB_OUTPUT
           echo "gitleaks_status=${{ steps.status.outputs.gitleaks_status }}" >> $GITHUB_OUTPUT
-          echo "gitleaks_link=${{ steps.status.outputs.gitleaks_link }}" >> $GITHUB_OUTPUT;
+          echo "gitleaks_link=${{ steps.status.outputs.gitleaks_link }}" >> $GITHUB_OUTPUT
+          echo "sonar_status=${{ steps.status.outputs.sonar_status }}" >> $GITHUB_OUTPUT
+          echo "sonar_link=${{ steps.status.outputs.sonar_link }}" >> $GITHUB_OUTPUT;
 
       - name: Generate PR Summary
         id: summary
@@ -219,6 +252,8 @@ jobs:
           SEMGREP_LINK: ${{ steps.merged-checks.outputs.semgrep_link }}
           GITLEAKS_STATUS: ${{ steps.merged-checks.outputs.gitleaks_status }}
           GITLEAKS_LINK: ${{ steps.merged-checks.outputs.gitleaks_link }}
+          SONAR_STATUS: ${{ steps.merged-checks.outputs.sonar_status }}
+          SONAR_LINK: ${{ steps.merged-checks.outputs.sonar_link }}
         run: |
           # Parse coverage from artifacts
           COVERAGE_BACKEND="N/A"
@@ -229,6 +264,10 @@ jobs:
           if [ -n "$JACOCO_CSV" ] && [ -f "$JACOCO_CSV" ]; then
             COVERAGE_BACKEND=$(tail -1 "$JACOCO_CSV" | awk -F',' '{if ($4 > 0) printf "%.1f", ($4/$3)*100; else print "0"}')
           fi
+          
+          echo "=== Coverage Debug ==="
+          echo "JACOCO_CSV=$JACOCO_CSV"
+          echo "COVERAGE_BACKEND=$COVERAGE_BACKEND"
           
           # Get current timestamp
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -253,6 +292,7 @@ jobs:
           | CodeQL | ${CODEQL_STATUS} | [Logs](${CODEQL_LINK}) |
           | Semgrep | ${SEMGREP_STATUS} | [Logs](${SEMGREP_LINK}) |
           | Gitleaks | ${GITLEAKS_STATUS} | [Logs](${GITLEAKS_LINK}) |
+          | SonarCloud | ${SONAR_STATUS} | [Logs](${SONAR_LINK}) |
           
           ### 🏷️ PR Labels
           - Size: Auto-assigned by \`CodelyTV/pr-size-labeler\`
