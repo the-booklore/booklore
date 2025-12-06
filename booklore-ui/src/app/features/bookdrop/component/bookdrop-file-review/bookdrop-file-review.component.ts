@@ -86,6 +86,7 @@ export class BookdropFileReviewComponent implements OnInit {
   copiedFlags: Record<number, boolean> = {};
   loading = true;
   saving = false;
+  includeCoversOnCopy = true;
 
   pageSize = 50;
   totalRecords = 0;
@@ -231,13 +232,13 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  copyAll(includeThumbnail: boolean): void {
+  copyAll(): void {
     Object.values(this.fileUiCache).forEach(fileUi => {
       const fetched = fileUi.file.fetchedMetadata;
       const form = fileUi.metadataForm;
       if (!fetched) return;
       for (const key of Object.keys(fetched)) {
-        if (!includeThumbnail && key === 'thumbnailUrl') continue;
+        if (!this.includeCoversOnCopy && key === 'thumbnailUrl') continue;
         const value = fetched[key as keyof typeof fetched];
         if (value != null) {
           form.get(key)?.setValue(value);
@@ -248,8 +249,16 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  resetAll(): void {
-    Object.values(this.fileUiCache).forEach(fileUi => {
+  resetMetadata(): void {
+    const selectedFiles = Object.values(this.fileUiCache).filter(file => {
+      if (this.selectAllAcrossPages) {
+        return !this.excludedFiles.has(file.file.id);
+      } else {
+        return file.selected;
+      }
+    });
+
+    const files = selectedFiles.map(fileUi => {
       const original = fileUi.file.originalMetadata;
       fileUi.metadataForm.patchValue({
         title: original?.title || null,
@@ -283,8 +292,8 @@ export class BookdropFileReviewComponent implements OnInit {
       });
       fileUi.copiedFields = {};
       fileUi.savedFields = {};
+      this.copiedFlags[fileUi.file.id] = false;
     });
-    this.copiedFlags = {};
   }
 
   selectAll(selected: boolean): void {
@@ -317,6 +326,26 @@ export class BookdropFileReviewComponent implements OnInit {
     this.syncCurrentPageSelection();
   }
 
+  confirmReset(): void {
+    const selectedCount = this.selectedCount;
+    if (selectedCount === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to reset metadata.',
+      });
+      return;
+    }
+
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to reset all metadata changes made to the selected files?',
+      header: 'Confirm Reset',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => this.resetMetadata()
+    });
+  }
+
   confirmFinalize(): void {
     const selectedCount = this.selectedCount;
     if (selectedCount === 0) {
@@ -332,8 +361,7 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to finalize the import of ${selectedCount} file${selectedCount !== 1 ? 's' : ''}?`,
       header: 'Confirm Finalize',
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Yes',
-      rejectLabel: 'Cancel',
+      acceptButtonStyleClass: 'p-button-danger',
       accept: () => this.finalizeImport(),
     });
   }
@@ -353,6 +381,7 @@ export class BookdropFileReviewComponent implements OnInit {
       message: `Are you sure you want to delete ${selectedCount} selected Bookdrop file${selectedCount !== 1 ? 's' : ''}? This action cannot be undone.`,
       header: 'Confirm Delete',
       icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
         const payload: any = {
           selectAll: this.selectAllAcrossPages,
