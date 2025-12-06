@@ -45,6 +45,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   @Input() index!: number;
   @Input() @HostBinding('class.layout-root-menuitem') root!: boolean;
   @Input() parentKey!: string;
+  @Input() menuKey!: string;
   @ViewChild('linkRef') linkRef!: ElementRef<HTMLAnchorElement>;
 
   hovered = false;
@@ -95,7 +96,8 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.key = this.parentKey ? this.parentKey + '-' + this.index : String(this.index);
+    const rootKey = this.menuKey ? this.menuKey + '-' : '';
+    this.key = this.parentKey ? this.parentKey + '-' + this.index : rootKey + String(this.index);
     this.expandedItems.add(this.key);
     if (this.item.routerLink) {
       this.updateActiveStateFromRoute();
@@ -145,6 +147,8 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
     if (this.item.items) {
       this.active = !this.active;
+    } else {
+      this.active = true;
     }
     this.menuService.onMenuStateChange({key: this.key});
   }

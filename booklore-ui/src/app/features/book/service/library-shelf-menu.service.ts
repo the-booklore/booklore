@@ -45,6 +45,8 @@ export class LibraryShelfMenuService {
                 header: 'Edit Library',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
                   mode: 'edit',
                   libraryId: entity?.id
@@ -163,13 +165,11 @@ export class LibraryShelfMenuService {
                 header: 'Edit Shelf',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
                   shelfId: entity?.id
                 },
-                style: {
-                  position: 'absolute',
-                  top: '15%',
-                }
               })
             }
           },
@@ -227,8 +227,11 @@ export class LibraryShelfMenuService {
                 header: 'Edit Magic Shelf',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
-                  id: entity?.id
+                  id: entity?.id,
+                  editMode: true,
                 }
               })
             }

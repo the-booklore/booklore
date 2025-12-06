@@ -16,12 +16,12 @@ import {IconPickerService} from '../../../../shared/service/icon-picker.service'
     InputText,
     ReactiveFormsModule,
     FormsModule
-],
+  ],
   templateUrl: './shelf-edit-dialog.component.html',
   standalone: true,
   styleUrl: './shelf-edit-dialog.component.scss'
 })
-export class ShelfEditDialogComponent implements OnInit{
+export class ShelfEditDialogComponent implements OnInit {
 
   private shelfService = inject(ShelfService);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
@@ -36,7 +36,7 @@ export class ShelfEditDialogComponent implements OnInit{
   ngOnInit(): void {
     const shelfId = this.dynamicDialogConfig?.data.shelfId;
     this.shelf = this.shelfService.getShelfById(shelfId);
-    if(this.shelf) {
+    if (this.shelf) {
       this.shelfName = this.shelf.name;
       this.selectedIcon = 'pi pi-' + this.shelf.icon;
     }
@@ -70,5 +70,9 @@ export class ShelfEditDialogComponent implements OnInit{
         console.error(e);
       }
     });
+  }
+
+  closeDialog() {
+    this.dynamicDialogRef.close();
   }
 }

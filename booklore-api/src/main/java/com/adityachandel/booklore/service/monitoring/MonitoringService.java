@@ -241,4 +241,8 @@ public class MonitoringService {
     public boolean isPathMonitored(Path path) {
         return monitoredPaths.contains(path.toAbsolutePath().normalize());
     }
+
+    public boolean isLibraryMonitored(Long libraryId) {
+        return libraryWatchStatusMap.getOrDefault(libraryId, false);
+    }
 }

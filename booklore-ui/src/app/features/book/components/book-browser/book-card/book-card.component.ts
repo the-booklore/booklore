@@ -10,7 +10,6 @@ import {BookService} from '../../../service/book.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
-import {MetadataRefreshRequest} from '../../../../metadata/model/request/metadata-refresh-request.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -27,7 +26,6 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
-import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -47,7 +45,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
-  @Input() readButtonHidden: boolean = false;
+  @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
@@ -464,9 +462,12 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private openShelfDialog(): void {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
       modal: true,
+      dismissableMask: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
+      styleClass: 'dynamic-dialog-minimal',
       baseZIndex: 10,
       style: {
         position: 'absolute',
@@ -766,5 +767,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   shouldShowStatusIcon(): boolean {
     return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
+  }
+
+  isSeriesViewActive(): boolean {
+    return this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount! >= 1;
   }
 }

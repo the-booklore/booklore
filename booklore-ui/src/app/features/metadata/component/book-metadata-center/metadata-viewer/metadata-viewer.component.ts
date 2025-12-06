@@ -348,7 +348,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 0 ? 1 : 2;
+    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
   }
 
   toggleExpand(): void {
@@ -427,6 +427,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   assignShelf(bookId: number) {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
+      dismissableMask: true,
       modal: true,
       closable: true,
       contentStyle: {overflow: 'auto'},

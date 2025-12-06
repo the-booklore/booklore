@@ -42,6 +42,8 @@ export class AppMenuComponent implements OnInit {
   librarySortOrder: 'asc' | 'desc' = 'desc';
   shelfSortField: 'name' | 'id' = 'name';
   shelfSortOrder: 'asc' | 'desc' = 'asc';
+  magicShelfSortField: 'name' | 'id' = 'name';
+  magicShelfSortOrder: 'asc' | 'desc' = 'asc';
 
 
   ngOnInit(): void {
@@ -59,6 +61,10 @@ export class AppMenuComponent implements OnInit {
         if (userState.user?.userSettings.sidebarShelfSorting) {
           this.shelfSortField = this.validateSortField(userState.user.userSettings.sidebarShelfSorting.field);
           this.shelfSortOrder = this.validateSortOrder(userState.user.userSettings.sidebarShelfSorting.order);
+        }
+        if (userState.user?.userSettings.sidebarMagicShelfSorting) {
+          this.magicShelfSortField = this.validateSortField(userState.user.userSettings.sidebarMagicShelfSorting.field);
+          this.magicShelfSortOrder = this.validateSortOrder(userState.user.userSettings.sidebarMagicShelfSorting.order);
         }
         this.initMenus();
       });
@@ -113,7 +119,7 @@ export class AppMenuComponent implements OnInit {
     this.magicShelfMenu$ = this.magicShelfService.shelvesState$.pipe(
       map((state: MagicShelfState) => {
         const shelves = state.shelves ?? [];
-        const sortedShelves = this.sortArray(shelves, 'name', 'asc');
+        const sortedShelves = this.sortArray(shelves, this.magicShelfSortField, this.magicShelfSortOrder);
         return [
           {
             label: 'Magic Shelves',

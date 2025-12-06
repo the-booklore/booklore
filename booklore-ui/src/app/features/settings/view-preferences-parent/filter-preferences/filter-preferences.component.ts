@@ -1,33 +1,38 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {SidebarLibrarySorting, SidebarMagicShelfSorting, SidebarShelfSorting, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
+import {Tooltip} from 'primeng/tooltip';
+import {BookFilterMode, FilterSortingMode, SidebarLibrarySorting, SidebarShelfSorting, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
 
 @Component({
-  selector: 'app-sidebar-sorting-preferences',
+  selector: 'app-filter-preferences',
   imports: [
     Select,
+    Tooltip,
     FormsModule
   ],
-  templateUrl: './sidebar-sorting-preferences.component.html',
-  styleUrl: './sidebar-sorting-preferences.component.scss'
+  templateUrl: './filter-preferences.component.html',
+  styleUrl: './filter-preferences.component.scss'
 })
-export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
+export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
-  readonly sortingOptions = [
-    {label: 'Name | Ascending', value: {field: 'name', order: 'asc'}},
-    {label: 'Name | Descending', value: {field: 'name', order: 'desc'}},
-    {label: 'Creation Date | Ascending', value: {field: 'id', order: 'asc'}},
-    {label: 'Creation Date | Descending', value: {field: 'id', order: 'desc'}},
+  readonly filterModes = [
+    {label: 'And', value: 'and'},
+    {label: 'Or', value: 'or'},
+    {label: 'Single', value: 'single'},
   ];
 
-  selectedLibrarySorting: SidebarLibrarySorting = {field: 'id', order: 'asc'};
-  selectedShelfSorting: SidebarShelfSorting = {field: 'id', order: 'asc'};
-  selectedMagicShelfSorting: SidebarMagicShelfSorting = {field: 'id', order: 'asc'};
+  readonly filterSortingModes = [
+    {label: 'Alphabetical', value: 'alphabetical'},
+    {label: 'By Count', value: 'count'},
+  ];
 
+  selectedFilterMode: BookFilterMode = 'and';
+  selectedFilterSortingMode: FilterSortingMode = 'alphabetical';
+  
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly destroy$ = new Subject<void>();
@@ -51,13 +56,13 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
   }
 
   private loadPreferences(settings: UserSettings): void {
-    this.selectedLibrarySorting = settings.sidebarLibrarySorting;
-    this.selectedShelfSorting = settings.sidebarShelfSorting;
-    this.selectedMagicShelfSorting = settings.sidebarMagicShelfSorting;
+    this.selectedFilterMode = settings.filterMode ?? 'and';
+    this.selectedFilterSortingMode = settings.filterSortingMode ?? 'alphabetical';
   }
 
   private updatePreference(path: string[], value: any): void {
     if (!this.currentUser) return;
+
     let target: any = this.currentUser.userSettings;
     for (let i = 0; i < path.length - 1; i++) {
       target = target[path[i]] ||= {};
@@ -75,15 +80,11 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
     });
   }
 
-  onLibrarySortingChange() {
-    this.updatePreference(['sidebarLibrarySorting'], this.selectedLibrarySorting);
+  onFilterModeChange() {
+    this.updatePreference(['filterMode'], this.selectedFilterMode);
   }
 
-  onShelfSortingChange() {
-    this.updatePreference(['sidebarShelfSorting'], this.selectedShelfSorting);
-  }
-
-  onMagicShelfSortingChange() {
-    this.updatePreference(['sidebarMagicShelfSorting'], this.selectedMagicShelfSorting);
+  onFilterSortingModeChange() {
+    this.updatePreference(['filterSortingMode'], this.selectedFilterSortingMode);
   }
 }

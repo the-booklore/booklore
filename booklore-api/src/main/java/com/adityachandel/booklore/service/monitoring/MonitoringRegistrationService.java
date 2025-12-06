@@ -21,6 +21,10 @@ public class MonitoringRegistrationService {
         return monitoringService.isPathMonitored(path);
     }
 
+    public boolean isLibraryMonitored(Long libraryId) {
+        return monitoringService.isLibraryMonitored(libraryId);
+    }
+
     public void unregisterSpecificPath(Path path) {
         monitoringService.unregisterPath(path);
     }
@@ -42,6 +46,7 @@ public class MonitoringRegistrationService {
             return;
         }
         try {
+            log.debug("Registering library paths for libraryId {} at {}", libraryId, libraryRoot);
             monitoringService.registerPath(libraryRoot, libraryId);
             try (var stream = Files.walk(libraryRoot)) {
                 stream.filter(Files::isDirectory)

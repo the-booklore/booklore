@@ -20,6 +20,7 @@ export class BookDialogHelperService {
       modal: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
+      styleClass: 'dynamic-dialog-minimal',
       baseZIndex: 10,
       style: {
         position: 'absolute',
@@ -40,6 +41,7 @@ export class BookDialogHelperService {
       dismissableMask: true,
       closable: true,
       contentStyle: {overflow: 'auto'},
+      styleClass: 'dynamic-dialog-minimal',
       baseZIndex: 10,
       style: {
         position: 'absolute',

@@ -122,8 +122,10 @@ public class FileMoveService {
 
         Long libraryId = bookEntity.getLibraryPath().getLibrary().getId();
         Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
+        boolean isLibraryMonitoredWhenCalled = false;
 
         try {
+            isLibraryMonitoredWhenCalled = monitoringRegistrationService.isLibraryMonitored(libraryId);
             String pattern = fileMoveHelper.getFileNamingPattern(bookEntity.getLibraryPath().getLibrary());
             Path currentFilePath = bookEntity.getFullFilePath();
             Path expectedFilePath = fileMoveHelper.generateNewFilePath(bookEntity, bookEntity.getLibraryPath(), pattern);
@@ -134,7 +136,10 @@ public class FileMoveService {
 
             log.info("File for book ID {} needs to be moved from {} to {} to match library pattern", bookEntity.getId(), currentFilePath, expectedFilePath);
 
-            fileMoveHelper.unregisterLibrary(libraryId);
+            if (isLibraryMonitoredWhenCalled) {
+                log.debug("Unregistering library {} before moving a single file", libraryId);
+                fileMoveHelper.unregisterLibrary(libraryId);
+            }
 
             fileMoveHelper.moveFile(currentFilePath, expectedFilePath);
 
@@ -151,7 +156,10 @@ public class FileMoveService {
         } catch (Exception e) {
             log.error("Failed to move file for book ID {}: {}", bookEntity.getId(), e.getMessage(), e);
         } finally {
-            fileMoveHelper.registerLibraryPaths(libraryId, libraryRoot);
+            if (isLibraryMonitoredWhenCalled) {
+                log.debug("Registering library paths for library {} with root {}", libraryId, libraryRoot);
+                fileMoveHelper.registerLibraryPaths(libraryId, libraryRoot);
+            }
         }
 
         return FileMoveResult.builder().moved(false).build();

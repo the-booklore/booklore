@@ -27,10 +27,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class EpubMetadataExtractor implements FileMetadataExtractor {
+
+    private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("^\\d{4}$");
 
     @Override
     public byte[] extractCover(File epubFile) {
@@ -169,6 +172,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             }
                             case "creator" -> authors.add(text);
                             case "subject" -> categories.add(text);
+                            case "description" -> builderMeta.description(text);
                             case "publisher" -> builderMeta.publisher(text);
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
@@ -262,6 +266,16 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     private LocalDate parseDate(String value) {
         if (StringUtils.isBlank(value)) return null;
 
+        value = value.trim();
+
+        // Check for year-only format first (e.g., "2024") - common in EPUB metadata
+        if (YEAR_ONLY_PATTERN.matcher(value).matches()) {
+            int year = Integer.parseInt(value);
+            if (year >= 1 && year <= 9999) {
+                return LocalDate.of(year, 1, 1);
+            }
+        }
+
         try {
             return LocalDate.parse(value);
         } catch (Exception ignored) {
@@ -272,9 +286,12 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         } catch (Exception ignored) {
         }
 
-        try {
-            return LocalDate.parse(value.substring(0, 10));
-        } catch (Exception ignored) {
+        // Try parsing first 10 characters for ISO date format with extra content
+        if (value.length() >= 10) {
+            try {
+                return LocalDate.parse(value.substring(0, 10));
+            } catch (Exception ignored) {
+            }
         }
 
         log.warn("Failed to parse date from string: {}", value);
