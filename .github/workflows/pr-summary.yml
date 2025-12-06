@@ -1,30 +1,71 @@
-name: Live PR Summary
+name: PR Final Summary
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows:
+      - "Build and Test BookLore"
+      - "Test Coverage Report"
+      - "Type Checking & Compilation"
+      - "Security Scan"
+      - "Code Quality Metrics"
+    types: [completed]
 
 concurrency:
-  group: live-summary-${{ github.event.number }}
+  group: final-summary-${{ github.event.workflow_run.pull_requests[0].number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
   pull-requests: write
   checks: read
   contents: read
+  actions: read
 
 jobs:
   summary:
-    name: 📊 Live PR Summary
+    name: 📊 PR Final Summary
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.event == 'pull_request' }}
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           egress-policy: audit
 
+      - uses: actions/checkout@v4
+
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Get PR number
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get PR number from workflow_run
+          PR_NUMBER=$(echo "${{ toJson(github.event.workflow_run.pull_requests) }}" | jq -r '.[0].number // empty')
+          if [ -z "$PR_NUMBER" ]; then
+            echo "::error::Could not determine PR number from workflow_run"
+            exit 1
+          fi
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "PR Number: $PR_NUMBER"
+
+      - name: Download All Artifacts
+        id: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/artifacts
+          
+          # Download all artifacts from the workflow_run
+          gh run download ${{ github.event.workflow_run.id }} \
+            --dir /tmp/artifacts \
+            --repo ${{ github.repository }} || true
+          
+          # List downloaded artifacts
+          echo "=== Downloaded Artifacts ==="
+          find /tmp/artifacts -type f -name "*.json" -o -name "*.txt" | head -20
+          ls -la /tmp/artifacts/ || true
 
       - name: Fetch Live Job Statuses
         id: checks
@@ -32,10 +73,13 @@ jobs:
         with:
           script: |
             try {
+              // Get the head SHA from the workflow_run
+              const headSha = '${{ github.event.workflow_run.head_commit.id }}';
+              
               const { data } = await github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: context.payload.pull_request.head.sha
+                ref: headSha
               });
               
               const statusMap = {};
@@ -77,7 +121,7 @@ jobs:
               };
               
               require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData));
-              core.info('Live check statuses written to /tmp/check_statuses.json');
+              core.info('Check statuses written to /tmp/check_statuses.json');
             } catch (error) {
               core.error(`Failed to fetch checks: ${error.message}`);
               const fallback = {
@@ -96,7 +140,7 @@ jobs:
 
       - name: Debug check statuses
         run: |
-          echo "=== Live Check Statuses JSON ==="
+          echo "=== Check Statuses JSON ==="
           cat /tmp/check_statuses.json | jq .
         continue-on-error: true
 
@@ -168,14 +212,14 @@ jobs:
 
       - name: Debug parsed statuses
         run: |
-          echo "=== Parsed Live Statuses ==="
+          echo "=== Parsed Check Statuses ==="
           echo "BACKEND_STATUS=$BACKEND_STATUS"
           echo "FRONTEND_STATUS=$FRONTEND_STATUS"
           echo "SONAR_STATUS=$SONAR_STATUS"
           echo "CODEQL_STATUS=$CODEQL_STATUS"
         continue-on-error: true
 
-      - name: Generate Live PR Summary
+      - name: Generate PR Summary
         id: summary
         env:
           BACKEND_STATUS: ${{ steps.status.outputs.backend_status }}
@@ -197,26 +241,23 @@ jobs:
           SONAR_STATUS: ${{ steps.status.outputs.sonar_status }}
           SONAR_LINK: ${{ steps.status.outputs.sonar_link }}
         run: |
-          # Coverage not available in live mode (no artifacts)
-          COVERAGE_BACKEND="N/A"
-          COVERAGE_FRONTEND="N/A"
-          
-          # Get current timestamp
+          # Get timestamp
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          WORKFLOW_CONCLUSION="${{ github.event.workflow_run.conclusion }}"
           
-          # Generate live summary markdown
+          # Generate summary markdown
           cat > /tmp/pr_summary.md << EOF
           <!-- booklore-ci-pr-summary -->
-          ## 📊 BookLore Live CI Summary
+          ## 📊 BookLore CI Summary
           
           ### 🧪 Tests & Build
-          | Component | Status | Coverage | Link |
-          |-----------|--------|----------|------|
-          | Backend Tests (JDK21) | ${BACKEND_STATUS} | ${COVERAGE_BACKEND} | [Logs](${BACKEND_LINK}) |
-          | Frontend Tests | ${FRONTEND_STATUS} | ${COVERAGE_FRONTEND} | [Logs](${FRONTEND_LINK}) |
-          | Type Checking (TS) | ${TYPECHECK_STATUS} | - | [Logs](${TYPECHECK_LINK}) |
-          | Docker Build (ARM64) | ${DOCKER_STATUS} | - | [Logs](${DOCKER_LINK}) |
-          | Test Coverage | ${COVERAGE_STATUS} | - | [Logs](${COVERAGE_LINK}) |
+          | Component | Status | Link |
+          |-----------|--------|------|
+          | Backend Tests (JDK21) | ${BACKEND_STATUS} | [Logs](${BACKEND_LINK}) |
+          | Frontend Tests | ${FRONTEND_STATUS} | [Logs](${FRONTEND_LINK}) |
+          | Type Checking (TS) | ${TYPECHECK_STATUS} | [Logs](${TYPECHECK_LINK}) |
+          | Docker Build (ARM64) | ${DOCKER_STATUS} | [Logs](${DOCKER_LINK}) |
+          | Test Coverage | ${COVERAGE_STATUS} | [Logs](${COVERAGE_LINK}) |
           
           ### 🔒 Security Checks
           | Check | Status | Link |
@@ -236,7 +277,7 @@ jobs:
           - 📖 **View Full CI**: [Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           - 📦 **Artifacts**: Available after jobs complete (7-day retention)
           
-          **Last updated**: ${TIMESTAMP} *(Updates live as jobs finish)*
+          **Last updated**: ${TIMESTAMP} (Workflow: ${WORKFLOW_CONCLUSION})
           EOF
           
           # Output summary
@@ -249,14 +290,14 @@ jobs:
         id: find-comment
         uses: peter-evans/find-comment@v3
         with:
-          issue-number: ${{ github.event.number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           comment-author: "github-actions[bot]"
           body-includes: "<!-- booklore-ci-pr-summary -->"
 
       - name: Create or update PR comment
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           edit-mode: replace
           body: ${{ steps.summary.outputs.summary }}
@@ -265,10 +306,12 @@ jobs:
       - name: Add summary to job summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 📊 BookLore Live CI Summary
+          ## 📊 BookLore CI Summary
           
-          ✅ Live PR summary comment posted successfully
+          ✅ PR summary comment posted successfully
           
-          - **PR Number**: ${{ github.event.number }}
+          - **PR Number**: ${{ steps.pr.outputs.number }}
+          - **Workflow Conclusion**: ${{ github.event.workflow_run.conclusion }}
+          - **Triggering Workflow**: ${{ github.event.workflow_run.name }}
           - **Run ID**: ${{ github.run_id }}
           EOF
