@@ -10,6 +10,7 @@ import {Textarea} from 'primeng/textarea';
 import {AutoComplete} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
+import {ConfirmationService} from 'primeng/api';
 
 @Component({
   selector: 'app-bookdrop-file-metadata-picker-component',
@@ -30,6 +31,8 @@ import {LazyLoadImageModule} from 'ng-lazyload-image';
 })
 export class BookdropFileMetadataPickerComponent {
 
+  private readonly confirmationService = inject(ConfirmationService);
+  
   @Input() fetchedMetadata!: BookMetadata;
   @Input() originalMetadata?: BookMetadata;
   @Input() metadataForm!: FormGroup;
@@ -162,6 +165,16 @@ export class BookdropFileMetadataPickerComponent {
       }
       event.target.value = '';
     }
+  }
+
+  confirmReset(): void {
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to reset all metadata changes made to this file?',
+      header: 'Reset Metadata Changes?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => this.resetAll()
+    });
   }
 
   resetAll() {
