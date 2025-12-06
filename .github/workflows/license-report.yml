@@ -1,0 +1,108 @@
+name: License Report Workflow
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "booklore-api/build.gradle"
+  workflow_dispatch:
+
+# cancel in-progress jobs if a new job is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref_name || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  generate-license-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165 # v5.0.0
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@4d9f0ba0025fe599b4ebab900eb7f3a1d93ef4c2 # v5.0.0
+
+      - name: Generate dependency report
+        run: ./gradlew dependencies --configuration runtimeClasspath > dependency-report.txt
+        working-directory: booklore-api
+
+      - name: Extract license info from dependencies
+        working-directory: booklore-api
+        run: |
+          # Create a simple license summary from dependencies
+          mkdir -p src/main/resources/static
+          
+          echo '{"generated": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'", "dependencies": [' > src/main/resources/static/3rdPartyLicenses.json
+          
+          # Parse dependency report for runtime dependencies
+          grep -E "^[+\\\\]---" dependency-report.txt | \
+            sed 's/[+\\]--- //' | \
+            sed 's/ (c)//' | \
+            sed 's/ (\*)//' | \
+            sort -u | \
+            head -100 | \
+            while read dep; do
+              # Extract group:artifact:version
+              if [[ "$dep" =~ ^([^:]+):([^:]+):([^:]+)$ ]]; then
+                GROUP="${BASH_REMATCH[1]}"
+                ARTIFACT="${BASH_REMATCH[2]}"
+                VERSION="${BASH_REMATCH[3]}"
+                echo "  {\"group\": \"$GROUP\", \"artifact\": \"$ARTIFACT\", \"version\": \"$VERSION\"},"
+              fi
+            done >> src/main/resources/static/3rdPartyLicenses.json
+          
+          # Close the JSON array (remove trailing comma and close)
+          sed -i '$ s/,$//' src/main/resources/static/3rdPartyLicenses.json
+          echo ']}' >> src/main/resources/static/3rdPartyLicenses.json
+
+      - name: Upload dependency report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dependency-report
+          path: booklore-api/dependency-report.txt
+          retention-days: 30
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add booklore-api/src/main/resources/static/3rdPartyLicenses.json
+          if git diff --staged --quiet; then
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.changes_detected == 'true'
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          commit-message: "chore: update 3rd party licenses"
+          title: "chore: Update 3rd Party Licenses"
+          body: |
+            Auto-generated license report update.
+            
+            This PR updates the list of third-party dependencies used in the project.
+          labels: dependencies,github-actions
+          branch: update-3rd-party-licenses
+          draft: false
+          delete-branch: true

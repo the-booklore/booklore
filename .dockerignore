@@ -1,0 +1,10 @@
+.git
+.github
+.idea
+.vscode
+**/node_modules
+**/build
+**/dist
+**/out
+**/.gradle
+# docker
