@@ -22,10 +22,49 @@
   --p-button-outlined-primary-color: #E32636;
 }
 
-.outlined-input-green {
-  border: 0.75px solid forestgreen !important;
+input.outlined-input-green,
+textarea.outlined-input-green,
+::ng-deep p-autocomplete.outlined-input-green ul.p-autocomplete-input-multiple {
+  border: 1px solid forestgreen !important;
 }
 
 ::ng-deep .p-inputchips {
   width: 100% !important;
+}
+
+::ng-deep .p-autocomplete .p-chip .p-chip-label {
+  font-size: 12px;
+}
+
+.metapicker {
+  box-sizing: border-box;
+}
+
+.metaheader {
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  justify-content: space-between;
+}
+
+.metaheader .midbuttons {
+  white-space: nowrap;
+}
+
+.metacontent {
+  padding: 0 1rem 1rem;
+}
+
+.metadata-status {
+  &.copied {
+    color: rgb(34, 197, 94);
+  }
+
+  &.no-metadata {
+    color: rgb(59, 130, 246);
+  }
+
+  &.not-applied {
+    color: rgb(239, 68, 68);
+  }
 }
