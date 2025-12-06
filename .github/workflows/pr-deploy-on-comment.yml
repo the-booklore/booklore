@@ -1,171 +1,106 @@
-name: PR Deploy on Comment
+name: Deploy PR Preview
 
 on:
+  # 1. The Standard Trigger (Requires file to be in default branch)
   issue_comment:
     types: [created]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: 'PR number to deploy'
-        required: true
 
-concurrency:
-  group: pr-deploy-${{ github.event.issue.number || github.event.inputs.pr_number }}
-  cancel-in-progress: true
-
-permissions:
+  # 2. The TEST Trigger (Allows you to run this MANUALLY from your PR branch)
   contents: read
   pull-requests: write
   issues: write
+  statuses: write
+
+# Prevent concurrent deploys for the same PR
+concurrency:
+  group: deploy-pr-${{ github.event.issue.number || github.event.inputs.pr_number }}
+  cancel-in-progress: true
 
 jobs:
-  check-deploy-command:
-    name: Check Deploy Command
-    runs-on: ubuntu-latest
-    if: |
+  deploy:
+    # Run if:
+    # 1. It is a manual run (workflow_dispatch)
+    # OR
+    # 2. It is a comment containing '/deploy' AND not from a bot
+    if: >
       github.event_name == 'workflow_dispatch' ||
       (
         github.event.issue.pull_request != null &&
-        (
-          contains(github.event.comment.body, '/deploy') ||
-          contains(github.event.comment.body, '/preview')
-        )
+        startsWith(github.event.comment.body, '/deploy') &&
+        github.event.comment.user.type != 'Bot'
       )
-    outputs:
-      should_deploy: ${{ steps.check.outputs.should_deploy }}
-      pr_number: ${{ steps.check.outputs.pr_number }}
-      pr_ref: ${{ steps.check.outputs.pr_ref }}
-      commit_hash: ${{ steps.check.outputs.commit_hash }}
-      commit_sha: ${{ steps.check.outputs.commit_sha }}
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
+        uses: step-security/harden-runner@v2
         with:
           egress-policy: audit
 
-      - name: Check authorization and get PR info
-        id: check
-        uses: actions/github-script@v7
-        env:
-          INPUT_PR: ${{ github.event.inputs.pr_number }}
-        with:
-          script: |
-            const authorizedUsers = ['balazs-szucs'];
-            let prNumber, author;
-            
-            if (context.eventName === 'workflow_dispatch') {
-              prNumber = parseInt(process.env.INPUT_PR, 10);
-              author = context.actor;
-              console.log(`Manual dispatch by ${author} for PR #${prNumber}`);
-            } else {
-              prNumber = context.payload.issue.number;
-              author = context.payload.comment.user.login;
-              console.log(`Comment trigger by ${author} on PR #${prNumber}`);
-            }
-            
-            // Check authorization
-            if (!authorizedUsers.includes(author)) {
-              core.warning(`User ${author} is not authorized to deploy`);
-              core.setOutput('should_deploy', 'false');
-              return;
-            }
-            
-            // Get PR details
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
-            
-            if (pr.state !== 'open') {
-              core.warning(`PR #${prNumber} is not open`);
-              core.setOutput('should_deploy', 'false');
-              return;
-            }
-            
-            const commitHash = pr.head.sha.substring(0, 8);
-            
-            core.setOutput('should_deploy', 'true');
-            core.setOutput('pr_number', String(prNumber));
-            core.setOutput('pr_ref', pr.head.ref);
-            core.setOutput('commit_hash', commitHash);
-            core.setOutput('commit_sha', pr.head.sha);
-            
-            console.log(`✓ Authorized: ${author}`);
-            console.log(`✓ PR #${prNumber} is open`);
-            console.log(`✓ Commit: ${commitHash} (${pr.head.sha})`);
+      # --- SETUP ENV VARS (Handles both Manual & Comment triggers) ---
+      - name: Set PR Environment Variables
+        id: pr-env
+        run: |
+          # Determine PR Number based on trigger type
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PR_NUMBER="${{ github.event.inputs.pr_number }}"
+            echo "Triggered Manually for PR: $PR_NUMBER"
+          else
+            PR_NUMBER="${{ github.event.issue.number }}"
+            echo "Triggered by Comment for PR: $PR_NUMBER"
+          fi
 
-      - name: Add reaction to comment
-        if: github.event_name == 'issue_comment' && steps.check.outputs.should_deploy == 'true'
+          echo "PR_NUM=$PR_NUMBER" >> $GITHUB_ENV
+          echo "pr_num=$PR_NUMBER" >> $GITHUB_OUTPUT
+          
+          # Calculate Port (6000 + 54 = 6054)
+          APP_PORT=$((6000 + PR_NUMBER))
+          echo "app_port=$APP_PORT" >> $GITHUB_OUTPUT
+
+      # --- FEEDBACK (Only works for Comments) ---
+      - name: Add 'Eyes' Reaction
+        if: github.event_name == 'issue_comment'
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.reactions.createForIssueComment({
+            github.rest.reactions.createForIssueComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               comment_id: context.payload.comment.id,
               content: 'eyes'
             });
 
-  deploy-to-vps:
-    name: Deploy to VPS
-    needs: check-deploy-command
-    if: needs.check-deploy-command.outputs.should_deploy == 'true'
-    runs-on: ubuntu-latest
+      # --- CHECKOUT LOGIC (The Tricky Part) ---
 
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
-        with:
-          egress-policy: audit
+      # Scenario A: Comment Trigger (Runs on default branch, need to fetch PR branch)
+      - name: Get PR Branch Info (Comment Trigger)
+        if: github.event_name == 'issue_comment'
+        uses: xt0rted/pull-request-comment-branch@v2
+        id: comment-branch
 
-      - name: Post deployment started comment
-        id: start-comment
-        uses: actions/github-script@v7
-        env:
-          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-        with:
-          script: |
-            const prNumber = parseInt(process.env.PR_NUMBER);
-            
-            // Delete previous deployment comments
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100
-            });
-
-            const oldComments = comments.filter(comment => 
-              (comment.body.includes('🚀 **Deploying PR') ||
-               comment.body.includes('## 🚀 PR Deployed!') ||
-               comment.body.includes('## ❌ Deployment Failed')) &&
-              comment.user.type === 'Bot'
-            );
-
-            for (const comment of oldComments) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id
-              });
-            }
-            
-            const { data: newComment } = await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: `🚀 **Deploying PR #${prNumber}** to preview environment...\n\n` +
-                    `⏳ This usually takes 1-2 minutes.`
-            });
-            
-            return newComment.id;
-
-      - name: Checkout Code
+      # Scenario A Checkout
+      - name: Checkout Code (Comment Trigger)
+        if: github.event_name == 'issue_comment'
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.check-deploy-command.outputs.commit_sha }}
+          ref: ${{ steps.comment-branch.outputs.head_ref }}
+
+      # Scenario B: Manual Trigger (Runs on the PR branch itself)
+      - name: Checkout Code (Manual Trigger)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v4
+        # No 'ref' needed, it checks out the branch you selected in the UI
+
+      - name: Get commit hash
+        id: commit-hash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short=8 HEAD)
+          echo "short=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+      # --- BUILD & DEPLOY (Same for both) ---
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -176,71 +111,85 @@ jobs:
       - name: Check if image exists
         id: check-image
         env:
-          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
-          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          IMAGE_TAG: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-${{ steps.commit-hash.outputs.short }}
         run: |
-          IMAGE_TAG="${DOCKER_USER}/booklore:pr-${PR_NUMBER}-${COMMIT_HASH}"
-          IMAGE_LATEST="${DOCKER_USER}/booklore:pr-${PR_NUMBER}"
-          
           if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
-            echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-            echo "✓ Found image: ${IMAGE_TAG}"
-          elif docker manifest inspect "$IMAGE_LATEST" >/dev/null 2>&1; then
-            echo "image=${IMAGE_LATEST}" >> $GITHUB_OUTPUT
-            echo "✓ Found image: ${IMAGE_LATEST}"
+            echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
-            echo "❌ No image found for PR #${PR_NUMBER}"
-            exit 1
           fi
+      - name: Build and Push (ARM64)
+        if: steps.check-image.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-${{ steps.commit-hash.outputs.short }}
+            ${{ secrets.DOCKER_HUB_USERNAME }}/booklore:pr-${{ env.PR_NUM }}-latest
+          cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache
+          cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/booklore:buildcache,mode=max
 
       - name: Set up SSH
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private.key
-          chmod 600 ~/.ssh/private.key
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null || true
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
       - name: Deploy to VPS
-        id: deploy
         env:
-          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-          IMAGE: ${{ steps.check-image.outputs.image }}
+          PR_NUM: ${{ env.PR_NUM }}
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          COMMIT_SHORT: ${{ steps.commit-hash.outputs.short }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
         run: |
-          VPS_USER="ubuntu"
-          PREVIEW_URL="https://pr.szucsb.eu/pr-${PR_NUMBER}"
+          UNIQUE_NAME="docker-compose-pr-${PR_NUM}-${GITHUB_RUN_ID}.yml"
           
-          # Deploy via SSH - pass variables to remote script
-          ssh -i ~/.ssh/private.key -T "${VPS_USER}@${VPS_HOST}" bash -s "${PR_NUMBER}" "${IMAGE}" <<'DEPLOY_EOF'
-          set -e
-          PR_NUMBER="$1"
-          IMAGE="$2"
-          mkdir -p ~/deployments/pr-${PR_NUMBER}/{data,books,bookdrop,mariadb_data}
-          cd ~/deployments/pr-${PR_NUMBER}
-          
-          # Create .env file for variable substitution
-          cat > .env <<ENV_EOF
-          PR_NUMBER=${PR_NUMBER}
-          IMAGE=${IMAGE}
-          ENV_EOF
-          
-          # Create docker-compose.yml with Traefik config
-          cat > docker-compose.yml <<'YAML_EOF'
-          version: '3.8'
+          # Create Docker Compose file
+          cat > "$UNIQUE_NAME" << EOF
           services:
+            booklore:
+              image: ${DOCKER_USER}/booklore:pr-${PR_NUM}-${COMMIT_SHORT}
+              container_name: booklore-pr-${PR_NUM}
+              environment:
+                - TZ=Etc/UTC
+                - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&allowPublicKeyRetrieval=true
+                - SPRING_DATASOURCE_USERNAME=booklore
+                - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUM}
+                - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+                - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+              depends_on:
+                mariadb:
+                  condition: service_healthy
+              ports:
+                - "${APP_PORT}:6060"
+              volumes:
+                - ./data:/app/data
+                - ./books:/books
+                - ./bookdrop:/bookdrop
+              restart: on-failure:5
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 90s
+
             mariadb:
               image: lscr.io/linuxserver/mariadb:11.4.5
-              container_name: mariadb-pr-${PR_NUMBER}
+              container_name: mariadb-pr-${PR_NUM}
               environment:
                 - PUID=1000
                 - PGID=1000
                 - TZ=Etc/UTC
-                - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUMBER}
+                - MYSQL_ROOT_PASSWORD=pr_root_${PR_NUM}
                 - MYSQL_DATABASE=booklore
                 - MYSQL_USER=booklore
-                - MYSQL_PASSWORD=pr_pass_${PR_NUMBER}
+                - MYSQL_PASSWORD=pr_pass_${PR_NUM}
               volumes:
                 - ./mariadb_data:/config
               healthcheck:
@@ -248,161 +197,87 @@ jobs:
                 interval: 5s
                 timeout: 5s
                 retries: 10
-              restart: unless-stopped
-              networks:
-                - proxy
-            booklore:
-              image: ${IMAGE}
-              container_name: booklore-pr-${PR_NUMBER}
-              environment:
-                - TZ=Etc/UTC
-                - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&allowPublicKeyRetrieval=true
-                - SPRING_DATASOURCE_USERNAME=booklore
-                - SPRING_DATASOURCE_PASSWORD=pr_pass_${PR_NUMBER}
-                - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
-                - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
-              depends_on:
-                mariadb:
-                  condition: service_healthy
-              volumes:
-                - ./data:/app/data
-                - ./books:/books
-                - ./bookdrop:/bookdrop
-              restart: unless-stopped
-              healthcheck:
-                test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
-                interval: 30s
-                timeout: 10s
-                retries: 3
-                start_period: 90s
-              labels:
-                - traefik.enable=true
-                - traefik.docker.network=proxy
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}.entrypoints=http
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}.rule=Host(`pr.szucsb.eu`) && PathPrefix(`/pr-${PR_NUMBER}`)
-                - traefik.http.middlewares.booklore-pr-${PR_NUMBER}-https-redirect.redirectscheme.scheme=https
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}.middlewares=booklore-pr-${PR_NUMBER}-https-redirect
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.entrypoints=https
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.rule=Host(`pr.szucsb.eu`) && PathPrefix(`/pr-${PR_NUMBER}`)
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.tls=true
-                - traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.service=booklore-pr-${PR_NUMBER}
-                - traefik.http.services.booklore-pr-${PR_NUMBER}.loadbalancer.server.port=6060
-              networks:
-                - proxy
-              security_opt:
-                - no-new-privileges:true
-          volumes:
-            mariadb_data:
-              driver: local
-          networks:
-            proxy:
-              external: true
-          YAML_EOF
+          EOF
           
-          # Deploy containers
-          docker compose down --remove-orphans 2>/dev/null || true
-          docker compose pull
-          docker compose up -d
-          docker image prune -af --filter "until=168h" || true
-          echo "✓ Deployed PR #${PR_NUMBER}"
-          DEPLOY_EOF
+          # Transfer and Deploy
+          scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "$UNIQUE_NAME" "${VPS_USER}@${VPS_HOST}:/tmp/${UNIQUE_NAME}"
           
-          echo "preview_url=${PREVIEW_URL}" >> $GITHUB_OUTPUT
-      - name: Wait for application
-        env:
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-        run: |
-          echo "Waiting for application to start at ${PREVIEW_URL}..."
-          for i in {1..60}; do
-            if curl -sf -k "${PREVIEW_URL}/" >/dev/null 2>&1; then
-              echo "✓ Application is responding"
-              exit 0
-            fi
-            echo "Waiting... ($i/60)"
-            sleep 5
-          done
-          echo "⚠ Health check timed out, but deployment may still be initializing"
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no "${VPS_USER}@${VPS_HOST}" << ENDSSH
+            mkdir -p ~/deployments/pr-${PR_NUM}/{data,books,bookdrop,mariadb_data}
+            mv /tmp/${UNIQUE_NAME} ~/deployments/pr-${PR_NUM}/docker-compose.yml
+            cd ~/deployments/pr-${PR_NUM}
+            docker compose down || true
+            docker compose pull
+            docker compose up -d
+            docker image prune -af --filter "until=168h" || true
+          ENDSSH
 
-      - name: Delete start comment and post success
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f ~/.ssh/deploy_key
+
+      # --- NOTIFICATIONS (Works for both) ---
+
+      - name: Comment Success
         if: success()
         uses: actions/github-script@v7
         env:
-          COMMENT_ID: ${{ steps.start-comment.outputs.result }}
-          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
-          PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
-          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          PR_NUM: ${{ env.PR_NUM }}
+          APP_PORT: ${{ steps.pr-env.outputs.app_port }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          COMMIT_SHORT: ${{ steps.commit-hash.outputs.short }}
+          IMAGE_EXISTS: ${{ steps.check-image.outputs.exists }}
         with:
           script: |
-            // Delete the "deploying" comment
-            const commentId = process.env.COMMENT_ID;
-            if (commentId) {
-              try {
-                await github.rest.issues.deleteComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: commentId
-                });
-              } catch (e) { console.log('Could not delete comment'); }
-            }
+            const cached = process.env.IMAGE_EXISTS === 'true';
+            const buildNote = cached ? '📦 *Used cached image*' : '🔨 *Built new image*';
             
-            const prNumber = process.env.PR_NUMBER;
-            const commitHash = process.env.COMMIT_HASH;
-            const previewUrl = process.env.PREVIEW_URL;
-            const dockerUser = process.env.DOCKER_USER;
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: parseInt(prNumber),
-              body: `## 🚀 PR Deployed!\n\n` +
-                    `**Preview URL:** [${previewUrl}](${previewUrl})\n\n` +
-                    `| Detail | Value |\n` +
-                    `|--------|-------|\n` +
-                    `| 📦 Commit | \`${commitHash}\` |\n` +
-                    `| 🐳 Image | \`${dockerUser}/booklore:pr-${prNumber}\` |\n` +
-                    `| 🌐 Domain | \`pr.szucsb.eu/pr-${prNumber}\` |\n\n` +
-                    `_Deployment will be cleaned up when PR is closed._`
-            });
-            
-            // Add rocket reaction to original comment
+            // Add emoji to request comment if it exists
             if (context.eventName === 'issue_comment') {
-              await github.rest.reactions.createForIssueComment({
+                await github.rest.reactions.createForIssueComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: context.payload.comment.id,
                 content: 'rocket'
-              });
+                });
             }
 
-      - name: Post failure comment
-        if: failure()
-        uses: actions/github-script@v7
-        env:
-          COMMENT_ID: ${{ steps.start-comment.outputs.result }}
-          PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-        with:
-          script: |
-            // Delete the "deploying" comment
-            const commentId = process.env.COMMENT_ID;
-            if (commentId) {
-              try {
-                await github.rest.issues.deleteComment({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  comment_id: commentId
-                });
-              } catch (e) {}
-            }
-            
+            // Post new comment with details
             await github.rest.issues.createComment({
+              issue_number: parseInt(process.env.PR_NUM),
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: parseInt(process.env.PR_NUMBER),
-              body: `## ❌ Deployment Failed\n\n` +
-                    `Check the [workflow logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for details.`
+              body: `🚀 **PR Preview Deployed!**\n\n` +
+                    `| Resource | Value |\n` +
+                    `|----------|-------|\n` +
+                    `| 📚 **URL** | http://${process.env.VPS_HOST}:${process.env.APP_PORT} |\n` +
+                    `| 🏷️ **Commit** | \`${process.env.COMMIT_SHORT}\` |\n` +
+                    `| 🐳 **Port** | ${process.env.APP_PORT} |\n\n` +
+                    `${buildNote}\n\n` +
+                    `⚠️ *Firewall port ${process.env.APP_PORT} must be open.*`
             });
 
-      - name: Cleanup SSH
-        if: always()
-        run: rm -f ~/.ssh/private.key
+      - name: Report Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'issue_comment') {
+                await github.rest.reactions.createForIssueComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: context.payload.comment.id,
+                content: '-1'
+                });
+            }
+            
+            // If manual trigger, we still want a comment on the PR
+            const prNum = parseInt(process.env.PR_NUM || 0);
+            if (prNum > 0) {
+                await github.rest.issues.createComment({
+                issue_number: prNum,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `❌ **Deployment Failed!**\n\nCheck the [workflow logs](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) for details.`
+                });
+            }
