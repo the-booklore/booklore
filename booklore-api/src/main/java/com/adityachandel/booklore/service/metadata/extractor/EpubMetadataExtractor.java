@@ -348,10 +348,27 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     }
 
     private String resolvePath(String opfPath, String href) {
+        if (href == null || href.isEmpty()) return null;
+
+        // If href is absolute within the zip (starts with /), return it without leading /
+        if (href.startsWith("/")) return href.substring(1);
+
         int lastSlash = opfPath.lastIndexOf('/');
-        if (lastSlash == -1) return href;
-        String basePath = opfPath.substring(0, lastSlash + 1);
-        return basePath + href;
+        String basePath = (lastSlash == -1) ? "" : opfPath.substring(0, lastSlash + 1);
+
+        String combined = basePath + href;
+
+        // Normalize path components to handle ".." and "."
+        java.util.LinkedList<String> parts = new java.util.LinkedList<>();
+        for (String part : combined.split("/")) {
+            if (part.equals("..")) {
+                if (!parts.isEmpty()) parts.removeLast();
+            } else if (!part.equals(".") && !part.isEmpty()) {
+                parts.add(part);
+            }
+        }
+
+        return String.join("/", parts);
     }
 
     private byte[] extractFileFromZip(File epubFile, String path) {
