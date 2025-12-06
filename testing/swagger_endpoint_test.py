@@ -553,12 +553,37 @@ class SwaggerEndpointTester:
         
         return resolved_path, query_params, request_body
     
+    def _check_skip_conditions(self, method: str, path: str) -> Optional[str]:
+        """Check if endpoint should be skipped and return skip reason."""
+        should_skip, skip_reason = EndpointClassifier.should_skip(path, method)
+        if should_skip:
+            return skip_reason
+        
+        if self.config.skip_destructive and EndpointClassifier.is_destructive(method, path):
+            return "Destructive endpoint skipped"
+        
+        requires_auth = EndpointClassifier.requires_auth(path)
+        if requires_auth and not self.config.enable_auth:
+            return "Requires authentication (use --enable-auth)"
+        
+        return None
+    
+    def _determine_success(self, error: Optional[str], status_code: int, method: str) -> bool:
+        """Determine if response indicates success."""
+        if error:
+            return False
+        if status_code in self.SUCCESS_CODES.get(method, set()):
+            return True
+        if status_code in self.ACCEPTABLE_CODES:
+            return True
+        return status_code != 500
+    
     def test_endpoint(self, method: str, path: str, 
                      operation: Dict[str, Any]) -> EndpointResult:
         """Test a single endpoint."""
-        # Check if should skip
-        should_skip, skip_reason = EndpointClassifier.should_skip(path, method)
-        if should_skip:
+        # Check skip conditions
+        skip_reason = self._check_skip_conditions(method, path)
+        if skip_reason:
             return EndpointResult(
                 path=path,
                 method=method,
@@ -567,31 +592,6 @@ class SwaggerEndpointTester:
                 response_time=0,
                 skipped=True,
                 skip_reason=skip_reason
-            )
-        
-        # Check if destructive and skip if configured
-        if self.config.skip_destructive and EndpointClassifier.is_destructive(method, path):
-            return EndpointResult(
-                path=path,
-                method=method,
-                status_code=0,
-                success=True,
-                response_time=0,
-                skipped=True,
-                skip_reason="Destructive endpoint skipped"
-            )
-        
-        # Check authentication requirements
-        requires_auth = EndpointClassifier.requires_auth(path)
-        if requires_auth and not self.config.enable_auth:
-            return EndpointResult(
-                path=path,
-                method=method,
-                status_code=0,
-                success=True,
-                response_time=0,
-                skipped=True,
-                skip_reason="Requires authentication (use --enable-auth)"
             )
         
         # Prepare request
@@ -606,17 +606,8 @@ class SwaggerEndpointTester:
         )
         
         # Determine success
-        success = False
-        if error:
-            success = False
-        elif status_code in self.SUCCESS_CODES.get(method, set()):
-            success = True
-        elif status_code in self.ACCEPTABLE_CODES:
-            # These are acceptable failures (expected for test data)
-            success = True
-        elif status_code == 500:
-            # Server error is a real failure
-            success = False
+        success = self._determine_success(error, status_code, method)
+        if status_code == 500 and not error:
             error = "Internal Server Error"
         
         if self.config.verbose:
@@ -780,7 +771,7 @@ def main():
     logger.info(f"Auth enabled: {config.enable_auth}")
     
     tester = SwaggerEndpointTester(config)
-    summary = tester.run()
+    tester.run()
     
     success = tester.print_summary()
     

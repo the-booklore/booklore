@@ -52,14 +52,11 @@ ENV APP_GROUP_ID=1000
 
 WORKDIR /app
 
-# Install simple utilities if needed (like curl for healthchecks)
-RUN apk add --no-cache curl tzdata
-
-# Create necessary directories for BookLore
-RUN mkdir -p /app/data /books /bookdrop \
+# Install simple utilities if needed (like curl for healthchecks), create directories, and copy JAR
+RUN apk add --no-cache curl tzdata \
+    && mkdir -p /app/data /books /bookdrop \
     && chown -R ${APP_USER_ID}:${APP_GROUP_ID} /app /books /bookdrop
 
-# Copy JAR from builder
 COPY --from=backend-builder /build/build/libs/*.jar app.jar
 
 # Set the server port to match what we expose

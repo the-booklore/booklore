@@ -125,14 +125,14 @@ export class FinishedBooksTimelineChartService implements OnDestroy {
       }
     });
 
-    const monthsWithData = Array.from(yearMonthMap.keys()).sort();
+    const monthsWithData = Array.from(yearMonthMap.keys()).sort((a, b) => a.localeCompare(b));
 
     if (monthsWithData.length === 0) {
       return [];
     }
 
     const startDate = this.parseYearMonth(monthsWithData[0]);
-    const endDate = this.parseYearMonth(monthsWithData[monthsWithData.length - 1]);
+    const endDate = this.parseYearMonth(monthsWithData.at(-1)!);
 
     const completeStats: FinishedBooksStats[] = [];
     const currentDate = new Date(startDate.year, startDate.month - 1, 1);

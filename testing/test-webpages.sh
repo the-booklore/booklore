@@ -30,11 +30,11 @@ PROTECTED_ENDPOINTS=(
     "/api/v1/users|401,403|Users API (protected)"
 )
 
-log_info() { echo -e "${GREEN}[INFO]${NC} $1"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
-log_success() { echo -e "${GREEN}[PASS]${NC} $1"; }
-log_fail() { echo -e "${RED}[FAIL]${NC} $1"; }
+log_info() { echo -e "${GREEN}[INFO]${NC} $1"; return 0; }
+log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; return 0; }
+log_error() { echo -e "${RED}[ERROR]${NC} $1" >&2; return 1; }
+log_success() { echo -e "${GREEN}[PASS]${NC} $1"; return 0; }
+log_fail() { echo -e "${RED}[FAIL]${NC} $1" >&2; return 1; }
 
 test_url() {
     local url="$1"
@@ -47,7 +47,7 @@ test_url() {
     # Check if status code matches any expected value
     IFS=',' read -ra EXPECTED_CODES <<< "$expected"
     for code in "${EXPECTED_CODES[@]}"; do
-        if [ "$status_code" = "$code" ]; then
+        if [[ "$status_code" = "$code" ]]; then
             log_success "$description: $url (HTTP $status_code)"
             return 0
         fi
@@ -107,7 +107,7 @@ main() {
     log_info "Skipped: $skipped"
     log_info "=========================================="
     
-    if [ $failed -eq 0 ]; then
+    if [[ $failed -eq 0 ]]; then
         log_success "All tests passed!"
         exit 0
     else

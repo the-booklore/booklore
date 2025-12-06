@@ -11,6 +11,7 @@ APP_PORT="${APP_PORT:-6060}"
 TIMEOUT="${TIMEOUT:-180}"
 HEALTH_ENDPOINT="/actuator/health"
 VERSION_ENDPOINT="/api/v1/version"
+SEPARATOR="=========================================="
 
 # Colors for output
 RED='\033[0;31m'
@@ -28,7 +29,8 @@ log_warn() {
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+    return 1
 }
 
 log_success() {
@@ -36,7 +38,8 @@ log_success() {
 }
 
 log_fail() {
-    echo -e "${RED}[FAIL]${NC} $1"
+    echo -e "${RED}[FAIL]${NC} $1" >&2
+    return 1
 }
 
 # Start MariaDB container for testing
@@ -66,6 +69,7 @@ start_mariadb() {
     
     log_error "MariaDB failed to start"
     return 1
+}
 }
 
 # Cleanup function
@@ -131,7 +135,7 @@ test_endpoint() {
     response=$(curl -s -w "\n%{http_code}" "http://localhost:${APP_PORT}${endpoint}" 2>/dev/null || echo "000")
     status_code=$(echo "$response" | tail -n1)
     
-    if [ "$status_code" = "$expected_status" ]; then
+    if [[ "$status_code" = "$expected_status" ]]; then
         log_success "$description (HTTP $status_code)"
         return 0
     else
@@ -252,16 +256,16 @@ main() {
     
     # Print summary
     log_info ""
-    log_info "=========================================="
+    log_info "$SEPARATOR"
     log_info "Test Results Summary"
-    log_info "=========================================="
+    log_info "$SEPARATOR"
     
     for result in "${test_results[@]}"; do
         echo "  $result"
     done
     
     log_info ""
-    if [ $failed -eq 0 ]; then
+    if [[ $failed -eq 0 ]]; then
         log_success "All tests passed!"
         exit 0
     else

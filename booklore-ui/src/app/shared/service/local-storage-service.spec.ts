@@ -53,8 +53,8 @@ describe('LocalStorageService', () => {
 
     it('should overwrite existing values', () => {
       service.set('key', 'first');
-      service.set('key', 'second');
-      expect(localStorage.getItem('key')).toBe('"second"');
+      service.set('overwrite', 'second');
+      expect(localStorage.getItem('overwrite')).toBe('"second"');
     });
   });
 
