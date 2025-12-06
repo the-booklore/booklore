@@ -103,28 +103,30 @@ jobs:
       - name: Parse check statuses
         id: status
         run: |
-          if [ -f /tmp/check_statuses.json ]; then
-            export CHECKS=$(cat /tmp/check_statuses.json)
-            
-            BACKEND_STATUS=$(echo "$CHECKS" | jq -r '.backend.status // "⚪ Pending"')
-            BACKEND_LINK=$(echo "$CHECKS" | jq -r '.backend.link // ""')
-            FRONTEND_STATUS=$(echo "$CHECKS" | jq -r '.frontend.status // "⚪ Pending"')
-            FRONTEND_LINK=$(echo "$CHECKS" | jq -r '.frontend.link // ""')
-            TYPECHECK_STATUS=$(echo "$CHECKS" | jq -r '.typecheck.status // "⚪ Pending"')
-            TYPECHECK_LINK=$(echo "$CHECKS" | jq -r '.typecheck.link // ""')
-            DOCKER_STATUS=$(echo "$CHECKS" | jq -r '.docker.status // "⚪ Pending"')
-            DOCKER_LINK=$(echo "$CHECKS" | jq -r '.docker.link // ""')
-            COVERAGE_STATUS=$(echo "$CHECKS" | jq -r '.coverage.status // "⚪ Pending"')
-            COVERAGE_LINK=$(echo "$CHECKS" | jq -r '.coverage.link // ""')
-            CODEQL_STATUS=$(echo "$CHECKS" | jq -r '.codeql.status // "⚪ Pending"')
-            CODEQL_LINK=$(echo "$CHECKS" | jq -r '.codeql.link // ""')
-            SEMGREP_STATUS=$(echo "$CHECKS" | jq -r '.semgrep.status // "⚪ Pending"')
-            SEMGREP_LINK=$(echo "$CHECKS" | jq -r '.semgrep.link // ""')
-            GITLEAKS_STATUS=$(echo "$CHECKS" | jq -r '.gitleaks.status // "⚪ Pending"')
-            GITLEAKS_LINK=$(echo "$CHECKS" | jq -r '.gitleaks.link // ""')
-            SONAR_STATUS=$(echo "$CHECKS" | jq -r '.sonar.status // "⚪ Pending"')
-            SONAR_LINK=$(echo "$CHECKS" | jq -r '.sonar.link // ""')
+          echo "=== JSON Content Raw ==="
+          cat /tmp/check_statuses.json
+          
+          if [ -f /tmp/check_statuses.json ] && jq empty /tmp/check_statuses.json >/dev/null 2>&1; then
+            BACKEND_STATUS=$(jq -r '.backend.status // "⚪ Pending"' /tmp/check_statuses.json)
+            BACKEND_LINK=$(jq -r '.backend.link // ""' /tmp/check_statuses.json)
+            FRONTEND_STATUS=$(jq -r '.frontend.status // "⚪ Pending"' /tmp/check_statuses.json)
+            FRONTEND_LINK=$(jq -r '.frontend.link // ""' /tmp/check_statuses.json)
+            TYPECHECK_STATUS=$(jq -r '.typecheck.status // "⚪ Pending"' /tmp/check_statuses.json)
+            TYPECHECK_LINK=$(jq -r '.typecheck.link // ""' /tmp/check_statuses.json)
+            DOCKER_STATUS=$(jq -r '.docker.status // "⚪ Pending"' /tmp/check_statuses.json)
+            DOCKER_LINK=$(jq -r '.docker.link // ""' /tmp/check_statuses.json)
+            COVERAGE_STATUS=$(jq -r '.coverage.status // "⚪ Pending"' /tmp/check_statuses.json)
+            COVERAGE_LINK=$(jq -r '.coverage.link // ""' /tmp/check_statuses.json)
+            CODEQL_STATUS=$(jq -r '.codeql.status // "⚪ Pending"' /tmp/check_statuses.json)
+            CODEQL_LINK=$(jq -r '.codeql.link // ""' /tmp/check_statuses.json)
+            SEMGREP_STATUS=$(jq -r '.semgrep.status // "⚪ Pending"' /tmp/check_statuses.json)
+            SEMGREP_LINK=$(jq -r '.semgrep.link // ""' /tmp/check_statuses.json)
+            GITLEAKS_STATUS=$(jq -r '.gitleaks.status // "⚪ Pending"' /tmp/check_statuses.json)
+            GITLEAKS_LINK=$(jq -r '.gitleaks.link // ""' /tmp/check_statuses.json)
+            SONAR_STATUS=$(jq -r '.sonar.status // "⚪ Pending"' /tmp/check_statuses.json)
+            SONAR_LINK=$(jq -r '.sonar.link // ""' /tmp/check_statuses.json)
           else
+            echo "JSON file missing or invalid, using fallbacks"
             BACKEND_STATUS="⚪ Pending"
             BACKEND_LINK=""
             FRONTEND_STATUS="⚪ Pending"
@@ -170,6 +172,7 @@ jobs:
           echo "BACKEND_STATUS=$BACKEND_STATUS"
           echo "FRONTEND_STATUS=$FRONTEND_STATUS"
           echo "SONAR_STATUS=$SONAR_STATUS"
+          echo "CODEQL_STATUS=$CODEQL_STATUS"
         continue-on-error: true
 
       - name: Generate Live PR Summary
