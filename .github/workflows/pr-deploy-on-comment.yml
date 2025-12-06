@@ -220,8 +220,14 @@ jobs:
           mkdir -p ~/deployments/pr-${PR_NUMBER}/{data,books,bookdrop,mariadb_data}
           cd ~/deployments/pr-${PR_NUMBER}
           
+          # Create .env file for variable substitution
+          cat > .env <<ENV_EOF
+          PR_NUMBER=${PR_NUMBER}
+          IMAGE=${IMAGE}
+          ENV_EOF
+          
           # Create docker-compose.yml with Traefik config
-          cat > docker-compose.yml <<YAML_EOF
+          cat > docker-compose.yml <<'YAML_EOF'
           version: '3.8'
           services:
             mariadb:
