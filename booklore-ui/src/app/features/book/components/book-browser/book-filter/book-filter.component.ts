@@ -1,5 +1,5 @@
 import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
+import {combineLatest, filter, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {BookService} from '../../../service/book.service';
 import {Library} from '../../../model/library.model';
@@ -11,14 +11,12 @@ import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
 import {Badge} from 'primeng/badge';
 import {FormsModule} from '@angular/forms';
 import {SelectButton} from 'primeng/selectbutton';
-import {UserService} from '../../../../settings/user-management/user.service';
+import {BookFilterMode, FilterSortingMode, UserService, UserState} from '../../../../settings/user-management/user.service';
 import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
 
 type Filter<T> = { value: T; bookCount: number };
-
-export type BookFilterMode = 'and' | 'or' | 'single';
 
 export const ratingRanges = [
   {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
@@ -200,14 +198,23 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   bookService = inject(BookService);
   userService = inject(UserService);
   bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  userData$: Observable<UserState> = this.userService.userState$;
+  filterSortingMode: FilterSortingMode = 'alphabetical';
 
   ngOnInit(): void {
+    this.userData$.pipe(
+      filter(userState => !!userState?.user && userState.loaded),
+      takeUntil(this.destroy$)
+    ).subscribe(userState => {
+      this.filterSortingMode = userState.user!.userSettings.filterSortingMode ?? 'alphabetical';
+    });
+
     combineLatest([
       this.entity$ ?? of(null),
       this.entityType$ ?? of(EntityType.ALL_BOOKS)
     ])
       .pipe(takeUntil(this.destroy$))
-      .subscribe(([sortMode]) => {
+      .subscribe(() => {
         this.filterStreams = {
           author: this.getFilterStream(
             (book: Book) => Array.isArray(book.metadata?.authors) ? book.metadata.authors.map(name => ({id: name, name})) : [],
@@ -270,7 +277,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     extractor: (book: Book) => T[] | undefined,
     idKey: keyof T,
     nameKey: keyof T,
-    sortMode: 'count' | 'alphabetical' | 'sortIndex' = 'count'
+    sortMode: FilterSortingMode | 'sortIndex' = this.filterSortingMode
   ): Observable<Filter<T[keyof T]>[]> {
     return combineLatest([
       this.bookService.bookState$,
@@ -296,11 +303,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         const sorted = result.sort((a, b) => {
           if (sortMode === 'sortIndex') {
             return (a.value.sortIndex ?? 999) - (b.value.sortIndex ?? 999);
+          } else if (sortMode === 'count' && b.bookCount !== a.bookCount) {
+            return b.bookCount - a.bookCount;
           }
-          return (
-            b.bookCount - a.bookCount ||
-            a.value[nameKey].toString().localeCompare(b.value[nameKey].toString())
-          );
+          return a.value[nameKey].toString().localeCompare(b.value[nameKey].toString());
         });
 
         const isTruncated = sorted.length > 500;

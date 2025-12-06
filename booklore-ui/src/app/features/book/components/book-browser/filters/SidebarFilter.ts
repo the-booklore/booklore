@@ -2,8 +2,9 @@ import {Observable, combineLatest, of} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {BookFilter} from './BookFilter';
 import {BookState} from '../../../model/state/book-state.model';
-import {fileSizeRanges, matchScoreRanges, pageCountRanges, ratingRanges, BookFilterMode} from '../book-filter/book-filter.component';
+import {fileSizeRanges, matchScoreRanges, pageCountRanges, ratingRanges} from '../book-filter/book-filter.component';
 import {Book, ReadStatus} from '../../../model/book.model';
+import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 export function isRatingInRange(rating: number | undefined | null, rangeId: string): boolean {
   if (rating == null) return false;
