@@ -183,25 +183,17 @@ jobs:
           IMAGE_TAG="${DOCKER_USER}/booklore:pr-${PR_NUMBER}-${COMMIT_HASH}"
           IMAGE_LATEST="${DOCKER_USER}/booklore:pr-${PR_NUMBER}"
           
-          # Try commit-specific tag first, then latest PR tag
           if docker manifest inspect "$IMAGE_TAG" >/dev/null 2>&1; then
             echo "image=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-            echo "exists=true" >> $GITHUB_OUTPUT
             echo "✓ Found image: ${IMAGE_TAG}"
           elif docker manifest inspect "$IMAGE_LATEST" >/dev/null 2>&1; then
             echo "image=${IMAGE_LATEST}" >> $GITHUB_OUTPUT
-            echo "exists=true" >> $GITHUB_OUTPUT
             echo "✓ Found image: ${IMAGE_LATEST}"
           else
             echo "exists=false" >> $GITHUB_OUTPUT
             echo "❌ No image found for PR #${PR_NUMBER}"
+            exit 1
           fi
-
-      - name: Fail if no image
-        if: steps.check-image.outputs.exists != 'true'
-        run: |
-          echo "No Docker image found. Please wait for the build workflow to complete first."
-          exit 1
 
       - name: Set up SSH
         run: |
@@ -214,100 +206,106 @@ jobs:
         id: deploy
         env:
           PR_NUMBER: ${{ needs.check-deploy-command.outputs.pr_number }}
-          COMMIT_HASH: ${{ needs.check-deploy-command.outputs.commit_hash }}
           IMAGE: ${{ steps.check-image.outputs.image }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
         run: |
           VPS_USER="ubuntu"
-          SUBDOMAIN="pr-${PR_NUMBER}"
-          DOMAIN="pr.szucsb.eu"
-          PREVIEW_URL="https://${SUBDOMAIN}.${DOMAIN}"
+          PREVIEW_URL="https://pr-${PR_NUMBER}.pr.szucsb.eu"
           
-          # Create docker-compose file with Traefik labels
-          cat > docker-compose.yml << EOF
+          # Deploy via SSH
+          ssh -i ~/.ssh/private.key -T "${VPS_USER}@${VPS_HOST}" <<'DEPLOY_EOF'
+          set -e
+          PR_NUMBER="PR_NUM"
+          IMAGE="IMG_VAL"
+          mkdir -p ~/deployments/pr-${PR_NUMBER}/{data,books,bookdrop,mariadb_data}
+          cd ~/deployments/pr-${PR_NUMBER}
+          
+          # Create docker-compose.yml with Traefik config
+          cat > docker-compose.yml <<'YAML_EOF'
           version: '3.8'
           services:
             mariadb:
-              container_name: booklore-db-pr-${PR_NUMBER}
-              image: mariadb:10.11
+              image: lscr.io/linuxserver/mariadb:11.4.5
+              container_name: mariadb-pr-PR_NUM
               environment:
-                MYSQL_ROOT_PASSWORD: booklore_pr_${PR_NUMBER}
-                MYSQL_DATABASE: booklore
-                MYSQL_USER: booklore
-                MYSQL_PASSWORD: booklore_pr_${PR_NUMBER}
+                - PUID=1000
+                - PGID=1000
+                - TZ=Etc/UTC
+                - MYSQL_ROOT_PASSWORD=pr_root_PR_NUM
+                - MYSQL_DATABASE=booklore
+                - MYSQL_USER=booklore
+                - MYSQL_PASSWORD=pr_pass_PR_NUM
               volumes:
-                - booklore-db-pr-${PR_NUMBER}:/var/lib/mysql
+                - ./mariadb_data:/config
               healthcheck:
-                test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+                test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
                 interval: 5s
-                timeout: 3s
+                timeout: 5s
                 retries: 10
               restart: unless-stopped
               networks:
                 - proxy
-
             booklore:
-              container_name: booklore-app-pr-${PR_NUMBER}
-              image: ${IMAGE}
+              image: IMG_VAL
+              container_name: booklore-pr-PR_NUM
               environment:
-                DATABASE_URL: jdbc:mariadb://mariadb:3306/booklore?createDatabaseIfNotExist=true
-                DATABASE_USERNAME: booklore
-                DATABASE_PASSWORD: booklore_pr_${PR_NUMBER}
-                SWAGGER_ENABLED: "true"
-                SPRING_JPA_HIBERNATE_DDL_AUTO: "validate"
-              volumes:
-                - booklore-data-pr-${PR_NUMBER}:/app/data
-                - booklore-books-pr-${PR_NUMBER}:/books
+                - TZ=Etc/UTC
+                - SPRING_DATASOURCE_URL=jdbc:mariadb://mariadb:3306/booklore?useSSL=false&allowPublicKeyRetrieval=true
+                - SPRING_DATASOURCE_USERNAME=booklore
+                - SPRING_DATASOURCE_PASSWORD=pr_pass_PR_NUM
+                - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.mariadb.jdbc.Driver
+                - SPRING_JPA_HIBERNATE_DDL_AUTO=validate
               depends_on:
                 mariadb:
                   condition: service_healthy
+              volumes:
+                - ./data:/app/data
+                - ./books:/books
+                - ./bookdrop:/bookdrop
               restart: unless-stopped
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:6060/actuator/health"]
+                interval: 30s
+                timeout: 10s
+                retries: 3
+                start_period: 90s
               labels:
-                - "traefik.enable=true"
-                - "traefik.docker.network=proxy"
-                # HTTP -> HTTPS Redirect
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}.entrypoints=http"
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}.rule=Host(\`${SUBDOMAIN}.${DOMAIN}\`)"
-                - "traefik.http.middlewares.booklore-pr-${PR_NUMBER}-https-redirect.redirectscheme.scheme=https"
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}.middlewares=booklore-pr-${PR_NUMBER}-https-redirect"
-                # HTTPS Router
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.entrypoints=https"
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.rule=Host(\`${SUBDOMAIN}.${DOMAIN}\`)"
-                - "traefik.http.routers.booklore-pr-${PR_NUMBER}-secure.tls=true"
-                - "traefik.http.services.booklore-pr-${PR_NUMBER}.loadbalancer.server.port=6060"
+                - traefik.enable=true
+                - traefik.docker.network=proxy
+                - traefik.http.routers.booklore-pr-PR_NUM.entrypoints=http
+                - traefik.http.routers.booklore-pr-PR_NUM.rule=Host(`pr-PR_NUM.pr.szucsb.eu`)
+                - traefik.http.middlewares.booklore-pr-PR_NUM-https-redirect.redirectscheme.scheme=https
+                - traefik.http.routers.booklore-pr-PR_NUM.middlewares=booklore-pr-PR_NUM-https-redirect
+                - traefik.http.routers.booklore-pr-PR_NUM-secure.entrypoints=https
+                - traefik.http.routers.booklore-pr-PR_NUM-secure.rule=Host(`pr-PR_NUM.pr.szucsb.eu`)
+                - traefik.http.routers.booklore-pr-PR_NUM-secure.tls=true
+                - traefik.http.routers.booklore-pr-PR_NUM-secure.service=booklore-pr-PR_NUM
+                - traefik.http.services.booklore-pr-PR_NUM.loadbalancer.server.port=6060
               networks:
                 - proxy
               security_opt:
                 - no-new-privileges:true
-
           volumes:
-            booklore-db-pr-${PR_NUMBER}:
-            booklore-data-pr-${PR_NUMBER}:
-            booklore-books-pr-${PR_NUMBER}:
-
+            mariadb_data:
+              driver: local
           networks:
             proxy:
               external: true
-          EOF
-
-          # Deploy
-          scp -i ~/.ssh/private.key docker-compose.yml "${VPS_USER}@${VPS_HOST}:/tmp/docker-compose-pr-${PR_NUMBER}.yml"
-
-          ssh -i ~/.ssh/private.key -T "${VPS_USER}@${VPS_HOST}" << ENDSSH
-            set -e
-            sudo mkdir -p /opt/booklore/pr-${PR_NUMBER}
-            sudo chown -R ubuntu:ubuntu /opt/booklore
-            mv /tmp/docker-compose-pr-${PR_NUMBER}.yml /opt/booklore/pr-${PR_NUMBER}/docker-compose.yml
-            cd /opt/booklore/pr-${PR_NUMBER}
-            docker compose down --remove-orphans 2>/dev/null || true
-            docker compose pull
-            docker compose up -d
-            docker image prune -af --filter "until=168h" || true
-            echo "✓ Deployed PR #${PR_NUMBER} at https://${SUBDOMAIN}.${DOMAIN}"
-          ENDSSH
-
+          YAML_EOF
+          
+          # Replace placeholders with actual values
+          sed -i "s/PR_NUM/${PR_NUMBER}/g" docker-compose.yml
+          sed -i "s|IMG_VAL|${IMAGE}|g" docker-compose.yml
+          
+          # Deploy containers
+          docker compose down --remove-orphans 2>/dev/null || true
+          docker compose pull
+          docker compose up -d
+          docker image prune -af --filter "until=168h" || true
+          echo "✓ Deployed PR #${PR_NUMBER}"
+          DEPLOY_EOF
+          
           echo "preview_url=${PREVIEW_URL}" >> $GITHUB_OUTPUT
-
       - name: Wait for application
         env:
           PREVIEW_URL: ${{ steps.deploy.outputs.preview_url }}
