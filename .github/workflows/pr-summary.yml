@@ -6,7 +6,9 @@ on:
       - "Build and Test BookLore"
       - "Test Coverage Report"
       - "Type Checking & Compilation"
+      - "Code Quality Metrics"
       - "Security Scan"
+      - "PR Build Docker Image"
     types: [completed]
 
 concurrency:
@@ -17,61 +19,45 @@ permissions:
   pull-requests: write
   checks: read
   contents: read
-  actions: read
 
 jobs:
   summary:
-    name: 📊 PR Final Summary
     runs-on: ubuntu-latest
     if: github.event.workflow_run.event == 'pull_request'
     steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@v2.13.1
+      - uses: step-security/harden-runner@v2.13.1
 
-      - name: Install jq
-        run: sudo apt-get install -y jq
+      - uses: actions/checkout@v4.2.2
+
+      - run: sudo apt-get install -y jq
 
       - name: Get PR Number (Fork-Safe)
         id: pr
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
-          
-          # Try workflow_run.pull_requests first
+          SHA="${{ github.event.workflow_run.head_sha }}"
           PR_NUMBER=$(echo '${{ toJson(github.event.workflow_run.pull_requests) }}' | jq -r '.[0].number // empty')
-          
-          # Fallback: Search PRs by head SHA (works for forks)
           if [ -z "$PR_NUMBER" ]; then
-            PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --json number,headRefOid \
-              | jq -r --arg sha "$HEAD_SHA" '.[] | select(.headRefOid == $sha) | .number' | head -1)
+            PR_NUMBER=$(gh pr list --repo ${{ github.repository }} --state open --json number,headRefOid --limit 20 | jq -r --arg sha "$SHA" '.[] | select(.headRefOid == $sha) | .number' | head -1)
           fi
-          
           if [ -z "$PR_NUMBER" ]; then
-            echo "::warning::No PR found for SHA $HEAD_SHA"
+            echo "::warning::No PR found for SHA $SHA"
+            echo "number=" >> $GITHUB_OUTPUT
             exit 0
           fi
-          
           echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
-          echo "sha=$HEAD_SHA" >> $GITHUB_OUTPUT
           echo "Found PR #$PR_NUMBER"
 
       - name: Check All Workflows Completed
+        if: steps.pr.outputs.number != ''
         id: all-done
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          HEAD_SHA="${{ steps.pr.outputs.sha }}"
+          SHA="${{ github.event.workflow_run.head_sha }}"
+          REQUIRED=("Build and Test BookLore" "Test Coverage Report" "Type Checking & Compilation" "Code Quality Metrics" "Security Scan" "PR Build Docker Image")
           
-          # Required workflows (must all be done)
-          REQUIRED=("Build and Test BookLore" "Test Coverage Report" "Type Checking & Compilation" "Security Scan")
-          
-          # Fetch all check runs for this SHA
-          CHECKS=$(gh api "/repos/${{ github.repository }}/commits/$HEAD_SHA/check-runs" --jq '.check_runs')
+          CHECKS=$(gh api "/repos/${{ github.repository }}/commits/$SHA/check-runs" --jq '.check_runs')
           
           ALL_DONE="true"
           for WF in "${REQUIRED[@]}"; do
-            # Check if any job from this workflow is still running/queued
             STATUS=$(echo "$CHECKS" | jq -r --arg wf "$WF" '
               [.[] | select(.name | test($wf; "i")) | .status] | 
               if any(. == "queued" or . == "in_progress") then "running" else "done" end
@@ -83,7 +69,15 @@ jobs:
           done
           
           echo "all_done=$ALL_DONE" >> $GITHUB_OUTPUT
-          echo "All workflows done: $ALL_DONE"
+
+      - name: Download Artifacts (All from Child Run)
+        if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          repo: ${{ github.repository }}
+          path: /tmp/artifacts
+          skip_unpack: false
 
       - name: Fetch Final Job Statuses
         if: steps.all-done.outputs.all_done == 'true' && steps.pr.outputs.number != ''
@@ -91,7 +85,7 @@ jobs:
         uses: actions/github-script@v7.0.1
         with:
           script: |
-            const headSha = '${{ steps.pr.outputs.sha }}';
+            const headSha = '${{ github.event.workflow_run.head_sha }}';
             
             const { data } = await github.rest.checks.listForRef({
               owner: context.repo.owner,
@@ -132,7 +126,8 @@ jobs:
               coverage: getStatus(['coverage']),
               codeql: getStatus(['codeql']),
               semgrep: getStatus(['semgrep']),
-              gitleaks: getStatus(['gitleaks', 'secret'])
+              gitleaks: getStatus(['gitleaks', 'secret']),
+              codequality: getStatus(['code quality'])
             };
             
             require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData, null, 2));
@@ -144,7 +139,6 @@ jobs:
           CHECKS=$(cat /tmp/check_statuses.json)
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
           
-          # Extract statuses
           BACKEND=$(echo "$CHECKS" | jq -r '.backend.status')
           BACKEND_LINK=$(echo "$CHECKS" | jq -r '.backend.link')
           FRONTEND=$(echo "$CHECKS" | jq -r '.frontend.status')
@@ -161,6 +155,8 @@ jobs:
           SEMGREP_LINK=$(echo "$CHECKS" | jq -r '.semgrep.link')
           GITLEAKS=$(echo "$CHECKS" | jq -r '.gitleaks.status')
           GITLEAKS_LINK=$(echo "$CHECKS" | jq -r '.gitleaks.link')
+          CODEQUALITY=$(echo "$CHECKS" | jq -r '.codequality.status')
+          CODEQUALITY_LINK=$(echo "$CHECKS" | jq -r '.codequality.link')
           
           cat > /tmp/pr_summary.md << EOF
           <!-- booklore-ci-pr-summary -->
@@ -175,9 +171,10 @@ jobs:
           | Docker Build (ARM64) | $DOCKER | [Logs]($DOCKER_LINK) |
           | Test Coverage | $COVERAGE | [Logs]($COVERAGE_LINK) |
           
-          ### 🔒 Security Checks
+          ### 🔍 Code Quality & Security
           | Check | Status | Link |
           |-------|--------|------|
+          | Code Quality | $CODEQUALITY | [Logs]($CODEQUALITY_LINK) |
           | CodeQL | $CODEQL | [Logs]($CODEQL_LINK) |
           | Semgrep | $SEMGREP | [Logs]($SEMGREP_LINK) |
           | Gitleaks | $GITLEAKS | [Logs]($GITLEAKS_LINK) |
