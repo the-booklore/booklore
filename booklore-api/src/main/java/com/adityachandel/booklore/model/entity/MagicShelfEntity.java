@@ -29,7 +29,7 @@ public class MagicShelfEntity {
     @Column(nullable = false)
     private String icon;
 
-    @Column(name = "filter_json", columnDefinition = "json", nullable = false)
+    @Column(name = "filter_json", columnDefinition = "LONGTEXT", nullable = false)
     private String filterJson;
 
     @Column(name = "is_public", nullable = false)

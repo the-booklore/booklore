@@ -53,8 +53,6 @@ jobs:
           m_max_size: 500
           l_label: "size/L"
           fail_if_xl: false
-          message_if_xl: >
-            This PR is quite large. Consider splitting it into smaller PRs for easier review.
           files_to_ignore: |
             package-lock.json
             *.lock
