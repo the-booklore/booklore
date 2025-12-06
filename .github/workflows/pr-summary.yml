@@ -116,8 +116,7 @@ jobs:
                 coverage: getStatus(['coverage']),
                 codeql: getStatus(['codeql']),
                 semgrep: getStatus(['semgrep']),
-                gitleaks: getStatus(['gitleaks']),
-                sonar: getStatus(['sonar', 'sonarcloud'])
+                gitleaks: getStatus(['gitleaks'])
               };
               
               require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData));
@@ -132,8 +131,7 @@ jobs:
                 coverage: { status: '⚪ Pending', link: '' },
                 codeql: { status: '⚪ Pending', link: '' },
                 semgrep: { status: '⚪ Pending', link: '' },
-                gitleaks: { status: '⚪ Pending', link: '' },
-                sonar: { status: '⚪ Pending', link: '' }
+                gitleaks: { status: '⚪ Pending', link: '' }
               };
               require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(fallback));
             }
@@ -187,8 +185,6 @@ jobs:
             SEMGREP_LINK=""
             GITLEAKS_STATUS="⚪ Pending"
             GITLEAKS_LINK=""
-            SONAR_STATUS="⚪ Pending"
-            SONAR_LINK=""
           fi
           
           echo "backend_status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
@@ -207,15 +203,12 @@ jobs:
           echo "semgrep_link=$SEMGREP_LINK" >> $GITHUB_OUTPUT
           echo "gitleaks_status=$GITLEAKS_STATUS" >> $GITHUB_OUTPUT
           echo "gitleaks_link=$GITLEAKS_LINK" >> $GITHUB_OUTPUT
-          echo "sonar_status=$SONAR_STATUS" >> $GITHUB_OUTPUT
-          echo "sonar_link=$SONAR_LINK" >> $GITHUB_OUTPUT
 
       - name: Debug parsed statuses
         run: |
           echo "=== Parsed Check Statuses ==="
           echo "BACKEND_STATUS=$BACKEND_STATUS"
           echo "FRONTEND_STATUS=$FRONTEND_STATUS"
-          echo "SONAR_STATUS=$SONAR_STATUS"
           echo "CODEQL_STATUS=$CODEQL_STATUS"
         continue-on-error: true
 
@@ -238,8 +231,6 @@ jobs:
           SEMGREP_LINK: ${{ steps.status.outputs.semgrep_link }}
           GITLEAKS_STATUS: ${{ steps.status.outputs.gitleaks_status }}
           GITLEAKS_LINK: ${{ steps.status.outputs.gitleaks_link }}
-          SONAR_STATUS: ${{ steps.status.outputs.sonar_status }}
-          SONAR_LINK: ${{ steps.status.outputs.sonar_link }}
         run: |
           # Get timestamp
           TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -265,7 +256,6 @@ jobs:
           | CodeQL | ${CODEQL_STATUS} | [Logs](${CODEQL_LINK}) |
           | Semgrep | ${SEMGREP_STATUS} | [Logs](${SEMGREP_LINK}) |
           | Gitleaks | ${GITLEAKS_STATUS} | [Logs](${GITLEAKS_LINK}) |
-          | SonarCloud | ${SONAR_STATUS} | [Logs](${SONAR_LINK}) |
           
           ### 🏷️ PR Labels
           - Size: Auto-assigned by \`CodelyTV/pr-size-labeler\`
