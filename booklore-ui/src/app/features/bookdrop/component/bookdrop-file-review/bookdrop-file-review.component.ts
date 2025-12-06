@@ -249,7 +249,7 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  resetAll(): void {
+  resetMetadata(): void {
     const selectedFiles = Object.values(this.fileUiCache).filter(file => {
       if (this.selectAllAcrossPages) {
         return !this.excludedFiles.has(file.file.id);
@@ -342,7 +342,7 @@ export class BookdropFileReviewComponent implements OnInit {
       header: 'Confirm Reset',
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
-      accept: () => this.resetAll()
+      accept: () => this.resetMetadata()
     });
   }
 
