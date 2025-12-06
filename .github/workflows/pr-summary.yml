@@ -1,0 +1,309 @@
+name: PR Summary Report
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows:
+      - "Build and Test BookLore"
+      - "Test Coverage Report"
+      - "Type Checking & Compilation"
+      - "Code Quality Metrics"
+    types: [completed]
+
+concurrency:
+  group: pr-summary-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: false
+
+permissions:
+  pull-requests: write
+  checks: read
+  contents: read
+
+jobs:
+  pr-summary:
+    name: 📊 PR Summary
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event.workflow_run.conclusion != 'skipped'
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Download all artifacts
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          skip_unpack: false
+          path: artifacts
+        continue-on-error: true
+
+      - name: Get PR number
+        id: pr
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ github.run_id }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get commit SHA for checks API
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "commit=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "commit=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Fetch Job Statuses from Checks API
+        id: checks
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            try {
+              const { data } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: '${{ steps.sha.outputs.commit }}'
+              });
+              
+              // Parse check runs into status map
+              const statusMap = {};
+              const jobLinks = {};
+              
+              data.check_runs.forEach(run => {
+                const name = run.name;
+                const conclusion = run.conclusion;
+                const status = run.status;
+                
+                let icon = '⚪';
+                if (status === 'in_progress') icon = '🔄';
+                else if (conclusion === 'success') icon = '✅';
+                else if (conclusion === 'failure') icon = '❌';
+                else if (conclusion === 'skipped') icon = '⏭️';
+                else if (conclusion === 'neutral') icon = '⚠️';
+                
+                statusMap[name] = icon;
+                jobLinks[name] = run.html_url;
+                
+                core.debug(`${name}: ${icon} (${conclusion})`);
+              });
+              
+              // Match patterns for our specific jobs
+              const getStatus = (pattern) => {
+                for (const [name, status] of Object.entries(statusMap)) {
+                  if (name.toLowerCase().includes(pattern.toLowerCase())) {
+                    return { status, link: jobLinks[name] || '' };
+                  }
+                }
+                return { status: '❓', link: '' };
+              };
+              
+              const statusData = {
+                backend: getStatus('backend tests'),
+                frontend: getStatus('frontend tests'),
+                docker: getStatus('docker') || getStatus('build') || getStatus('arm64'),
+                typecheck: getStatus('typescript') || getStatus('type check'),
+                coverage: getStatus('coverage'),
+                codeql: getStatus('codeql'),
+                semgrep: getStatus('semgrep'),
+                gitleaks: getStatus('gitleaks')
+              };
+              
+              require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(statusData));
+              core.info('Check statuses written to /tmp/check_statuses.json');
+            } catch (error) {
+              core.error(`Failed to fetch checks: ${error.message}`);
+              const fallback = {
+                backend: { status: '❓', link: '' },
+                frontend: { status: '❓', link: '' },
+                docker: { status: '❓', link: '' },
+                typecheck: { status: '❓', link: '' },
+                coverage: { status: '❓', link: '' },
+                codeql: { status: '❓', link: '' },
+                semgrep: { status: '❓', link: '' },
+                gitleaks: { status: '❓', link: '' }
+              };
+              require('fs').writeFileSync('/tmp/check_statuses.json', JSON.stringify(fallback));
+            }
+
+      - name: Parse check statuses
+        id: status
+        run: |
+          if [ -f /tmp/check_statuses.json ]; then
+            export CHECKS=$(cat /tmp/check_statuses.json)
+            
+            BACKEND_STATUS=$(echo "$CHECKS" | jq -r '.backend.status // "❓"')
+            BACKEND_LINK=$(echo "$CHECKS" | jq -r '.backend.link // ""')
+            FRONTEND_STATUS=$(echo "$CHECKS" | jq -r '.frontend.status // "❓"')
+            FRONTEND_LINK=$(echo "$CHECKS" | jq -r '.frontend.link // ""')
+            TYPECHECK_STATUS=$(echo "$CHECKS" | jq -r '.typecheck.status // "❓"')
+            TYPECHECK_LINK=$(echo "$CHECKS" | jq -r '.typecheck.link // ""')
+            DOCKER_STATUS=$(echo "$CHECKS" | jq -r '.docker.status // "❓"')
+            DOCKER_LINK=$(echo "$CHECKS" | jq -r '.docker.link // ""')
+            COVERAGE_STATUS=$(echo "$CHECKS" | jq -r '.coverage.status // "❓"')
+            COVERAGE_LINK=$(echo "$CHECKS" | jq -r '.coverage.link // ""')
+            CODEQL_STATUS=$(echo "$CHECKS" | jq -r '.codeql.status // "❓"')
+            CODEQL_LINK=$(echo "$CHECKS" | jq -r '.codeql.link // ""')
+            SEMGREP_STATUS=$(echo "$CHECKS" | jq -r '.semgrep.status // "❓"')
+            SEMGREP_LINK=$(echo "$CHECKS" | jq -r '.semgrep.link // ""')
+            GITLEAKS_STATUS=$(echo "$CHECKS" | jq -r '.gitleaks.status // "❓"')
+            GITLEAKS_LINK=$(echo "$CHECKS" | jq -r '.gitleaks.link // ""')
+          else
+            BACKEND_STATUS="❓"
+            BACKEND_LINK=""
+            FRONTEND_STATUS="❓"
+            FRONTEND_LINK=""
+            TYPECHECK_STATUS="❓"
+            TYPECHECK_LINK=""
+            DOCKER_STATUS="❓"
+            DOCKER_LINK=""
+            COVERAGE_STATUS="❓"
+            COVERAGE_LINK=""
+            CODEQL_STATUS="❓"
+            CODEQL_LINK=""
+            SEMGREP_STATUS="❓"
+            SEMGREP_LINK=""
+            GITLEAKS_STATUS="❓"
+            GITLEAKS_LINK=""
+          fi
+          
+          echo "backend_status=$BACKEND_STATUS" >> $GITHUB_OUTPUT
+          echo "backend_link=$BACKEND_LINK" >> $GITHUB_OUTPUT
+          echo "frontend_status=$FRONTEND_STATUS" >> $GITHUB_OUTPUT
+          echo "frontend_link=$FRONTEND_LINK" >> $GITHUB_OUTPUT
+          echo "typecheck_status=$TYPECHECK_STATUS" >> $GITHUB_OUTPUT
+          echo "typecheck_link=$TYPECHECK_LINK" >> $GITHUB_OUTPUT
+          echo "docker_status=$DOCKER_STATUS" >> $GITHUB_OUTPUT
+          echo "docker_link=$DOCKER_LINK" >> $GITHUB_OUTPUT
+          echo "coverage_status=$COVERAGE_STATUS" >> $GITHUB_OUTPUT
+          echo "coverage_link=$COVERAGE_LINK" >> $GITHUB_OUTPUT
+          echo "codeql_status=$CODEQL_STATUS" >> $GITHUB_OUTPUT
+          echo "codeql_link=$CODEQL_LINK" >> $GITHUB_OUTPUT
+          echo "semgrep_status=$SEMGREP_STATUS" >> $GITHUB_OUTPUT
+          echo "semgrep_link=$SEMGREP_LINK" >> $GITHUB_OUTPUT
+          echo "gitleaks_status=$GITLEAKS_STATUS" >> $GITHUB_OUTPUT
+          echo "gitleaks_link=$GITLEAKS_LINK" >> $GITHUB_OUTPUT
+
+      - name: Merge check statuses
+        id: merged-checks
+        run: |
+          echo "backend_status=${{ steps.status.outputs.backend_status }}" >> $GITHUB_OUTPUT
+          echo "backend_link=${{ steps.status.outputs.backend_link }}" >> $GITHUB_OUTPUT
+          echo "frontend_status=${{ steps.status.outputs.frontend_status }}" >> $GITHUB_OUTPUT
+          echo "frontend_link=${{ steps.status.outputs.frontend_link }}" >> $GITHUB_OUTPUT
+          echo "typecheck_status=${{ steps.status.outputs.typecheck_status }}" >> $GITHUB_OUTPUT
+          echo "typecheck_link=${{ steps.status.outputs.typecheck_link }}" >> $GITHUB_OUTPUT
+          echo "docker_status=${{ steps.status.outputs.docker_status }}" >> $GITHUB_OUTPUT
+          echo "docker_link=${{ steps.status.outputs.docker_link }}" >> $GITHUB_OUTPUT
+          echo "coverage_status=${{ steps.status.outputs.coverage_status }}" >> $GITHUB_OUTPUT
+          echo "coverage_link=${{ steps.status.outputs.coverage_link }}" >> $GITHUB_OUTPUT
+          echo "codeql_status=${{ steps.status.outputs.codeql_status }}" >> $GITHUB_OUTPUT
+          echo "codeql_link=${{ steps.status.outputs.codeql_link }}" >> $GITHUB_OUTPUT
+          echo "semgrep_status=${{ steps.status.outputs.semgrep_status }}" >> $GITHUB_OUTPUT
+          echo "semgrep_link=${{ steps.status.outputs.semgrep_link }}" >> $GITHUB_OUTPUT
+          echo "gitleaks_status=${{ steps.status.outputs.gitleaks_status }}" >> $GITHUB_OUTPUT
+          echo "gitleaks_link=${{ steps.status.outputs.gitleaks_link }}" >> $GITHUB_OUTPUT;
+
+      - name: Generate PR Summary
+        id: summary
+        env:
+          BACKEND_STATUS: ${{ steps.merged-checks.outputs.backend_status }}
+          BACKEND_LINK: ${{ steps.merged-checks.outputs.backend_link }}
+          FRONTEND_STATUS: ${{ steps.merged-checks.outputs.frontend_status }}
+          FRONTEND_LINK: ${{ steps.merged-checks.outputs.frontend_link }}
+          TYPECHECK_STATUS: ${{ steps.merged-checks.outputs.typecheck_status }}
+          TYPECHECK_LINK: ${{ steps.merged-checks.outputs.typecheck_link }}
+          DOCKER_STATUS: ${{ steps.merged-checks.outputs.docker_status }}
+          DOCKER_LINK: ${{ steps.merged-checks.outputs.docker_link }}
+          COVERAGE_STATUS: ${{ steps.merged-checks.outputs.coverage_status }}
+          COVERAGE_LINK: ${{ steps.merged-checks.outputs.coverage_link }}
+          CODEQL_STATUS: ${{ steps.merged-checks.outputs.codeql_status }}
+          CODEQL_LINK: ${{ steps.merged-checks.outputs.codeql_link }}
+          SEMGREP_STATUS: ${{ steps.merged-checks.outputs.semgrep_status }}
+          SEMGREP_LINK: ${{ steps.merged-checks.outputs.semgrep_link }}
+          GITLEAKS_STATUS: ${{ steps.merged-checks.outputs.gitleaks_status }}
+          GITLEAKS_LINK: ${{ steps.merged-checks.outputs.gitleaks_link }}
+        run: |
+          # Parse coverage from artifacts
+          COVERAGE_BACKEND="N/A"
+          COVERAGE_FRONTEND="N/A"
+          
+          if [ -f "artifacts/backend-metrics/jacocoTestReport.csv" ]; then
+            COVERAGE_BACKEND=$(tail -1 "artifacts/backend-metrics/jacocoTestReport.csv" | awk -F',' '{printf "%.1f", ($4/$3)*100}' 2>/dev/null || echo "N/A")
+          fi
+          
+          # Get current timestamp
+          TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          
+          # Generate summary markdown with dynamic job statuses
+          cat > /tmp/pr_summary.md << EOF
+          <!-- booklore-ci-pr-summary -->
+          ## 📊 BookLore CI Summary
+          
+          ### 🧪 Tests & Build
+          | Component | Status | Coverage | Link |
+          |-----------|--------|----------|------|
+          | Backend Tests (JDK21) | ${BACKEND_STATUS} | ${COVERAGE_BACKEND}% | [Logs](${BACKEND_LINK}) |
+          | Frontend Tests | ${FRONTEND_STATUS} | ${COVERAGE_FRONTEND}% | [Logs](${FRONTEND_LINK}) |
+          | Type Checking (TS) | ${TYPECHECK_STATUS} | - | [Logs](${TYPECHECK_LINK}) |
+          | Docker Build (ARM64) | ${DOCKER_STATUS} | - | [Logs](${DOCKER_LINK}) |
+          | Test Coverage | ${COVERAGE_STATUS} | - | [Logs](${COVERAGE_LINK}) |
+          
+          ### 🔒 Security Checks
+          | Check | Status | Link |
+          |-------|--------|------|
+          | CodeQL | ${CODEQL_STATUS} | [Logs](${CODEQL_LINK}) |
+          | Semgrep | ${SEMGREP_STATUS} | [Logs](${SEMGREP_LINK}) |
+          | Gitleaks | ${GITLEAKS_STATUS} | [Logs](${GITLEAKS_LINK}) |
+          
+          ### 🏷️ PR Labels
+          - Size: Auto-assigned by \`CodelyTV/pr-size-labeler\`
+          - Type: Based on conventional commit prefixes
+          - Domain: Detected from file changes (backend/frontend/infra)
+          
+          ### 📋 Quick Actions
+          - 🚀 **Deploy Preview**: Comment \`/deploy\` to trigger deployment
+          - 📖 **View Full CI**: [Actions Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - 📦 **Artifacts**: Backend JAR, Frontend Build, Test Reports (7-day retention)
+          
+          **Last updated**: ${TIMESTAMP}
+          EOF
+          
+          # Output summary
+          SUMMARY=$(cat /tmp/pr_summary.md)
+          echo "summary<<EOSUMMARY" >> $GITHUB_OUTPUT
+          echo "$SUMMARY" >> $GITHUB_OUTPUT
+          echo "EOSUMMARY" >> $GITHUB_OUTPUT
+
+      - name: Find existing comment
+        id: find-comment
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "<!-- booklore-ci-pr-summary -->"
+
+      - name: Create or update PR comment
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ steps.pr.outputs.number }}
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          edit-mode: replace
+          body: ${{ steps.summary.outputs.summary }}
+          reactions: "eyes"
+
+      - name: Add summary to job summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 📊 BookLore CI Summary
+          
+          ✅ PR summary comment posted successfully
+          
+          - **PR Number**: ${{ steps.pr.outputs.number }}
+          - **Run ID**: ${{ github.run_id }}
+          EOF

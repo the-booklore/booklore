@@ -59,7 +59,7 @@ jobs:
           egress-policy: audit
 
       - name: Label PR size
-        uses: codelytv/pr-size-labeler@56f6f0fc35c7cc0f72963b8571e2d42c5f5e4aec # v1.10.1
+        uses: CodelyTV/pr-size-labeler@v1.10.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           xs_label: "size/XS"
