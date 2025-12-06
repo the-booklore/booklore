@@ -31,6 +31,7 @@ public class BookEntity {
     @Column(name = "file_sub_path")
     private String fileSubPath;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "book_type")
     private BookFileType bookType;
 
