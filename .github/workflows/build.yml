@@ -51,6 +51,13 @@ jobs:
       - name: Build frontend
         run: npm run build -- --configuration=production
 
+      - name: Upload frontend build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: booklore-ui/dist/
+          retention-days: 7
+
   # ============================================
   # Backend Tests
   # ============================================
@@ -86,9 +93,19 @@ jobs:
       - name: Run tests with Gradle
         run: ./gradlew test --no-daemon
         
+      - name: Build JAR artifact
+        run: ./gradlew bootJar -x test --no-daemon
+        
       - name: Generate test report
         if: always()
         run: ./gradlew jacocoTestReport --no-daemon || true
+
+      - name: Upload backend JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar-${{ matrix.java-version }}
+          path: booklore-api/build/libs/*.jar
+          retention-days: 7
         
       - name: Upload test results
         if: always()

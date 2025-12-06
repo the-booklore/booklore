@@ -1,0 +1,157 @@
+# Auto-labeler configuration for BookLore
+# Labels PRs based on file paths modified
+
+# ===========================================
+# Backend Labels
+# ===========================================
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/**"
+
+java:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/**/*.java"
+
+api:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/main/java/**/controller/**"
+          - "booklore-api/src/main/java/**/model/**"
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/main/resources/db/**"
+          - "booklore-api/src/main/java/**/repository/**"
+
+config:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/main/java/**/config/**"
+          - "booklore-api/src/main/resources/application.yaml"
+
+# ===========================================
+# Frontend Labels
+# ===========================================
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/**"
+
+angular:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/src/**/*.ts"
+          - "booklore-ui/src/**/*.html"
+          - "booklore-ui/src/**/*.scss"
+
+ui-components:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/src/app/features/**"
+          - "booklore-ui/src/app/shared/**"
+
+styles:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/src/**/*.scss"
+          - "booklore-ui/src/**/*.css"
+          - "booklore-ui/tailwind.config.js"
+
+# ===========================================
+# Infrastructure Labels
+# ===========================================
+docker:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Dockerfile"
+          - "docker-compose*.yml"
+          - "dev.docker-compose.yml"
+          - ".dockerignore"
+          - "nginx.conf"
+          - "start.sh"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/actions/**"
+
+github:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+gradle:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/build.gradle"
+          - "booklore-api/settings.gradle"
+          - "booklore-api/gradle/**"
+          - "booklore-api/gradlew"
+          - "booklore-api/gradlew.bat"
+
+npm:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/package.json"
+          - "booklore-ui/package-lock.json"
+
+# ===========================================
+# Documentation Labels
+# ===========================================
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**.md"
+          - "docs/**"
+          - "CONTRIBUTING.md"
+          - "SECURITY.md"
+          - "LICENSE"
+
+# ===========================================
+# Testing Labels
+# ===========================================
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/test/**"
+          - "booklore-ui/src/**/*.spec.ts"
+          - "testing/**"
+
+# ===========================================
+# Deployment Labels
+# ===========================================
+kubernetes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "example-chart/**"
+
+podman:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "example-podman/**"
+
+# ===========================================
+# Security Labels
+# ===========================================
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "SECURITY.md"
+          - ".github/workflows/security.yml"
+          - ".github/workflows/codeql-analysis.yml"
+          - ".github/dependabot.yml"
+          - "booklore-api/src/main/java/**/security/**"
+
+# ===========================================
+# Dependencies Labels
+# ===========================================
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/build.gradle"
+          - "booklore-ui/package.json"
+          - "booklore-ui/package-lock.json"
