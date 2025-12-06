@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.config.security.service;
 
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.security.JwtSecretService;
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +14,8 @@ import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.web.client.RestTemplate;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Slf4j
@@ -22,6 +26,7 @@ public class JwtMultiIssuerConfiguration {
 
     private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
     private final AppSettingService appSettingService;
+    private final JwtSecretService jwtSecretService;
 
     @Value("${booklore.security.oauth2.multi-issuer.enabled:false}")
     private boolean legacyEnabled = false;
@@ -57,7 +62,7 @@ public class JwtMultiIssuerConfiguration {
     @Bean
     public JwtDecoder jwtDecoder() {
         // Defer configuration check until first use to avoid circular dependency
-        return new LazyJwtDecoder(dynamicOidcJwtProcessor, appSettingService, this);
+        return new LazyJwtDecoder(dynamicOidcJwtProcessor, appSettingService, jwtSecretService, this);
     }
 
     private JwtDecoder createExplicitMultiIssuerDecoder() {
@@ -394,15 +399,18 @@ public class JwtMultiIssuerConfiguration {
     private static class LazyJwtDecoder implements JwtDecoder {
         private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
         private final AppSettingService appSettingService;
+        private final JwtSecretService jwtSecretService;
         private final JwtMultiIssuerConfiguration config;
         private volatile JwtDecoder delegate;
         private final Object lock = new Object();
 
-        public LazyJwtDecoder(DynamicOidcJwtProcessor dynamicOidcJwtProcessor,
+        private LazyJwtDecoder(DynamicOidcJwtProcessor dynamicOidcJwtProcessor,
                             AppSettingService appSettingService,
+                            JwtSecretService jwtSecretService,
                             JwtMultiIssuerConfiguration config) {
             this.dynamicOidcJwtProcessor = dynamicOidcJwtProcessor;
             this.appSettingService = appSettingService;
+            this.jwtSecretService = jwtSecretService;
             this.config = config;
         }
 
@@ -429,6 +437,12 @@ public class JwtMultiIssuerConfiguration {
             if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
                 log.info("Using dynamic OIDC JWT processor for advanced security features");
                 return new DynamicOidcJwtDecoder(dynamicOidcJwtProcessor);
+            }
+
+            // If OIDC is disabled, use local HS256 decoder for internal JWT tokens
+            if (!appSettings.isOidcEnabled()) {
+                log.info("OIDC disabled, using local HS256 JWT decoder for internal authentication");
+                return createLocalDecoder();
             }
 
             if (config.shouldUseLegacyConfig()) {
@@ -461,6 +475,12 @@ public class JwtMultiIssuerConfiguration {
                 "3. app.security.jwt.issuer-uri + internal-issuer-uri, or\n" +
                 "4. Set app.security.jwt.enable-local-dev-fallback=true for local dev only"
             );
+        }
+
+        private JwtDecoder createLocalDecoder() {
+            String secret = jwtSecretService.getSecret();
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+            return NimbusJwtDecoder.withSecretKey(key).build();
         }
     }
 }
