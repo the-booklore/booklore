@@ -165,8 +165,6 @@ jobs:
             SEMGREP_LINK=$(jq -r '.semgrep.link // ""' /tmp/check_statuses.json)
             GITLEAKS_STATUS=$(jq -r '.gitleaks.status // "⚪ Pending"' /tmp/check_statuses.json)
             GITLEAKS_LINK=$(jq -r '.gitleaks.link // ""' /tmp/check_statuses.json)
-            SONAR_STATUS=$(jq -r '.sonar.status // "⚪ Pending"' /tmp/check_statuses.json)
-            SONAR_LINK=$(jq -r '.sonar.link // ""' /tmp/check_statuses.json)
           else
             echo "JSON file missing or invalid, using fallbacks"
             BACKEND_STATUS="⚪ Pending"
