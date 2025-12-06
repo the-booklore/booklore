@@ -68,6 +68,9 @@ jobs:
             fi
           done
           
+          # Filter out SonarCloud checks (they may fail but shouldn't block summary)
+          echo "Note: SonarCloud checks are ignored (automation disabled)"
+          
           echo "all_done=$ALL_DONE" >> $GITHUB_OUTPUT
 
       - name: Download Artifacts (All from Child Run)

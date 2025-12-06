@@ -38,24 +38,29 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number }}
           GITHUB_REF: ${{ github.ref }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
             echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
             echo "ref=$PR_HEAD_REF" >> $GITHUB_OUTPUT
+            echo "sha=$PR_HEAD_SHA" >> $GITHUB_OUTPUT
           elif [ -n "$INPUT_PR_NUMBER" ]; then
             echo "pr_number=$INPUT_PR_NUMBER" >> $GITHUB_OUTPUT
             echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+            echo "sha=" >> $GITHUB_OUTPUT
           else
             echo "pr_number=0" >> $GITHUB_OUTPUT
             echo "ref=$GITHUB_REF" >> $GITHUB_OUTPUT
+            echo "sha=" >> $GITHUB_OUTPUT
           fi
 
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ steps.pr-info.outputs.sha || github.ref }}
 
       - name: Get commit hash
         id: commit-hash
