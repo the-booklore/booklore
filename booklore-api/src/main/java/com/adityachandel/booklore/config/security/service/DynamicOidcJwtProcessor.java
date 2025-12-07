@@ -154,6 +154,18 @@ public class DynamicOidcJwtProcessor {
             if (secondsLeft < 0) {
                 log.warn("Token received is already expired by {} seconds. Check server clock sync.", Math.abs(secondsLeft));
             }
+            
+            // Enhanced algorithm diagnostics
+            var algorithm = header.getAlgorithm();
+            if (isHmacAlgorithm(algorithm)) {
+                log.error("🔴 CRITICAL: Token uses HMAC algorithm '{}'. This is incompatible with JWKS public key validation.", algorithm);
+                log.error("📋 REQUIRED ACTION: Configure your IdP to use RS256 algorithm. See docs/OIDC-PROVIDER-CONFIG.md for instructions.");
+            } else if (isRsaAlgorithm(algorithm) || algorithm.equals(JWSAlgorithm.PS256) || 
+                       algorithm.equals(JWSAlgorithm.PS384) || algorithm.equals(JWSAlgorithm.PS512)) {
+                log.debug("✓ Token uses compatible asymmetric algorithm: {}", algorithm);
+            } else if (isEcAlgorithm(algorithm)) {
+                log.debug("Token uses EC algorithm: {}. Verify JWKS contains EC keys.", algorithm);
+            }
 
         } catch (Exception e) {
             log.warn("Received token that could not be parsed for logging: {}", e.getMessage());
@@ -244,7 +256,7 @@ public class DynamicOidcJwtProcessor {
 
     /**
      * Handles JWT algorithm mismatch by attempting to process tokens with algorithms not in JWKS.
-     * This is a fallback for providers (like Authentik) that may sign with HS256 but advertise RSA keys.
+     * This is a fallback for providers (like Authentik, Authelia) that may sign with HS256 but advertise RSA keys.
      */
     private JWTClaimsSet handleAlgorithmMismatch(String token, BadJOSEException originalException) throws Exception {
         try {
@@ -275,6 +287,7 @@ public class DynamicOidcJwtProcessor {
             // Log recommendation
             log.info("RECOMMENDATION: Update IdP configuration at issuer='{}' to sign tokens with RS256 algorithm " +
                     "matching the public keys in JWKS endpoint.", currentIssuerUri);
+            log.info("📖 FIX INSTRUCTIONS: See docs/OIDC-PROVIDER-CONFIG.md for step-by-step configuration guides (Authentik, Authelia, Keycloak).");
             
         } catch (Exception parseEx) {
             log.error("Failed to parse token header for algorithm inspection: {}", parseEx.getMessage());
@@ -283,7 +296,7 @@ public class DynamicOidcJwtProcessor {
         // Re-throw original exception with additional context
         throw new BadJOSEException("JWT algorithm mismatch: Token algorithm does not match available JWKS keys. " +
                 "This is typically caused by IdP misconfiguration (e.g., signing with HS256 but advertising RSA keys). " +
-                "Please reconfigure your OIDC provider to use RS256 signing.", originalException);
+                "Please reconfigure your OIDC provider to use RS256 signing. See docs/OIDC-PROVIDER-CONFIG.md for instructions.", originalException);
     }
 
     private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails, String normalizedIssuerUri) throws Exception {
@@ -486,19 +499,31 @@ public class DynamicOidcJwtProcessor {
             boolean hasEc = false;
             boolean hasOct = false;
             boolean hasOkp = false;
+            
+            int totalKeys = jwkSet.getKeys().size();
+            log.debug("Inspecting {} keys in JWKS at {}", totalKeys, jwksUri);
 
             for (JWK jwk : jwkSet.getKeys()) {
                 KeyType keyType = jwk.getKeyType();
+                String kid = jwk.getKeyID();
+                String use = jwk.getKeyUse() != null ? jwk.getKeyUse().getValue() : "unspecified";
+                String alg = jwk.getAlgorithm() != null ? jwk.getAlgorithm().getName() : "unspecified";
+                
+                log.debug("  Key: kid={}, kty={}, use={}, alg={}", kid, keyType, use, alg);
+                
                 if (KeyType.RSA.equals(keyType)) {
                     hasRsa = true;
                 } else if (KeyType.EC.equals(keyType)) {
                     hasEc = true;
                 } else if (KeyType.OCT.equals(keyType)) {
                     hasOct = true;
+                    log.warn("⚠️ JWKS contains OCT (symmetric) key with kid={}. This is unusual for OIDC providers.", kid);
                 } else if (KeyType.OKP.equals(keyType)) {
                     hasOkp = true;
                 }
             }
+            
+            log.info("JWKS Key Types Summary: RSA={}, EC={}, OCT={}, OKP={}", hasRsa, hasEc, hasOct, hasOkp);
 
             Set<JWSAlgorithm> filtered = new LinkedHashSet<>();
             for (JWSAlgorithm alg : advertisedAlgorithms) {
