@@ -127,8 +127,6 @@ public class DynamicOidcJwtProcessor {
     }
 
     private void logTokenMetadata(String token) {
-        if (!log.isDebugEnabled()) return;
-
         try {
             // Parse without verifying signature just for inspection
             var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
@@ -141,7 +139,7 @@ public class DynamicOidcJwtProcessor {
                 ? (claims.getExpirationTime().getTime() - now.getTime()) / 1000
                 : 0;
 
-            log.debug("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub=***, aud={}, azp={}, exp_in={}s]",
+            log.info("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub=***, aud={}, azp={}, exp_in={}s]",
                     header.getAlgorithm(),
                     header.getKeyID(),
                     claims.getIssuer(),
