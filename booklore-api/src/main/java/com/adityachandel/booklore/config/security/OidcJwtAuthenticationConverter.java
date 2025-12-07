@@ -35,10 +35,19 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
         // 1. Determine which claim holds the username
         OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
         String usernameClaim = "preferred_username";
+        String emailClaim = "email";
+        String nameClaim = "name";
+
         if (providerDetails != null && providerDetails.getClaimMapping() != null) {
-            String mapped = providerDetails.getClaimMapping().getUsername();
-            if (mapped != null && !mapped.isEmpty()) {
-                usernameClaim = mapped;
+            OidcProviderDetails.ClaimMapping mapping = providerDetails.getClaimMapping();
+            if (mapping.getUsername() != null && !mapping.getUsername().isEmpty()) {
+                usernameClaim = mapping.getUsername();
+            }
+            if (mapping.getEmail() != null && !mapping.getEmail().isEmpty()) {
+                emailClaim = mapping.getEmail();
+            }
+            if (mapping.getName() != null && !mapping.getName().isEmpty()) {
+                nameClaim = mapping.getName();
             }
         }
 
@@ -49,13 +58,13 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
             logger.debug("Username claim '{}' missing/empty. Falling back to 'sub': {}", usernameClaim, username);
         }
         
-        String email = jwt.getClaimAsString("email");
-        String name = jwt.getClaimAsString("name");
+        String email = jwt.getClaimAsString(emailClaim);
+        String name = jwt.getClaimAsString(nameClaim);
 
         logger.info("🔐 OIDC Authentication - JWT Claims Analysis:");
         logger.info("   └─ Username claim '{}' = '{}'", usernameClaim, username);
-        logger.info("   └─ Email claim = '{}'", email);
-        logger.info("   └─ Name claim = '{}'", name);
+        logger.info("   └─ Email claim '{}' = '{}'", emailClaim, email);
+        logger.info("   └─ Name claim '{}' = '{}'", nameClaim, name);
         logger.info("   └─ Subject (sub) = '{}'", jwt.getSubject());
         logger.info("   └─ All claims: {}", jwt.getClaims().keySet());
         

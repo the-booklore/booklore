@@ -75,14 +75,13 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AsyncRequestNotUsableException.class)
-    public ResponseEntity<ErrorResponse> handleAsyncRequestNotUsableException(AsyncRequestNotUsableException ex) {
+    public void handleAsyncRequestNotUsableException(AsyncRequestNotUsableException ex) {
         if (ex.getCause() instanceof ClientAbortException) {
-            log.info("Request was canceled by client: {}", ex.getMessage());
+            log.debug("Request was canceled by client: {}", ex.getMessage());
         } else {
-            log.error("Unexpected error occurred during async request handling: ", ex);
+            log.warn("Unexpected error occurred during async request handling: {}", ex.getMessage());
         }
-        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.OK.value(), "Request was canceled by the client.");
-        return new ResponseEntity<>(errorResponse, HttpStatus.OK);
+        // Don't attempt to write response - client has already disconnected
     }
 
     @ExceptionHandler(InterruptedException.class)
