@@ -27,6 +27,7 @@ public class AppProperties {
         private String headerEmail;
         private String headerGroups;
         private String adminGroup;
+        private String groupsDelimiter = "\\s+";  // Default to whitespace for backward compatibility
     }
 
     @Getter
