@@ -173,12 +173,17 @@ public class UserProvisioningService {
                     log.debug("Successfully created OIDC user: id={}, username={}", saved.getId(), saved.getUsername());
                     return saved;
                 } catch (DataIntegrityViolationException e) {
-                    if (e.getMessage() != null && e.getMessage().contains("uk_users_username")) {
+                    // Handle race condition where multiple concurrent requests try to create the same user
+                    String errorMsg = e.getMessage();
+                    if (errorMsg != null && (errorMsg.contains("uk_users_username") || 
+                                              errorMsg.contains("for key 'username'") ||
+                                              errorMsg.contains("Duplicate entry") && errorMsg.contains("username"))) {
                         log.debug("Race condition on user creation for {}, fetching existing", username);
                         return userRepository.findByUsername(username)
                                 .orElseThrow(() -> new IllegalStateException("User not found after constraint violation"));
                     }
                     // Email conflict or other issue - rethrow
+                    log.error("User provisioning failed for username={}: {}", username, errorMsg);
                     throw e;
                 }
             } finally {
