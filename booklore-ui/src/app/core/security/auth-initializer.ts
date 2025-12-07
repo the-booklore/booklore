@@ -81,7 +81,7 @@ export function initializeAuthFactory() {
             console.log(`[OIDC] Attempting discovery and login (attempt ${currentErrorCount + 1}/${MAX_OIDC_RETRIES})`);
 
             withTimeout(
-              oauthService.loadDiscoveryDocumentFromUrl(discoveryDocumentUrl)
+              oauthService.loadDiscoveryDocument(discoveryDocumentUrl)
                 .then(() => oauthService.tryLogin()),
               OIDC_TIMEOUT_MS
             )
