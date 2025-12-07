@@ -435,8 +435,11 @@ public class JwtMultiIssuerConfiguration {
             var appSettings = appSettingService.getAppSettings();
             log.debug("OIDC enabled: {}, provider details: {}", appSettings.isOidcEnabled(), (appSettings.getOidcProviderDetails() != null));
             if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
-                log.info("Using dynamic OIDC JWT processor for advanced security features");
-                return new DynamicOidcJwtDecoder(dynamicOidcJwtProcessor);
+                log.info("Using hybrid decoder: OIDC (RS256) + Internal (HS256) for backward compatibility");
+                // Create a hybrid decoder that supports both OIDC and internal JWT tokens
+                JwtDecoder oidcDecoder = new DynamicOidcJwtDecoder(dynamicOidcJwtProcessor);
+                JwtDecoder internalDecoder = createLocalDecoder();
+                return new HybridJwtDecoder(oidcDecoder, internalDecoder);
             }
 
             // If OIDC is disabled, use local HS256 decoder for internal JWT tokens

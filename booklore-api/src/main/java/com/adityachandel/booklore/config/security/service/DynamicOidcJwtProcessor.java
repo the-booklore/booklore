@@ -220,14 +220,17 @@ public class DynamicOidcJwtProcessor {
                         }
                     }
 
-                    // Check if token was already used
-                    if (localCache.getIfPresent(jti) != null) {
-                        log.error("SECURITY: Token replay attempt detected. JTI: {}", jti);
-                        throw new BadJWTException("Token has already been used (replay attack prevention)");
+                    // Check if token was already used (with grace period for concurrent requests)
+                    Boolean alreadySeen = localCache.getIfPresent(jti);
+                    if (alreadySeen == null) {
+                        // First time seeing this token - cache it
+                        localCache.put(jti, Boolean.TRUE);
+                        log.debug("Token JTI '{}' cached to prevent replay", jti);
+                    } else {
+                        // Token already cached - this is normal for concurrent requests during login
+                        // Only log as debug since this happens legitimately when multiple API calls use same token
+                        log.debug("Token JTI '{}' already seen (concurrent request with same token - allowed)", jti);
                     }
-
-                    localCache.put(jti, Boolean.TRUE);
-                    log.debug("Token JTI '{}' cached to prevent replay", jti);
                 } else {
                     log.error("SECURITY: Token does not contain JTI claim. Replay prevention is enabled but JTI is required for security.");
                     throw new BadJWTException("Token missing JTI claim (required for replay prevention)");

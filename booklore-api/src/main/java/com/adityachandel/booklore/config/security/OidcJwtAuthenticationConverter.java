@@ -52,6 +52,13 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
         String email = jwt.getClaimAsString("email");
         String name = jwt.getClaimAsString("name");
 
+        logger.info("🔐 OIDC Authentication - JWT Claims Analysis:");
+        logger.info("   └─ Username claim '{}' = '{}'", usernameClaim, username);
+        logger.info("   └─ Email claim = '{}'", email);
+        logger.info("   └─ Name claim = '{}'", name);
+        logger.info("   └─ Subject (sub) = '{}'", jwt.getSubject());
+        logger.info("   └─ All claims: {}", jwt.getClaims().keySet());
+        
         logger.debug("OidcJwtAuthenticationConverter.convert() called for username: {}", username);
 
         OidcAutoProvisionDetails provisionDetails = appSettingService.getAppSettings().getOidcAutoProvisionDetails();

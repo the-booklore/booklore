@@ -108,7 +108,14 @@ public class UserProvisioningService {
     @Transactional
     public BookLoreUserEntity provisionOidcUser(String username, String email, String name,
                                                 OidcAutoProvisionDetails oidcAutoProvisionDetails) {
-        log.debug("Attempting to provision OIDC user: username={}, email={}, name={}", username, email, name);
+        // Handle missing name claim (common in Authelia and some IdPs)
+        if (name == null || name.trim().isEmpty()) {
+            name = username; // Fallback to username
+            log.warn("⚠️  OIDC IdP did not provide 'name' claim. Using username '{}' as display name.", username);
+            log.warn("   💡 To fix: Configure your IdP to include 'name' claim in ID tokens.");
+        }
+        
+        log.info("📝 Provisioning OIDC user: username='{}', email='{}', name='{}'", username, email, name);
         // Use a per-username lock to avoid race conditions when provisioning the same username concurrently
         Object lock = USER_CREATION_LOCKS.computeIfAbsent(username, k -> new Object());
         synchronized (lock) {
