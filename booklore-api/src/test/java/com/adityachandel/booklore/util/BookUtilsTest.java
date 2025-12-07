@@ -161,4 +161,105 @@ class BookUtilsTest {
         assertEquals("harry potter", BookUtils.normalizeForSearch("Harry Potter"));
         assertEquals("misere", BookUtils.normalizeForSearch("Misère"));
     }
+
+    @Test
+    void testNormalizeForSearch_variousDiacritics() {
+        // French
+        assertEquals("francois", BookUtils.normalizeForSearch("François"));
+        assertEquals("renee", BookUtils.normalizeForSearch("Renée"));
+        assertEquals("helene", BookUtils.normalizeForSearch("Hélène"));
+        
+        // Spanish
+        assertEquals("jose", BookUtils.normalizeForSearch("José"));
+        assertEquals("nino", BookUtils.normalizeForSearch("Niño"));
+        assertEquals("manana", BookUtils.normalizeForSearch("Mañana"));
+        
+        // German
+        assertEquals("muller", BookUtils.normalizeForSearch("Müller"));
+        assertEquals("gross", BookUtils.normalizeForSearch("Groß"));
+        assertEquals("schon", BookUtils.normalizeForSearch("Schön"));
+        
+        // Polish
+        assertEquals("lodz", BookUtils.normalizeForSearch("Łódź"));
+        assertEquals("wroclaw", BookUtils.normalizeForSearch("Wrocław"));
+        
+        // Scandinavian
+        assertEquals("oslo", BookUtils.normalizeForSearch("Oslø"));
+        assertEquals("malmo", BookUtils.normalizeForSearch("Malmö"));
+        assertEquals("copenhagen", BookUtils.normalizeForSearch("Cøpenhagen"));
+        
+        // Portuguese
+        assertEquals("sao paulo", BookUtils.normalizeForSearch("São Paulo"));
+        assertEquals("cacao", BookUtils.normalizeForSearch("Cação"));
+        
+        // Turkish
+        assertEquals("istanbul", BookUtils.normalizeForSearch("İstanbul"));
+        
+        // Czech
+        assertEquals("dvorak", BookUtils.normalizeForSearch("Dvořák"));
+        assertEquals("capek", BookUtils.normalizeForSearch("Čapek"));
+    }
+
+    @Test
+    void testBuildSearchText_withDiacritics() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("The Snowman");
+        metadata.setSubtitle("A Harry Hole Novel");
+        metadata.setSeriesName("Harry Hole");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("jo nesbo"), "Expected 'jo nesbo' in: " + searchText);
+        assertTrue(searchText.contains("the snowman"), "Expected 'the snowman' in: " + searchText);
+        assertTrue(searchText.contains("harry hole"), "Expected 'harry hole' in: " + searchText);
+        
+        assertFalse(searchText.contains("ø"), "Should not contain 'ø' in: " + searchText);
+        assertFalse(searchText.contains("Nesbø"), "Should not contain 'Nesbø' in: " + searchText);
+    }
+
+    @Test
+    void testSearchMatchingWithAndWithoutDiacritics() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Misère");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("François Müller").build()));
+        
+        String storedSearchText = BookUtils.buildSearchText(metadata);
+        
+        String searchWithoutDiacritics = BookUtils.normalizeForSearch("francois muller");
+        String searchWithDiacritics = BookUtils.normalizeForSearch("François Müller");
+        String searchMixedCase = BookUtils.normalizeForSearch("FRANCOIS muller");
+        
+        assertEquals(searchWithoutDiacritics, searchWithDiacritics);
+        assertEquals(searchWithoutDiacritics, searchMixedCase);
+        
+        assertTrue(storedSearchText.contains("francois muller"),
+            "Stored text should contain normalized author: " + storedSearchText);
+        
+        assertTrue(storedSearchText.contains(searchWithoutDiacritics),
+            "Search without diacritics should match");
+        assertTrue(storedSearchText.contains(searchWithDiacritics), 
+            "Search with diacritics should match");
+    }
+
+    @Test
+    void testNormalizeForSearch_nullAndEmpty() {
+        assertNull(BookUtils.normalizeForSearch(null));
+        assertEquals("", BookUtils.normalizeForSearch(""));
+        assertEquals("", BookUtils.normalizeForSearch("   "));
+    }
+
+    @Test
+    void testNormalizeForSearch_preservesSpaces() {
+        assertEquals("jo nesbo book", BookUtils.normalizeForSearch("Jo Nesbø Book"));
+        assertEquals("multiple word title", BookUtils.normalizeForSearch("Multiple Word Title"));
+    }
+
+    @Test
+    void testNormalizeForSearch_removesSpecialCharacters() {
+        assertEquals("book title", BookUtils.normalizeForSearch("Book: Title!"));
+        assertEquals("authors name", BookUtils.normalizeForSearch("Author's Name"));
+        assertEquals("test 123", BookUtils.normalizeForSearch("Test (123)"));
+    }
 }
