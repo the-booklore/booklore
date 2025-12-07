@@ -431,9 +431,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       dismissableMask: true,
       modal: true,
       closable: true,
-      contentStyle: {overflow: 'auto'},
+      contentStyle: {overflow: 'hidden'},
       baseZIndex: 10,
-      style: {position: 'absolute', top: '15%'},
       data: {book: this.bookService.getBookByIdFromState(bookId)}
     });
   }
