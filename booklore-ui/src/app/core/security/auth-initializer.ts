@@ -3,9 +3,11 @@ import {OAuthService} from 'angular-oauth2-oidc';
 import {AuthService, websocketInitializer} from '../../shared/service/auth.service';
 import {AppSettingsService} from '../../shared/service/app-settings.service';
 import {AuthInitializationService} from './auth-initialization-service';
+import {API_CONFIG} from '../config/api-config';
 
 const OIDC_BYPASS_KEY = 'booklore-oidc-bypass';
 const OIDC_ERROR_COUNT_KEY = 'booklore-oidc-error-count';
+const OIDC_CONFIG_HASH_KEY = 'booklore-oidc-config-hash';
 const MAX_OIDC_RETRIES = 3;
 const OIDC_TIMEOUT_MS = 5000;
 
@@ -35,9 +37,36 @@ export function initializeAuthFactory() {
           if (!forceLocalOnly &&
             publicSettings.oidcEnabled &&
             publicSettings.oidcProviderDetails &&
-            !oidcBypassed &&
             errorCount < MAX_OIDC_RETRIES) {
             const details = publicSettings.oidcProviderDetails;
+            const discoveryDocumentUrl = `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`;
+
+            // Reset bypass/error counters if OIDC configuration changed since last load
+            const newConfigHash = `${details.issuerUri}|${details.clientId}|${details.providerName}`;
+            const storedHash = localStorage.getItem(OIDC_CONFIG_HASH_KEY);
+            if (storedHash !== newConfigHash) {
+              resetOidcBypass();
+              localStorage.setItem(OIDC_CONFIG_HASH_KEY, newConfigHash);
+            }
+
+            const bypassActive = localStorage.getItem(OIDC_BYPASS_KEY) === 'true';
+            const currentErrorCount = parseInt(localStorage.getItem(OIDC_ERROR_COUNT_KEY) || '0', 10);
+
+            if (bypassActive) {
+              console.log('[OIDC] OIDC is manually bypassed, using local authentication only');
+              authInitService.markAsInitialized();
+              resolve();
+              sub.unsubscribe();
+              return;
+            }
+
+            if (currentErrorCount >= MAX_OIDC_RETRIES) {
+              console.log(`[OIDC] OIDC automatically bypassed due to ${currentErrorCount} consecutive errors`);
+              authInitService.markAsInitialized();
+              resolve();
+              sub.unsubscribe();
+              return;
+            }
 
             oauthService.configure({
               issuer: details.issuerUri,
@@ -48,9 +77,10 @@ export function initializeAuthFactory() {
               showDebugInformation: false,
               requireHttps: false,
               strictDiscoveryDocumentValidation: false,
+              discoveryDocumentUrl
             });
 
-            console.log(`[OIDC] Attempting discovery and login (attempt ${errorCount + 1}/${MAX_OIDC_RETRIES})`);
+            console.log(`[OIDC] Attempting discovery and login (attempt ${currentErrorCount + 1}/${MAX_OIDC_RETRIES})`);
 
             withTimeout(oauthService.loadDiscoveryDocumentAndTryLogin(), OIDC_TIMEOUT_MS)
               .then(() => {
@@ -71,7 +101,7 @@ export function initializeAuthFactory() {
                 }
               })
               .catch(err => {
-                const newErrorCount = errorCount + 1;
+                const newErrorCount = currentErrorCount + 1;
                 localStorage.setItem(OIDC_ERROR_COUNT_KEY, newErrorCount.toString());
 
                 authInitService.markAsInitialized();
