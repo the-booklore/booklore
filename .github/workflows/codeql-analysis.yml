@@ -36,6 +36,10 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
@@ -45,12 +49,10 @@ jobs:
 
       - name: Build Java
         working-directory: ./booklore-api
-        run: ./gradlew compileJava --no-daemon
+        run: ./gradlew build -x test --no-daemon
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:java"
 
   analyze-javascript:
     name: Analyze JavaScript/TypeScript
