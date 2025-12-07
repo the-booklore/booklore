@@ -36,19 +36,9 @@ env:
   BOOKLORE_URL: http://localhost:8080
 
 jobs:
-  setup:
-    name: Shared Setup
-    uses: ./.github/workflows/_shared-setup.yml
-
   swagger-api-tests:
     name: Swagger API Tests
-    needs: setup
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        java: ['21', '25']
-        os: ['ubuntu-latest', 'ubuntu-24.04']
+    runs-on: ubuntu-latest
     
     timeout-minutes: 40
 
@@ -70,17 +60,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/java-gradle-setup
         with:
-          java-version: ${{ matrix.java }}
-          distribution: 'temurin'
-          cache: 'gradle'
-
-      - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
+          java-version: '21'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -118,9 +101,14 @@ jobs:
 
       - name: Build Backend
         working-directory: booklore-api
+        id: build
         run: |
           chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
+          # Find the bootJar and store path for artifact upload
+          JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
+          echo "JAR built at: $JAR_FILE"
 
       - name: Create bookdrop directory
         run: mkdir -p /tmp/bookdrop && chmod 777 /tmp/bookdrop
@@ -217,6 +205,15 @@ jobs:
             kill $(cat /tmp/booklore.pid) || true
           fi
 
+      - name: Upload built JAR artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: booklore-jar
+          path: booklore-api/build/libs/
+          retention-days: 1
+          compression-level: 0
+
   docker-api-tests:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
@@ -226,6 +223,23 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: booklore-jar
+          path: booklore-api/build/libs/
+
+      - name: Verify JAR downloaded
+        run: |
+          JAR_FILE=$(find booklore-api/build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          if [ -z "$JAR_FILE" ]; then
+            echo "❌ ERROR: JAR artifact not found"
+            ls -la booklore-api/build/libs/ || echo "Directory doesn't exist"
+            exit 1
+          fi
+          echo "✓ JAR found: $JAR_FILE"
+          ls -lh "$JAR_FILE"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
