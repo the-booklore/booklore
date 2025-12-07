@@ -147,16 +147,19 @@ public class BookdropMonitoringService {
                         try (Stream<Path> pathStream = Files.walk(fullPath)) {
                             pathStream
                                     .filter(Files::isRegularFile)
+                                    .filter(path -> !path.getFileName().toString().startsWith("."))
                                     .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
                                     .forEach(path -> eventHandler.enqueueFile(path, StandardWatchEventKinds.ENTRY_CREATE));
                         } catch (IOException e) {
                             log.error("Failed to scan new directory: {}", fullPath, e);
                         }
                     } else {
-                        if (BookFileExtension.fromFileName(fullPath.getFileName().toString()).isPresent()) {
-                            eventHandler.enqueueFile(fullPath, kind);
-                        } else {
-                            log.info("Ignored unsupported file type: {}", fullPath);
+                        if (!(!fullPath.getFileName().toString().isEmpty() && fullPath.getFileName().toString().charAt(0) == '.')) {
+                            if (BookFileExtension.fromFileName(fullPath.getFileName().toString()).isPresent()) {
+                                eventHandler.enqueueFile(fullPath, kind);
+                            } else {
+                                log.info("Ignored unsupported file type: {}", fullPath);
+                            }
                         }
                     }
                 } else if (kind == StandardWatchEventKinds.ENTRY_DELETE) {
@@ -185,6 +188,7 @@ public class BookdropMonitoringService {
     private void scanExistingBookdropFiles() {
         try (Stream<Path> files = Files.walk(bookdrop)) {
             files.filter(Files::isRegularFile)
+                    .filter(path -> !(!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.'))
                     .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
                     .forEach(file -> {
                         log.info("Found existing supported file on startup: {}", file);
