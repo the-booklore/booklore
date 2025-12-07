@@ -412,6 +412,20 @@ class EpubMetadataExtractorTest {
 
             assertNull(cover);
         }
+
+        @Test
+        @DisplayName("Should extract cover declared with properties='cover-image' even if ID/href doesn't contain 'cover'")
+        void extractCover_propertiesCoverImage_returnsCoverBytes() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            // Use an ID and HREF that do not contain "cover"
+            File epubFile = createEpubWithPropertiesCover(pngImage, "image123", "images/img001.png");
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted");
+            assertTrue(cover.length > 0);
+            assertEquals(pngImage.length, cover.length);
+        }
     }
 
     @Nested
@@ -656,6 +670,51 @@ class EpubMetadataExtractorTest {
             zos.closeEntry();
 
             zos.putNextEntry(new ZipEntry("OEBPS/cover.png"));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    private File createEpubWithPropertiesCover(byte[] coverImageData, String id, String href) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Properties Cover</dc:title>
+                </metadata>
+                <manifest>
+                    <item id="%s" href="%s" media-type="image/png" properties="cover-image"/>
+                </manifest>
+            </package>
+            """, id, href);
+
+        File epubFile = tempDir.resolve("test-prop-cover-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/" + href));
             zos.write(coverImageData);
             zos.closeEntry();
         }

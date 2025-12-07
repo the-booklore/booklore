@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 @AllArgsConstructor
 public class UserProvisioningService {
 
-    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private final AppProperties appProperties;
     private final UserRepository userRepository;
     private final LibraryRepository libraryRepository;
@@ -146,7 +145,9 @@ public class UserProvisioningService {
             if (groupsContent.length() >= 2 && groupsContent.charAt(0) == '[' && groupsContent.charAt(groupsContent.length() - 1) == ']') {
                 groupsContent = groupsContent.substring(1, groupsContent.length() - 1);
             }
-            List<String> groupsList = Arrays.asList(WHITESPACE_PATTERN.split(groupsContent));
+            String delimiter = appProperties.getRemoteAuth().getGroupsDelimiter();
+            Pattern groupsPattern = Pattern.compile(delimiter);
+            List<String> groupsList = Arrays.asList(groupsPattern.split(groupsContent));
             isAdmin = groupsList.contains(appProperties.getRemoteAuth().getAdminGroup());
             log.debug("Remote-Auth: user {} will be admin: {}", username, isAdmin);
         }
