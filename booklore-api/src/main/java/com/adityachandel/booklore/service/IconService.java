@@ -78,6 +78,11 @@ public class IconService {
         String filename = normalizeFilename(request.getSvgName());
         Path filePath = getIconsSvgPath().resolve(filename);
 
+        if (Files.exists(filePath)) {
+            log.warn("SVG icon already exists: {}", filename);
+            throw ApiError.ICON_ALREADY_EXISTS.createException(request.getSvgName());
+        }
+
         try {
             Files.writeString(filePath, request.getSvgData(),
                     StandardOpenOption.CREATE,
@@ -190,31 +195,31 @@ public class IconService {
 
     private void validateSvgData(String svgData) {
         if (svgData == null || svgData.isBlank()) {
-            throw new IllegalArgumentException("SVG data cannot be empty");
+            throw ApiError.INVALID_INPUT.createException("SVG data cannot be empty");
         }
 
         String trimmed = svgData.trim();
         if (!trimmed.startsWith(SVG_START_TAG) && !trimmed.startsWith(XML_DECLARATION)) {
-            throw new IllegalArgumentException("Invalid SVG format: must start with <svg or <?xml");
+            throw ApiError.INVALID_INPUT.createException("Invalid SVG format: must start with <svg or <?xml");
         }
 
         if (!trimmed.contains(SVG_END_TAG)) {
-            throw new IllegalArgumentException("Invalid SVG format: missing closing </svg> tag");
+            throw ApiError.INVALID_INPUT.createException("Invalid SVG format: missing closing </svg> tag");
         }
     }
 
     private void validatePaginationParams(int page, int size) {
         if (page < 0) {
-            throw new IllegalArgumentException("Page index must not be less than zero");
+            throw ApiError.INVALID_INPUT.createException("Page index must not be less than zero");
         }
         if (size < 1) {
-            throw new IllegalArgumentException("Page size must not be less than one");
+            throw ApiError.INVALID_INPUT.createException("Page size must not be less than one");
         }
     }
 
     private String normalizeFilename(String filename) {
         if (filename == null || filename.isBlank()) {
-            throw new IllegalArgumentException("Filename cannot be empty");
+            throw ApiError.INVALID_INPUT.createException("Filename cannot be empty");
         }
 
         String sanitized = filename.trim().replaceAll("[^a-zA-Z0-9._-]", "_");

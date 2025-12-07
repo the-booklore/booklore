@@ -10,7 +10,7 @@ import {NgClass, NgStyle} from '@angular/common';
   template: `
     @if (icon) {
       @if (icon.type === 'PRIME_NG') {
-        <i [class]="icon.value" [ngClass]="iconClass" [ngStyle]="iconStyle"></i>
+        <i [class]="getPrimeNgIconClass(icon.value)" [ngClass]="iconClass" [ngStyle]="iconStyle"></i>
       } @else {
         <img
           [src]="getIconUrl(icon.value)"
@@ -37,6 +37,16 @@ export class IconDisplayComponent {
   @Input() alt: string = 'Icon';
 
   private urlHelper = inject(UrlHelperService);
+
+  getPrimeNgIconClass(iconValue: string): string {
+    if (iconValue.startsWith('pi pi-')) {
+      return iconValue;
+    }
+    if (iconValue.startsWith('pi-')) {
+      return `pi ${iconValue}`;
+    }
+    return `pi pi-${iconValue}`;
+  }
 
   getIconUrl(iconName: string): string {
     return this.urlHelper.getIconUrl(iconName);

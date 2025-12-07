@@ -13,6 +13,8 @@ import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -23,6 +25,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -192,6 +195,53 @@ public class AppMigrationService {
 
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
         log.info("Completed migration: populateCoversAndResizeThumbnails in {} ms", elapsedMs);
+    }
+
+    @Transactional
+    public void moveIconsToDataFolder() {
+        if (migrationRepository.existsById("moveIconsToDataFolder")) return;
+
+        long start = System.nanoTime();
+        log.info("Starting migration: moveIconsToDataFolder");
+
+        try {
+            String targetFolder = fileService.getIconsSvgFolder();
+            Path targetDir = Paths.get(targetFolder);
+            Files.createDirectories(targetDir);
+
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource[] resources = resolver.getResources("classpath:static/images/icons/svg/*.svg");
+
+            int copiedCount = 0;
+            for (Resource resource : resources) {
+                String filename = resource.getFilename();
+                if (filename == null) continue;
+
+                Path targetFile = targetDir.resolve(filename);
+
+                try (var inputStream = resource.getInputStream()) {
+                    Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                    copiedCount++;
+                    log.debug("Copied icon: {} to {}", filename, targetFile);
+                } catch (IOException e) {
+                    log.error("Failed to copy icon: {}", filename, e);
+                }
+            }
+
+            log.info("Copied {} SVG icons from resources to data folder", copiedCount);
+
+            migrationRepository.save(new AppMigrationEntity(
+                    "moveIconsToDataFolder",
+                    LocalDateTime.now(),
+                    "Move SVG icons from resources/static/images/icons/svg to data/icons/svg"
+            ));
+
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Completed migration: moveIconsToDataFolder in {} ms", elapsedMs);
+        } catch (IOException e) {
+            log.error("Error during migration moveIconsToDataFolder", e);
+            throw new UncheckedIOException(e);
+        }
     }
 
 }

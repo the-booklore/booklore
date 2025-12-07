@@ -91,7 +91,7 @@ class IconServiceTest {
         SvgIconCreateRequest req = new SvgIconCreateRequest();
         req.setSvgName(SVG_NAME);
         req.setSvgData(INVALID_SVG_DATA);
-        assertThrows(IllegalArgumentException.class, () -> iconService.saveSvgIcon(req));
+        assertThrows(APIException.class, () -> iconService.saveSvgIcon(req));
     }
 
     @Test
@@ -99,7 +99,7 @@ class IconServiceTest {
         SvgIconCreateRequest req = new SvgIconCreateRequest();
         req.setSvgName(SVG_NAME);
         req.setSvgData(INVALID_SVG_DATA_NO_END);
-        assertThrows(IllegalArgumentException.class, () -> iconService.saveSvgIcon(req));
+        assertThrows(APIException.class, () -> iconService.saveSvgIcon(req));
     }
 
     @Test
@@ -153,14 +153,14 @@ class IconServiceTest {
 
     @Test
     void getIconNames_invalidPageParams_throwsException() {
-        assertThrows(IllegalArgumentException.class, () -> iconService.getIconNames(-1, 2));
-        assertThrows(IllegalArgumentException.class, () -> iconService.getIconNames(0, 0));
+        assertThrows(APIException.class, () -> iconService.getIconNames(-1, 2));
+        assertThrows(APIException.class, () -> iconService.getIconNames(0, 0));
     }
 
     @Test
     void normalizeFilename_invalid_throwsException() {
-        assertThrows(IllegalArgumentException.class, () -> iconService.getSvgIcon(""));
-        assertThrows(IllegalArgumentException.class, () -> iconService.getSvgIcon(null));
+        assertThrows(APIException.class, () -> iconService.getSvgIcon(""));
+        assertThrows(APIException.class, () -> iconService.getSvgIcon(null));
     }
 
     @Test
@@ -187,7 +187,7 @@ class IconServiceTest {
         int initialSize = iconService.getSvgCache().size();
 
         req.setSvgData("<svg><circle r=\"50\"/></svg>");
-        iconService.saveSvgIcon(req);
+        assertThrows(APIException.class, () -> iconService.saveSvgIcon(req));
 
         assertEquals(initialSize, iconService.getSvgCache().size());
     }
