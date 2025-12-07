@@ -25,6 +25,11 @@ REMOTE_AUTH_HEADER_GROUPS=Remote-Groups    # Groups/roles
 
 # Admin group name (optional)
 REMOTE_AUTH_ADMIN_GROUP=admin              # Specify this if you want a group to automatically get admin rights
+
+# Groups delimiter pattern (optional)
+REMOTE_AUTH_GROUPS_DELIMITER=\\s+          # Regex pattern for splitting groups. Default: "\\s+" (whitespace)
+                                           # Use "\\s*,\\s*" for comma-separated groups
+                                           # Use "\\s*;\\s*" for semicolon-separated groups
 ```
 
 ### Docker Compose Example
@@ -42,6 +47,7 @@ services:
       - REMOTE_AUTH_HEADER_EMAIL=Remote-Email
       - REMOTE_AUTH_HEADER_GROUPS=Remote-Groups
       - REMOTE_AUTH_ADMIN_GROUP=admin
+      # - REMOTE_AUTH_GROUPS_DELIMITER=\\s*,\\s*  # Uncomment if your proxy sends comma-separated groups
     # ... rest of configuration ...
 ```
 
