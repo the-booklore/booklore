@@ -47,12 +47,18 @@ jobs:
           languages: java
           queries: security-extended
 
+      - name: Make gradlew executable
+        working-directory: ./booklore-api
+        run: chmod +x ./gradlew
+
       - name: Build Java
         working-directory: ./booklore-api
         run: ./gradlew build -x test --no-daemon
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:java"
 
   analyze-javascript:
     name: Analyze JavaScript/TypeScript
