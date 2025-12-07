@@ -39,8 +39,6 @@ export function initializeAuthFactory() {
             publicSettings.oidcProviderDetails &&
             errorCount < MAX_OIDC_RETRIES) {
             const details = publicSettings.oidcProviderDetails;
-            const discoveryDocumentUrl = `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`;
-
             // Reset bypass/error counters if OIDC configuration changed since last load
             const newConfigHash = `${details.issuerUri}|${details.clientId}|${details.providerName}`;
             const storedHash = localStorage.getItem(OIDC_CONFIG_HASH_KEY);
@@ -76,13 +74,13 @@ export function initializeAuthFactory() {
               responseType: 'code',
               showDebugInformation: false,
               requireHttps: false,
-              strictDiscoveryDocumentValidation: false,
-              discoveryDocumentUrl
+              strictDiscoveryDocumentValidation: false
             });
 
+            const discoveryDocumentUrl = `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`;
             console.log(`[OIDC] Attempting discovery and login (attempt ${currentErrorCount + 1}/${MAX_OIDC_RETRIES})`);
 
-            withTimeout(oauthService.loadDiscoveryDocumentAndTryLogin(), OIDC_TIMEOUT_MS)
+            withTimeout(oauthService.loadDiscoveryDocumentAndTryLogin({customUrl: discoveryDocumentUrl}), OIDC_TIMEOUT_MS)
               .then(() => {
                 console.log('[OIDC] Discovery document loaded and login attempted');
                 localStorage.removeItem(OIDC_ERROR_COUNT_KEY);

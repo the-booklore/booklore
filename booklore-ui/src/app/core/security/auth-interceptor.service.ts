@@ -6,7 +6,7 @@ import {BehaviorSubject, Observable, throwError} from 'rxjs';
 import {AuthService} from '../../shared/service/auth.service';
 import {API_CONFIG} from '../config/api-config';
 
-export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandlerFn) => {
+export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandlerFn): Observable<import('@angular/common/http').HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
@@ -15,8 +15,14 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
   const token = internalToken || oidcToken;
 
   const isApiRequest = req.url.startsWith(`${API_CONFIG.BASE_URL}/api/`);
+  const skipAuthPaths = [
+    `${API_CONFIG.BASE_URL}/api/v1/public-settings`,
+    `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`
+  ];
 
-  const authReq = (token && isApiRequest) ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  const shouldAttachToken = token && isApiRequest && !skipAuthPaths.some(path => req.url.startsWith(path));
+
+  const authReq = shouldAttachToken ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -31,7 +37,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-function handle401Error(authService: AuthService, request: HttpRequest<any>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<any> {
+function handle401Error(authService: AuthService, request: HttpRequest<any>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<import('@angular/common/http').HttpEvent<unknown>> {
   if (!isRefreshing && isInternal) {
     isRefreshing = true;
     refreshTokenSubject.next(null);

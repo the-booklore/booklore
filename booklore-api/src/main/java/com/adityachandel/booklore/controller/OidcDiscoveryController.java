@@ -5,6 +5,7 @@ import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -80,8 +81,12 @@ public class OidcDiscoveryController {
 
     private RestTemplate restTemplate() {
         return restTemplateBuilder
-            .setConnectTimeout(Duration.ofSeconds(5))
-            .setReadTimeout(Duration.ofSeconds(5))
+            .requestFactory(() -> {
+                SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+                factory.setConnectTimeout((int) Duration.ofSeconds(5).toMillis());
+                factory.setReadTimeout((int) Duration.ofSeconds(5).toMillis());
+                return factory;
+            })
             .build();
     }
 
