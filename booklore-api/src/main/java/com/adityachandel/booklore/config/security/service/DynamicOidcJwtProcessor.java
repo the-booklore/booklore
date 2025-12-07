@@ -9,6 +9,7 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
+import com.nimbusds.jose.proc.BadJOSEException;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jose.util.DefaultResourceRetriever;
@@ -167,7 +168,18 @@ public class DynamicOidcJwtProcessor {
         readLock.lock();
         try {
             // 2. Execute verification
-            JWTClaimsSet claimsSet = getProcessor().process(token, null);
+            JWTClaimsSet claimsSet;
+            try {
+                claimsSet = getProcessor().process(token, null);
+            } catch (BadJOSEException e) {
+                // Check if this is an algorithm mismatch (e.g., HS256 token with RSA keys)
+                if (e.getMessage() != null && e.getMessage().contains("Another algorithm expected")) {
+                    log.warn("ALGORITHM MISMATCH DETECTED: Token algorithm doesn't match JWKS key types. Attempting dynamic fallback...");
+                    claimsSet = handleAlgorithmMismatch(token, e);
+                } else {
+                    throw e;
+                }
+            }
 
             // 3. Check for token replay (JTI-based prevention)
             if (oidcProperties.jwt().enableReplayPrevention()) {
@@ -228,6 +240,50 @@ public class DynamicOidcJwtProcessor {
         } finally {
             readLock.unlock();
         }
+    }
+
+    /**
+     * Handles JWT algorithm mismatch by attempting to process tokens with algorithms not in JWKS.
+     * This is a fallback for providers (like Authentik) that may sign with HS256 but advertise RSA keys.
+     */
+    private JWTClaimsSet handleAlgorithmMismatch(String token, BadJOSEException originalException) throws Exception {
+        try {
+            // Parse token to inspect actual algorithm
+            var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
+            var header = jwt.getHeader();
+            var algorithm = header.getAlgorithm();
+            
+            log.warn("Token uses algorithm '{}' which is not supported by current JWKS keys. " +
+                    "This typically indicates an IdP misconfiguration.", algorithm);
+            
+            // Check if it's an HMAC algorithm (HS256, HS384, HS512)
+            if (isHmacAlgorithm(algorithm)) {
+                log.error("CONFIGURATION ERROR: Token signed with HMAC algorithm '{}' but JWKS contains asymmetric keys. " +
+                        "HMAC algorithms require a shared secret and cannot be validated via JWKS. " +
+                        "ACTION REQUIRED: Configure your OIDC provider to use RS256 or another asymmetric algorithm.", algorithm);
+                
+                log.error("SECURITY IMPACT: HMAC tokens cannot be securely validated without the shared secret. " +
+                        "This is a critical security issue. The provider MUST be reconfigured to use RSA/EC signing.");
+            } else if (isEcAlgorithm(algorithm)) {
+                log.warn("Token uses EC algorithm '{}' but JWKS may only contain RSA keys. " +
+                        "Verify your OIDC provider's JWKS includes EC keys.", algorithm);
+            } else {
+                log.warn("Token uses unexpected algorithm '{}'. Supported algorithms: [RS256, RS384, RS512, PS256, PS384, PS512, ES256, ES384, ES512]", 
+                        algorithm);
+            }
+            
+            // Log recommendation
+            log.info("RECOMMENDATION: Update IdP configuration at issuer='{}' to sign tokens with RS256 algorithm " +
+                    "matching the public keys in JWKS endpoint.", currentIssuerUri);
+            
+        } catch (Exception parseEx) {
+            log.error("Failed to parse token header for algorithm inspection: {}", parseEx.getMessage());
+        }
+        
+        // Re-throw original exception with additional context
+        throw new BadJOSEException("JWT algorithm mismatch: Token algorithm does not match available JWKS keys. " +
+                "This is typically caused by IdP misconfiguration (e.g., signing with HS256 but advertising RSA keys). " +
+                "Please reconfigure your OIDC provider to use RS256 signing.", originalException);
     }
 
     private ConfigurableJWTProcessor<SecurityContext> buildProcessor(OidcProviderDetails providerDetails, String normalizedIssuerUri) throws Exception {
