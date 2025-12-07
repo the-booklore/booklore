@@ -80,7 +80,11 @@ export function initializeAuthFactory() {
             const discoveryDocumentUrl = `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`;
             console.log(`[OIDC] Attempting discovery and login (attempt ${currentErrorCount + 1}/${MAX_OIDC_RETRIES})`);
 
-            withTimeout(oauthService.loadDiscoveryDocumentAndTryLogin({customUrl: discoveryDocumentUrl}), OIDC_TIMEOUT_MS)
+            withTimeout(
+              oauthService.loadDiscoveryDocumentFromUrl(discoveryDocumentUrl)
+                .then(() => oauthService.tryLogin()),
+              OIDC_TIMEOUT_MS
+            )
               .then(() => {
                 console.log('[OIDC] Discovery document loaded and login attempted');
                 localStorage.removeItem(OIDC_ERROR_COUNT_KEY);
