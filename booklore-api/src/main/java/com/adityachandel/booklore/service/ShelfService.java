@@ -40,6 +40,7 @@ public class ShelfService {
         ShelfEntity shelfEntity = ShelfEntity.builder()
                 .icon(request.getIcon())
                 .name(request.getName())
+                .iconType(request.getIconType())
                 .user(fetchUserEntityById(userId))
                 .build();
         return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
@@ -49,6 +50,7 @@ public class ShelfService {
         ShelfEntity shelfEntity = findShelfByIdOrThrow(id);
         shelfEntity.setName(request.getName());
         shelfEntity.setIcon(request.getIcon());
+        shelfEntity.setIconType(request.getIconType());
         return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
     }
 

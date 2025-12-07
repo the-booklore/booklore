@@ -1,12 +1,126 @@
-<input type="text" placeholder="Search icons..." [(ngModel)]="searchText" class="icon-search"/>
+<p-tabs [(value)]="activeTabIndex">
+  <p-tablist>
+    <p-tab value="0">Prime Icons</p-tab>
+    <p-tab value="1">SVG Icons</p-tab>
+    <p-tab value="2">Add SVG Icon</p-tab>
+  </p-tablist>
+  <p-tabpanels>
+    <p-tabpanel value="0">
+      <input type="text" placeholder="Search Prime icons..." [(ngModel)]="searchText" class="icon-search"/>
 
-<div class="icon-grid">
-  @for (icon of filteredIcons(); track icon) {
-    <div
-      class="icon-item"
-      (click)="selectIcon(icon)"
-      [class.selected]="icon === selectedIcon">
-      <i [class]="icon"></i>
-    </div>
-  }
-</div>
+      <div class="icon-grid">
+        @for (icon of filteredIcons(); track icon) {
+          <div
+            class="icon-item"
+            (click)="selectIcon(icon)"
+            [class.selected]="icon === selectedIcon"
+            [title]="icon">
+            <i [class]="icon"></i>
+          </div>
+        }
+      </div>
+    </p-tabpanel>
+    <p-tabpanel value="1">
+      <div class="svg-browse-container">
+        @if (isLoadingSvgIcons) {
+          <div class="loading-message">Loading icons...</div>
+        } @else if (svgIconsError) {
+          <div class="error-message">{{ svgIconsError }}</div>
+        } @else {
+          <input type="text" placeholder="Search SVG icons..." [(ngModel)]="svgSearchText" class="icon-search"/>
+
+          <div class="icon-grid">
+            @for (iconName of filteredSvgIcons(); track iconName) {
+              <div
+                class="icon-item svg-icon-item"
+                (click)="selectSvgIcon(iconName)"
+                [class.selected]="iconName === selectedSvgIcon"
+                [title]="iconName"
+                draggable="true"
+                (dragstart)="onSvgIconDragStart(iconName)"
+                (dragend)="onSvgIconDragEnd()"
+              >
+                <img
+                  [src]="getSvgIconUrl(iconName)"
+                  [alt]="iconName"
+                  (error)="onImageError($event)"
+                  class="svg-icon-image"/>
+              </div>
+            }
+          </div>
+
+          @if (totalSvgPages > 1) {
+            <div class="pagination-controls">
+              <button
+                (click)="loadSvgIcons(currentSvgPage - 1)"
+                [disabled]="currentSvgPage === 0"
+                class="pagination-button">
+                Previous
+              </button>
+              <span class="pagination-info">
+                Page {{ currentSvgPage + 1 }} of {{ totalSvgPages }}
+              </span>
+              <button
+                (click)="loadSvgIcons(currentSvgPage + 1)"
+                [disabled]="currentSvgPage >= totalSvgPages - 1"
+                class="pagination-button">
+                Next
+              </button>
+            </div>
+          }
+
+          <div style="display: flex; align-items: center; position: fixed; right: 32px; bottom: 32px; z-index: 101;">
+            <div
+              class="svg-trash-area"
+              [class.trash-hover]="isTrashHover"
+              (dragover)="onTrashDragOver($event)"
+              (dragleave)="onTrashDragLeave($event)"
+              (drop)="onTrashDrop($event)"
+            >
+              <i class="pi pi-trash"></i>
+              <span>Drag here to delete icon</span>
+            </div>
+          </div>
+        }
+      </div>
+    </p-tabpanel>
+    <p-tabpanel value="2">
+      <div class="svg-paste-container">
+        <input
+          type="text"
+          [(ngModel)]="svgName"
+          placeholder="Enter icon name for saving"
+          class="svg-name-input"
+        />
+
+        <textarea
+          [(ngModel)]="svgContent"
+          (ngModelChange)="onSvgContentChange()"
+          placeholder="Paste your SVG code here..."
+          class="svg-textarea"
+          rows="8"></textarea>
+
+        @if (svgContent && svgPreview) {
+          <div class="svg-preview-section">
+            <h4 class="preview-title">Preview</h4>
+            <div class="svg-preview" [innerHTML]="svgPreview"></div>
+          </div>
+        }
+
+        @if (errorMessage) {
+          <div class="error-message">{{ errorMessage }}</div>
+        }
+
+        <div class="button-container">
+          <p-button
+            (onClick)="saveSvg()"
+            [disabled]="!svgContent || !svgName"
+            [loading]="isLoading"
+            label="Save SVG"
+            severity="primary">
+          </p-button>
+        </div>
+      </div>
+    </p-tabpanel>
+  </p-tabpanels>
+</p-tabs>

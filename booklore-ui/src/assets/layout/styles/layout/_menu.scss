@@ -78,10 +78,6 @@
       border-radius: variables.$borderRadius;
       transition: background-color variables.$transitionDuration, box-shadow variables.$transitionDuration;
 
-      .layout-menuitem-icon {
-        margin-right: .5rem;
-      }
-
       .layout-submenu-toggler {
         font-size: 75%;
         margin-left: auto;
