@@ -5,6 +5,9 @@ import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.KeyType;
 import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
 import com.nimbusds.jose.proc.JWSVerificationKeySelector;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -267,9 +270,12 @@ public class DynamicOidcJwtProcessor {
 
         URI jwksUri = discoveryConfiguration.jwksUri();
 
-    Set<JWSAlgorithm> supportedAlgorithms = discoveryConfiguration.supportedAlgorithms().isEmpty()
-        ? Set.of(JWSAlgorithm.RS256)
-                : discoveryConfiguration.supportedAlgorithms();
+        Set<JWSAlgorithm> supportedAlgorithms = discoveryConfiguration.supportedAlgorithms().isEmpty()
+            ? Set.of(JWSAlgorithm.RS256)
+            : discoveryConfiguration.supportedAlgorithms();
+
+        // Filter advertised algorithms against the actual key material to avoid alg/key mismatches (e.g. HS tokens with RSA keys)
+        supportedAlgorithms = filterAlgorithmsByJwks(jwksUri, resourceRetriever, supportedAlgorithms);
 
         log.debug("Configuring JWKS retrieval from {} with timeouts: connect={}ms, read={}ms, sizeLimit={}bytes, algorithms={}",
                 jwksUri, oidcProperties.jwks().connectTimeout().toMillis(), oidcProperties.jwks().readTimeout().toMillis(), oidcProperties.jwks().sizeLimit(), supportedAlgorithms);
@@ -417,6 +423,82 @@ public class DynamicOidcJwtProcessor {
         return Collections.unmodifiableSet(algorithms);
     }
 
+    private Set<JWSAlgorithm> filterAlgorithmsByJwks(URI jwksUri, DefaultResourceRetriever retriever, Set<JWSAlgorithm> advertisedAlgorithms) {
+        try {
+            var resource = retriever.retrieveResource(jwksUri.toURL());
+            var jwkSet = JWKSet.parse(resource.getContent());
+
+            boolean hasRsa = false;
+            boolean hasEc = false;
+            boolean hasOct = false;
+            boolean hasOkp = false;
+
+            for (JWK jwk : jwkSet.getKeys()) {
+                KeyType keyType = jwk.getKeyType();
+                if (KeyType.RSA.equals(keyType)) {
+                    hasRsa = true;
+                } else if (KeyType.EC.equals(keyType)) {
+                    hasEc = true;
+                } else if (KeyType.OCT.equals(keyType)) {
+                    hasOct = true;
+                } else if (KeyType.OKP.equals(keyType)) {
+                    hasOkp = true;
+                }
+            }
+
+            Set<JWSAlgorithm> filtered = new LinkedHashSet<>();
+            for (JWSAlgorithm alg : advertisedAlgorithms) {
+                if (isHmacAlgorithm(alg) && hasOct) {
+                    filtered.add(alg);
+                } else if (isRsaAlgorithm(alg) && hasRsa) {
+                    filtered.add(alg);
+                } else if (isEcAlgorithm(alg) && hasEc) {
+                    filtered.add(alg);
+                } else if (JWSAlgorithm.EdDSA.equals(alg) && hasOkp) {
+                    filtered.add(alg);
+                }
+            }
+
+            if (filtered.isEmpty()) {
+                // If nothing matched the actual keys, prefer asymmetric defaults based on available key types
+                if (hasRsa) {
+                    filtered.addAll(List.of(JWSAlgorithm.RS256, JWSAlgorithm.PS256));
+                } else if (hasEc) {
+                    filtered.addAll(List.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384));
+                } else if (hasOkp) {
+                    filtered.add(JWSAlgorithm.EdDSA);
+                } else if (hasOct) {
+                    filtered.addAll(List.of(JWSAlgorithm.HS256, JWSAlgorithm.HS512));
+                } else {
+                    log.warn("JWKS at {} did not expose any keys. Falling back to advertised algorithms: {}", jwksUri, advertisedAlgorithms);
+                    return advertisedAlgorithms;
+                }
+                log.warn("Advertised algorithms {} did not match JWKS key types at {}. Using inferred set: {}", advertisedAlgorithms, jwksUri, filtered);
+            } else if (!filtered.equals(advertisedAlgorithms)) {
+                log.info("Filtered advertised algorithms {} down to {} based on JWKS key types at {}", advertisedAlgorithms, filtered, jwksUri);
+            }
+
+            return Collections.unmodifiableSet(filtered);
+        } catch (Exception e) {
+            log.warn("Could not inspect JWKS at {} to filter algorithms: {}. Using advertised algorithms {}", jwksUri, e.getMessage(), advertisedAlgorithms);
+            return advertisedAlgorithms;
+        }
+    }
+
+    private boolean isHmacAlgorithm(JWSAlgorithm alg) {
+        return JWSAlgorithm.HS256.equals(alg) || JWSAlgorithm.HS384.equals(alg) || JWSAlgorithm.HS512.equals(alg);
+    }
+
+    private boolean isRsaAlgorithm(JWSAlgorithm alg) {
+        return JWSAlgorithm.RS256.equals(alg) || JWSAlgorithm.RS384.equals(alg) || JWSAlgorithm.RS512.equals(alg)
+            || JWSAlgorithm.PS256.equals(alg) || JWSAlgorithm.PS384.equals(alg) || JWSAlgorithm.PS512.equals(alg);
+    }
+
+    private boolean isEcAlgorithm(JWSAlgorithm alg) {
+        return JWSAlgorithm.ES256.equals(alg) || JWSAlgorithm.ES256K.equals(alg)
+            || JWSAlgorithm.ES384.equals(alg) || JWSAlgorithm.ES512.equals(alg);
+    }
+
     private void validateAudienceOrAzp(JWTClaimsSet claims, String clientId) throws BadJWTException {
         List<String> audiences = claims.getAudience();
         if (audiences != null && audiences.contains(clientId)) {
@@ -516,15 +598,6 @@ public class DynamicOidcJwtProcessor {
             return "/";
         }
         return end == issuerUri.length() ? issuerUri : issuerUri.substring(0, end);
-    }
-
-    private static String stripPort(String url) {
-        try {
-            URI uri = new URI(url);
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), -1, uri.getPath(), uri.getQuery(), uri.getFragment()).toString();
-        } catch (URISyntaxException e) {
-            return url;
-        }
     }
 
     private static final class DiscoveryConfiguration {
