@@ -116,14 +116,22 @@ public class UserProvisioningService {
         }
         
         log.info("📝 Provisioning OIDC user: username='{}', email='{}', name='{}'", username, email, name);
+        
+        // Fast-path: check if user exists without lock (reduces contention)
+        Optional<BookLoreUserEntity> fastPathCheck = userRepository.findByUsername(username);
+        if (fastPathCheck.isPresent()) {
+            log.debug("Fast-path: User already exists for username: {}", username);
+            return fastPathCheck.get();
+        }
+        
         // Use a per-username lock to avoid race conditions when provisioning the same username concurrently
         Object lock = USER_CREATION_LOCKS.computeIfAbsent(username, k -> new Object());
         synchronized (lock) {
             try {
-                // Try to find existing first (re-check inside lock)
+                // Double-check inside lock (another thread may have created the user)
                 Optional<BookLoreUserEntity> existing = userRepository.findByUsername(username);
                 if (existing.isPresent()) {
-                    log.debug("Found existing user for username: {}", username);
+                    log.debug("Found existing user for username: {} (created by concurrent thread)", username);
                     return existing.get();
                 }
                 

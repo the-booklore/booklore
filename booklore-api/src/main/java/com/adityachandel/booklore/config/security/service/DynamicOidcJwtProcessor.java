@@ -803,4 +803,23 @@ public class DynamicOidcJwtProcessor {
                      e.getMessage());
         }
     }
+
+    public boolean isHealthy() {
+        try {
+            getProcessor();
+            return true;
+        } catch (Exception e) {
+            log.debug("OIDC health check failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public String getHealthStatus() {
+        try {
+            getProcessor();
+            return "OIDC provider reachable and configured correctly";
+        } catch (Exception e) {
+            return "OIDC provider unreachable or misconfigured: " + e.getMessage();
+        }
+    }
 }
