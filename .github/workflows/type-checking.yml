@@ -3,6 +3,9 @@ name: Type Checking & Compilation
 on:
   pull_request:
     branches: [main, develop]
+    paths:
+      - 'booklore-ui/**'
+      - '.github/workflows/type-checking.yml'
 
 # Cancel in-progress runs when a new run is triggered
 concurrency:
@@ -17,6 +20,7 @@ jobs:
   typescript-check:
     name: TypeScript Type Checking
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: ./booklore-ui
@@ -51,6 +55,7 @@ jobs:
   java-compilation:
     name: Java Compilation Check
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: ./booklore-api

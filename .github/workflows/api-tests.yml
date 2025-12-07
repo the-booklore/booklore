@@ -3,8 +3,17 @@ name: Swagger API Tests
 on:
   push:
     branches: [main, develop]
+    paths:
+      - 'booklore-api/**'
+      - 'booklore-ui/**'
+      - 'build.gradle'
+      - '.github/workflows/api-tests.yml'
   pull_request:
     branches: [develop]
+    paths:
+      - 'booklore-api/**'
+      - 'booklore-ui/**'
+      - '.github/workflows/api-tests.yml'
   workflow_dispatch:
     inputs:
       enable_auth:
@@ -27,10 +36,22 @@ env:
   BOOKLORE_URL: http://localhost:8080
 
 jobs:
+  setup:
+    name: Shared Setup
+    uses: ./.github/workflows/_shared-setup.yml
+
   swagger-api-tests:
     name: Swagger API Tests
-    runs-on: ubuntu-latest
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        java: ['21', '22']
+        os: ['ubuntu-latest', 'ubuntu-24.04']
     
+    timeout-minutes: 40
+
     services:
       mariadb:
         image: mariadb:10.11
@@ -49,12 +70,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 21
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
+          java-version: ${{ matrix.java }}
           distribution: 'temurin'
           cache: 'gradle'
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -195,6 +221,7 @@ jobs:
     name: Docker Integration Tests
     runs-on: ubuntu-latest
     needs: swagger-api-tests
+    timeout-minutes: 45
 
     steps:
       - name: Checkout repository

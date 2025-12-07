@@ -110,4 +110,5 @@ jobs:
           labels: dependencies,github-actions
           branch: update-3rd-party-licenses
           draft: false
+          base: develop
           delete-branch: true
