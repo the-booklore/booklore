@@ -3,11 +3,13 @@ package com.adityachandel.booklore.service.migration;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.entity.AppMigrationEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.AppMigrationRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
@@ -37,7 +39,27 @@ public class AppMigrationService {
     private BookQueryService bookQueryService;
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
-    private FileService fileService;
+
+    @Transactional
+    public void populateSearchTextOnce() {
+        if (migrationRepository.existsById("populateSearchText")) return;
+
+        List<BookEntity> books = bookQueryService.getAllFullBookEntities();
+        for (BookEntity book : books) {
+            BookMetadataEntity m = book.getMetadata();
+            if (m != null) {
+                m.setSearchText(BookUtils.buildSearchText(m));
+            }
+        }
+        bookRepository.saveAll(books);
+
+        log.info("Migration 'populateSearchText' applied to {} books.", books.size());
+        migrationRepository.save(new AppMigrationEntity(
+                "populateSearchText",
+                LocalDateTime.now(),
+                "Populate search_text column for all books"
+        ));
+    }
 
     @Transactional
     public void populateMissingFileSizesOnce() {

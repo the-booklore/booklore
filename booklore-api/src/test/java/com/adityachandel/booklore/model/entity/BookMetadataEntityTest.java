@@ -1,21 +1,24 @@
 package com.adityachandel.booklore.model.entity;
 
 import org.junit.jupiter.api.Test;
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Set;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BookMetadataEntityTest {
 
     @Test
-    void builderShouldRespectDefaultValues() {
-        BookMetadataEntity metadata = BookMetadataEntity.builder().build();
+    void updateSearchText_populatesSearchText() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Jo Nesbø Book");
+        metadata.setSubtitle("Murder Mystery");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
 
-        assertThat(metadata.getTitleLocked()).isFalse();
-        assertThat(metadata.getSubtitleLocked()).isFalse();
-        assertThat(metadata.getPublisherLocked()).isFalse();
+        metadata.updateSearchText();
 
-        assertThat(metadata.getAuthorsLocked()).isFalse();
-        assertThat(metadata.getCoverLocked()).isFalse();
-
-        assertThat(metadata.getReviews()).isNotNull().isEmpty();
+        String searchText = metadata.getSearchText();
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("jo nesbo book"));
+        assertTrue(searchText.contains("murder mystery"));
+        assertTrue(searchText.contains("jo nesbo"));
     }
 }

@@ -75,23 +75,15 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query(value = """
                 SELECT DISTINCT b FROM BookEntity b
                 LEFT JOIN b.metadata m
-                LEFT JOIN m.authors a
                 WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                   OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                      m.searchText LIKE CONCAT('%', :text, '%')
                 )
             """,
             countQuery = """
                         SELECT COUNT(DISTINCT b.id) FROM BookEntity b
                         LEFT JOIN b.metadata m
-                        LEFT JOIN m.authors a
                         WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                              LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-                           OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-                           OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-                           OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                              m.searchText LIKE CONCAT('%', :text, '%')
                         )
                     """)
     Page<BookEntity> searchByMetadata(@Param("text") String text, Pageable pageable);

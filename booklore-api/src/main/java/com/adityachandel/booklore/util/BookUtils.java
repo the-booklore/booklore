@@ -1,15 +1,45 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @UtilityClass
 public class BookUtils {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
-    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
+    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:']");
     private static final Pattern PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN = Pattern.compile("\\s?\\(.*?\\)");
+
+    public static String buildSearchText(BookMetadataEntity e) {
+        if (e == null) return null;
+        String authors = e.getAuthors() != null ? e.getAuthors().stream().map(AuthorEntity::getName).collect(Collectors.joining(" ")) : "";
+        String text = (e.getTitle() != null ? e.getTitle() : "") + " " +
+                (e.getSubtitle() != null ? e.getSubtitle() : "") + " " +
+                (e.getSeriesName() != null ? e.getSeriesName() : "") + " " +
+                authors;
+        return normalizeForSearch(text.trim());
+    }
+
+    public static String normalizeForSearch(String term) {
+        if (term == null) {
+            return null;
+        }
+        String s = java.text.Normalizer.normalize(term, java.text.Normalizer.Form.NFD);
+        s = s.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        s = s.replace("ø", "o").replace("Ø", "O")
+                .replace("ł", "l").replace("Ł", "L")
+                .replace("æ", "ae").replace("Æ", "AE")
+                .replace("œ", "oe").replace("Œ", "OE")
+                .replace("ß", "ss");
+        
+        // Use cleanSearchTerm instead of cleanAndTruncateSearchTerm
+        s = cleanSearchTerm(s);
+        return s.toLowerCase();
+    }
 
     public static String cleanFileName(String fileName) {
         String name = fileName;
@@ -25,13 +55,18 @@ public class BookUtils {
         return name;
     }
 
-    public static String cleanAndTruncateSearchTerm(String term) {
+    public static String cleanSearchTerm(String term) {
         if (term == null) {
             return "";
         }
         String s = term;
         s = SPECIAL_CHARACTERS_PATTERN.matcher(s).replaceAll("").trim();
         s = WHITESPACE_PATTERN.matcher(s).replaceAll(" ");
+        return s;
+    }
+
+    public static String cleanAndTruncateSearchTerm(String term) {
+        String s = cleanSearchTerm(term);
         if (s.length() > 60) {
             String[] words = WHITESPACE_PATTERN.split(s);
             if (words.length > 1) {

@@ -1,9 +1,38 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.Test;
+
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BookUtilsTest {
+
+    @Test
+    void testBuildSearchText() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Harry Potter");
+        metadata.setSubtitle("Philosopher's Stone");
+        metadata.setSeriesName("Harry Potter Series");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("J.K. Rowling").build()));
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("harry potter"));
+        assertTrue(searchText.contains("philosophers stone"));
+        assertTrue(searchText.contains("jk rowling"));
+    }
+
+    @Test
+    void testCleanSearchTerm_doesNotTruncate() {
+        String longText = "A".repeat(100);
+        String result = BookUtils.cleanSearchTerm(longText);
+        assertEquals(100, result.length());
+        assertEquals(longText, result);
+    }
 
     @Test
     void testCleanFileName_nullInput() {
@@ -119,5 +148,17 @@ class BookUtilsTest {
     void testCleanAndTruncateSearchTerm_onlySpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm(",.!@#$%^&*()[]{}");
         assertEquals("", result);
+    }
+
+    @Test
+    void testNormalizeForSearch() {
+        assertEquals("nesbo", BookUtils.normalizeForSearch("Nesbø"));
+        assertEquals("jo nesbo", BookUtils.normalizeForSearch("Jo Nesbø"));
+        assertEquals("aeiou", BookUtils.normalizeForSearch("áéíóú"));
+        assertEquals("aeiou", BookUtils.normalizeForSearch("ÀÈÌÒÙ"));
+        assertEquals("l", BookUtils.normalizeForSearch("ł"));
+        assertEquals("ss", BookUtils.normalizeForSearch("ß"));
+        assertEquals("harry potter", BookUtils.normalizeForSearch("Harry Potter"));
+        assertEquals("misere", BookUtils.normalizeForSearch("Misère"));
     }
 }
