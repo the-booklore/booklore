@@ -37,7 +37,8 @@ public class ShelfEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "icon_type", nullable = false)
-    private IconType iconType;
+    @Builder.Default
+    private IconType iconType = IconType.PRIME_NG;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
