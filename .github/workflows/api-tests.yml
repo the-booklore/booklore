@@ -113,6 +113,12 @@ jobs:
       - name: Create bookdrop directory
         run: mkdir -p /tmp/bookdrop && chmod 777 /tmp/bookdrop
 
+      - name: Create data directory
+        run: mkdir -p /tmp/booklore-data && chmod 777 /tmp/booklore-data
+
+      - name: Create app directory
+        run: mkdir -p /app && chmod 777 /app
+
       - name: Start BookLore
         working-directory: booklore-api
         run: |
@@ -123,6 +129,7 @@ jobs:
           # Start with logging to file and custom bookdrop folder
           java -jar "$JAR_FILE" \
             --app.bookdrop-folder=/tmp/bookdrop \
+            --app.path-config=/tmp/booklore-data \
             > /tmp/booklore.log 2>&1 &
           echo $! > /tmp/booklore.pid
           
