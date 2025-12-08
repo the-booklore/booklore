@@ -42,6 +42,7 @@ public class AppMigrationService {
     private BookQueryService bookQueryService;
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
+    private FileService fileService;
 
     @Transactional
     public void populateSearchTextOnce() {
