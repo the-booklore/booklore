@@ -14,4 +14,6 @@ public interface BookMarkRepository extends JpaRepository<BookMarkEntity, Long> 
 
     @Query("SELECT b FROM BookMarkEntity b WHERE b.bookId = :bookId AND b.userId = :userId ORDER BY b.createdAt DESC")
     List<BookMarkEntity> findByBookIdAndUserIdOrderByCreatedAtDesc(@Param("bookId") Long bookId, @Param("userId") Long userId);
+    
+    boolean existsByCfiAndBookIdAndUserId(String cfi, Long bookId, Long userId);
 }

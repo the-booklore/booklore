@@ -11,8 +11,9 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import jakarta.persistence.EntityNotFoundException;
-import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class BookMarkService {
     private final BookMarkMapper mapper;
     private final AuthenticationService authenticationService;
 
+    @Transactional(readOnly = true)
     public List<BookMark> getBookmarksForBook(Long bookId) {
         Long userId = authenticationService.getAuthenticatedUser().getId();
         return bookMarkRepository.findByBookIdAndUserIdOrderByCreatedAtDesc(bookId, userId)
@@ -34,9 +36,17 @@ public class BookMarkService {
                 .toList();
     }
 
+    @Transactional
     public BookMark createBookmark(CreateBookMarkRequest request) {
         Long userId = authenticationService.getAuthenticatedUser().getId();
-        BookLoreUserEntity currentUser = userRepository.getReferenceById(userId);
+        
+        // Check for existing bookmark
+        if (bookMarkRepository.existsByCfiAndBookIdAndUserId(request.getCfi(), request.getBookId(), userId)) {
+            throw new IllegalArgumentException("Bookmark already exists at this location");
+        }
+        
+        BookLoreUserEntity currentUser = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found: " + userId));
         
         BookEntity book = bookRepository.findById(request.getBookId())
                 .orElseThrow(() -> new EntityNotFoundException("Book not found: " + request.getBookId()));
@@ -52,6 +62,7 @@ public class BookMarkService {
         return mapper.toDto(saved);
     }
 
+    @Transactional
     public void deleteBookmark(Long bookmarkId) {
         Long userId = authenticationService.getAuthenticatedUser().getId();
         BookMarkEntity bookmark = bookMarkRepository.findByIdAndUserId(bookmarkId, userId)
