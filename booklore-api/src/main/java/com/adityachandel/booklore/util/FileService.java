@@ -42,6 +42,8 @@ public class FileService {
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
     private static final String BACKGROUNDS_DIR     = "backgrounds";
+    private static final String ICONS_DIR           = "icons";
+    private static final String SVG_DIR             = "svg";
     private static final String THUMBNAIL_FILENAME  = "thumbnail.jpg";
     private static final String COVER_FILENAME      = "cover.jpg";
     private static final String JPEG_MIME_TYPE      = "image/jpeg";
@@ -399,6 +401,10 @@ public class FileService {
             }
         }
         return new ClassPathResource("static/images/background.jpg");
+    }
+
+    public String getIconsSvgFolder() {
+        return Paths.get(appProperties.getPathConfig(), ICONS_DIR, SVG_DIR).toString();
     }
 
     // ========================================

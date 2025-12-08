@@ -249,9 +249,19 @@
     border-radius: 8px;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
 
-    i {
-      font-size: 1.25rem;
+    app-icon-display {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: var(--primary-contrast-color);
+
+      ::ng-deep i {
+        color: var(--primary-contrast-color);
+      }
+
+      ::ng-deep img {
+        filter: brightness(0) invert(1);
+      }
     }
   }
 
@@ -281,10 +291,6 @@
     .icon-preview {
       width: 36px;
       height: 36px;
-
-      i {
-        font-size: 1.125rem;
-      }
     }
 
     .icon-info {

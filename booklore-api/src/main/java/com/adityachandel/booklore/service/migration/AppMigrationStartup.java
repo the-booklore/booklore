@@ -18,5 +18,6 @@ public class AppMigrationStartup {
         appMigrationService.populateFileHashesOnce();
         appMigrationService.populateCoversAndResizeThumbnails();
         appMigrationService.populateSearchTextOnce();
+        appMigrationService.moveIconsToDataFolder();
     }
 }

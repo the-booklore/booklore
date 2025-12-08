@@ -65,7 +65,6 @@ interface TabConfig {
 export class MetadataManagerComponent implements OnInit, OnDestroy {
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
-  private confirmationService = inject(ConfirmationService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private pageTitle = inject(PageTitleService);
@@ -149,7 +148,7 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
   }
 
   updatePageTitle() {
-    const currentTab = this.tabConfigs.find((tab)=> tab.type === this._activeTab);
+    const currentTab = this.tabConfigs.find((tab) => tab.type === this._activeTab);
     this.pageTitle.setPageTitle(`Metadata Manager: ${currentTab?.label ?? this._activeTab}`);
   }
 

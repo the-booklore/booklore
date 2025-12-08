@@ -71,6 +71,7 @@ public class LibraryService {
 
         library.setName(request.getName());
         library.setIcon(request.getIcon());
+        library.setIconType(request.getIconType());
         library.setWatch(request.isWatch());
         if (request.getScanMode() != null) {
             library.setScanMode(request.getScanMode());
@@ -149,6 +150,7 @@ public class LibraryService {
                                         .collect(Collectors.toList())
                 )
                 .icon(request.getIcon())
+                .iconType(request.getIconType())
                 .watch(request.isWatch())
                 .scanMode(request.getScanMode() != null ? request.getScanMode() : LibraryScanMode.FILE_AS_BOOK)
                 .defaultBookFormat(request.getDefaultBookFormat())

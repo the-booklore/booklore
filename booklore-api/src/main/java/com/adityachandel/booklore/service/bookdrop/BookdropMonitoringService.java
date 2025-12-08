@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.bookdrop;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.util.FileService;
+import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -147,14 +148,14 @@ public class BookdropMonitoringService {
                         try (Stream<Path> pathStream = Files.walk(fullPath)) {
                             pathStream
                                     .filter(Files::isRegularFile)
-                                    .filter(path -> !path.getFileName().toString().startsWith("."))
+                                    .filter(path -> !FileUtils.shouldIgnore(path))
                                     .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
                                     .forEach(path -> eventHandler.enqueueFile(path, StandardWatchEventKinds.ENTRY_CREATE));
                         } catch (IOException e) {
                             log.error("Failed to scan new directory: {}", fullPath, e);
                         }
                     } else {
-                        if (!(!fullPath.getFileName().toString().isEmpty() && fullPath.getFileName().toString().charAt(0) == '.')) {
+                        if (!FileUtils.shouldIgnore(fullPath)) {
                             if (BookFileExtension.fromFileName(fullPath.getFileName().toString()).isPresent()) {
                                 eventHandler.enqueueFile(fullPath, kind);
                             } else {
@@ -188,7 +189,7 @@ public class BookdropMonitoringService {
     private void scanExistingBookdropFiles() {
         try (Stream<Path> files = Files.walk(bookdrop)) {
             files.filter(Files::isRegularFile)
-                    .filter(path -> !(!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.'))
+                    .filter(path -> !FileUtils.shouldIgnore(path))
                     .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
                     .forEach(file -> {
                         log.info("Found existing supported file on startup: {}", file);
