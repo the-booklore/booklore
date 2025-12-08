@@ -116,8 +116,6 @@ jobs:
       - name: Create data directory
         run: mkdir -p /tmp/booklore-data && chmod 777 /tmp/booklore-data
 
-      - name: Create app directory
-        run: mkdir -p /app && chmod 777 /app
 
       - name: Start BookLore
         working-directory: booklore-api
