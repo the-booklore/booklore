@@ -44,16 +44,38 @@ public class AppMigrationService {
     public void populateSearchTextOnce() {
         if (migrationRepository.existsById("populateSearchText")) return;
 
-        List<BookEntity> books = bookQueryService.getAllFullBookEntities();
-        for (BookEntity book : books) {
-            BookMetadataEntity m = book.getMetadata();
-            if (m != null) {
-                m.setSearchText(BookUtils.buildSearchText(m));
+        int batchSize = 1000;
+        int processedCount = 0;
+        int offset = 0;
+        
+        while (true) {
+            List<BookEntity> bookBatch = bookRepository.findBooksForMigrationBatch(offset, batchSize);
+            if (bookBatch.isEmpty()) break;
+            
+            List<Long> bookIds = bookBatch.stream().map(BookEntity::getId).toList();
+            List<BookEntity> books = bookRepository.findBooksWithMetadataAndAuthors(bookIds);
+            
+            for (BookEntity book : books) {
+                BookMetadataEntity m = book.getMetadata();
+                if (m != null) {
+                    try {
+                        m.setSearchText(BookUtils.buildSearchText(m));
+                    } catch (Exception ex) {
+                        log.warn("Failed to build search text for book {}: {}", book.getId(), ex.getMessage());
+                    }
+                }
             }
+            
+            bookRepository.saveAll(books);
+            processedCount += books.size();
+            offset += batchSize;
+            
+            log.info("Migration progress: {} books processed", processedCount);
+            
+            if (bookBatch.size() < batchSize) break;
         }
-        bookRepository.saveAll(books);
 
-        log.info("Migration 'populateSearchText' applied to {} books.", books.size());
+        log.info("Migration 'populateSearchText' completed. Total books processed: {}", processedCount);
         migrationRepository.save(new AppMigrationEntity(
                 "populateSearchText",
                 LocalDateTime.now(),

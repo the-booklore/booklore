@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -261,5 +262,55 @@ class BookUtilsTest {
         assertEquals("book title", BookUtils.normalizeForSearch("Book: Title!"));
         assertEquals("authors name", BookUtils.normalizeForSearch("Author's Name"));
         assertEquals("test 123", BookUtils.normalizeForSearch("Test (123)"));
+    }
+
+    @Test
+    void testBuildSearchText_withNullFields() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Title Only");
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertEquals("title only", searchText);
+    }
+
+    @Test
+    void testBuildSearchText_handlesExceptionGracefully() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("test book"));
+    }
+
+    @Test
+    void testBuildSearchText_withAuthorHavingNullName() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+        Set<AuthorEntity> authors = new HashSet<>();
+        authors.add(AuthorEntity.builder().name("Valid Author").build());
+        authors.add(AuthorEntity.builder().name(null).build()); // Author with null name
+        metadata.setAuthors(authors);
+        
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("valid author"));
+        assertTrue(searchText.contains("test book"));
+    }
+
+    @Test
+    void testBuildSearchText_withEmptyAuthorsSet() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+        metadata.setAuthors(new HashSet<>()); // Empty set
+        
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertEquals("test book", searchText);
     }
 }

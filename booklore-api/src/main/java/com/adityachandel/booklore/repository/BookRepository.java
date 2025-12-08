@@ -73,6 +73,23 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     List<BookEntity> findAllFullBooks();
 
     @Query(value = """
+                SELECT DISTINCT b.* FROM book b
+                LEFT JOIN book_metadata m ON b.book_id = m.book_id
+                WHERE (b.deleted IS NULL OR b.deleted = false)
+                ORDER BY b.book_id
+                LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<BookEntity> findBooksForMigrationBatch(@Param("offset") int offset, @Param("limit") int limit);
+
+    @Query("""
+                SELECT DISTINCT b FROM BookEntity b
+                LEFT JOIN FETCH b.metadata m
+                LEFT JOIN FETCH m.authors
+                WHERE b.id IN :bookIds
+            """)
+    List<BookEntity> findBooksWithMetadataAndAuthors(@Param("bookIds") List<Long> bookIds);
+
+    @Query(value = """
                 SELECT DISTINCT b FROM BookEntity b
                 LEFT JOIN b.metadata m
                 WHERE (b.deleted IS NULL OR b.deleted = false) AND (

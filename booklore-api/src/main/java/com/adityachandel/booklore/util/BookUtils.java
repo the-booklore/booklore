@@ -5,7 +5,6 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @UtilityClass
 public class BookUtils {
@@ -16,12 +15,24 @@ public class BookUtils {
 
     public static String buildSearchText(BookMetadataEntity e) {
         if (e == null) return null;
-        String authors = e.getAuthors() != null ? e.getAuthors().stream().map(AuthorEntity::getName).collect(Collectors.joining(" ")) : "";
-        String text = (e.getTitle() != null ? e.getTitle() : "") + " " +
-                (e.getSubtitle() != null ? e.getSubtitle() : "") + " " +
-                (e.getSeriesName() != null ? e.getSeriesName() : "") + " " +
-                authors;
-        return normalizeForSearch(text.trim());
+        
+        StringBuilder sb = new StringBuilder();
+        if (e.getTitle() != null) sb.append(e.getTitle()).append(" ");
+        if (e.getSubtitle() != null) sb.append(e.getSubtitle()).append(" ");
+        if (e.getSeriesName() != null) sb.append(e.getSeriesName()).append(" ");
+        
+        try {
+            if (e.getAuthors() != null) {
+                for (AuthorEntity author : e.getAuthors()) {
+                    if (author != null && author.getName() != null) {
+                        sb.append(author.getName()).append(" ");
+                    }
+                }
+            }
+        } catch (Exception ex) {
+        }
+        
+        return normalizeForSearch(sb.toString().trim());
     }
 
     public static String normalizeForSearch(String term) {
