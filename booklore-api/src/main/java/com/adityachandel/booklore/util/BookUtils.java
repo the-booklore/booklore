@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 public class BookUtils {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
-    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:']");
+    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@$%^&*_=|~`<>?/\";:']");
     private static final Pattern PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN = Pattern.compile("\\s?\\(.*?\\)");
 
     public static String buildSearchText(BookMetadataEntity e) {
@@ -30,6 +30,7 @@ public class BookUtils {
                 }
             }
         } catch (Exception ex) {
+            // LazyInitializationException or similar - authors won't be included in search text
         }
         
         return normalizeForSearch(sb.toString().trim());

@@ -18,7 +18,8 @@ export class HeaderFilter implements BookFilter {
            .replace(/æ/gi, 'ae')
            .replace(/œ/gi, 'oe')
            .replace(/ß/g, 'ss');
-      s = s.replace(/[.,\-[\]{}()!@#$%^&*_=+|~`<>?/";:']/g, '');
+      // Preserve + and # for programming book titles (e.g., "C++", "C#", "F#")
+      s = s.replace(/[.,\-[\]{}()!@$%^&*_=|~`<>?/";:']/g, '');
       s = s.replace(/\s+/g, ' ').trim();
       return s.toLowerCase();
     };

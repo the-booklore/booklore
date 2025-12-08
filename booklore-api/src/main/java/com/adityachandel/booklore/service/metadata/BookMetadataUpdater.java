@@ -224,11 +224,14 @@ public class BookMetadataUpdater {
         if (replaceAll) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMissing && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         }
     }
 

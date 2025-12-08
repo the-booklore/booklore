@@ -128,7 +128,7 @@ class BookUtilsTest {
         String longText = "This-is,a@very#long$search%term^with&special*chars(that)should[be]truncated{because}it<exceeds>sixty?characters";
         String result = BookUtils.cleanAndTruncateSearchTerm(longText);
         assertTrue(result.length() <= 60);
-        assertEquals("Thisisaverylongsearchtermwithspecialcharsthatshouldbetruncat", result);
+        assertEquals("Thisisavery#longsearchtermwithspecialcharsthatshouldbetrunca", result);
     }
 
     @Test
@@ -148,7 +148,8 @@ class BookUtilsTest {
     @Test
     void testCleanAndTruncateSearchTerm_onlySpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm(",.!@#$%^&*()[]{}");
-        assertEquals("", result);
+        // Note: # and + are now preserved for programming book titles
+        assertEquals("#", result);
     }
 
     @Test
@@ -191,6 +192,16 @@ class BookUtilsTest {
         
         // Portuguese
         assertEquals("sao paulo", BookUtils.normalizeForSearch("São Paulo"));
+    }
+    
+    @Test
+    void testNormalizeForSearch_programmingLanguages() {
+        // Test that + and # are preserved for programming book titles
+        assertEquals("c++", BookUtils.normalizeForSearch("C++"));
+        assertEquals("c#", BookUtils.normalizeForSearch("C#"));
+        assertEquals("f#", BookUtils.normalizeForSearch("F#"));
+        assertEquals("effective c++ programming", BookUtils.normalizeForSearch("Effective C++ Programming"));
+        assertEquals("c# in depth", BookUtils.normalizeForSearch("C# In Depth"));
         assertEquals("cacao", BookUtils.normalizeForSearch("Cação"));
         
         // Turkish
