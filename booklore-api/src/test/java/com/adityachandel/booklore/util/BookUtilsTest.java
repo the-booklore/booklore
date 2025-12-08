@@ -23,8 +23,10 @@ class BookUtilsTest {
         
         assertNotNull(searchText);
         assertTrue(searchText.contains("harry potter"));
-        assertTrue(searchText.contains("philosophers stone"));
-        assertTrue(searchText.contains("jk rowling"));
+        // More permissive: keeps apostrophe
+        assertTrue(searchText.contains("philosopher's stone"));
+        // Keeps period
+        assertTrue(searchText.contains("rowling"));
     }
 
     @Test
@@ -106,13 +108,15 @@ class BookUtilsTest {
     @Test
     void testCleanAndTruncateSearchTerm_withSpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm("Hello, World! How are you?");
-        assertEquals("Hello World How are you", result);
+        // More permissive: keeps comma
+        assertEquals("Hello, World How are you", result);
     }
 
     @Test
     void testCleanAndTruncateSearchTerm_withBrackets() {
         String result = BookUtils.cleanAndTruncateSearchTerm("Test [Book] {Series}");
-        assertEquals("Test Book Series", result);
+        // More permissive: keeps brackets and braces
+        assertEquals("Test [Book] {Series}", result);
     }
 
     @Test
@@ -128,7 +132,7 @@ class BookUtilsTest {
         String longText = "This-is,a@very#long$search%term^with&special*chars(that)should[be]truncated{because}it<exceeds>sixty?characters";
         String result = BookUtils.cleanAndTruncateSearchTerm(longText);
         assertTrue(result.length() <= 60);
-        assertEquals("Thisisavery#longsearchtermwithspecialcharsthatshouldbetrunca", result);
+        assertEquals("This-is,avery#longsearchtermwithspecialchars(that)should[be]", result);
     }
 
     @Test
@@ -148,8 +152,7 @@ class BookUtilsTest {
     @Test
     void testCleanAndTruncateSearchTerm_onlySpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm(",.!@#$%^&*()[]{}");
-        // Note: # and + are now preserved for programming book titles
-        assertEquals("#", result);
+        assertEquals(",.#()[]{}", result);
     }
 
     @Test
@@ -270,9 +273,9 @@ class BookUtilsTest {
 
     @Test
     void testNormalizeForSearch_removesSpecialCharacters() {
-        assertEquals("book title", BookUtils.normalizeForSearch("Book: Title!"));
-        assertEquals("authors name", BookUtils.normalizeForSearch("Author's Name"));
-        assertEquals("test 123", BookUtils.normalizeForSearch("Test (123)"));
+        assertEquals("book: title", BookUtils.normalizeForSearch("Book: Title!"));
+        assertEquals("author's name", BookUtils.normalizeForSearch("Author's Name"));
+        assertEquals("test (123)", BookUtils.normalizeForSearch("Test (123)"));
     }
 
     @Test
