@@ -74,9 +74,9 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @Query(value = """
                 SELECT DISTINCT b.* FROM book b
-                LEFT JOIN book_metadata m ON b.book_id = m.book_id
+                LEFT JOIN book_metadata m ON b.id = m.book_id
                 WHERE (b.deleted IS NULL OR b.deleted = false)
-                ORDER BY b.book_id
+                ORDER BY b.id
                 LIMIT :limit OFFSET :offset
             """, nativeQuery = true)
     List<BookEntity> findBooksForMigrationBatch(@Param("offset") int offset, @Param("limit") int limit);
