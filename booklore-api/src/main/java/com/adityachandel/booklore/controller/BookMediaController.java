@@ -119,14 +119,4 @@ public class BookMediaController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
-    @Operation(summary = "Get SVG icon", description = "Retrieve an SVG icon by its name.")
-    @ApiResponse(responseCode = "200", description = "SVG icon returned successfully")
-    @GetMapping("/icon/{name}")
-    public ResponseEntity<String> getSvgIcon(@Parameter(description = "Name of the icon") @PathVariable String name) {
-        String svgData = iconService.getSvgIcon(name);
-        return ResponseEntity.ok()
-                .contentType(MediaType.valueOf("image/svg+xml"))
-                .body(svgData);
-    }
 }

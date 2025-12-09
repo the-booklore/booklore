@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.request.SvgIconCreateRequest;
+import com.adityachandel.booklore.model.dto.response.SvgIconBatchResponse;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -95,6 +97,44 @@ public class IconService {
             log.error("Failed to save SVG icon: {}", e.getMessage(), e);
             throw ApiError.FILE_READ_ERROR.createException("Failed to save SVG icon: " + e.getMessage());
         }
+    }
+
+    public SvgIconBatchResponse saveBatchSvgIcons(List<SvgIconCreateRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw ApiError.INVALID_INPUT.createException("Icons list cannot be empty");
+        }
+
+        List<SvgIconBatchResponse.IconSaveResult> results = new ArrayList<>();
+        int successCount = 0;
+        int failureCount = 0;
+
+        for (SvgIconCreateRequest request : requests) {
+            try {
+                saveSvgIcon(request);
+                results.add(SvgIconBatchResponse.IconSaveResult.builder()
+                        .iconName(request.getSvgName())
+                        .success(true)
+                        .build());
+                successCount++;
+            } catch (Exception e) {
+                log.warn("Failed to save icon '{}': {}", request.getSvgName(), e.getMessage());
+                results.add(SvgIconBatchResponse.IconSaveResult.builder()
+                        .iconName(request.getSvgName())
+                        .success(false)
+                        .errorMessage(e.getMessage())
+                        .build());
+                failureCount++;
+            }
+        }
+
+        log.info("Batch save completed: {} successful, {} failed", successCount, failureCount);
+
+        return SvgIconBatchResponse.builder()
+                .totalRequested(requests.size())
+                .successCount(successCount)
+                .failureCount(failureCount)
+                .results(results)
+                .build();
     }
 
     public String getSvgIcon(String name) {
