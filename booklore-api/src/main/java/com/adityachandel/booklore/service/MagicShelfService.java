@@ -56,6 +56,7 @@ public class MagicShelfService {
             }
             existing.setName(dto.getName());
             existing.setIcon(dto.getIcon());
+            existing.setIconType(dto.getIconType());
             existing.setFilterJson(dto.getFilterJson());
             existing.setPublic(dto.getIsPublic());
             return toDto(magicShelfRepository.save(existing));
@@ -81,6 +82,7 @@ public class MagicShelfService {
         dto.setId(entity.getId());
         dto.setName(entity.getName());
         dto.setIcon(entity.getIcon());
+        dto.setIconType(entity.getIconType());
         dto.setFilterJson(entity.getFilterJson());
         dto.setIsPublic(entity.isPublic());
         return dto;
@@ -91,6 +93,7 @@ public class MagicShelfService {
         entity.setId(dto.getId());
         entity.setName(dto.getName());
         entity.setIcon(dto.getIcon());
+        entity.setIconType(dto.getIconType());
         entity.setFilterJson(dto.getFilterJson());
         entity.setPublic(dto.getIsPublic());
         entity.setUserId(userId);

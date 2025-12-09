@@ -7,6 +7,7 @@ export interface Library {
   id?: number;
   name: string;
   icon: string;
+  iconType?: 'PRIME_NG' | 'CUSTOM_SVG';
   watch: boolean;
   fileNamingPattern?: string;
   sort?: SortOption;

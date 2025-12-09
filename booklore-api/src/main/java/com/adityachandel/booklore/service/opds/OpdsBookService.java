@@ -157,6 +157,68 @@ public class OpdsBookService {
         return books.stream().map(bookMapper::toBook).toList();
     }
 
+    public List<String> getDistinctAuthors(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+
+        BookLoreUserEntity entity = userRepository.findById(userId)
+                .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(userId));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+
+        List<com.adityachandel.booklore.model.entity.AuthorEntity> authors;
+
+        if (user.getPermissions().isAdmin()) {
+            authors = bookOpdsRepository.findDistinctAuthors();
+        } else {
+            Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                    .map(Library::getId)
+                    .collect(Collectors.toSet());
+            authors = bookOpdsRepository.findDistinctAuthorsByLibraryIds(libraryIds);
+        }
+
+        return authors.stream()
+                .map(com.adityachandel.booklore.model.entity.AuthorEntity::getName)
+                .filter(Objects::nonNull)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    public Page<Book> getBooksByAuthorName(Long userId, String authorName, int page, int size) {
+        if (userId == null) {
+            throw ApiError.FORBIDDEN.createException("Authentication required");
+        }
+
+        BookLoreUserEntity entity = userRepository.findById(userId)
+                .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(userId));
+        BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+
+        Pageable pageable = PageRequest.of(Math.max(page, 0), size);
+
+        if (user.getPermissions().isAdmin()) {
+            Page<Long> idPage = bookOpdsRepository.findBookIdsByAuthorName(authorName, pageable);
+            if (idPage.isEmpty()) {
+                return new PageImpl<>(List.of(), pageable, 0);
+            }
+            List<BookEntity> books = bookOpdsRepository.findAllWithMetadataByIds(idPage.getContent());
+            return createPageFromEntities(books, idPage, pageable);
+        }
+
+        Set<Long> libraryIds = user.getAssignedLibraries().stream()
+                .map(Library::getId)
+                .collect(Collectors.toSet());
+
+        Page<Long> idPage = bookOpdsRepository.findBookIdsByAuthorNameAndLibraryIds(authorName, libraryIds, pageable);
+        if (idPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        List<BookEntity> books = bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(idPage.getContent(), libraryIds);
+        Page<Book> booksPage = createPageFromEntities(books, idPage, pageable);
+        return applyBookFilters(booksPage, userId);
+    }
+
     private Page<Book> getAllBooksPageInternal(int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), size);
 

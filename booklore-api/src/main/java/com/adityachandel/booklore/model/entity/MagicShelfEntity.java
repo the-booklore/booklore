@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.model.enums.IconType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -28,6 +29,10 @@ public class MagicShelfEntity {
 
     @Column(nullable = false)
     private String icon;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon_type", nullable = false)
+    private IconType iconType;
 
     @Column(name = "filter_json", columnDefinition = "json", nullable = false)
     private String filterJson;

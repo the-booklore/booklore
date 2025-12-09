@@ -29,13 +29,22 @@
         <div class="icon-picker-section">
           <div class="icon-picker-wrapper">
             <label>Shelf Icon</label>
-            <p-button
-              [icon]="form.get('icon')?.value || 'pi pi-plus'"
-              (click)="openIconPicker()"
-              [outlined]="form.get('icon')?.value"
-              [severity]="form.get('icon')?.value ? 'success' : 'danger'"
-              [label]="form.get('icon')?.value ? 'Icon Selected' : 'Select Icon'">
-            </p-button>
+            <div class="icon-display-container" (click)="openIconPicker()">
+              @if (selectedIcon) {
+                <app-icon-display
+                  [icon]="selectedIcon"
+                  [size]="'16px'"
+                  iconClass="selected-icon"
+                  alt="Selected shelf icon">
+                </app-icon-display>
+                <span class="icon-label">Click to change</span>
+              } @else {
+                <div class="icon-placeholder">
+                  <i class="pi pi-plus"></i>
+                  <span>Select Icon</span>
+                </div>
+              }
+            </div>
           </div>
         </div>
         @if (isAdmin) {
