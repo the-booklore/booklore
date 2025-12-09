@@ -190,7 +190,7 @@ Please be respectful, inclusive, and collaborative. Harassment, abuse, or discri
 
 ## 📄 License
 
-Booklore is open-source and licensed under the MIT License. See [`LICENSE`](./LICENSE) for details.
+Booklore is open-source and licensed under the GPL-3.0 License. See [`LICENSE`](./LICENSE) for details.
 
 ---
 
