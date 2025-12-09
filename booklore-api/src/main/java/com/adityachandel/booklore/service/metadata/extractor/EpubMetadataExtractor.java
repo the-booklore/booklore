@@ -361,9 +361,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         // Normalize path components to handle ".." and "."
         java.util.LinkedList<String> parts = new java.util.LinkedList<>();
         for (String part : combined.split("/")) {
-            if (part.equals("..")) {
+            if ("..".equals(part)) {
                 if (!parts.isEmpty()) parts.removeLast();
-            } else if (!part.equals(".") && !part.isEmpty()) {
+            } else if (!".".equals(part) && !part.isEmpty()) {
                 parts.add(part);
             }
         }

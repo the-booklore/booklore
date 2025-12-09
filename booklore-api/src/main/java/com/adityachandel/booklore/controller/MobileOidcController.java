@@ -241,7 +241,7 @@ public class MobileOidcController {
             String code,
             String codeVerifier,
             String redirectUri,
-            String clientId) throws Exception {
+            String clientId) {
 
         RestTemplate restTemplate = new RestTemplate();
 

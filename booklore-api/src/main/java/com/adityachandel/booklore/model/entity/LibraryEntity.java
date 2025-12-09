@@ -43,7 +43,8 @@ public class LibraryEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "icon_type", nullable = false)
-    private IconType iconType;
+    @Builder.Default
+    private IconType iconType = IconType.PRIME_NG;
 
     @Column(name = "file_naming_pattern")
     private String fileNamingPattern;
@@ -56,4 +57,11 @@ public class LibraryEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "default_book_format")
     private BookFileType defaultBookFormat;
+
+    @PrePersist
+    public void ensureIconType() {
+        if (this.iconType == null) {
+            this.iconType = IconType.PRIME_NG;
+        }
+    }
 }

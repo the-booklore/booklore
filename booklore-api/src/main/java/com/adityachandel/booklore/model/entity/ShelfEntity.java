@@ -37,7 +37,8 @@ public class ShelfEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "icon_type", nullable = false)
-    private IconType iconType;
+    @Builder.Default
+    private IconType iconType = IconType.PRIME_NG;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -47,4 +48,11 @@ public class ShelfEntity {
     )
     @Builder.Default
     private Set<BookEntity> bookEntities = new HashSet<>();
+
+    @PrePersist
+    public void ensureIconType() {
+        if (this.iconType == null) {
+            this.iconType = IconType.PRIME_NG;
+        }
+    }
 }
