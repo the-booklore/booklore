@@ -36,7 +36,11 @@
           @if (selectedIcon) {
             <div class="icon-container">
               <div class="icon-wrapper">
-                <i [class]="selectedIcon" class="icon"></i>
+                <app-icon-display
+                  [icon]="selectedIcon"
+                  size="24px"
+                  iconClass="icon"
+                />
               </div>
               <p-button icon="pi pi-times" (onClick)="clearSelectedIcon()" [rounded]="true" [text]="true" severity="danger"></p-button>
             </div>

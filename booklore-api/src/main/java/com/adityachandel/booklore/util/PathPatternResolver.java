@@ -266,6 +266,9 @@ public class PathPatternResolver {
                 if (component.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
                     component = truncatePathComponent(component, MAX_FILESYSTEM_COMPONENT_BYTES);
                 }
+                while (component.endsWith(".")) {
+                    component = component.substring(0, component.length() - 1);
+                }
             }
 
             if (i > 0) result.append("/");

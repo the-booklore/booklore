@@ -3,6 +3,7 @@ package com.adityachandel.booklore.model.entity;
 import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.IconType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,6 +40,10 @@ public class LibraryEntity {
     private boolean watch;
 
     private String icon;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon_type", nullable = false)
+    private IconType iconType;
 
     @Column(name = "file_naming_pattern")
     private String fileNamingPattern;

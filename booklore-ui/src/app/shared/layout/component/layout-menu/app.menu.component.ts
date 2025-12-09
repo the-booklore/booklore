@@ -107,7 +107,8 @@ export class AppMenuComponent implements OnInit {
               menu: this.libraryShelfMenuService.initializeLibraryMenuItems(library),
               label: library.name,
               type: 'Library',
-              icon: 'pi pi-' + library.icon,
+              icon: library.icon,
+              iconType: (library.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
             })),
@@ -129,7 +130,8 @@ export class AppMenuComponent implements OnInit {
             items: sortedShelves.map((shelf) => ({
               label: shelf.name,
               type: 'magicShelfItem',
-              icon: 'pi pi-' + shelf.icon,
+              icon: shelf.icon || 'pi pi-book',
+              iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
               menu: this.libraryShelfMenuService.initializeMagicShelfMenuItems(shelf),
               routerLink: [`/magic-shelf/${shelf.id}/books`],
               bookCount$: this.magicShelfService.getBookCount(shelf.id ?? 0),
@@ -154,7 +156,8 @@ export class AppMenuComponent implements OnInit {
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
           type: 'Shelf',
-          icon: 'pi pi-' + shelf.icon,
+          icon: shelf.icon,
+          iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
           routerLink: [`/shelf/${shelf.id}/books`],
           bookCount$: this.shelfService.getBookCount(shelf.id ?? 0),
         }));
@@ -163,6 +166,7 @@ export class AppMenuComponent implements OnInit {
           label: 'Unshelved',
           type: 'Shelf',
           icon: 'pi pi-inbox',
+          iconType: 'PRIME_NG' as 'PRIME_NG' | 'CUSTOM_SVG',
           routerLink: ['/unshelved-books'],
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
@@ -172,7 +176,8 @@ export class AppMenuComponent implements OnInit {
           items.push({
             label: koboShelf.name,
             type: 'Shelf',
-            icon: 'pi pi-' + koboShelf.icon,
+            icon: koboShelf.icon,
+            iconType: (koboShelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
             routerLink: [`/shelf/${koboShelf.id}/books`],
             bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
           });

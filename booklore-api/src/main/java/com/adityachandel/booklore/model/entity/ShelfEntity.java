@@ -2,6 +2,7 @@ package com.adityachandel.booklore.model.entity;
 
 import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
+import com.adityachandel.booklore.model.enums.IconType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,10 @@ public class ShelfEntity {
     private Sort sort;
 
     private String icon;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "icon_type", nullable = false)
+    private IconType iconType;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
