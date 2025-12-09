@@ -10,10 +10,10 @@
   cursor: pointer;
   justify-content: space-evenly;
   align-items: flex-start;
-}
 
-.icon-item > i {
-  font-size: 1.25rem;
+  > i {
+    font-size: 1.25rem;
+  }
 }
 
 .icon-search {
@@ -25,22 +25,30 @@
   margin-bottom: 15px;
   margin-top: 15px;
   box-sizing: border-box;
-}
 
-.icon-search:focus {
-  border-color: var(--primary-color);
-  outline: none;
-}
+  &:focus {
+    border-color: var(--primary-color);
+    outline: none;
+  }
 
-.icon-search::placeholder {
-  color: var(--text-secondary-color);
-  opacity: 1;
+  &::placeholder {
+    color: var(--text-secondary-color);
+    opacity: 1;
+  }
 }
 
 .svg-paste-container {
   display: flex;
   flex-direction: column;
+  gap: 20px;
+}
+
+.svg-input-section {
+  display: flex;
+  flex-direction: column;
   gap: 15px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .svg-textarea {
@@ -129,25 +137,6 @@
   }
 }
 
-.svg-icon-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
-  height: 24px;
-  width: 24px;
-
-  .svg-icon-image {
-    height: 20px;
-    width: 20px;
-    object-fit: contain;
-  }
-}
-
 .pagination-controls {
   display: flex;
   justify-content: center;
@@ -155,36 +144,16 @@
   gap: 1rem;
   padding: 1rem;
   margin-top: 1rem;
-  border-top: 1px solid #e0e0e0;
-
-  .pagination-button {
-    padding: 0.5rem 1rem;
-    border: 1px solid #ddd;
-    background: white;
-    border-radius: 4px;
-    cursor: pointer;
-
-    &:hover:not(:disabled) {
-      background: #f5f5f5;
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
+  border-top: 1px solid var(--border-color);
 
   .pagination-info {
     color: #666;
     font-size: 0.9rem;
+    font-weight: 500;
   }
 }
 
 .svg-trash-area {
-  position: fixed;
-  right: 32px;
-  bottom: 32px;
-  z-index: 100;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -194,7 +163,6 @@
   padding: 12px 22px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.30);
   color: var(--text-secondary-color);
-  font-size: 16px;
   transition: border-color 0.2s, background 0.2s, color 0.2s;
 
   i.pi-trash {
@@ -223,5 +191,119 @@
     span {
       color: #ff7675;
     }
+  }
+}
+
+.svg-entries-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+
+  .entries-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .entries-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary-color);
+    }
+  }
+
+  .entries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px 0;
+  }
+
+  .entry-card {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px;
+    background-color: var(--surface-ground);
+    transition: box-shadow 0.2s;
+
+    &:hover {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    &.has-error {
+      border-color: #e74c3c;
+      background-color: #fff5f5;
+    }
+
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+
+      .entry-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary-color);
+        word-break: break-all;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .entry-remove {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: #e74c3c;
+        transition: color 0.2s;
+
+        &:hover {
+          color: #c0392b;
+        }
+
+        i {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .entry-preview {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 80px;
+      max-height: 100px;
+      background-color: var(--ground-background);
+      border-radius: 4px;
+      padding: 8px;
+      overflow: hidden;
+
+      ::ng-deep svg {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+      }
+    }
+
+    .entry-error {
+      margin-top: 8px;
+      color: #e74c3c;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+  }
+
+  .batch-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
   }
 }
