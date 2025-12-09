@@ -183,7 +183,6 @@ Please be respectful, inclusive, and collaborative. Harassment, abuse, or discri
 
 ## 💬 Community & Support
 
-- Use [GitHub Discussions](https://github.com/adityachandelgit/BookLore/discussions)
 - Discord server: https://discord.gg/Ee5hd458Uz
 
 ---
