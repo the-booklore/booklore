@@ -9,7 +9,7 @@ services:
       - DATABASE_URL=jdbc:mariadb://backend_db:3306/booklore
       - DATABASE_USERNAME=booklore
       - DATABASE_PASSWORD=booklore
-      # - REMOTE_DEBUG_ENABLED=false
+      - REMOTE_DEBUG_ENABLED=true
     stdin_open: true
     tty: true
     restart: unless-stopped
