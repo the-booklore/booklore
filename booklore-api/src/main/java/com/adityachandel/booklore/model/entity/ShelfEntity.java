@@ -48,11 +48,4 @@ public class ShelfEntity {
     )
     @Builder.Default
     private Set<BookEntity> bookEntities = new HashSet<>();
-
-    @PrePersist
-    public void ensureIconType() {
-        if (this.iconType == null) {
-            this.iconType = IconType.PRIME_NG;
-        }
-    }
 }
