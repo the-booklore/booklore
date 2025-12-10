@@ -43,6 +43,6 @@ public class MetadataFetchProposalEntity {
     private FetchedMetadataProposalStatus status;
 
     @Lob
-    @Column(name = "metadata_json", columnDefinition = "JSON")
+    @Column(name = "metadata_json", columnDefinition = "LONGTEXT")
     private String metadataJson;
 }

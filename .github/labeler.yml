@@ -1,0 +1,39 @@
+# Auto-labeler configuration for BookLore
+# Labels PRs based on file paths modified (simplified for clarity)
+
+# ===========================================
+# Core Area Labels (Simplified)
+# ===========================================
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/**"
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-ui/**"
+
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "Dockerfile"
+          - "docker-compose*.yml"
+          - ".dockerignore"
+          - "nginx.conf"
+          - ".github/workflows/**"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**.md"
+          - "docs/**"
+          - "CONTRIBUTING.md"
+          - "SECURITY.md"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "booklore-api/src/test/**"
+          - "booklore-ui/src/**/*.spec.ts"
+          - "testing/**"
