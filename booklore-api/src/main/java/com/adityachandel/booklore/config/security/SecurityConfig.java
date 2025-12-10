@@ -8,9 +8,13 @@ import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -20,6 +24,7 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -46,12 +51,16 @@ public class SecurityConfig {
     };
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
-            "/ws/**",                  // WebSocket connections (auth handled in WebSocketAuthInterceptor)
-            "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
-            "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
-            "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
-            "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
-            "/actuator/**"             // Spring Boot Actuator endpoints for health checks and monitoring
+            "/ws/**",                    // WebSocket connections (auth handled in WebSocketAuthInterceptor)
+            "/kobo/**",                  // Kobo API requests (auth handled in KoboAuthFilter)
+            "/api/v1/auth/login",        // Local username/password login
+            "/api/v1/auth/refresh",      // Token refresh endpoint
+            "/api/v1/auth/remote",       // Remote auth (forward-auth proxy)
+            "/api/v1/auth/register",     // User registration (admin only, but needs to be accessible)
+            "/api/v1/auth/oidc/discovery", // OIDC discovery endpoint (must be public for frontend)
+            // Note: /api/v1/auth/oidc/token is intentionally excluded - it requires OIDC JWT authentication
+            "/api/v1/public-settings",   // Public endpoint for checking OIDC or other app settings
+            "/api/v1/setup/**"           // Setup wizard endpoints (must remain accessible before initial setup)
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
@@ -157,6 +166,7 @@ public class SecurityConfig {
         auth.userDetailsService(opdsUserDetailsService).passwordEncoder(passwordEncoder());
         return auth.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
