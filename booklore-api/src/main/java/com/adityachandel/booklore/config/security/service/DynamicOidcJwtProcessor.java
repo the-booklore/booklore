@@ -376,13 +376,14 @@ public class DynamicOidcJwtProcessor {
 
         log.info("Setting up JWT verifier with expected issuer: '{}'", normalizedIssuerUri);
         
+        // Don't set issuer in expectedClaims - we'll verify it manually with normalization
         var expectedClaims = new JWTClaimsSet.Builder()
-                .issuer(normalizedIssuerUri)
                 .build();
 
-        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp")) {
+        var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp", "iss")) {
             @Override
             public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
+                // Verify issuer with normalization (handles trailing slash differences)
                 String originalIssuer = claimsSet.getIssuer();
                 String actualIssuer = normalizeIssuer(originalIssuer, true);
                 log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'", 
@@ -390,6 +391,7 @@ public class DynamicOidcJwtProcessor {
                 if (!normalizedIssuerUri.equals(actualIssuer)) {
                     throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
                 }
+                // Call parent to verify other standard claims (exp, sub, etc.)
                 super.verify(claimsSet, ctx);
             }
         };
