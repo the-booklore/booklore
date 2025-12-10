@@ -32,7 +32,6 @@ public class BookEntity {
     private String fileSubPath;
 
     @Column(name = "book_type")
-    @Enumerated(EnumType.STRING)
     private BookFileType bookType;
 
     @Column(name = "file_size_kb")

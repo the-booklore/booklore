@@ -35,11 +35,11 @@ public class BookdropFileEntity {
     private Status status = Status.PENDING_REVIEW;
 
     @Lob
-    @Column(name = "original_metadata", columnDefinition = "LONGTEXT")
+    @Column(name = "original_metadata", columnDefinition = "JSON")
     private String originalMetadata;
 
     @Lob
-    @Column(name = "fetched_metadata", columnDefinition = "LONGTEXT")
+    @Column(name = "fetched_metadata", columnDefinition = "JSON")
     private String fetchedMetadata;
 
     @CreationTimestamp
