@@ -3,11 +3,13 @@ package com.adityachandel.booklore.service.migration;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.entity.AppMigrationEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.AppMigrationRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
@@ -41,6 +43,49 @@ public class AppMigrationService {
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
     private FileService fileService;
+
+    @Transactional
+    public void populateSearchTextOnce() {
+        if (migrationRepository.existsById("populateSearchText")) return;
+
+        int batchSize = 1000;
+        int processedCount = 0;
+        int offset = 0;
+        
+        while (true) {
+            List<BookEntity> bookBatch = bookRepository.findBooksForMigrationBatch(offset, batchSize);
+            if (bookBatch.isEmpty()) break;
+            
+            List<Long> bookIds = bookBatch.stream().map(BookEntity::getId).toList();
+            List<BookEntity> books = bookRepository.findBooksWithMetadataAndAuthors(bookIds);
+            
+            for (BookEntity book : books) {
+                BookMetadataEntity m = book.getMetadata();
+                if (m != null) {
+                    try {
+                        m.setSearchText(BookUtils.buildSearchText(m));
+                    } catch (Exception ex) {
+                        log.warn("Failed to build search text for book {}: {}", book.getId(), ex.getMessage());
+                    }
+                }
+            }
+            
+            bookRepository.saveAll(books);
+            processedCount += books.size();
+            offset += batchSize;
+            
+            log.info("Migration progress: {} books processed", processedCount);
+            
+            if (bookBatch.size() < batchSize) break;
+        }
+
+        log.info("Migration 'populateSearchText' completed. Total books processed: {}", processedCount);
+        migrationRepository.save(new AppMigrationEntity(
+                "populateSearchText",
+                LocalDateTime.now(),
+                "Populate search_text column for all books"
+        ));
+    }
 
     @Transactional
     public void populateMissingFileSizesOnce() {

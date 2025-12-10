@@ -76,7 +76,6 @@ public class BookMetadataUpdater {
 
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
-        boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
         if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
@@ -90,7 +89,6 @@ public class BookMetadataUpdater {
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean writeToFile = settings.isSaveToOriginalFile();
-        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         BookFileType bookType = bookEntity.getBookType();
 
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
@@ -226,11 +224,14 @@ public class BookMetadataUpdater {
         if (replaceAll) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMissing && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         }
     }
 
