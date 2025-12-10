@@ -74,8 +74,6 @@ public class BookMetadataUpdater {
         MetadataClearFlags clearFlags = wrapper.getClearFlags();
         BookMetadataEntity metadata = bookEntity.getMetadata();
 
-        updateLocks(newMetadata, metadata);
-
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
         boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
@@ -84,7 +82,8 @@ public class BookMetadataUpdater {
             return;
         }
 
-        if (metadata.areAllFieldsLocked()) {
+        // If all fields are locked we must allow unlocking, hasValueChanges will be false
+        if (metadata.areAllFieldsLocked() && hasValueChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
             return;
         }
@@ -103,6 +102,7 @@ public class BookMetadataUpdater {
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
         updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
+        updateLocks(newMetadata, metadata);
 
         bookRepository.save(bookEntity);
 
