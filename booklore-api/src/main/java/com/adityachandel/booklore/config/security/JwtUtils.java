@@ -45,6 +45,8 @@ public class JwtUtils {
                 .subject(user.getUsername())
                 .claim("userId", user.getId())
                 .claim("isDefaultPassword", user.isDefaultPassword())
+                .claim("email", user.getEmail())
+                .claim("name", user.getName())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationTime)))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
