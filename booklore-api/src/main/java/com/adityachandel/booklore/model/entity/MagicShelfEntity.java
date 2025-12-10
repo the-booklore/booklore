@@ -54,4 +54,11 @@ public class MagicShelfEntity {
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @PrePersist
+    public void ensureIconType() {
+        if (this.iconType == null) {
+            this.iconType = IconType.PRIME_NG;
+        }
+    }
 }

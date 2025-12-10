@@ -183,14 +183,13 @@ Please be respectful, inclusive, and collaborative. Harassment, abuse, or discri
 
 ## 💬 Community & Support
 
-- Use [GitHub Discussions](https://github.com/adityachandelgit/BookLore/discussions)
 - Discord server: https://discord.gg/Ee5hd458Uz
 
 ---
 
 ## 📄 License
 
-Booklore is open-source and licensed under the MIT License. See [`LICENSE`](./LICENSE) for details.
+Booklore is open-source and licensed under the GPL-3.0 License. See [`LICENSE`](./LICENSE) for details.
 
 ---
 

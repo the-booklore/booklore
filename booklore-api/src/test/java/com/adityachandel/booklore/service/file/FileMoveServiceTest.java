@@ -83,7 +83,7 @@ class FileMoveServiceTest {
     }
 
     @Test
-    void moveSingleFile_whenLibraryMonitored_reRegistersLibraryPaths() throws Exception {
+    void moveSingleFile_whenLibraryMonitored_reRegistersLibraryPaths() {
         when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(true);
 
         FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
@@ -96,7 +96,7 @@ class FileMoveServiceTest {
     }
 
     @Test
-    void moveSingleFile_whenLibraryNotMonitored_skipsMonitoringCalls() throws Exception {
+    void moveSingleFile_whenLibraryNotMonitored_skipsMonitoringCalls() {
         when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(false);
 
         FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
