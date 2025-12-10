@@ -19,6 +19,11 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
     `${API_CONFIG.BASE_URL}/api/v1/public-settings`,
     `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/discovery`
   ];
+  
+  // Skip 401 handling for OIDC token exchange endpoint (let errors propagate to caller)
+  const skip401HandlingPaths = [
+    `${API_CONFIG.BASE_URL}/api/v1/auth/oidc/token`
+  ];
 
   const shouldAttachToken = token && isApiRequest && !skipAuthPaths.some(path => req.url.startsWith(path));
 
@@ -26,7 +31,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
+      if (error.status === 401 && !skip401HandlingPaths.some(path => req.url.startsWith(path))) {
         return handle401Error(authService, authReq, next, router, !!internalToken);
       }
       return throwError(() => error);
