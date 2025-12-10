@@ -81,7 +81,7 @@ public class BookMetadataUpdater {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
         }
-        
+
         // If all fields are locked we must allow unlocking, hasValueChanges will be false
         if (metadata.areAllFieldsLocked() && hasValueChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
