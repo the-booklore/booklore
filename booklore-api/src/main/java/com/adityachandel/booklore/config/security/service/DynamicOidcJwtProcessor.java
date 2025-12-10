@@ -89,8 +89,9 @@ public class DynamicOidcJwtProcessor {
 
         String issuerUri = providerDetails.getIssuerUri();
         String normalizedIssuerUri = normalizeIssuerUri(issuerUri);
+        log.info("Issuer from database: '{}', Normalized: '{}'", issuerUri, normalizedIssuerUri);
         if (!Objects.equals(issuerUri, normalizedIssuerUri)) {
-            log.debug("Normalized issuer URI from '{}' to '{}'", issuerUri, normalizedIssuerUri);
+            log.info("Normalized issuer URI from '{}' to '{}'", issuerUri, normalizedIssuerUri);
         }
         String clientId = providerDetails.getClientId();
 
@@ -373,6 +374,8 @@ public class DynamicOidcJwtProcessor {
         long clockSkewSeconds = oidcProperties.jwt().clockSkew().toSeconds();
         log.debug("JWT clock skew tolerance set to {}s for handling clock drift between services", clockSkewSeconds);
 
+        log.info("Setting up JWT verifier with expected issuer: '{}'", normalizedIssuerUri);
+        
         var expectedClaims = new JWTClaimsSet.Builder()
                 .issuer(normalizedIssuerUri)
                 .build();
@@ -380,9 +383,12 @@ public class DynamicOidcJwtProcessor {
         var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp")) {
             @Override
             public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
-                String actualIssuer = normalizeIssuer(claimsSet.getIssuer(), true);
+                String originalIssuer = claimsSet.getIssuer();
+                String actualIssuer = normalizeIssuer(originalIssuer, true);
+                log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'", 
+                         originalIssuer, actualIssuer, normalizedIssuerUri);
                 if (!normalizedIssuerUri.equals(actualIssuer)) {
-                    throw new BadJWTException("JWT iss claim has value " + claimsSet.getIssuer() + ", must be " + normalizedIssuerUri);
+                    throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
                 }
                 super.verify(claimsSet, ctx);
             }
