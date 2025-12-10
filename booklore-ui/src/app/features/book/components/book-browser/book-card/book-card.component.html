@@ -27,8 +27,8 @@
     }
 
     @if (book.seriesCount && book.seriesCount! >= 1) {
-      <div class="series-items-count-overlay">
-        {{ book.seriesCount }}
+      <div class="series-items-count-overlay" [pTooltip]="'Series collapsed: ' + book.seriesCount + ' books'" tooltipPosition="right">
+        <i class="pi pi-book" style="font-size: 0.65rem; margin-right: 2px;"></i>{{ book.seriesCount }}
       </div>
     }
 
