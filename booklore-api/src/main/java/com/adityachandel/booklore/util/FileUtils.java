@@ -59,4 +59,16 @@ public class FileUtils {
                     .forEach(File::delete);
         }
     }
+
+    public boolean shouldIgnore(Path path) {
+        if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
+            return true;
+        }
+        for (Path part : path) {
+            if (".caltrash".equals(part.toString())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

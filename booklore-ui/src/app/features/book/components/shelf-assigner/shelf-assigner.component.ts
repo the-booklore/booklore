@@ -3,7 +3,7 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Book} from '../../model/book.model';
 import {MessageService} from 'primeng/api';
 import {ShelfService} from '../../service/shelf.service';
-import {Observable} from 'rxjs';
+import {finalize, Observable} from 'rxjs';
 import {BookService} from '../../service/book.service';
 import {map, tap} from 'rxjs/operators';
 import {Shelf} from '../../model/shelf.model';
@@ -13,6 +13,7 @@ import {AsyncPipe} from '@angular/common';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {BookDialogHelperService} from '../book-browser/BookDialogHelperService';
+import {LoadingService} from '../../../../core/services/loading.service';
 
 @Component({
   selector: 'app-shelf-assigner',
@@ -34,6 +35,7 @@ export class ShelfAssignerComponent implements OnInit {
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
   private bookDialogHelper = inject(BookDialogHelperService);
+  private loadingService = inject(LoadingService);
 
   shelfState$: Observable<ShelfState> = this.shelfService.shelfState$;
   book: Book = this.dynamicDialogConfig.data.book;
@@ -62,16 +64,20 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   private updateBookShelves(bookIds: Set<number>, idsToAssign: Set<number | undefined>, idsToUnassign: Set<number>): void {
-    this.bookService.updateBookShelves(bookIds, idsToAssign, idsToUnassign).subscribe({
-      next: () => {
-        this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book shelves updated'});
-        this.dynamicDialogRef.close();
-      },
-      error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book shelves'});
-        this.dynamicDialogRef.close();
-      }
-    });
+    const loader = this.loadingService.show(`Updating shelves for ${bookIds.size} book(s)...`);
+
+    this.bookService.updateBookShelves(bookIds, idsToAssign, idsToUnassign)
+      .pipe(finalize(() => this.loadingService.hide(loader)))
+      .subscribe({
+        next: () => {
+          this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book shelves updated'});
+          this.dynamicDialogRef.close();
+        },
+        error: () => {
+          this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book shelves'});
+          this.dynamicDialogRef.close();
+        }
+      });
   }
 
   private getIdsToUnAssign(book: Book, idsToAssign: Set<number | undefined>): Set<number> {

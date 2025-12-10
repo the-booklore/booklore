@@ -52,5 +52,6 @@ public class BookEntitlement {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ActivePeriod {
         private String from;
+        private String to;
     }
 }

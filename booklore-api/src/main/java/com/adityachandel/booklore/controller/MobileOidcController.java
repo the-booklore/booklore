@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Pattern;
 
 /**
  * Controller for handling OIDC authentication for mobile applications.
@@ -53,6 +54,7 @@ import java.util.concurrent.ConcurrentMap;
 @RequestMapping("/api/v1/auth/mobile")
 public class MobileOidcController {
 
+    private static final Pattern TRAILING_SLASHES_PATTERN = Pattern.compile("/+$");
     private final AppSettingService appSettingService;
     private final UserRepository userRepository;
     private final UserProvisioningService userProvisioningService;
@@ -213,7 +215,7 @@ public class MobileOidcController {
      * Discover the token endpoint from the OIDC provider's well-known configuration.
      */
     private String discoverTokenEndpoint(String issuerUri) throws Exception {
-        String discoveryUrl = issuerUri.replaceAll("/+$", "") + "/.well-known/openid-configuration";
+        String discoveryUrl = TRAILING_SLASHES_PATTERN.matcher(issuerUri).replaceAll("") + "/.well-known/openid-configuration";
 
         RestTemplate restTemplate = new RestTemplate();
         ResponseEntity<String> response = restTemplate.getForEntity(discoveryUrl, String.class);
@@ -227,7 +229,7 @@ public class MobileOidcController {
 
         if (tokenEndpointNode == null || tokenEndpointNode.isNull()) {
             // Fall back to standard path
-            return issuerUri.replaceAll("/+$", "") + "/protocol/openid-connect/token";
+            return TRAILING_SLASHES_PATTERN.matcher(issuerUri).replaceAll("") + "/protocol/openid-connect/token";
         }
 
         return tokenEndpointNode.asText();
@@ -241,7 +243,7 @@ public class MobileOidcController {
             String code,
             String codeVerifier,
             String redirectUri,
-            String clientId) throws Exception {
+            String clientId) {
 
         RestTemplate restTemplate = new RestTemplate();
 

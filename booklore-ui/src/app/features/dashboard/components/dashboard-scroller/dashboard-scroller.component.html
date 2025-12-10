@@ -23,8 +23,8 @@
       #scrollContainer
       [horizontal]="true">
       @for (book of books; track book.id) {
-        <div class="dashboard-scroller-card">
-          <app-book-card [book]="book" [isCheckboxEnabled]="false"></app-book-card>
+        <div class="dashboard-scroller-card" [class.menu-open]="openMenuBookId === book.id">
+          <app-book-card [book]="book" [isCheckboxEnabled]="false" (menuToggled)="handleMenuToggle(book.id, $event)"></app-book-card>
         </div>
       }
     </div>

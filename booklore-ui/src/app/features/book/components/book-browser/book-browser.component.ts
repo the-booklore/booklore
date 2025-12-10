@@ -5,7 +5,7 @@ import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {LibraryService} from '../../service/library.service';
 import {BookService} from '../../service/book.service';
 import {catchError, debounceTime, filter, map, switchMap, take} from 'rxjs/operators';
-import {BehaviorSubject, combineLatest, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
 import {ShelfService} from '../../service/shelf.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -49,6 +49,7 @@ import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refr
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
+import {LoadingService} from '../../../../core/services/loading.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -118,6 +119,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected magicShelfService = inject(MagicShelfService);
   protected bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
   private pageTitle = inject(PageTitleService);
+  private loadingService = inject(LoadingService);
 
   protected taskHelperService = inject(TaskHelperService);
 
@@ -530,9 +532,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       header: 'Confirm Deletion',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.bookService.deleteBooks(this.selectedBooks).subscribe(() => {
-          this.selectedBooks.clear();
-        });
+        const count = this.selectedBooks.size;
+        const loader = this.loadingService.show(`Deleting ${count} book(s)...`);
+
+        this.bookService.deleteBooks(this.selectedBooks)
+          .pipe(finalize(() => this.loadingService.hide(loader)))
+          .subscribe(() => {
+            this.selectedBooks.clear();
+          });
       },
       reject: () => {
       }
@@ -615,15 +622,20 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   unshelfBooks() {
     if (!this.entity) return;
-    this.bookService.updateBookShelves(this.selectedBooks, new Set(), new Set([this.entity.id])).subscribe({
-      next: () => {
-        this.messageService.add({severity: 'info', summary: 'Success', detail: 'Books shelves updated'});
-        this.selectedBooks.clear();
-      },
-      error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update books shelves'});
-      }
-    });
+    const count = this.selectedBooks.size;
+    const loader = this.loadingService.show(`Unshelving ${count} book(s)...`);
+
+    this.bookService.updateBookShelves(this.selectedBooks, new Set(), new Set([this.entity.id]))
+      .pipe(finalize(() => this.loadingService.hide(loader)))
+      .subscribe({
+        next: () => {
+          this.messageService.add({severity: 'info', summary: 'Success', detail: 'Books shelves updated'});
+          this.selectedBooks.clear();
+        },
+        error: () => {
+          this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update books shelves'});
+        }
+      });
   }
 
   openShelfAssigner(): void {

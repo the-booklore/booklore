@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.util.BookUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -231,6 +232,15 @@ public class BookMetadataEntity {
 
     @Column(name = "embedding_updated_at")
     private Instant embeddingUpdatedAt;
+
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    private String searchText;
+
+    @PrePersist
+    @PreUpdate
+    public void updateSearchText() {
+        this.searchText = BookUtils.buildSearchText(this);
+    }
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

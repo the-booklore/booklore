@@ -4,10 +4,12 @@ services:
     command: sh -c "cd /booklore-api && ./gradlew bootRun"
     ports:
       - "${BACKEND_PORT:-8080}:8080"
+      - "${REMOTE_DEBUG_PORT:-5005}:5005"
     environment:
       - DATABASE_URL=jdbc:mariadb://backend_db:3306/booklore
       - DATABASE_USERNAME=booklore
       - DATABASE_PASSWORD=booklore
+      - REMOTE_DEBUG_ENABLED=true
     stdin_open: true
     tty: true
     restart: unless-stopped
@@ -29,6 +31,8 @@ services:
       - MYSQL_DATABASE=booklore
       - MYSQL_USER=booklore
       - MYSQL_PASSWORD=booklore
+    ports:
+      - "${DB_PORT:-3366}:3306"
     healthcheck:
       test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-uroot", "-pbooklore" ]
       interval: 10s

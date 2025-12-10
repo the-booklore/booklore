@@ -20,7 +20,6 @@ import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.
 import {AutoComplete} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
-import {IftaLabel} from "primeng/iftalabel";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
 import {CoverSearchComponent} from '../../cover-search/cover-search.component';
@@ -44,7 +43,6 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
     AutoComplete,
     DatePicker,
     Textarea,
-    IftaLabel,
     Image,
     LazyLoadImageModule,
   ],

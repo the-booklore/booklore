@@ -32,17 +32,21 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
     @Transactional
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         for (LibraryFile libraryFile : libraryFiles) {
-            log.info("Processing file: {}", libraryFile.getFileName());
+            processFileWithErrorHandling(libraryFile);
+        }
+        log.info("Finished processing library '{}'", libraryEntity.getName());
+    }
 
+    private void processFileWithErrorHandling(LibraryFile libraryFile) {
+        log.info("Processing file: {}", libraryFile.getFileName());
+        try {
             FileProcessResult result = processLibraryFile(libraryFile);
-
             if (result != null) {
                 bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
-                log.debug("Processed file: {}", libraryFile.getFileName());
             }
+        } catch (Exception e) {
+            log.error("Failed to process file '{}': {}", libraryFile.getFileName(), e.getMessage());
         }
-
-        log.info("Finished processing library '{}'", libraryEntity.getName());
     }
 
     @Transactional

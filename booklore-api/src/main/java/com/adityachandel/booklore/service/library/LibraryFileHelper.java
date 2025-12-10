@@ -34,6 +34,7 @@ public class LibraryFileHelper {
 
         try (Stream<Path> stream = Files.walk(libraryPath, FileVisitOption.FOLLOW_LINKS)) {
             return stream.filter(Files::isRegularFile)
+                    .filter(path -> !FileUtils.shouldIgnore(path))
                     .map(fullPath -> {
                         String fileName = fullPath.getFileName().toString();
                         Optional<BookFileExtension> bookExtension = BookFileExtension.fromFileName(fileName);
@@ -51,7 +52,6 @@ public class LibraryFileHelper {
                                 .build();
                     })
                     .filter(Objects::nonNull)
-                    .filter(file -> !file.getFileName().startsWith("."))
                     .toList();
         }
     }
