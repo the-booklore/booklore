@@ -9,8 +9,19 @@ export class HeaderFilter implements BookFilter {
   }
 
   filter(bookState: BookState): Observable<BookState> {
-    const normalize = (str: string): string =>
-      str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const normalize = (str: string): string => {
+      if (!str) return '';
+      // Normalize Unicode combining characters (e.g., é -> e)
+      let s = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      s = s.replace(/ø/gi, 'o')
+           .replace(/ł/gi, 'l')
+           .replace(/æ/gi, 'ae')
+           .replace(/œ/gi, 'oe')
+           .replace(/ß/g, 'ss');
+      s = s.replace(/[!@$%^&*_=|~`<>?/";']/g, '');
+      s = s.replace(/\s+/g, ' ').trim();
+      return s.toLowerCase();
+    };
 
     return this.searchTerm$.pipe(
       distinctUntilChanged(),

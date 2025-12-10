@@ -291,11 +291,9 @@ public class CbxConversionService {
     private boolean isImageFile(String fileName) {
         String lowerName = fileName.toLowerCase();
 
-        boolean isImage = lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
+        return lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
                lowerName.endsWith(".png") || lowerName.endsWith(".webp") ||
                lowerName.endsWith(".gif") || lowerName.endsWith(".bmp");
-        
-        return isImage;
     }
 
     private boolean isJpegFile(Path path) {
@@ -348,7 +346,7 @@ public class CbxConversionService {
         List<EpubContentFileGroup> contentGroups = new ArrayList<>();
 
         if (!imagePaths.isEmpty()) {
-            addImageToZipFromPath(zipOut, COVER_IMAGE_PATH, imagePaths.get(0));
+            addImageToZipFromPath(zipOut, COVER_IMAGE_PATH, imagePaths.getFirst());
         }
 
         for (int i = 0; i < imagePaths.size(); i++) {
@@ -461,7 +459,7 @@ public class CbxConversionService {
         model.put("tocNcxPath", makeRelativeToOebps(TOC_NCX_PATH));
         model.put("navXhtmlPath", makeRelativeToOebps(NAV_XHTML_PATH));
         model.put("stylesheetCssPath", makeRelativeToOebps(STYLESHEET_CSS_PATH));
-        model.put("firstPageId", contentGroups.isEmpty() ? "" : "page_" + contentGroups.get(0).contentKey());
+        model.put("firstPageId", contentGroups.isEmpty() ? "" : "page_" + contentGroups.getFirst().contentKey());
         
         String contentOpf = processTemplate("xml/content.opf.ftl", model);
         

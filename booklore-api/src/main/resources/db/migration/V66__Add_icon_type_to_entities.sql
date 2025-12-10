@@ -1,0 +1,13 @@
+ALTER TABLE library
+    ADD COLUMN IF NOT EXISTS icon_type VARCHAR(100) NOT NULL DEFAULT 'PRIME_NG';
+
+ALTER TABLE magic_shelf
+    ADD COLUMN IF NOT EXISTS icon_type VARCHAR(100) NOT NULL DEFAULT 'PRIME_NG';
+
+ALTER TABLE shelf
+    ADD COLUMN IF NOT EXISTS icon_type VARCHAR(100) NOT NULL DEFAULT 'PRIME_NG';
+
+UPDATE library SET icon_type = 'PRIME_NG' WHERE icon_type IS NULL;
+UPDATE magic_shelf SET icon_type = 'PRIME_NG' WHERE icon_type IS NULL;
+UPDATE shelf SET icon_type = 'PRIME_NG' WHERE icon_type IS NULL;
+

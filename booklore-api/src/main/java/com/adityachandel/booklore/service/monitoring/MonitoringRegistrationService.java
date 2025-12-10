@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -70,5 +72,23 @@ public class MonitoringRegistrationService {
             return;
         }
         libraryIds.forEach(this::unregisterLibrary);
+    }
+
+    public Set<Path> getPathsForLibraries(Collection<Long> libraryIds) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
+            return Set.of();
+        }
+        return monitoringService.getPathsForLibraries(new HashSet<>(libraryIds));
+    }
+
+    public boolean waitForEventsDrainedByPaths(Set<Path> paths, long timeoutMs) {
+        return monitoringService.waitForEventsDrainedByPaths(paths, timeoutMs);
+    }
+
+    public boolean waitForEventsDrained(Collection<Long> libraryIds, long timeoutMs) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
+            return true;
+        }
+        return monitoringService.waitForEventsDrained(new HashSet<>(libraryIds), timeoutMs);
     }
 }
