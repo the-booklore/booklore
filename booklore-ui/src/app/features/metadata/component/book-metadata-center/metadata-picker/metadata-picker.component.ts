@@ -359,7 +359,7 @@ export class MetadataPickerComponent implements OnInit {
   onSave(): void {
     this.isSaving = true;
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
-    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false).subscribe({
+    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, true).subscribe({
       next: (bookMetadata) => {
         this.isSaving = false;
         Object.keys(this.copiedFields).forEach((field) => {
