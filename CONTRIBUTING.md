@@ -50,7 +50,7 @@ Run  `docker compose -f dev.docker-compose.yml up`
 
 - Dev web server is accessible at `http://localhost:4200/`
 - Dev database is accessible at `http://localhost:3366/`
-- Remote java debugging is accessible at `http://localhost:5505/`
+- Remote java debugging is accessible at `http://localhost:5005/`
 
 All ports are configurable using environment variables - see dev.docker-compose.yml
 
