@@ -32,7 +32,9 @@ public class MagicShelfEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "icon_type", nullable = false)
-    private IconType iconType;
+
+    @Builder.Default
+    private IconType iconType = IconType.PRIME_NG;
 
     @Column(name = "filter_json", columnDefinition = "json", nullable = false)
     private String filterJson;
@@ -52,5 +54,12 @@ public class MagicShelfEntity {
     @PreUpdate
     public void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    @PrePersist
+    public void ensureIconType() {
+        if (this.iconType == null) {
+            this.iconType = IconType.PRIME_NG;
+        }
     }
 }

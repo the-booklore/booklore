@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -28,6 +29,7 @@ import java.util.stream.Stream;
 @Service
 public class IconService {
 
+    private static final Pattern INVALID_FILENAME_CHARS_PATTERN = Pattern.compile("[^a-zA-Z0-9._-]");
     private final AppProperties appProperties;
 
     private final ConcurrentHashMap<String, String> svgCache = new ConcurrentHashMap<>();
@@ -262,7 +264,7 @@ public class IconService {
             throw ApiError.INVALID_INPUT.createException("Filename cannot be empty");
         }
 
-        String sanitized = filename.trim().replaceAll("[^a-zA-Z0-9._-]", "_");
+        String sanitized = INVALID_FILENAME_CHARS_PATTERN.matcher(filename.trim()).replaceAll("_");
         return sanitized.endsWith(SVG_EXTENSION) ? sanitized : sanitized + SVG_EXTENSION;
     }
 

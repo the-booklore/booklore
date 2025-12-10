@@ -17,10 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -433,7 +430,7 @@ public class BookRuleEvaluatorService {
     private List<String> toStringList(Object value) {
         if (value == null) return Collections.emptyList();
         if (value instanceof List) {
-            return ((List<?>) value).stream()
+            return ((Collection<?>) value).stream()
                     .map(Object::toString)
                     .collect(Collectors.toList());
         }
