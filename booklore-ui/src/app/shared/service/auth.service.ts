@@ -58,6 +58,16 @@ export class AuthService {
     );
   }
 
+  exchangeOidcToken(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
+    return this.http.get<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/oidc/token`).pipe(
+      tap((response) => {
+        if (response.accessToken && response.refreshToken) {
+          this.saveInternalTokens(response.accessToken, response.refreshToken);
+        }
+      })
+    );
+  }
+
   saveInternalTokens(accessToken: string, refreshToken: string): void {
     localStorage.setItem('accessToken_Internal', accessToken);
     localStorage.setItem('refreshToken_Internal', refreshToken);

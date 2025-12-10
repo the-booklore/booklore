@@ -156,6 +156,14 @@ public class AuthenticationService {
         ));
     }
 
+    public ResponseEntity<Map<String, String>> generateTokensForUser(BookLoreUser userDto) {
+        // Fetch the entity from database to ensure we have the latest data
+        BookLoreUserEntity user = userRepository.findByUsername(userDto.getUsername())
+                .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(userDto.getUsername()));
+        
+        return loginUser(user);
+    }
+
     public ResponseEntity<Map<String, String>> refreshToken(String token) {
         RefreshTokenEntity storedToken = refreshTokenRepository.findByToken(token).orElseThrow(() -> ApiError.INVALID_CREDENTIALS.createException("Refresh token not found"));
 

@@ -3,6 +3,7 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.UserCreateRequest;
 import com.adityachandel.booklore.model.dto.request.RefreshTokenRequest;
 import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
@@ -19,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
@@ -95,5 +97,36 @@ public class AuthenticationController {
         }
 
         return authenticationService.loginRemote(name, username, email, groups);
+    }
+
+    @Operation(
+        summary = "Exchange OIDC token for internal JWT",
+        description = "After successful OIDC authentication, exchange the OIDC token for Booklore internal JWT tokens."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tokens generated successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid OIDC token")
+    })
+    @GetMapping("/oidc/token")
+    public ResponseEntity<Map<String, String>> exchangeOidcToken(Authentication authentication) {
+        log.debug("OIDC token exchange requested");
+        
+        // At this point, authentication has been validated by the JWT decoder
+        // and the user has been provisioned by OidcJwtAuthenticationConverter
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("Not authenticated");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof BookLoreUser)) {
+            log.error("Invalid principal type: {}. Expected BookLoreUser.", principal.getClass().getName());
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("Invalid authentication principal");
+        }
+        
+        BookLoreUser user = (BookLoreUser) principal;
+        log.info("Generating internal JWT for OIDC user: {}", user.getUsername());
+        
+        // Generate internal JWT tokens
+        return authenticationService.generateTokensForUser(user);
     }
 }
