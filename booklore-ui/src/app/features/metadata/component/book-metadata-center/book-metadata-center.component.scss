@@ -1,28 +1,9 @@
-::ng-deep .layout-main .tabpanels-responsive {
+.tabpanels-responsive {
   height: calc(100dvh - 9.7rem);
 }
 
 @media (max-width: 768px) {
-  ::ng-deep .layout-main .tabpanels-responsive {
+  .tabpanels-responsive {
     height: calc(100dvh - 8.5rem);
   }
-}
-
-::ng-deep .p-dialog-content,
-::ng-deep p-dialog app-book-metadata-center,
-::ng-deep p-dialog app-book-metadata-center > div {
-  display: flex;
-}
-
-::ng-deep p-tablist {
-  flex-shrink: 0;
-}
-
-::ng-deep .p-dialog-content {
-  padding: 0;
-}
-
-::ng-deep p-dialog app-book-metadata-center > div {
-  border-radius: 0 0 0.75rem 0.75rem !important;
-  border-width: 1px 0 0 !important;
 }

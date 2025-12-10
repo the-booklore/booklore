@@ -217,8 +217,8 @@ export class AppMenuComponent implements OnInit {
   getVersionUrl(version: string | undefined): string {
     if (!version) return '#';
     return version.startsWith('v')
-      ? `https://github.com/adityachandelgit/BookLore/releases/tag/${version}`
-      : `https://github.com/adityachandelgit/BookLore/commit/${version}`;
+      ? `https://github.com/booklore-app/booklore/releases/tag/${version}`
+      : `https://github.com/booklore-app/booklore/commit/${version}`;
   }
 
   private sortArray<T>(array: T[], field: 'name' | 'id', order: 'asc' | 'desc'): T[] {

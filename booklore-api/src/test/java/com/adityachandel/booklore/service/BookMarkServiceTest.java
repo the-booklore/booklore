@@ -81,7 +81,8 @@ class BookMarkServiceTest {
         CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
         
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
-        when(userRepository.getReferenceById(userId)).thenReturn(userEntity);
+        when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
         when(bookMarkRepository.save(any(BookMarkEntity.class))).thenReturn(bookmarkEntity);
         when(mapper.toDto(bookmarkEntity)).thenReturn(bookmarkDto);
@@ -98,7 +99,8 @@ class BookMarkServiceTest {
         CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
         
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
-        when(userRepository.getReferenceById(userId)).thenReturn(userEntity);
+        when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> bookMarkService.createBookmark(request));
