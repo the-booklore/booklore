@@ -259,4 +259,34 @@ class BookMetadataUpdaterTest {
         assertTrue(bookEntity.getMetadata().getMoods().stream().anyMatch(m -> m.getName().equals("Mood2")));
         assertTrue(bookEntity.getMetadata().getMoods().stream().anyMatch(m -> m.getName().equals("Mood3")));
     }
+
+    @Test
+    void setBookMetadata_withLockField_shouldUpdateAndLock() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Old Title");
+        metadataEntity.setTitleLocked(false);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title");
+        newMetadata.setTitleLocked(true);
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("New Title", bookEntity.getMetadata().getTitle());
+        assertTrue(bookEntity.getMetadata().getTitleLocked());
+    }
 }
