@@ -96,7 +96,7 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 
-  &:hover {
+  &:hover, &.menu-open {
     transform: translateY(-4px) scale(1.04);
     filter: drop-shadow(0 25px 50px rgba(0, 0, 0, 0.4));
 

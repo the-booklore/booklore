@@ -38,6 +38,7 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() checkboxClick = new EventEmitter<{ index: number; bookId: number; selected: boolean; shiftKey: boolean }>();
+  @Output() menuToggled = new EventEmitter<boolean>();
 
   @Input() index!: number;
   @Input() book!: Book;
@@ -124,6 +125,14 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   readBook(book: Book): void {
     this.bookService.readBook(book.id);
+  }
+
+  onMenuShow(): void {
+    this.menuToggled.emit(true);
+  }
+
+  onMenuHide(): void {
+    this.menuToggled.emit(false);
   }
 
   onMenuToggle(event: Event, menu: TieredMenu): void {
