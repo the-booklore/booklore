@@ -28,6 +28,23 @@ import java.util.regex.Pattern;
 public class UserProvisioningService {
 
     private static final ConcurrentHashMap<String, Object> USER_CREATION_LOCKS = new ConcurrentHashMap<>();
+    
+    /**
+     * Custom exception to signal that user creation failed due to duplicate username,
+     * and should be retried after transaction rollback.
+     */
+    private static class DuplicateUserRetryException extends RuntimeException {
+        private final String username;
+        
+        DuplicateUserRetryException(String username) {
+            super("Duplicate user detected, retry needed: " + username);
+            this.username = username;
+        }
+        
+        String getUsername() {
+            return username;
+        }
+    }
 
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
@@ -105,7 +122,6 @@ public class UserProvisioningService {
         createUser(user);
     }
 
-    @Transactional
     public BookLoreUserEntity provisionOidcUser(String username, String email, String name,
                                                 OidcAutoProvisionDetails oidcAutoProvisionDetails) {
         // Handle missing name claim (common in Authelia and some IdPs)
@@ -124,6 +140,21 @@ public class UserProvisioningService {
             return fastPathCheck.get();
         }
         
+        // Try to create user in transaction, handle race condition by retrying
+        try {
+            return provisionOidcUserInternal(username, email, name, oidcAutoProvisionDetails);
+        } catch (DuplicateUserRetryException e) {
+            // Transaction rolled back, session cleared. Now safe to query for user created by concurrent thread.
+            log.debug("Retrying user lookup after duplicate key exception for username: {}", username);
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "User '" + username + "' not found after duplicate key exception - concurrent creation failed"));
+        }
+    }
+    
+    @Transactional
+    private BookLoreUserEntity provisionOidcUserInternal(String username, String email, String name,
+                                                         OidcAutoProvisionDetails oidcAutoProvisionDetails) {
         // Use a per-username lock to avoid race conditions when provisioning the same username concurrently
         Object lock = USER_CREATION_LOCKS.computeIfAbsent(username, k -> new Object());
         synchronized (lock) {
@@ -186,9 +217,10 @@ public class UserProvisioningService {
                     if (errorMsg != null && (errorMsg.contains("uk_users_username") || 
                                               errorMsg.contains("for key 'username'") ||
                                               errorMsg.contains("Duplicate entry") && errorMsg.contains("username"))) {
-                        log.debug("Race condition on user creation for {}, fetching existing", username);
-                        return userRepository.findByUsername(username)
-                                .orElseThrow(() -> new IllegalStateException("User not found after constraint violation"));
+                        log.debug("Race condition on user creation for {}, will retry fetch after transaction rollback", username);
+                        // Don't query in same transaction - session is corrupted after failed saveAndFlush
+                        // Instead, mark for retry and let the transaction roll back
+                        throw new DuplicateUserRetryException(username);
                     }
                     // Email conflict or other issue - rethrow
                     log.error("User provisioning failed for username={}: {}", username, errorMsg);
