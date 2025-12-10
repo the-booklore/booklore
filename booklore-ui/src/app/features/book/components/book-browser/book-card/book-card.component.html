@@ -85,7 +85,7 @@
           [pTooltip]="'Title: ' + displayTitle">
         {{ displayTitle }}
       </h4>
-      <p-tieredmenu #menu [model]="items" [popup]="true" appendTo="body"></p-tieredmenu>
+      <p-tieredmenu #menu [model]="items" [popup]="true" appendTo="body" (onShow)="onMenuShow()" (onHide)="onMenuHide()"></p-tieredmenu>
       <p-button
         class="custom-button-padding"
         size="small"
