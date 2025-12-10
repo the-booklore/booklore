@@ -73,8 +73,8 @@ booklore:
         # SECURITY: JWT replay prevention using JTI (JWT ID) cache
         # When enabled, tokens with the same JTI cannot be used twice
         # Requires OIDC provider to include 'jti' claim in tokens
-        # Enabled by default for security
-        enable-replay-prevention: ${OIDC_JWT_ENABLE_REPLAY_PREVENTION:true}
+        # Disabled by default as many OIDC providers (like Authentik) don't include JTI
+        enable-replay-prevention: ${OIDC_JWT_ENABLE_REPLAY_PREVENTION:false}
         # Maximum number of JTI tokens to cache (default 10000)
         # Adjust based on expected concurrent users and token expiry times
         replay-cache-size: ${OIDC_JWT_REPLAY_CACHE_SIZE:10000}
