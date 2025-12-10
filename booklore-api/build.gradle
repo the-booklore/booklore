@@ -94,3 +94,9 @@ test {
     jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
 
+bootRun {
+    def debug = System.getenv('REMOTE_DEBUG_ENABLED')
+    if (debug.equals("true")) { 
+        jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
+    }
+}

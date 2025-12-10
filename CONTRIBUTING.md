@@ -41,10 +41,24 @@ cd booklore
 
 ## 🧱 Local Development Setup
 
-Either run  `docker compose -f dev.docker-compose.yml up` or install & run everything Locally (described below).
+Booklore has a simple all-in-one Docker development stack, or you can install & run everything manually.
 
 
-### 1. Prerequisites
+### Development using Docker stack
+
+Run  `docker compose -f dev.docker-compose.yml up`
+
+- Dev web server is accessible at `http://localhost:4200/`
+- Dev database is accessible at `http://localhost:3366/`
+- Remote java debugging is accessible at `http://localhost:5005/`
+
+All ports are configurable using environment variables - see dev.docker-compose.yml
+
+---
+
+### Development on local machine
+
+#### 1. Prerequisites
 
 - **Java 21+**
 - **Node.js 18+**
@@ -53,7 +67,7 @@ Either run  `docker compose -f dev.docker-compose.yml up` or install & run every
 
 ---
 
-### 2. Frontend Setup
+#### 2. Frontend Setup
 
 To set up the Angular frontend:
 
@@ -69,9 +83,9 @@ The dev server runs at `http://localhost:4200/`.
 
 ---
 
-### 3. Backend Setup
+#### 3. Backend Setup
 
-#### a. Configure `application-dev.yml`
+##### a. Configure `application-dev.yml`
 
 Create or edit `booklore-api/src/main/resources/application-dev.yml`:
 
@@ -90,7 +104,7 @@ spring:
 
 > 🔧 Replace `/path/to/...` with actual local paths
 
-#### b. Run the Backend
+##### b. Run the Backend
 
 ```bash
 cd booklore-api
