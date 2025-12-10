@@ -25,4 +25,9 @@ export class DashboardScrollerComponent {
   @Input() isMagicShelf: boolean = false;
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
+  openMenuBookId: number | null = null;
+
+  handleMenuToggle(bookId: number, isOpen: boolean) {
+    this.openMenuBookId = isOpen ? bookId : null;
+  }
 }

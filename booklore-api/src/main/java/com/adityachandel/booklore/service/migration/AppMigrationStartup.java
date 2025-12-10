@@ -17,6 +17,7 @@ public class AppMigrationStartup {
         appMigrationService.populateMetadataScoresOnce();
         appMigrationService.populateFileHashesOnce();
         appMigrationService.populateCoversAndResizeThumbnails();
+        appMigrationService.populateSearchTextOnce();
         appMigrationService.moveIconsToDataFolder();
     }
 }

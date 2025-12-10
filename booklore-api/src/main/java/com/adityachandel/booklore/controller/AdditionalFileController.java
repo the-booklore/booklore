@@ -46,7 +46,7 @@ public class AdditionalFileController {
             @PathVariable Long bookId,
             @RequestParam("file") MultipartFile file,
             @RequestParam AdditionalFileType additionalFileType,
-            @RequestParam(required = false) String description) throws IOException {
+            @RequestParam(required = false) String description) {
         AdditionalFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, additionalFileType, description);
         return ResponseEntity.ok(additionalFile);
     }

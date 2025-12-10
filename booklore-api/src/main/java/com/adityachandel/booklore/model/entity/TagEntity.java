@@ -31,7 +31,7 @@ public class TagEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof TagEntity that)) return false;
-        return getId() != null && Objects.equals(getId(), that.getId());
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override

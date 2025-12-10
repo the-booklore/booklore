@@ -74,12 +74,8 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     @Query("""
             SELECT DISTINCT b.id FROM BookEntity b
             LEFT JOIN b.metadata m
-            LEFT JOIN m.authors a
             WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                  LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                  m.searchText LIKE CONCAT('%', :text, '%')
             )
             ORDER BY b.addedOn DESC
             """)
@@ -96,14 +92,10 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     @Query("""
             SELECT DISTINCT b.id FROM BookEntity b
             LEFT JOIN b.metadata m
-            LEFT JOIN m.authors a
             WHERE (b.deleted IS NULL OR b.deleted = false)
               AND b.library.id IN :libraryIds
               AND (
-                  LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                  m.searchText LIKE CONCAT('%', :text, '%')
               )
             ORDER BY b.addedOn DESC
             """)
