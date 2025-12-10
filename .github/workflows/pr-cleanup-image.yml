@@ -1,0 +1,39 @@
+name: PR Cleanup Docker Image
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  delete-image:
+    name: Delete PR Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Image from Docker Hub
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_API }}
+          IMAGE_NAME: booklore
+          TAG: pr-${{ github.event.number }}
+        run: |
+          # 1. Get Authentication Token
+          # Note: Docker Hub API requires a JWT token for authentication
+          TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${DOCKER_USER}'", "password": "'${DOCKER_PASSWORD}'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
+
+          if [ "$TOKEN" == "null" ] || [ -z "$TOKEN" ]; then
+            echo "::error::Failed to authenticate with Docker Hub. Please check credentials."
+            exit 1
+          fi
+
+          # 2. Delete the tag
+          echo "Attempting to delete tag: ${TAG}"
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE -H "Authorization: JWT ${TOKEN}" "https://hub.docker.com/v2/repositories/${DOCKER_USER}/${IMAGE_NAME}/tags/${TAG}/")
+
+          if [ "$RESPONSE" == "204" ]; then
+            echo "Successfully deleted tag ${TAG}"
+          elif [ "$RESPONSE" == "404" ]; then
+             echo "Tag ${TAG} not found (maybe already deleted or never built)"
+          else
+            echo "::error::Failed to delete tag ${TAG}. HTTP Status: ${RESPONSE}"
+            exit 1
+          fi
