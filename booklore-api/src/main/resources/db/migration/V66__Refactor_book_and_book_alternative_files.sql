@@ -16,6 +16,9 @@ SELECT id, file_name, file_sub_path, true, CASE when book_type = 0 then 'PDF' wh
 -- Regenerate virtual column for alternative book format files
 ALTER TABLE book_file ADD COLUMN alt_format_current_hash VARCHAR(128) AS (CASE WHEN is_book = true THEN current_hash END) STORED;
 
+-- Remove constraing
+ALTER TABLE book DROP CONSTRAINT unique_library_file_path;
+
 -- Remove migrated fields from the book table
 ALTER TABLE book DROP COLUMN file_name;
 ALTER TABLE book DROP COLUMN file_sub_path;

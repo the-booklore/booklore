@@ -3,7 +3,6 @@ package com.adityachandel.booklore.service.file;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
 import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import lombok.AllArgsConstructor;
@@ -41,8 +40,8 @@ public class AdditionalFileService {
         return additionalFileMapper.toAdditionalFiles(entities);
     }
 
-    public List<BookFile> getAdditionalFilesByBookIdAndType(Long bookId, AdditionalFileType type) {
-        List<BookFileEntity> entities = additionalFileRepository.findByBookIdAndAdditionalFileType(bookId, type);
+    public List<BookFile> getAdditionalFilesByBookIdAndIsBook(Long bookId, boolean isBook) {
+        List<BookFileEntity> entities = additionalFileRepository.findByBookIdAndIsBookFormat(bookId, isBook);
         return additionalFileMapper.toAdditionalFiles(entities);
     }
 

@@ -331,7 +331,7 @@ public class BookCoverService {
     private List<BookRegenerationInfo> getUnlockedBookRegenerationInfos(Set<Long> bookIds) {
         return bookQueryService.findAllWithMetadataByIds(bookIds).stream()
                 .filter(book -> !isCoverLocked(book))
-                .map(book -> new BookRegenerationInfo(book.getId(), book.getMetadata().getTitle(), book.getBookType(), false))
+                .map(book -> new BookRegenerationInfo(book.getId(), book.getMetadata().getTitle(), book.getPrimaryBookFile().getBookType(), false))
                 .toList();
     }
 

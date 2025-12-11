@@ -2,7 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.model.dto.BookFile;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.file.AdditionalFileService;
 import com.adityachandel.booklore.service.upload.FileUploadService;
 import lombok.AllArgsConstructor;
@@ -30,12 +30,12 @@ public class AdditionalFileController {
         return ResponseEntity.ok(files);
     }
 
-    @GetMapping(params = "type")
+    @GetMapping(params = "isBook")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<List<BookFile>> getAdditionalFilesByType(
+    public ResponseEntity<List<BookFile>> getFilesByIsBook(
             @PathVariable Long bookId,
-            @RequestParam AdditionalFileType type) {
-        List<BookFile> files = additionalFileService.getAdditionalFilesByBookIdAndType(bookId, type);
+            @RequestParam boolean isBook) {
+        List<BookFile> files = additionalFileService.getAdditionalFilesByBookIdAndIsBook(bookId, isBook);
         return ResponseEntity.ok(files);
     }
 
@@ -45,9 +45,10 @@ public class AdditionalFileController {
     public ResponseEntity<BookFile> uploadAdditionalFile(
             @PathVariable Long bookId,
             @RequestParam("file") MultipartFile file,
-            @RequestParam AdditionalFileType additionalFileType,
+            @RequestParam boolean isBook,
+            @RequestParam(required = false) BookFileType bookType,
             @RequestParam(required = false) String description) {
-        BookFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, additionalFileType, description);
+        BookFile additionalFile = fileUploadService.uploadAdditionalFile(bookId, file, isBook, bookType, description);
         return ResponseEntity.ok(additionalFile);
     }
 

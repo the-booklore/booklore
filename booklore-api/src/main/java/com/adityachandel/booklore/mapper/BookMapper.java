@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -76,21 +75,35 @@ public interface BookMapper {
     default List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
         if (bookFiles == null) return null;
         return bookFiles.stream()
-                .filter(af -> AdditionalFileType.ALTERNATIVE_FORMAT.equals(af.getAdditionalFileType()))
-                .map(this::toAdditionalFile)
+                .filter(bf -> bf.isBook())
+                .filter(bf -> !bf.equals(getPrimaryBookFile(bookFiles)))
+                .map(this::toBookFile)
                 .toList();
     }
 
     @Named("mapSupplementaryFiles")
     default List<BookFile> mapSupplementaryFiles(List<BookFileEntity> bookFiles) {
-        if (bookFiles == null) return null;
+        if (bookFiles == null)
+            return null;
         return bookFiles.stream()
-                .filter(af -> AdditionalFileType.SUPPLEMENTARY.equals(af.getAdditionalFileType()))
-                .map(this::toAdditionalFile)
+                .filter(bf -> !bf.isBook())
+                .map(this::toBookFile)
                 .toList();
     }
 
-    default BookFile toAdditionalFile(BookFileEntity entity) {
+    /*
+    * TODO: evolve the logic so that the user can select the primary book file format to be used.
+    * For now, we just return the first book file in the list.
+    */
+    default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null || bookFiles.isEmpty()) return null;
+        return bookFiles.stream()
+                .filter(bf -> bf.isBook())
+                .findFirst()
+                .orElse(null);
+    }
+
+    default BookFile toBookFile(BookFileEntity entity) {
         if (entity == null) return null;
         return BookFile.builder()
                 .id(entity.getId())
@@ -98,7 +111,8 @@ public interface BookMapper {
                 .fileName(entity.getFileName())
                 .filePath(entity.getFullFilePath().toString())
                 .fileSubPath(entity.getFileSubPath())
-                .additionalFileType(entity.getAdditionalFileType())
+                .isBook(entity.isBook())
+                .bookType(entity.getBookType())
                 .fileSizeKb(entity.getFileSizeKb())
                 .description(entity.getDescription())
                 .addedOn(entity.getAddedOn())

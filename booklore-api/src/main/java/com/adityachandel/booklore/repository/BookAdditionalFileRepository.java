@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookFileEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +15,9 @@ public interface BookAdditionalFileRepository extends JpaRepository<BookFileEnti
 
     List<BookFileEntity> findByBookId(Long bookId);
 
-    List<BookFileEntity> findByBookIdAndAdditionalFileType(Long bookId, AdditionalFileType additionalFileType);
+    List<BookFileEntity> findByBookIdAndIsBookFormat(Long bookId, boolean isBookFormat);
+
+    List<BookFileEntity> findByBookIdAndBookType(Long bookId, BookFileType bookType);
 
     /**
      * Finds a {@link BookFileEntity} by its alternative format current hash.
@@ -29,16 +31,18 @@ public interface BookAdditionalFileRepository extends JpaRepository<BookFileEnti
      */
     Optional<BookFileEntity> findByAltFormatCurrentHash(String altFormatCurrentHash);
 
-    @Query("SELECT af FROM BookAdditionalFileEntity af WHERE af.book.libraryPath.id = :libraryPathId AND af.fileSubPath = :fileSubPath AND af.fileName = :fileName")
+    @Query("SELECT bf FROM BookFileEntity bf WHERE bf.book.libraryPath.id = :libraryPathId AND bf.fileSubPath = :fileSubPath AND bf.fileName = :fileName")
     Optional<BookFileEntity> findByLibraryPath_IdAndFileSubPathAndFileName(@Param("libraryPathId") Long libraryPathId,
                                                                                       @Param("fileSubPath") String fileSubPath,
                                                                                       @Param("fileName") String fileName);
 
-    List<BookFileEntity> findByAdditionalFileType(AdditionalFileType additionalFileType);
+    List<BookFileEntity> findByIsBookFormat(boolean isBookFormat);
 
-    @Query("SELECT COUNT(af) FROM BookAdditionalFileEntity af WHERE af.book.id = :bookId AND af.additionalFileType = :additionalFileType")
-    long countByBookIdAndAdditionalFileType(@Param("bookId") Long bookId, @Param("additionalFileType") AdditionalFileType additionalFileType);
+    List<BookFileEntity> findByBookType(BookFileType bookType);
 
-    @Query("SELECT af FROM BookAdditionalFileEntity af WHERE af.book.library.id = :libraryId")
+    @Query("SELECT COUNT(bf) FROM BookFileEntity bf WHERE bf.book.id = :bookId AND bf.isBookFormat = :isBookFormat")
+    long countByBookIdAndIsBookFormat(@Param("bookId") Long bookId, @Param("isBookFormat") boolean isBookFormat);
+
+    @Query("SELECT bf FROM BookFileEntity bf WHERE bf.book.library.id = :libraryId")
     List<BookFileEntity> findByLibraryId(@Param("libraryId") Long libraryId);
 }

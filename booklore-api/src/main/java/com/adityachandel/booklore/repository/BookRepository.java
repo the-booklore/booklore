@@ -21,19 +21,21 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     Optional<BookEntity> findBookByIdAndLibraryId(long id, long libraryId);
 
     @EntityGraph(attributePaths = { "metadata", "shelves", "libraryPath", "bookFiles" })
-    @Query("SELECT b FROM BookEntity b LEFT JOIN FETCH b.bookFiles bf WHERE b.id = :id AND (b.deleted IS NULL OR b.deleted = false) AND (bf.isBook = true)")
+    @Query("SELECT b FROM BookEntity b LEFT JOIN FETCH b.bookFiles bf WHERE b.id = :id AND (b.deleted IS NULL OR b.deleted = false)")
     Optional<BookEntity> findByIdWithBookFiles(@Param("id") Long id);
 
-    Optional<BookEntity> findByCurrentHash(String currentHash);
+    @Query("SELECT b FROM BookEntity b JOIN b.bookFiles bf WHERE bf.currentHash = :currentHash AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
+    Optional<BookEntity> findByCurrentHash(@Param("currentHash") String currentHash);
 
     Optional<BookEntity> findByBookCoverHash(String bookCoverHash);
 
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     Set<Long> findBookIdsByLibraryId(@Param("libraryId") long libraryId);
 
-    List<BookEntity> findAllByLibraryPathIdAndFileSubPathStartingWith(Long libraryPathId, String fileSubPathPrefix);
+    @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.bookFiles bf WHERE b.libraryPath.id = :libraryPathId AND bf.fileSubPath LIKE CONCAT(:fileSubPathPrefix, '%') AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
+    List<BookEntity> findAllByLibraryPathIdAndFileSubPathStartingWith(@Param("libraryPathId") Long libraryPathId, @Param("fileSubPathPrefix") String fileSubPathPrefix);
 
-    @Query("SELECT b FROM BookEntity b WHERE b.libraryPath.id = :libraryPathId AND b.fileSubPath = :fileSubPath AND b.fileName = :fileName AND (b.deleted IS NULL OR b.deleted = false)")
+    @Query("SELECT b FROM BookEntity b JOIN b.bookFiles bf WHERE b.libraryPath.id = :libraryPathId AND bf.fileSubPath = :fileSubPath AND bf.fileName = :fileName AND bf.isBookFormat = true AND (b.deleted IS NULL OR b.deleted = false)")
     Optional<BookEntity> findByLibraryPath_IdAndFileSubPathAndFileName(@Param("libraryPathId") Long libraryPathId,
                                                                        @Param("fileSubPath") String fileSubPath,
                                                                        @Param("fileName") String fileName);
@@ -65,8 +67,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByShelfId(@Param("shelfId") Long shelfId);
 
-    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath", "bookFiles"})
-    @Query("SELECT b FROM BookEntity b WHERE b.fileSizeKb IS NULL AND (b.deleted IS NULL OR b.deleted = false)")
+    @EntityGraph(attributePaths = { "metadata", "shelves", "libraryPath", "bookFiles" })
+    @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.bookFiles bf WHERE bf.isBookFormat = true AND bf.fileSizeKb IS NULL AND (b.deleted IS NULL OR b.deleted = false)")
     List<BookEntity> findAllWithMetadataByFileSizeKbIsNull();
 
     @Query("""
@@ -109,31 +111,17 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.deleted = TRUE")
     long countAllSoftDeleted();
 
-    @Modifying
-    @Query("""
-                UPDATE BookEntity b
-                SET b.fileSubPath = :fileSubPath,
-                    b.fileName = :fileName,
-                    b.library.id = :libraryId,
-                    b.libraryPath = :libraryPath
-                WHERE b.id = :bookId
-            """)
-    void updateFileAndLibrary(
-            @Param("bookId") Long bookId,
-            @Param("fileSubPath") String fileSubPath,
-            @Param("fileName") String fileName,
-            @Param("libraryId") Long libraryId,
-            @Param("libraryPath") LibraryPathEntity libraryPath);
-
     @Query(value = """
-                SELECT *
-                FROM book
-                WHERE library_id = :libraryId
-                  AND library_path_id = :libraryPathId
-                  AND file_sub_path = :fileSubPath
-                  AND file_name = :fileName
-                LIMIT 1
-            """, nativeQuery = true)
+        SELECT b.*
+        FROM book b
+        JOIN book_file bf ON bf.book_id = b.id
+        WHERE b.library_id = :libraryId
+          AND b.library_path_id = :libraryPathId
+          AND bf.file_sub_path = :fileSubPath
+          AND bf.file_name = :fileName
+          AND bf.is_book = true
+        LIMIT 1
+    """, nativeQuery = true)
     Optional<BookEntity> findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
             @Param("libraryId") Long libraryId,
             @Param("libraryPathId") Long libraryPathId,

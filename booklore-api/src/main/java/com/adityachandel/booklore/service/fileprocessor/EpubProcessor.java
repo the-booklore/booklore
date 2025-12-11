@@ -62,7 +62,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             byte[] coverData = epubMetadataExtractor.extractCover(epubFile);
 
             if (coverData == null) {
-                log.warn("No cover image found in EPUB '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
                 return false;
             }
 
@@ -80,7 +80,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             return saved;
 
         } catch (Exception e) {
-            log.error("Error generating cover for EPUB '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for EPUB '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
             return false;
         }
     }

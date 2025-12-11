@@ -27,7 +27,6 @@ import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
-import org.flywaydb.core.internal.resource.classpath.ClassPathResource;
 import org.springframework.core.io.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -326,8 +325,8 @@ public class BookService {
         List<Long> failedFileDeletions = new ArrayList<>();
         for (BookEntity book : books) {
             List<Path> fullFilePaths = book.getFullFilePaths();
-            try {
-                for (Path fullFilePath : fullFilePaths) {
+            for (Path fullFilePath : fullFilePaths) {
+                try {
                     if (Files.exists(fullFilePath)) {
                         try {
                         monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
@@ -337,11 +336,11 @@ public class BookService {
                         Files.delete(fullFilePath);
                         log.info("Deleted book file: {}", fullFilePath);
 
-                    Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
-                            .map(LibraryPathEntity::getPath)
-                            .map(Paths::get)
-                            .map(Path::normalize)
-                            .collect(Collectors.toSet());
+                        Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
+                                .map(LibraryPathEntity::getPath)
+                                .map(Paths::get)
+                                .map(Path::normalize)
+                                .collect(Collectors.toSet());
 
                     deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
                 }

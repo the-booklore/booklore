@@ -14,7 +14,7 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "book_additional_file")
+@Table(name = "book_file")
 public class BookFileEntity {
 
     @Id
@@ -32,11 +32,15 @@ public class BookFileEntity {
     private String fileSubPath;
 
     @Column(name = "is_book", nullable = false)
-    private boolean isBook;
+    private boolean isBookFormat;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "book_type", nullable = false)
     private BookFileType bookType;
+
+    @Column(name = "archive_type")
+    @Enumerated(EnumType.STRING)
+    private ArchiveUtils.ArchiveType archiveType;
 
     @Column(name = "file_size_kb")
     private Long fileSizeKb;
@@ -55,6 +59,10 @@ public class BookFileEntity {
 
     @Column(name = "added_on")
     private Instant addedOn;
+
+    public boolean isBook() {
+        return isBookFormat;
+    }
 
     public Path getFullFilePath() {
         if (book == null || book.getLibraryPath() == null || book.getLibraryPath().getPath() == null

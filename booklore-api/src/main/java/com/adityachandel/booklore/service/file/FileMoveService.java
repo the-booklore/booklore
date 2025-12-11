@@ -119,7 +119,13 @@ public class FileMoveService {
 
             String newFileName = newFilePath.getFileName().toString();
             String newFileSubPath = fileMoveHelper.extractSubPath(newFilePath, libraryPathEntity);
-            bookRepository.updateFileAndLibrary(bookEntity.getId(), newFileSubPath, newFileName, targetLibrary.getId(), libraryPathEntity);
+
+            var primaryFile = bookEntity.getPrimaryBookFile();
+            primaryFile.setFileSubPath(newFileSubPath);
+            primaryFile.setFileName(newFileName);
+            bookEntity.setLibrary(targetLibrary);
+            bookEntity.setLibraryPath(libraryPathEntity);
+            bookRepository.save(bookEntity);
 
             fileMoveHelper.commitMove(tempPath, newFilePath);
             tempPath = null;

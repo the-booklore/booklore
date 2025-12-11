@@ -35,7 +35,7 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
+        String currentFilename = book.getPrimaryBookFile().getFileName() != null ? book.getPrimaryBookFile().getFileName().trim() : "";
         return resolvePattern(book.getMetadata(), pattern, currentFilename);
     }
 

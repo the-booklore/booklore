@@ -10,7 +10,7 @@ import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -86,7 +86,7 @@ public class FileUploadService {
     }
 
     @Transactional
-    public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
+    public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, boolean isBook, BookFileType bookType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
         final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
@@ -97,7 +97,9 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final String fileHash = FileFingerprint.generateHash(tempPath);
-            validateAlternativeFormatDuplicate(additionalFileType, fileHash);
+            if (isBook) {
+                validateAlternativeFormatDuplicate(fileHash);
+            }
 
             final Path finalPath = buildAdditionalFilePath(book, sanitizedFileName);
             validateFinalPath(finalPath);
@@ -105,8 +107,7 @@ public class FileUploadService {
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-
-            final BookFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, additionalFileType, file.getSize(), fileHash, description);
+            final BookFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, isBook, bookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
@@ -196,25 +197,26 @@ public class FileUploadService {
         Files.move(sourcePath, targetPath);
     }
 
-    private void validateAlternativeFormatDuplicate(AdditionalFileType additionalFileType, String fileHash) {
-        if (additionalFileType == AdditionalFileType.ALTERNATIVE_FORMAT) {
-            final Optional<BookFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
-            if (existingAltFormat.isPresent()) {
-                throw new IllegalArgumentException("Alternative format file already exists with same content");
-            }
+    private void validateAlternativeFormatDuplicate(String fileHash) {
+        final Optional<BookFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
+        if (existingAltFormat.isPresent()) {
+            throw new IllegalArgumentException("Alternative format file already exists with same content");
         }
     }
 
     private Path buildAdditionalFilePath(BookEntity book, String fileName) {
-        return Paths.get(book.getLibraryPath().getPath(), book.getFileSubPath(), fileName);
+        final BookFileEntity primaryFile = book.getPrimaryBookFile();
+        return Paths.get(book.getLibraryPath().getPath(), primaryFile.getFileSubPath(), fileName);
     }
 
-    private BookFileEntity createAdditionalFileEntity(BookEntity book, String fileName, AdditionalFileType additionalFileType, long fileSize, String fileHash, String description) {
+    private BookFileEntity createAdditionalFileEntity(BookEntity book, String fileName, boolean isBook, BookFileType bookType, long fileSize, String fileHash, String description) {
+        final BookFileEntity primaryFile = book.getPrimaryBookFile();
         return BookFileEntity.builder()
                 .book(book)
                 .fileName(fileName)
-                .fileSubPath(book.getFileSubPath())
-                .additionalFileType(additionalFileType)
+                .fileSubPath(primaryFile.getFileSubPath())
+                .isBookFormat(isBook)
+                .bookType(bookType)
                 .fileSizeKb(fileSize / BYTES_TO_KB_DIVISOR)
                 .initialHash(fileHash)
                 .currentHash(fileHash)

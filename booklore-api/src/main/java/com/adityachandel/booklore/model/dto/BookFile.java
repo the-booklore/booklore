@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.model.dto;
 
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
@@ -16,7 +16,8 @@ public class BookFile {
     private String fileName;
     private String filePath;
     private String fileSubPath;
-    private AdditionalFileType additionalFileType;
+    private boolean isBook;
+    private BookFileType bookType;
     private Long fileSizeKb;
     private String description;
     private Instant addedOn;

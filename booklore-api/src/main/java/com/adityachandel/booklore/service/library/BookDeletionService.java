@@ -3,8 +3,6 @@ package com.adityachandel.booklore.service.library;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -97,49 +95,31 @@ public class BookDeletionService {
     }
 
     private boolean tryPromoteAlternativeFormatToBook(BookEntity book, List<LibraryFile> libraryFiles) {
-        List<BookFileEntity> existingAlternativeFormats = findExistingAlternativeFormats(book, libraryFiles);
-
-        if (existingAlternativeFormats.isEmpty()) {
-            return false;
-        }
-
-        BookFileEntity promotedFormat = existingAlternativeFormats.getFirst();
-        promoteAlternativeFormatToBook(book, promotedFormat);
-
-        bookAdditionalFileRepository.delete(promotedFormat);
-
-        log.info("Promoted alternative format {} to main book for book ID {}", promotedFormat.getFileName(), book.getId());
-        return true;
-    }
-
-    private List<BookFileEntity> findExistingAlternativeFormats(BookEntity book, List<LibraryFile> libraryFiles) {
-        Set<String> currentFileNames = libraryFiles.stream()
+        Set<String> existingFileNames = libraryFiles.stream()
                 .map(LibraryFile::getFileName)
                 .collect(Collectors.toSet());
 
-        if (book.getBookFiles() == null) {
-            return Collections.emptyList();
+        List<BookFileEntity> deletedBookFiles = book.getBookFiles().stream()
+                .filter(BookFileEntity::isBook)
+                .filter(bf -> !existingFileNames.contains(bf.getFileName()))
+                .toList();
+
+        deletedBookFiles.forEach(bf -> {
+            book.getBookFiles().remove(bf);
+            bookAdditionalFileRepository.delete(bf);
+        });
+
+        boolean hasRemainingBookFiles = book.getBookFiles().stream()
+                .anyMatch(BookFileEntity::isBook);
+
+        if (hasRemainingBookFiles) {
+            bookRepository.save(book);
+            log.info("Removed {} deleted book file(s) for book ID {}", deletedBookFiles.size(), book.getId());
+            return true;
         }
-
-        return book.getBookFiles().stream()
-                .filter(additionalFile -> AdditionalFileType.ALTERNATIVE_FORMAT.equals(additionalFile.getAdditionalFileType()))
-                .filter(additionalFile -> currentFileNames.contains(additionalFile.getFileName()))
-                .filter(additionalFile -> BookFileExtension.fromFileName(additionalFile.getFileName()).isPresent())
-                .collect(Collectors.toList());
+        return false;
     }
 
-    private void promoteAlternativeFormatToBook(BookEntity book, BookFileEntity alternativeFormat) {
-        book.setFileName(alternativeFormat.getFileName());
-        book.setFileSubPath(alternativeFormat.getFileSubPath());
-        BookFileExtension.fromFileName(alternativeFormat.getFileName())
-                .ifPresent(ext -> book.setBookType(ext.getType()));
-
-        book.setFileSizeKb(alternativeFormat.getFileSizeKb());
-        book.setCurrentHash(alternativeFormat.getCurrentHash());
-        book.setInitialHash(alternativeFormat.getInitialHash());
-
-        bookRepository.save(book);
-    }
 
     private void deleteDirectoryRecursively(Path path) throws IOException {
         if (Files.exists(path)) {

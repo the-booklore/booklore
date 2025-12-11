@@ -13,6 +13,7 @@ public interface AdditionalFileMapper {
 
     @Mapping(source = "book.id", target = "bookId")
     @Mapping(source = ".", target = "filePath", qualifiedByName = "mapFilePath")
+    @Mapping(source = "bookFormat", target = "isBook")
     BookFile toAdditionalFile(BookFileEntity entity);
 
     List<BookFile> toAdditionalFiles(List<BookFileEntity> entities);
