@@ -48,7 +48,7 @@ paths:
                 $ref: "#/components/schemas/ProviderCapabilities"
 
   /metadata/search:
-    post:
+    get:
       tags:
         - metadata
       summary: Search for book metadata
@@ -56,12 +56,50 @@ paths:
         Search for book metadata using various identifiers (ISBN, title/author, etc.).
         Returns a list of potential matches ranked by relevance.
       operationId: searchMetadata
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/MetadataSearchRequest"
+      parameters:
+        - name: query
+          in: query
+          description: General search query (title, author, ISBN, etc.)
+          schema:
+            type: string
+        - name: title
+          in: query
+          description: Book title
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Author name
+          schema:
+            type: string
+        - name: isbn13
+          in: query
+          description: ISBN-13 identifier
+          schema:
+            type: string
+        - name: isbn10
+          in: query
+          description: ISBN-10 identifier
+          schema:
+            type: string
+        - name: asin
+          in: query
+          description: Amazon ASIN
+          schema:
+            type: string
+        - name: providerId
+          in: query
+          description: Provider-specific ID (if known)
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
       responses:
         "200":
           description: List of matching books
@@ -121,7 +159,7 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /covers/search:
-    post:
+    get:
       tags:
         - covers
       summary: Search for book covers
@@ -129,12 +167,43 @@ paths:
         Search for cover images using book identifiers.
         Returns URLs to cover images in various sizes.
       operationId: searchCovers
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CoverSearchRequest"
+      parameters:
+        - name: query
+          in: query
+          description: General search query (title, author, ISBN, etc.)
+          schema:
+            type: string
+        - name: title
+          in: query
+          description: Book title
+          schema:
+            type: string
+        - name: author
+          in: query
+          description: Author name
+          schema:
+            type: string
+        - name: isbn13
+          in: query
+          description: ISBN-13 identifier
+          schema:
+            type: string
+        - name: isbn10
+          in: query
+          description: ISBN-10 identifier
+          schema:
+            type: string
+        - name: providerId
+          in: query
+          description: Provider-specific ID (if known)
+          schema:
+            type: string
+        - name: size
+          in: query
+          description: Preferred cover size
+          schema:
+            type: string
+            enum: [thumbnail, small, medium, large, original]
       responses:
         "200":
           description: List of cover images
@@ -275,39 +344,6 @@ components:
               type: integer
               example: 10000
 
-    MetadataSearchRequest:
-      type: object
-      properties:
-        isbn13:
-          type: string
-          description: ISBN-13 identifier
-          example: "9780765326355"
-        isbn10:
-          type: string
-          description: ISBN-10 identifier
-          example: "0765326353"
-        title:
-          type: string
-          description: Book title
-          example: The Way of Kings
-        author:
-          type: string
-          description: Author name
-          example: Brandon Sanderson
-        asin:
-          type: string
-          description: Amazon ASIN
-          example: B003P2WO5E
-        providerId:
-          type: string
-          description: Provider-specific ID (if known)
-        limit:
-          type: integer
-          description: Maximum number of results
-          minimum: 1
-          maximum: 50
-          default: 10
-
     BookMetadata:
       type: object
       required:
@@ -387,12 +423,13 @@ components:
           description: Series information
           items:
             type: object
+            required:
+              - name
             properties:
               name:
                 type: string
                 description: Series name
                 example: The Stormlight Archive
-                required: true
               number:
                 type: number
                 format: float
@@ -428,36 +465,6 @@ components:
           minimum: 0
           maximum: 1
           example: 0.95
-
-    CoverSearchRequest:
-      type: object
-      properties:
-        isbn13:
-          type: string
-          description: ISBN-13 identifier
-        isbn10:
-          type: string
-          description: ISBN-10 identifier
-        title:
-          type: string
-          description: Book title
-        author:
-          type: string
-          description: Author name
-        providerId:
-          type: string
-          description: Provider-specific ID (if known)
-        size:
-          type: string
-          enum: [thumbnail, small, medium, large, original]
-          description: Preferred cover size
-          default: medium
-        limit:
-          type: integer
-          description: Maximum number of results
-          minimum: 1
-          maximum: 20
-          default: 5
 
     CoverImage:
       type: object
