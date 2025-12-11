@@ -3,15 +3,23 @@ import {HttpClient} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {API_CONFIG} from '../../../core/config/api-config';
 
+export type OpdsSortOrder = 'RECENT' | 'TITLE_ASC' | 'TITLE_DESC' | 'AUTHOR_ASC' | 'AUTHOR_DESC' | 'SERIES_ASC' | 'SERIES_DESC' | 'RATING_ASC' | 'RATING_DESC';
+
 export interface OpdsUserV2CreateRequest {
   username: string;
   password: string;
+  sortOrder?: OpdsSortOrder;
+}
+
+export interface OpdsUserV2UpdateRequest {
+  sortOrder: OpdsSortOrder;
 }
 
 export interface OpdsUserV2 {
   id: number;
   userId: number;
   username: string;
+  sortOrder?: OpdsSortOrder;
 }
 
 @Injectable({
@@ -28,6 +36,10 @@ export class OpdsService {
 
   createUser(user: OpdsUserV2CreateRequest): Observable<OpdsUserV2> {
     return this.http.post<OpdsUserV2>(this.baseUrl, user);
+  }
+
+  updateUser(id: number, sortOrder: OpdsSortOrder): Observable<OpdsUserV2> {
+    return this.http.patch<OpdsUserV2>(`${this.baseUrl}/${id}`, { sortOrder });
   }
 
   deleteCredential(id: number): Observable<void> {

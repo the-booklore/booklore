@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,7 @@ class OpdsFeedServiceTest {
         OpdsUserV2 v2 = mock(OpdsUserV2.class);
         when(userDetails.getOpdsUserV2()).thenReturn(v2);
         when(v2.getUserId()).thenReturn(TEST_USER_ID);
+        when(v2.getSortOrder()).thenReturn(OpdsSortOrder.RECENT);
         when(authenticationService.getOpdsUser()).thenReturn(userDetails);
         return userDetails;
     }
@@ -152,6 +154,7 @@ class OpdsFeedServiceTest {
 
         Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
         when(opdsBookService.getBooksPage(eq(TEST_USER_ID), any(), any(), any(), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
 
         String xml = opdsFeedService.generateCatalogFeed(request);
         assertThat(xml).contains("Book Title");
@@ -173,6 +176,7 @@ class OpdsFeedServiceTest {
 
         Page<Book> page = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 50), 0);
         when(opdsBookService.getBooksPage(any(), any(), any(), any(), anyInt(), anyInt())).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
 
         String xml = opdsFeedService.generateCatalogFeed(request);
         assertThat(xml).contains("</feed>");
@@ -196,6 +200,7 @@ class OpdsFeedServiceTest {
 
         Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
         when(opdsBookService.getRecentBooksPage(eq(TEST_USER_ID), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
 
         String xml = opdsFeedService.generateRecentFeed(request);
         assertThat(xml).contains("Recent Book");
@@ -214,6 +219,7 @@ class OpdsFeedServiceTest {
 
         Page<Book> page = new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 50), 0);
         when(opdsBookService.getRecentBooksPage(any(), anyInt(), anyInt())).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
 
         String xml = opdsFeedService.generateRecentFeed(request);
         assertThat(xml).contains("</feed>");
