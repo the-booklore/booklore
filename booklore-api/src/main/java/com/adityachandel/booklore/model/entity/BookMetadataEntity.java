@@ -88,9 +88,6 @@ public class BookMetadataEntity {
     @Column(name = "hardcover_review_count")
     private Integer hardcoverReviewCount;
 
-    @Column(name = "personal_rating")
-    private Double personalRating;
-
     @Column(name = "asin", length = 10)
     private String asin;
 
@@ -170,10 +167,6 @@ public class BookMetadataEntity {
     @Column(name = "hardcover_review_count_locked")
     @Builder.Default
     private Boolean hardcoverReviewCountLocked = Boolean.FALSE;
-
-    @Column(name = "personal_rating_locked")
-    @Builder.Default
-    private Boolean personalRatingLocked = Boolean.FALSE;
 
     @Column(name = "cover_locked")
     @Builder.Default
@@ -314,7 +307,6 @@ public class BookMetadataEntity {
         this.hardcoverRatingLocked = lock;
         this.hardcoverReviewCountLocked = lock;
         this.comicvineIdLocked = lock;
-        this.personalRatingLocked = lock;
         this.goodreadsIdLocked = lock;
         this.hardcoverIdLocked = lock;
         this.googleIdLocked = lock;
@@ -346,7 +338,6 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.goodreadsReviewCountLocked)
                 && Boolean.TRUE.equals(this.hardcoverRatingLocked)
                 && Boolean.TRUE.equals(this.hardcoverReviewCountLocked)
-                && Boolean.TRUE.equals(this.personalRatingLocked)
                 && Boolean.TRUE.equals(this.goodreadsIdLocked)
                 && Boolean.TRUE.equals(this.comicvineIdLocked)
                 && Boolean.TRUE.equals(this.hardcoverIdLocked)

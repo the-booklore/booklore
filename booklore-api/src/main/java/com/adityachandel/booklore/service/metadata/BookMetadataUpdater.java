@@ -163,7 +163,6 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getGoogleIdLocked(), clear.isGoogleId(), m.getGoogleId(), v -> e.setGoogleId(nullIfBlank(v)), e::getGoogleId, replaceMode);
         handleFieldUpdate(e.getPageCountLocked(), clear.isPageCount(), m.getPageCount(), e::setPageCount, e::getPageCount, replaceMode);
         handleFieldUpdate(e.getLanguageLocked(), clear.isLanguage(), m.getLanguage(), v -> e.setLanguage(nullIfBlank(v)), e::getLanguage, replaceMode);
-        handleFieldUpdate(e.getPersonalRatingLocked(), clear.isPersonalRating(), m.getPersonalRating(), e::setPersonalRating, e::getPersonalRating, replaceMode);
         handleFieldUpdate(e.getAmazonRatingLocked(), clear.isAmazonRating(), m.getAmazonRating(), e::setAmazonRating, e::getAmazonRating, replaceMode);
         handleFieldUpdate(e.getAmazonReviewCountLocked(), clear.isAmazonReviewCount(), m.getAmazonReviewCount(), e::setAmazonReviewCount, e::getAmazonReviewCount, replaceMode);
         handleFieldUpdate(e.getGoodreadsRatingLocked(), clear.isGoodreadsRating(), m.getGoodreadsRating(), e::setGoodreadsRating, e::getGoodreadsRating, replaceMode);
@@ -379,7 +378,6 @@ public class BookMetadataUpdater {
                 Pair.of(m.getGoogleIdLocked(), e::setGoogleIdLocked),
                 Pair.of(m.getPageCountLocked(), e::setPageCountLocked),
                 Pair.of(m.getLanguageLocked(), e::setLanguageLocked),
-                Pair.of(m.getPersonalRatingLocked(), e::setPersonalRatingLocked),
                 Pair.of(m.getAmazonRatingLocked(), e::setAmazonRatingLocked),
                 Pair.of(m.getAmazonReviewCountLocked(), e::setAmazonReviewCountLocked),
                 Pair.of(m.getGoodreadsRatingLocked(), e::setGoodreadsRatingLocked),

@@ -93,10 +93,10 @@
               <div class="rating-group">
                 <i class="pi pi-thumbs-up-fill rating-icon" pTooltip="Personal Rating" tooltipPosition="top"></i>
                 <p-rating
-                  [ngModel]="book?.metadata!.personalRating"
+                  [ngModel]="book?.personalRating"
                   (onRate)="onPersonalRatingChange(book, $event)"
                   stars="10"
-                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.metadata!.personalRating, 10)">
+                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.personalRating, 10)">
                 </p-rating>
               </div>
               <p-button

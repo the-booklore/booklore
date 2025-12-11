@@ -239,7 +239,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
             }
             return [{id: status, name: getReadStatusName(status)}];
           }, 'id', 'name'),
-          personalRating: this.getFilterStream((book: Book) => getRatingRangeFilters10(book.metadata?.personalRating!), 'id', 'name', 'sortIndex'),
+          personalRating: this.getFilterStream((book: Book) => getRatingRangeFilters10(book.personalRating!), 'id', 'name', 'sortIndex'),
           publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name'),
           matchScore: this.getFilterStream((book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore), 'id', 'name', 'sortIndex'),
           mood: this.getFilterStream(

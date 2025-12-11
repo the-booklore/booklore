@@ -10,6 +10,7 @@ export class BookSorter {
     { label: 'Author', field: 'author', direction: SortDirection.ASCENDING },
     { label: 'Author + Series', field: 'authorSeries', direction: SortDirection.ASCENDING },
     { label: 'Last Read', field: 'lastReadTime', direction: SortDirection.ASCENDING },
+    { label: 'Personal Rating', field: 'personalRating', direction: SortDirection.ASCENDING },
     { label: 'Added On', field: 'addedOn', direction: SortDirection.ASCENDING },
     { label: 'File Size', field: 'fileSizeKb', direction: SortDirection.ASCENDING },
     { label: 'Locked', field: 'locked', direction: SortDirection.ASCENDING },
