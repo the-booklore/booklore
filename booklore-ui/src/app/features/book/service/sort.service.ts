@@ -95,6 +95,7 @@ export class SortService {
     addedOn: (book) => book.addedOn ? new Date(book.addedOn).getTime() : null,
     fileSizeKb: (book) => book.fileSizeKb || null,
     fileName: (book) => book.fileName,
+    random: (book) => Math.random(),
   };
 
   applySort(books: Book[], selectedSort: SortOption | null): Book[] {
