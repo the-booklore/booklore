@@ -23,6 +23,7 @@ export class BookSorter {
     { label: 'Hardcover Rating', field: 'hardcoverRating', direction: SortDirection.ASCENDING },
     { label: 'Hardcover #', field: 'hardcoverReviewCount', direction: SortDirection.ASCENDING },
     { label: 'Pages', field: 'pageCount', direction: SortDirection.ASCENDING },
+    { label: 'Random', field: 'random', direction: SortDirection.ASCENDING },
   ];
 
   constructor(private applySortOption: (sort: SortOption) => void) {}

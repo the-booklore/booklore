@@ -179,19 +179,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         icon: 'pi pi-info-circle',
         command: () => {
           setTimeout(() => {
-            if (this.metadataCenterViewMode === 'route') {
-              this.router.navigate(['/book', this.book.id], {
-                queryParams: {tab: 'view'}
-              });
-            } else {
-              this.dialogService.open(BookMetadataCenterComponent, {
-                width: '95%',
-                data: {bookId: this.book.id},
-                modal: true,
-                dismissableMask: true,
-                showHeader: false
-              });
-            }
+            this.openBookInfo(this.book);
           }, 150);
         },
       },
@@ -502,13 +490,16 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       this.dialogService.open(BookMetadataCenterComponent, {
         width: '90%',
+        height: '90%',
         data: {bookId: book.id},
         modal: true,
-        dismissableMask: false,
+        dismissableMask: true,
         showHeader: true,
         closable: true,
         closeOnEscape: true,
-        maximizable: true,
+        draggable: false,
+        maximizable: false,
+        resizable: false,
         header: 'Book Details',
         styleClass: 'book-details-dialog'
       });
