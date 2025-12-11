@@ -50,6 +50,7 @@ export interface MetadataProviderSettings {
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
+  custom: Custom;
 }
 
 export interface Amazon {
@@ -79,6 +80,13 @@ export interface Comicvine {
 
 export interface Douban {
   enabled: boolean;
+}
+
+export interface Custom {
+  enabled: boolean;
+  baseUrl: string;
+  bearerToken: string;
+  providerName: string;
 }
 
 export interface MetadataPersistenceSettings {

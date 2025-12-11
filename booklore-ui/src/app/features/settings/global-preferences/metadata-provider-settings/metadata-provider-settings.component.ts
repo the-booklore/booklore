@@ -76,6 +76,10 @@ export class MetadataProviderSettingsComponent implements OnInit {
   comicvineEnabled: boolean = false;
   comicvineToken: string = '';
   doubanEnabled: boolean = false;
+  customEnabled: boolean = false;
+  customBaseUrl: string = '';
+  customBearerToken: string = '';
+  customProviderName: string = '';
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -101,6 +105,10 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
         this.comicvineToken = metadataProviderSettings?.comicvine?.apiKey ?? '';
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
+        this.customEnabled = metadataProviderSettings?.custom?.enabled ?? false;
+        this.customBaseUrl = metadataProviderSettings?.custom?.baseUrl ?? '';
+        this.customBearerToken = metadataProviderSettings?.custom?.bearerToken ?? '';
+        this.customProviderName = metadataProviderSettings?.custom?.providerName ?? '';
       });
   }
 
@@ -115,6 +123,20 @@ export class MetadataProviderSettingsComponent implements OnInit {
     this.comicvineToken = newToken;
     if (!newToken.trim()) {
       this.comicvineEnabled = false;
+    }
+  }
+
+  onCustomBaseUrlChange(newUrl: string): void {
+    this.customBaseUrl = newUrl;
+    if (!newUrl.trim()) {
+      this.customEnabled = false;
+    }
+  }
+
+  onCustomTokenChange(newToken: string): void {
+    this.customBearerToken = newToken;
+    if (!newToken.trim()) {
+      this.customEnabled = false;
     }
   }
 
@@ -143,7 +165,13 @@ export class MetadataProviderSettingsComponent implements OnInit {
             enabled: this.hardcoverEnabled,
             apiKey: this.hardcoverToken.trim()
           },
-          douban: {enabled: this.doubanEnabled}
+          douban: {enabled: this.doubanEnabled},
+          custom: {
+            enabled: this.customEnabled,
+            baseUrl: this.customBaseUrl.trim(),
+            bearerToken: this.customBearerToken.trim(),
+            providerName: this.customProviderName
+          }
         }
       }
     ];

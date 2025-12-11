@@ -99,12 +99,19 @@ public class SettingPersistenceHelper {
         MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
         defaultDouban.setEnabled(false);
 
+        MetadataProviderSettings.Custom defaultCustom = new MetadataProviderSettings.Custom();
+        defaultCustom.setEnabled(false);
+        defaultCustom.setBaseUrl(null);
+        defaultCustom.setBearerToken(null);
+        defaultCustom.setProviderName(null);
+
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
         defaultMetadataProviderSettings.setDouban(defaultDouban);
+        defaultMetadataProviderSettings.setCustom(defaultCustom);
 
         return defaultMetadataProviderSettings;
     }

@@ -145,6 +145,53 @@
         </div>
       </div>
     </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
+          <p-checkbox
+            [binary]="true"
+            [(ngModel)]="customEnabled"
+            [disabled]="!customBaseUrl || !customBearerToken">
+          </p-checkbox>
+          <label class="provider-label">Custom Provider</label>
+        </div>
+      </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <label class="config-label">Base URL</label>
+          <p class="config-description">
+            <i class="pi pi-info-circle"></i>
+            The base URL of your custom metadata provider API (e.g., https://api.example.com/v1)
+          </p>
+          <input
+            type="text"
+            pInputText
+            placeholder="https://api.example.com/v1"
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="customBaseUrl"
+            (ngModelChange)="onCustomBaseUrlChange($event)"/>
+        </div>
+
+        <div class="config-field">
+          <label class="config-label">Bearer Token</label>
+          <p class="config-description">
+            <i class="pi pi-info-circle"></i>
+            Authentication token for the custom provider API
+          </p>
+          <input
+            type="password"
+            pInputText
+            placeholder="Enter bearer token"
+            fluid
+            class="max-w-[60rem]"
+            [(ngModel)]="customBearerToken"
+            (ngModelChange)="onCustomTokenChange($event)"/>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="setting-actions">
