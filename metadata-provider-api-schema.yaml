@@ -1,0 +1,478 @@
+openapi: 3.0.3
+info:
+  title: Book Metadata Provider API
+  description: |
+    External metadata provider API that Booklore can integrate with to retrieve
+    book metadata, enhanced information, and cover images.
+
+    This API follows the standard patterns used by Booklore's existing metadata
+    providers (Google Books, Goodreads, etc.) and provides capability discovery.
+  version: 1.0.0
+  contact:
+    name: API Support
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+  - url: http://localhost:8080/v1
+    description: Development server
+
+tags:
+  - name: capabilities
+    description: Provider capability discovery
+  - name: metadata
+    description: Book metadata retrieval
+  - name: covers
+    description: Cover image retrieval
+
+paths:
+  /capabilities:
+    get:
+      tags:
+        - capabilities
+      summary: Get provider capabilities
+      description: |
+        Returns information about what this metadata provider supports.
+        Booklore can use this to determine what features to enable.
+      operationId: getCapabilities
+      responses:
+        "200":
+          description: Provider capabilities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProviderCapabilities"
+
+  /metadata/search:
+    post:
+      tags:
+        - metadata
+      summary: Search for book metadata
+      description: |
+        Search for book metadata using various identifiers (ISBN, title/author, etc.).
+        Returns a list of potential matches ranked by relevance.
+      operationId: searchMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MetadataSearchRequest"
+      responses:
+        "200":
+          description: List of matching books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BookMetadata"
+        "400":
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metadata/{providerId}:
+    get:
+      tags:
+        - metadata
+      summary: Get metadata by provider ID
+      description: |
+        Retrieve complete metadata for a specific book using the provider's
+        internal ID (returned from search results).
+      operationId: getMetadataById
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          description: Provider-specific book identifier
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Book metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookMetadata"
+        "404":
+          description: Book not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /covers/search:
+    post:
+      tags:
+        - covers
+      summary: Search for book covers
+      description: |
+        Search for cover images using book identifiers.
+        Returns URLs to cover images in various sizes.
+      operationId: searchCovers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoverSearchRequest"
+      responses:
+        "200":
+          description: List of cover images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoverImage"
+        "400":
+          description: Invalid search parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /covers/{providerId}:
+    get:
+      tags:
+        - covers
+      summary: Get covers by provider ID
+      description: |
+        Retrieve cover images for a specific book using the provider's internal ID.
+      operationId: getCoversById
+      parameters:
+        - name: providerId
+          in: path
+          required: true
+          description: Provider-specific book identifier
+          schema:
+            type: string
+        - name: size
+          in: query
+          required: false
+          description: Preferred cover size
+          schema:
+            type: string
+            enum: [thumbnail, small, medium, large, original]
+      responses:
+        "200":
+          description: Cover images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoverImage"
+        "404":
+          description: Covers not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    ProviderCapabilities:
+      type: object
+      required:
+        - providerId
+        - providerName
+        - version
+        - capabilities
+      properties:
+        providerId:
+          type: string
+          description: Unique identifier for this provider
+          example: custom-metadata-provider
+        providerName:
+          type: string
+          description: Human-readable provider name
+          example: Custom Metadata Provider
+        version:
+          type: string
+          description: API version
+          example: 1.0.0
+        capabilities:
+          type: object
+          required:
+            - supportsMetadata
+            - supportsCovers
+          properties:
+            supportsMetadata:
+              type: boolean
+              description: Whether provider supports book metadata
+              example: true
+            supportsCovers:
+              type: boolean
+              description: Whether provider supports cover images
+              example: true
+            supportsIsbnSearch:
+              type: boolean
+              description: Whether provider can search by ISBN
+              example: true
+            supportsTitleAuthorSearch:
+              type: boolean
+              description: Whether provider can search by title/author
+              example: true
+            supportsRatings:
+              type: boolean
+              description: Whether provider includes ratings/reviews
+              example: true
+            supportsSeriesInfo:
+              type: boolean
+              description: Whether provider includes series information
+              example: true
+            supportsEnhancedMetadata:
+              type: boolean
+              description: Whether provider includes genres, moods, tags
+              example: true
+        rateLimit:
+          type: object
+          description: Rate limiting information
+          properties:
+            requestsPerMinute:
+              type: integer
+              example: 60
+            requestsPerDay:
+              type: integer
+              example: 10000
+
+    MetadataSearchRequest:
+      type: object
+      properties:
+        isbn13:
+          type: string
+          description: ISBN-13 identifier
+          example: "9780765326355"
+        isbn10:
+          type: string
+          description: ISBN-10 identifier
+          example: "0765326353"
+        title:
+          type: string
+          description: Book title
+          example: The Way of Kings
+        author:
+          type: string
+          description: Author name
+          example: Brandon Sanderson
+        asin:
+          type: string
+          description: Amazon ASIN
+          example: B003P2WO5E
+        providerId:
+          type: string
+          description: Provider-specific ID (if known)
+        limit:
+          type: integer
+          description: Maximum number of results
+          minimum: 1
+          maximum: 50
+          default: 10
+
+    BookMetadata:
+      type: object
+      required:
+        - providerId
+        - title
+      properties:
+        providerId:
+          type: string
+          description: Provider's unique identifier for this book
+          example: "12345"
+        title:
+          type: string
+          description: Book title
+          example: The Way of Kings
+        subtitle:
+          type: string
+          description: Book subtitle
+          example: The Stormlight Archive, Book One
+        authors:
+          type: array
+          description: List of authors
+          items:
+            type: string
+          example: ["Brandon Sanderson"]
+        publisher:
+          type: string
+          description: Publisher name
+          example: Tor Books
+        publishedDate:
+          type: string
+          format: date
+          description: Publication date (ISO 8601)
+          example: "2010-08-31"
+        description:
+          type: string
+          description: Book description/synopsis
+        pageCount:
+          type: integer
+          description: Number of pages
+          example: 1007
+        language:
+          type: string
+          description: Language code (ISO 639-1)
+          example: en
+        isbn13:
+          type: string
+          description: ISBN-13
+          example: "9780765326355"
+        isbn10:
+          type: string
+          description: ISBN-10
+          example: "0765326353"
+        asin:
+          type: string
+          description: Amazon ASIN
+          example: "0765376679"
+        categories:
+          type: array
+          description: Book categories/genres
+          items:
+            type: string
+          example: ["Fantasy", "Epic Fantasy"]
+        moods:
+          type: array
+          description: Book moods/themes
+          items:
+            type: string
+          example: ["Adventurous", "Epic"]
+        tags:
+          type: array
+          description: Additional tags
+          items:
+            type: string
+          example: ["Magic", "War"]
+        series:
+          type: array
+          description: Series information
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Series name
+                example: The Stormlight Archive
+                required: true
+              number:
+                type: number
+                format: float
+                description: Position in series
+                example: 1.0
+              total:
+                type: integer
+                description: Total books in series
+                example: 10
+        rating:
+          type: number
+          format: float
+          description: Average rating (0-10)
+          example: 4.65
+          minimum: 0
+          maximum: 10
+        reviewCount:
+          type: integer
+          description: Number of reviews
+          example: 250000
+        coverUrl:
+          type: string
+          format: uri
+          description: URL to cover image
+        thumbnailUrl:
+          type: string
+          format: uri
+          description: URL to thumbnail image
+        matchScore:
+          type: number
+          format: float
+          description: Relevance score (0-1) for search results
+          minimum: 0
+          maximum: 1
+          example: 0.95
+
+    CoverSearchRequest:
+      type: object
+      properties:
+        isbn13:
+          type: string
+          description: ISBN-13 identifier
+        isbn10:
+          type: string
+          description: ISBN-10 identifier
+        title:
+          type: string
+          description: Book title
+        author:
+          type: string
+          description: Author name
+        providerId:
+          type: string
+          description: Provider-specific ID (if known)
+        size:
+          type: string
+          enum: [thumbnail, small, medium, large, original]
+          description: Preferred cover size
+          default: medium
+        limit:
+          type: integer
+          description: Maximum number of results
+          minimum: 1
+          maximum: 20
+          default: 5
+
+    CoverImage:
+      type: object
+      required:
+        - url
+        - size
+      properties:
+        url:
+          type: string
+          format: uri
+          description: URL to the cover image
+          example: https://covers.example.com/books/12345/medium.jpg
+        size:
+          type: string
+          enum: [thumbnail, small, medium, large, original]
+          description: Cover size category
+          example: medium
+        width:
+          type: integer
+          description: Image width in pixels
+          example: 400
+        height:
+          type: integer
+          description: Image height in pixels
+          example: 600
+        format:
+          type: string
+          description: Image format
+          enum: [jpg, jpeg, png, webp]
+          example: jpg
+        providerId:
+          type: string
+          description: Associated book provider ID
+          example: "12345"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code
+          example: INVALID_REQUEST
+        message:
+          type: string
+          description: Human-readable error message
+          example: Missing required parameter 'isbn' or 'title'
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
