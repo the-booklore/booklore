@@ -25,6 +25,9 @@ tags:
   - name: covers
     description: Cover image retrieval
 
+security:
+  - bearerAuth: []
+
 paths:
   /capabilities:
     get:
@@ -35,6 +38,7 @@ paths:
         Returns information about what this metadata provider supports.
         Booklore can use this to determine what features to enable.
       operationId: getCapabilities
+      security: []
       responses:
         "200":
           description: Provider capabilities
@@ -73,6 +77,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized - invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /metadata/{providerId}:
     get:
@@ -97,6 +107,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BookMetadata"
+        "401":
+          description: Unauthorized - invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Book not found
           content:
@@ -134,6 +150,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized - invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /covers/{providerId}:
     get:
@@ -166,6 +188,12 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CoverImage"
+        "401":
+          description: Unauthorized - invalid or missing bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: Covers not found
           content:
@@ -174,6 +202,13 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token authentication
+
   schemas:
     ProviderCapabilities:
       type: object
