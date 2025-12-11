@@ -1,5 +1,5 @@
 @if (selectedFetchedMetadata$ | async; as selectedFetchedMetadata) {
-  <div class="h-full w-full flex-auto min-w-[80rem]">
+  <div class="h-full w-full flex-auto">
     <app-metadata-picker
       [fetchedMetadata]="selectedFetchedMetadata"
       [book$]="book$"
@@ -7,7 +7,7 @@
     </app-metadata-picker>
   </div>
 } @else {
-  <form class="flex flex-col w-full h-full pt-2 min-w-full md:min-w-[60rem] pr-0 md:pr-2 pl-0 md:pl-2" [formGroup]="form" (ngSubmit)="onSubmit()">
+  <form class="flex flex-col w-full h-full pt-2 min-w-full pr-0 md:pr-2 pl-0 md:pl-2" [formGroup]="form" (ngSubmit)="onSubmit()">
 
     <div class="flex flex-col space-y-3">
       <div class="grid grid-cols-1 md:flex md:flex-row w-full gap-2 md:gap-4 md:items-end">
@@ -82,7 +82,7 @@
         </div>
       }
       @if (allFetchedMetadata.length > 0) {
-        <div class="mt-4 md:mt-8 flex-1 overflow-y-auto">
+        <div class="mt-4 md:mt-8 flex-1">
           @for (metadata of allFetchedMetadata; track metadata) {
             <div class="book-item flex flex-col w-full">
               <div class="flex flex-row w-full book-item-content cursor-pointer" (click)="onBookClick(metadata)">
