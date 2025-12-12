@@ -42,10 +42,10 @@ dependencies {
 
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
-    implementation 'org.flywaydb:flyway-database-mariadb:11.18.0'
+    implementation 'org.flywaydb:flyway-mysql:11.18.0'
 
     // Flyway Gradle plugin runtime
-    flywayMigration 'org.flywaydb:flyway-database-mariadb:11.18.0'
+    flywayMigration 'org.flywaydb:flyway-mysql:11.18.0'
     flywayMigration 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
 
     // --- Security & Authentication ---
