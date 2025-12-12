@@ -44,14 +44,14 @@ jobs:
           egress-policy: audit
 
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8026d9017b428adf15ae0e2a6c1a3b6e3e4b5c5c
+        uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         id: build
-        uses: docker/build-push-action@15560696de535e4014efeff63c48f16952e52dd1
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -77,13 +77,13 @@ jobs:
           egress-policy: audit
 
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8026d9017b428adf15ae0e2a6c1a3b6e3e4b5c5c
+        uses: docker/setup-buildx-action@v3
 
       - name: Rebuild test image (cache hit expected)
-        uses: docker/build-push-action@15560696de535e4014efeff63c48f16952e52dd1
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
@@ -286,10 +286,10 @@ jobs:
           egress-policy: audit
 
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8026d9017b428adf15ae0e2a6c1a3b6e3e4b5c5c
+        uses: docker/setup-buildx-action@v3
 
       - name: Rebuild test image
         uses: docker/build-push-action@v6
@@ -441,10 +441,10 @@ jobs:
           egress-policy: audit
 
       - name: Checkout repository
-        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8026d9017b428adf15ae0e2a6c1a3b6e3e4b5c5c
+        uses: docker/setup-buildx-action@v3
 
       - name: Rebuild test image
         uses: docker/build-push-action@v6
