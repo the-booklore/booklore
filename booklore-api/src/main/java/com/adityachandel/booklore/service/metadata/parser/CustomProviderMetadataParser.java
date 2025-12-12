@@ -6,7 +6,7 @@ import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.service.metadata.parser.custom.CustomBookMetadata;
+import com.adityachandel.booklore.service.metadata.parser.custom.CustomProviderBookMetadata;
 import com.adityachandel.booklore.service.metadata.parser.custom.CustomProviderClient;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @AllArgsConstructor
-public class CustomMetadataParser implements BookParser {
+public class CustomProviderMetadataParser implements BookParser {
 
     private final CustomProviderClient client;
     private final AppSettingService appSettingService;
@@ -35,7 +35,7 @@ public class CustomMetadataParser implements BookParser {
         log.debug("Custom provider: Searching metadata for title={}, author={}, isbn={}",
                 request.getTitle(), request.getAuthor(), request.getIsbn());
 
-        List<CustomBookMetadata> results = client.searchMetadata(
+        List<CustomProviderBookMetadata> results = client.searchMetadata(
                 null,
                 request.getTitle(),
                 request.getAuthor(),
@@ -63,20 +63,20 @@ public class CustomMetadataParser implements BookParser {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    private BookMetadata mapToBookMetadata(CustomBookMetadata custom) {
+    private BookMetadata mapToBookMetadata(CustomProviderBookMetadata custom) {
         String seriesName = null;
         Float seriesNumber = null;
         Integer seriesTotal = null;
 
         if (custom.getSeries() != null && !custom.getSeries().isEmpty()) {
-            CustomBookMetadata.SeriesInfo series = custom.getSeries().get(0);
+            CustomProviderBookMetadata.SeriesInfo series = custom.getSeries().get(0);
             seriesName = series.getName();
             seriesNumber = series.getNumber();
             seriesTotal = series.getTotal();
         }
 
         return BookMetadata.builder()
-                .provider(MetadataProvider.Custom)
+                .provider(MetadataProvider.CustomProvider)
                 .title(custom.getTitle())
                 .subtitle(custom.getSubtitle())
                 .authors(custom.getAuthors() != null ? new HashSet<>(custom.getAuthors()) : null)
@@ -100,9 +100,9 @@ public class CustomMetadataParser implements BookParser {
     }
 
     private boolean isEnabled() {
-        MetadataProviderSettings.Custom settings = appSettingService.getAppSettings()
+        MetadataProviderSettings.CustomProvider settings = appSettingService.getAppSettings()
                 .getMetadataProviderSettings()
-                .getCustom();
+                .getCustomProvider();
         return settings != null
                 && settings.isEnabled()
                 && settings.getBaseUrl() != null

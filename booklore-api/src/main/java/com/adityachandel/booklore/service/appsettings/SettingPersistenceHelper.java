@@ -99,11 +99,11 @@ public class SettingPersistenceHelper {
         MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
         defaultDouban.setEnabled(false);
 
-        MetadataProviderSettings.Custom defaultCustom = new MetadataProviderSettings.Custom();
-        defaultCustom.setEnabled(false);
-        defaultCustom.setBaseUrl(null);
-        defaultCustom.setBearerToken(null);
-        defaultCustom.setProviderName(null);
+        MetadataProviderSettings.CustomProvider defaultCustomPorvider = new MetadataProviderSettings.CustomProvider();
+        defaultCustomPorvider.setEnabled(false);
+        defaultCustomPorvider.setBaseUrl(null);
+        defaultCustomPorvider.setBearerToken(null);
+        defaultCustomPorvider.setProviderName(null);
 
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
@@ -111,7 +111,7 @@ public class SettingPersistenceHelper {
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
         defaultMetadataProviderSettings.setDouban(defaultDouban);
-        defaultMetadataProviderSettings.setCustom(defaultCustom);
+        defaultMetadataProviderSettings.setCustomProvider(defaultCustomPorvider);
 
         return defaultMetadataProviderSettings;
     }

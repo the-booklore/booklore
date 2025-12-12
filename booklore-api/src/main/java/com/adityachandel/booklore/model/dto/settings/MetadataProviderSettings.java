@@ -10,7 +10,7 @@ public class MetadataProviderSettings {
     private Hardcover hardcover;
     private Comicvine comicvine;
     private Douban douban;
-    private Custom custom;
+    private CustomProvider customProvider;
 
     @Data
     public static class Amazon {
@@ -48,7 +48,7 @@ public class MetadataProviderSettings {
     }
 
     @Data
-    public static class Custom {
+    public static class CustomProvider {
         private boolean enabled;
         private String baseUrl;
         private String bearerToken;

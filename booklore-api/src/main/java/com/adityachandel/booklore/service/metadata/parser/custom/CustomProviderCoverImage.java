@@ -3,7 +3,7 @@ package com.adityachandel.booklore.service.metadata.parser.custom;
 import lombok.Data;
 
 @Data
-public class CustomCoverImage {
+public class CustomProviderCoverImage {
     private String url;
     private String size;
     private Integer width;

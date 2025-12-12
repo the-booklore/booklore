@@ -14,7 +14,7 @@ public class BookParserConfig {
     public Map<MetadataProvider, BookParser> parserMap(GoogleParser googleParser, AmazonBookParser amazonBookParser,
                                                        GoodReadsParser goodReadsParser, HardcoverParser hardcoverParser,
                                                        ComicvineBookParser comicvineBookParser, DoubanBookParser doubanBookParser,
-                                                       CustomMetadataParser customMetadataParser) {
+                                                       CustomProviderMetadataParser customMetadataParser) {
         return Map.of(
                 MetadataProvider.Amazon, amazonBookParser,
                 MetadataProvider.GoodReads, goodReadsParser,
@@ -22,7 +22,7 @@ public class BookParserConfig {
                 MetadataProvider.Hardcover, hardcoverParser,
                 MetadataProvider.Comicvine, comicvineBookParser,
                 MetadataProvider.Douban, doubanBookParser,
-                MetadataProvider.Custom, customMetadataParser
+                MetadataProvider.CustomProvider, customMetadataParser
         );
     }
 }

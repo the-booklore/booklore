@@ -27,7 +27,7 @@ public class CustomProviderClient {
     }
 
     public CustomProviderCapabilities getCapabilities() {
-        MetadataProviderSettings.Custom settings = getCustomSettings();
+        MetadataProviderSettings.CustomProvider settings = getCustomProviderSettings();
         if (settings == null || settings.getBaseUrl() == null || settings.getBaseUrl().isBlank()) {
             log.warn("Custom provider: Base URL not configured");
             return null;
@@ -49,10 +49,10 @@ public class CustomProviderClient {
         }
     }
 
-    public List<CustomBookMetadata> searchMetadata(String query, String title, String author,
+    public List<CustomProviderBookMetadata> searchMetadata(String query, String title, String author,
                                                     String isbn13, String isbn10, String asin,
                                                     String providerId, Integer limit) {
-        MetadataProviderSettings.Custom settings = getCustomSettings();
+        MetadataProviderSettings.CustomProvider settings = getCustomProviderSettings();
         if (!isConfigured(settings)) {
             return Collections.emptyList();
         }
@@ -70,7 +70,7 @@ public class CustomProviderClient {
             if (providerId != null && !providerId.isBlank()) uriBuilder.queryParam("providerId", providerId);
             if (limit != null) uriBuilder.queryParam("limit", limit);
 
-            List<CustomBookMetadata> results = client.get()
+            List<CustomProviderBookMetadata> results = client.get()
                     .uri(uriBuilder.build().toUriString())
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
@@ -83,8 +83,8 @@ public class CustomProviderClient {
         }
     }
 
-    public CustomBookMetadata getMetadataById(String providerId) {
-        MetadataProviderSettings.Custom settings = getCustomSettings();
+    public CustomProviderBookMetadata getMetadataById(String providerId) {
+        MetadataProviderSettings.CustomProvider settings = getCustomProviderSettings();
         if (!isConfigured(settings)) {
             return null;
         }
@@ -96,16 +96,16 @@ public class CustomProviderClient {
                     .uri("/metadata/{providerId}", providerId)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
-                    .body(CustomBookMetadata.class);
+                    .body(CustomProviderBookMetadata.class);
         } catch (RestClientException e) {
             log.error("Custom provider: Failed to fetch metadata for providerId={}, Error: {}", providerId, e.getMessage());
             return null;
         }
     }
 
-    public List<CustomCoverImage> searchCovers(String query, String title, String author,
+    public List<CustomProviderCoverImage> searchCovers(String query, String title, String author,
                                                 String isbn13, String isbn10, String providerId, String size) {
-        MetadataProviderSettings.Custom settings = getCustomSettings();
+        MetadataProviderSettings.CustomProvider settings = getCustomProviderSettings();
         if (!isConfigured(settings)) {
             return Collections.emptyList();
         }
@@ -122,7 +122,7 @@ public class CustomProviderClient {
             if (providerId != null && !providerId.isBlank()) uriBuilder.queryParam("providerId", providerId);
             if (size != null && !size.isBlank()) uriBuilder.queryParam("size", size);
 
-            List<CustomCoverImage> results = client.get()
+            List<CustomProviderCoverImage> results = client.get()
                     .uri(uriBuilder.build().toUriString())
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
@@ -135,8 +135,8 @@ public class CustomProviderClient {
         }
     }
 
-    public List<CustomCoverImage> getCoversById(String providerId, String size) {
-        MetadataProviderSettings.Custom settings = getCustomSettings();
+    public List<CustomProviderCoverImage> getCoversById(String providerId, String size) {
+        MetadataProviderSettings.CustomProvider settings = getCustomProviderSettings();
         if (!isConfigured(settings)) {
             return Collections.emptyList();
         }
@@ -147,7 +147,7 @@ public class CustomProviderClient {
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromPath("/covers/{providerId}");
             if (size != null && !size.isBlank()) uriBuilder.queryParam("size", size);
 
-            List<CustomCoverImage> results = client.get()
+            List<CustomProviderCoverImage> results = client.get()
                     .uri(uriBuilder.build(providerId).toString())
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
@@ -160,11 +160,11 @@ public class CustomProviderClient {
         }
     }
 
-    private MetadataProviderSettings.Custom getCustomSettings() {
-        return appSettingService.getAppSettings().getMetadataProviderSettings().getCustom();
+    private MetadataProviderSettings.CustomProvider getCustomProviderSettings() {
+        return appSettingService.getAppSettings().getMetadataProviderSettings().getCustomProvider();
     }
 
-    private boolean isConfigured(MetadataProviderSettings.Custom settings) {
+    private boolean isConfigured(MetadataProviderSettings.CustomProvider settings) {
         if (settings == null) {
             log.warn("Custom provider: Not configured");
             return false;
@@ -180,7 +180,7 @@ public class CustomProviderClient {
         return true;
     }
 
-    private RestClient buildAuthenticatedClient(MetadataProviderSettings.Custom settings) {
+    private RestClient buildAuthenticatedClient(MetadataProviderSettings.CustomProvider settings) {
         return restClientBuilder
                 .baseUrl(settings.getBaseUrl())
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + settings.getBearerToken())

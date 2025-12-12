@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Data
-public class CustomBookMetadata {
+public class CustomProviderBookMetadata {
     private String providerId;
     private String title;
     private String subtitle;
