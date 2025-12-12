@@ -80,6 +80,7 @@ jobs:
           FLYWAY_PASSWORD: root
         run: |
           ./gradlew flywayClean --no-daemon --stacktrace \
+            -Dflyway.cleanDisabled=false \
             -Dorg.gradle.jvmargs="-Xmx1024m"
           ./gradlew flywayMigrate --no-daemon --stacktrace \
             -Dflyway.locations=filesystem:/tmp/baseline/booklore-api/src/main/resources/db/migration \
