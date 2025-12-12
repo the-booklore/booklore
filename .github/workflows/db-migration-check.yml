@@ -45,7 +45,7 @@ jobs:
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mariadb -h 127.0.0.1 -uroot -proot -e "SELECT 1" &>/dev/null; then
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
               exit 0
             fi
