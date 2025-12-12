@@ -105,6 +105,7 @@ export interface KoboSettings {
   convertCbxToEpub: boolean;
   conversionLimitInMbForCbx: number;
   forceEnableHyphenation: boolean;
+  persistConversion: boolean;
 }
 
 export interface AppSettings {

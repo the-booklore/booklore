@@ -38,6 +38,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.regex.Pattern;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.enums.ShelfType;
 
 @Slf4j
 @AllArgsConstructor
@@ -108,6 +109,7 @@ public class BookDownloadService {
 
         boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
         boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
+        boolean persistConversion = koboSettings.isPersistConversion();
 
         Path tempDir = null;
         try {
@@ -115,44 +117,43 @@ public class BookDownloadService {
             File fileToSend = inputFile;
             boolean convertedExists = false;
 
-            // Check if a conversion already exists in the library and serve it directly
-            try {
-                Path libraryDir = Paths.get(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath() == null ? "" : bookEntity.getFileSubPath());
+            if(persistConversion) {
+                try {
+                    Path libraryDir = Paths.get(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath() == null ? "" : bookEntity.getFileSubPath());
 
-                if (convertCbxToEpub) {
-                    Path maybeConverted = libraryDir.resolve(inputFile.getName() + ".epub");
-                    if (Files.exists(maybeConverted)) {
-                        log.debug("Found existing converted EPUB for book {} at {}", bookId, maybeConverted);
-                        fileToSend = maybeConverted.toFile();
-                        convertedExists = true;
+                    if (convertCbxToEpub) {
+                        Path maybeConverted = libraryDir.resolve(inputFile.getName() + ".epub");
+                        if (Files.exists(maybeConverted)) {
+                            log.debug("Found existing converted EPUB for book {} at {}", bookId, maybeConverted);
+                            fileToSend = maybeConverted.toFile();
+                            convertedExists = true;
+                        }
                     }
+
+                    if (convertEpubToKepub) {
+                        Path maybeKepub1 = libraryDir.resolve(inputFile.getName() + ".kepub.epub");
+                        Path maybeKepub2 = null;
+                        String name = inputFile.getName();
+                        if (name.toLowerCase().endsWith(".epub")) {
+                            String base = name.substring(0, name.length() - 5);
+                            maybeKepub2 = libraryDir.resolve(base + ".kepub.epub");
+                        }
+                        if (Files.exists(maybeKepub1)) {
+                            log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub1);
+                            fileToSend = maybeKepub1.toFile();
+                            convertedExists = true;
+
+                        } else if (maybeKepub2 != null && Files.exists(maybeKepub2)) {
+                            log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub2);
+                            fileToSend = maybeKepub2.toFile();
+                            convertedExists = true;
+
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Error while checking for existing converted files for book {}: {}", bookId, e.getMessage());
                 }
-
-                if (convertEpubToKepub) {
-                    // kepub outputs often end with .kepub.epub
-                    Path maybeKepub1 = libraryDir.resolve(inputFile.getName() + ".kepub.epub");
-                    Path maybeKepub2 = null;
-                    String name = inputFile.getName();
-                    if (name.toLowerCase().endsWith(".epub")) {
-                        String base = name.substring(0, name.length() - 5);
-                        maybeKepub2 = libraryDir.resolve(base + ".kepub.epub");
-                    }
-                    if (Files.exists(maybeKepub1)) {
-                        log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub1);
-                        fileToSend = maybeKepub1.toFile();
-                        convertedExists = true;
-
-                    } else if (maybeKepub2 != null && Files.exists(maybeKepub2)) {
-                        log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub2);
-                        fileToSend = maybeKepub2.toFile();
-                        convertedExists = true;
-
-                    }
-                }
-            } catch (Exception e) {
-                log.warn("Error while checking for existing converted files for book {}: {}", bookId, e.getMessage());
             }
-
             if (convertCbxToEpub || convertEpubToKepub) {
                 tempDir = Files.createTempDirectory("kobo-conversion");
             }
@@ -166,8 +167,7 @@ public class BookDownloadService {
                     koboSettings.isForceEnableHyphenation());
             }
 
-            // If conversion created a different file (i.e., in temp dir), move it into the book's library and attach Conversion shelf
-            if (!fileToSend.equals(inputFile) && !convertedExists) {
+            if (!fileToSend.equals(inputFile) && !convertedExists && persistConversion) {
                 Path destDir = Paths.get(bookEntity.getLibraryPath().getPath(),
                         bookEntity.getFileSubPath() == null ? "" : bookEntity.getFileSubPath());
                 Files.createDirectories(destDir);
@@ -194,11 +194,23 @@ public class BookDownloadService {
                 // Map existing book's metadata DTO and import the converted file using BookImportService
                 try {
                     BookMetadata metadataDto = bookMapper.toBook(bookEntity).getMetadata();
+                    // determine conversion shelf for current user (if any) and pass its id to the import
+                    Long conversionShelfId = null;
+                    try {
+                        var authUser = authenticationService.getAuthenticatedUser();
+                        if (authUser != null) {
+                            var shelfOpt = shelfService.getShelf(authUser.getId(), ShelfType.CONVERSION.getName());
+                            if (shelfOpt.isPresent()) conversionShelfId = shelfOpt.get().getId();
+                        }
+                    } catch (Exception e) {
+                        log.debug("Could not resolve conversion shelf: {}", e.getMessage());
+                    }
                     // importFileToLibrary expects the file already in the library path
                     var imported = bookImportService.importFileToLibrary(destPath.toFile(),
                             bookEntity.getLibrary().getId(),
                             bookEntity.getLibraryPath().getId(),
-                            metadataDto);
+                            metadataDto,
+                            conversionShelfId);
                     log.debug("Imported converted file as book id={}", imported.getId());
                 } catch (Exception e) {
                     // If import fails, log and continue to stream the file to the client

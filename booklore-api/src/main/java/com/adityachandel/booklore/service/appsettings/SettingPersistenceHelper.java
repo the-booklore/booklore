@@ -255,6 +255,7 @@ public class SettingPersistenceHelper {
                 .conversionLimitInMb(100)
                 .convertCbxToEpub(false)
                 .conversionLimitInMbForCbx(100)
+                .persistConversion(false)
                 .forceEnableHyphenation(false)
                 .build();
     }

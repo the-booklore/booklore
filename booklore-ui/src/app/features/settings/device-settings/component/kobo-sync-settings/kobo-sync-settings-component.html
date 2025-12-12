@@ -267,6 +267,22 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
+                  <label class="setting-label">Persist Conversions</label>
+                  <p-toggle-switch
+                    id="convertCbxToEpub"
+                    [(ngModel)]="koboSettings.persistConversion"
+                    (ngModelChange)="onToggleChange()">
+                  </p-toggle-switch>
+                </div>
+                <p class="setting-description">
+                  Stores converted files to the conversion shelf for future use.
+                </p>
+              </div>
+            </div>
+
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
                   <label class="setting-label">CBX Conversion Size Limit: {{ koboSettings.conversionLimitInMbForCbx }} MB</label>
                   <div class="slider-container">
                     <p-slider

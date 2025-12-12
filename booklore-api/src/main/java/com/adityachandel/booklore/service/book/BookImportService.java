@@ -17,6 +17,8 @@ import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
+import com.adityachandel.booklore.repository.ShelfRepository;
+import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
@@ -41,6 +43,7 @@ public class BookImportService {
     private final NotificationService notificationService;
     private final MetadataRefreshService metadataRefreshService;
     private final BookMapper bookMapper;
+    private final ShelfRepository shelfRepository;
 
     /**
      * Import a single file into the specified library / libraryPath.
@@ -53,7 +56,7 @@ public class BookImportService {
      * @param metadata optional metadata to apply after import (can be null)
      * @return the imported Book DTO
      */
-    public Book importFileToLibrary(File file, Long libraryId, Long libraryPathId, BookMetadata metadata) {
+    public Book importFileToLibrary(File file, Long libraryId, Long libraryPathId, BookMetadata metadata, Long shelfId) {
         LibraryEntity library = libraryRepository.findById(libraryId)
                 .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
 
@@ -111,7 +114,23 @@ public class BookImportService {
             metadataRefreshService.updateBookMetadata(context);
         }
 
-        return bookDto;
+        // If a shelfId was provided, add the imported book to that shelf
+        if (shelfId != null) {
+            try {
+                ShelfEntity shelfEntity = shelfRepository.findById(shelfId).orElse(null);
+                if (shelfEntity != null) {
+                    if (bookEntity.getShelves() == null) {
+                        bookEntity.setShelves(new java.util.HashSet<>());
+                    }
+                    bookEntity.getShelves().add(shelfEntity);
+                    bookRepository.save(bookEntity);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to add imported book {} to shelf {}: {}", bookEntity.getId(), shelfId, e.getMessage());
+            }
+        }
+
+        // Re-map the (potentially updated) entity to DTO to include shelf changes
+        return bookMapper.toBook(bookEntity);
     }
 }
-

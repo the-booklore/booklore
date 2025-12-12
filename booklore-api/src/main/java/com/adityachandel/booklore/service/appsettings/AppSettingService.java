@@ -21,6 +21,7 @@ public class AppSettingService {
 
     private final AppProperties appProperties;
     private final SettingPersistenceHelper settingPersistenceHelper;
+    private final ConversionShelfHelper conversionShelfHelper;
 
     private volatile AppSettings appSettings;
     private final ReentrantLock lock = new ReentrantLock();
@@ -48,7 +49,9 @@ public class AppSettingService {
         }
         setting.setVal(settingPersistenceHelper.serializeSettingValue(key, val));
         settingPersistenceHelper.appSettingsRepository.save(setting);
+        conversionShelfHelper.handleConversionShelf(key,val);
         refreshCache();
+
     }
 
     public PublicAppSetting getPublicSettings() {
