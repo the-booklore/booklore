@@ -63,12 +63,17 @@ public class KoboSettingsService {
 
         if (settings.isSyncEnabled() != entity.isSyncEnabled()) {
             Shelf userKoboShelf = shelfService.getUserKoboShelf();
+            Shelf conversionShelf = shelfService.getUserKoboConversionShelf();
             if (!settings.isSyncEnabled()) {
                 if (userKoboShelf != null) {
                     shelfService.deleteShelf(userKoboShelf.getId());
                 }
+                if(conversionShelf != null) {
+                    shelfService.deleteShelf(conversionShelf.getId());
+                }
             } else {
                 ensureKoboShelfExists(user.getId());
+                ensureKoboConversionShelfExists(user.getId());
             }
             entity.setSyncEnabled(settings.isSyncEnabled());
         }
@@ -103,6 +108,19 @@ public class KoboSettingsService {
                     ShelfCreateRequest.builder()
                             .name(ShelfType.KOBO.getName())
                             .icon(ShelfType.KOBO.getIcon())
+                            .iconType(IconType.PRIME_NG)
+                            .build()
+            );
+        }
+    }
+
+    private void ensureKoboConversionShelfExists(Long userId) {
+        Optional<ShelfEntity> shelf = shelfService.getShelf(userId, ShelfType.CONVERSION.getName());
+        if (shelf.isEmpty()) {
+            shelfService.createShelf(
+                    ShelfCreateRequest.builder()
+                            .name(ShelfType.CONVERSION.getName())
+                            .icon(ShelfType.CONVERSION.getIcon())
                             .iconType(IconType.PRIME_NG)
                             .build()
             );

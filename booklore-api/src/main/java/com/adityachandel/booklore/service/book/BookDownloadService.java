@@ -1,14 +1,21 @@
 package com.adityachandel.booklore.service.book;
 
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.ShelfEntity;
+import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.ShelfType;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.service.ShelfService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.kobo.KepubConversionService;
 import com.adityachandel.booklore.service.kobo.CbxConversionService;
 import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.PathPatternResolver;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +37,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
+
+import static net.lingala.zip4j.util.FileUtils.getFileExtension;
 
 @Slf4j
 @AllArgsConstructor
@@ -43,6 +55,8 @@ public class BookDownloadService {
     private final KepubConversionService kepubConversionService;
     private final CbxConversionService cbxConversionService;
     private final AppSettingService appSettingService;
+    private final ShelfService shelfService;
+    private final AuthenticationService authenticationService;
 
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         try {
@@ -80,7 +94,7 @@ public class BookDownloadService {
 
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        
+
         boolean isEpub = bookEntity.getBookType() == BookFileType.EPUB;
         boolean isCbx = bookEntity.getBookType() == BookFileType.CBX;
 
@@ -100,18 +114,111 @@ public class BookDownloadService {
         try {
             File inputFile = new File(FileUtils.getBookFullPath(bookEntity));
             File fileToSend = inputFile;
+            boolean convertedExists = false;
+
+            // Check if a conversion already exists in the library and serve it directly
+            try {
+                Path libraryDir = Paths.get(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath() == null ? "" : bookEntity.getFileSubPath());
+
+                if (convertCbxToEpub) {
+                    Path maybeConverted = libraryDir.resolve(inputFile.getName() + ".epub");
+                    if (Files.exists(maybeConverted)) {
+                        log.debug("Found existing converted EPUB for book {} at {}", bookId, maybeConverted);
+                        fileToSend = maybeConverted.toFile();
+                        convertedExists = true;
+                    }
+                }
+
+                if (convertEpubToKepub) {
+                    // kepub outputs often end with .kepub.epub
+                    Path maybeKepub1 = libraryDir.resolve(inputFile.getName() + ".kepub.epub");
+                    Path maybeKepub2 = null;
+                    String name = inputFile.getName();
+                    if (name.toLowerCase().endsWith(".epub")) {
+                        String base = name.substring(0, name.length() - 5);
+                        maybeKepub2 = libraryDir.resolve(base + ".kepub.epub");
+                    }
+                    if (Files.exists(maybeKepub1)) {
+                        log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub1);
+                        fileToSend = maybeKepub1.toFile();
+                        convertedExists = true;
+
+                    } else if (maybeKepub2 != null && Files.exists(maybeKepub2)) {
+                        log.debug("Found existing kepubified file for book {} at {}", bookId, maybeKepub2);
+                        fileToSend = maybeKepub2.toFile();
+                        convertedExists = true;
+
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error while checking for existing converted files for book {}: {}", bookId, e.getMessage());
+            }
 
             if (convertCbxToEpub || convertEpubToKepub) {
                 tempDir = Files.createTempDirectory("kobo-conversion");
             }
 
-            if (convertCbxToEpub) {
+            if (convertCbxToEpub && !convertedExists) {
                 fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity);
             }
 
-            if (convertEpubToKepub) {
+            if (convertEpubToKepub && !convertedExists) {
                 fileToSend = kepubConversionService.convertEpubToKepub(inputFile, tempDir.toFile(),
                     koboSettings.isForceEnableHyphenation());
+            }
+
+            System.out.println("File to send after conversion: " + fileToSend.getAbsolutePath());
+            // If conversion created a different file (i.e., in temp dir), move it into the book's library and attach Conversion shelf
+            if (!fileToSend.equals(inputFile) && !convertedExists) {
+                Path destDir = Paths.get(bookEntity.getLibraryPath().getPath(),
+                        bookEntity.getFileSubPath() == null ? "" : bookEntity.getFileSubPath());
+                Files.createDirectories(destDir);
+
+                String destFileName = fileToSend.getName();
+                Path destPath = destDir.resolve(destFileName);
+
+                try {
+                    Files.move(fileToSend.toPath(), destPath, StandardCopyOption.ATOMIC_MOVE);
+                } catch (IOException moveEx) {
+                    // Fallback to copy + delete
+                    try {
+                        Files.copy(fileToSend.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
+                        Files.deleteIfExists(fileToSend.toPath());
+                    } catch (IOException copyEx) {
+                        log.error("Failed to move converted file into library directory: {}", copyEx.getMessage(), copyEx);
+                        throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
+                    }
+                }
+
+                // Update book entity to point to the new file
+                bookEntity.setFileName(destPath.getFileName().toString());
+                // update file size
+                Long newSizeKb = FileUtils.getFileSizeInKb(destPath);
+                bookEntity.setFileSizeKb(newSizeKb);
+                // conversion results are EPUBs
+                bookEntity.setBookType(BookFileType.EPUB);
+
+                // attach conversion shelf for the current user if available
+                Long userId = authenticationService.getAuthenticatedUser() != null ? authenticationService.getAuthenticatedUser().getId() : null;
+                if (userId != null) {
+                    Optional<ShelfEntity> conversionShelf = shelfService.getShelf(userId, ShelfType.CONVERSION.getName());
+                    if (conversionShelf.isPresent()) {
+                        Set<ShelfEntity> shelves = bookEntity.getShelves();
+                        if (shelves == null) {
+                            // lazy init using builder pattern would normally handle this, but ensure non-null
+                            java.util.HashSet<ShelfEntity> newSet = new java.util.HashSet<>();
+                            bookEntity.setShelves(newSet);
+                            shelves = bookEntity.getShelves();
+                        }
+                        shelves.add(conversionShelf.get());
+                    }
+                }
+
+                // Persist changes
+                bookRepository.save(bookEntity);
+
+                // ensure we stream the moved file from library
+                fileToSend = destPath.toFile();
             }
 
             setResponseHeaders(response, fileToSend);
@@ -125,6 +232,24 @@ public class BookDownloadService {
         } finally {
             cleanupTempDirectory(tempDir);
         }
+    }
+
+    private Path resolveWithUniqueName(Path dir, String baseName) {
+        String name = baseName;
+        String ext = "";
+        int lastDot = baseName.lastIndexOf('.');
+        if (lastDot > 0) {
+            name = baseName.substring(0, lastDot);
+            ext = baseName.substring(lastDot);
+        }
+
+        int counter = 1;
+        Path candidate = dir.resolve(baseName);
+        while (Files.exists(candidate)) {
+            String candidateName = String.format("%s(%d)%s", name, counter++, ext);
+            candidate = dir.resolve(candidateName);
+        }
+        return candidate;
     }
 
     private void setResponseHeaders(HttpServletResponse response, File file) {

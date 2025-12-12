@@ -75,6 +75,12 @@ public class ShelfService {
         return koboShelf.map(shelfMapper::toShelf).orElse(null);
     }
 
+    public Shelf getUserKoboConversionShelf() {
+        Long userId = getAuthenticatedUserId();
+        Optional<ShelfEntity> koboShelf = shelfRepository.findByUserIdAndName(userId, ShelfType.CONVERSION.getName());
+        return koboShelf.map(shelfMapper::toShelf).orElse(null);
+    }
+
     public List<Book> getShelfBooks(Long shelfId) {
         findShelfByIdOrThrow(shelfId);
         return bookRepository.findAllWithMetadataByShelfId(shelfId).stream()
