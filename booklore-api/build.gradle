@@ -100,6 +100,11 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
+    
+    // --- Testcontainers for Integration Tests ---
+    testImplementation 'org.testcontainers:testcontainers:1.20.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.4'
+    testImplementation 'org.testcontainers:mariadb:1.20.4'
 }
 
 hibernate {

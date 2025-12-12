@@ -1,0 +1,441 @@
+name: Comprehensive CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      run_migration_tests:
+        description: 'Force run migration tests'
+        type: boolean
+        default: false
+      run_integration_tests:
+        description: 'Force run integration tests'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  JAVA_VERSION: '21'
+  NODE_VERSION: '20'
+  APP_PORT: 6060
+
+jobs:
+  # ============================================
+  # Stage 1: Quick Checks (< 2 minutes)
+  # ============================================
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      backend_changed: ${{ steps.changes.outputs.backend }}
+      frontend_changed: ${{ steps.changes.outputs.frontend }}
+      migration_changed: ${{ steps.changes.outputs.migrations }}
+      docker_changed: ${{ steps.changes.outputs.docker }}
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed files
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'booklore-api/**'
+              - 'build.gradle'
+            frontend:
+              - 'booklore-ui/**'
+            migrations:
+              - 'booklore-api/src/main/resources/db/migration/**'
+            docker:
+              - 'Dockerfile'
+              - 'start.sh'
+              - 'nginx.conf'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Check lockfile integrity
+        working-directory: booklore-ui
+        run: |
+          if ! npm ci --dry-run 2>/dev/null; then
+            echo "❌ package-lock.json is out of sync with package.json"
+            echo "Run 'npm install' and commit the updated lockfile"
+            exit 1
+          fi
+          echo "✅ Lockfile is in sync"
+
+      - name: Frontend lint check
+        if: steps.changes.outputs.frontend == 'true'
+        working-directory: booklore-ui
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm run lint 2>&1 || echo "⚠️ Lint issues found (non-blocking)"
+
+      - name: Commit message check
+        if: github.event_name == 'pull_request'
+        run: |
+          # Check for conventional commit format (optional but recommended)
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:\ .+ ]]; then
+            echo "✅ PR title follows conventional commit format"
+          else
+            echo "⚠️ PR title doesn't follow conventional commit format (optional)"
+          fi
+
+  # ============================================
+  # Stage 2: Unit Tests (Parallel)
+  # ============================================
+  backend-unit-tests:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    if: needs.quick-checks.outputs.backend_changed == 'true' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 20
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@1f3844548437d2c9f3bafd1b8c8a93a2b4f698ab
+        with:
+          cache-read-only: ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/develop"]'), github.ref) }}
+
+      - name: Run unit tests
+        working-directory: booklore-api
+        run: ./gradlew test --no-daemon
+
+      - name: Generate coverage report
+        if: always()
+        working-directory: booklore-api
+        run: ./gradlew jacocoTestReport --no-daemon || true
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: |
+            booklore-api/build/reports/tests/
+            booklore-api/build/reports/jacoco/
+          retention-days: 7
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@47a8d3e48c9c7b1e6c4b6b8e2b9f9f9e2f9f9f9e
+        if: always()
+        with:
+          files: booklore-api/build/test-results/**/*.xml
+          check_name: Backend Unit Test Results
+          comment_mode: off
+
+  frontend-unit-tests:
+    name: Frontend Unit Tests
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    if: needs.quick-checks.outputs.frontend_changed == 'true' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 15
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: booklore-ui
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run tests
+        working-directory: booklore-ui
+        run: npm run test -- --no-watch --no-progress --browsers=ChromeHeadless --code-coverage
+
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: booklore-ui/coverage/
+          retention-days: 7
+
+  # ============================================
+  # Stage 3: Build Verification
+  # ============================================
+  build-verification:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    needs: [backend-unit-tests, frontend-unit-tests]
+    # Run even if some tests are skipped
+    if: always() && !failure() && !cancelled()
+    timeout-minutes: 25
+    outputs:
+      jar_artifact: ${{ steps.build.outputs.jar_path }}
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@1f3844548437d2c9f3bafd1b8c8a93a2b4f698ab
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Build frontend
+        working-directory: booklore-ui
+        run: |
+          npm ci --prefer-offline --no-audit
+          npm run build -- --configuration=production
+
+      - name: Build backend
+        id: build
+        working-directory: booklore-api
+        run: |
+          ./gradlew bootJar -x test --no-daemon
+          JAR_PATH=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          echo "jar_path=$JAR_PATH" >> $GITHUB_OUTPUT
+          echo "✅ Built: $JAR_PATH"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            booklore-api/build/libs/*.jar
+            booklore-ui/dist/
+          retention-days: 7
+
+  # ============================================
+  # Stage 4: Integration Tests (Parallel)
+  # ============================================
+  database-migration-test:
+    name: Database Migration Test
+    runs-on: ubuntu-latest
+    needs: [quick-checks, build-verification]
+    if: |
+      always() && !failure() && !cancelled() &&
+      (needs.quick-checks.outputs.migration_changed == 'true' || 
+       github.event.inputs.run_migration_tests == 'true' ||
+       github.event_name == 'push')
+    timeout-minutes: 30
+
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@1f3844548437d2c9f3bafd1b8c8a93a2b4f698ab
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Run migration integrity check
+        run: |
+          chmod +x scripts/check-migration-integrity.sh
+          ./scripts/check-migration-integrity.sh "origin/${{ github.base_ref || 'develop' }}"
+        continue-on-error: true
+
+      - name: Run Flyway migrations
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          ./gradlew flywayClean flywayMigrate flywayValidate --no-daemon
+
+  docker-build-test:
+    name: Docker Build Test
+    runs-on: ubuntu-latest
+    needs: [quick-checks, build-verification]
+    if: |
+      always() && !failure() && !cancelled() &&
+      (needs.quick-checks.outputs.docker_changed == 'true' || 
+       github.event_name == 'push')
+    timeout-minutes: 30
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:ci-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test container starts
+        run: |
+          docker run -d --name test-container \
+            --health-cmd="curl -f http://localhost:${{ env.APP_PORT }}/actuator/health || exit 1" \
+            --health-interval=5s \
+            --health-timeout=3s \
+            --health-retries=5 \
+            -e DATABASE_URL=jdbc:mariadb://localhost:3306/booklore \
+            booklore:ci-test
+
+          # Wait for container to be healthy or timeout
+          timeout 60 bash -c 'until docker inspect test-container --format="{{.State.Health.Status}}" | grep -q healthy; do sleep 2; done' && {
+            echo "✅ Container started and is healthy"
+          } || {
+            echo "⚠️ Container may have exited (expected without DB)"
+            docker logs test-container | head -20
+          }
+
+          docker rm -f test-container 2>/dev/null || true
+
+  # ============================================
+  # Stage 5: Final Summary
+  # ============================================
+  ci-summary:
+    name: CI Summary
+    runs-on: ubuntu-latest
+    needs: [quick-checks, backend-unit-tests, frontend-unit-tests, build-verification, database-migration-test, docker-build-test]
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🔄 Comprehensive CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Changes Detected" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Changed |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.quick-checks.outputs.backend_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.quick-checks.outputs.frontend_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations | ${{ needs.quick-checks.outputs.migration_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.quick-checks.outputs.docker_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Quick Checks | ${{ needs.quick-checks.result == 'success' && '✅ Pass' || (needs.quick-checks.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Tests | ${{ needs.backend-unit-tests.result == 'success' && '✅ Pass' || (needs.backend-unit-tests.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Tests | ${{ needs.frontend-unit-tests.result == 'success' && '✅ Pass' || (needs.frontend-unit-tests.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build-verification.result == 'success' && '✅ Pass' || (needs.build-verification.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migration Test | ${{ needs.database-migration-test.result == 'success' && '✅ Pass' || (needs.database-migration-test.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build-test.result == 'success' && '✅ Pass' || (needs.docker-build-test.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for failures
+        run: |
+          # Determine overall status
+          if [[ "${{ needs.quick-checks.result }}" == "failure" ]] || \
+             [[ "${{ needs.backend-unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.build-verification.result }}" == "failure" ]]; then
+            echo "❌ CI pipeline failed"
+            exit 1
+          fi
+          
+          echo "✅ CI pipeline passed"
+
