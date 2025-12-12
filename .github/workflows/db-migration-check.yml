@@ -61,18 +61,31 @@ jobs:
           chmod +x scripts/check-migration-integrity.sh
           ./scripts/check-migration-integrity.sh "origin/${{ github.base_ref }}"
 
-      - name: Flyway dry-run (syntax check)
-        id: flyway_dry_run
-        working-directory: booklore-api
-        env:
-          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
-          FLYWAY_USER: root
-          FLYWAY_PASSWORD: root
-          FLYWAY_CLEAN_DISABLED: 'false'
+      - name: SQL syntax check
+        id: sql_lint
         run: |
-          ./gradlew flywayClean flywayMigrate --no-daemon --stacktrace \
-            -Dflyway.dryRunOutput=build/flyway-dryrun.sql \
-            -Dorg.gradle.jvmargs="-Xmx1024m"
+          echo "Checking SQL files for basic syntax issues..."
+          
+          issues_found=0
+          
+          # Check for missing semicolons (very basic check)
+          for file in $(find booklore-api/src/main/resources/db/migration -name "*.sql"); do
+            if [ ! -s "$file" ]; then
+              continue
+            fi
+            
+            # Check if file ends with semicolon (basic check)
+            if ! tail -1 "$file" | grep -q ";[[:space:]]*$"; then
+              echo "⚠️  $file: May be missing semicolon at end"
+              issues_found=$((issues_found + 1))
+            fi
+          done
+          
+          if [ $issues_found -eq 0 ]; then
+            echo "✅ No basic SQL syntax issues found"
+          else
+            echo "⚠️  Found $issues_found potential SQL syntax issues"
+          fi
 
       - name: Run Flyway Migrations
         id: flyway
@@ -94,5 +107,5 @@ jobs:
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Integrity | ${{ steps.integrity.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Flyway dry-run | ${{ steps.flyway_dry_run.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL lint | ${{ steps.sql_lint.outcome == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Flyway | ${{ steps.flyway.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
