@@ -18,6 +18,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: booklore
+          MARIADB_EXTRA_FLAGS: --max-allowed-packet=64M --innodb-buffer-pool-size=128M
         ports:
           - 3306:3306
         options: >-
@@ -25,8 +26,6 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=20
-          --max-allowed-packet=64M
-          --innodb-buffer-pool-size=128M
 
     steps:
       - uses: actions/checkout@v4
