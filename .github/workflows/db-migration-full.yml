@@ -1,0 +1,105 @@
+name: Database Migration Full Matrix
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/resources/db/migration/**'
+      - '.github/workflows/db-migration-full.yml'
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 3 * * 1' # Weekly Monday 03:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  migrate-from-develop:
+    name: Upgrade from develop snapshot
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
+              echo "✅ MariaDB is ready"
+              exit 0
+            fi
+            echo "⏳ Waiting for MariaDB... ($i/30)"
+            sleep 2
+          done
+          echo "❌ MariaDB failed to start"
+          exit 1
+
+      - name: Prepare baseline migrations from develop
+        run: |
+          git fetch origin develop --quiet
+          mkdir -p /tmp/baseline
+          git archive origin/develop booklore-api/src/main/resources/db/migration | tar -x -C /tmp/baseline
+          ls -la /tmp/baseline/booklore-api/src/main/resources/db/migration
+
+      - name: Baseline migrate (develop)
+        id: baseline_migrate
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: root
+        run: |
+          ./gradlew flywayClean --no-daemon --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx1024m"
+          ./gradlew flywayMigrate --no-daemon --stacktrace \
+            -Dflyway.locations=filesystem:/tmp/baseline/booklore-api/src/main/resources/db/migration \
+            -Dflyway.cleanDisabled=false \
+            -Dorg.gradle.jvmargs="-Xmx1024m"
+
+      - name: Upgrade migrate (current branch)
+        id: upgrade_migrate
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: root
+        run: |
+          ./gradlew flywayMigrate flywayValidate --no-daemon --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx1024m"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Migration upgrade (develop -> current)" >> $GITHUB_STEP_SUMMARY
+          echo "- Baseline migrate: ${{ steps.baseline_migrate.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Upgrade migrate: ${{ steps.upgrade_migrate.outcome }}" >> $GITHUB_STEP_SUMMARY

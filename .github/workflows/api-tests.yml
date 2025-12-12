@@ -110,6 +110,16 @@ jobs:
           echo "jar_file=$JAR_FILE" >> $GITHUB_OUTPUT
           echo "JAR built at: $JAR_FILE"
 
+      - name: Run Flyway migrations (prep DB)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: rootpassword
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          ./gradlew flywayClean flywayMigrate --no-daemon --stacktrace
+
       - name: Create bookdrop directory
         run: mkdir -p /tmp/bookdrop && chmod 777 /tmp/bookdrop
 
@@ -136,9 +146,12 @@ jobs:
           echo "=== Initial startup logs ==="
           head -50 /tmp/booklore.log || true
         env:
-          DATABASE_URL: jdbc:mariadb://localhost:3306/booklore?createDatabaseIfNotExist=true
-          DATABASE_USERNAME: root
-          DATABASE_PASSWORD: rootpassword
+          SPRING_DATASOURCE_URL: jdbc:mariadb://localhost:3306/booklore?createDatabaseIfNotExist=true
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: rootpassword
+          SPRING_FLYWAY_URL: jdbc:mariadb://localhost:3306/booklore
+          SPRING_FLYWAY_USER: root
+          SPRING_FLYWAY_PASSWORD: rootpassword
           SWAGGER_ENABLED: "true"
           SPRING_PROFILES_ACTIVE: default
 
