@@ -2,20 +2,18 @@ package com.adityachandel.booklore.service.book;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
-import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.ShelfEntity;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.ShelfType;
+import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.ShelfService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.kobo.KepubConversionService;
 import com.adityachandel.booklore.service.kobo.CbxConversionService;
 import com.adityachandel.booklore.util.FileUtils;
-import com.adityachandel.booklore.util.PathPatternResolver;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,11 +36,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Optional;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import static net.lingala.zip4j.util.FileUtils.getFileExtension;
 
 @Slf4j
 @AllArgsConstructor
@@ -57,6 +53,8 @@ public class BookDownloadService {
     private final AppSettingService appSettingService;
     private final ShelfService shelfService;
     private final AuthenticationService authenticationService;
+    private final LibraryRepository libraryRepository;
+    private final BookMetadataRepository bookMetadataRepository;
 
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         try {
@@ -167,7 +165,6 @@ public class BookDownloadService {
                     koboSettings.isForceEnableHyphenation());
             }
 
-            System.out.println("File to send after conversion: " + fileToSend.getAbsolutePath());
             // If conversion created a different file (i.e., in temp dir), move it into the book's library and attach Conversion shelf
             if (!fileToSend.equals(inputFile) && !convertedExists) {
                 Path destDir = Paths.get(bookEntity.getLibraryPath().getPath(),
@@ -190,32 +187,41 @@ public class BookDownloadService {
                     }
                 }
 
-                // Update book entity to point to the new file
-                bookEntity.setFileName(destPath.getFileName().toString());
                 // update file size
                 Long newSizeKb = FileUtils.getFileSizeInKb(destPath);
-                bookEntity.setFileSizeKb(newSizeKb);
-                // conversion results are EPUBs
-                bookEntity.setBookType(BookFileType.EPUB);
+                Set<Long> longset = new HashSet<>();
+                longset.add(bookId);
+                var meta=bookRepository.findAllWithMetadataByIds(longset);
+
+                // Build new BookEntity for the converted file
+                BookEntity newBook = BookEntity.builder()
+                        .library(bookEntity.getLibrary())
+                        .libraryPath(bookEntity.getLibraryPath())
+                        .fileName(destPath.getFileName().toString())
+                        .fileSubPath(bookEntity.getFileSubPath())
+                        .bookType(BookFileType.EPUB)
+                        .fileSizeKb(newSizeKb)
+                        .addedOn(java.time.Instant.now())
+                        .build();
+
 
                 // attach conversion shelf for the current user if available
-                Long userId = authenticationService.getAuthenticatedUser() != null ? authenticationService.getAuthenticatedUser().getId() : null;
-                if (userId != null) {
-                    Optional<ShelfEntity> conversionShelf = shelfService.getShelf(userId, ShelfType.CONVERSION.getName());
-                    if (conversionShelf.isPresent()) {
-                        Set<ShelfEntity> shelves = bookEntity.getShelves();
-                        if (shelves == null) {
-                            // lazy init using builder pattern would normally handle this, but ensure non-null
-                            java.util.HashSet<ShelfEntity> newSet = new java.util.HashSet<>();
-                            bookEntity.setShelves(newSet);
-                            shelves = bookEntity.getShelves();
-                        }
-                        shelves.add(conversionShelf.get());
-                    }
-                }
+//                Long userId = authenticationService.getAuthenticatedUser() != null ? authenticationService.getAuthenticatedUser().getId() : null;
+//                if (userId != null) {
+//                    Optional<ShelfEntity> conversionShelf = shelfService.getShelf(userId, ShelfType.CONVERSION.getName());
+//                    if (conversionShelf.isPresent()) {
+//                        var shelves = bookEntity.getShelves();
+//                        shelves.clear();
+//                        shelves.add(conversionShelf.get());
+//                        newBook.setShelves(shelves);
+//                    }
+//                }
 
-                // Persist changes
-                bookRepository.save(bookEntity);
+                BookMetadataEntity bookMetadataEntity = new BookMetadataEntity();
+                bookMetadataEntity.setBook(newBook);
+                bookMetadataEntity.setBookId(newBook.getId());
+                bookRepository.save(newBook);
+                bookMetadataRepository.save(bookMetadataEntity);
 
                 // ensure we stream the moved file from library
                 fileToSend = destPath.toFile();
