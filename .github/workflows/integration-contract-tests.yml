@@ -130,6 +130,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: testroot
           SPRING_FLYWAY_ENABLED: 'true'
+          SWAGGER_ENABLED: true
         run: |
           # Build the application
           ./gradlew bootJar -x test --no-daemon
@@ -356,6 +357,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/booklore
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: testroot
+          SWAGGER_ENABLED: true
         run: |
           ./gradlew bootJar -x test --no-daemon
           
@@ -586,10 +588,12 @@ jobs:
 
       - name: Build and start application
         working-directory: booklore-api
+        env:
+          SWAGGER_ENABLED: true
         run: |
           ./gradlew bootJar -x test --no-daemon
           JAR=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
-          
+
           java -jar "$JAR" \
             --spring.datasource.url=jdbc:mariadb://127.0.0.1:3306/booklore \
             --spring.datasource.username=root \
@@ -609,12 +613,15 @@ jobs:
           exit 1
 
       - name: Validate OpenAPI schema exists
+        env:
+          APP_PORT: ${{ env.APP_PORT }}
         run: |
           echo "📋 Validating OpenAPI schema..."
 
-          SCHEMA=$(curl -sf "http://localhost:${{ env.APP_PORT }}/v3/api-docs" 2>/dev/null || \
-                   curl -sf "http://localhost:${{ env.APP_PORT }}/api-docs" 2>/dev/null || \
-                   curl -sf "http://localhost:${{ env.APP_PORT }}/swagger.json" 2>/dev/null)
+          SCHEMA=$(curl -sf "http://localhost:$APP_PORT/api/v1/api-docs" 2>/dev/null || \
+                   curl -sf "http://localhost:$APP_PORT/v3/api-docs" 2>/dev/null || \
+                   curl -sf "http://localhost:$APP_PORT/api-docs" 2>/dev/null || \
+                   curl -sf "http://localhost:$APP_PORT/swagger.json" 2>/dev/null)
           
           if echo "$SCHEMA" | grep -q "openapi"; then
             echo "✅ OpenAPI schema is accessible"

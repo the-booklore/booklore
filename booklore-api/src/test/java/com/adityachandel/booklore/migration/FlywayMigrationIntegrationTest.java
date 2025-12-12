@@ -101,20 +101,26 @@ class FlywayMigrationIntegrationTest {
             String unicodeAuthor = "夏目漱石";
             
             // Check if book_metadata table exists and has title column
-            if (tableExists(conn, "book") && tableExists(conn, "library")) {
-                
-                // Insert a test library first
+            if (tableExists(conn, "book") && tableExists(conn, "library") && tableExists(conn, "library_path")) {
+
+                // Insert a test library path first (required for book insertion)
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("""
-                        INSERT IGNORE INTO library (id, name, path, created_at, updated_at)
-                        VALUES (99999, 'Unicode Test Library', '/test/unicode', NOW(), NOW())
+                        INSERT IGNORE INTO library_path (id, path, library_id)
+                        VALUES (99999, '/test/unicode', 99999)
                         """);
-                    
+
+                    // Insert a test library
+                    stmt.execute("""
+                        INSERT IGNORE INTO library (id, name, watch, icon)
+                        VALUES (99999, 'Unicode Test Library', false, 'test-icon')
+                        """);
+
                     // Insert a test book
                     stmt.execute(String.format("""
-                        INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-                        VALUES (99999, 99999, '%s', '/test/unicode/%s', NOW(), NOW())
-                        """, unicodeTitle + ".epub", unicodeTitle + ".epub"));
+                        INSERT IGNORE INTO book (id, library_id, library_path_id, file_name, file_sub_path, book_type, added_on)
+                        VALUES (99999, 99999, 99999, '%s', '', 'EPUB', NOW())
+                        """, unicodeTitle + ".epub"));
                 }
 
                 // Verify the data was stored correctly
@@ -125,13 +131,14 @@ class FlywayMigrationIntegrationTest {
                         String storedTitle = rs.getString("file_name");
                         assertThat(storedTitle)
                             .as("Unicode data should be preserved exactly")
-                            .startsWith(unicodeTitle);
+                            .isEqualTo(unicodeTitle + ".epub");
                     }
                 }
 
                 // Cleanup
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("DELETE FROM book WHERE id = 99999");
+                    stmt.execute("DELETE FROM library_path WHERE id = 99999");
                     stmt.execute("DELETE FROM library WHERE id = 99999");
                 }
             }
@@ -153,20 +160,25 @@ class FlywayMigrationIntegrationTest {
                 mariadb.getJdbcUrl(), mariadb.getUsername(), mariadb.getPassword())) {
 
             // Check if book_metadata table exists with description column
-            if (tableExists(conn, "book_metadata") && columnExists(conn, "book_metadata", "description")) {
-                
+            if (tableExists(conn, "book_metadata") && columnExists(conn, "book_metadata", "description") &&
+                tableExists(conn, "library_path")) {
+
                 // Create a very long description (10KB)
                 String longDescription = "A".repeat(10000);
-                
+
                 // First, we need a book and library
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("""
-                        INSERT IGNORE INTO library (id, name, path, created_at, updated_at)
-                        VALUES (99998, 'Long Text Test Library', '/test/longtext', NOW(), NOW())
+                        INSERT IGNORE INTO library_path (id, path, library_id)
+                        VALUES (99998, '/test/longtext', 99998)
                         """);
                     stmt.execute("""
-                        INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-                        VALUES (99998, 99998, 'longtext_test.epub', '/test/longtext/longtext_test.epub', NOW(), NOW())
+                        INSERT IGNORE INTO library (id, name, watch, icon)
+                        VALUES (99998, 'Long Text Test Library', false, 'test-icon')
+                        """);
+                    stmt.execute("""
+                        INSERT IGNORE INTO book (id, library_id, library_path_id, file_name, file_sub_path, book_type, added_on)
+                        VALUES (99998, 99998, 99998, 'longtext_test.epub', '', 'EPUB', NOW())
                         """);
                 }
 
@@ -193,6 +205,7 @@ class FlywayMigrationIntegrationTest {
                 try (Statement stmt = conn.createStatement()) {
                     stmt.execute("DELETE FROM book_metadata WHERE book_id = 99998");
                     stmt.execute("DELETE FROM book WHERE id = 99998");
+                    stmt.execute("DELETE FROM library_path WHERE id = 99998");
                     stmt.execute("DELETE FROM library WHERE id = 99998");
                 }
             }
@@ -290,7 +303,7 @@ class FlywayMigrationIntegrationTest {
             String[] requiredTables = {
                 "book",
                 "library",
-                "book_lore_user",
+                "users",
                 "flyway_schema_history"
             };
 
@@ -319,7 +332,7 @@ class FlywayMigrationIntegrationTest {
             Map<String, Object> metrics = new HashMap<>();
 
             // Capture table counts
-            String[] tables = {"library", "book", "book_lore_user"};
+            String[] tables = {"library", "book", "users"};
             for (String table : tables) {
                 if (tableExists(conn, table)) {
                     try (Statement stmt = conn.createStatement()) {

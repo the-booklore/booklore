@@ -57,9 +57,11 @@ jobs:
 
       - name: Check Migration Integrity
         id: integrity
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           chmod +x scripts/check-migration-integrity.sh
-          ./scripts/check-migration-integrity.sh "origin/${{ github.base_ref }}"
+          ./scripts/check-migration-integrity.sh "origin/$BASE_REF"
 
       - name: SQL syntax check
         id: sql_lint

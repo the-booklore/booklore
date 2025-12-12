@@ -326,9 +326,11 @@ jobs:
           exit 1
 
       - name: Run migration integrity check
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
           chmod +x scripts/check-migration-integrity.sh
-          ./scripts/check-migration-integrity.sh "origin/${{ github.base_ref || 'develop' }}"
+          ./scripts/check-migration-integrity.sh "origin/${BASE_REF:-develop}"
         continue-on-error: true
 
       - name: Run Flyway migrations

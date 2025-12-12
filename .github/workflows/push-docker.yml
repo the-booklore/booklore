@@ -153,8 +153,10 @@ jobs:
 
       - name: Extract Version
         id: version
+        env:
+          GITHUB_REF: ${{ github.ref }}
         run: |
-          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
             echo "is_release=true" >> $GITHUB_OUTPUT
