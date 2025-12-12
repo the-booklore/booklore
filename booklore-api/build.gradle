@@ -3,7 +3,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.flywaydb:flyway-mysql:11.18.0'
+        classpath 'org.flywaydb:flyway-mysql:10.21.0'
     }
 }
 
@@ -13,7 +13,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.hibernate.orm' version '6.6.36.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
-    id 'org.flywaydb.flyway' version '11.18.0'
+    id 'org.flywaydb.flyway' version '10.21.0'
     id 'jacoco'
 }
 
@@ -50,7 +50,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
     // --- Flyway for runtime (required by Spring Boot for the flyway bean) ---
-    implementation 'org.flywaydb:flyway-core:11.18.0'
+    implementation 'org.flywaydb:flyway-core:10.21.0'
+    implementation 'org.flywaydb:flyway-mysql:10.21.0'
 
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
