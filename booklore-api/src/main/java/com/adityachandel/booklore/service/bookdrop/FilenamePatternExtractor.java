@@ -11,6 +11,8 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,28 +24,37 @@ public class FilenamePatternExtractor {
 
     private final BookdropFileRepository bookdropFileRepository;
 
-    private static final Map<String, PlaceholderConfig> PLACEHOLDER_CONFIGS = Map.of(
-            "SeriesName", new PlaceholderConfig("(.+?)", "seriesName"),
-            "Title", new PlaceholderConfig("(.+?)", "title"),
-            "Authors", new PlaceholderConfig("(.+?)", "authors"),
-            "SeriesNumber", new PlaceholderConfig("(\\d+(?:\\.\\d+)?)", "seriesNumber"),
-            "SeriesBookNumber", new PlaceholderConfig("(\\d+(?:\\.\\d+)?)", "seriesNumber"),
-            "Year", new PlaceholderConfig("(\\d{4})", "publishedDate"),
-            "Publisher", new PlaceholderConfig("(.+?)", "publisher"),
-            "Language", new PlaceholderConfig("([a-zA-Z]+)", "language"),
-            "SeriesTotal", new PlaceholderConfig("(\\d+)", "seriesTotal")
+    private static final Map<String, PlaceholderConfig> PLACEHOLDER_CONFIGS = Map.ofEntries(
+            Map.entry("SeriesName", new PlaceholderConfig("(.+?)", "seriesName")),
+            Map.entry("Title", new PlaceholderConfig("(.+?)", "title")),
+            Map.entry("Subtitle", new PlaceholderConfig("(.+?)", "subtitle")),
+            Map.entry("Authors", new PlaceholderConfig("(.+?)", "authors")),
+            Map.entry("SeriesNumber", new PlaceholderConfig("(\\d+(?:\\.\\d+)?)", "seriesNumber")),
+            Map.entry("Published", new PlaceholderConfig("(.+?)", "publishedDate")),
+            Map.entry("Publisher", new PlaceholderConfig("(.+?)", "publisher")),
+            Map.entry("Language", new PlaceholderConfig("([a-zA-Z]+)", "language")),
+            Map.entry("SeriesTotal", new PlaceholderConfig("(\\d+)", "seriesTotal")),
+            Map.entry("ISBN10", new PlaceholderConfig("([0-9X]{10})", "isbn10")),
+            Map.entry("ISBN13", new PlaceholderConfig("([0-9]{13})", "isbn13")),
+            Map.entry("ASIN", new PlaceholderConfig("([A-Z0-9]{10})", "asin"))
     );
 
-    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\w+)}");
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\w+)(?::(.*?))?}|\\*");
 
     public BookdropPatternExtractResult bulkExtract(BookdropPatternExtractRequest request) {
         List<Long> fileIds = resolveFileIds(request);
         List<BookdropFileEntity> files = bookdropFileRepository.findAllById(fileIds);
+        
+        boolean isPreview = Boolean.TRUE.equals(request.getPreview());
+        int previewLimit = 5;
+        List<BookdropFileEntity> filesToProcess = isPreview && files.size() > previewLimit
+                ? files.subList(0, previewLimit)
+                : files;
 
         List<BookdropPatternExtractResult.FileExtractionResult> results = new ArrayList<>();
         int successCount = 0;
 
-        for (BookdropFileEntity file : files) {
+        for (BookdropFileEntity file : filesToProcess) {
             BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, request.getPattern());
             results.add(result);
             if (result.isSuccess()) {
@@ -54,7 +65,7 @@ public class FilenamePatternExtractor {
         return BookdropPatternExtractResult.builder()
                 .totalFiles(files.size())
                 .successfullyExtracted(successCount)
-                .failed(files.size() - successCount)
+                .failed(filesToProcess.size() - successCount)
                 .results(results)
                 .build();
     }
@@ -152,17 +163,29 @@ public class FilenamePatternExtractor {
             regexBuilder.append(Pattern.quote(literalTextBeforePlaceholder));
 
             String placeholderName = placeholderMatch.name;
-            PlaceholderConfig config = PLACEHOLDER_CONFIGS.get(placeholderName);
+            String formatParameter = placeholderMatch.formatParameter;
             
             boolean isLastPlaceholder = (i == placeholderMatches.size() - 1);
             boolean hasTextAfterPlaceholder = (placeholderMatch.end < pattern.length());
             boolean shouldUseGreedyMatching = isLastPlaceholder && !hasTextAfterPlaceholder;
 
-            String regexForPlaceholder = determineRegexForPlaceholder(config, shouldUseGreedyMatching);
-            regexBuilder.append(regexForPlaceholder);
-            log.debug("Placeholder {}: using regex '{}' (greedy={})", placeholderName, regexForPlaceholder, shouldUseGreedyMatching);
+            String regexForPlaceholder;
+            if ("*".equals(placeholderName)) {
+                regexForPlaceholder = shouldUseGreedyMatching ? "(.+)" : "(.+?)";
+                log.debug("Wildcard *: using regex '{}' (greedy={})", regexForPlaceholder, shouldUseGreedyMatching);
+            } else if ("Published".equals(placeholderName) && formatParameter != null) {
+                regexForPlaceholder = buildRegexForDateFormat(formatParameter);
+                log.debug("Placeholder Published with format '{}': using regex '{}'", formatParameter, regexForPlaceholder);
+            } else {
+                PlaceholderConfig config = PLACEHOLDER_CONFIGS.get(placeholderName);
+                regexForPlaceholder = determineRegexForPlaceholder(config, shouldUseGreedyMatching);
+                log.debug("Placeholder {}: using regex '{}' (greedy={})", placeholderName, regexForPlaceholder, shouldUseGreedyMatching);
+            }
             
-            placeholderOrder.add(placeholderName);
+            regexBuilder.append(regexForPlaceholder);
+            
+            String placeholderWithFormat = formatParameter != null ? placeholderName + ":" + formatParameter : placeholderName;
+            placeholderOrder.add(placeholderWithFormat);
             lastEnd = placeholderMatch.end;
         }
 
@@ -186,14 +209,57 @@ public class FilenamePatternExtractor {
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(pattern);
         
         while (matcher.find()) {
+            String placeholderName;
+            String formatParameter = null;
+            
+            if (matcher.group(0).equals("*")) {
+                placeholderName = "*";
+            } else {
+                placeholderName = matcher.group(1);
+                formatParameter = matcher.group(2);
+            }
+            
             placeholderMatches.add(new PlaceholderMatch(
                 matcher.start(),
                 matcher.end(),
-                matcher.group(1)
+                placeholderName,
+                formatParameter
             ));
         }
         
         return placeholderMatches;
+    }
+
+    private String buildRegexForDateFormat(String dateFormat) {
+        StringBuilder result = new StringBuilder();
+        int i = 0;
+        
+        while (i < dateFormat.length()) {
+            if (dateFormat.startsWith("yyyy", i)) {
+                result.append("\\d{4}");
+                i += 4;
+            } else if (dateFormat.startsWith("yy", i)) {
+                result.append("\\d{2}");
+                i += 2;
+            } else if (dateFormat.startsWith("MM", i)) {
+                result.append("\\d{2}");
+                i += 2;
+            } else if (dateFormat.startsWith("M", i)) {
+                result.append("\\d{1,2}");
+                i += 1;
+            } else if (dateFormat.startsWith("dd", i)) {
+                result.append("\\d{2}");
+                i += 2;
+            } else if (dateFormat.startsWith("d", i)) {
+                result.append("\\d{1,2}");
+                i += 1;
+            } else {
+                result.append(Pattern.quote(String.valueOf(dateFormat.charAt(i))));
+                i++;
+            }
+        }
+        
+        return "(" + result.toString() + ")";
     }
 
     private String determineRegexForPlaceholder(PlaceholderConfig config, boolean shouldUseGreedyMatching) {
@@ -214,15 +280,23 @@ public class FilenamePatternExtractor {
         BookMetadata metadata = new BookMetadata();
 
         for (int i = 0; i < placeholderOrder.size(); i++) {
-            String placeholderName = placeholderOrder.get(i);
+            String placeholderWithFormat = placeholderOrder.get(i);
+            String[] parts = placeholderWithFormat.split(":", 2);
+            String placeholderName = parts[0];
+            String formatParameter = parts.length > 1 ? parts[1] : null;
+            
+            if ("*".equals(placeholderName)) {
+                continue;
+            }
+            
             String value = matcher.group(i + 1).trim();
-            applyValueToMetadata(metadata, placeholderName, value);
+            applyValueToMetadata(metadata, placeholderName, value, formatParameter);
         }
 
         return metadata;
     }
 
-    private void applyValueToMetadata(BookMetadata metadata, String placeholderName, String value) {
+    private void applyValueToMetadata(BookMetadata metadata, String placeholderName, String value, String formatParameter) {
         if (value == null || value.isBlank()) {
             return;
         }
@@ -230,12 +304,16 @@ public class FilenamePatternExtractor {
         switch (placeholderName) {
             case "SeriesName" -> metadata.setSeriesName(value);
             case "Title" -> metadata.setTitle(value);
+            case "Subtitle" -> metadata.setSubtitle(value);
             case "Authors" -> metadata.setAuthors(parseAuthors(value));
-            case "SeriesNumber", "SeriesBookNumber" -> parseAndSetSeriesNumber(metadata, value);
-            case "Year" -> parseAndSetYear(metadata, value);
+            case "SeriesNumber" -> parseAndSetSeriesNumber(metadata, value);
+            case "Published" -> parseAndSetPublishedDate(metadata, value, formatParameter);
             case "Publisher" -> metadata.setPublisher(value);
             case "Language" -> metadata.setLanguage(value);
             case "SeriesTotal" -> parseAndSetSeriesTotal(metadata, value);
+            case "ISBN10" -> metadata.setIsbn10(value);
+            case "ISBN13" -> metadata.setIsbn13(value);
+            case "ASIN" -> metadata.setAsin(value);
         }
     }
 
@@ -259,13 +337,71 @@ public class FilenamePatternExtractor {
         }
     }
 
-    private void parseAndSetYear(BookMetadata metadata, String value) {
-        try {
-            int year = Integer.parseInt(value);
-            metadata.setPublishedDate(LocalDate.of(year, 1, 1));
-        } catch (NumberFormatException e) {
-            log.debug("Could not parse year: {}", value);
+    private void parseAndSetPublishedDate(BookMetadata metadata, String value, String dateFormat) {
+        String detectedFormat = (dateFormat == null || dateFormat.isBlank()) 
+                ? detectDateFormat(value) 
+                : dateFormat;
+        
+        if (detectedFormat == null) {
+            log.debug("Could not detect date format for value: '{}'", value);
+            return;
         }
+        
+        try {
+            if ("yyyy".equals(detectedFormat) || "yy".equals(detectedFormat)) {
+                int year = Integer.parseInt(value);
+                if ("yy".equals(detectedFormat) && year < 100) {
+                    year += (year < 50) ? 2000 : 1900;
+                }
+                metadata.setPublishedDate(LocalDate.of(year, 1, 1));
+                return;
+            }
+            
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
+            LocalDate date = LocalDate.parse(value, formatter);
+            metadata.setPublishedDate(date);
+        } catch (DateTimeParseException | IllegalArgumentException e) {
+            log.debug("Could not parse published date '{}' with format '{}': {}", value, detectedFormat, e.getMessage());
+        }
+    }
+
+    private String detectDateFormat(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        
+        String trimmedValue = value.trim();
+        int length = trimmedValue.length();
+        
+        if (length == 4 && trimmedValue.matches("\\d{4}")) {
+            return "yyyy";
+        }
+        
+        if (length == 2 && trimmedValue.matches("\\d{2}")) {
+            return "yy";
+        }
+        
+        if (trimmedValue.matches("\\d{4}-\\d{1,2}-\\d{1,2}")) {
+            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}-\\d{2}-\\d{2}");
+            return hasPaddedMonthAndDay ? "yyyy-MM-dd" : "yyyy-M-d";
+        }
+        
+        if (trimmedValue.matches("\\d{4}\\.\\d{1,2}\\.\\d{1,2}")) {
+            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}\\.\\d{2}\\.\\d{2}");
+            return hasPaddedMonthAndDay ? "yyyy.MM.dd" : "yyyy.M.d";
+        }
+        
+        if (trimmedValue.matches("\\d{4}/\\d{1,2}/\\d{1,2}")) {
+            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}/\\d{2}/\\d{2}");
+            return hasPaddedMonthAndDay ? "yyyy/MM/dd" : "yyyy/M/d";
+        }
+        
+        if (length == 8 && trimmedValue.matches("\\d{8}")) {
+            return "yyyyMMdd";
+        }
+        
+        log.debug("No date format detected for value: '{}'", value);
+        return null;
     }
 
     private void parseAndSetSeriesTotal(BookMetadata metadata, String value) {
@@ -280,5 +416,5 @@ public class FilenamePatternExtractor {
 
     private record ParsedPattern(Pattern compiledPattern, List<String> placeholderOrder) {}
     
-    private record PlaceholderMatch(int start, int end, String name) {}
+    private record PlaceholderMatch(int start, int end, String name, String formatParameter) {}
 }

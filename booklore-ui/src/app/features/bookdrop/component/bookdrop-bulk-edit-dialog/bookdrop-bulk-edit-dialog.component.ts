@@ -50,7 +50,6 @@ export class BookdropBulkEditDialogComponent implements OnInit {
 
   bulkEditForm = new FormGroup({
     seriesName: new FormControl(''),
-    seriesNumber: new FormControl<number | null>(null),
     seriesTotal: new FormControl<number | null>(null),
     authors: new FormControl<string[]>([]),
     publisher: new FormControl(''),
@@ -67,7 +66,6 @@ export class BookdropBulkEditDialogComponent implements OnInit {
   ];
 
   numberFields: BulkEditField[] = [
-    {name: 'seriesNumber', label: 'Series Number', type: 'number', controlName: 'seriesNumber'},
     {name: 'seriesTotal', label: 'Series Total', type: 'number', controlName: 'seriesTotal'},
   ];
 

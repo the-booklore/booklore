@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, ElementRef, inject, OnInit, ViewChild} from '@angular/core';
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Button} from 'primeng/button';
@@ -46,7 +46,8 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   private readonly bookdropService = inject(BookdropService);
   private readonly messageService = inject(MessageService);
 
-  sampleFiles: string[] = [];
+  @ViewChild('patternInput', {static: false}) patternInput?: ElementRef<HTMLInputElement>;
+
   fileCount = 0;
   selectAll = false;
   excludedIds: number[] = [];
@@ -63,28 +64,35 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   });
 
   availablePlaceholders: PatternPlaceholder[] = [
-    {name: 'SeriesName', description: 'Series or comic name', example: 'One Punch Man'},
-    {name: 'Title', description: 'Book title', example: 'The Great Gatsby'},
+    {name: '*', description: 'Wildcard - skips any text (not a metadata field)', example: 'anything'},
+    {name: 'SeriesName', description: 'Series or comic name', example: 'Chronicles of Earth'},
+    {name: 'Title', description: 'Book title', example: 'The Lost City'},
+    {name: 'Subtitle', description: 'Book subtitle', example: 'A Tale of Adventure'},
     {name: 'Authors', description: 'Author name(s)', example: 'John Smith'},
     {name: 'SeriesNumber', description: 'Book number in series', example: '25'},
-    {name: 'SeriesBookNumber', description: 'Alias for SeriesNumber', example: '12'},
-    {name: 'Year', description: 'Publication year (4 digits)', example: '2023'},
-    {name: 'Publisher', description: 'Publisher name', example: 'Marvel'},
+    {name: 'Published', description: 'Full date with format', example: '{Published:yyyy-MM-dd}'},
+    {name: 'Publisher', description: 'Publisher name', example: 'Epic Press'},
     {name: 'Language', description: 'Language code', example: 'en'},
     {name: 'SeriesTotal', description: 'Total books in series', example: '50'},
+    {name: 'ISBN10', description: 'ISBN-10 identifier', example: '1234567890'},
+    {name: 'ISBN13', description: 'ISBN-13 identifier', example: '1234567890123'},
+    {name: 'ASIN', description: 'Amazon ASIN', example: 'B012345678'},
   ];
 
   commonPatterns = [
-    {label: 'Series - Ch Number', pattern: '{SeriesName} - Ch {SeriesNumber}'},
-    {label: 'Series - Volume Number', pattern: '{SeriesName} - Vol {SeriesNumber}'},
-    {label: 'Series #Number', pattern: '{SeriesName} #{SeriesNumber}'},
-    {label: 'Title (Year)', pattern: '{Title} ({Year})'},
     {label: 'Author - Title', pattern: '{Authors} - {Title}'},
-    {label: 'Series Vol.X #Y', pattern: '{SeriesName} Vol.{SeriesTotal} #{SeriesNumber}'},
+    {label: 'Title - Author', pattern: '{Title} - {Authors}'},
+    {label: 'Title (Year)', pattern: '{Title} ({Published:yyyy})'},
+    {label: 'Author - Title (Year)', pattern: '{Authors} - {Title} ({Published:yyyy})'},
+    {label: 'Series #Number', pattern: '{SeriesName} #{SeriesNumber}'},
+    {label: 'Series - Chapter Number', pattern: '{SeriesName} - Chapter {SeriesNumber}'},
+    {label: 'Series - Vol Number', pattern: '{SeriesName} - Vol {SeriesNumber}'},
+    {label: '[Tag] Series - Chapter Number', pattern: '[*] {SeriesName} - Chapter {SeriesNumber}'},
+    {label: 'Title by Author', pattern: '{Title} by {Authors}'},
+    {label: 'Series vX #Y', pattern: '{SeriesName} v{SeriesTotal} #{SeriesNumber}'},
   ];
 
   ngOnInit(): void {
-    this.sampleFiles = this.config.data?.sampleFiles ?? [];
     this.fileCount = this.config.data?.fileCount ?? 0;
     this.selectAll = this.config.data?.selectAll ?? false;
     this.excludedIds = this.config.data?.excludedIds ?? [];
@@ -92,8 +100,45 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   insertPlaceholder(placeholderName: string): void {
-    const currentPattern = this.patternForm.get('pattern')?.value ?? '';
-    this.patternForm.get('pattern')?.setValue(currentPattern + `{${placeholderName}}`);
+    const patternControl = this.patternForm.get('pattern');
+    const currentPattern = patternControl?.value ?? '';
+    const inputElement = this.patternInput?.nativeElement;
+    
+    const textToInsert = placeholderName === '*' ? '*' : `{${placeholderName}}`;
+    
+    const existingPlaceholderRegex = placeholderName === '*' 
+      ? /\*/g
+      : new RegExp(`\\{${placeholderName}(?::[^}]*)?\\}`, 'g');
+    
+    let patternWithoutExisting = currentPattern.replace(existingPlaceholderRegex, '');
+    
+    if (inputElement) {
+      let cursorPosition = inputElement.selectionStart ?? patternWithoutExisting.length;
+      
+      if (currentPattern !== patternWithoutExisting) {
+        const matchBefore = currentPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
+        if (matchBefore) {
+          cursorPosition -= matchBefore.reduce((sum, match) => sum + match.length, 0);
+        }
+        cursorPosition = Math.max(0, cursorPosition);
+      }
+      
+      const textBefore = patternWithoutExisting.substring(0, cursorPosition);
+      const textAfter = patternWithoutExisting.substring(cursorPosition);
+      const newPattern = textBefore + textToInsert + textAfter;
+      
+      patternControl?.setValue(newPattern);
+      
+      setTimeout(() => {
+        const newCursorPosition = cursorPosition + textToInsert.length;
+        inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
+        inputElement.focus();
+      }, 0);
+    } else {
+      patternControl?.setValue(patternWithoutExisting + textToInsert);
+    }
+    
+    this.previewPattern();
   }
 
   applyCommonPattern(pattern: string): void {
@@ -108,71 +153,26 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
       return;
     }
 
-    this.previewResults = this.sampleFiles.map(fileName => {
-      const result = this.simulateExtraction(fileName, pattern);
-      return {
-        fileName,
-        success: result.success,
-        preview: result.extracted,
-      };
+    const request = {
+      pattern,
+      selectAll: this.selectAll,
+      excludedIds: this.excludedIds,
+      selectedIds: this.selectedIds,
+      preview: true
+    };
+
+    this.bookdropService.extractFromPattern(request).subscribe({
+      next: (result) => {
+        this.previewResults = result.results.map(r => ({
+          fileName: r.fileName,
+          success: r.success,
+          preview: r.extractedMetadata || {}
+        }));
+      },
+      error: () => {
+        this.previewResults = [];
+      }
     });
-  }
-
-  private simulateExtraction(filename: string, pattern: string): { success: boolean; extracted: Record<string, string> } {
-    const filenameWithoutExtension = this.getBaseName(filename);
-    const placeholderRegex = /\{(\w+)}/g;
-    const placeholders: string[] = [];
-    let regexPattern = pattern;
-
-    let match;
-    while ((match = placeholderRegex.exec(pattern)) !== null) {
-      placeholders.push(match[1]);
-    }
-
-    regexPattern = this.escapeRegex(pattern);
-    
-    const lastPlaceholderMatch = pattern.match(/\{(\w+)}(?![\s\S]*\{)/);
-    const lastPlaceholderName = lastPlaceholderMatch ? lastPlaceholderMatch[1] : null;
-    const patternEndsWithPlaceholder = pattern.trimEnd().endsWith('}');
-    
-    regexPattern = regexPattern.replace(/\\\{(\w+)\\}/g, (_, placeholderName) => {
-      if (['SeriesNumber', 'SeriesBookNumber', 'SeriesTotal'].includes(placeholderName)) {
-        return '(\\d+(?:\\.\\d+)?)';
-      }
-      if (placeholderName === 'Year') {
-        return '(\\d{4})';
-      }
-      
-      const isLastPlaceholderWithNoTextAfter = (placeholderName === lastPlaceholderName && patternEndsWithPlaceholder);
-      return isLastPlaceholderWithNoTextAfter ? '(.+)' : '(.+?)';
-    });
-
-    try {
-      const regex = new RegExp(regexPattern);
-      const extractMatch = regex.exec(filenameWithoutExtension);
-
-      if (!extractMatch) {
-        return {success: false, extracted: {}};
-      }
-
-      const extracted: Record<string, string> = {};
-      placeholders.forEach((placeholder, index) => {
-        extracted[placeholder] = extractMatch[index + 1]?.trim() ?? '';
-      });
-
-      return {success: true, extracted};
-    } catch {
-      return {success: false, extracted: {}};
-    }
-  }
-
-  private escapeRegex(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
-  private getBaseName(filename: string): string {
-    const lastDot = filename.lastIndexOf('.');
-    return lastDot > 0 ? filename.substring(0, lastDot) : filename;
   }
 
   cancel(): void {
@@ -222,7 +222,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   getPlaceholderLabel(name: string): string {
-    return '{' + name + '}';
+    return name === '*' ? '*' : '{' + name + '}';
   }
 
   getPlaceholderTooltip(placeholder: PatternPlaceholder): string {
