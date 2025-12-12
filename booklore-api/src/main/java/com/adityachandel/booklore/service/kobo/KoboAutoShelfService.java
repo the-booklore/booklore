@@ -10,7 +10,12 @@ import com.adityachandel.booklore.repository.ShelfRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 
@@ -24,13 +29,25 @@ public class KoboAutoShelfService {
     private final BookRepository bookRepository;
     private final KoboCompatibilityService koboCompatibilityService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void autoAddBookToKoboShelves(Long bookId) {
         BookEntity book = bookRepository.findById(bookId).orElse(null);
         if (book == null) {
             log.warn("Book not found for auto-add to Kobo shelf: {}", bookId);
             return;
         }
+
+        autoAddBookToKoboShelvesInternal(book);
+    }
+
+    @Transactional
+    public void autoAddBookToKoboShelvesInternal(BookEntity book) {
+        if (book == null) {
+            log.warn("Book is null for auto-add to Kobo shelf");
+            return;
+        }
+
+        Long bookId = book.getId();
 
         // Check if book is compatible with Kobo
         if (!koboCompatibilityService.isBookSupportedForKobo(book)) {
