@@ -22,9 +22,11 @@ jobs:
           - 3306:3306
         options: >-
           --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent"
-          --health-interval=5s
-          --health-timeout=3s
-          --health-retries=10
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+          --max-allowed-packet=64M
+          --innodb-buffer-pool-size=128M
 
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +51,7 @@ jobs:
 
       - name: Wait for MariaDB
         run: |
+          sleep 10
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
