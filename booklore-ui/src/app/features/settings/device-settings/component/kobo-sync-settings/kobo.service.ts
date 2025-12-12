@@ -23,27 +23,10 @@ export class KoboService {
   }
 
   createOrUpdateToken(): Observable<KoboSyncSettings> {
-    return this.http.put<KoboSyncSettings>(`${this.baseUrl}`, null);
+    return this.http.put<KoboSyncSettings>(`${this.baseUrl}/token`, null);
   }
 
-  toggleSync(enabled: boolean): Observable<void> {
-    const params = new HttpParams().set('enabled', enabled.toString());
-    return this.http.put<void>(`${this.baseUrl}/sync`, null, { params });
-  }
-
-  updateProgressThresholds(readingThreshold?: number, finishedThreshold?: number): Observable<KoboSyncSettings> {
-    let params = new HttpParams();
-    if (readingThreshold !== undefined && readingThreshold !== null) {
-      params = params.set('readingThreshold', readingThreshold.toString());
-    }
-    if (finishedThreshold !== undefined && finishedThreshold !== null) {
-      params = params.set('finishedThreshold', finishedThreshold.toString());
-    }
-    return this.http.put<KoboSyncSettings>(`${this.baseUrl}/progress-thresholds`, null, { params });
-  }
-
-  toggleAutoAdd(enabled: boolean): Observable<KoboSyncSettings> {
-    const params = new HttpParams().set('enabled', enabled.toString());
-    return this.http.put<KoboSyncSettings>(`${this.baseUrl}/auto-add`, null, { params });
+  updateSettings(settings: KoboSyncSettings): Observable<KoboSyncSettings> {
+    return this.http.put<KoboSyncSettings>(`${this.baseUrl}`, settings);
   }
 }

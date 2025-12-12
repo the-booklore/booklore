@@ -36,5 +36,5 @@ public class KoboUserSettingsEntity {
 
     @Column(name = "auto_add_to_shelf")
     @Builder.Default
-    private boolean autoAddToShelf = true;
+    private boolean autoAddToShelf = false;
 }

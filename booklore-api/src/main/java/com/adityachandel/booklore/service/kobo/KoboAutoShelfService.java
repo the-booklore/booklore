@@ -12,12 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -31,59 +29,69 @@ public class KoboAutoShelfService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void autoAddBookToKoboShelves(Long bookId) {
+        if (bookId == null) {
+            log.warn("Book ID is null for auto-add to Kobo shelf");
+            return;
+        }
+
         BookEntity book = bookRepository.findById(bookId).orElse(null);
-        if (book == null) {
-            log.warn("Book not found for auto-add to Kobo shelf: {}", bookId);
+        if (!isBookEligible(book)) {
             return;
         }
 
-        autoAddBookToKoboShelvesInternal(book);
-    }
+        List<KoboUserSettingsEntity> eligibleUsers = koboUserSettingsRepository.findByAutoAddToShelfTrueAndSyncEnabledTrue();
 
-    @Transactional
-    public void autoAddBookToKoboShelvesInternal(BookEntity book) {
-        if (book == null) {
-            log.warn("Book is null for auto-add to Kobo shelf");
+        if (eligibleUsers.isEmpty()) {
+            log.debug("No Kobo auto-add enabled users for book {}", book.getId());
             return;
         }
 
-        Long bookId = book.getId();
-
-        // Check if book is compatible with Kobo
-        if (!koboCompatibilityService.isBookSupportedForKobo(book)) {
-            log.debug("Book {} is not Kobo-compatible, skipping auto-add", bookId);
-            return;
-        }
-
-        // Find all users with auto-add enabled and sync enabled
-        List<KoboUserSettingsEntity> usersWithAutoAdd = koboUserSettingsRepository.findAll().stream()
-                .filter(KoboUserSettingsEntity::isAutoAddToShelf)
-                .filter(KoboUserSettingsEntity::isSyncEnabled)
+        List<Long> userIds = eligibleUsers.stream()
+                .map(KoboUserSettingsEntity::getUserId)
                 .toList();
 
-        for (KoboUserSettingsEntity userSettings : usersWithAutoAdd) {
-            Long userId = userSettings.getUserId();
+        List<ShelfEntity> shelves = shelfRepository.findByUserIdInAndName(userIds, ShelfType.KOBO.getName());
 
-            // Find the user's Kobo shelf
-            ShelfEntity koboShelf = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
-                    .orElse(null);
+        Map<Long, ShelfEntity> shelfByUser = shelves
+                .stream()
+                .collect(Collectors.toMap(s -> s.getUser().getId(), s -> s));
 
-            if (koboShelf == null) {
-                log.debug("User {} has auto-add enabled but no Kobo shelf exists", userId);
+        boolean modified = false;
+
+        for (KoboUserSettingsEntity setting : eligibleUsers) {
+            ShelfEntity shelf = shelfByUser.get(setting.getUserId());
+
+            if (shelf == null) {
+                log.debug("User {} has auto-add enabled but no Kobo shelf exists", setting.getUserId());
                 continue;
             }
 
-            // Check if book is already on the shelf
-            if (book.getShelves().contains(koboShelf)) {
-                log.debug("Book {} already on Kobo shelf for user {}", bookId, userId);
+            if (book.getShelves().contains(shelf)) {
+                log.debug("Book {} already on Kobo shelf for user {}", book.getId(), setting.getUserId());
                 continue;
             }
 
-            // Add book to Kobo shelf
-            book.getShelves().add(koboShelf);
-            log.info("Auto-added book {} to Kobo shelf for user {}", bookId, userId);
+            book.getShelves().add(shelf);
+            modified = true;
+            log.info("Auto-added book {} to Kobo shelf for user {}", book.getId(), setting.getUserId());
         }
 
-        bookRepository.save(book);
+        if (modified) {
+            bookRepository.save(book);
+        }
+    }
+
+    private boolean isBookEligible(BookEntity book) {
+        if (book == null) {
+            log.warn("Book not found for Kobo auto-add");
+            return false;
+        }
+
+        if (!koboCompatibilityService.isBookSupportedForKobo(book)) {
+            log.debug("Book {} is not Kobo-compatible, skipping", book.getId());
+            return false;
+        }
+
+        return true;
     }
 }
