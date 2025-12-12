@@ -3,6 +3,7 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.entity.*;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
@@ -22,6 +23,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
+    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBook(BookEntity bookEntity);
@@ -31,6 +33,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
+    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
@@ -69,6 +72,12 @@ public interface BookMapper {
         return LibraryPath.builder()
                 .id(entity.getId())
                 .build();
+    }
+
+    @Named("mapPrimaryBookType")
+    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+        return primary == null ? null : primary.getBookType();
     }
 
     @Named("mapAlternativeFormats")
