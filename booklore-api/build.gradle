@@ -49,6 +49,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+    // --- Flyway for runtime (required by Spring Boot for the flyway bean) ---
+    implementation 'org.flywaydb:flyway-core:11.18.0'
+
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
 
