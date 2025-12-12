@@ -51,7 +51,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mysqladmin ping -h localhost -u root -prootpassword"
+          --health-cmd="mariadb-admin ping -h localhost -u root -prootpassword"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -298,7 +298,7 @@ jobs:
           
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if docker exec mariadb mysqladmin ping -h localhost -u root -prootpassword 2>/dev/null; then
+            if docker exec mariadb mariadb-admin ping -h localhost -u root -prootpassword 2>/dev/null; then
               echo "MariaDB is ready!"
               break
             fi

@@ -152,15 +152,20 @@ jobs:
         with:
           cache-read-only: ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/develop"]'), github.ref) }}
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB ${{ matrix.mariadb-version }}
         run: |
           echo "⏳ Waiting for MariaDB ${{ matrix.mariadb-version }}..."
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               echo "✅ MariaDB ${{ matrix.mariadb-version }} is ready"
               
               # Verify strict mode is enabled
-              SQLMODE=$(mysql -h 127.0.0.1 -uroot -ptestroot -e "SELECT @@sql_mode;" -sN)
+              SQLMODE=$(mariadb -h 127.0.0.1 -uroot -ptestroot -e "SELECT @@sql_mode;" -sN)
               echo "📋 SQL Mode: $SQLMODE"
               exit 0
             fi
@@ -211,7 +216,7 @@ jobs:
             -Dorg.gradle.jvmargs="-Xmx1024m"
           
           # Record baseline state
-          BASELINE_VERSION=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          BASELINE_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;")
           echo "📋 Baseline schema version: $BASELINE_VERSION"
           echo "version=$BASELINE_VERSION" >> $GITHUB_OUTPUT
@@ -222,7 +227,7 @@ jobs:
         run: |
           echo "🌱 Seeding test data to detect migration regressions..."
           
-          mysql -h 127.0.0.1 -uroot -ptestroot booklore_test << 'SEEDSQL'
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test << 'SEEDSQL'
           -- ============================================
           -- Synthetic Test Data for Migration Verification
           -- ============================================
@@ -302,13 +307,13 @@ jobs:
           # Capture baseline counts
           echo "📊 Capturing baseline data counts..."
           
-          BOOK_COUNT=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          BOOK_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book WHERE id >= 99900;" 2>/dev/null || echo "0")
           echo "book_count=$BOOK_COUNT" >> $GITHUB_OUTPUT
           echo "  Books seeded: $BOOK_COUNT"
           
           # Capture specific test values
-          UNICODE_TITLE=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          UNICODE_TITLE=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT file_name FROM book WHERE id = 99901;" 2>/dev/null || echo "")
           echo "unicode_title=$UNICODE_TITLE" >> $GITHUB_OUTPUT
           echo "  Unicode title: $UNICODE_TITLE"
@@ -328,7 +333,7 @@ jobs:
             -Dorg.gradle.jvmargs="-Xmx1024m"
           
           # Record new version
-          NEW_VERSION=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          NEW_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;")
           echo "📋 Upgraded schema version: $NEW_VERSION"
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
@@ -344,7 +349,7 @@ jobs:
           echo ""
           echo "=== Test 1: Row Count Integrity ==="
           EXPECTED_BOOKS="${{ steps.seed.outputs.book_count }}"
-          ACTUAL_BOOKS=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          ACTUAL_BOOKS=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book WHERE id >= 99900;" 2>/dev/null || echo "0")
           
           if [ "$EXPECTED_BOOKS" = "$ACTUAL_BOOKS" ]; then
@@ -358,7 +363,7 @@ jobs:
           echo ""
           echo "=== Test 2: Unicode Data Integrity ==="
           EXPECTED_UNICODE="${{ steps.seed.outputs.unicode_title }}"
-          ACTUAL_UNICODE=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          ACTUAL_UNICODE=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT file_name FROM book WHERE id = 99901;" 2>/dev/null || echo "")
           
           if [ "$EXPECTED_UNICODE" = "$ACTUAL_UNICODE" ]; then
@@ -373,7 +378,7 @@ jobs:
           # Test 3: Long text truncation check
           echo ""
           echo "=== Test 3: Long Text Preservation ==="
-          DESC_LENGTH=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          DESC_LENGTH=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT LENGTH(description) FROM book_metadata WHERE book_id = 99902;" 2>/dev/null || echo "0")
           
           if [ "$DESC_LENGTH" -gt 1000 ]; then
@@ -388,7 +393,7 @@ jobs:
           # Test 4: Check for orphaned FK references
           echo ""
           echo "=== Test 4: Referential Integrity ==="
-          ORPHANED=$(mysql -h 127.0.0.1 -uroot -ptestroot booklore_test \
+          ORPHANED=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book b LEFT JOIN library l ON b.library_id = l.id WHERE l.id IS NULL AND b.id >= 99900;" 2>/dev/null || echo "0")
           
           if [ "$ORPHANED" = "0" ]; then
@@ -413,7 +418,7 @@ jobs:
       - name: Cleanup test data
         if: always()
         run: |
-          mysql -h 127.0.0.1 -uroot -ptestroot booklore_test << 'CLEANSQL'
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test << 'CLEANSQL'
           -- Clean up test data with safe existence checks
           SET @sql = (
             SELECT IF(
@@ -466,7 +471,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: testroot
           MYSQL_DATABASE: booklore_history
@@ -498,10 +503,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
               exit 0
             fi

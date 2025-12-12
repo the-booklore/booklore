@@ -22,7 +22,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: booklore
@@ -51,10 +51,15 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/develop' }}
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
               exit 0
             fi

@@ -41,7 +41,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: testroot
           MYSQL_DATABASE: booklore
@@ -73,10 +73,15 @@ jobs:
         with:
           cache-read-only: ${{ !contains(fromJSON('["refs/heads/main", "refs/heads/develop"]'), github.ref) }}
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
               exit 0
             fi
@@ -99,14 +104,14 @@ jobs:
         run: |
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               break
             fi
             sleep 2
           done
 
           # Create test user for Kobo authentication
-          mysql -h 127.0.0.1 -uroot -ptestroot booklore -e "
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "
             CREATE TABLE IF NOT EXISTS book_lore_user (
               id BIGINT PRIMARY KEY AUTO_INCREMENT,
               username VARCHAR(255) UNIQUE NOT NULL,
@@ -272,7 +277,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: testroot
           MYSQL_DATABASE: booklore
@@ -302,10 +307,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               echo "✅ MariaDB is ready"
               exit 0
             fi
@@ -328,14 +338,14 @@ jobs:
         run: |
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               break
             fi
             sleep 2
           done
 
           # Create test user for KOReader authentication
-          mysql -h 127.0.0.1 -uroot -ptestroot booklore -e "
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "
             CREATE TABLE IF NOT EXISTS book_lore_user (
               id BIGINT PRIMARY KEY AUTO_INCREMENT,
               username VARCHAR(255) UNIQUE NOT NULL,
@@ -546,7 +556,7 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:11.4
+        image: mariadb:10.11
         env:
           MYSQL_ROOT_PASSWORD: testroot
           MYSQL_DATABASE: booklore
@@ -576,10 +586,15 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
+
       - name: Wait for MariaDB
         run: |
           for i in {1..30}; do
-            if mysqladmin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               exit 0
             fi
             sleep 2
