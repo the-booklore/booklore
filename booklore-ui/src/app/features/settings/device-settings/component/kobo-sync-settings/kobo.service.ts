@@ -8,6 +8,7 @@ export interface KoboSyncSettings {
   syncEnabled: boolean;
   progressMarkAsReadingThreshold?: number;
   progressMarkAsFinishedThreshold?: number;
+  autoAddToShelf: boolean;
 }
 
 @Injectable({
@@ -39,5 +40,10 @@ export class KoboService {
       params = params.set('finishedThreshold', finishedThreshold.toString());
     }
     return this.http.put<KoboSyncSettings>(`${this.baseUrl}/progress-thresholds`, null, { params });
+  }
+
+  toggleAutoAdd(enabled: boolean): Observable<KoboSyncSettings> {
+    const params = new HttpParams().set('enabled', enabled.toString());
+    return this.http.put<KoboSyncSettings>(`${this.baseUrl}/auto-add`, null, { params });
   }
 }

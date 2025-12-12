@@ -58,4 +58,14 @@ public class KoboSettingsController {
         KoboSyncSettings updated = koboService.updateProgressThresholds(readingThreshold, finishedThreshold);
         return ResponseEntity.ok(updated);
     }
+
+    @Operation(summary = "Toggle auto-add to Kobo shelf", description = "Enable or disable automatic addition of new books to the Kobo shelf. Requires sync permission or admin.")
+    @ApiResponse(responseCode = "200", description = "Auto-add setting updated successfully")
+    @PutMapping("/auto-add")
+    @PreAuthorize("@securityUtil.canSyncKobo() or @securityUtil.isAdmin()")
+    public ResponseEntity<KoboSyncSettings> toggleAutoAdd(
+            @Parameter(description = "Enable or disable auto-add to Kobo shelf") @RequestParam boolean enabled) {
+        KoboSyncSettings updated = koboService.setAutoAddToShelf(enabled);
+        return ResponseEntity.ok(updated);
+    }
 }
