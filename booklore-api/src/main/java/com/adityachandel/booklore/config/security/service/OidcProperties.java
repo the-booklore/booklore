@@ -32,7 +32,7 @@ public record OidcProperties(
                 Duration.ofMinutes(30),
                 Duration.ofMinutes(10),
                 true,
-                20,
+                100,
                 "",
                 null,
                 "BookLore-OIDC-Client/1.0",

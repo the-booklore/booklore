@@ -45,7 +45,8 @@ public class OidcRateLimitFilter extends OncePerRequestFilter {
             if (count.incrementAndGet() > limit) { 
                 log.warn("OIDC Token Endpoint Rate limit exceeded for IP: {}", clientIp);
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
-                response.getWriter().write("Rate limit exceeded. Please try again later.");
+                response.setContentType("application/json");
+                response.getWriter().write("{\"error\": \"Too Many Requests\", \"message\": \"Rate limit exceeded. Please try again later.\"}");
                 return;
             }
         }
