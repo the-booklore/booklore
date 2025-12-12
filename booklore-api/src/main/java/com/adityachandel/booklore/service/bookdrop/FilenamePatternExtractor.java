@@ -23,6 +23,13 @@ import java.util.regex.Pattern;
 public class FilenamePatternExtractor {
 
     private final BookdropFileRepository bookdropFileRepository;
+    
+    private static final int PREVIEW_FILE_LIMIT = 5;
+    private static final int TWO_DIGIT_YEAR_CUTOFF = 50;
+    private static final int TWO_DIGIT_YEAR_CENTURY_BASE = 1900;
+    private static final int FOUR_DIGIT_YEAR_LENGTH = 4;
+    private static final int TWO_DIGIT_YEAR_LENGTH = 2;
+    private static final int COMPACT_DATE_LENGTH = 8;
 
     private static final Map<String, PlaceholderConfig> PLACEHOLDER_CONFIGS = Map.ofEntries(
             Map.entry("SeriesName", new PlaceholderConfig("(.+?)", "seriesName")),
@@ -40,22 +47,34 @@ public class FilenamePatternExtractor {
     );
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\w+)(?::(.*?))?}|\\*");
+    
+    private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
+    private static final Pattern TWO_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{2}");
+    private static final Pattern COMPACT_DATE_PATTERN = Pattern.compile("\\d{8}");
+    private static final Pattern ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{1,2})-(\\d{1,2})");
+    private static final Pattern DOT_DATE_PATTERN = Pattern.compile("(\\d{4})\\.(\\d{1,2})\\.(\\d{1,2})");
+    private static final Pattern SLASH_DATE_PATTERN = Pattern.compile("(\\d{4})/(\\d{1,2})/(\\d{1,2})");
 
     public BookdropPatternExtractResult bulkExtract(BookdropPatternExtractRequest request) {
         List<Long> fileIds = resolveFileIds(request);
         List<BookdropFileEntity> files = bookdropFileRepository.findAllById(fileIds);
         
         boolean isPreview = Boolean.TRUE.equals(request.getPreview());
-        int previewLimit = 5;
-        List<BookdropFileEntity> filesToProcess = isPreview && files.size() > previewLimit
-                ? files.subList(0, previewLimit)
+        List<BookdropFileEntity> filesToProcess = isPreview && files.size() > PREVIEW_FILE_LIMIT
+                ? files.subList(0, PREVIEW_FILE_LIMIT)
                 : files;
+
+        ParsedPattern cachedPattern = parsePattern(request.getPattern());
+        if (cachedPattern == null) {
+            log.error("Failed to parse pattern: '{}'", request.getPattern());
+            return buildEmptyResult(files.size());
+        }
 
         List<BookdropPatternExtractResult.FileExtractionResult> results = new ArrayList<>();
         int successCount = 0;
 
         for (BookdropFileEntity file : filesToProcess) {
-            BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, request.getPattern());
+            BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, cachedPattern);
             results.add(result);
             if (result.isSuccess()) {
                 successCount++;
@@ -69,33 +88,31 @@ public class FilenamePatternExtractor {
                 .results(results)
                 .build();
     }
+    
+    private BookdropPatternExtractResult buildEmptyResult(int totalFiles) {
+        return BookdropPatternExtractResult.builder()
+                .totalFiles(totalFiles)
+                .successfullyExtracted(0)
+                .failed(totalFiles)
+                .results(Collections.emptyList())
+                .build();
+    }
 
     public BookMetadata extractFromFilename(String filename, String pattern) {
-        log.info("Extracting from filename='{}' with pattern='{}'", filename, pattern);
-        String nameOnly = FilenameUtils.getBaseName(filename);
-        log.info("Base name (without extension): '{}'", nameOnly);
-        
         ParsedPattern parsedPattern = parsePattern(pattern);
-
         if (parsedPattern == null) {
-            log.warn("Failed to parse pattern: '{}'", pattern);
             return null;
         }
-
-        String regexPattern = parsedPattern.compiledPattern().pattern();
-        log.info("Compiled regex pattern: '{}'", regexPattern);
         
+        return extractFromFilenameWithParsedPattern(filename, parsedPattern);
+    }
+    
+    private BookMetadata extractFromFilenameWithParsedPattern(String filename, ParsedPattern parsedPattern) {
+        String nameOnly = FilenameUtils.getBaseName(filename);
         Matcher extractMatcher = parsedPattern.compiledPattern().matcher(nameOnly);
-        boolean matches = extractMatcher.matches();
-        log.info("Regex match result: {}", matches);
         
-        if (!matches) {
-            log.warn("Pattern did not match filename");
+        if (!extractMatcher.matches()) {
             return null;
-        }
-
-        if (extractMatcher.groupCount() > 0) {
-            log.info("Extracted value from group 1: '{}'", extractMatcher.group(1));
         }
         
         return buildMetadataFromMatch(extractMatcher, parsedPattern.placeholderOrder());
@@ -103,9 +120,9 @@ public class FilenamePatternExtractor {
 
     private BookdropPatternExtractResult.FileExtractionResult extractFromFile(
             BookdropFileEntity file, 
-            String pattern) {
+            ParsedPattern parsedPattern) {
         try {
-            BookMetadata extracted = extractFromFilename(file.getFileName(), pattern);
+            BookMetadata extracted = extractFromFilenameWithParsedPattern(file.getFileName(), parsedPattern);
             
             if (extracted == null) {
                 return BookdropPatternExtractResult.FileExtractionResult.builder()
@@ -172,14 +189,11 @@ public class FilenamePatternExtractor {
             String regexForPlaceholder;
             if ("*".equals(placeholderName)) {
                 regexForPlaceholder = shouldUseGreedyMatching ? "(.+)" : "(.+?)";
-                log.debug("Wildcard *: using regex '{}' (greedy={})", regexForPlaceholder, shouldUseGreedyMatching);
             } else if ("Published".equals(placeholderName) && formatParameter != null) {
                 regexForPlaceholder = buildRegexForDateFormat(formatParameter);
-                log.debug("Placeholder Published with format '{}': using regex '{}'", formatParameter, regexForPlaceholder);
             } else {
                 PlaceholderConfig config = PLACEHOLDER_CONFIGS.get(placeholderName);
                 regexForPlaceholder = determineRegexForPlaceholder(config, shouldUseGreedyMatching);
-                log.debug("Placeholder {}: using regex '{}' (greedy={})", placeholderName, regexForPlaceholder, shouldUseGreedyMatching);
             }
             
             regexBuilder.append(regexForPlaceholder);
@@ -192,14 +206,11 @@ public class FilenamePatternExtractor {
         String literalTextAfterLastPlaceholder = pattern.substring(lastEnd);
         regexBuilder.append(Pattern.quote(literalTextAfterLastPlaceholder));
         
-        String finalRegex = regexBuilder.toString();
-        log.debug("Final compiled regex pattern: '{}'", finalRegex);
-
         try {
-            Pattern compiledPattern = Pattern.compile(finalRegex);
+            Pattern compiledPattern = Pattern.compile(regexBuilder.toString());
             return new ParsedPattern(compiledPattern, placeholderOrder);
         } catch (Exception e) {
-            log.error("Failed to compile pattern: {}", e.getMessage());
+            log.error("Failed to compile regex pattern from user input '{}': {}", pattern, e.getMessage());
             return null;
         }
     }
@@ -332,8 +343,7 @@ public class FilenamePatternExtractor {
     private void parseAndSetSeriesNumber(BookMetadata metadata, String value) {
         try {
             metadata.setSeriesNumber(Float.parseFloat(value));
-        } catch (NumberFormatException e) {
-            log.debug("Could not parse series number: {}", value);
+        } catch (NumberFormatException ignored) {
         }
     }
 
@@ -343,7 +353,6 @@ public class FilenamePatternExtractor {
                 : dateFormat;
         
         if (detectedFormat == null) {
-            log.debug("Could not detect date format for value: '{}'", value);
             return;
         }
         
@@ -351,7 +360,7 @@ public class FilenamePatternExtractor {
             if ("yyyy".equals(detectedFormat) || "yy".equals(detectedFormat)) {
                 int year = Integer.parseInt(value);
                 if ("yy".equals(detectedFormat) && year < 100) {
-                    year += (year < 50) ? 2000 : 1900;
+                    year += (year < TWO_DIGIT_YEAR_CUTOFF) ? 2000 : TWO_DIGIT_YEAR_CENTURY_BASE;
                 }
                 metadata.setPublishedDate(LocalDate.of(year, 1, 1));
                 return;
@@ -360,8 +369,7 @@ public class FilenamePatternExtractor {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
             LocalDate date = LocalDate.parse(value, formatter);
             metadata.setPublishedDate(date);
-        } catch (DateTimeParseException | IllegalArgumentException e) {
-            log.debug("Could not parse published date '{}' with format '{}': {}", value, detectedFormat, e.getMessage());
+        } catch (DateTimeParseException | IllegalArgumentException ignored) {
         }
     }
 
@@ -370,45 +378,53 @@ public class FilenamePatternExtractor {
             return null;
         }
         
-        String trimmedValue = value.trim();
-        int length = trimmedValue.length();
+        String trimmed = value.trim();
+        int length = trimmed.length();
         
-        if (length == 4 && trimmedValue.matches("\\d{4}")) {
+        if (length == FOUR_DIGIT_YEAR_LENGTH && FOUR_DIGIT_YEAR_PATTERN.matcher(trimmed).matches()) {
             return "yyyy";
         }
         
-        if (length == 2 && trimmedValue.matches("\\d{2}")) {
+        if (length == TWO_DIGIT_YEAR_LENGTH && TWO_DIGIT_YEAR_PATTERN.matcher(trimmed).matches()) {
             return "yy";
         }
         
-        if (trimmedValue.matches("\\d{4}-\\d{1,2}-\\d{1,2}")) {
-            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}-\\d{2}-\\d{2}");
-            return hasPaddedMonthAndDay ? "yyyy-MM-dd" : "yyyy-M-d";
-        }
-        
-        if (trimmedValue.matches("\\d{4}\\.\\d{1,2}\\.\\d{1,2}")) {
-            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}\\.\\d{2}\\.\\d{2}");
-            return hasPaddedMonthAndDay ? "yyyy.MM.dd" : "yyyy.M.d";
-        }
-        
-        if (trimmedValue.matches("\\d{4}/\\d{1,2}/\\d{1,2}")) {
-            boolean hasPaddedMonthAndDay = trimmedValue.matches("\\d{4}/\\d{2}/\\d{2}");
-            return hasPaddedMonthAndDay ? "yyyy/MM/dd" : "yyyy/M/d";
-        }
-        
-        if (length == 8 && trimmedValue.matches("\\d{8}")) {
+        if (length == COMPACT_DATE_LENGTH && COMPACT_DATE_PATTERN.matcher(trimmed).matches()) {
             return "yyyyMMdd";
         }
         
-        log.debug("No date format detected for value: '{}'", value);
+        Matcher isoMatcher = ISO_DATE_PATTERN.matcher(trimmed);
+        if (isoMatcher.matches()) {
+            return determineMonthDayFormat(isoMatcher, "yyyy", "MM", "dd", "-");
+        }
+        
+        Matcher dotMatcher = DOT_DATE_PATTERN.matcher(trimmed);
+        if (dotMatcher.matches()) {
+            return determineMonthDayFormat(dotMatcher, "yyyy", "MM", "dd", ".");
+        }
+        
+        Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(trimmed);
+        if (slashMatcher.matches()) {
+            return determineMonthDayFormat(slashMatcher, "yyyy", "MM", "dd", "/");
+        }
+        
         return null;
+    }
+    
+    private String determineMonthDayFormat(Matcher matcher, String year, String paddedMonth, String paddedDay, String separator) {
+        String monthPart = matcher.group(2);
+        String dayPart = matcher.group(3);
+        
+        String monthFormat = monthPart.length() == 2 ? paddedMonth : "M";
+        String dayFormat = dayPart.length() == 2 ? paddedDay : "d";
+        
+        return year + separator + monthFormat + separator + dayFormat;
     }
 
     private void parseAndSetSeriesTotal(BookMetadata metadata, String value) {
         try {
             metadata.setSeriesTotal(Integer.parseInt(value));
-        } catch (NumberFormatException e) {
-            log.debug("Could not parse series total: {}", value);
+        } catch (NumberFormatException ignored) {
         }
     }
 
