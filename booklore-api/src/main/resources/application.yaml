@@ -55,6 +55,7 @@ booklore:
         # Protects JWKS endpoint from flooding attacks
         # Safe to enable even for internal networks
         rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:true}
+        rate-limit-requests-per-minute: ${OIDC_JWKS_RATE_LIMIT_REQUESTS_PER_MINUTE:100}
         
         # HTTP proxy configuration for JWKS endpoint (optional, for corporate environments)
         proxy-host: ${OIDC_JWKS_PROXY_HOST:}
