@@ -55,7 +55,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     token: '',
     syncEnabled: false,
     progressMarkAsReadingThreshold: 1,
-    progressMarkAsFinishedThreshold: 99
+    progressMarkAsFinishedThreshold: 99,
+    autoAddToShelf: true
   }
 
   ngOnInit() {
@@ -108,6 +109,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.koboSyncSettings.syncEnabled = settings.syncEnabled;
         this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 1;
         this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99;
+        this.koboSyncSettings.autoAddToShelf = settings.autoAddToShelf ?? true;
         this.credentialsSaved = !!settings.token;
       },
       error: () => {
@@ -240,6 +242,27 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
           severity: 'error',
           summary: 'Error',
           detail: 'Failed to update progress thresholds'
+        });
+      }
+    });
+  }
+
+  onAutoAddToggle() {
+    this.koboService.toggleAutoAdd(this.koboSyncSettings.autoAddToShelf).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Auto-Add Updated',
+          detail: this.koboSyncSettings.autoAddToShelf
+            ? 'New books will be automatically added to Kobo shelf'
+            : 'Auto-add to Kobo shelf disabled'
+        });
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update auto-add setting'
         });
       }
     });

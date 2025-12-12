@@ -76,14 +76,24 @@ public class KoboSettingsService {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         KoboUserSettingsEntity entity = repository.findByUserId(user.getId())
                 .orElseGet(() -> initDefaultSettings(user.getId()));
-        
+
         if (readingThreshold != null) {
             entity.setProgressMarkAsReadingThreshold(readingThreshold);
         }
         if (finishedThreshold != null) {
             entity.setProgressMarkAsFinishedThreshold(finishedThreshold);
         }
-        
+
+        repository.save(entity);
+        return mapToDto(entity);
+    }
+
+    @Transactional
+    public KoboSyncSettings setAutoAddToShelf(boolean enabled) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        KoboUserSettingsEntity entity = repository.findByUserId(user.getId())
+                .orElseGet(() -> initDefaultSettings(user.getId()));
+        entity.setAutoAddToShelf(enabled);
         repository.save(entity);
         return mapToDto(entity);
     }
@@ -122,6 +132,7 @@ public class KoboSettingsService {
         dto.setSyncEnabled(entity.isSyncEnabled());
         dto.setProgressMarkAsReadingThreshold(entity.getProgressMarkAsReadingThreshold());
         dto.setProgressMarkAsFinishedThreshold(entity.getProgressMarkAsFinishedThreshold());
+        dto.setAutoAddToShelf(entity.isAutoAddToShelf());
         return dto;
     }
 }
