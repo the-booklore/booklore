@@ -21,7 +21,7 @@ jobs:
         ports:
           - 3306:3306
         options: >-
-          --health-cmd="mariadb-admin ping -h localhost -uroot -proot"
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent"
           --health-interval=5s
           --health-timeout=3s
           --health-retries=10
@@ -42,6 +42,19 @@ jobs:
         with:
           cache-read-only: ${{ github.ref != 'refs/heads/main' }}
 
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mariadb -h 127.0.0.1 -uroot -proot -e "SELECT 1" &>/dev/null; then
+              echo "✅ MariaDB is ready"
+              exit 0
+            fi
+            echo "⏳ Waiting for MariaDB... ($i/30)"
+            sleep 2
+          done
+          echo "❌ MariaDB failed to start"
+          exit 1
+
       - name: Check Migration Integrity
         id: integrity
         run: |
@@ -52,13 +65,13 @@ jobs:
         id: flyway
         working-directory: booklore-api
         env:
-          FLYWAY_URL: jdbc:mariadb://localhost:3306/booklore
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
           FLYWAY_USER: root
           FLYWAY_PASSWORD: root
-          FLYWAY_LOCATIONS: filesystem:src/main/resources/db/migration
-          FLYWAY_CLEAN_DISABLED: false
+          FLYWAY_CLEAN_DISABLED: 'false'
         run: |
-          ./gradlew flywayClean flywayMigrate flywayValidate --info
+          ./gradlew flywayClean flywayMigrate flywayValidate --info \
+            -Dorg.gradle.jvmargs="-Xmx1024m"
 
       - name: Migration Summary
         if: always()

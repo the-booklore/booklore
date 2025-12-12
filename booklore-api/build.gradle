@@ -25,6 +25,7 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    flywayMigration
 }
 
 dependencies {
@@ -42,6 +43,10 @@ dependencies {
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
     implementation 'org.flywaydb:flyway-mysql:11.18.0'
+
+    // Flyway Gradle plugin runtime
+    flywayMigration 'org.flywaydb:flyway-mysql:11.18.0'
+    flywayMigration 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
 
     // --- Security & Authentication ---
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -122,4 +127,13 @@ bootRun {
     if (debug.equals("true")) { 
         jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
+}
+
+flyway {
+    configurations = ['flywayMigration']
+    url = System.getenv('FLYWAY_URL') ?: 'jdbc:mariadb://localhost:3306/booklore'
+    user = System.getenv('FLYWAY_USER') ?: 'root'
+    password = System.getenv('FLYWAY_PASSWORD') ?: 'root'
+    locations = ['filesystem:src/main/resources/db/migration']
+    cleanDisabled = (System.getenv('FLYWAY_CLEAN_DISABLED') ?: 'true').toBoolean()
 }
