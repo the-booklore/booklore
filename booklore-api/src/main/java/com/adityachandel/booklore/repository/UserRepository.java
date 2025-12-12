@@ -16,5 +16,11 @@ public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long> 
 
     Optional<BookLoreUserEntity> findById(Long id);
 
+    /**
+     * Find user by their immutable OIDC subject identifier.
+     * This is the preferred method for OIDC user lookup as the 'sub' claim never changes.
+     */
+    Optional<BookLoreUserEntity> findByOidcSubject(String oidcSubject);
+
     List<BookLoreUserEntity> findAllByLibraries_Id(Long libraryId);
 }

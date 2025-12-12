@@ -15,6 +15,69 @@ app:
     groups-delimiter: ${REMOTE_AUTH_GROUPS_DELIMITER:\\s+}
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
 
+booklore:
+  security:
+    oidc:
+      # When true, throws exception on issuer mismatch between config and discovery document
+      # Only disable for non-standard OIDC providers (not recommended in production)
+      strict-issuer-validation: ${OIDC_STRICT_ISSUER_VALIDATION:true}
+      
+      # When true, requires JWT 'aud' claim to contain client ID (no azp fallback)
+      # Enable for high-security environments to prevent token substitution attacks
+      strict-audience-validation: ${OIDC_STRICT_AUDIENCE_VALIDATION:false}
+      
+      # This silently upgrades HTTP issuers to HTTPS, which could mask MITM attacks
+      # Only works when Spring profile is 'dev', 'development', or 'local'
+      # For production, always use matching protocols (both HTTP or both HTTPS)
+      allow-issuer-protocol-mismatch: ${OIDC_ALLOW_ISSUER_PROTOCOL_MISMATCH:false}
+      
+      jwks:
+        # Connection timeout for JWKS endpoint (Spring Duration format: 5s, 1000ms, etc.)
+        # Increased from default to handle slow Docker networking and container startup
+        connect-timeout: ${OIDC_JWKS_CONNECT_TIMEOUT:5s}
+        # Read timeout for JWKS endpoint (Spring Duration format: 5s, 1000ms, etc.)
+        # Prevents failures during GC pauses or network delays
+        read-timeout: ${OIDC_JWKS_READ_TIMEOUT:5s}
+        # Maximum size of JWKS response (in bytes)
+        # Default 1MB should be sufficient for most JWKS documents
+        size-limit: ${OIDC_JWKS_SIZE_LIMIT:1048576}
+        
+        # SECURITY: Reduced default cache times for faster key revocation propagation
+        # Previous default: 6h (too long for security-sensitive environments)
+        # New default: 30m (balances security and performance)
+        # For high-security environments, consider: cache-ttl: 15m, cache-refresh: 5m
+        # How long to cache JWKS keys (Spring Duration format)
+        cache-ttl: ${OIDC_JWKS_CACHE_TTL:30m}
+        # How often to refresh JWKS cache (Spring Duration format)
+        cache-refresh: ${OIDC_JWKS_CACHE_REFRESH:10m}
+        
+        # SECURITY: Rate limiting enabled by default (changed from false)
+        # Protects JWKS endpoint from flooding attacks
+        # Safe to enable even for internal networks
+        rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:true}
+        
+        # HTTP proxy configuration for JWKS endpoint (optional, for corporate environments)
+        proxy-host: ${OIDC_JWKS_PROXY_HOST:}
+        proxy-port: ${OIDC_JWKS_PROXY_PORT:}
+        # User-Agent string for JWKS requests (optional, defaults to BookLore-OIDC-Client/1.0)
+        user-agent: ${OIDC_USER_AGENT:BookLore-OIDC-Client/1.0}
+        proxy-user: ${OIDC_PROXY_USER:}
+        proxy-password: ${OIDC_PROXY_PASSWORD:}
+        
+      jwt:
+        # Clock skew tolerance for JWT timestamp validation (default 60s)
+        # Handles clock drift between services and authentication servers
+        clock-skew: ${OIDC_JWT_CLOCK_SKEW:60s}
+        
+        # SECURITY: JWT replay prevention using JTI (JWT ID) cache
+        # When enabled, tokens with the same JTI cannot be used twice
+        # Requires OIDC provider to include 'jti' claim in tokens
+        # Disabled by default as many OIDC providers (like Authentik) don't include JTI
+        enable-replay-prevention: ${OIDC_JWT_ENABLE_REPLAY_PREVENTION:false}
+        # Maximum number of JTI tokens to cache (default 10000)
+        # Adjust based on expected concurrent users and token expiry times
+        replay-cache-size: ${OIDC_JWT_REPLAY_CACHE_SIZE:10000}
+
 server:
   forward-headers-strategy: native
   port: 8080
@@ -66,6 +129,9 @@ logging:
   level:
     root: ${ROOT_LOG_LEVEL:INFO}
     com.adityachandel.booklore: ${LOG_LEVEL:INFO}
+    com.adityachandel.booklore.config.security: ${OIDC_LOG_LEVEL:WARN}
+    com.adityachandel.booklore.service.oidc: ${OIDC_SERVICE_LOG_LEVEL:WARN}
+    com.nimbusds.jose: INFO
     org.apache.fontbox: ERROR
     org.apache.pdfbox: ERROR
     org.quartz.core.QuartzScheduler: WARN

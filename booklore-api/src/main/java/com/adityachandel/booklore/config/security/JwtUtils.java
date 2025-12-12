@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.config.security;
 
+import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.service.security.JwtSecretService;
 import io.jsonwebtoken.Claims;
@@ -25,6 +26,8 @@ import java.util.Date;
 public class JwtUtils {
 
     private final JwtSecretService jwtSecretService;
+    private final OidcProperties oidcProperties;
+
     @Getter
     public static final long accessTokenExpirationMs = 1000L * 60 * 60 * 10;  // 10 hours
     @Getter
@@ -42,6 +45,8 @@ public class JwtUtils {
                 .subject(user.getUsername())
                 .claim("userId", user.getId())
                 .claim("isDefaultPassword", user.isDefaultPassword())
+                .claim("email", user.getEmail())
+                .claim("name", user.getName())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationTime)))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)
@@ -69,21 +74,20 @@ public class JwtUtils {
     }
 
     public Claims extractClaims(String token) {
+        long skewSeconds = oidcProperties.jwt().clockSkew().toSeconds();
+
         return Jwts.parser()
                 .verifyWith(getSigningKey())
+                .clockSkewSeconds(skewSeconds)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
-    public String extractUsername(String token) {
-        return extractClaims(token).getSubject();
-    }
-
     public Long extractUserId(String token) {
         Object userIdClaim = extractClaims(token).get("userId");
-        if (userIdClaim instanceof Number) {
-            return ((Number) userIdClaim).longValue();
+        if (userIdClaim instanceof Number number) {
+            return number.longValue();
         }
         throw new IllegalArgumentException("Invalid userId claim type");
     }

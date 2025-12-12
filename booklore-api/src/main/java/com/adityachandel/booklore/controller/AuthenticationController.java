@@ -3,6 +3,7 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.UserCreateRequest;
 import com.adityachandel.booklore.model.dto.request.RefreshTokenRequest;
 import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
@@ -16,9 +17,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
@@ -44,7 +47,7 @@ public class AuthenticationController {
     })
     @PostMapping("/register")
     @PreAuthorize("@securityUtil.isAdmin()")
-    public ResponseEntity<?> registerUser(
+    public ResponseEntity<Void> registerUser(
             @Parameter(description = "User registration request") @RequestBody @Valid UserCreateRequest userCreateRequest) {
         userProvisioningService.provisionInternalUser(userCreateRequest);
         return ResponseEntity.noContent().build();
@@ -95,5 +98,46 @@ public class AuthenticationController {
         }
 
         return authenticationService.loginRemote(name, username, email, groups);
+    }
+
+    @Data
+    public static class TokenExchangeRequest {
+        private String token;
+    }
+
+    @Operation(
+        summary = "Exchange OIDC token for internal JWT",
+        description = "After successful OIDC authentication, exchange the OIDC ID token for Booklore internal JWT tokens. " +
+                     "The OIDC ID token should be sent in the request body."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Tokens generated successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid OIDC token")
+    })
+    @PostMapping("/oidc/token")
+    public ResponseEntity<Map<String, String>> exchangeOidcToken(@RequestBody TokenExchangeRequest request) {
+        log.info("OIDC token exchange requested");
+        String oidcToken = request.getToken();
+        
+        // Validate token parameter
+        if (oidcToken == null || oidcToken.trim().isEmpty()) {
+            log.warn("OIDC token exchange failed: Missing token parameter");
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("Missing token parameter");
+        }
+        
+        log.debug("Received OIDC token parameter (length: {})", oidcToken.length());
+        
+        // Manually validate OIDC token and provision user
+        BookLoreUser user = userProvisioningService.provisionUserFromOidcToken(oidcToken);
+        
+        if (user == null) {
+            log.error("OIDC token exchange failed: User provisioning returned null");
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("Failed to provision user from OIDC token");
+        }
+        
+        log.info("Generating internal JWT for OIDC user: {}", user.getUsername());
+        
+        // Generate internal JWT tokens
+        return authenticationService.generateTokensForUser(user);
     }
 }

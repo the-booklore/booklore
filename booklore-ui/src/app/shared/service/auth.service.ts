@@ -1,5 +1,5 @@
 import {inject, Injectable, Injector} from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {BehaviorSubject, Observable, tap} from 'rxjs';
 import {RxStompService} from '../websocket/rx-stomp.service';
 import {API_CONFIG} from '../../core/config/api-config';
@@ -21,7 +21,7 @@ export class AuthService {
   private oAuthStorage = inject(OAuthStorage);
   private router = inject(Router);
 
-  public tokenSubject = new BehaviorSubject<string | null>(this.getOidcAccessToken() || this.getInternalAccessToken());
+  public tokenSubject = new BehaviorSubject<string | null>(this.getInternalAccessToken());
   public token$ = this.tokenSubject.asObservable();
 
 
@@ -49,6 +49,22 @@ export class AuthService {
 
   remoteLogin(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
     return this.http.get<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/remote`).pipe(
+      tap((response) => {
+        if (response.accessToken && response.refreshToken) {
+          this.saveInternalTokens(response.accessToken, response.refreshToken);
+          this.initializeWebSocketConnection();
+        }
+      })
+    );
+  }
+
+  exchangeOidcToken(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
+    const oidcToken = this.getOidcAccessToken();
+    if (!oidcToken) {
+      throw new Error('No OIDC token available for exchange');
+    }
+
+    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/oidc/token`, { token: oidcToken }).pipe(
       tap((response) => {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);
@@ -94,7 +110,9 @@ export class AuthService {
     this.oAuthStorage.removeItem("id_token");
     this.tokenSubject.next(null);
     this.getRxStompService().deactivate();
-    this.router.navigate(['/login']);
+    // Force a full page reload to ensure OIDC configuration is refreshed from the backend
+    // This is necessary because OIDC settings might have changed while the user was logged in
+    window.location.href = '/login';
   }
 
   getRxStompService(): RxStompService {
@@ -105,7 +123,8 @@ export class AuthService {
   }
 
   initializeWebSocketConnection(): void {
-    const token = this.getOidcAccessToken() || this.getInternalAccessToken();
+    // Only use internal token for WebSocket to avoid race conditions with OIDC user provisioning
+    const token = this.getInternalAccessToken();
     if (!token) return;
 
     const stompService = this.getRxStompService();

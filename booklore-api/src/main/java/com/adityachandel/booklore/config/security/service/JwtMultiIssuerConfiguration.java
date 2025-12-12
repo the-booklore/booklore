@@ -1,0 +1,462 @@
+package com.adityachandel.booklore.config.security.service;
+
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.security.JwtSecretService;
+import io.jsonwebtoken.security.Keys;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.web.client.RestTemplate;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+@Slf4j
+@Configuration
+@ConfigurationProperties(prefix = "booklore.security.oidc")
+@RequiredArgsConstructor
+public class JwtMultiIssuerConfiguration {
+
+    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+    private final AppSettingService appSettingService;
+    private final JwtSecretService jwtSecretService;
+
+    @Value("${booklore.security.oauth2.multi-issuer.enabled:false}")
+    private boolean legacyEnabled = false;
+
+    @Value("${booklore.security.oauth2.multi-issuer.issuers[0].internal-url:#{null}}")
+    private String legacyIssuer0InternalUrl;
+
+    @Value("${booklore.security.oauth2.multi-issuer.issuers[0].external-url:#{null}}")
+    private String legacyIssuer0ExternalUrl;
+
+    @Value("${booklore.security.oauth2.multi-issuer.issuers[1].internal-url:#{null}}")
+    private String legacyIssuer1InternalUrl;
+
+    @Value("${booklore.security.oauth2.multi-issuer.issuers[1].external-url:#{null}}")
+    private String legacyIssuer1ExternalUrl;
+
+    // Getters/Setters
+    @Setter
+    @Getter
+    private boolean enabled = true;
+
+    @Setter
+    @Getter
+    private List<IssuerMapping> issuers = new ArrayList<>();
+
+    @Setter
+    @Getter
+    private String issuerUri;
+    @Setter
+    @Getter
+    private String internalIssuerUri;
+
+    // Local dev only, MUST be explicitly enabled
+    @Setter
+    @Getter
+    private boolean enableLocalDevFallback = false;
+
+    @Setter
+    @Getter
+    private boolean strictIssuerValidation = true;
+
+    private RestTemplate sharedRestTemplate;
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        // Defer configuration check until first use to avoid circular dependency
+        return new LazyJwtDecoder(dynamicOidcJwtProcessor, appSettingService, jwtSecretService, this);
+    }
+
+    private JwtDecoder createExplicitMultiIssuerDecoder() {
+        Map<String, JwtDecoder> decoders = new HashMap<>();
+
+        for (IssuerMapping mapping : issuers) {
+            String discoveryUrl = mapping.getInternalUrl() != null
+                ? mapping.getInternalUrl()
+                : mapping.getExternalUrl();
+            String validationUrl = mapping.getExternalUrl();
+
+            NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder = NimbusJwtDecoder
+                .withIssuerLocation(discoveryUrl);
+
+            if (sharedRestTemplate == null) {
+                sharedRestTemplate = createRestTemplateWithTimeouts();
+            }
+            builder.restOperations(sharedRestTemplate);
+
+            NimbusJwtDecoder decoder = builder.build();
+
+            if (strictIssuerValidation) {
+                decoder.setJwtValidator(
+                    JwtValidators.createDefaultWithIssuer(validationUrl)
+                );
+            }
+
+            decoders.put(validationUrl, decoder);
+            log.info("Configured issuer: {} (discovery: {}, validation: {})",
+                mapping.getName(), discoveryUrl, validationUrl);
+        }
+
+        return new MultiIssuerJwtDecoder(decoders);
+    }
+
+    private JwtDecoder createEnvironmentBasedDecoder() {
+        String discoveryUrl = internalIssuerUri != null ? internalIssuerUri : issuerUri;
+        String validationUrl = issuerUri;
+
+        log.info("Using environment-based issuer configuration: discovery={}, validation={}",
+            discoveryUrl, validationUrl);
+
+        NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder = NimbusJwtDecoder
+            .withIssuerLocation(discoveryUrl);
+
+        if (sharedRestTemplate == null) {
+            sharedRestTemplate = createRestTemplateWithTimeouts();
+        }
+        builder.restOperations(sharedRestTemplate);
+
+        NimbusJwtDecoder decoder = builder.build();
+
+        if (strictIssuerValidation && validationUrl != null) {
+            decoder.setJwtValidator(
+                JwtValidators.createDefaultWithIssuer(validationUrl)
+            );
+        }
+
+        return decoder;
+    }
+
+    private static JwtDecoder createLocalDevDecoder() {
+        String[] localUrls = {
+            "http://localhost:8080",
+            "http://host.docker.internal:8080",
+            "http://keycloak:8080"
+        };
+
+        for (String url : localUrls) {
+            try {
+                NimbusJwtDecoder decoder = NimbusJwtDecoder
+                    .withIssuerLocation(url + "/realms/master")
+                    .build();
+
+                decoder.setJwtValidator(jwt -> {
+                    log.debug("Local dev mode: Accepting token from issuer: {}", jwt.getIssuer());
+                    return org.springframework.security.oauth2.core.OAuth2TokenValidatorResult.success();
+                });
+
+                log.warn("LOCAL DEV MODE: Using auto-detected issuer {} - DO NOT USE IN PRODUCTION", url);
+                return decoder;
+            } catch (Exception e) {
+                log.debug("Could not connect to {}: {}", url, e.getMessage());
+            }
+        }
+
+        throw new IllegalStateException("Local dev fallback enabled but no local OIDC server found");
+    }
+
+    private boolean shouldUseLegacyConfig() {
+        return legacyEnabled && hasLegacyIssuers() &&
+               (issuers.isEmpty() && issuerUri == null && internalIssuerUri == null);
+    }
+
+    private boolean hasLegacyIssuers() {
+        return (legacyIssuer0InternalUrl != null || legacyIssuer0ExternalUrl != null) ||
+               (legacyIssuer1InternalUrl != null || legacyIssuer1ExternalUrl != null);
+    }
+
+    private JwtDecoder createLegacyMultiIssuerDecoder() {
+        Map<String, JwtDecoder> decoders = new HashMap<>();
+
+        if (legacyIssuer0ExternalUrl != null) {
+            addLegacyIssuer(decoders, legacyIssuer0ExternalUrl, legacyIssuer0InternalUrl, "Legacy Issuer 0");
+        }
+        if (legacyIssuer1ExternalUrl != null) {
+            addLegacyIssuer(decoders, legacyIssuer1ExternalUrl, legacyIssuer1InternalUrl, "Legacy Issuer 1");
+        }
+
+        return new MultiIssuerJwtDecoder(decoders);
+    }
+
+    private void addLegacyIssuer(Map<String, JwtDecoder> decoders, String externalUrl, String internalUrl, String name) {
+        String discoveryUrl = internalUrl != null ? internalUrl : externalUrl;
+
+        NimbusJwtDecoder.JwkSetUriJwtDecoderBuilder builder = NimbusJwtDecoder
+            .withIssuerLocation(discoveryUrl);
+
+        builder.restOperations(createRestTemplateWithTimeouts());
+
+        NimbusJwtDecoder decoder = builder.build();
+
+        if (strictIssuerValidation) {
+            decoder.setJwtValidator(
+                JwtValidators.createDefaultWithIssuer(externalUrl)
+            );
+        }
+
+        decoders.put(externalUrl, decoder);
+        log.info("Configured legacy issuer: {} (discovery: {}, validation: {})",
+            name, discoveryUrl, externalUrl);
+    }
+
+    private static class MultiIssuerJwtDecoder implements JwtDecoder {
+        private final Map<String, JwtDecoder> decoders;
+
+        public MultiIssuerJwtDecoder(Map<String, JwtDecoder> decoders) {
+            this.decoders = decoders;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException {
+            String issuer = extractIssuerFromToken(token);
+
+            if (issuer != null && decoders.containsKey(issuer)) {
+                return decoders.get(issuer).decode(token);
+            }
+
+            List<String> failures = new ArrayList<>();
+            for (Map.Entry<String, JwtDecoder> entry : decoders.entrySet()) {
+                try {
+                    return entry.getValue().decode(token);
+                } catch (JwtException e) {
+                    failures.add(entry.getKey() + ": " + e.getMessage());
+                }
+            }
+
+            throw new JwtValidationException(
+                "Token validation failed for all issuers. Failures: " + String.join("; ", failures),
+                Collections.emptyList()
+            );
+        }
+
+        /**
+         * Extracts the issuer from JWT token using proper JWT parser.
+         * This avoids fragile string manipulation that can fail on edge cases.
+         */
+        private static String extractIssuerFromToken(String token) {
+            try {
+                com.nimbusds.jwt.SignedJWT signedJWT = com.nimbusds.jwt.SignedJWT.parse(token);
+                return signedJWT.getJWTClaimsSet().getIssuer();
+            } catch (Exception e) {
+                log.debug("Unable to extract issuer from token: {}", e.getMessage());
+                return null;
+            }
+        }
+    }
+
+    private static boolean isLocalDevelopmentEnvironment() {
+        String env = System.getenv("SPRING_PROFILES_ACTIVE");
+        String[] localProfiles = {"local", "dev", "development"};
+
+        if (env != null) {
+            for (String profile : localProfiles) {
+                if (env.contains(profile)) {
+                    return true;
+                }
+            }
+        }
+
+        String javaCommand = System.getProperty("sun.java.command", "");
+        return javaCommand.contains("IntellijIdeaRulezzz") ||
+               javaCommand.contains("org.eclipse.jdt");
+    }
+
+    private RestTemplate createRestTemplateWithTimeouts() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        int connectionTimeoutMs = 30000;
+        factory.setConnectTimeout(connectionTimeoutMs);
+        int readTimeoutMs = 30000;
+        factory.setReadTimeout(readTimeoutMs);
+
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setRequestFactory(factory);
+        return restTemplate;
+    }
+
+    @Setter
+    @Getter
+    public static class IssuerMapping {
+        // Getters/Setters
+        private String name;
+        private String externalUrl;  // URL in JWT iss claim
+        private String internalUrl;  // URL for OIDC discovery (optional)
+
+        // Constructor for backward compatibility
+        public IssuerMapping(String name, String externalUrl, String internalUrl) {
+            this.name = name != null ? name : "Legacy Config";
+            this.externalUrl = externalUrl;
+            this.internalUrl = internalUrl;
+        }
+
+    }
+
+    /**
+     * JwtDecoder implementation that delegates to DynamicOidcJwtProcessor
+     * to enable advanced features like JTI replay prevention and protocol upgrades.
+     */
+    private static class DynamicOidcJwtDecoder implements JwtDecoder {
+        private final DynamicOidcJwtProcessor processor;
+
+        public DynamicOidcJwtDecoder(DynamicOidcJwtProcessor processor) {
+            this.processor = processor;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException {
+            try {
+                var claimsSet = processor.process(token);
+                return createJwtFromClaimsSet(token, claimsSet);
+            } catch (JwtValidationException e) {
+                log.debug("JWT validation failed: {}", e.getMessage());
+                if (e.getErrors() != null && !e.getErrors().isEmpty()) {
+                    log.debug("JWT validation errors: {}", e.getErrors());
+                }
+                // Ensure errors list is not empty for Spring Security
+                if (e.getErrors() == null || e.getErrors().isEmpty()) {
+                    throw new JwtValidationException(e.getMessage(), 
+                        java.util.Collections.singletonList(new OAuth2Error("jwt_validation_error", e.getMessage(), null)));
+                }
+                throw e;
+            } catch (JwtException e) {
+                throw e;
+            } catch (Exception e) {
+                throw new JwtValidationException("Failed to process JWT: " + e.getMessage(), 
+                    java.util.Collections.singletonList(new OAuth2Error("jwt_processing_error", e.getMessage(), null)));
+            }
+        }
+
+        private static Jwt createJwtFromClaimsSet(String token, com.nimbusds.jwt.JWTClaimsSet claimsSet) {
+            // Parse the original token to get headers
+            try {
+                var parsedJwt = com.nimbusds.jwt.SignedJWT.parse(token);
+                var headers = parsedJwt.getHeader().toJSONObject();
+                var claims = claimsSet.toJSONObject();
+
+                // Convert timestamp claims from Long to Instant
+                if (claims.get("iat") instanceof Long iat) {
+                    claims.put("iat", java.time.Instant.ofEpochSecond(iat));
+                }
+                if (claims.get("exp") instanceof Long exp) {
+                    claims.put("exp", java.time.Instant.ofEpochSecond(exp));
+                }
+                if (claims.get("nbf") instanceof Long nbf) {
+                    claims.put("nbf", java.time.Instant.ofEpochSecond(nbf));
+                }
+
+                return Jwt.withTokenValue(token)
+                    .headers(h -> h.putAll(headers))
+                    .claims(c -> c.putAll(claims))
+                    .build();
+            } catch (Exception e) {
+                throw new JwtValidationException("Failed to create Jwt from claims: " + e.getMessage(), 
+                    java.util.Collections.singletonList(new OAuth2Error("jwt_creation_error", e.getMessage(), null)));
+            }
+        }
+    }
+
+    /**
+     * Lazy JwtDecoder that defers configuration until first use to avoid circular dependencies.
+     */
+    private static class LazyJwtDecoder implements JwtDecoder {
+        private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+        private final AppSettingService appSettingService;
+        private final JwtSecretService jwtSecretService;
+        private final JwtMultiIssuerConfiguration config;
+        private volatile JwtDecoder delegate;
+        private final Object lock = new Object();
+
+        private LazyJwtDecoder(DynamicOidcJwtProcessor dynamicOidcJwtProcessor,
+                            AppSettingService appSettingService,
+                            JwtSecretService jwtSecretService,
+                            JwtMultiIssuerConfiguration config) {
+            this.dynamicOidcJwtProcessor = dynamicOidcJwtProcessor;
+            this.appSettingService = appSettingService;
+            this.jwtSecretService = jwtSecretService;
+            this.config = config;
+        }
+
+        @Override
+        public Jwt decode(String token) throws JwtException {
+            log.debug("LazyJwtDecoder.decode() called");
+            if (delegate == null) {
+                synchronized (lock) {
+                    if (delegate == null) {
+                        delegate = createDelegate();
+                        log.debug("Created delegate: {}", (delegate != null ? delegate.getClass().getSimpleName() : "null"));
+                    }
+                }
+            }
+            if (delegate == null) {
+                throw new JwtException("No JWT decoder available - check configuration");
+            }
+            return delegate.decode(token);
+        }
+
+        private JwtDecoder createDelegate() {
+            var appSettings = appSettingService.getAppSettings();
+            log.debug("OIDC enabled: {}, provider details: {}", appSettings.isOidcEnabled(), (appSettings.getOidcProviderDetails() != null));
+            if (appSettings.isOidcEnabled() && appSettings.getOidcProviderDetails() != null) {
+                log.info("Using hybrid decoder: OIDC (RS256) + Internal (HS256) for backward compatibility");
+                // Create a hybrid decoder that supports both OIDC and internal JWT tokens
+                JwtDecoder oidcDecoder = new DynamicOidcJwtDecoder(dynamicOidcJwtProcessor);
+                JwtDecoder internalDecoder = createLocalDecoder();
+                return new HybridJwtDecoder(oidcDecoder, internalDecoder);
+            }
+
+            // If OIDC is disabled, use local HS256 decoder for internal JWT tokens
+            if (!appSettings.isOidcEnabled()) {
+                log.info("OIDC disabled, using local HS256 JWT decoder for internal authentication");
+                return createLocalDecoder();
+            }
+
+            if (config.shouldUseLegacyConfig()) {
+                log.info("Using legacy multi-issuer configuration for backward compatibility");
+                return config.createLegacyMultiIssuerDecoder();
+            }
+
+            if (!config.enabled) {
+                log.warn("JWT issuer configuration is disabled");
+                return null;
+            }
+
+            if (!config.issuers.isEmpty()) {
+                return config.createExplicitMultiIssuerDecoder();
+            }
+
+            if (config.issuerUri != null || config.internalIssuerUri != null) {
+                return config.createEnvironmentBasedDecoder();
+            }
+
+            if (config.enableLocalDevFallback && JwtMultiIssuerConfiguration.isLocalDevelopmentEnvironment()) {
+                log.warn("Using local development fallback - NOT FOR PRODUCTION");
+                return JwtMultiIssuerConfiguration.createLocalDevDecoder();
+            }
+
+            throw new IllegalStateException(
+                """
+                No JWT issuer configuration found. Please configure:
+                1. OIDC provider details in app settings (recommended for dynamic config), or
+                2. app.security.jwt.issuers[] (recommended), or
+                3. app.security.jwt.issuer-uri + internal-issuer-uri, or
+                4. Set app.security.jwt.enable-local-dev-fallback=true for local dev only
+                """
+            );
+        }
+
+        private JwtDecoder createLocalDecoder() {
+            String secret = jwtSecretService.getSecret();
+            SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+            return NimbusJwtDecoder.withSecretKey(key).build();
+        }
+    }
+}

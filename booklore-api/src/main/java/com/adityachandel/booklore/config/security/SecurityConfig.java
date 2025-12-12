@@ -5,6 +5,7 @@ import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
 import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
+import com.adityachandel.booklore.config.security.filter.OidcRateLimitFilter;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
@@ -37,6 +38,7 @@ public class SecurityConfig {
 
     private final OpdsUserDetailsService opdsUserDetailsService;
     private final DualJwtAuthenticationFilter dualJwtAuthenticationFilter;
+    private final OidcRateLimitFilter oidcRateLimitFilter;
     private final AppProperties appProperties;
 
     private static final String[] SWAGGER_ENDPOINTS = {
@@ -50,7 +52,8 @@ public class SecurityConfig {
             "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
             "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
             "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
-            "/api/v1/setup/**"         // Setup wizard endpoints (must remain accessible before initial setup)
+            "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
+            "/actuator/**"             // Spring Boot Actuator endpoints for health checks and monitoring
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
@@ -62,6 +65,19 @@ public class SecurityConfig {
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
+
+    private static final String[] AUTH_WHITELIST_ENDPOINTS = {
+            "/ws/**",                    // WebSocket connections (auth handled in WebSocketAuthInterceptor)
+            "/kobo/**",                  // Kobo API requests (auth handled in KoboAuthFilter)
+            "/api/v1/auth/login",        // Local username/password login
+            "/api/v1/auth/refresh",      // Token refresh endpoint
+            "/api/v1/auth/remote",       // Remote auth (forward-auth proxy)
+            "/api/v1/auth/register",       // User registration (admin only, but needs to be accessible)
+            "/api/v1/auth/oidc/discovery", // OIDC discovery endpoint (must be public for frontend)
+            "/api/v1/auth/oidc/token",     // OIDC token exchange (validates token manually in controller)
+            "/api/v1/public-settings",     // Public endpoint for checking OIDC or other app settings
+            "/api/v1/setup/**"             // Setup wizard endpoints (must remain accessible before initial setup)
+    };
 
     @Bean
     @Order(1)
@@ -133,7 +149,7 @@ public class SecurityConfig {
     @Bean
     @Order(5)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
-        List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
+        List<String> publicEndpoints = new ArrayList<>(Arrays.asList(AUTH_WHITELIST_ENDPOINTS));
         if (appProperties.getSwagger().isEnabled()) {
             publicEndpoints.addAll(Arrays.asList(SWAGGER_ENDPOINTS));
         }
@@ -145,6 +161,7 @@ public class SecurityConfig {
                         .requestMatchers(publicEndpoints.toArray(new String[0])).permitAll()
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(oidcRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(dualJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
@@ -156,6 +173,7 @@ public class SecurityConfig {
         auth.userDetailsService(opdsUserDetailsService).passwordEncoder(passwordEncoder());
         return auth.build();
     }
+
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

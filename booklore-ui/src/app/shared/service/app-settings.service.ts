@@ -1,7 +1,7 @@
 import {inject, Injectable, Injector} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable, of} from 'rxjs';
-import {catchError, finalize, shareReplay, tap} from 'rxjs/operators';
+import {BehaviorSubject, Observable, of, ReplaySubject} from 'rxjs';
+import {catchError, finalize, shareReplay, tap, timeout} from 'rxjs/operators';
 import {API_CONFIG} from '../../core/config/api-config';
 import {AppSettings, OidcProviderDetails} from '../model/app-settings.model';
 import {AuthService} from './auth.service';
@@ -9,7 +9,7 @@ import {AuthService} from './auth.service';
 export interface PublicAppSettings {
   oidcEnabled: boolean;
   remoteAuthEnabled: boolean;
-  oidcProviderDetails: OidcProviderDetails;
+  oidcProviderDetails: OidcProviderDetails | null;
 }
 
 @Injectable({providedIn: 'root'})
@@ -35,20 +35,37 @@ export class AppSettingsService {
     })
   );
 
-  private publicLoading$: Observable<PublicAppSettings> | null = null;
-  private publicAppSettingsSubject = new BehaviorSubject<PublicAppSettings | null>(null);
+  // Use ReplaySubject to cache the last emitted value and emit immediately to new subscribers
+  private publicAppSettingsSubject = new ReplaySubject<PublicAppSettings | null>(1);
+  private publicSettingsLoaded = false;
 
-  publicAppSettings$ = this.publicAppSettingsSubject.asObservable().pipe(
-    tap(state => {
-      if (!state && !this.publicLoading$) {
-        this.publicLoading$ = this.fetchPublicSettings().pipe(
-          shareReplay(1),
-          finalize(() => (this.publicLoading$ = null))
-        );
-        this.publicLoading$.subscribe();
-      }
-    })
-  );
+  // Eagerly fetch public settings - no lazy loading for this critical path
+  publicAppSettings$ = this.publicAppSettingsSubject.asObservable();
+
+  constructor() {
+    // Immediately start fetching public settings on service instantiation
+    this.loadPublicSettings();
+  }
+
+  private loadPublicSettings(): void {
+    if (this.publicSettingsLoaded) return;
+    this.publicSettingsLoaded = true;
+
+    this.http.get<PublicAppSettings>(this.publicApiUrl).pipe(
+      timeout(5000),
+      catchError(err => {
+        console.error('Failed to fetch public settings', err);
+        // Emit safe default to unblock waiting subscribers
+        return of({
+          oidcEnabled: false,
+          remoteAuthEnabled: false,
+          oidcProviderDetails: null
+        } as PublicAppSettings);
+      })
+    ).subscribe(settings => {
+      this.publicAppSettingsSubject.next(settings);
+    });
+  }
 
   private fetchAppSettings(): Observable<AppSettings> {
     return this.http.get<AppSettings>(this.apiUrl).pipe(
@@ -64,32 +81,14 @@ export class AppSettingsService {
     );
   }
 
-  private fetchPublicSettings(): Observable<PublicAppSettings> {
-    return this.http.get<PublicAppSettings>(this.publicApiUrl).pipe(
-      tap(settings => this.publicAppSettingsSubject.next(settings)),
-      catchError(err => {
-        console.error('Failed to fetch public settings', err);
-        throw err;
-      })
-    );
-  }
-
   private syncPublicSettings(appSettings: AppSettings): void {
     const updatedPublicSettings: PublicAppSettings = {
       oidcEnabled: appSettings.oidcEnabled,
       remoteAuthEnabled: appSettings.remoteAuthEnabled,
       oidcProviderDetails: appSettings.oidcProviderDetails
     };
-    const current = this.publicAppSettingsSubject.value;
-
-    if (
-      !current ||
-      current.oidcEnabled !== updatedPublicSettings.oidcEnabled ||
-      current.remoteAuthEnabled !== updatedPublicSettings.remoteAuthEnabled ||
-      JSON.stringify(current.oidcProviderDetails) !== JSON.stringify(updatedPublicSettings.oidcProviderDetails)
-    ) {
-      this.publicAppSettingsSubject.next(updatedPublicSettings);
-    }
+    // Always update since ReplaySubject doesn't have .value accessor
+    this.publicAppSettingsSubject.next(updatedPublicSettings);
   }
 
   saveSettings(settings: { key: string; newValue: any }[]): Observable<void> {

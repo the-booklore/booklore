@@ -14,7 +14,8 @@ services:
     tty: true
     restart: unless-stopped
     depends_on:
-      - backend_db
+      backend_db:
+        condition: service_healthy
     volumes:
       - './booklore-api:/booklore-api'
       - ./shared/data:/app/data
@@ -59,7 +60,6 @@ services:
       - '/dev/null:/angular-app/package-lock.json'
     ports:
       - "${FRONTEND_PORT:-4200}:4200"
-
 volumes:
   node_modules:
   backend_db:

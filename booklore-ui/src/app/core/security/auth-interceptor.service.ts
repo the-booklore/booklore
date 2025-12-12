@@ -6,23 +6,41 @@ import {BehaviorSubject, Observable, throwError} from 'rxjs';
 import {AuthService} from '../../shared/service/auth.service';
 import {API_CONFIG} from '../config/api-config';
 
-export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandlerFn) => {
+export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandlerFn): Observable<import('@angular/common/http').HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const router = inject(Router);
 
   const internalToken = authService.getInternalAccessToken();
-  const oidcToken = authService.getOidcAccessToken();
-  const token = internalToken || oidcToken;
+  const token = internalToken;
 
   const isApiRequest = req.url.startsWith(`${API_CONFIG.BASE_URL}/api/`);
+  const skipAuthPaths = [
+    API_CONFIG.AUTH.PUBLIC_SETTINGS,
+    API_CONFIG.AUTH.OIDC_DISCOVERY
+  ];
 
-  const authReq = (token && isApiRequest) ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
+  // Skip 401 handling for OIDC token exchange endpoint (let errors propagate to caller)
+  const skip401HandlingPaths = [
+    API_CONFIG.AUTH.OIDC_TOKEN
+  ];
+
+  const shouldAttachToken = token && isApiRequest && !skipAuthPaths.some(path => req.url.startsWith(path));
+
+  const authReq = shouldAttachToken ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : req;
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401) {
+      if (error.status === 401 && !skip401HandlingPaths.some(path => req.url.startsWith(path))) {
         return handle401Error(authService, authReq, next, router, !!internalToken);
       }
+      
+      // Handle 403 Forbidden - implies authenticated but not authorized, or token rejected by policy (e.g. missing JTI)
+      // We force a logout to allow the user to re-authenticate and establish a valid session.
+      if (error.status === 403) {
+        forceLogout(authService, router, 'Access denied (403), redirecting to login.');
+        return throwError(() => error);
+      }
+
       return throwError(() => error);
     })
   );
@@ -31,7 +49,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-function handle401Error(authService: AuthService, request: HttpRequest<any>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<any> {
+function handle401Error(authService: AuthService, request: HttpRequest<any>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<import('@angular/common/http').HttpEvent<unknown>> {
   if (!isRefreshing && isInternal) {
     isRefreshing = true;
     refreshTokenSubject.next(null);

@@ -1,29 +1,50 @@
 package com.adityachandel.booklore.service.user;
 
 import com.adityachandel.booklore.config.AppProperties;
+import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.exception.OidcProvisioningException;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.UserCreateRequest;
 import com.adityachandel.booklore.model.dto.request.InitialUserRequest;
 import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
+import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.*;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.nimbusds.jwt.JWTClaimsSet;
+
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@lombok.RequiredArgsConstructor
 public class UserProvisioningService {
+
+    private static final Pattern REGEX = Pattern.compile("[^a-zA-Z0-9@._-]");
+    private static final Pattern GROUPS_SPLIT_PATTERN = Pattern.compile("[,\\s]+");
+
+    // Cache for OIDC user lookups to reduce DB calls on repeated token validation
+    // Key: oidcSubject, Value: userId
+    private final Cache<String, Long> oidcUserCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5))
+            .maximumSize(1000)
+            .build();
+
 
     private final AppProperties appProperties;
     private final UserRepository userRepository;
@@ -31,9 +52,131 @@ public class UserProvisioningService {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final UserDefaultsService userDefaultsService;
     private final AppSettingService appSettingService;
+    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+    private final UserPersistenceService userPersistenceService;
 
     public boolean isInitialUserAlreadyProvisioned() {
         return userRepository.count() > 0;
+    }
+
+    /**
+     * Validates an OIDC token and provisions/returns the user.
+     * This method is used by the token exchange endpoint.
+     * 
+     * Uses subject-first lookup for stable user identity:
+     * 1. Try to find user by OIDC subject (immutable)
+     * 2. Fall back to username lookup (migration path)
+     * 3. Link subject to existing user if found by username
+     * 4. Sync profile if claims changed
+     * 5. Apply group-based role mappings if configured
+     * 
+     * @param oidcToken The OIDC ID token to validate
+     * @return BookLoreUser DTO if validation successful, null otherwise
+     */
+    public BookLoreUser provisionUserFromOidcToken(String oidcToken) {
+        try {
+            log.debug("Validating OIDC token and provisioning user");
+            
+            JWTClaimsSet claims = dynamicOidcJwtProcessor.process(oidcToken);
+            
+            // Extract the immutable subject identifier
+            String subject = claims.getSubject();
+            String issuer = claims.getIssuer();
+            if (subject == null || subject.trim().isEmpty()) {
+                log.error("OIDC token missing required 'sub' claim");
+                return null;
+            }
+            
+            // Use composite key (issuer:subject) to prevent collisions between providers
+            String oidcSubject = (issuer != null ? issuer : "unknown") + ":" + subject;
+            
+            // Get claim mappings from configuration
+            OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
+            OidcProviderDetails.ClaimMapping claimMapping = providerDetails != null ? providerDetails.getClaimMapping() : null;
+            
+            // Extract user info using configured claim names
+            String username = extractClaimValue(claims, claimMapping != null ? claimMapping.getUsername() : null, oidcSubject);
+            String email = extractClaimValue(claims, claimMapping != null ? claimMapping.getEmail() : "email", null);
+            String name = extractClaimValue(claims, claimMapping != null ? claimMapping.getName() : "name", null);
+            
+            // Sanitize username to prevent injection and ensure valid format
+            username = sanitizeUsername(username);
+            
+            // Extract groups for role mapping
+            List<String> groups = Collections.emptyList();
+            if (claimMapping != null && claimMapping.getGroups() != null && !claimMapping.getGroups().isEmpty()) {
+                groups = dynamicOidcJwtProcessor.extractGroups(claims, claimMapping.getGroups());
+                if (!groups.isEmpty()) {
+                    log.debug("Extracted groups from OIDC token: {}", groups);
+                }
+            }
+            
+            log.info("OIDC token validated for user: sub={}, username={}, email={}", 
+                     oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "...", username, email);
+            
+            OidcAutoProvisionDetails provisionDetails = appSettingService.getAppSettings().getOidcAutoProvisionDetails();
+            
+            // Use the new subject-first provisioning method
+            BookLoreUserEntity userEntity = provisionOidcUserWithSubject(oidcSubject, username, email, name, groups, provisionDetails);
+            
+            UserPermissionsEntity permsEntity = userEntity.getPermissions();
+            BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
+            permissions.setAdmin(permsEntity.isPermissionAdmin());
+            permissions.setCanUpload(permsEntity.isPermissionUpload());
+            permissions.setCanDownload(permsEntity.isPermissionDownload());
+            permissions.setCanEditMetadata(permsEntity.isPermissionEditMetadata());
+            permissions.setCanManipulateLibrary(permsEntity.isPermissionManipulateLibrary());
+            permissions.setCanEmailBook(permsEntity.isPermissionEmailBook());
+            permissions.setCanDeleteBook(permsEntity.isPermissionDeleteBook());
+            permissions.setCanAccessOpds(permsEntity.isPermissionAccessOpds());
+            permissions.setCanSyncKoReader(permsEntity.isPermissionSyncKoreader());
+            permissions.setCanSyncKobo(permsEntity.isPermissionSyncKobo());
+            
+            return BookLoreUser.builder()
+                .id(userEntity.getId())
+                .username(userEntity.getUsername())
+                .email(userEntity.getEmail())
+                .name(userEntity.getName())
+                .permissions(permissions)
+                .provisioningMethod(userEntity.getProvisioningMethod())
+                .isDefaultPassword(false)
+                .build();
+            
+        } catch (Exception e) {
+            log.error("Failed to validate OIDC token and provision user: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+    
+    /**
+     * Sanitizes the username to prevent security issues.
+     * Removes dangerous characters and limits length.
+     */
+    private String sanitizeUsername(String username) {
+        if (username == null) return null;
+        // Remove dangerous characters (allow alphanumeric, @, ., _, -)
+        String sanitized = REGEX.matcher(username).replaceAll("");
+        // Limit length to 255 characters
+        return sanitized.substring(0, Math.min(sanitized.length(), 255));
+    }
+
+    /**
+     * Extracts a claim value from JWT claims using the configured claim name.
+     * Falls back to default value if claim is not found or empty.
+     */
+    private String extractClaimValue(JWTClaimsSet claims, String claimName, String defaultValue) {
+        if (claimName == null || claimName.isEmpty()) {
+            return defaultValue;
+        }
+        try {
+            Object value = claims.getClaim(claimName);
+            if (value instanceof String str && !str.isEmpty()) {
+                return str;
+            }
+        } catch (Exception e) {
+            log.debug("Failed to extract claim '{}': {}", claimName, e.getMessage());
+        }
+        return defaultValue;
     }
 
     @Transactional
@@ -99,39 +242,240 @@ public class UserProvisioningService {
         createUser(user);
     }
 
-    @Transactional
-    public BookLoreUserEntity provisionOidcUser(String username, String email, String name, OidcAutoProvisionDetails oidcAutoProvisionDetails) {
-        BookLoreUserEntity user = new BookLoreUserEntity();
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setName(name);
-        user.setDefaultPassword(false);
-        user.setPasswordHash("OIDC_USER_" + UUID.randomUUID());
-        user.setProvisioningMethod(ProvisioningMethod.OIDC);
-
-        UserPermissionsEntity perms = new UserPermissionsEntity();
-        List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
-        if (defaultPermissions != null) {
-            perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
-            perms.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
-            perms.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
-            perms.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
-            perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
-            perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
-            perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
-            perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
-            perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
-        }
-        user.setPermissions(perms);
-
-        List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
-        if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
-            List<LibraryEntity> libraries = libraryRepository.findAllById(defaultLibraryIds);
-            user.setLibraries(new ArrayList<>(libraries));
-        }
-
-        return createUser(user);
+    public BookLoreUserEntity provisionOidcUser(String username, String email, String name,
+                                                OidcAutoProvisionDetails oidcAutoProvisionDetails) {
+        // Delegate to the new method without subject (for backward compatibility)
+        return provisionOidcUserWithSubject(null, username, email, name, null, oidcAutoProvisionDetails);
     }
+    
+    /**
+     * Provisions or finds an OIDC user with subject-first lookup strategy.
+     * 
+     * The lookup order is:
+     * 1. Try to find by oidcSubject (immutable, preferred)
+     * 2. Fall back to username lookup (migration path for existing users)
+     * 3. Link oidcSubject to user found by username (migration)
+     * 4. Sync profile if username changed in IdP
+     * 5. Create new user if not found
+     * 
+     * @param oidcSubject The immutable 'sub' claim from the OIDC token
+     * @param username The username/preferred_username claim
+     * @param email The email claim
+     * @param name The name claim
+     * @param groups The groups/roles from the OIDC token for role mapping
+     * @param oidcAutoProvisionDetails Auto-provisioning configuration
+     * @return The found or created user entity
+     */
+    public BookLoreUserEntity provisionOidcUserWithSubject(String oidcSubject, String username, String email, 
+                                                           String name, List<String> groups,
+                                                           OidcAutoProvisionDetails oidcAutoProvisionDetails) {
+        String displayName = name;
+        // Handle missing name claim (common in Authelia and some IdPs)
+        if (displayName == null || displayName.trim().isEmpty()) {
+            displayName = username; // Fallback to username
+            log.warn("OIDC IdP did not provide 'name' claim. Using username '{}' as display name.", username);
+            log.warn("To fix: Configure your IdP to include 'name' claim in ID tokens.");
+        }
+        
+        log.info("Provisioning OIDC user: sub='{}', username='{}', email='{}', name='{}'", 
+                 oidcSubject != null ? oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "..." : "null",
+                 username, email, displayName);
+        
+        // Check cache first for performance (reduces DB calls on repeated token validation)
+        if (oidcSubject != null) {
+            Long cachedUserId = oidcUserCache.getIfPresent(oidcSubject);
+            if (cachedUserId != null) {
+                Optional<BookLoreUserEntity> cachedUser = userRepository.findById(cachedUserId);
+                if (cachedUser.isPresent()) {
+                    log.debug("Cache hit for OIDC subject: {}", oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "...");
+                    BookLoreUserEntity user = cachedUser.get();
+                    // Sync groups/roles even on cache hit
+                    if (groups != null && !groups.isEmpty()) {
+                        userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
+                    }
+                    return user;
+                }
+                // Cache entry invalid, remove it
+                oidcUserCache.invalidate(oidcSubject);
+            }
+        }
+        
+        // Step 1: Try to find by oidcSubject first (immutable identifier)
+        if (oidcSubject != null && !oidcSubject.trim().isEmpty()) {
+            Optional<BookLoreUserEntity> bySubject = userRepository.findByOidcSubject(oidcSubject);
+            if (bySubject.isPresent()) {
+                BookLoreUserEntity user = bySubject.get();
+                log.debug("Found user by OIDC subject: {}", username);
+                
+                // Sync profile if username/email/name changed in IdP
+                syncUserProfile(user, username, email, displayName);
+                user = userRepository.save(user);
+                
+                // Sync groups/roles if configured
+                if (groups != null && !groups.isEmpty()) {
+                    userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
+                }
+                
+                // Cache the result
+                oidcUserCache.put(oidcSubject, user.getId());
+                return user;
+            }
+        }
+        
+        // Step 2: Fall back to username lookup (migration path for existing users)
+        Optional<BookLoreUserEntity> byUsername = userRepository.findByUsername(username);
+        if (byUsername.isPresent()) {
+            BookLoreUserEntity user = byUsername.get();
+            log.debug("Found user by username: {} (migration path)", username);
+            
+            // Security Check: Prevent Account Takeover
+            // Check if provisioning method is null (legacy users) or not OIDC
+            boolean isLocalUser = user.getProvisioningMethod() == null || user.getProvisioningMethod() != ProvisioningMethod.OIDC;
+            
+            if (isLocalUser && user.getOidcSubject() == null) {
+                // This is a LOCAL user trying to link to OIDC
+                if (email != null && email.equalsIgnoreCase(user.getEmail())) {
+                    // Allow linking with email verification
+                    log.info("Linking existing LOCAL user '{}' to OIDC (email verified)", username);
+                    user.setOidcSubject(oidcSubject);
+                    user.setProvisioningMethod(ProvisioningMethod.OIDC);
+                } else {
+                    // Provide better error message
+                    throw new OidcProvisioningException(
+                        "Cannot link OIDC account to existing local user. " +
+                        "Please log in with your password first and update your email to match your OIDC email, " +
+                        "or contact an administrator."
+                    );
+                }
+            } else if (user.getOidcSubject() != null && !user.getOidcSubject().equals(oidcSubject)) {
+                // Security violation - different OIDC subject
+                log.error("Security Alert: Username '{}' is already linked to a different OIDC account", username);
+                throw new OidcProvisioningException(
+                    "This username is already associated with a different OIDC account. " +
+                    "Please use a different username or contact an administrator."
+                );
+            } else if (user.getOidcSubject() == null) {
+                // OIDC user but subject is null (should not happen normally, but safe to link if it's OIDC method)
+                 log.info("Linking OIDC subject to existing OIDC user '{}'", username);
+                 user.setOidcSubject(oidcSubject);
+            }
+            
+            // Sync profile
+            syncUserProfile(user, username, email, displayName);
+            user = userRepository.save(user);
+            
+            // Sync groups/roles if configured
+            if (groups != null && !groups.isEmpty()) {
+                userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
+            }
+            
+            // Cache the result
+            if (oidcSubject != null) {
+                oidcUserCache.put(oidcSubject, user.getId());
+            }
+            return user;
+        }
+
+        // Step 2.5: Fall back to email lookup (migration path for existing users with different username)
+        if (email != null) {
+            Optional<BookLoreUserEntity> byEmail = userRepository.findByEmail(email);
+            if (byEmail.isPresent()) {
+                BookLoreUserEntity user = byEmail.get();
+                log.debug("Found user by email: {} (migration path)", email);
+
+                // Security Check: Prevent Account Takeover (Same logic as username lookup)
+                boolean isLocalUser = user.getProvisioningMethod() == null || user.getProvisioningMethod() != ProvisioningMethod.OIDC;
+
+                if (isLocalUser && user.getOidcSubject() == null) {
+                    // This is a LOCAL user trying to link to OIDC
+                    if (email.equalsIgnoreCase(user.getEmail())) {
+                        // Allow linking with email verification (implicit here since we found by email)
+                        log.info("Linking existing LOCAL user '{}' to OIDC (found by email)", user.getUsername());
+                        user.setOidcSubject(oidcSubject);
+                        user.setProvisioningMethod(ProvisioningMethod.OIDC);
+                    } else {
+                        // Should technically not happen if found by email, but good for safety
+                        throw new OidcProvisioningException(
+                            "Cannot link OIDC account to existing local user. Email mismatch."
+                        );
+                    }
+                } else if (user.getOidcSubject() != null && !user.getOidcSubject().equals(oidcSubject)) {
+                    // Security violation - different OIDC subject
+                    log.error("Security Alert: Email '{}' is already linked to a different OIDC account", email);
+                    throw new OidcProvisioningException(
+                        "This email is already associated with a different OIDC account. " +
+                        "Please contact an administrator."
+                    );
+                } else if (user.getOidcSubject() == null) {
+                    // OIDC user but subject is null
+                    log.info("Linking OIDC subject to existing OIDC user '{}' (found by email)", user.getUsername());
+                    user.setOidcSubject(oidcSubject);
+                }
+
+                // Sync profile
+                syncUserProfile(user, username, email, displayName);
+                user = userRepository.save(user);
+
+                // Sync groups/roles if configured
+                if (groups != null && !groups.isEmpty()) {
+                    userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
+                }
+
+                // Cache the result
+                if (oidcSubject != null) {
+                    oidcUserCache.put(oidcSubject, user.getId());
+                }
+                return user;
+            }
+        }
+        
+        // Step 3: User doesn't exist, create new one
+        try {
+            BookLoreUserEntity newUser = userPersistenceService.provisionOidcUserInternal(oidcSubject, username, email, displayName, groups, oidcAutoProvisionDetails);
+            if (oidcSubject != null) {
+                oidcUserCache.put(oidcSubject, newUser.getId());
+            }
+            return newUser;
+        } catch (DuplicateUserRetryException e) {
+            // Transaction rolled back, session cleared. Now safe to query for user created by concurrent thread.
+            log.debug("Retrying user lookup after duplicate key exception for username: {}", username);
+            BookLoreUserEntity existingUser = userRepository.findByUsername(username)
+                    .or(() -> oidcSubject != null ? userRepository.findByOidcSubject(oidcSubject) : Optional.empty())
+                    .or(() -> email != null ? userRepository.findByEmail(email) : Optional.empty())
+                    .orElseThrow(() -> new OidcProvisioningException(
+                            String.format("Concurrency Error: User '%s' could not be created, nor found after a unique constraint violation.", username)));
+            if (oidcSubject != null) {
+                oidcUserCache.put(oidcSubject, existingUser.getId());
+            }
+            return existingUser;
+        }
+    }
+    
+    /**
+     * Syncs user profile fields if they have changed in the IdP.
+     */
+    private void syncUserProfile(BookLoreUserEntity user, String username, String email, String name) {
+        // Sync username if changed (only for OIDC users)
+        if (user.getProvisioningMethod() == ProvisioningMethod.OIDC && 
+            username != null && !username.equals(user.getUsername())) {
+            log.info("Syncing username change from IdP: '{}' -> '{}'", user.getUsername(), username);
+            user.setUsername(username);
+        }
+        
+        // Sync email if changed
+        if (email != null && !email.equals(user.getEmail())) {
+            log.debug("Syncing email from IdP for user '{}'", user.getUsername());
+            user.setEmail(email);
+        }
+        
+        // Sync name if changed
+        if (name != null && !name.equals(user.getName())) {
+            log.debug("Syncing name from IdP for user '{}'", user.getUsername());
+            user.setName(name);
+        }
+    }
+    
+
 
     /**
      * Create and persist a remote-provisioned user based on incoming headers.
@@ -145,9 +489,8 @@ public class UserProvisioningService {
             if (groupsContent.length() >= 2 && groupsContent.charAt(0) == '[' && groupsContent.charAt(groupsContent.length() - 1) == ']') {
                 groupsContent = groupsContent.substring(1, groupsContent.length() - 1);
             }
-            String delimiter = appProperties.getRemoteAuth().getGroupsDelimiter();
-            Pattern groupsPattern = Pattern.compile(delimiter);
-            List<String> groupsList = Arrays.asList(groupsPattern.split(groupsContent));
+            // Split by comma or whitespace to handle various formats (e.g. "admin, editor" or "admin editor")
+            List<String> groupsList = Arrays.asList(GROUPS_SPLIT_PATTERN.split(groupsContent));
             isAdmin = groupsList.contains(appProperties.getRemoteAuth().getAdminGroup());
             log.debug("Remote-Auth: user {} will be admin: {}", username, isAdmin);
         }

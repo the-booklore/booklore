@@ -50,6 +50,7 @@ export class AuthenticationSettingsComponent implements OnInit {
   oidcEnabled = false;
   allLibraries: Library[] = [];
   editingLibraryIds: number[] = [];
+  adminGroup = '';
 
   oidcProvider: OidcProviderDetails = {
     providerName: '',
@@ -58,7 +59,8 @@ export class AuthenticationSettingsComponent implements OnInit {
     claimMapping: {
       username: '',
       email: '',
-      name: ''
+      name: '',
+      groups: ''
     }
   };
 
@@ -89,18 +91,23 @@ export class AuthenticationSettingsComponent implements OnInit {
     this.autoUserProvisioningEnabled = details?.enableAutoProvisioning ?? false;
     this.selectedPermissions = details?.defaultPermissions ?? [];
     this.editingLibraryIds = details?.defaultLibraryIds ?? [];
+    this.adminGroup = details?.adminGroup || '';
 
     const defaultClaimMapping = {
       username: 'preferred_username',
       email: 'email',
-      name: 'given_name'
+      name: 'given_name',
+      groups: 'groups'
     };
 
     this.oidcProvider = {
       providerName: settings.oidcProviderDetails?.providerName || '',
       clientId: settings.oidcProviderDetails?.clientId || '',
       issuerUri: settings.oidcProviderDetails?.issuerUri || '',
-      claimMapping: settings.oidcProviderDetails?.claimMapping || defaultClaimMapping
+      claimMapping: {
+        ...defaultClaimMapping,
+        ...settings.oidcProviderDetails?.claimMapping
+      }
     };
 
     this.availablePermissions.forEach(perm => {
@@ -151,32 +158,27 @@ export class AuthenticationSettingsComponent implements OnInit {
   }
 
   saveOidcAutoProvisionSettings(): void {
-    const provisionDetails = {
-      enableAutoProvisioning: this.autoUserProvisioningEnabled,
-      defaultPermissions: [
-        'permissionRead',
-        ...this.availablePermissions.filter(p => p.selected).map(p => p.value)
-      ],
-      defaultLibraryIds: this.editingLibraryIds
-    };
-
     const payload = [
       {
         key: AppSettingKey.OIDC_AUTO_PROVISION_DETAILS,
-        newValue: provisionDetails
+        newValue: {
+          enableAutoProvisioning: this.autoUserProvisioningEnabled,
+          defaultPermissions: this.selectedPermissions,
+          defaultLibraryIds: this.editingLibraryIds,
+          adminGroup: this.adminGroup || undefined
+        }
       }
     ];
-
     this.appSettingsService.saveSettings(payload).subscribe({
       next: () => this.messageService.add({
         severity: 'success',
         summary: 'Saved',
-        detail: 'OIDC auto-provisioning settings saved.'
+        detail: 'Auto-provisioning settings saved.'
       }),
       error: () => this.messageService.add({
         severity: 'error',
         summary: 'Error',
-        detail: 'Failed to save OIDC auto-provisioning settings.'
+        detail: 'Failed to save auto-provisioning settings.'
       })
     });
   }

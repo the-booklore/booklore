@@ -34,6 +34,7 @@ export interface OidcProviderDetails {
     username: string;
     email: string;
     name: string;
+    groups?: string;
   };
 }
 
@@ -41,6 +42,7 @@ export interface OidcAutoProvisionDetails {
   enableAutoProvisioning: boolean;
   defaultPermissions: string[];
   defaultLibraryIds: number[];
+  adminGroup?: string;
 }
 
 export interface MetadataProviderSettings {

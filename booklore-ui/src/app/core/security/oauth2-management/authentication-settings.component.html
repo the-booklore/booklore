@@ -141,11 +141,29 @@
                       placeholder="e.g. name or given_name"
                       class="w-full"/>
                   </div>
+                  <div class="form-field">
+                    <label for="claimGroups">Groups Claim (Optional)</label>
+                    <input
+                      pInputText
+                      id="claimGroups"
+                      [(ngModel)]="oidcProvider.claimMapping.groups"
+                      placeholder="e.g. groups or realm_access.roles"
+                      class="w-full"/>
+                  </div>
                 </div>
                 <div class="field-info">
                   <i class="pi pi-info-circle text-blue-500"></i>
                   <span>
-                    These claims are used by Booklore to provision new OIDC users with their name, username, and email. Ensure they match the claims provided by your OIDC provider.
+                    These claims are used by Booklore to provision new OIDC users with their name, username, and email.
+                    The groups claim enables role-based permissions from your OIDC provider.
+                    Ensure they match the claims provided by your OIDC provider.
+                  </span>
+                </div>
+                <div class="field-info" style="margin-top: 0.5rem;">
+                  <i class="pi pi-exclamation-triangle text-yellow-500"></i>
+                  <span>
+                    After changing OIDC provider settings, please refresh your browser to apply the new configuration.
+                    Users may need to log out and log back in for changes to take effect.
                   </span>
                 </div>
               </div>
@@ -187,6 +205,24 @@
 
               @if (autoUserProvisioningEnabled) {
                 <div class="permissions-section">
+                  <h5 class="permissions-title">Admin Role Mapping (Optional)</h5>
+                  <div class="form-field">
+                    <label for="adminGroup">Admin Group Name</label>
+                    <input
+                      pInputText
+                      id="adminGroup"
+                      [(ngModel)]="adminGroup"
+                      placeholder="e.g. booklore-admins"
+                      class="w-full"/>
+                    <div class="field-info">
+                      <i class="pi pi-info-circle text-blue-500"></i>
+                      <span>
+                        Users with this group in their OIDC groups claim will automatically be granted admin privileges.
+                        Leave empty to disable admin role mapping via groups.
+                      </span>
+                    </div>
+                  </div>
+
                   <h5 class="permissions-title">Default permissions for auto-provisioned users</h5>
                   <div class="permissions-list">
                     <div class="permission-item">

@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.appsettings;
 
 import com.adityachandel.booklore.config.AppProperties;
+import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
@@ -21,8 +22,10 @@ public class AppSettingService {
 
     private final AppProperties appProperties;
     private final SettingPersistenceHelper settingPersistenceHelper;
+    private final OidcDiscoveryService oidcDiscoveryService;
 
     private volatile AppSettings appSettings;
+    private volatile PublicAppSetting publicAppSetting;
     private final ReentrantLock lock = new ReentrantLock();
 
     public AppSettings getAppSettings() {
@@ -52,13 +55,25 @@ public class AppSettingService {
     }
 
     public PublicAppSetting getPublicSettings() {
-        return buildPublicSetting();
+        if (publicAppSetting == null) {
+            lock.lock();
+            try {
+                if (publicAppSetting == null) {
+                    publicAppSetting = buildPublicSetting();
+                }
+            } finally {
+                lock.unlock();
+            }
+        }
+        return publicAppSetting;
     }
 
     private void refreshCache() {
         lock.lock();
         try {
             appSettings = buildAppSettings();
+            publicAppSetting = buildPublicSetting();
+            oidcDiscoveryService.invalidateCache();
         } finally {
             lock.unlock();
         }
@@ -72,7 +87,12 @@ public class AppSettingService {
         Map<String, String> settingsMap = getSettingsMap();
         PublicAppSetting.PublicAppSettingBuilder builder = PublicAppSetting.builder();
 
-        builder.oidcEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false")));
+        // Respect forceDisableOidc property like buildAppSettings does
+        boolean settingEnabled = Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false"));
+        Boolean forceDisable = appProperties.getForceDisableOidc();
+        boolean finalEnabled = settingEnabled && (forceDisable == null || !forceDisable);
+        builder.oidcEnabled(finalEnabled);
+
         builder.remoteAuthEnabled(appProperties.getRemoteAuth().isEnabled());
         builder.oidcProviderDetails(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.OIDC_PROVIDER_DETAILS, OidcProviderDetails.class, null, false));
 

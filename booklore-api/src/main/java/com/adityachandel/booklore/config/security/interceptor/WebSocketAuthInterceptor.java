@@ -1,11 +1,12 @@
 package com.adityachandel.booklore.config.security.interceptor;
 
 import com.adityachandel.booklore.config.security.JwtUtils;
-import com.adityachandel.booklore.config.security.service.DynamicOidcJwtProcessor;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
+import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
+import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.nimbusds.jwt.JWTClaimsSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
@@ -18,10 +19,12 @@ import org.springframework.messaging.support.ChannelInterceptor;
 import org.springframework.messaging.support.MessageHeaderAccessor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import org.springframework.lang.Nullable;
 import java.util.List;
 
 @Slf4j
@@ -31,11 +34,16 @@ import java.util.List;
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
 
     private final JwtUtils jwtUtils;
-    private final DynamicOidcJwtProcessor dynamicOidcJwtProcessor;
+    private final JwtDecoder jwtDecoder;
     private final AppSettingService appSettingService;
+    private final UserRepository userRepository;
+    private final BookLoreUserTransformer bookLoreUserTransformer;
 
     @Override
-    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+    public Message<?> preSend(@Nullable Message<?> message, @Nullable MessageChannel channel) {
+        if (message == null) {
+            return null;
+        }
         StompHeaderAccessor accessor = MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
         if (accessor != null && StompCommand.CONNECT.equals(accessor.getCommand())) {
@@ -68,11 +76,10 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
         }
         try {
             if (jwtUtils.validateToken(token)) {
-                String username = jwtUtils.extractUsername(token);
-                if (username != null && !username.trim().isEmpty()) {
-                    return new UsernamePasswordAuthenticationToken(username, null, null);
-                }
-                log.debug("Username extracted from JWT is null or empty");
+                Long userId = jwtUtils.extractUserId(token);
+                BookLoreUserEntity entity = userRepository.findById(userId).orElseThrow(() -> new UsernameNotFoundException("User not found with ID: " + userId));
+                BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+                return new UsernamePasswordAuthenticationToken(user, null, null);
             }
 
             if (!appSettingService.getAppSettings().isOidcEnabled()) {
@@ -80,9 +87,9 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 return null;
             }
 
-            JWTClaimsSet claims = dynamicOidcJwtProcessor.getProcessor().process(token, null);
-            if (claims == null) {
-                log.debug("OIDC token processing returned null claims");
+            Jwt jwt = jwtDecoder.decode(token);
+            if (jwt == null) {
+                log.debug("OIDC token processing returned null JWT");
                 return null;
             }
             OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
@@ -99,9 +106,11 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                 log.debug("Username claim key is null or empty");
                 return null;
             }
-            String username = claims.getStringClaim(usernameClaimKey);
+            String username = jwt.getClaimAsString(usernameClaimKey);
             if (username != null && !username.trim().isEmpty()) {
-                return new UsernamePasswordAuthenticationToken(username, null, null);
+                BookLoreUserEntity entity = userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("OIDC user not found: " + username));
+                BookLoreUser user = bookLoreUserTransformer.toDTO(entity);
+                return new UsernamePasswordAuthenticationToken(user, null, null);
             }
 
             log.warn("Username extracted from OIDC claims is null or empty");
