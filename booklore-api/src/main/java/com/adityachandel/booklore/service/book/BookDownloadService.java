@@ -4,7 +4,6 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -36,9 +35,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.regex.Pattern;
+import com.adityachandel.booklore.mapper.BookMapper;
+import com.adityachandel.booklore.model.dto.BookMetadata;
 
 @Slf4j
 @AllArgsConstructor
@@ -55,6 +54,8 @@ public class BookDownloadService {
     private final AuthenticationService authenticationService;
     private final LibraryRepository libraryRepository;
     private final BookMetadataRepository bookMetadataRepository;
+    private final BookImportService bookImportService;
+    private final BookMapper bookMapper;
 
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         try {
@@ -189,39 +190,20 @@ public class BookDownloadService {
 
                 // update file size
                 Long newSizeKb = FileUtils.getFileSizeInKb(destPath);
-                Set<Long> longset = new HashSet<>();
-                longset.add(bookId);
-                var meta=bookRepository.findAllWithMetadataByIds(longset);
 
-                // Build new BookEntity for the converted file
-                BookEntity newBook = BookEntity.builder()
-                        .library(bookEntity.getLibrary())
-                        .libraryPath(bookEntity.getLibraryPath())
-                        .fileName(destPath.getFileName().toString())
-                        .fileSubPath(bookEntity.getFileSubPath())
-                        .bookType(BookFileType.EPUB)
-                        .fileSizeKb(newSizeKb)
-                        .addedOn(java.time.Instant.now())
-                        .build();
-
-
-                // attach conversion shelf for the current user if available
-//                Long userId = authenticationService.getAuthenticatedUser() != null ? authenticationService.getAuthenticatedUser().getId() : null;
-//                if (userId != null) {
-//                    Optional<ShelfEntity> conversionShelf = shelfService.getShelf(userId, ShelfType.CONVERSION.getName());
-//                    if (conversionShelf.isPresent()) {
-//                        var shelves = bookEntity.getShelves();
-//                        shelves.clear();
-//                        shelves.add(conversionShelf.get());
-//                        newBook.setShelves(shelves);
-//                    }
-//                }
-
-                BookMetadataEntity bookMetadataEntity = new BookMetadataEntity();
-                bookMetadataEntity.setBook(newBook);
-                bookMetadataEntity.setBookId(newBook.getId());
-                bookRepository.save(newBook);
-                bookMetadataRepository.save(bookMetadataEntity);
+                // Map existing book's metadata DTO and import the converted file using BookImportService
+                try {
+                    BookMetadata metadataDto = bookMapper.toBook(bookEntity).getMetadata();
+                    // importFileToLibrary expects the file already in the library path
+                    var imported = bookImportService.importFileToLibrary(destPath.toFile(),
+                            bookEntity.getLibrary().getId(),
+                            bookEntity.getLibraryPath().getId(),
+                            metadataDto);
+                    log.debug("Imported converted file as book id={}", imported.getId());
+                } catch (Exception e) {
+                    // If import fails, log and continue to stream the file to the client
+                    log.warn("Failed to import converted file into library: {}", e.getMessage(), e);
+                }
 
                 // ensure we stream the moved file from library
                 fileToSend = destPath.toFile();
