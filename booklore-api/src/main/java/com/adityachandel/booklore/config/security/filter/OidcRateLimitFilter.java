@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.config.security.filter;
 
+import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
@@ -20,8 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class OidcRateLimitFilter extends OncePerRequestFilter {
 
     private final Cache<String, AtomicInteger> requestCounts;
+    private final OidcProperties oidcProperties;
 
-    public OidcRateLimitFilter() {
+    public OidcRateLimitFilter(OidcProperties oidcProperties) {
+        this.oidcProperties = oidcProperties;
         this.requestCounts = Caffeine.newBuilder()
                 .expireAfterWrite(Duration.ofMinutes(1))
                 .build();
@@ -30,10 +33,16 @@ public class OidcRateLimitFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         if (request.getRequestURI().equals("/api/v1/auth/oidc/token")) {
+            if (!oidcProperties.jwks().rateLimitEnabled()) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+            
             String clientIp = getClientIp(request);
             AtomicInteger count = requestCounts.get(clientIp, k -> new AtomicInteger(0));
             
-            if (count.incrementAndGet() > 20) { 
+            int limit = oidcProperties.jwks().rateLimitRequestsPerMinute();
+            if (count.incrementAndGet() > limit) { 
                 log.warn("OIDC Token Endpoint Rate limit exceeded for IP: {}", clientIp);
                 response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
                 response.getWriter().write("Rate limit exceeded. Please try again later.");

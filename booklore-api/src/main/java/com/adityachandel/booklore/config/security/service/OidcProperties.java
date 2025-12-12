@@ -32,9 +32,11 @@ public record OidcProperties(
                 Duration.ofMinutes(30),
                 Duration.ofMinutes(10),
                 true,
+                20,
                 "",
                 null,
                 "BookLore-OIDC-Client/1.0",
+                "",
                 "",
                 ""
             );
@@ -49,9 +51,7 @@ public record OidcProperties(
      * strict audience validation is disabled (indicating non-production use).
      * This prevents algorithm confusion attacks in production.
      */
-    public boolean allowUnsafeAlgorithmFallback() {
-        // Extra safety: only allow if explicitly enabled
-        // In the future, consider removing this entirely
+    public boolean isAlgorithmFallbackAllowed() {
         return allowUnsafeAlgorithmFallback && !strictAudienceValidation;
     }
 
@@ -62,15 +62,17 @@ public record OidcProperties(
             Duration cacheTtl,
             Duration cacheRefresh,
             boolean rateLimitEnabled,
+            int rateLimitRequestsPerMinute,
             String proxyHost,
             Integer proxyPort,
             String userAgent,
-            String proxyUser,
+            String trustedCertificates,
+            String proxyUsername,
             String proxyPassword
     ) {}
 
     public record Jwt(
-            Duration clockSkew, 
+            Duration clockSkew,
             boolean enableReplayPrevention,
             int replayCacheSize
     ) {

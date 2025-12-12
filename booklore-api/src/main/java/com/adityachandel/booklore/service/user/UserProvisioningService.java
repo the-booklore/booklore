@@ -39,11 +39,13 @@ public class UserProvisioningService {
     private static final Pattern GROUPS_SPLIT_PATTERN = Pattern.compile("[,\\s]+");
 
     // Cache for OIDC user lookups to reduce DB calls on repeated token validation
-    // Key: oidcSubject, Value: userId
-    private final Cache<String, Long> oidcUserCache = Caffeine.newBuilder()
+    // Key: oidcSubject, Value: CachedUser (User DTO + groups hash)
+    private final Cache<String, CachedUser> oidcUserCache = Caffeine.newBuilder()
             .expireAfterWrite(Duration.ofMinutes(5))
             .maximumSize(1000)
             .build();
+
+    private record CachedUser(BookLoreUser user, int groupsHash) {}
 
 
     private final AppProperties appProperties;
@@ -93,16 +95,8 @@ public class UserProvisioningService {
             // Get claim mappings from configuration
             OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
             OidcProviderDetails.ClaimMapping claimMapping = providerDetails != null ? providerDetails.getClaimMapping() : null;
-            
-            // Extract user info using configured claim names
-            String username = extractClaimValue(claims, claimMapping != null ? claimMapping.getUsername() : null, oidcSubject);
-            String email = extractClaimValue(claims, claimMapping != null ? claimMapping.getEmail() : "email", null);
-            String name = extractClaimValue(claims, claimMapping != null ? claimMapping.getName() : "name", null);
-            
-            // Sanitize username to prevent injection and ensure valid format
-            username = sanitizeUsername(username);
-            
-            // Extract groups for role mapping
+
+            // Extract groups for role mapping (needed for cache validation)
             List<String> groups = Collections.emptyList();
             if (claimMapping != null && claimMapping.getGroups() != null && !claimMapping.getGroups().isEmpty()) {
                 groups = dynamicOidcJwtProcessor.extractGroups(claims, claimMapping.getGroups());
@@ -110,6 +104,25 @@ public class UserProvisioningService {
                     log.debug("Extracted groups from OIDC token: {}", groups);
                 }
             }
+            int groupsHash = groups.hashCode();
+
+            // Check cache first
+            CachedUser cached = oidcUserCache.getIfPresent(oidcSubject);
+            if (cached != null && cached.groupsHash() == groupsHash) {
+                log.debug("Returning cached OIDC user for subject: {}", oidcSubject);
+                return cached.user();
+            }
+            
+            // Extract user info using configured claim names
+            String username = extractClaimValue(claims, claimMapping != null ? claimMapping.getUsername() : null, oidcSubject);
+            String email = extractClaimValue(claims, claimMapping != null ? claimMapping.getEmail() : "email", null);
+            if (email != null) {
+                email = email.toLowerCase(Locale.ROOT);
+            }
+            String name = extractClaimValue(claims, claimMapping != null ? claimMapping.getName() : "name", null);
+            
+            // Sanitize username to prevent injection and ensure valid format
+            username = sanitizeUsername(username);
             
             log.info("OIDC token validated for user: sub={}, username={}, email={}", 
                      oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "...", username, email);
@@ -132,7 +145,7 @@ public class UserProvisioningService {
             permissions.setCanSyncKoReader(permsEntity.isPermissionSyncKoreader());
             permissions.setCanSyncKobo(permsEntity.isPermissionSyncKobo());
             
-            return BookLoreUser.builder()
+            BookLoreUser userDto = BookLoreUser.builder()
                 .id(userEntity.getId())
                 .username(userEntity.getUsername())
                 .email(userEntity.getEmail())
@@ -141,6 +154,11 @@ public class UserProvisioningService {
                 .provisioningMethod(userEntity.getProvisioningMethod())
                 .isDefaultPassword(false)
                 .build();
+            
+            // Cache the result
+            oidcUserCache.put(oidcSubject, new CachedUser(userDto, groupsHash));
+            
+            return userDto;
             
         } catch (Exception e) {
             log.error("Failed to validate OIDC token and provision user: {}", e.getMessage(), e);
@@ -281,25 +299,6 @@ public class UserProvisioningService {
                  oidcSubject != null ? oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "..." : "null",
                  username, email, displayName);
         
-        // Check cache first for performance (reduces DB calls on repeated token validation)
-        if (oidcSubject != null) {
-            Long cachedUserId = oidcUserCache.getIfPresent(oidcSubject);
-            if (cachedUserId != null) {
-                Optional<BookLoreUserEntity> cachedUser = userRepository.findById(cachedUserId);
-                if (cachedUser.isPresent()) {
-                    log.debug("Cache hit for OIDC subject: {}", oidcSubject.substring(0, Math.min(8, oidcSubject.length())) + "...");
-                    BookLoreUserEntity user = cachedUser.get();
-                    // Sync groups/roles even on cache hit
-                    if (groups != null && !groups.isEmpty()) {
-                        userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
-                    }
-                    return user;
-                }
-                // Cache entry invalid, remove it
-                oidcUserCache.invalidate(oidcSubject);
-            }
-        }
-        
         // Step 1: Try to find by oidcSubject first (immutable identifier)
         if (oidcSubject != null && !oidcSubject.trim().isEmpty()) {
             Optional<BookLoreUserEntity> bySubject = userRepository.findByOidcSubject(oidcSubject);
@@ -316,8 +315,6 @@ public class UserProvisioningService {
                     userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
                 }
                 
-                // Cache the result
-                oidcUserCache.put(oidcSubject, user.getId());
                 return user;
             }
         }
@@ -369,10 +366,6 @@ public class UserProvisioningService {
                 userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
             }
             
-            // Cache the result
-            if (oidcSubject != null) {
-                oidcUserCache.put(oidcSubject, user.getId());
-            }
             return user;
         }
 
@@ -421,10 +414,6 @@ public class UserProvisioningService {
                     userPersistenceService.syncUserPermissionsFromGroups(user, groups, oidcAutoProvisionDetails);
                 }
 
-                // Cache the result
-                if (oidcSubject != null) {
-                    oidcUserCache.put(oidcSubject, user.getId());
-                }
                 return user;
             }
         }
@@ -432,9 +421,6 @@ public class UserProvisioningService {
         // Step 3: User doesn't exist, create new one
         try {
             BookLoreUserEntity newUser = userPersistenceService.provisionOidcUserInternal(oidcSubject, username, email, displayName, groups, oidcAutoProvisionDetails);
-            if (oidcSubject != null) {
-                oidcUserCache.put(oidcSubject, newUser.getId());
-            }
             return newUser;
         } catch (DuplicateUserRetryException e) {
             // Transaction rolled back, session cleared. Now safe to query for user created by concurrent thread.
@@ -444,9 +430,6 @@ public class UserProvisioningService {
                     .or(() -> email != null ? userRepository.findByEmail(email) : Optional.empty())
                     .orElseThrow(() -> new OidcProvisioningException(
                             String.format("Concurrency Error: User '%s' could not be created, nor found after a unique constraint violation.", username)));
-            if (oidcSubject != null) {
-                oidcUserCache.put(oidcSubject, existingUser.getId());
-            }
             return existingUser;
         }
     }

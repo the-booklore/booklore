@@ -9,12 +9,15 @@ import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BooleanSupplier;
@@ -25,25 +28,23 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class UserPersistenceService {
 
-    private static final ConcurrentHashMap<String, Object> USER_CREATION_LOCKS = new ConcurrentHashMap<>();
-    private static final String OIDC_LOCKED_PASSWORD = "$OIDC_LOCKED$";
+    // Use Caffeine cache for locks with expiration to prevent stale locks
+    private static final Cache<String, Object> USER_CREATION_LOCKS = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(5))
+            .build();
+            
+    private static final String OIDC_LOCKED_PASSWORD_HASH = "$OIDC_LOCKED$";
 
     private final UserRepository userRepository;
     private final LibraryRepository libraryRepository;
     private final UserDefaultsService userDefaultsService;
     private final AppSettingService appSettingService;
 
-    @org.springframework.scheduling.annotation.Scheduled(fixedRate = 3600000) // Every hour
-    public void cleanupStaleLocks() {
-        USER_CREATION_LOCKS.clear(); // Safe because locks are only used during provisioning
-        log.debug("Cleaned up user provisioning locks");
-    }
-
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public BookLoreUserEntity provisionOidcUserInternal(String oidcSubject, String username, String email, String name,
                                                         List<String> groups, OidcAutoProvisionDetails oidcAutoProvisionDetails) {
         // Use a per-username lock to avoid race conditions when provisioning the same username concurrently
-        Object lock = USER_CREATION_LOCKS.computeIfAbsent(username, k -> new Object());
+        Object lock = USER_CREATION_LOCKS.get(username, k -> new Object());
         synchronized (lock) {
             // Double-check inside lock - check by subject first, then username
             if (oidcSubject != null) {
@@ -90,7 +91,7 @@ public class UserPersistenceService {
             user.setName(name);
             user.setOidcSubject(oidcSubject); // Store the immutable subject identifier
             // Set an invalid password hash that explicitly fails bcrypt validation
-            user.setPasswordHash(OIDC_LOCKED_PASSWORD);
+            user.setPasswordHash(OIDC_LOCKED_PASSWORD_HASH);
             user.setDefaultPassword(false);
             user.setProvisioningMethod(ProvisioningMethod.OIDC);
 

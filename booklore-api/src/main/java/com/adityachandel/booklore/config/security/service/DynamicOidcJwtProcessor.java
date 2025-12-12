@@ -75,6 +75,7 @@ public class DynamicOidcJwtProcessor {
 
     // Cache for JWT IDs to prevent token replay attacks
     private volatile Cache<String, Boolean> usedTokenCache;
+    private final Object cacheInitLock = new Object();
 
     // Read-write lock for thread-safe configuration changes and concurrent token processing
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -218,10 +219,7 @@ public class DynamicOidcJwtProcessor {
                 if (jti != null && !jti.isEmpty()) {
                     Cache<String, Boolean> localCache = usedTokenCache;
                     if (localCache == null) {
-                        // Need write lock for cache initialization
-                        readLock.unlock();
-                        writeLock.lock();
-                        try {
+                        synchronized (cacheInitLock) {
                             localCache = usedTokenCache;
                             if (localCache == null) {
                                 usedTokenCache = Caffeine.newBuilder()
@@ -232,10 +230,6 @@ public class DynamicOidcJwtProcessor {
                                 log.info("Initialized JWT replay prevention cache (size: {}, TTL: 2h)",
                                     oidcProperties.jwt().replayCacheSize());
                             }
-                            // Downgrade to read lock for the rest of the processing
-                            readLock.lock();
-                        } finally {
-                            writeLock.unlock();
                         }
                     }
 
@@ -442,7 +436,7 @@ public class DynamicOidcJwtProcessor {
                 jwks.proxyHost(),
                 jwks.proxyPort(),
                 jwks.userAgent(),
-                jwks.proxyUser(),
+                jwks.proxyUsername(),
                 jwks.proxyPassword()
         );
     }
