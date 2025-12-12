@@ -213,6 +213,22 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     }
   }
 
+  onPersistConversionToggle() {
+    if (!this.koboSettings.persistConversion) {
+      this.confirmationService.confirm({
+        message: 'Disabling Persist conversion will delete your Conversion shelf. Are you sure you want to proceed?',
+        header: 'Confirm Disable',
+        icon: 'pi pi-exclamation-triangle',
+        accept: () => {this.onToggleChange()},
+        reject: () => {
+          this.koboSettings.persistConversion = true;
+        }
+      });
+    }else {
+      this.onToggleChange();
+    }
+  }
+
   onProgressThresholdsChange() {
     this.progressThresholdChange$.next();
   }
