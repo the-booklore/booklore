@@ -239,47 +239,72 @@ jobs:
           
           -- Insert test user (if users table exists)
           INSERT IGNORE INTO book_lore_user (id, username, email, created_at, updated_at)
-          VALUES (9999, 'migration_test_user', 'test@booklore.local', NOW(), NOW())
+          SELECT 9999, 'migration_test_user', 'test@booklore.local', NOW(), NOW()
+          FROM dual
+          WHERE EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'book_lore_user' AND table_schema = DATABASE()
+          )
           ON DUPLICATE KEY UPDATE username = username;
           
           -- Insert test library (if libraries table exists)
           INSERT IGNORE INTO library (id, name, path, created_at, updated_at)
-          VALUES (9999, 'Migration Test Library', '/test/migration/library', NOW(), NOW())
+          SELECT 9999, 'Migration Test Library', '/test/migration/library', NOW(), NOW()
+          FROM dual
+          WHERE EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'library' AND table_schema = DATABASE()
+          )
           ON DUPLICATE KEY UPDATE name = name;
           
           -- Insert books with edge-case data
           -- Book 1: Unicode stress test (Japanese, emoji, special chars)
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          VALUES (
+          SELECT 
             99901,
             9999,
             '吾輩は猫である_📚_特殊文字テスト.epub',
             '/test/migration/library/吾輩は猫である_📚_特殊文字テスト.epub',
             NOW(),
             NOW()
-          ) ON DUPLICATE KEY UPDATE file_name = file_name;
+          FROM dual
+          WHERE EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'book' AND table_schema = DATABASE()
+          )
+          ON DUPLICATE KEY UPDATE file_name = file_name;
           
           -- Book 2: Long description stress test
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          VALUES (
+          SELECT 
             99902,
             9999,
             'long_description_test.epub',
             '/test/migration/library/long_description_test.epub',
             NOW(),
             NOW()
-          ) ON DUPLICATE KEY UPDATE file_name = file_name;
+          FROM dual
+          WHERE EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'book' AND table_schema = DATABASE()
+          )
+          ON DUPLICATE KEY UPDATE file_name = file_name;
           
           -- Book 3: Edge case with null-safe columns
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          VALUES (
+          SELECT 
             99903,
             9999,
             'null_test_book.pdf',
             '/test/migration/library/null_test_book.pdf',
             NOW(),
             NOW()
-          ) ON DUPLICATE KEY UPDATE file_name = file_name;
+          FROM dual
+          WHERE EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_name = 'book' AND table_schema = DATABASE()
+          )
+          ON DUPLICATE KEY UPDATE file_name = file_name;
           
           -- Insert book metadata if table exists
           INSERT IGNORE INTO book_metadata (id, book_id, title, description, isbn)
@@ -435,9 +460,50 @@ jobs:
           EXECUTE stmt;
           DEALLOCATE PREPARE stmt;
 
-          DELETE FROM book WHERE id >= 99900;
-          DELETE FROM library WHERE id = 9999;
-          DELETE FROM book_lore_user WHERE id = 9999;
+          SET @sql = (
+            SELECT IF(
+              EXISTS (
+                SELECT 1 FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'book'
+              ),
+              'DELETE FROM book WHERE id >= 99900;',
+              'SELECT "book table does not exist" as status;'
+            )
+          );
+          PREPARE stmt FROM @sql;
+          EXECUTE stmt;
+          DEALLOCATE PREPARE stmt;
+
+          SET @sql = (
+            SELECT IF(
+              EXISTS (
+                SELECT 1 FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'library'
+              ),
+              'DELETE FROM library WHERE id = 9999;',
+              'SELECT "library table does not exist" as status;'
+            )
+          );
+          PREPARE stmt FROM @sql;
+          EXECUTE stmt;
+          DEALLOCATE PREPARE stmt;
+
+          SET @sql = (
+            SELECT IF(
+              EXISTS (
+                SELECT 1 FROM information_schema.TABLES
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'book_lore_user'
+              ),
+              'DELETE FROM book_lore_user WHERE id = 9999;',
+              'SELECT "book_lore_user table does not exist" as status;'
+            )
+          );
+          PREPARE stmt FROM @sql;
+          EXECUTE stmt;
+          DEALLOCATE PREPARE stmt;
           SELECT 'CLEANUP_COMPLETE' AS status;
           CLEANSQL
 
