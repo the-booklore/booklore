@@ -55,9 +55,19 @@ public class PathPatternResolver {
             return filename;
         }
 
+        String filenameBase = "Untitled";
+        if (filename != null && !filename.isBlank()) {
+            int lastDot = filename.lastIndexOf('.');
+            if (lastDot > 0) {
+                filenameBase = filename.substring(0, lastDot);
+            } else {
+                filenameBase = filename;
+            }
+        }
+
         String title = sanitize(metadata != null && metadata.getTitle() != null
                 ? metadata.getTitle()
-                : "Untitled");
+                : filenameBase);
 
         String subtitle = sanitize(metadata != null ? metadata.getSubtitle() : "");
 
