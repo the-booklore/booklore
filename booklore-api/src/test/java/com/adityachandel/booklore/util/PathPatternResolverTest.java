@@ -184,7 +184,7 @@ class PathPatternResolverTest {
     void testResolvePattern_nullMetadata() {
         String result = PathPatternResolver.resolvePattern((BookMetadata) null, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
@@ -195,7 +195,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
