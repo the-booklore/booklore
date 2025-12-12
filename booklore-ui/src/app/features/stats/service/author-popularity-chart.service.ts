@@ -271,7 +271,7 @@ export class AuthorPopularityChartService implements OnDestroy {
         if (book.metadata?.goodreadsRating) ratings.push(book.metadata.goodreadsRating);
         if (book.metadata?.amazonRating) ratings.push(book.metadata.amazonRating);
         if (book.metadata?.hardcoverRating) ratings.push(book.metadata.hardcoverRating);
-        if (book.metadata?.personalRating) ratings.push(book.metadata.personalRating);
+        if (book.personalRating) ratings.push(book.personalRating);
 
         if (ratings.length > 0) {
           const avgRating = ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;

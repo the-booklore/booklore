@@ -31,7 +31,6 @@ public class EpubMetadata {
     private Integer pageCount;
     private String language;
     private String asin;
-    private Double personalRating;
     private Double amazonRating;
     private Integer amazonReviewCount;
     private String goodreadsId;

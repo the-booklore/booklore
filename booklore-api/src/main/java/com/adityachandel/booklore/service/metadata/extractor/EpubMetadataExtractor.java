@@ -165,10 +165,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                if ("calibre:rating".equals(name) || "booklore:personal_rating".equals(prop)) {
-                                    safeParseDouble(content, builderMeta::personalRating);
-                                }
-
                                 switch (prop) {
                                     case "booklore:asin" -> builderMeta.asin(content);
                                     case "booklore:goodreads_id" -> builderMeta.goodreadsId(content);

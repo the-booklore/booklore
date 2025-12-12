@@ -45,7 +45,6 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
             FileProcessResult result = processLibraryFile(libraryFile);
             if (result != null) {
                 bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
-                // Auto-add book to Kobo shelves for users with auto-add enabled
                 koboAutoShelfService.autoAddBookToKoboShelves(result.getBook().getId());
             }
         } catch (Exception e) {

@@ -208,7 +208,7 @@ export class PersonalRatingChartService implements OnDestroy {
     RATING_RANGES.forEach(range => rangeCounts.set(range.range, {count: 0, totalRating: 0}));
 
     books.forEach(book => {
-      const personalRating = book.metadata?.personalRating;
+      const personalRating = book.personalRating;
 
       if (!personalRating || personalRating === 0) {
         const noRatingData = rangeCounts.get('No Rating')!;
