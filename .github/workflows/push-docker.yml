@@ -2,7 +2,7 @@ name: Push BookLore Docker
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "develop" ]
     tags: [ "v*.*.*" ]
   workflow_dispatch:
 
@@ -52,7 +52,7 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/booklore
             ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/develop' }}
             type=semver,pattern={{version}}
           flavor: |
             suffix=-amd64
@@ -107,7 +107,7 @@ jobs:
             ${{ secrets.DOCKER_HUB_USERNAME }}/booklore
             ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/develop' }}
             type=semver,pattern={{version}}
           flavor: |
             suffix=-arm64

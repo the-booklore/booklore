@@ -5,14 +5,14 @@ name: WireMock Protocol Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'booklore-api/src/main/java/**/kobo/**'
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'testing/wiremock/**'
       - '.github/workflows/wiremock-protocol-tests.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'booklore-api/src/main/java/**/kobo/**'
       - 'booklore-api/src/main/java/**/koreader/**'

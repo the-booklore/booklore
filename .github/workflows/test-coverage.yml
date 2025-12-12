@@ -2,9 +2,9 @@ name: Test Coverage Report
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [develop, main]
   push:
-    branches: [main, develop]
+    branches: [develop, main]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

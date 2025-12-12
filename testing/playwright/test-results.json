@@ -1,0 +1,464 @@
+{
+  "config": {
+    "configFile": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright/playwright.config.ts",
+    "rootDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright",
+    "forbidOnly": false,
+    "fullyParallel": true,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {},
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "test-results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "kobo-libra-2",
+        "name": "kobo-libra-2",
+        "testDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "kobo-elipsa",
+        "name": "kobo-elipsa",
+        "testDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      },
+      {
+        "outputDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {},
+        "id": "pocketbook-era",
+        "name": "pocketbook-era",
+        "testDir": "/home/balazsszucs/IdeaProjects/booklore-1/testing/playwright",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.57.0",
+    "workers": 6,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "accessibility.spec.ts",
+      "file": "accessibility.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "WCAG Accessibility Compliance",
+          "file": "accessibility.spec.ts",
+          "line": 38,
+          "column": 6,
+          "specs": [
+            {
+              "title": "login page meets WCAG 2.1 AA standards",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-d2a29d789ab13ba6b4d7",
+              "file": "accessibility.spec.ts",
+              "line": 46,
+              "column": 7
+            },
+            {
+              "title": "color contrast meets WCAG AA (4.5:1 ratio)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-1e5b39416304ef139958",
+              "file": "accessibility.spec.ts",
+              "line": 50,
+              "column": 7
+            },
+            {
+              "title": "enhanced contrast for e-ink readability (WCAG AAA)",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-001cbadcab32b1747c3e",
+              "file": "accessibility.spec.ts",
+              "line": 57,
+              "column": 7
+            },
+            {
+              "title": "text alternatives exist for non-text content",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-25cdeaae40be3e06133f",
+              "file": "accessibility.spec.ts",
+              "line": 64,
+              "column": 7
+            },
+            {
+              "title": "form elements have proper labels",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-4f4e6f96227d4428e033",
+              "file": "accessibility.spec.ts",
+              "line": 71,
+              "column": 7
+            },
+            {
+              "title": "keyboard navigation is functional",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-9c825322b2efcfa17f9f",
+              "file": "accessibility.spec.ts",
+              "line": 77,
+              "column": 7
+            },
+            {
+              "title": "focus indicators are visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-2faac17eb6daf69991b7",
+              "file": "accessibility.spec.ts",
+              "line": 83,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "E-Ink Specific Accessibility",
+          "file": "accessibility.spec.ts",
+          "line": 119,
+          "column": 6,
+          "specs": [
+            {
+              "title": "reduced motion preference disables animations",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-1b9b91d85d3d0ad9faf9",
+              "file": "accessibility.spec.ts",
+              "line": 121,
+              "column": 7
+            },
+            {
+              "title": "light color scheme provides adequate contrast",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-libra-2",
+                  "projectName": "kobo-libra-2",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "kobo-elipsa",
+                  "projectName": "kobo-elipsa",
+                  "results": [],
+                  "status": "skipped"
+                },
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "pocketbook-era",
+                  "projectName": "pocketbook-era",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-fff4b6c7f2d8cad089ea",
+              "file": "accessibility.spec.ts",
+              "line": 150,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-12-12T23:28:47.642Z",
+    "duration": 124.22000000000003,
+    "expected": 0,
+    "skipped": 27,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

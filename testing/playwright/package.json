@@ -1,0 +1,14 @@
+{
+  "name": "booklore-accessibility-tests",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "playwright test",
+    "test:a11y": "playwright test accessibility.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@axe-core/playwright": "^4.8.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

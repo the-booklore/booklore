@@ -2,7 +2,7 @@ name: Swagger API Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'booklore-api/**'
       - 'booklore-ui/**'

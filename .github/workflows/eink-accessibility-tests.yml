@@ -6,14 +6,16 @@ name: E-Ink Simulation & Accessibility Tests
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'booklore-ui/**'
+      - 'testing/playwright/**'
       - '.github/workflows/eink-accessibility-tests.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'booklore-ui/**'
+      - 'testing/playwright/**'
       - '.github/workflows/eink-accessibility-tests.yml'
   workflow_dispatch:
 
@@ -510,275 +512,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Create accessibility test directory
-        run: mkdir -p testing/playwright
-
-      - name: Create axe-core accessibility tests
-        run: |
-          cat > testing/playwright/accessibility.spec.ts << 'EOF'
-          import { test, expect } from '@playwright/test';
-          import AxeBuilder from '@axe-core/playwright';
-
-          // WCAG 2.1 AA is the minimum standard
-          // WCAG 2.1 AAA provides enhanced contrast (better for e-ink)
-          const WCAG_STANDARD = 'wcag21aa';
-
-          interface AxeViolation {
-            id: string;
-            impact: string;
-            description: string;
-            nodes: { html: string }[];
-          }
-
-          test.describe('WCAG Accessibility Compliance', () => {
-            
-            test('login page meets WCAG 2.1 AA standards', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              const accessibilityResults = await new AxeBuilder({ page })
-                .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-                .analyze();
-              
-              // Log violations for debugging
-              if (accessibilityResults.violations.length > 0) {
-                console.log('Accessibility violations found:');
-                accessibilityResults.violations.forEach((violation: AxeViolation) => {
-                  console.log(`  - ${violation.id}: ${violation.impact}`);
-                  console.log(`    ${violation.description}`);
-                  violation.nodes.slice(0, 2).forEach(node => {
-                    console.log(`    Element: ${node.html.substring(0, 100)}`);
-                  });
-                });
-              }
-              
-              // Filter for critical and serious issues only
-              const criticalViolations = accessibilityResults.violations.filter(
-                (v: AxeViolation) => v.impact === 'critical' || v.impact === 'serious'
-              );
-              
-              expect(criticalViolations).toHaveLength(0);
-            });
-
-            test('color contrast meets WCAG AA (4.5:1 ratio)', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              const contrastResults = await new AxeBuilder({ page })
-                .withTags(['cat.color'])
-                .analyze();
-              
-              const contrastViolations = contrastResults.violations.filter(
-                (v: AxeViolation) => v.id === 'color-contrast' || v.id === 'color-contrast-enhanced'
-              );
-              
-              if (contrastViolations.length > 0) {
-                console.log('⚠️ Color contrast issues (problematic for e-ink):');
-                contrastViolations.forEach((violation: AxeViolation) => {
-                  violation.nodes.slice(0, 5).forEach(node => {
-                    console.log(`  - ${node.html.substring(0, 80)}`);
-                  });
-                });
-              }
-              
-              // E-ink displays need high contrast - fail on any contrast issues
-              expect(contrastViolations).toHaveLength(0);
-            });
-
-            test('text alternatives exist for non-text content', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              const altTextResults = await new AxeBuilder({ page })
-                .withTags(['cat.text-alternatives'])
-                .analyze();
-              
-              // Check for missing alt text on images
-              const altViolations = altTextResults.violations.filter(
-                (v: AxeViolation) => v.id === 'image-alt' || v.id === 'input-image-alt'
-              );
-              
-              if (altViolations.length > 0) {
-                console.log('⚠️ Missing alt text (required for accessibility):');
-                altViolations.forEach((violation: AxeViolation) => {
-                  violation.nodes.slice(0, 3).forEach(node => {
-                    console.log(`  - ${node.html.substring(0, 80)}`);
-                  });
-                });
-              }
-            });
-
-            test('form elements have proper labels', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              const formResults = await new AxeBuilder({ page })
-                .withTags(['cat.forms'])
-                .analyze();
-              
-              const labelViolations = formResults.violations.filter(
-                (v: AxeViolation) => v.id === 'label' || v.id === 'label-title-only'
-              );
-              
-              expect(labelViolations).toHaveLength(0);
-            });
-
-            test('keyboard navigation is functional', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              const keyboardResults = await new AxeBuilder({ page })
-                .withTags(['cat.keyboard'])
-                .analyze();
-              
-              const keyboardViolations = keyboardResults.violations.filter(
-                (v: AxeViolation) => v.impact === 'critical' || v.impact === 'serious'
-              );
-              
-              if (keyboardViolations.length > 0) {
-                console.log('⚠️ Keyboard navigation issues:');
-                keyboardViolations.forEach((violation: AxeViolation) => {
-                  console.log(`  - ${violation.id}: ${violation.description}`);
-                });
-              }
-              
-              expect(keyboardViolations).toHaveLength(0);
-            });
-
-            test('focus indicators are visible', async ({ page }) => {
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              // Tab through focusable elements and check for visible focus
-              const focusableElements = await page.locator('button, a, input, [tabindex]:not([tabindex="-1"])').count();
-              
-              let visibleFocusCount = 0;
-              for (let i = 0; i < Math.min(focusableElements, 10); i++) {
-                await page.keyboard.press('Tab');
-                
-                // Check if focused element has visible focus indicator
-                const hasFocusStyle = await page.evaluate(() => {
-                  const focused = document.activeElement;
-                  if (!focused) return false;
-                  
-                  const style = window.getComputedStyle(focused);
-                  const outline = style.outline;
-                  const boxShadow = style.boxShadow;
-                  const border = style.border;
-                  
-                  // Check if any focus indicator is present
-                  return (
-                    (outline && outline !== 'none' && !outline.includes('0px')) ||
-                    (boxShadow && boxShadow !== 'none') ||
-                    focused.matches(':focus-visible')
-                  );
-                });
-                
-                if (hasFocusStyle) visibleFocusCount++;
-              }
-              
-              // At least 70% of elements should have visible focus
-              const focusRatio = visibleFocusCount / Math.min(focusableElements, 10);
-              console.log(`Focus visibility: ${visibleFocusCount}/${Math.min(focusableElements, 10)} (${(focusRatio * 100).toFixed(0)}%)`);
-              
-              expect(focusRatio).toBeGreaterThan(0.5);
-            });
-          });
-
-          test.describe('E-Ink Specific Accessibility', () => {
-            
-            test('reduced motion preference is respected', async ({ page }) => {
-              // Set reduced motion preference
-              await page.emulateMedia({ reducedMotion: 'reduce' });
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              // Check for CSS that respects prefers-reduced-motion
-              const respectsReducedMotion = await page.evaluate(() => {
-                const stylesheets = Array.from(document.styleSheets);
-                let hasReducedMotionRule = false;
-                
-                try {
-                  stylesheets.forEach(sheet => {
-                    try {
-                      const rules = Array.from(sheet.cssRules || []);
-                      rules.forEach(rule => {
-                        if (rule instanceof CSSMediaRule) {
-                          if (rule.conditionText?.includes('prefers-reduced-motion')) {
-                            hasReducedMotionRule = true;
-                          }
-                        }
-                      });
-                    } catch (e) {
-                      // Cross-origin stylesheets will throw
-                    }
-                  });
-                } catch (e) {
-                  // Ignore errors
-                }
-                
-                return hasReducedMotionRule;
-              });
-              
-              console.log(`Reduced motion CSS rules: ${respectsReducedMotion ? 'Found' : 'Not found'}`);
-            });
-
-            test('light color scheme is properly supported', async ({ page }) => {
-              await page.emulateMedia({ colorScheme: 'light' });
-              await page.goto('/');
-              await page.waitForLoadState('networkidle');
-              
-              // Check that background is light (for e-ink readability)
-              const backgroundColor = await page.evaluate(() => {
-                const body = document.body;
-                const style = window.getComputedStyle(body);
-                return style.backgroundColor;
-              });
-              
-              console.log(`Body background color: ${backgroundColor}`);
-              
-              // Parse RGB and check if it's light (R, G, B all > 200)
-              const rgbMatch = backgroundColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-              if (rgbMatch) {
-                const [, r, g, b] = rgbMatch.map(Number);
-                const isLight = r > 200 && g > 200 && b > 200;
-                console.log(`Background is ${isLight ? 'light' : 'dark'} (RGB: ${r}, ${g}, ${b})`);
-              }
-            });
-          });
-          EOF
-
-      - name: Update package.json with axe-core
-        run: |
-          cat > testing/playwright/package.json << 'EOF'
-          {
-            "name": "booklore-accessibility-tests",
-            "version": "1.0.0",
-            "scripts": {
-              "test": "playwright test",
-              "test:a11y": "playwright test accessibility.spec.ts"
-            },
-            "devDependencies": {
-              "@playwright/test": "^1.40.0",
-              "@axe-core/playwright": "^4.8.0",
-              "typescript": "^5.3.0"
-            }
-          }
-          EOF
-
-      - name: Create tsconfig for Playwright
-        run: |
-          cat > testing/playwright/tsconfig.json << 'EOF'
-          {
-            "compilerOptions": {
-              "target": "ES2020",
-              "module": "commonjs",
-              "strict": true,
-              "esModuleInterop": true,
-              "skipLibCheck": true
-            }
-          }
-          EOF
+      # Test files are now managed locally in the testing/playwright/ directory
 
       - name: Install MariaDB client
         run: |
@@ -822,7 +556,7 @@ jobs:
           done
           exit 1
 
-      - name: Install Playwright and axe-core
+      - name: Install Playwright and dependencies
         working-directory: testing/playwright
         run: |
           npm install
@@ -883,7 +617,10 @@ jobs:
           echo "- ✓ Animation detection & disabling" >> $GITHUB_STEP_SUMMARY
           echo "- ✓ Touch target size verification (44x44px min)" >> $GITHUB_STEP_SUMMARY
           echo "- ✓ WCAG 2.1 AA color contrast (4.5:1 ratio)" >> $GITHUB_STEP_SUMMARY
-          echo "- ✓ Keyboard navigation" >> $GITHUB_STEP_SUMMARY
-          echo "- ✓ Focus indicator visibility" >> $GITHUB_STEP_SUMMARY
-          echo "- ✓ prefers-reduced-motion support" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ WCAG AAA enhanced contrast for e-ink" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Text alternatives (alt text, ARIA labels)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Form labeling and keyboard navigation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Focus indicator visibility (70% minimum)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ prefers-reduced-motion animation disabling" >> $GITHUB_STEP_SUMMARY
+          echo "- ✓ Light color scheme luminance validation" >> $GITHUB_STEP_SUMMARY
 

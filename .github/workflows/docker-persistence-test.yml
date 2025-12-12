@@ -2,14 +2,14 @@ name: Docker Persistence Smoke Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'Dockerfile'
       - 'start.sh'
       - 'booklore-api/src/main/resources/application.yaml'
       - '.github/workflows/docker-persistence-test.yml'
   pull_request:
-    branches: [main, develop]
+    branches: [develop, main]
     paths:
       - 'Dockerfile'
       - 'start.sh'

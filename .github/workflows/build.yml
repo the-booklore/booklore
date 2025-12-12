@@ -2,7 +2,7 @@ name: Build and Test BookLore
 
 on:
   pull_request:
-    branches: ["main", "develop"]
+    branches: ["develop", "main"]
   workflow_dispatch:
 
 # Cancel in-progress runs when a new run is triggered
