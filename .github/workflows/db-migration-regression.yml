@@ -53,11 +53,15 @@ jobs:
 
       - name: Determine baseline version
         id: baseline
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_BASELINE_REF: ${{ inputs.baseline_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.baseline_ref }}" ]; then
-            BASELINE="${{ inputs.baseline_ref }}"
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASELINE="origin/${{ github.base_ref }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_BASELINE_REF" ]; then
+            BASELINE="$INPUT_BASELINE_REF"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            BASELINE="origin/$BASE_REF"
           else
             # For push events, use the previous commit or latest tag
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
