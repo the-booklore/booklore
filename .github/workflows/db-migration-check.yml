@@ -1,0 +1,71 @@
+name: Database Migration Check
+
+on:
+  pull_request:
+    paths:
+      - 'booklore-api/src/main/resources/db/migration/**'
+      - 'scripts/check-migration-integrity.sh'
+      - '.github/workflows/db-migration-check.yml'
+
+jobs:
+  migration-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Check Migration Integrity
+        id: integrity
+        run: |
+          chmod +x scripts/check-migration-integrity.sh
+          ./scripts/check-migration-integrity.sh "origin/${{ github.base_ref }}"
+
+      - name: Run Flyway Migrations
+        id: flyway
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://localhost:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: root
+          FLYWAY_LOCATIONS: filesystem:src/main/resources/db/migration
+          FLYWAY_CLEAN_DISABLED: false
+        run: |
+          ./gradlew flywayClean flywayMigrate flywayValidate --info
+
+      - name: Migration Summary
+        if: always()
+        run: |
+          echo "## Migration Check Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Integrity | ${{ steps.integrity.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Flyway | ${{ steps.flyway.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
