@@ -48,12 +48,12 @@ public class SecurityConfig {
     };
 
     private static final String[] COMMON_PUBLIC_ENDPOINTS = {
-        "/ws/**",                  // WebSocket connections (auth handled in WebSocketAuthInterceptor)
-        "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
-        "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
-        "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
-        "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
-        "/actuator/**"             // Spring Boot Actuator endpoints for health checks and monitoring
+            "/ws/**",                  // WebSocket connections (auth handled in WebSocketAuthInterceptor)
+            "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
+            "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
+            "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
+            "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
+            "/actuator/**"             // Spring Boot Actuator endpoints for health checks and monitoring
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
