@@ -93,4 +93,7 @@ public class UserBookProgressEntity {
 
     @Column(name = "read_status_modified_time")
     private Instant readStatusModifiedTime;
+
+    @Column(name = "personal_rating")
+    private Integer personalRating;
 }

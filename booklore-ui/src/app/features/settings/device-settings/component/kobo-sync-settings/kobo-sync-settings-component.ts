@@ -37,6 +37,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
 
   private readonly destroy$ = new Subject<void>();
   private readonly sliderChange$ = new Subject<void>();
+  private readonly progressThresholdChange$ = new Subject<void>();
 
   hasKoboTokenPermission = false;
   isAdmin = false;
@@ -55,7 +56,8 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     token: '',
     syncEnabled: false,
     progressMarkAsReadingThreshold: 1,
-    progressMarkAsFinishedThreshold: 99
+    progressMarkAsFinishedThreshold: 99,
+    autoAddToShelf: true
   }
 
   ngOnInit() {
@@ -69,6 +71,13 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(() => {
       this.saveSettings();
+    });
+
+    this.progressThresholdChange$.pipe(
+      debounceTime(500),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.updateKoboSettings('Progress thresholds updated successfully');
     });
   }
 
@@ -108,6 +117,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.koboSyncSettings.syncEnabled = settings.syncEnabled;
         this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 1;
         this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99;
+        this.koboSyncSettings.autoAddToShelf = settings.autoAddToShelf ?? false;
         this.credentialsSaved = !!settings.token;
       },
       error: () => {
@@ -191,55 +201,44 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         message: 'Disabling Kobo sync will delete your Kobo shelf. Are you sure you want to proceed?',
         header: 'Confirm Disable',
         icon: 'pi pi-exclamation-triangle',
-        accept: () => this.performToggle(false),
+        accept: () => this.updateKoboSettings('Kobo sync disabled'),
         reject: () => {
           this.koboSyncSettings.syncEnabled = true;
         }
       });
     } else {
-      this.performToggle(true);
+      this.updateKoboSettings('Kobo sync enabled');
     }
   }
 
-  private performToggle(enabled: boolean) {
-    this.koboService.toggleSync(enabled).subscribe({
-      next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Sync Updated',
-          detail: enabled
-            ? 'Kobo sync enabled'
-            : 'Kobo sync disabled'
-        });
-        this.shelfService.reloadShelves();
-      },
-      error: () => {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to update sync setting'
-        });
-      }
-    });
+  onProgressThresholdsChange() {
+    this.progressThresholdChange$.next();
   }
 
-  onProgressThresholdsChange() {
-    this.koboService.updateProgressThresholds(
-      this.koboSyncSettings.progressMarkAsReadingThreshold,
-      this.koboSyncSettings.progressMarkAsFinishedThreshold
-    ).subscribe({
+  onAutoAddToggle() {
+    const message = this.koboSyncSettings.autoAddToShelf
+      ? 'New books will be automatically added to Kobo shelf'
+      : 'Auto-add to Kobo shelf disabled';
+    this.updateKoboSettings(message);
+  }
+
+  private updateKoboSettings(successMessage: string) {
+    this.koboService.updateSettings(this.koboSyncSettings).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
-          summary: 'Thresholds Updated',
-          detail: 'Progress thresholds updated successfully'
+          summary: 'Settings Updated',
+          detail: successMessage
         });
+        if (!this.koboSyncSettings.syncEnabled) {
+          this.shelfService.reloadShelves();
+        }
       },
       error: () => {
         this.messageService.add({
           severity: 'error',
           summary: 'Error',
-          detail: 'Failed to update progress thresholds'
+          detail: 'Failed to update Kobo settings'
         });
       }
     });

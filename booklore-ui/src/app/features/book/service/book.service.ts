@@ -531,6 +531,22 @@ export class BookService {
     );
   }
 
+  resetPersonalRating(bookIds: number | number[]): Observable<Book[]> {
+    const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
+    return this.http.post<Book[]>(`${this.url}/reset-personal-rating`, ids).pipe(
+      tap(updatedBooks => updatedBooks.forEach(book => this.handleBookUpdate(book)))
+    );
+  }
+
+  updatePersonalRating(bookIds: number | number[], rating: number): Observable<Book[]> {
+    const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
+    return this.http.put<Book[]>(`${this.url}/personal-rating`, {ids, rating}).pipe(
+      tap(updatedBooks => {
+        updatedBooks.forEach(updatedBook => this.handleBookUpdate(updatedBook));
+      })
+    );
+  }
+
   consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<any> {
     const payload = {metadataType, targetValues, valuesToMerge};
     return this.http.post(`${this.url}/metadata/manage/consolidate`, payload).pipe(

@@ -502,12 +502,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   onPersonalRatingChange(book: Book, {value: personalRating}: RatingRateEvent): void {
-    if (!book?.metadata) return;
-    const updatedMetadata = {...book.metadata, personalRating};
-    this.bookService.updateBookMetadata(book.id, {
-      metadata: updatedMetadata,
-      clearFlags: {personalRating: false}
-    }, false).subscribe({
+    this.bookService.updatePersonalRating(book.id, personalRating).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -527,12 +522,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   resetPersonalRating(book: Book): void {
-    if (!book?.metadata) return;
-    const updatedMetadata = {...book.metadata, personalRating: null};
-    this.bookService.updateBookMetadata(book.id, {
-      metadata: updatedMetadata,
-      clearFlags: {personalRating: true}
-    }, false).subscribe({
+    this.bookService.resetPersonalRating(book.id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'info',

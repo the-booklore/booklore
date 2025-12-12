@@ -318,9 +318,9 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
     const averagePages = books.length > 0 ? Math.round(totalPages / books.length) : 0;
 
     // Calculate average rating
-    const ratedBooks = books.filter(book => book.metadata?.personalRating || book.metadata?.goodreadsRating);
+    const ratedBooks = books.filter(book => book.personalRating || book.metadata?.goodreadsRating);
     const totalRating = ratedBooks.reduce((sum, book) => {
-      const rating = book.metadata?.personalRating || book.metadata?.goodreadsRating || 0;
+      const rating = book.personalRating || book.metadata?.goodreadsRating || 0;
       return sum + rating;
     }, 0);
     const averageRating = ratedBooks.length > 0 ? Number((totalRating / ratedBooks.length).toFixed(1)) : 0;

@@ -48,6 +48,26 @@
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
+                  <label class="setting-label">Auto-Add New Books to Kobo Shelf</label>
+                  <p-toggle-switch
+                    id="autoAddToShelf"
+                    name="autoAddToShelf"
+                    [(ngModel)]="koboSyncSettings.autoAddToShelf"
+                    (ngModelChange)="onAutoAddToggle()">
+                  </p-toggle-switch>
+                </div>
+                <p class="setting-description">
+                  When enabled, newly added books will be automatically added to your Kobo shelf for syncing.
+                  This eliminates the need to manually add each book to the shelf.
+                </p>
+              </div>
+            </div>
+          }
+
+          @if (koboSyncSettings.syncEnabled) {
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
                   <label class="setting-label">Kobo Sync Token</label>
                   <div class="token-input-group">
                     <input

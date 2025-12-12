@@ -48,7 +48,6 @@ public class MetadataChangeDetectorTest {
                 .googleId("google123")
                 .pageCount(300)
                 .language("en")
-                .personalRating(4.5)
                 .amazonRating(4.2)
                 .amazonReviewCount(1500)
                 .goodreadsRating(4.1)
@@ -72,7 +71,6 @@ public class MetadataChangeDetectorTest {
                 .googleIdLocked(false)
                 .pageCountLocked(false)
                 .languageLocked(false)
-                .personalRatingLocked(false)
                 .amazonRatingLocked(false)
                 .amazonReviewCountLocked(false)
                 .goodreadsRatingLocked(false)
@@ -121,7 +119,6 @@ public class MetadataChangeDetectorTest {
                 .googleId("google123")
                 .pageCount(300)
                 .language("en")
-                .personalRating(4.5)
                 .amazonRating(4.2)
                 .amazonReviewCount(1500)
                 .goodreadsRating(4.1)
@@ -145,7 +142,6 @@ public class MetadataChangeDetectorTest {
                 .googleIdLocked(false)
                 .pageCountLocked(false)
                 .languageLocked(false)
-                .personalRatingLocked(false)
                 .amazonRatingLocked(false)
                 .amazonReviewCountLocked(false)
                 .goodreadsRatingLocked(false)
@@ -200,7 +196,6 @@ public class MetadataChangeDetectorTest {
             Arguments.of("googleId", (Consumer<BookMetadata>) m -> m.setGoogleId("google456")),
             Arguments.of("pageCount", (Consumer<BookMetadata>) m -> m.setPageCount(350)),
             Arguments.of("language", (Consumer<BookMetadata>) m -> m.setLanguage("fr")),
-            Arguments.of("personalRating", (Consumer<BookMetadata>) m -> m.setPersonalRating(4.8)),
             Arguments.of("amazonRating", (Consumer<BookMetadata>) m -> m.setAmazonRating(4.5)),
             Arguments.of("amazonReviewCount", (Consumer<BookMetadata>) m -> m.setAmazonReviewCount(2000)),
             Arguments.of("goodreadsRating", (Consumer<BookMetadata>) m -> m.setGoodreadsRating(4.3)),
