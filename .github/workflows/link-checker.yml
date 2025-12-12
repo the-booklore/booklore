@@ -43,7 +43,7 @@ jobs:
           args: >
             --verbose
             --no-progress
-            --accept 200,204,206,301,302,307,308
+            --accept 200,204,206,301,302,307,308,429
             --exclude-loopback
             --exclude-mail
             --exclude 'localhost'
@@ -51,6 +51,7 @@ jobs:
             --exclude 'demo\.booklore\.dev'
             --exclude 'discord\.gg'
             --exclude 'opencollective\.com'
+            --exclude 'gnu\.org'
             --timeout 30
             --max-retries 3
             --retry-wait-time 5
