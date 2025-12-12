@@ -56,6 +56,29 @@ export interface Page<T> {
   number: number;
 }
 
+export interface PatternExtractRequest {
+  pattern: string;
+  selectAll?: boolean;
+  excludedIds?: number[];
+  selectedIds?: number[];
+  preview?: boolean;
+}
+
+export interface FileExtractionResult {
+  fileId: number;
+  fileName: string;
+  success: boolean;
+  extractedMetadata?: BookMetadata;
+  errorMessage?: string;
+}
+
+export interface PatternExtractResult {
+  totalFiles: number;
+  successfullyExtracted: number;
+  failed: number;
+  results: FileExtractionResult[];
+}
+
 @Injectable({providedIn: 'root'})
 export class BookdropService {
   private readonly url = `${API_CONFIG.BASE_URL}/api/v1/bookdrop`;
@@ -75,5 +98,9 @@ export class BookdropService {
 
   rescan(): Observable<void> {
     return this.http.post<void>(`${this.url}/rescan`, {});
+  }
+
+  extractFromPattern(payload: PatternExtractRequest): Observable<PatternExtractResult> {
+    return this.http.post<PatternExtractResult>(`${this.url}/files/extract-pattern`, payload);
   }
 }

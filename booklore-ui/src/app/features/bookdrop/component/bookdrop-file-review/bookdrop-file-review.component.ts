@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 
-import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService} from '../../service/bookdrop.service';
+import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService, FileExtractionResult} from '../../service/bookdrop.service';
 import {LibraryService} from '../../../book/service/library.service';
 import {Library} from '../../../book/model/library.model';
 
@@ -27,6 +27,8 @@ import {Paginator} from 'primeng/paginator';
 import {ActivatedRoute} from '@angular/router';
 import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-picker/bookdrop-file-metadata-picker.component';
 import {BookdropFinalizeResultDialogComponent} from '../bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog-component';
+import {BookdropBulkEditDialogComponent, BulkEditResult} from '../bookdrop-bulk-edit-dialog/bookdrop-bulk-edit-dialog.component';
+import {BookdropPatternExtractDialogComponent} from '../bookdrop-pattern-extract-dialog/bookdrop-pattern-extract-dialog.component';
 
 export interface BookdropFileUI {
   file: BookdropFile;
@@ -589,6 +591,144 @@ export class BookdropFileReviewComponent implements OnInit {
         });
         console.error(err);
       }
+    });
+  }
+
+  openBulkEditDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    if (selectedFiles.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to bulk edit.',
+      });
+      return;
+    }
+
+    const dialogRef = this.dialogService.open(BookdropBulkEditDialogComponent, {
+      header: `Bulk Edit ${selectedFiles.length} Files`,
+      width: '600px',
+      modal: true,
+      closable: true,
+      data: {fileCount: selectedFiles.length},
+    });
+
+    dialogRef?.onClose.subscribe((result: BulkEditResult | null) => {
+      if (result) {
+        this.applyBulkMetadata(result);
+      }
+    });
+  }
+
+  openPatternExtractDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    if (selectedFiles.length === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to extract metadata from.',
+      });
+      return;
+    }
+
+    const sampleFiles = selectedFiles.slice(0, 5).map(f => f.file.fileName);
+    const selectedIds = selectedFiles.map(f => f.file.id);
+
+    const dialogRef = this.dialogService.open(BookdropPatternExtractDialogComponent, {
+      header: 'Extract Metadata from Filenames',
+      width: '700px',
+      modal: true,
+      closable: true,
+      data: {
+        sampleFiles,
+        fileCount: selectedFiles.length,
+        selectAll: this.selectAllAcrossPages,
+        excludedIds: Array.from(this.excludedFiles),
+        selectedIds,
+      },
+    });
+
+    dialogRef?.onClose.subscribe((result: { results: FileExtractionResult[] } | null) => {
+      if (result?.results) {
+        this.applyExtractedMetadata(result.results);
+      }
+    });
+  }
+
+  private getSelectedFiles(): BookdropFileUI[] {
+    return Object.values(this.fileUiCache).filter(file => {
+      if (this.selectAllAcrossPages) {
+        return !this.excludedFiles.has(file.file.id);
+      }
+      return file.selected;
+    });
+  }
+
+  private applyBulkMetadata(result: BulkEditResult): void {
+    const selectedFiles = this.getSelectedFiles();
+    let updatedCount = 0;
+
+    selectedFiles.forEach(fileUi => {
+      result.enabledFields.forEach(fieldName => {
+        const value = result.fields[fieldName as keyof BookMetadata];
+        if (value === undefined) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(fieldName);
+        if (!control) {
+          return;
+        }
+
+        if (result.mergeArrays && Array.isArray(value)) {
+          const currentValue = control.value || [];
+          const merged = [...new Set([...currentValue, ...value])];
+          control.setValue(merged);
+        } else {
+          control.setValue(value);
+        }
+      });
+      updatedCount++;
+    });
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Bulk Edit Applied',
+      detail: `Updated metadata for ${updatedCount} file(s).`,
+    });
+  }
+
+  private applyExtractedMetadata(results: FileExtractionResult[]): void {
+    let appliedCount = 0;
+
+    results.forEach(result => {
+      if (!result.success || !result.extractedMetadata) {
+        return;
+      }
+
+      const fileUi = this.fileUiCache[result.fileId];
+      if (!fileUi) {
+        return;
+      }
+
+      Object.entries(result.extractedMetadata).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(key);
+        if (control) {
+          control.setValue(value);
+        }
+      });
+
+      appliedCount++;
+    });
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Pattern Extraction Applied',
+      detail: `Applied extracted metadata to ${appliedCount} file(s).`,
     });
   }
 }
