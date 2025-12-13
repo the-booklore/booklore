@@ -18,6 +18,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class FileUploadService {
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final AdditionalFileMapper additionalFileMapper;
     private final FileMovingHelper fileMovingHelper;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
     public void uploadFile(MultipartFile file, long libraryId, long pathId) {
         validateFile(file);
@@ -89,9 +91,11 @@ public class FileUploadService {
     public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, boolean isBook, BookFileType bookType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
+        final Long libraryId = book.getLibrary() != null ? book.getLibrary().getId() : null;
         final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
 
         Path tempPath = null;
+        boolean monitoringUnregistered = false;
         try {
             tempPath = createTempFile(UPLOAD_TEMP_PREFIX, sanitizedFileName);
             file.transferTo(tempPath);
@@ -101,8 +105,24 @@ public class FileUploadService {
                 validateAlternativeFormatDuplicate(fileHash);
             }
 
-            final Path finalPath = buildAdditionalFilePath(book, sanitizedFileName);
+            final Path finalPath;
+            final String finalFileName;
+            if (isBook) {
+                String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
+                String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
+                finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
+                finalPath = buildAdditionalFilePath(book, finalFileName);
+            } else {
+                finalFileName = originalFileName;
+                finalPath = buildAdditionalFilePath(book, sanitizedFileName);
+            }
             validateFinalPath(finalPath);
+
+            if (libraryId != null) {
+                log.debug("Unregistering library {} for monitoring", libraryId);
+                monitoringRegistrationService.unregisterLibrary(libraryId);
+                monitoringUnregistered = true;
+            }
             moveFileToFinalLocation(tempPath, finalPath);
 
             log.info("Additional file uploaded to final location: {}", finalPath);
@@ -116,6 +136,19 @@ public class FileUploadService {
             log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
+            if (monitoringUnregistered && libraryId != null) {
+                try {
+                    if (book.getLibrary() != null && book.getLibrary().getLibraryPaths() != null) {
+                        for (LibraryPathEntity libPath : book.getLibrary().getLibraryPaths()) {
+                            Path libraryRoot = Path.of(libPath.getPath());
+                            log.debug("Re-registering library {} for monitoring", libraryId);
+                            monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to re-register library {} for monitoring after additional file upload: {}", libraryId, e.getMessage());
+                }
+            }
             cleanupTempFile(tempPath);
         }
     }

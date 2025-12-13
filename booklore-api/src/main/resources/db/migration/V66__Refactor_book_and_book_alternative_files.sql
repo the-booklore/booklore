@@ -13,10 +13,67 @@ ALTER TABLE book_file DROP COLUMN additional_file_type;
 INSERT INTO book_file (book_id, file_name, file_sub_path, is_book, book_type, file_size_kb, initial_hash, added_on, current_hash)
 SELECT id, file_name, file_sub_path, true, CASE when book_type = 0 then 'PDF' when book_type = 1 then 'EPUB' when book_type = 2 then 'CBX' end, file_size_kb, initial_hash, added_on, current_hash FROM book;
 
+-- Prevent duplicates of book files (is_book=true) by (library_id, library_path_id, file_sub_path, file_name)
+-- MariaDB/MySQL do not support UNIQUE constraints across multiple tables, so we need to enforce via triggers.
+DELIMITER $$
+DROP TRIGGER IF EXISTS trg_book_file_prevent_duplicate_book_insert$$
+DROP TRIGGER IF EXISTS trg_book_file_prevent_duplicate_book_update$$
+DROP PROCEDURE IF EXISTS assert_no_duplicate_book_file$$
+
+CREATE PROCEDURE assert_no_duplicate_book_file(
+    IN p_book_file_id BIGINT,
+    IN p_book_id BIGINT,
+    IN p_file_name VARCHAR(1000),
+    IN p_file_sub_path VARCHAR(512),
+    IN p_is_book BOOLEAN
+)
+BEGIN
+    DECLARE v_library_id BIGINT;
+    DECLARE v_library_path_id BIGINT;
+
+    IF p_is_book = true THEN
+        SELECT b.library_id, b.library_path_id
+        INTO v_library_id, v_library_path_id
+        FROM book b
+        WHERE b.id = p_book_id;
+
+        IF v_library_id IS NOT NULL AND EXISTS (
+            SELECT 1
+            FROM book_file bf
+            INNER JOIN book b2 ON b2.id = bf.book_id
+            WHERE bf.is_book = true
+              AND bf.file_name = p_file_name
+              AND bf.file_sub_path = p_file_sub_path
+              AND b2.library_id = v_library_id
+              AND b2.library_path_id = v_library_path_id
+              AND (p_book_file_id IS NULL OR bf.id <> p_book_file_id)
+            LIMIT 1
+        ) THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Duplicate book file detected for library/path/subpath/name';
+        END IF;
+    END IF;
+END$$
+
+CREATE TRIGGER trg_book_file_prevent_duplicate_book_insert
+BEFORE INSERT ON book_file
+FOR EACH ROW
+BEGIN
+    CALL assert_no_duplicate_book_file(NULL, NEW.book_id, NEW.file_name, NEW.file_sub_path, NEW.is_book);
+END$$
+
+CREATE TRIGGER trg_book_file_prevent_duplicate_book_update
+BEFORE UPDATE ON book_file
+FOR EACH ROW
+BEGIN
+    CALL assert_no_duplicate_book_file(OLD.id, NEW.book_id, NEW.file_name, NEW.file_sub_path, NEW.is_book);
+END$$
+DELIMITER ;
+
 -- Regenerate virtual column for alternative book format files
 ALTER TABLE book_file ADD COLUMN alt_format_current_hash VARCHAR(128) AS (CASE WHEN is_book = true THEN current_hash END) STORED;
 
--- Remove constraing
+-- Remove constraint from book table
 ALTER TABLE book DROP CONSTRAINT unique_library_file_path;
 
 -- Remove migrated fields from the book table
