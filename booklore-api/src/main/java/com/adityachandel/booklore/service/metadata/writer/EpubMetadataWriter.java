@@ -114,11 +114,6 @@ public class EpubMetadataWriter implements MetadataWriter {
                 replaceMetaElement(metadataElement, opfDoc, "calibre:series_index", formatted, hasChanges);
             });
 
-            helper.copyPersonalRating(clear != null && clear.isPersonalRating(), val -> {
-                String formatted = val != null ? String.format("%.1f", val) : null;
-                replaceMetaElement(metadataElement, opfDoc, "calibre:rating", formatted, hasChanges);
-            });
-
             List<String> schemes = List.of("AMAZON", "GOOGLE", "GOODREADS", "HARDCOVER", "ISBN");
 
             for (String scheme : schemes) {

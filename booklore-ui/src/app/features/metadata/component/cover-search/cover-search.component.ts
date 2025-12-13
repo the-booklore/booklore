@@ -69,7 +69,6 @@ export class CoverSearchComponent implements OnInit {
         .pipe(finalize(() => this.loading = false))
         .subscribe({
           next: (images) => {
-            console.log('API response received:', images);
             this.coverImages = images.sort((a, b) => a.index - b.index);
             this.hasSearched = true;
           },

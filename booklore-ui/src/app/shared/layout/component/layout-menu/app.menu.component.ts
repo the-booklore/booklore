@@ -42,6 +42,8 @@ export class AppMenuComponent implements OnInit {
   librarySortOrder: 'asc' | 'desc' = 'desc';
   shelfSortField: 'name' | 'id' = 'name';
   shelfSortOrder: 'asc' | 'desc' = 'asc';
+  magicShelfSortField: 'name' | 'id' = 'name';
+  magicShelfSortOrder: 'asc' | 'desc' = 'asc';
 
 
   ngOnInit(): void {
@@ -59,6 +61,10 @@ export class AppMenuComponent implements OnInit {
         if (userState.user?.userSettings.sidebarShelfSorting) {
           this.shelfSortField = this.validateSortField(userState.user.userSettings.sidebarShelfSorting.field);
           this.shelfSortOrder = this.validateSortOrder(userState.user.userSettings.sidebarShelfSorting.order);
+        }
+        if (userState.user?.userSettings.sidebarMagicShelfSorting) {
+          this.magicShelfSortField = this.validateSortField(userState.user.userSettings.sidebarMagicShelfSorting.field);
+          this.magicShelfSortOrder = this.validateSortOrder(userState.user.userSettings.sidebarMagicShelfSorting.order);
         }
         this.initMenus();
       });
@@ -101,7 +107,8 @@ export class AppMenuComponent implements OnInit {
               menu: this.libraryShelfMenuService.initializeLibraryMenuItems(library),
               label: library.name,
               type: 'Library',
-              icon: 'pi pi-' + library.icon,
+              icon: library.icon,
+              iconType: (library.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
               routerLink: [`/library/${library.id}/books`],
               bookCount$: this.libraryService.getBookCount(library.id ?? 0),
             })),
@@ -113,7 +120,7 @@ export class AppMenuComponent implements OnInit {
     this.magicShelfMenu$ = this.magicShelfService.shelvesState$.pipe(
       map((state: MagicShelfState) => {
         const shelves = state.shelves ?? [];
-        const sortedShelves = this.sortArray(shelves, 'name', 'asc');
+        const sortedShelves = this.sortArray(shelves, this.magicShelfSortField, this.magicShelfSortOrder);
         return [
           {
             label: 'Magic Shelves',
@@ -123,7 +130,8 @@ export class AppMenuComponent implements OnInit {
             items: sortedShelves.map((shelf) => ({
               label: shelf.name,
               type: 'magicShelfItem',
-              icon: 'pi pi-' + shelf.icon,
+              icon: shelf.icon || 'pi pi-book',
+              iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
               menu: this.libraryShelfMenuService.initializeMagicShelfMenuItems(shelf),
               routerLink: [`/magic-shelf/${shelf.id}/books`],
               bookCount$: this.magicShelfService.getBookCount(shelf.id ?? 0),
@@ -148,7 +156,8 @@ export class AppMenuComponent implements OnInit {
           menu: this.libraryShelfMenuService.initializeShelfMenuItems(shelf),
           label: shelf.name,
           type: 'Shelf',
-          icon: 'pi pi-' + shelf.icon,
+          icon: shelf.icon,
+          iconType: (shelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
           routerLink: [`/shelf/${shelf.id}/books`],
           bookCount$: this.shelfService.getBookCount(shelf.id ?? 0),
         }));
@@ -157,6 +166,7 @@ export class AppMenuComponent implements OnInit {
           label: 'Unshelved',
           type: 'Shelf',
           icon: 'pi pi-inbox',
+          iconType: 'PRIME_NG' as 'PRIME_NG' | 'CUSTOM_SVG',
           routerLink: ['/unshelved-books'],
           bookCount$: this.shelfService.getUnshelvedBookCount?.() ?? of(0),
         };
@@ -166,7 +176,8 @@ export class AppMenuComponent implements OnInit {
           items.push({
             label: koboShelf.name,
             type: 'Shelf',
-            icon: 'pi pi-' + koboShelf.icon,
+            icon: koboShelf.icon,
+            iconType: (koboShelf.iconType || 'PRIME_NG') as 'PRIME_NG' | 'CUSTOM_SVG',
             routerLink: [`/shelf/${koboShelf.id}/books`],
             bookCount$: this.shelfService.getBookCount(koboShelf.id ?? 0),
           });
@@ -206,8 +217,8 @@ export class AppMenuComponent implements OnInit {
   getVersionUrl(version: string | undefined): string {
     if (!version) return '#';
     return version.startsWith('v')
-      ? `https://github.com/adityachandelgit/BookLore/releases/tag/${version}`
-      : `https://github.com/adityachandelgit/BookLore/commit/${version}`;
+      ? `https://github.com/booklore-app/booklore/releases/tag/${version}`
+      : `https://github.com/booklore-app/booklore/commit/${version}`;
   }
 
   private sortArray<T>(array: T[], field: 'name' | 'id', order: 'asc' | 'desc'): T[] {

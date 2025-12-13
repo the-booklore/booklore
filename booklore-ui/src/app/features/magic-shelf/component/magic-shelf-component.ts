@@ -11,13 +11,14 @@ import {LibraryService} from '../../book/service/library.service';
 import {Library} from '../../book/model/library.model';
 import {MagicShelfService} from '../service/magic-shelf.service';
 import {MessageService} from 'primeng/api';
-import {DynamicDialogConfig} from 'primeng/dynamicdialog';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
-import {IconPickerService} from '../../../shared/service/icon-picker.service';
+import {IconPickerService, IconSelection} from '../../../shared/service/icon-picker.service';
 import {CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
+import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
 
 export type RuleOperator =
   | 'equals'
@@ -142,6 +143,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
 @Component({
   selector: 'app-magic-shelf',
   templateUrl: './magic-shelf-component.html',
+  styleUrl: './magic-shelf-component.scss',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -153,7 +155,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
     InputNumber,
     MultiSelect,
     AutoComplete,
-    CheckboxModule
+    CheckboxModule,
+    IconDisplayComponent
   ]
 })
 export class MagicShelfComponent implements OnInit {
@@ -199,13 +202,17 @@ export class MagicShelfComponent implements OnInit {
 
   shelfId: number | null = null;
   isAdmin: boolean = false;
+  editMode!: boolean;
 
   libraryService = inject(LibraryService);
   magicShelfService = inject(MagicShelfService);
+  ref = inject(DynamicDialogRef);
   messageService = inject(MessageService);
   config = inject(DynamicDialogConfig);
   userService = inject(UserService);
   private iconPicker = inject(IconPickerService);
+
+  selectedIcon: IconSelection | null = null;
 
   trackByFn(ruleCtrl: AbstractControl, index: number): any {
     return ruleCtrl;
@@ -214,16 +221,25 @@ export class MagicShelfComponent implements OnInit {
   ngOnInit(): void {
     this.isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const id = this.config?.data?.id;
+    this.editMode = !!this.config?.data?.editMode;
 
     if (id) {
       this.shelfId = id;
       this.magicShelfService.getShelf(id).subscribe((data) => {
+        const iconValue = data?.icon ?? null;
+
         this.form = new FormGroup({
           name: new FormControl<string | null>(data?.name ?? null, {nonNullable: true, validators: [Validators.required]}),
-          icon: new FormControl<string | null>(data?.icon ?? null, {nonNullable: true, validators: [Validators.required]}),
+          icon: new FormControl<string | null>(iconValue, {nonNullable: true, validators: [Validators.required]}),
           isPublic: new FormControl<boolean>(data?.isPublic ?? false),
           group: data?.filterJson ? this.buildGroupFromData(JSON.parse(data.filterJson)) : this.createGroup()
         });
+
+        if (iconValue) {
+          this.selectedIcon = iconValue.startsWith('pi ')
+            ? {type: 'PRIME_NG', value: iconValue}
+            : {type: 'CUSTOM_SVG', value: iconValue};
+        }
       });
     } else {
       this.form = new FormGroup({
@@ -405,7 +421,11 @@ export class MagicShelfComponent implements OnInit {
   openIconPicker() {
     this.iconPicker.open().subscribe(icon => {
       if (icon) {
-        this.form.get('icon')?.setValue(icon);
+        this.selectedIcon = icon;
+        const iconValue = icon.type === 'CUSTOM_SVG'
+          ? icon.value
+          : icon.value;
+        this.form.get('icon')?.setValue(iconValue);
       }
     });
   }
@@ -458,14 +478,14 @@ export class MagicShelfComponent implements OnInit {
       id: this.shelfId ?? undefined,
       name: value.name,
       icon: value.icon,
-      isPublic: !!value.isPublic, // Ensure it's a boolean
+      iconType: this.selectedIcon?.type,
+      isPublic: !!value.isPublic,
       group: cleanedGroup
     }).subscribe({
       next: (savedShelf) => {
         this.messageService.add({severity: 'success', summary: 'Success', detail: 'Magic shelf saved successfully.'});
         if (savedShelf?.id) {
           this.shelfId = savedShelf.id;
-          // Update the form with the saved data to reflect changes immediately
           this.form.patchValue({
             name: savedShelf.name,
             icon: savedShelf.icon,
@@ -481,5 +501,9 @@ export class MagicShelfComponent implements OnInit {
         });
       }
     });
+  }
+
+  cancel() {
+    this.ref.close();
   }
 }

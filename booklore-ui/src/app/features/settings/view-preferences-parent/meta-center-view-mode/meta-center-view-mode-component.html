@@ -1,11 +1,11 @@
 <div class="main-container enclosing-container">
   <div class="settings-header">
     <h2 class="settings-title">
-      <i class="pi pi-window-maximize"></i>
-      Open Metadata Center
+      <i class="pi pi-cog"></i>
+      View Preferences
     </h2>
     <p class="settings-description">
-      Decide how you want to view book details — inline as a full page or in a pop-up dialog.
+      Customize how you view metadata and series information.
     </p>
   </div>
 
@@ -16,7 +16,7 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">
-                Display Mode
+                Metadata Center Display Mode
                 <i class="pi pi-info-circle text-sky-600"
                    pTooltip="Choose whether to open the Metadata Center in the current page or as a popup dialog window."
                    tooltipPosition="right"
@@ -30,7 +30,7 @@
                                  [(ngModel)]="viewMode"
                                  inputId="viewModeRoute"
                                  (onClick)="onViewModeChange('route')"></p-radioButton>
-                  <label for="viewModeRoute">Route</label>
+                  <label for="viewModeRoute">Open in Page</label>
                 </div>
                 <div class="radio-option">
                   <p-radioButton name="viewMode"
@@ -38,12 +38,48 @@
                                  [(ngModel)]="viewMode"
                                  inputId="viewModeDialog"
                                  (onClick)="onViewModeChange('dialog')"></p-radioButton>
-                  <label for="viewModeDialog">Dialog</label>
+                  <label for="viewModeDialog">Open in Popup</label>
                 </div>
               </div>
             </div>
             <p class="setting-description">
               Choose whether to open the Metadata Center in the current page or as a popup dialog window.
+            </p>
+          </div>
+        </div>
+        <!-- Series View Mode Setting -->
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">
+                Series View Mode
+                <i class="pi pi-info-circle text-sky-600"
+                   pTooltip="Enable or disable the series view mode for displaying series information."
+                   tooltipPosition="right"
+                   style="cursor: pointer;">
+                </i>
+              </label>
+              <div class="radio-group">
+                <div class="radio-option">
+                  <p-radioButton name="seriesViewMode"
+                                 [value]="true"
+                                 [(ngModel)]="seriesViewMode"
+                                 inputId="seriesViewModeTrue"
+                                 (onClick)="onSeriesViewModeChange(true)"></p-radioButton>
+                  <label for="seriesViewModeTrue">Enabled</label>
+                </div>
+                <div class="radio-option">
+                  <p-radioButton name="seriesViewMode"
+                                 [value]="false"
+                                 [(ngModel)]="seriesViewMode"
+                                 inputId="seriesViewModeFalse"
+                                 (onClick)="onSeriesViewModeChange(false)"></p-radioButton>
+                  <label for="seriesViewModeFalse">Disabled</label>
+                </div>
+              </div>
+            </div>
+            <p class="setting-description">
+              Enable or disable the series view mode for displaying series information.
             </p>
           </div>
         </div>

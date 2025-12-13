@@ -171,7 +171,6 @@ export class MetadataPickerComponent implements OnInit {
       pageCountLocked: new FormControl(false),
       languageLocked: new FormControl(false),
       asinLocked: new FormControl(false),
-      personalRatingLocked: new FormControl(false),
       amazonRatingLocked: new FormControl(false),
       amazonReviewCountLocked: new FormControl(false),
       goodreadsIdLocked: new FormControl(false),
@@ -277,7 +276,6 @@ export class MetadataPickerComponent implements OnInit {
           pageCountLocked: metadata.pageCountLocked || false,
           languageLocked: metadata.languageLocked || false,
           asinLocked: metadata.asinLocked || false,
-          personalRatingLocked: metadata.personalRatingLocked || false,
           amazonRatingLocked: metadata.amazonRatingLocked || false,
           amazonReviewCountLocked: metadata.amazonReviewCountLocked || false,
           goodreadsIdLocked: metadata.goodreadsIdLocked || false,
@@ -313,7 +311,6 @@ export class MetadataPickerComponent implements OnInit {
         if (metadata.isbn10Locked) this.metadataForm.get('isbn10')?.disable({emitEvent: false});
         if (metadata.isbn13Locked) this.metadataForm.get('isbn13')?.disable({emitEvent: false});
         if (metadata.asinLocked) this.metadataForm.get('asin')?.disable({emitEvent: false});
-        if (metadata.personalRatingLocked) this.metadataForm.get('personalRating')?.disable({emitEvent: false});
         if (metadata.amazonReviewCountLocked) this.metadataForm.get('amazonReviewCount')?.disable({emitEvent: false});
         if (metadata.amazonRatingLocked) this.metadataForm.get('amazonRating')?.disable({emitEvent: false});
         if (metadata.googleIdLocked) this.metadataForm.get('googleIdCount')?.disable({emitEvent: false});
@@ -359,7 +356,7 @@ export class MetadataPickerComponent implements OnInit {
   onSave(): void {
     this.isSaving = true;
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
-    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false).subscribe({
+    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, true).subscribe({
       next: (bookMetadata) => {
         this.isSaving = false;
         Object.keys(this.copiedFields).forEach((field) => {
@@ -393,7 +390,6 @@ export class MetadataPickerComponent implements OnInit {
       pageCount: this.metadataForm.get('pageCount')?.value || this.copiedFields['pageCount'] ? this.getPageCountOrCopied() : null,
       language: this.metadataForm.get('language')?.value || this.copiedFields['language'] ? this.getValueOrCopied('language') : '',
       asin: this.metadataForm.get('asin')?.value || this.copiedFields['asin'] ? this.getValueOrCopied('asin') : '',
-      personalRating: this.metadataForm.get('personalRating')?.value || this.copiedFields['personalRating'] ? this.getNumberOrCopied('personalRating') : null,
       amazonRating: this.metadataForm.get('amazonRating')?.value || this.copiedFields['amazonRating'] ? this.getNumberOrCopied('amazonRating') : null,
       amazonReviewCount: this.metadataForm.get('amazonReviewCount')?.value || this.copiedFields['amazonReviewCount'] ? this.getNumberOrCopied('amazonReviewCount') : null,
       goodreadsId: this.metadataForm.get('goodreadsId')?.value || this.copiedFields['goodreadsId'] ? this.getValueOrCopied('goodreadsId') : '',
@@ -423,7 +419,6 @@ export class MetadataPickerComponent implements OnInit {
       pageCountLocked: this.metadataForm.get('pageCountLocked')?.value,
       languageLocked: this.metadataForm.get('languageLocked')?.value,
       asinLocked: this.metadataForm.get('asinLocked')?.value,
-      personalRatingLocked: this.metadataForm.get('personalRatingLocked')?.value,
       amazonRatingLocked: this.metadataForm.get('amazonRatingLocked')?.value,
       amazonReviewCountLocked: this.metadataForm.get('amazonReviewCountLocked')?.value,
       goodreadsIdLocked: this.metadataForm.get('goodreadsIdLocked')?.value,
@@ -480,7 +475,6 @@ export class MetadataPickerComponent implements OnInit {
       seriesNumber: current.seriesNumber === null && original.seriesNumber !== null,
       seriesTotal: current.seriesTotal === null && original.seriesTotal !== null,
       cover: !current.thumbnailUrl && !!original.thumbnailUrl,
-      personalRating: current.personalRating === null && original.personalRating !== null,
     };
   }
 

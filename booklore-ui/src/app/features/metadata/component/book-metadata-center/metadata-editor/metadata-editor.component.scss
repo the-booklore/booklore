@@ -6,6 +6,50 @@
   }
 }
 
+::ng-deep p-image {
+  width: 250px;
+}
+
+::ng-deep p-image img {
+  margin: 0 auto;
+}
+
 ::ng-deep .p-autocomplete .p-chip .p-chip-label {
   font-size: 12px;
+}
+
+::ng-deep .p-autocomplete-input-chip {
+  width: 2rem;
+}
+
+::ng-deep .p-autocomplete-clearable ul {
+  padding-inline-end: 2rem !important;
+}
+
+::ng-deep .p-autocomplete-clearable .p-autocomplete-clear-icon {
+  right: 0px;
+  margin-top: -1rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.5rem;
+}
+
+::ng-deep .withbutton input,
+::ng-deep .withbutton ul {
+  border-radius: 6px 0 0 6px;
+}
+
+.withbutton textarea {
+  border-radius: 6px 0 6px 6px;
+}
+
+::ng-deep .withbutton button {
+  border-color: var(--p-inputtext-border-color) !important;
+  border-radius: 0 6px 6px 0 !important;
+  border-left: 0px !important;
+}
+
+label {
+  color: var(--text-color-secondary);
+  white-space: nowrap;
 }

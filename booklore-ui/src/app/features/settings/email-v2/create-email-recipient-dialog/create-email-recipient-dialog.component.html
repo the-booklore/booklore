@@ -1,33 +1,121 @@
-<form [formGroup]="emailRecipientForm" (ngSubmit)="createEmailRecipient()" class="space-y-6 p-6">
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Recipient Name:</label>
-    <input type="text" pInputText formControlName="name" placeholder="Enter recipient name..." class="w-full md:w-80"/>
-  </div>
-  @if (emailRecipientForm.get('name')?.invalid && (emailRecipientForm.get('name')?.dirty || emailRecipientForm.get('name')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Recipient name is required.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Email Address:</label>
-    <input type="email" pInputText formControlName="email" placeholder="Enter email address..." class="w-full md:w-80"/>
-  </div>
-  @if (emailRecipientForm.get('email')?.invalid && (emailRecipientForm.get('email')?.dirty || emailRecipientForm.get('email')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Valid email is required.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Default Recipient:</label>
-    <p-checkbox formControlName="defaultRecipient" [binary]="true"></p-checkbox>
+<div class="email-recipient-creator">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-user header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Create Email Recipient</h2>
+      <p class="panel-description">Add a new recipient for email notifications</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="closeDialog()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      pTooltip="Close"
+      tooltipPosition="left"/>
   </div>
 
-  <div class="flex justify-end">
-    <p-button label="Add Recipient" [disabled]="emailRecipientForm.invalid" type="submit">
-    </p-button>
-  </div>
+  <form [formGroup]="emailRecipientForm" (ngSubmit)="createEmailRecipient()">
+    <div class="form-container">
+      <div class="form-group highlight-group">
+        <label for="recipientName" class="form-label">
+          <i class="pi pi-user label-icon"></i>
+          Recipient Name
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="recipientName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="input-full"
+            placeholder="Enter recipient name..."
+            [class.filled]="emailRecipientForm.get('name')?.value"
+            autofocus
+          />
+          @if (emailRecipientForm.get('name')?.value && emailRecipientForm.get('name')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailRecipientForm.get('name')?.invalid && (emailRecipientForm.get('name')?.dirty || emailRecipientForm.get('name')?.touched)) {
+          <small class="field-error">Recipient name is required.</small>
+        }
+      </div>
 
-</form>
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group">
+        <label for="email" class="form-label">
+          <i class="pi pi-at label-icon"></i>
+          Email Address
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="email"
+            type="email"
+            pInputText
+            formControlName="email"
+            class="input-full"
+            placeholder="Enter email address..."
+            [class.filled]="emailRecipientForm.get('email')?.value"
+          />
+          @if (emailRecipientForm.get('email')?.value && emailRecipientForm.get('email')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailRecipientForm.get('email')?.invalid && (emailRecipientForm.get('email')?.dirty || emailRecipientForm.get('email')?.touched)) {
+          <small class="field-error">Valid email is required.</small>
+        }
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="defaultRecipient" [binary]="true" inputId="defaultRecipient"></p-checkbox>
+          <label for="defaultRecipient" class="checkbox-label">
+            <span class="checkbox-title">Default Recipient</span>
+            <span class="checkbox-description">Set as default recipient for all notifications</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <div class="validation-status">
+        @if (emailRecipientForm.invalid) {
+          <div class="validation-message error">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>Please fill in all required fields</span>
+          </div>
+        } @else {
+          <div class="validation-message success">
+            <i class="pi pi-check-circle"></i>
+            <span>Ready to add recipient</span>
+          </div>
+        }
+      </div>
+      <div class="footer-actions">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="closeDialog()"
+          type="button"
+        />
+        <p-button
+          label="Add Recipient"
+          icon="pi pi-plus"
+          severity="success"
+          type="submit"
+          [disabled]="emailRecipientForm.invalid"
+        />
+      </div>
+    </div>
+  </form>
+</div>

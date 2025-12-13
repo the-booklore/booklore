@@ -10,7 +10,6 @@ import {BookService} from '../../../service/book.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
-import {MetadataRefreshRequest} from '../../../../metadata/model/request/metadata-refresh-request.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
@@ -27,7 +26,6 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
-import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -40,6 +38,7 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() checkboxClick = new EventEmitter<{ index: number; bookId: number; selected: boolean; shiftKey: boolean }>();
+  @Output() menuToggled = new EventEmitter<boolean>();
 
   @Input() index!: number;
   @Input() book!: Book;
@@ -47,7 +46,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
-  @Input() readButtonHidden: boolean = false;
+  @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
@@ -128,6 +127,14 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this.bookService.readBook(book.id);
   }
 
+  onMenuShow(): void {
+    this.menuToggled.emit(true);
+  }
+
+  onMenuHide(): void {
+    this.menuToggled.emit(false);
+  }
+
   onMenuToggle(event: Event, menu: TieredMenu): void {
     menu.toggle(event);
 
@@ -172,19 +179,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         icon: 'pi pi-info-circle',
         command: () => {
           setTimeout(() => {
-            if (this.metadataCenterViewMode === 'route') {
-              this.router.navigate(['/book', this.book.id], {
-                queryParams: {tab: 'view'}
-              });
-            } else {
-              this.dialogService.open(BookMetadataCenterComponent, {
-                width: '95%',
-                data: {bookId: this.book.id},
-                modal: true,
-                dismissableMask: true,
-                showHeader: false
-              });
-            }
+            this.openBookInfo(this.book);
           }, 150);
         },
       },
@@ -464,14 +459,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private openShelfDialog(): void {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
       modal: true,
+      dismissableMask: true,
       closable: true,
-      contentStyle: {overflow: 'auto'},
+      contentStyle: {overflow: 'hidden'},
+      styleClass: 'dynamic-dialog-minimal',
       baseZIndex: 10,
-      style: {
-        position: 'absolute',
-        top: '15%',
-      },
       data: {
         book: this.book,
       },
@@ -496,13 +490,16 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     } else {
       this.dialogService.open(BookMetadataCenterComponent, {
         width: '90%',
+        height: '90%',
         data: {bookId: book.id},
         modal: true,
-        dismissableMask: false,
+        dismissableMask: true,
         showHeader: true,
         closable: true,
         closeOnEscape: true,
-        maximizable: true,
+        draggable: false,
+        maximizable: false,
+        resizable: false,
         header: 'Book Details',
         styleClass: 'book-details-dialog'
       });
@@ -766,5 +763,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   shouldShowStatusIcon(): boolean {
     return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
+  }
+
+  isSeriesViewActive(): boolean {
+    return this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount! >= 1;
   }
 }

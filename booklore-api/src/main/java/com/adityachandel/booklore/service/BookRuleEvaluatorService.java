@@ -17,10 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
@@ -315,13 +312,13 @@ public class BookRuleEvaluatorService {
             case READ_STATUS -> progressJoin.get("readStatus");
             case DATE_FINISHED -> progressJoin.get("dateFinished");
             case LAST_READ_TIME -> progressJoin.get("lastReadTime");
+            case PERSONAL_RATING -> progressJoin.get("personalRating");
             case FILE_SIZE -> root.get("fileSizeKb");
             case METADATA_SCORE -> root.get("metadataMatchScore");
             case TITLE -> root.get("metadata").get("title");
             case SUBTITLE -> root.get("metadata").get("subtitle");
             case PUBLISHER -> root.get("metadata").get("publisher");
             case PUBLISHED_DATE -> root.get("metadata").get("publishedDate");
-            case PERSONAL_RATING -> root.get("metadata").get("personalRating");
             case PAGE_COUNT -> root.get("metadata").get("pageCount");
             case LANGUAGE -> root.get("metadata").get("language");
             case SERIES_NAME -> root.get("metadata").get("seriesName");
@@ -433,7 +430,7 @@ public class BookRuleEvaluatorService {
     private List<String> toStringList(Object value) {
         if (value == null) return Collections.emptyList();
         if (value instanceof List) {
-            return ((List<?>) value).stream()
+            return ((Collection<?>) value).stream()
                     .map(Object::toString)
                     .collect(Collectors.toList());
         }

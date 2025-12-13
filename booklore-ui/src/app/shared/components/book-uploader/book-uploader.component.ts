@@ -18,6 +18,7 @@ import {AppSettingsService} from '../../service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
 import {AppSettings} from '../../model/app-settings.model';
 import {SelectButton} from 'primeng/selectbutton';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 
 interface UploadingFile {
   file: File;
@@ -51,6 +52,7 @@ export class BookUploaderComponent implements OnInit {
   private readonly messageService = inject(MessageService);
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly http = inject(HttpClient);
+  private readonly ref = inject(DynamicDialogRef);
 
   readonly libraryState$: Observable<LibraryState> = this.libraryService.libraryState$;
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
@@ -222,5 +224,9 @@ export class BookUploaderComponent implements OnInit {
       default:
         return 'info';
     }
+  }
+
+  closeDialog(): void {
+    this.ref.close();
   }
 }

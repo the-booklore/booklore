@@ -271,7 +271,7 @@ export class ReadingVelocityChartService implements OnDestroy {
 
     const goodreadsRating = metadata.goodreadsRating || 0;
     const amazonRating = metadata.amazonRating || 0;
-    const personalRating = metadata.personalRating || 0;
+    const personalRating = book.personalRating || 0;
 
     return goodreadsRating >= 4.0 || amazonRating >= 4.0 || personalRating >= 4;
   }
@@ -290,14 +290,14 @@ export class ReadingVelocityChartService implements OnDestroy {
   private calculateAverageRating(books: Book[]): number {
     const ratingsBooks = books.filter(book => {
       const metadata = book.metadata;
-      return metadata && (metadata.goodreadsRating || metadata.amazonRating || metadata.personalRating);
+      return metadata && (metadata.goodreadsRating || metadata.amazonRating || book.personalRating);
     });
 
     if (ratingsBooks.length === 0) return 0;
 
     const totalRating = ratingsBooks.reduce((sum, book) => {
       const metadata = book.metadata!;
-      const rating = metadata.goodreadsRating || metadata.amazonRating || metadata.personalRating || 0;
+      const rating = metadata.goodreadsRating || metadata.amazonRating || book.personalRating || 0;
       return sum + rating;
     }, 0);
 

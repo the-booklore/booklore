@@ -92,6 +92,16 @@ public class OpdsFeedService {
 
         feed.append("""
                   <entry>
+                    <title>Authors</title>
+                    <id>urn:booklore:navigation:authors</id>
+                    <updated>%s</updated>
+                    <link rel="subsection" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                    <content type="text">Browse books by author</content>
+                  </entry>
+                """.formatted(now()));
+
+        feed.append("""
+                  <entry>
                     <title>Surprise Me</title>
                     <id>urn:booklore:catalog:surprise</id>
                     <updated>%s</updated>
@@ -223,11 +233,49 @@ public class OpdsFeedService {
         return feed.toString();
     }
 
+    public String generateAuthorsNavigation(HttpServletRequest request) {
+        Long userId = getUserId();
+        List<String> authors = opdsBookService.getDistinctAuthors(userId);
+
+        var feed = new StringBuilder("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog">
+                  <id>urn:booklore:navigation:authors</id>
+                  <title>Authors</title>
+                  <updated>%s</updated>
+                  <link rel="self" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                  <link rel="start" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                  <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
+                """.formatted(now()));
+
+        for (String author : authors) {
+            feed.append("""
+                      <entry>
+                        <title>%s</title>
+                        <id>urn:booklore:author:%s</id>
+                        <updated>%s</updated>
+                        <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                        <content type="text">Books by %s</content>
+                      </entry>
+                    """.formatted(
+                    escapeXml(author),
+                    escapeXml(author),
+                    now(),
+                    escapeXml("/api/v1/opds/catalog?author=" + java.net.URLEncoder.encode(author, java.nio.charset.StandardCharsets.UTF_8)),
+                    escapeXml(author)
+            ));
+        }
+
+        feed.append("</feed>");
+        return feed.toString();
+    }
+
     public String generateCatalogFeed(HttpServletRequest request) {
         Long libraryId = parseLongParam(request, "libraryId", null);
         Long shelfId = parseLongParam(request, "shelfId", null);
         Long magicShelfId = parseLongParam(request, "magicShelfId", null);
         String query = request.getParameter("q");
+        String author = request.getParameter("author");
         int page = Math.max(1, parseLongParam(request, "page", 1L).intValue());
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
@@ -236,12 +284,14 @@ public class OpdsFeedService {
 
         if (magicShelfId != null) {
             booksPage = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelfId, page - 1, size);
+        } else if (author != null && !author.isBlank()) {
+            booksPage = opdsBookService.getBooksByAuthorName(userId, author, page - 1, size);
         } else {
             booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfId, page - 1, size);
         }
 
-        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId);
-        String feedId = determineFeedId(libraryId, shelfId, magicShelfId);
+        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author);
+        String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -427,6 +477,15 @@ public class OpdsFeedService {
         if (meta.getIsbn10() != null) {
             feed.append("    <dc:identifier>urn:isbn:").append(escapeXml(meta.getIsbn10())).append("</dc:identifier>\n");
         }
+        // Series metadata
+        if (meta.getSeriesName() != null) {
+            feed.append("    <meta property=\"belongs-to-collection\" id=\"series\">")
+                    .append(escapeXml(meta.getSeriesName())).append("</meta>\n");
+            if (meta.getSeriesNumber() != null) {
+                feed.append("    <meta property=\"group-position\" refines=\"#series\">")
+                        .append(meta.getSeriesNumber()).append("</meta>\n");
+            }
+        }
     }
 
     private void appendLinks(StringBuilder feed, Book book) {
@@ -443,7 +502,7 @@ public class OpdsFeedService {
         }
     }
 
-    private String determineFeedTitle(Long libraryId, Long shelfId, Long magicShelfId) {
+    private String determineFeedTitle(Long libraryId, Long shelfId, Long magicShelfId, String author) {
         if (magicShelfId != null) {
             return magicShelfBookService.getMagicShelfName(magicShelfId);
         }
@@ -453,10 +512,13 @@ public class OpdsFeedService {
         if (libraryId != null) {
             return opdsBookService.getLibraryName(libraryId);
         }
+        if (author != null && !author.isBlank()) {
+            return "Books by " + author;
+        }
         return "Booklore Catalog";
     }
 
-    private String determineFeedId(Long libraryId, Long shelfId, Long magicShelfId) {
+    private String determineFeedId(Long libraryId, Long shelfId, Long magicShelfId, String author) {
         if (magicShelfId != null) {
             return "urn:booklore:magic-shelf:" + magicShelfId;
         }
@@ -465,6 +527,9 @@ public class OpdsFeedService {
         }
         if (libraryId != null) {
             return "urn:booklore:library:" + libraryId;
+        }
+        if (author != null && !author.isBlank()) {
+            return "urn:booklore:author:" + author;
         }
         return "urn:booklore:catalog";
     }

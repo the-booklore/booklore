@@ -6,6 +6,7 @@ import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFi
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,8 +29,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import jakarta.servlet.http.HttpServletResponse;
 
 @AllArgsConstructor
 @EnableMethodSecurity

@@ -6,7 +6,6 @@ import {InputText} from 'primeng/inputtext';
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ProgressSpinner} from 'primeng/progressspinner';
-import {Breadcrumb} from 'primeng/breadcrumb';
 import {MenuItem} from 'primeng/api';
 import {CheckboxModule} from 'primeng/checkbox';
 import {InputIcon} from 'primeng/inputicon';
@@ -24,7 +23,6 @@ import {Tooltip} from 'primeng/tooltip';
     CommonModule,
     FormsModule,
     ProgressSpinner,
-    Breadcrumb,
     CheckboxModule,
     InputIcon,
     Button,

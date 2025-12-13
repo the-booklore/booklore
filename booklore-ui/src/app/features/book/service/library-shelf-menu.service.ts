@@ -16,6 +16,8 @@ import {TaskCreateRequest, TaskType} from '../../settings/task-management/task.s
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {TaskHelperService} from '../../settings/task-management/task-helper.service';
 import {UserService} from "../../settings/user-management/user.service";
+import {LoadingService} from '../../../core/services/loading.service';
+import {finalize} from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -31,6 +33,7 @@ export class LibraryShelfMenuService {
   private dialogService = inject(DialogService);
   private magicShelfService = inject(MagicShelfService);
   private userService = inject(UserService);
+  private loadingService = inject(LoadingService);
 
   initializeLibraryMenuItems(entity: Library | Shelf | MagicShelf | null): MenuItem[] {
     return [
@@ -45,6 +48,8 @@ export class LibraryShelfMenuService {
                 header: 'Edit Library',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
                   mode: 'edit',
                   libraryId: entity?.id
@@ -128,19 +133,23 @@ export class LibraryShelfMenuService {
                   severity: 'danger',
                 },
                 accept: () => {
-                  this.libraryService.deleteLibrary(entity?.id!).subscribe({
-                    complete: () => {
-                      this.router.navigate(['/']);
-                      this.messageService.add({severity: 'info', summary: 'Success', detail: 'Library was deleted'});
-                    },
-                    error: () => {
-                      this.messageService.add({
-                        severity: 'error',
-                        summary: 'Failed',
-                        detail: 'Failed to delete library',
-                      });
-                    }
-                  });
+                  const loader = this.loadingService.show(`Deleting library '${entity?.name}'...`);
+
+                  this.libraryService.deleteLibrary(entity?.id!)
+                    .pipe(finalize(() => this.loadingService.hide(loader)))
+                    .subscribe({
+                      complete: () => {
+                        this.router.navigate(['/']);
+                        this.messageService.add({severity: 'info', summary: 'Success', detail: 'Library was deleted'});
+                      },
+                      error: () => {
+                        this.messageService.add({
+                          severity: 'error',
+                          summary: 'Failed',
+                          detail: 'Failed to delete library',
+                        });
+                      }
+                    });
                 }
               });
             }
@@ -163,13 +172,11 @@ export class LibraryShelfMenuService {
                 header: 'Edit Shelf',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
                   shelfId: entity?.id
                 },
-                style: {
-                  position: 'absolute',
-                  top: '15%',
-                }
               })
             }
           },
@@ -227,8 +234,11 @@ export class LibraryShelfMenuService {
                 header: 'Edit Magic Shelf',
                 modal: true,
                 closable: true,
+                showHeader: false,
+                styleClass: 'dynamic-dialog-minimal',
                 data: {
-                  id: entity?.id
+                  id: entity?.id,
+                  editMode: true,
                 }
               })
             }
