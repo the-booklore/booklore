@@ -418,15 +418,19 @@ class FolderAsBookFileProcessorTest {
     private BookEntity createBookEntity(Long id, String fileName, String subPath) {
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setFileName(fileName);
-        book.setFileSubPath(subPath);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.parse("2025-01-01T12:00:00Z"));
 
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setId(1L);
         libraryPath.setPath("/test/library");
         book.setLibraryPath(libraryPath);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName(fileName);
+        primaryFile.setFileSubPath(subPath);
+        primaryFile.setBookType(BookFileType.PDF);
+        book.setBookFiles(List.of(primaryFile));
 
         return book;
     }

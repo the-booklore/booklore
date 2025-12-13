@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -228,7 +229,13 @@ class FileUploadServiceTest {
         BookEntity book = new BookEntity();
         book.setId(bookId);
         book.setLibraryPath(libPath);
-        book.setFileSubPath(".");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("primary.epub");
+        primaryFile.setFileSubPath(".");
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(List.of(primaryFile));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
@@ -265,7 +272,13 @@ class FileUploadServiceTest {
         BookEntity book = new BookEntity();
         book.setId(bookId);
         book.setLibraryPath(libPath);
-        book.setFileSubPath(".");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("primary.epub");
+        primaryFile.setFileSubPath(".");
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(List.of(primaryFile));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 

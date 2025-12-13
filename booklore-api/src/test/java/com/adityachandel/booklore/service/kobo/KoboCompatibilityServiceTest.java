@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -172,7 +175,11 @@ class KoboCompatibilityServiceTest {
 
         BookEntity bookWithNullType = new BookEntity();
         bookWithNullType.setId(1L);
-        bookWithNullType.setBookType(null);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookWithNullType);
+        primaryFile.setBookType(null);
+        bookWithNullType.setBookFiles(List.of(primaryFile));
 
 
         boolean isSupported = koboCompatibilityService.isBookSupportedForKobo(bookWithNullType);
@@ -289,8 +296,13 @@ class KoboCompatibilityServiceTest {
     private BookEntity createBookEntity(Long id, BookFileType bookType, Long fileSizeKb) {
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setBookType(bookType);
-        book.setFileSizeKb(fileSizeKb);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(bookType);
+        primaryFile.setFileSizeKb(fileSizeKb);
+        book.setBookFiles(List.of(primaryFile));
+
         return book;
     }
 }
