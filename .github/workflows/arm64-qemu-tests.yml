@@ -232,7 +232,7 @@ jobs:
             
             if [ "$HTTP_CODE" = "200" ]; then
               echo "✅ $ENDPOINT - OK"
-              ((PASSED++))
+              PASSED=$((PASSED+1))
             else
               echo "⚠️ $ENDPOINT - HTTP $HTTP_CODE"
             fi
