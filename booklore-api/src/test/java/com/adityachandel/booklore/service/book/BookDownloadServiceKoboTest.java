@@ -95,7 +95,6 @@ class BookDownloadServiceKoboTest {
         book.setFileName(fileName);
         book.setBookType(type);
         book.setAddedOn(Instant.now());
-        // ensure file size is small
         book.setFileSizeKb(1L);
 
         BookMetadataEntity meta = new BookMetadataEntity();
@@ -107,11 +106,9 @@ class BookDownloadServiceKoboTest {
 
     @Test
     void downloadKoboBook_persistConversion_true_callsImportAndUsesConversionShelf() throws Exception {
-        // Arrange
         Path libraryDir = tempDir.resolve("library");
         Files.createDirectories(libraryDir);
         Path sourceFile = Files.createFile(libraryDir.resolve("comic.cbz"));
-        // write minimal content to source file in case service checks file size
         Files.write(sourceFile, "source-content".getBytes());
 
         BookEntity book = createBookEntity(libraryDir, "comic.cbz", BookFileType.CBX);
@@ -126,13 +123,9 @@ class BookDownloadServiceKoboTest {
         appSettings.setKoboSettings(kobo);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
-        // converted file returned by conversion service lives in a temp dir
         Path converted = Files.createFile(tempDir.resolve("comic.cbz.epub"));
-        // write some bytes into converted file so streaming produces non-empty response
         Files.write(converted, "converted-content".getBytes());
         when(cbxConversionService.convertCbxToEpub(eq(sourceFile.toFile()), any(File.class), eq(book))).thenReturn(converted.toFile());
-
-        // authenticated user and conversion shelf (BookLoreUser DTO expected)
         BookLoreUser user = BookLoreUser.builder().id(55L).build();
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
@@ -140,49 +133,32 @@ class BookDownloadServiceKoboTest {
         shelf.setId(77L);
         when(shelfService.getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()))).thenReturn(Optional.of(shelf));
 
-        // map metadata
         com.adityachandel.booklore.model.dto.Book bookDto = com.adityachandel.booklore.model.dto.Book.builder()
                 .metadata(new com.adityachandel.booklore.model.dto.BookMetadata())
                 .build();
         when(bookMapper.toBook(book)).thenReturn(bookDto);
-
-        // Mock import to return an imported Book DTO with id
         com.adityachandel.booklore.model.dto.Book importedDto = com.adityachandel.booklore.model.dto.Book.builder().id(999L).build();
         when(bookImportService.importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any())).thenReturn(importedDto);
-
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        // Act
         bookDownloadService.downloadKoboBook(101L, response);
-
-        // Assert
-        // verify import called and shelf lookup performed
         verify(bookImportService, atLeastOnce()).importFileToLibrary(any(File.class), eq(11L), eq(22L), any(), eq(77L));
         verify(shelfService, atLeastOnce()).getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()));
-
-        // response should contain content-disposition
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
-
-        // Verify that the converted file was moved into the library path
         Path destPath = libraryDir.resolve("comic.cbz.epub");
         assertThat(Files.exists(destPath)).isTrue();
         assertThat(Files.size(destPath)).isGreaterThan(0);
-        // temp converted file should have been moved (no longer exists at temp location)
         assertThat(Files.exists(converted)).isFalse();
     }
 
     @Test
     void downloadKoboBook_persistConversion_false_streamsWithoutImport() throws Exception {
-        // Arrange
         Path libraryDir = tempDir.resolve("library2");
         Files.createDirectories(libraryDir);
         Path sourceFile = Files.createFile(libraryDir.resolve("comic2.cbz"));
         Files.write(sourceFile, "source-content-2".getBytes());
-
         BookEntity book = createBookEntity(libraryDir, "comic2.cbz", BookFileType.CBX);
         when(bookRepository.findById(101L)).thenReturn(Optional.of(book));
-
         KoboSettings kobo = KoboSettings.builder()
                 .convertCbxToEpub(true)
                 .persistConversion(false)
@@ -191,36 +167,25 @@ class BookDownloadServiceKoboTest {
         com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = new com.adityachandel.booklore.model.dto.settings.AppSettings();
         appSettings.setKoboSettings(kobo);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
-
-        // converted file in tempDir (conversion output)
         Path converted = Files.createFile(tempDir.resolve("comic2.cbz.epub"));
         Files.write(converted, "converted-content-2".getBytes());
         when(cbxConversionService.convertCbxToEpub(eq(sourceFile.toFile()), any(File.class), eq(book))).thenReturn(converted.toFile());
-
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        // Act
         bookDownloadService.downloadKoboBook(101L, response);
-
-        // Assert
         verify(bookImportService, never()).importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any());
         verify(shelfService, never()).getShelf(anyLong(), eq(ShelfType.CONVERSION.getName()));
-
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
     }
 
     @Test
     void downloadKoboBook_existingConvertedFile_usesExistingAndNoImport() throws Exception {
-        // Arrange
         Path libraryDir = tempDir.resolve("library3");
         Files.createDirectories(libraryDir);
         Path sourceFile = Files.createFile(libraryDir.resolve("comic3.cbz"));
         Files.write(sourceFile, "source-content-3".getBytes());
-
         BookEntity book = createBookEntity(libraryDir, "comic3.cbz", BookFileType.CBX);
         when(bookRepository.findById(101L)).thenReturn(Optional.of(book));
-
         KoboSettings kobo = KoboSettings.builder()
                 .convertCbxToEpub(true)
                 .persistConversion(true)
@@ -229,33 +194,23 @@ class BookDownloadServiceKoboTest {
         com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = new com.adityachandel.booklore.model.dto.settings.AppSettings();
         appSettings.setKoboSettings(kobo);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
-
-        // Create an already converted file in the library (so convert is skipped)
         Path existingConverted = libraryDir.resolve("comic3.cbz.epub");
         Files.write(existingConverted, "existing-converted".getBytes());
-
-        // Make sure conversion service is not invoked when existing converted file is present
         when(cbxConversionService.convertCbxToEpub(any(File.class), any(File.class), any(BookEntity.class)))
                 .thenAnswer(invocation -> { throw new AssertionError("Conversion should not be invoked when existing converted file is present"); });
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        // Act
         bookDownloadService.downloadKoboBook(101L, response);
-
-        // Assert
         verify(cbxConversionService, never()).convertCbxToEpub(any(File.class), any(File.class), any(BookEntity.class));
         verify(bookImportService, never()).importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any());
 
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
-        // Make sure streamed file was the existing converted file (name appears in Content-Disposition)
         assertThat(response.getHeader("Content-Disposition")).contains("comic3.cbz.epub");
     }
 
     @Test
     void downloadKoboBook_importFails_streamsAnyway() throws Exception {
-        // Arrange
         Path libraryDir = tempDir.resolve("library4");
         Files.createDirectories(libraryDir);
         Path sourceFile = Files.createFile(libraryDir.resolve("comic4.cbz"));
@@ -272,32 +227,22 @@ class BookDownloadServiceKoboTest {
         com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = new com.adityachandel.booklore.model.dto.settings.AppSettings();
         appSettings.setKoboSettings(kobo);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
-
-        // Conversion produces a file in temp dir
         Path converted = Files.createFile(tempDir.resolve("comic4.cbz.epub"));
         Files.write(converted, "converted-content-4".getBytes());
         when(cbxConversionService.convertCbxToEpub(eq(sourceFile.toFile()), any(File.class), eq(book))).thenReturn(converted.toFile());
-
-        // Ensure bookMapper returns a non-null DTO so import is invoked (which we'll mock to fail)
         com.adityachandel.booklore.model.dto.Book bookDto = com.adityachandel.booklore.model.dto.Book.builder()
                 .metadata(new com.adityachandel.booklore.model.dto.BookMetadata())
                 .build();
         when(bookMapper.toBook(book)).thenReturn(bookDto);
-
         // Make import fail
         when(bookImportService.importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any()))
                 .thenThrow(new RuntimeException("import failed"));
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        // Act
         bookDownloadService.downloadKoboBook(101L, response);
-
-        // Assert
         // import may fail; primary assertion is that streaming still occurs
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
-
         // Even if import failed, the converted file should have been moved into the library path
         Path destPath = libraryDir.resolve("comic4.cbz.epub");
         assertThat(Files.exists(destPath)).isTrue();
@@ -306,7 +251,6 @@ class BookDownloadServiceKoboTest {
 
     @Test
     void downloadKoboBook_epubToKepub_persistConversion_true_importsKepub() throws Exception {
-        // Arrange
         Path libraryDir = tempDir.resolve("library5");
         Files.createDirectories(libraryDir);
         Path sourceFile = Files.createFile(libraryDir.resolve("comic.epub"));
@@ -323,14 +267,10 @@ class BookDownloadServiceKoboTest {
         com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = new com.adityachandel.booklore.model.dto.settings.AppSettings();
         appSettings.setKoboSettings(kobo);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
-
-        // Simulate conversion output in temp dir (kepub file)
         Path converted = Files.createFile(tempDir.resolve("comic.kepub.epub"));
         Files.write(converted, "kepub-content".getBytes());
         when(kepubConversionService.convertEpubToKepub(eq(sourceFile.toFile()), any(File.class), eq(kobo.isForceEnableHyphenation())))
                 .thenReturn(converted.toFile());
-
-        // authenticated user and conversion shelf
         BookLoreUser user = BookLoreUser.builder().id(66L).build();
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
 
@@ -338,22 +278,16 @@ class BookDownloadServiceKoboTest {
         shelf.setId(88L);
         when(shelfService.getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()))).thenReturn(Optional.of(shelf));
 
-        // map metadata
         com.adityachandel.booklore.model.dto.Book bookDto = com.adityachandel.booklore.model.dto.Book.builder()
                 .metadata(new com.adityachandel.booklore.model.dto.BookMetadata())
                 .build();
         when(bookMapper.toBook(book)).thenReturn(bookDto);
-
-        // Mock import to return an imported Book DTO with id
         com.adityachandel.booklore.model.dto.Book importedDto = com.adityachandel.booklore.model.dto.Book.builder().id(1234L).build();
         when(bookImportService.importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any())).thenReturn(importedDto);
 
         MockHttpServletResponse response = new MockHttpServletResponse();
-
-        // Act
         bookDownloadService.downloadKoboBook(101L, response);
 
-        // Assert
         verify(kepubConversionService, atLeastOnce()).convertEpubToKepub(eq(sourceFile.toFile()), any(File.class), eq(kobo.isForceEnableHyphenation()));
         verify(bookImportService, atLeastOnce()).importFileToLibrary(any(File.class), eq(11L), eq(22L), any(), eq(88L));
         verify(shelfService, atLeastOnce()).getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()));
@@ -361,7 +295,6 @@ class BookDownloadServiceKoboTest {
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
 
-        // Verify that kepub file was moved into library path
         Path destPath = libraryDir.resolve("comic.kepub.epub");
         assertThat(Files.exists(destPath)).isTrue();
         assertThat(Files.size(destPath)).isGreaterThan(0);

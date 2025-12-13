@@ -88,18 +88,15 @@ public class BookImportService {
 
         Book bookDto = processResult.getBook();
 
-        // Ensure we have the persisted entity available
         BookEntity bookEntity = bookRepository.findById(bookDto.getId())
                 .orElseThrow(() -> ApiError.FILE_NOT_FOUND.createException("Book ID missing after import"));
 
-        // Notify listeners about new book
         try {
             notificationService.sendMessage(Topic.BOOK_ADD, bookDto);
         } catch (Exception e) {
             log.warn("Failed to send BOOK_ADD notification for book {}: {}", bookDto.getId(), e.getMessage());
         }
 
-        // If optional metadata provided, apply it using existing metadata flow
         if (metadata != null) {
             MetadataUpdateContext context = MetadataUpdateContext.builder()
                     .bookEntity(bookEntity)
@@ -114,7 +111,6 @@ public class BookImportService {
             metadataRefreshService.updateBookMetadata(context);
         }
 
-        // If a shelfId was provided, add the imported book to that shelf
         if (shelfId != null) {
             try {
                 ShelfEntity shelfEntity = shelfRepository.findById(shelfId).orElse(null);
@@ -130,7 +126,6 @@ public class BookImportService {
             }
         }
 
-        // Re-map the (potentially updated) entity to DTO to include shelf changes
         return bookMapper.toBook(bookEntity);
     }
 }

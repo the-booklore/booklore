@@ -178,7 +178,6 @@ public class BookDownloadService {
                 try {
                     Files.move(fileToSend.toPath(), destPath, StandardCopyOption.ATOMIC_MOVE);
                 } catch (IOException moveEx) {
-                    // Fallback to copy + delete
                     try {
                         Files.copy(fileToSend.toPath(), destPath, StandardCopyOption.REPLACE_EXISTING);
                         Files.deleteIfExists(fileToSend.toPath());
@@ -188,13 +187,8 @@ public class BookDownloadService {
                     }
                 }
 
-                // update file size
-                Long newSizeKb = FileUtils.getFileSizeInKb(destPath);
-
-                // Map existing book's metadata DTO and import the converted file using BookImportService
                 try {
                     BookMetadata metadataDto = bookMapper.toBook(bookEntity).getMetadata();
-                    // determine conversion shelf for current user (if any) and pass its id to the import
                     Long conversionShelfId = null;
                     try {
                         var authUser = authenticationService.getAuthenticatedUser();
@@ -205,7 +199,6 @@ public class BookDownloadService {
                     } catch (Exception e) {
                         log.debug("Could not resolve conversion shelf: {}", e.getMessage());
                     }
-                    // importFileToLibrary expects the file already in the library path
                     var imported = bookImportService.importFileToLibrary(destPath.toFile(),
                             bookEntity.getLibrary().getId(),
                             bookEntity.getLibraryPath().getId(),
@@ -213,11 +206,9 @@ public class BookDownloadService {
                             conversionShelfId);
                     log.debug("Imported converted file as book id={}", imported.getId());
                 } catch (Exception e) {
-                    // If import fails, log and continue to stream the file to the client
                     log.warn("Failed to import converted file into library: {}", e.getMessage(), e);
                 }
 
-                // ensure we stream the moved file from library
                 fileToSend = destPath.toFile();
             }
 
