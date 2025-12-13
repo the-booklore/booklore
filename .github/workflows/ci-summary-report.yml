@@ -39,25 +39,25 @@
 # permissions:
 #   actions: read
 #   checks: read
-  contents: read
-  pull-requests: write
+#   contents: read
+#   pull-requests: write
 
-jobs:
-  generate-summary:
-    name: Generate CI Summary Report
-    runs-on: ubuntu-latest
-    if: github.event.workflow_run.event == 'pull_request'
-    
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
-        with:
-          egress-policy: audit
+# jobs:
+#   generate-summary:
+#     name: Generate CI Summary Report
+#     runs-on: ubuntu-latest
+#     if: github.event.workflow_run.event == 'pull_request'
+#     
+#     steps:
+#       - name: Harden Runner
+#         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+#         with:
+#           egress-policy: audit
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
 
-      - name: Gather workflow run data
+#       - name: Gather workflow run data
         id: gather
         uses: actions/github-script@v7
         with:
