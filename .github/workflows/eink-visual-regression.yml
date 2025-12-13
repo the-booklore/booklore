@@ -303,17 +303,43 @@ jobs:
         run: |
           echo "🔍 Running Lighthouse accessibility audit..."
           
+          # Verify frontend is accessible before running Lighthouse
+          echo "Checking if frontend is ready..."
+          for i in {1..10}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6060/)
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Frontend is ready (HTTP $HTTP_CODE)"
+              break
+            fi
+            echo "Attempt $i/10 - Frontend HTTP: $HTTP_CODE"
+            sleep 3
+          done
+          
+          # Verify one more time
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6060/)
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "❌ Frontend not responding (HTTP $HTTP_CODE), skipping Lighthouse"
+            docker logs booklore-contrast 2>&1 | tail -50
+            exit 0  # Don't fail the job, just skip Lighthouse
+          fi
+          
+          # Run Lighthouse
           lighthouse http://localhost:6060 \
             --only-categories=accessibility \
             --output=json,html \
             --output-path=/tmp/lighthouse-report \
-            --chrome-flags="--headless --no-sandbox" \
-            --preset=desktop || true
+            --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+            --preset=desktop || {
+              echo "⚠️ Lighthouse failed, checking logs..."
+              docker logs booklore-contrast 2>&1 | tail -100
+              exit 0  # Don't fail the job
+            }
           
-          # Extract accessibility score
+          # Extract accessibility score (only if report exists)
           if [ -f /tmp/lighthouse-report.report.json ]; then
-            SCORE=$(jq '.categories.accessibility.score * 100' /tmp/lighthouse-report.report.json)
-            echo "📊 Accessibility Score: $SCORE%"
+            SCORE=$(jq -r '.categories.accessibility.score // 0' /tmp/lighthouse-report.report.json)
+            SCORE_PCT=$(echo "$SCORE * 100" | bc -l 2>/dev/null || echo "0")
+            echo "📊 Accessibility Score: ${SCORE_PCT}%"
             
             # Check for color contrast issues
             CONTRAST_ISSUES=$(jq '[.audits["color-contrast"].details.items // [] | length] | add // 0' /tmp/lighthouse-report.report.json)
@@ -322,8 +348,10 @@ jobs:
             if [ "$CONTRAST_ISSUES" -gt 0 ]; then
               echo ""
               echo "⚠️ Color contrast issues that may affect E-Ink readability:"
-              jq -r '.audits["color-contrast"].details.items[]? | "  - \(.node.snippet // "unknown element")"' /tmp/lighthouse-report.report.json | head -10
+              jq -r '.audits["color-contrast"].details.items[]? | "  - \(.node.snippet // \"unknown element\")"' /tmp/lighthouse-report.report.json | head -10 || true
             fi
+          else
+            echo "⚠️ Lighthouse report not generated, skipping analysis"
           fi
 
       - name: Upload Lighthouse report

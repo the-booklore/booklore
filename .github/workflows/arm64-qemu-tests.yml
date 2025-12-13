@@ -275,8 +275,6 @@ jobs:
     name: ARMv7 Build Check (Raspberry Pi 3)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    # Only run on manual trigger (ARMv7 is slower)
-    if: github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Harden Runner

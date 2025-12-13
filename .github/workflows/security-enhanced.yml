@@ -285,8 +285,6 @@ jobs:
     name: Container Image Scanning
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # Only run on develop/main or manual trigger
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     
     steps:
       - name: Harden Runner
