@@ -1,6 +1,7 @@
 name: Build, Tag, Push, and Release to GitHub Container Registry
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - '**'
