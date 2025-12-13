@@ -28,7 +28,14 @@ public class ConversionShelfEventListener {
         AppSettingKey key = event.getKey();
         Object val = event.getVal();
         if (key == AppSettingKey.KOBO_SETTINGS && val instanceof LinkedHashMap<?,?>) {
-            boolean persistConversion = (boolean) ((LinkedHashMap) val).get("persistConversion");
+            Object raw = ((LinkedHashMap) val).get("persistConversion");
+            boolean persistConversion = false;
+            if (raw instanceof Boolean) {
+                persistConversion = (Boolean) raw;
+            } else if (raw != null) {
+                persistConversion = Boolean.parseBoolean(String.valueOf(raw));
+            }
+
             if (persistConversion) {
                 ensureKoboConversionShelfExists();
             } else {
