@@ -296,26 +296,29 @@ jobs:
           docker run -d \
             --name mariadb-artillery \
             --network artillery-net \
-            -e MYSQL_ROOT_PASSWORD=artillerytest \
-            -e MYSQL_DATABASE=booklore \
+            -e MARIADB_ROOT_PASSWORD=artillerytest \
+            -e MARIADB_DATABASE=booklore \
             mariadb:10.11
           
           # Wait for MariaDB with explicit success/failure handling
           echo "⏳ Waiting for MariaDB to be ready..."
           READY=false
-          for i in {1..30}; do
-            if docker exec mariadb-artillery mariadb-admin ping -h localhost -uroot -partillerytest >/dev/null 2>&1; then
-              echo "✅ MariaDB is ready"
+          for i in {1..45}; do
+            # Try to authenticate - this ensures password is initialized
+            if docker exec mariadb-artillery mariadb -uroot -partillerytest -e "SELECT 1" >/dev/null 2>&1; then
+              echo "✅ MariaDB is ready and authenticated"
               READY=true
               break
             fi
-            echo "  Attempt $i/30... waiting"
-            sleep 2
+            if [ $((i % 5)) -eq 0 ]; then
+              echo "  Attempt $i/45... waiting"
+            fi
+            sleep 1
           done
           
           if [ "$READY" = "false" ]; then
-            echo "❌ MariaDB failed to start after 60 seconds"
-            docker logs mariadb-artillery
+            echo "❌ MariaDB failed to authenticate after 45 seconds"
+            docker logs mariadb-artillery | tail -30
             exit 1
           fi
           

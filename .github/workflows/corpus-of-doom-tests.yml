@@ -400,9 +400,20 @@ jobs:
           docker logs booklore-doom 2>&1 > /tmp/server-logs.txt
           
           # Count unhandled exceptions (stack traces)
-          STACK_TRACES=$(grep -c "Exception\|Error" /tmp/server-logs.txt 2>/dev/null || echo "0")
-          UNCAUGHT=$(grep -c "UncaughtException\|OutOfMemory\|StackOverflow" /tmp/server-logs.txt 2>/dev/null || echo "0")
-          GRACEFUL=$(grep -c "Failed to parse\|Invalid file\|Skipping\|Unable to process" /tmp/server-logs.txt 2>/dev/null || echo "0")
+          # Ensure output is numeric only - use head -1 and strip whitespace
+          STACK_TRACES=$(grep -c "Exception\|Error" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+          UNCAUGHT=$(grep -c "UncaughtException\|OutOfMemory\|StackOverflow" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+          GRACEFUL=$(grep -c "Failed to parse\|Invalid file\|Skipping\|Unable to process" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+          
+          # Ensure variables are numeric (fallback to 0 if empty)
+          STACK_TRACES=${STACK_TRACES:-0}
+          UNCAUGHT=${UNCAUGHT:-0}
+          GRACEFUL=${GRACEFUL:-0}
+          
+          # Final safety: convert to integer
+          STACK_TRACES=$((STACK_TRACES + 0))
+          UNCAUGHT=$((UNCAUGHT + 0))
+          GRACEFUL=$((GRACEFUL + 0))
           
           echo "📊 Log Analysis:"
           echo "   Total exception mentions: $STACK_TRACES"
