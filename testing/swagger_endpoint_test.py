@@ -16,11 +16,21 @@ import logging
 import os
 import sys
 import time
+import random
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
+from datetime import datetime
 
 import requests
+try:
+    from jsonschema import validate, ValidationError
+except ImportError:
+    validate = None
+    ValidationError = None
 
 
 logging.basicConfig(
@@ -28,6 +38,205 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class ResponseValidator:
+    """Validate API responses against OpenAPI schema"""
+    
+    def __init__(self, openapi_spec: Dict[str, Any]):
+        self.spec = openapi_spec
+        self.schemas = openapi_spec.get("components", {}).get("schemas", {})
+    
+    def validate_response(self, operation: Dict, status_code: int, 
+                         response_body: Any) -> Tuple[bool, Optional[str]]:
+        """Validate response against OpenAPI schema"""
+        if not validate or not ValidationError:
+            return True, None
+        
+        responses = operation.get("responses", {})
+        response_spec = responses.get(str(status_code)) or responses.get("default")
+        
+        if not response_spec:
+            return True, None
+        
+        content = response_spec.get("content", {})
+        json_schema = content.get("application/json", {}).get("schema", {})
+        
+        if not json_schema:
+            return True, None
+        
+        try:
+            resolved_schema = self._resolve_schema(json_schema)
+            validate(instance=response_body, schema=resolved_schema)
+            return True, None
+        except ValidationError as e:
+            return False, f"Schema validation failed: {e.message[:100]}"
+        except Exception as e:
+            return False, f"Validation error: {str(e)[:100]}"
+    
+    def _resolve_schema(self, schema: Dict) -> Dict:
+        """Resolve $ref in schemas"""
+        if "$ref" in schema:
+            ref_path = schema["$ref"].split("/")
+            return self.schemas.get(ref_path[-1], {})
+        return schema
+
+
+class ReportGenerator:
+    """Generate test reports in various formats"""
+    
+    @staticmethod
+    def generate_json_report(summary: 'TestSummary', config: TestConfig, 
+                            output_path: str = "test_report.json") -> str:
+        """Generate JSON report"""
+        report = {
+            "timestamp": datetime.now().isoformat(),
+            "config": {
+                "base_url": config.base_url,
+                "auth_enabled": config.enable_auth,
+            },
+            "summary": {
+                "total": summary.total,
+                "passed": summary.passed,
+                "failed": summary.failed,
+                "skipped": summary.skipped,
+                "success_rate": (summary.passed / max(summary.total - summary.skipped, 1)) * 100
+            },
+            "results": [
+                {
+                    "path": r.path,
+                    "method": r.method,
+                    "status_code": r.status_code,
+                    "success": r.success,
+                    "response_time": round(r.response_time, 3),
+                    "error": r.error,
+                    "schema_valid": r.schema_valid,
+                    "schema_error": r.schema_error,
+                    "skipped": r.skipped,
+                    "skip_reason": r.skip_reason
+                }
+                for r in summary.results
+            ]
+        }
+        
+        Path(output_path).write_text(json.dumps(report, indent=2))
+        logger.info(f"JSON report generated: {output_path}")
+        return output_path
+    
+    @staticmethod
+    def generate_html_report(summary: 'TestSummary', config: TestConfig,
+                            output_path: str = "test_report.html") -> str:
+        """Generate HTML report"""
+        success_rate = (summary.passed / max(summary.total - summary.skipped, 1)) * 100
+        
+        html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; }}
+        .container {{ max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        .summary {{ background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px; }}
+        .metric {{ display: inline-block; margin-right: 30px; }}
+        .metric-label {{ color: #666; font-size: 12px; text-transform: uppercase; }}
+        .metric-value {{ font-size: 24px; font-weight: bold; }}
+        .success {{ color: #4CAF50; }}
+        .failure {{ color: #f44336; }}
+        .skipped {{ color: #ff9800; }}
+        table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+        th {{ background-color: #4CAF50; color: white; font-weight: bold; }}
+        tr:nth-child(even) {{ background-color: #f2f2f2; }}
+        tr:hover {{ background-color: #e8f5e9; }}
+        .method-get {{ color: #2196F3; font-weight: bold; }}
+        .method-post {{ color: #4CAF50; font-weight: bold; }}
+        .method-put {{ color: #FF9800; font-weight: bold; }}
+        .method-delete {{ color: #f44336; font-weight: bold; }}
+        .method-patch {{ color: #9C27B0; font-weight: bold; }}
+        .time-fast {{ color: #4CAF50; }}
+        .time-slow {{ color: #f44336; }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 BookLore API Test Report</h1>
+        <div class="summary">
+            <h2>Summary</h2>
+            <p><strong>Test Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p><strong>Base URL:</strong> {config.base_url}</p>
+            <div>
+                <div class="metric">
+                    <div class="metric-label">Total Endpoints</div>
+                    <div class="metric-value">{summary.total}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label success">Passed</div>
+                    <div class="metric-value success">{summary.passed}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label failure">Failed</div>
+                    <div class="metric-value failure">{summary.failed}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label skipped">Skipped</div>
+                    <div class="metric-value skipped">{summary.skipped}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Success Rate</div>
+                    <div class="metric-value success">{success_rate:.1f}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Test Results</h2>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Time (s)</th>
+                <th>Schema</th>
+                <th>Result</th>
+            </tr>
+"""
+        
+        for result in summary.results:
+            method_class = f"method-{result.method.lower()}"
+            time_class = "time-fast" if result.response_time < 1.0 else "time-slow"
+            
+            if result.skipped:
+                status_text = "⊘ Skipped"
+                status_class = "skipped"
+            elif result.success:
+                status_text = "✓ Pass"
+                status_class = "success"
+            else:
+                status_text = "✗ Fail"
+                status_class = "failure"
+            
+            schema_text = ""
+            if result.schema_valid is not None:
+                schema_text = "✓ Valid" if result.schema_valid else "✗ Invalid"
+            
+            html += f"""            <tr>
+                <td><span class="{method_class}">{result.method}</span></td>
+                <td><code>{result.path}</code></td>
+                <td>{result.status_code}</td>
+                <td><span class="{time_class}">{result.response_time:.2f}</span></td>
+                <td>{schema_text}</td>
+                <td><span class="{status_class}">{status_text}</span></td>
+            </tr>
+"""
+        
+        html += """        </table>
+    </div>
+</body>
+</html>
+"""
+        
+        Path(output_path).write_text(html)
+        logger.info(f"HTML report generated: {output_path}")
+        return output_path
 
 
 
@@ -44,6 +253,10 @@ class TestConfig:
     timeout: int = 30
     retry_count: int = 3
     retry_delay: float = 2.0
+    max_workers: int = 10
+    output_format: str = "console"
+    output_file: str = "test_report"
+    validate_response_schema: bool = True
 
 
 @dataclass
@@ -56,6 +269,8 @@ class EndpointResult:
     error: Optional[str] = None
     skipped: bool = False
     skip_reason: Optional[str] = None
+    schema_valid: Optional[bool] = None
+    schema_error: Optional[str] = None
 
 
 @dataclass
@@ -76,6 +291,14 @@ class TestDataGenerator:
         "boolean": True,
         "array": [],
         "object": {},
+    }
+    
+    SAMPLE_DATA = {
+        "title": ["The Great Gatsby", "1984", "To Kill a Mockingbird", "Pride and Prejudice"],
+        "author": ["F. Scott Fitzgerald", "George Orwell", "Harper Lee", "Jane Austen"],
+        "isbn": ["978-0-7432-7356-5", "978-0-452-28423-4", "978-0-06-112008-4", "978-0-141-44144-4"],
+        "genre": ["Fiction", "Science Fiction", "Classic", "Mystery", "Romance"],
+        "language": ["en", "es", "fr", "de", "it"],
     }
     
     BOOKLORE_PARAMS = {
@@ -100,6 +323,20 @@ class TestDataGenerator:
     
     @classmethod
     def get_value_for_param(cls, name: str, schema: Dict[str, Any]) -> Any:
+        name_lower = name.lower()
+        
+        # Sample data from realistic values
+        if "title" in name_lower and "title" in cls.SAMPLE_DATA:
+            return random.choice(cls.SAMPLE_DATA["title"])
+        if "author" in name_lower and "author" in cls.SAMPLE_DATA:
+            return random.choice(cls.SAMPLE_DATA["author"])
+        if "isbn" in name_lower and "isbn" in cls.SAMPLE_DATA:
+            return random.choice(cls.SAMPLE_DATA["isbn"])
+        if "genre" in name_lower and "genre" in cls.SAMPLE_DATA:
+            return random.choice(cls.SAMPLE_DATA["genre"])
+        if "language" in name_lower and "language" in cls.SAMPLE_DATA:
+            return random.choice(cls.SAMPLE_DATA["language"])
+        
         if name in cls.BOOKLORE_PARAMS:
             return cls.BOOKLORE_PARAMS[name]
         
@@ -130,6 +367,14 @@ class TestDataGenerator:
             return "https://example.com"
         if param_format == "uuid":
             return "00000000-0000-0000-0000-000000000001"
+        
+        # Number constraints
+        if param_type in ["integer", "number"]:
+            minimum = schema.get("minimum", 1)
+            maximum = schema.get("maximum", 100)
+            if param_type == "integer":
+                return random.randint(int(minimum), int(maximum))
+            return random.uniform(minimum, maximum)
         
         return cls.DEFAULTS.get(param_type, "test")
     
@@ -378,6 +623,47 @@ class BookLoreApiClient:
             return 0, 0, "Connection error"
         except Exception as e:
             return 0, 0, str(e)
+    
+    def call_endpoint_with_response(self, method: str, path: str, 
+                                   params: Dict[str, Any] = None,
+                                   body: Dict[str, Any] = None,
+                                   headers: Dict[str, str] = None) -> Tuple[int, float, Optional[str], Any]:
+        """Call endpoint and return response body for validation"""
+        url = urljoin(self.config.base_url, path)
+        
+        try:
+            start_time = time.time()
+            
+            request_kwargs = {
+                "timeout": self.config.timeout,
+                "params": params,
+            }
+            
+            if body is not None:
+                request_kwargs["json"] = body
+            
+            if headers:
+                request_kwargs["headers"] = {**self.session.headers, **headers}
+            
+            response = self.session.request(method, url, **request_kwargs)
+            
+            response_time = time.time() - start_time
+            
+            response_body = None
+            if response.headers.get('content-type', '').startswith('application/json'):
+                try:
+                    response_body = response.json()
+                except:
+                    pass
+            
+            return response.status_code, response_time, None, response_body
+            
+        except requests.exceptions.Timeout:
+            return 0, 0, "Request timeout", None
+        except requests.exceptions.ConnectionError:
+            return 0, 0, "Connection error", None
+        except Exception as e:
+            return 0, 0, str(e), None
 
 
 class SwaggerEndpointTester:
@@ -405,6 +691,8 @@ class SwaggerEndpointTester:
         self.client = BookLoreApiClient(config)
         self.summary = TestSummary()
         self.openapi_spec: Optional[Dict[str, Any]] = None
+        self.validator: Optional[ResponseValidator] = None
+        self.lock = Lock()  # For thread-safe summary updates
     
     def setup(self) -> bool:
         logger.info(f"Connecting to {self.config.base_url}")
@@ -416,6 +704,11 @@ class SwaggerEndpointTester:
             return False
         
         logger.info(f"OpenAPI spec version: {self.openapi_spec.get('openapi', 'unknown')}")
+        
+        # Initialize response validator if schema validation is enabled
+        if self.config.validate_response_schema and validate:
+            self.validator = ResponseValidator(self.openapi_spec)
+        
         if self.config.enable_auth:
             if not self.client.login():
                 logger.warning("Authentication failed - some tests may fail")
@@ -513,7 +806,7 @@ class SwaggerEndpointTester:
             method, path, operation
         )
         
-        status_code, response_time, error = self.client.call_endpoint(
+        status_code, response_time, error, response_body = self.client.call_endpoint_with_response(
             method, resolved_path, query_params, 
             request_body if request_body else None
         )
@@ -521,6 +814,16 @@ class SwaggerEndpointTester:
         success = self._determine_success(error, status_code, method)
         if status_code == 500 and not error:
             error = "Internal Server Error"
+        
+        # Validate response schema
+        schema_valid = None
+        schema_error = None
+        if self.validator and response_body and success:
+            schema_valid, schema_error = self.validator.validate_response(
+                operation, status_code, response_body
+            )
+            if not schema_valid:
+                success = False
         
         if self.config.verbose:
             status_str = "✓" if success else "✗"
@@ -532,7 +835,9 @@ class SwaggerEndpointTester:
             status_code=status_code,
             success=success,
             response_time=response_time,
-            error=error
+            error=error,
+            schema_valid=schema_valid,
+            schema_error=schema_error
         )
     
     def run(self) -> TestSummary:
@@ -541,18 +846,30 @@ class SwaggerEndpointTester:
         
         endpoints = self.get_endpoints()
         logger.info(f"Found {len(endpoints)} endpoints to test")
+        logger.info(f"Running with {self.config.max_workers} parallel workers")
         
-        for method, path, operation in endpoints:
-            result = self.test_endpoint(method, path, operation)
-            self.summary.results.append(result)
-            self.summary.total += 1
+        # Parallel execution
+        with ThreadPoolExecutor(max_workers=self.config.max_workers) as executor:
+            futures = {
+                executor.submit(self.test_endpoint, method, path, operation): (method, path)
+                for method, path, operation in endpoints
+            }
             
-            if result.skipped:
-                self.summary.skipped += 1
-            elif result.success:
-                self.summary.passed += 1
-            else:
-                self.summary.failed += 1
+            for future in as_completed(futures):
+                method, path = futures[future]
+                try:
+                    result = future.result()
+                    with self.lock:
+                        self.summary.results.append(result)
+                        self.summary.total += 1
+                        if result.skipped:
+                            self.summary.skipped += 1
+                        elif result.success:
+                            self.summary.passed += 1
+                        else:
+                            self.summary.failed += 1
+                except Exception as e:
+                    logger.error(f"Error testing {method} {path}: {e}")
         
         return self.summary
     
@@ -571,6 +888,8 @@ class SwaggerEndpointTester:
             print("\nFAILED ENDPOINTS:")
             for result in failures:
                 error_msg = result.error or f"HTTP {result.status_code}"
+                if result.schema_error:
+                    error_msg += f" (Schema: {result.schema_error})"
                 print(f"  ✗ {result.method} {result.path}: {error_msg}")
         
         if self.config.verbose:
@@ -585,7 +904,27 @@ class SwaggerEndpointTester:
         success_rate = (self.summary.passed / max(self.summary.total - self.summary.skipped, 1)) * 100
         print(f"Success rate: {success_rate:.1f}%")
         
+        # Generate reports
+        self._generate_reports()
+        
         return self.summary.failed == 0
+    
+    def _generate_reports(self):
+        """Generate test reports in configured formats"""
+        formats = self.config.output_format.split(',')
+        
+        for fmt in formats:
+            fmt = fmt.strip()
+            if fmt == "json" or fmt == "all":
+                ReportGenerator.generate_json_report(
+                    self.summary, self.config,
+                    f"{self.config.output_file}.json"
+                )
+            if fmt == "html" or fmt == "all":
+                ReportGenerator.generate_html_report(
+                    self.summary, self.config,
+                    f"{self.config.output_file}.html"
+                )
 
 
 def parse_args() -> TestConfig:
@@ -646,6 +985,28 @@ def parse_args() -> TestConfig:
         default=30,
         help="Request timeout in seconds (default: 30)"
     )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=10,
+        help="Maximum number of parallel workers (default: 10)"
+    )
+    parser.add_argument(
+        "--output-format",
+        default="console",
+        choices=["console", "json", "html", "all"],
+        help="Output format for test reports (default: console)"
+    )
+    parser.add_argument(
+        "--output-file",
+        default="test_report",
+        help="Base filename for test reports (default: test_report)"
+    )
+    parser.add_argument(
+        "--no-schema-validation",
+        action="store_true",
+        help="Disable response schema validation"
+    )
     
     args = parser.parse_args()
     
@@ -659,6 +1020,10 @@ def parse_args() -> TestConfig:
         skip_setup=args.skip_setup,
         skip_destructive=not args.include_destructive,
         timeout=args.timeout,
+        max_workers=args.max_workers,
+        output_format=args.output_format,
+        output_file=args.output_file,
+        validate_response_schema=not args.no_schema_validation,
     )
 
 
