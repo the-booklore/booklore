@@ -6,7 +6,8 @@ on:
     paths:
       - 'booklore-api/src/main/resources/db/migration/**'
       - '.github/workflows/db-migration-full.yml'
-  workflow_dispatch: {}
+  workflow_call:
+  workflow_dispatch:
   schedule:
     - cron: '0 3 * * 1' # Weekly Monday 03:00 UTC
 

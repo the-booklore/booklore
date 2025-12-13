@@ -20,8 +20,13 @@ on:
     branches: [develop, main]
   pull_request:
     branches: [develop, main]
-  schedule:
-    - cron: '0 2 * * 1'  # Weekly Monday 02:00 UTC
+  workflow_call:
+    inputs:
+      full_scan:
+        description: 'Run full dependency scan (slower, more comprehensive)'
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       full_scan:
@@ -29,6 +34,8 @@ on:
         required: false
         type: boolean
         default: false
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 02:00 UTC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

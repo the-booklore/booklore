@@ -61,8 +61,8 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: build-for-eink-tests
   #   timeout-minutes: 30
-
-    steps:
+  #
+  #   steps:
       - name: Harden Runner
         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
         with:
@@ -219,8 +219,8 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: build-for-eink-tests
   #   timeout-minutes: 20
-
-    steps:
+  #
+  #   steps:
       - name: Harden Runner
         uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
         with:
@@ -380,8 +380,8 @@ jobs:
   #   runs-on: ubuntu-latest
   #   needs: [eink-visual-tests, eink-contrast-analysis]
   #   if: always()
-
-    steps:
+  #
+  #   steps:
       - name: Generate Summary
         run: |
           echo "# 📱 E-Ink Visual Regression Test Results" >> $GITHUB_STEP_SUMMARY

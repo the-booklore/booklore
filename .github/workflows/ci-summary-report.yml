@@ -1,11 +1,11 @@
-name: CI Summary Report
-
-on:
-  workflow_run:
-    workflows:
-      - "Build and Test"
-      - "API Integration Tests"
-      - "Database Migration Check"
+# name: CI Summary Report
+# 
+# on:
+#   workflow_run:
+#     workflows:
+#       - "Build and Test"
+#       - "API Integration Tests"
+#       - "Database Migration Check"
       - "Database Migration Full Test"
       - "Database Migration Regression"
       - "Docker Persistence Test"
