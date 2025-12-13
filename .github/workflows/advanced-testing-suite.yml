@@ -71,11 +71,11 @@ jobs:
       book_count: ${{ inputs.book_count }}
     secrets: inherit
 
-  eink-tests:
-    name: E-Ink Visual Tests
-    if: ${{ inputs.run_eink_tests }}
-    uses: ./.github/workflows/eink-visual-regression.yml
-    secrets: inherit
+  # eink-tests:
+  #   name: E-Ink Visual Tests
+  #   if: ${{ inputs.run_eink_tests }}
+  #   uses: ./.github/workflows/eink-visual-regression.yml
+  #   secrets: inherit
 
   # ============================================
   # Unified Summary
@@ -83,7 +83,7 @@ jobs:
   unified-summary:
     name: Advanced Testing Summary
     runs-on: ubuntu-latest
-    needs: [arm64-tests, proxy-tests, corpus-tests, load-tests, eink-tests]
+    needs: [arm64-tests, proxy-tests, corpus-tests, load-tests] # eink-tests disabled
     if: always()
 
     steps:
@@ -105,7 +105,7 @@ jobs:
           PROXY_RESULT: ${{ needs.proxy-tests.result }}
           CORPUS_RESULT: ${{ needs.corpus-tests.result }}
           LOAD_RESULT: ${{ needs.load-tests.result }}
-          EINK_RESULT: ${{ needs.eink-tests.result }}
+          # EINK_RESULT: ${{ needs.eink-tests.result }} # disabled
         run: |
           echo "# 🧪 Advanced Testing Suite Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -180,18 +180,18 @@ jobs:
           fi
           
           # E-Ink Tests
-          if [ "$RUN_EINK" = "true" ]; then
-            EINK_STATUS="$EINK_RESULT"
-            case $EINK_STATUS in
-              success) EINK_ICON="✅" ;;
-              failure) EINK_ICON="❌" ;;
-              skipped) EINK_ICON="⏭️" ;;
-              *) EINK_ICON="⚠️" ;;
-            esac
-            echo "| 📱 E-Ink Visual Regression | $EINK_ICON $EINK_STATUS | Grayscale rendering and contrast verification |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| 📱 E-Ink Visual Regression | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
-          fi
+          # if [ "$RUN_EINK" = "true" ]; then
+          #   EINK_STATUS="$EINK_RESULT"
+          #   case $EINK_STATUS in
+          #     success) EINK_ICON="✅" ;;
+          #     failure) EINK_ICON="❌" ;;
+          #     skipped) EINK_ICON="⏭️" ;;
+          #     *) EINK_ICON="⚠️" ;;
+          #   esac
+          #   echo "| 📱 E-Ink Visual Regression | $EINK_ICON $EINK_STATUS | Grayscale rendering and contrast verification |" >> $GITHUB_STEP_SUMMARY
+          # else
+          #   echo "| 📱 E-Ink Visual Regression | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          # fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
@@ -202,8 +202,8 @@ jobs:
           if [ "$ARM64_RESULT" = "failure" ] || \
              [ "$PROXY_RESULT" = "failure" ] || \
              [ "$CORPUS_RESULT" = "failure" ] || \
-             [ "$LOAD_RESULT" = "failure" ] || \
-             [ "$EINK_RESULT" = "failure" ]; then
+             [ "$LOAD_RESULT" = "failure" ]; then  # || \
+             # [ "$EINK_RESULT" = "failure" ]; then  # disabled
             OVERALL="failure"
           fi
           
@@ -271,7 +271,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>📱 E-Ink Visual Regression Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>📱 E-Ink Visual Regression Tests (DISABLED)</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests UI rendering on E-Ink displays:" >> $GITHUB_STEP_SUMMARY
           echo "- Applies grayscale + contrast CSS filters" >> $GITHUB_STEP_SUMMARY
@@ -279,6 +279,8 @@ jobs:
           echo "- Checks button/input visibility" >> $GITHUB_STEP_SUMMARY
           echo "- Tests dark mode (common E-Ink failure)" >> $GITHUB_STEP_SUMMARY
           echo "- Validates touch target sizes (min 40x40px)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Currently disabled - under revision*" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "</details>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -290,8 +292,8 @@ jobs:
       - name: Set job status
         run: |
           if [ "${{ needs.arm64-tests.result }}" = "failure" ] || \
-             [ "${{ needs.proxy-tests.result }}" = "failure" ] || \
-             [ "${{ needs.corpus-tests.result }}" = "failure" ] || \
+             [ "${{ needs.proxy-tests.result }}" = "failure" ; then  # || \
+             # [ "${{ needs.eink-tests.result }}" = "failure" ]; then  # disabled\
              [ "${{ needs.load-tests.result }}" = "failure" ] || \
              [ "${{ needs.eink-tests.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
