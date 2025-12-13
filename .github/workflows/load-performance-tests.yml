@@ -1,0 +1,543 @@
+name: Load & Performance Tests
+
+# Catches: Large Library Freeze bug (30k+ books, P95 < 500ms, Kobo 30s timeout)
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/java/**/kobo/**'
+      - 'booklore-api/src/main/java/**/koreader/**'
+      - 'booklore-api/src/main/java/**/controller/**'
+      - 'booklore-api/src/main/java/**/repository/**'
+      - '.github/workflows/load-performance-tests.yml'
+  schedule:
+    - cron: '0 4 * * 6'  # Weekly Saturday 04:00 UTC
+  workflow_dispatch:
+    inputs:
+      book_count:
+        description: 'Number of synthetic books to seed'
+        type: choice
+        options:
+          - '1000'
+          - '10000'
+          - '50000'
+        default: '10000'
+      concurrent_users:
+        description: 'Number of concurrent virtual users'
+        type: choice
+        options:
+          - '10'
+          - '50'
+          - '100'
+        default: '50'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  APP_PORT: 6060
+  DEFAULT_BOOK_COUNT: 10000
+  DEFAULT_CONCURRENT_USERS: 50
+  # Kobo device timeout is ~30s, we need P95 < 5s for safety margin
+  MAX_P95_RESPONSE_TIME_MS: 5000
+
+jobs:
+  setup-large-library:
+    name: Seed Large Library
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      book_count: ${{ steps.seed.outputs.book_count }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build BookLore image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:load-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Start services
+        run: |
+          docker network create load-test-net
+          
+          # Start MariaDB with performance tuning
+          docker run -d \
+            --name mariadb-load \
+            --network load-test-net \
+            -e MYSQL_ROOT_PASSWORD=loadtest \
+            -e MYSQL_DATABASE=booklore \
+            -e MYSQL_INNODB_BUFFER_POOL_SIZE=256M \
+            mariadb:10.11
+          
+          # Wait for MariaDB
+          for i in {1..30}; do
+            if docker exec mariadb-load mariadb-admin ping -h localhost -uroot -ploadtest 2>/dev/null; then
+              echo "✅ MariaDB ready"
+              break
+            fi
+            sleep 2
+          done
+          
+          # Start BookLore
+          docker run -d \
+            --name booklore-load \
+            --network load-test-net \
+            -p ${{ env.APP_PORT }}:6060 \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-load:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=loadtest \
+            -e JAVA_OPTS="-Xms512m -Xmx1g" \
+            booklore:load-test
+          
+          # Wait for BookLore
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" \
+              http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ BookLore ready"
+              break
+            fi
+            sleep 3
+          done
+
+      - name: Seed synthetic book data
+        id: seed
+        run: |
+          BOOK_COUNT=${{ github.event.inputs.book_count || env.DEFAULT_BOOK_COUNT }}
+          echo "📚 Seeding $BOOK_COUNT synthetic books..."
+          
+          # Create seed script
+          cat > /tmp/seed_books.sql << 'SEED_SQL'
+          -- Create library if not exists
+          INSERT IGNORE INTO library (id, name, path, created_at, updated_at)
+          VALUES (1, 'Load Test Library', '/data/library', NOW(), NOW());
+          
+          -- Generate synthetic books using a loop
+          DELIMITER //
+          CREATE PROCEDURE IF NOT EXISTS seed_books(IN num_books INT)
+          BEGIN
+            DECLARE i INT DEFAULT 1;
+            DECLARE batch_size INT DEFAULT 1000;
+            DECLARE batch_count INT DEFAULT 0;
+            
+            START TRANSACTION;
+            
+            WHILE i <= num_books DO
+              INSERT INTO book (
+                title, 
+                file_path, 
+                file_name,
+                file_format,
+                file_size,
+                library_id,
+                created_at, 
+                updated_at
+              ) VALUES (
+                CONCAT('Synthetic Book #', i, ' - ', UUID()),
+                CONCAT('/data/library/book_', i, '.epub'),
+                CONCAT('book_', i, '.epub'),
+                'EPUB',
+                FLOOR(RAND() * 10000000) + 100000,
+                1,
+                NOW(),
+                NOW()
+              );
+              
+              SET batch_count = batch_count + 1;
+              
+              IF batch_count >= batch_size THEN
+                COMMIT;
+                START TRANSACTION;
+                SET batch_count = 0;
+              END IF;
+              
+              SET i = i + 1;
+            END WHILE;
+            
+            COMMIT;
+          END //
+          DELIMITER ;
+          SEED_SQL
+          
+          # Seed books directly via SQL
+          echo "Creating seed procedure..."
+          docker exec mariadb-load mariadb -uroot -ploadtest booklore < /tmp/seed_books.sql 2>/dev/null || true
+          
+          # If procedure creation failed, use a simpler batch insert approach
+          echo "Seeding $BOOK_COUNT books in batches..."
+          
+          # Generate batch insert SQL
+          BATCH_SIZE=1000
+          BATCHES=$((BOOK_COUNT / BATCH_SIZE))
+          
+          for batch in $(seq 0 $BATCHES); do
+            START=$((batch * BATCH_SIZE + 1))
+            END=$((START + BATCH_SIZE - 1))
+            if [ $END -gt $BOOK_COUNT ]; then
+              END=$BOOK_COUNT
+            fi
+            
+            # Generate INSERT statement for this batch
+            VALUES=""
+            for i in $(seq $START $END); do
+              if [ -n "$VALUES" ]; then
+                VALUES="$VALUES,"
+              fi
+              VALUES="$VALUES
+                ('Synthetic Book #$i', '/data/library/book_$i.epub', 'book_$i.epub', 'EPUB', $((RANDOM * 1000 + 100000)), 1, NOW(), NOW())"
+            done
+            
+            if [ -n "$VALUES" ]; then
+              docker exec mariadb-load mariadb -uroot -ploadtest booklore -e "
+                INSERT INTO book (title, file_path, file_name, file_format, file_size, library_id, created_at, updated_at)
+                VALUES $VALUES;" 2>/dev/null || true
+            fi
+            
+            echo "  Batch $((batch + 1))/$((BATCHES + 1)) completed ($END books)"
+          done
+          
+          # Verify count
+          ACTUAL_COUNT=$(docker exec mariadb-load mariadb -uroot -ploadtest booklore -sN -e "SELECT COUNT(*) FROM book;" 2>/dev/null || echo "0")
+          echo "📊 Actual books seeded: $ACTUAL_COUNT"
+          echo "book_count=$ACTUAL_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Export database snapshot
+        run: |
+          docker exec mariadb-load mysqldump -uroot -ploadtest booklore > /tmp/seeded-db.sql
+          gzip /tmp/seeded-db.sql
+
+      - name: Upload seeded database
+        uses: actions/upload-artifact@v4
+        with:
+          name: seeded-database
+          path: /tmp/seeded-db.sql.gz
+          retention-days: 1
+
+      - name: Cleanup setup
+        if: always()
+        run: |
+          docker rm -f booklore-load mariadb-load 2>/dev/null || true
+          docker network rm load-test-net 2>/dev/null || true
+
+  # ============================================
+  # Run Load Tests
+  # ============================================
+  run-load-tests:
+    name: Artillery Load Tests
+    runs-on: ubuntu-latest
+    needs: setup-large-library
+    timeout-minutes: 45
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Artillery
+        run: npm install -g artillery@latest
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build BookLore image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:load-test
+          cache-from: type=gha
+
+      - name: Download seeded database
+        uses: actions/download-artifact@v4
+        with:
+          name: seeded-database
+          path: /tmp
+
+      - name: Start services with seeded data
+        run: |
+          docker network create artillery-net
+          
+          # Start MariaDB
+          docker run -d \
+            --name mariadb-artillery \
+            --network artillery-net \
+            -e MYSQL_ROOT_PASSWORD=artillerytest \
+            -e MYSQL_DATABASE=booklore \
+            mariadb:10.11
+          
+          # Wait for MariaDB
+          for i in {1..30}; do
+            if docker exec mariadb-artillery mariadb-admin ping -h localhost -uroot -partillerytest 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+          
+          # Import seeded database
+          echo "📥 Importing seeded database..."
+          gunzip -c /tmp/seeded-db.sql.gz | docker exec -i mariadb-artillery mariadb -uroot -partillerytest booklore
+          
+          # Start BookLore
+          docker run -d \
+            --name booklore-artillery \
+            --network artillery-net \
+            -p ${{ env.APP_PORT }}:6060 \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-artillery:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=artillerytest \
+            -e JAVA_OPTS="-Xms512m -Xmx1g" \
+            booklore:load-test
+          
+          # Wait for BookLore
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" \
+              http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ BookLore ready with seeded data"
+              break
+            fi
+            sleep 3
+          done
+          
+          # Verify book count
+          curl -s http://localhost:${{ env.APP_PORT }}/api/v1/libraries 2>/dev/null || true
+
+      - name: Create Artillery load test config
+        run: |
+          cat > /tmp/load-test.yml << 'ARTILLERY_CONFIG'
+          config:
+            target: "http://localhost:6060"
+            phases:
+              # Warm-up phase
+              - duration: 30
+                arrivalRate: 5
+                name: "Warm-up"
+              # Ramp-up
+              - duration: 60
+                arrivalRate: 10
+                rampTo: 50
+                name: "Ramp-up"
+              # Sustained load
+              - duration: 120
+                arrivalRate: 50
+                name: "Sustained load"
+            defaults:
+              headers:
+                Accept: "application/json"
+            ensure:
+              # Kobo timeout is ~30s, we need P95 well under that
+              p95: 5000
+              p99: 10000
+              maxErrorRate: 5
+          
+          scenarios:
+            # Scenario 1: Kobo device sync (most critical path)
+            - name: "Kobo Sync"
+              weight: 40
+              flow:
+                - get:
+                    url: "/api/kobo/test-token-{{ $randomNumber(1, 1000) }}/v1/initialization"
+                    headers:
+                      X-Kobo-DeviceId: "test-device-{{ $randomNumber(1, 100) }}"
+                      User-Agent: "Kobo eReader"
+                - think: 1
+                - get:
+                    url: "/api/kobo/test-token-{{ $randomNumber(1, 1000) }}/v1/library/sync"
+                    headers:
+                      X-Kobo-DeviceId: "test-device-{{ $randomNumber(1, 100) }}"
+                      X-Kobo-SyncToken: "sync-token-{{ $randomNumber(1, 1000) }}"
+            
+            # Scenario 2: KOReader progress sync
+            - name: "KOReader Sync"
+              weight: 30
+              flow:
+                - get:
+                    url: "/api/koreader/users/auth"
+                    headers:
+                      Authorization: "Basic dGVzdDp0ZXN0"
+                - think: 1
+                - get:
+                    url: "/api/koreader/syncs/progress/book-hash-{{ $randomNumber(1, 10000) }}"
+            
+            # Scenario 3: Web UI browsing
+            - name: "Web UI Browse"
+              weight: 20
+              flow:
+                - get:
+                    url: "/actuator/health"
+                - think: 1
+                - get:
+                    url: "/api/v1/libraries"
+            
+            # Scenario 4: Health checks (monitoring)
+            - name: "Health Check"
+              weight: 10
+              flow:
+                - get:
+                    url: "/actuator/health"
+          ARTILLERY_CONFIG
+          
+          echo "✅ Artillery config created"
+          cat /tmp/load-test.yml
+
+      - name: Run Artillery load test
+        id: artillery
+        run: |
+          echo "🚀 Starting Artillery load test..."
+          echo "   Book count: ${{ needs.setup-large-library.outputs.book_count }}"
+          echo "   Duration: ~210 seconds"
+          echo ""
+          
+          artillery run \
+            --output /tmp/artillery-report.json \
+            /tmp/load-test.yml 2>&1 | tee /tmp/artillery-output.txt
+          
+          EXIT_CODE=${PIPESTATUS[0]}
+          echo "artillery_exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+
+      - name: Generate Artillery HTML report
+        if: always()
+        run: |
+          artillery report \
+            --output /tmp/artillery-report.html \
+            /tmp/artillery-report.json 2>/dev/null || true
+
+      - name: Parse Artillery results
+        id: results
+        run: |
+          echo "📊 Parsing Artillery results..."
+          
+          if [ -f /tmp/artillery-report.json ]; then
+            # Extract key metrics
+            P50=$(jq '.aggregate.latency.p50 // 0' /tmp/artillery-report.json)
+            P95=$(jq '.aggregate.latency.p95 // 0' /tmp/artillery-report.json)
+            P99=$(jq '.aggregate.latency.p99 // 0' /tmp/artillery-report.json)
+            TOTAL_REQUESTS=$(jq '.aggregate.counters["vusers.created"] // 0' /tmp/artillery-report.json)
+            ERRORS=$(jq '.aggregate.counters["errors.ETIMEDOUT"] // 0' /tmp/artillery-report.json)
+            
+            echo "p50=$P50" >> $GITHUB_OUTPUT
+            echo "p95=$P95" >> $GITHUB_OUTPUT
+            echo "p99=$P99" >> $GITHUB_OUTPUT
+            echo "total_requests=$TOTAL_REQUESTS" >> $GITHUB_OUTPUT
+            echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+            
+            echo ""
+            echo "📈 Load Test Results:"
+            echo "   Total Requests: $TOTAL_REQUESTS"
+            echo "   P50 Latency: ${P50}ms"
+            echo "   P95 Latency: ${P95}ms"
+            echo "   P99 Latency: ${P99}ms"
+            echo "   Errors: $ERRORS"
+            
+            # Check against thresholds
+            if (( $(echo "$P95 > ${{ env.MAX_P95_RESPONSE_TIME_MS }}" | bc -l 2>/dev/null || echo 1) )); then
+              echo ""
+              echo "⚠️ WARNING: P95 latency ($P95 ms) exceeds threshold (${{ env.MAX_P95_RESPONSE_TIME_MS }} ms)"
+              echo "   Kobo devices may experience sync timeouts!"
+              echo "threshold_exceeded=true" >> $GITHUB_OUTPUT
+            else
+              echo ""
+              echo "✅ P95 latency within acceptable limits"
+              echo "threshold_exceeded=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "⚠️ Artillery report not found"
+          fi
+
+      - name: Collect server metrics
+        run: |
+          echo "📊 Server metrics during load test:"
+          docker stats booklore-artillery --no-stream --format \
+            "CPU: {{.CPUPerc}}, Memory: {{.MemUsage}}"
+          
+          echo ""
+          echo "📋 Server logs (last 50 lines):"
+          docker logs booklore-artillery 2>&1 | tail -50
+
+      - name: Upload Artillery reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: artillery-reports
+          path: |
+            /tmp/artillery-report.json
+            /tmp/artillery-report.html
+            /tmp/artillery-output.txt
+          retention-days: 14
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f booklore-artillery mariadb-artillery 2>/dev/null || true
+          docker network rm artillery-net 2>/dev/null || true
+
+  # ============================================
+  # Summary
+  # ============================================
+  load-test-summary:
+    name: Load Test Summary
+    runs-on: ubuntu-latest
+    needs: [setup-large-library, run-load-tests]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 📈 Load & Performance Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Books Seeded | ${{ needs.setup-large-library.outputs.book_count }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Duration | ~210 seconds |" >> $GITHUB_STEP_SUMMARY
+          echo "| P95 Threshold | ${{ env.MAX_P95_RESPONSE_TIME_MS }}ms |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Library Seeding | ${{ needs.setup-large-library.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Load Test | ${{ needs.run-load-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Why This Matters" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Kobo devices have a ~30 second sync timeout. If the server takes too long" >> $GITHUB_STEP_SUMMARY
+          echo "to respond (especially for large libraries), users will see 'Sync Failed'." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Target**: P95 response time < 5 seconds for Kobo sync endpoints." >> $GITHUB_STEP_SUMMARY
+

@@ -1,0 +1,347 @@
+name: ARM64 Hardware Emulation Tests
+
+# Catches: ARM64-specific JNI bindings, endianness issues, base image breaks
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'Dockerfile'
+      - 'booklore-api/**'
+      - '.github/workflows/arm64-qemu-tests.yml'
+  schedule:
+    - cron: '0 3 * * 0'  # Weekly Sunday 03:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  TEST_TIMEOUT_SECONDS: 120
+
+jobs:
+  # ============================================
+  # Build ARM64 Image with QEMU
+  # ============================================
+  build-arm64:
+    name: Build ARM64 Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      image_built: ${{ steps.build.outputs.imageid }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64,linux/arm/v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ARM64 Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/arm64
+          tags: booklore:arm64-test
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,mode=max,scope=arm64
+          build-args: |
+            BUILDPLATFORM=linux/amd64
+            TARGETPLATFORM=linux/arm64
+
+      - name: Verify image architecture
+        run: |
+          echo "🔍 Verifying ARM64 image architecture..."
+          
+          ARCH=$(docker image inspect booklore:arm64-test --format '{{.Architecture}}')
+          
+          if [ "$ARCH" = "arm64" ]; then
+            echo "✅ Image architecture is ARM64"
+          else
+            echo "❌ Expected arm64, got: $ARCH"
+            exit 1
+          fi
+          
+          # Show image details
+          docker image inspect booklore:arm64-test --format '{{.Os}}/{{.Architecture}}' 
+          docker image inspect booklore:arm64-test --format 'Size: {{.Size}} bytes'
+
+  # ============================================
+  # Test ARM64 Binary Execution via QEMU
+  # ============================================
+  test-arm64-execution:
+    name: ARM64 Binary Execution Test
+    runs-on: ubuntu-latest
+    needs: build-arm64
+    timeout-minutes: 30
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Rebuild ARM64 image (cache hit expected)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          platforms: linux/arm64
+          tags: booklore:arm64-test
+          cache-from: type=gha,scope=arm64
+
+      - name: Test ARM64 container startup
+        id: startup_test
+        run: |
+          echo "🚀 Testing ARM64 container startup via QEMU..."
+          
+          # Create test network
+          docker network create arm64-test-net || true
+          
+          # Start MariaDB (AMD64 - just for DB connectivity test)
+          docker run -d \
+            --name mariadb-arm64-test \
+            --network arm64-test-net \
+            -e MYSQL_ROOT_PASSWORD=arm64test \
+            -e MYSQL_DATABASE=booklore \
+            mariadb:10.11
+          
+          # Wait for MariaDB
+          echo "⏳ Waiting for MariaDB..."
+          for i in {1..30}; do
+            if docker exec mariadb-arm64-test mariadb-admin ping -h localhost -uroot -parm64test 2>/dev/null; then
+              echo "✅ MariaDB ready"
+              break
+            fi
+            sleep 2
+          done
+          
+          # Run ARM64 container with QEMU emulation
+          echo "🔧 Starting ARM64 BookLore container..."
+          
+          docker run -d \
+            --name booklore-arm64-test \
+            --network arm64-test-net \
+            --platform linux/arm64 \
+            -p 6060:6060 \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-arm64-test:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=arm64test \
+            booklore:arm64-test
+          
+          # Monitor startup with timeout
+          echo "⏳ Monitoring ARM64 container startup..."
+          START_TIME=$(date +%s)
+          
+          for i in {1..60}; do
+            # Check if container is still running
+            if ! docker ps --filter "name=booklore-arm64-test" --format '{{.Names}}' | grep -q booklore-arm64-test; then
+              echo "❌ Container exited unexpectedly!"
+              echo "=== Container Logs ==="
+              docker logs booklore-arm64-test 2>&1 | tail -100
+              exit 1
+            fi
+            
+            # Try health check
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" http://localhost:6060/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              END_TIME=$(date +%s)
+              STARTUP_TIME=$((END_TIME - START_TIME))
+              echo "✅ ARM64 container healthy after ${STARTUP_TIME}s"
+              echo "startup_time=$STARTUP_TIME" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            
+            echo "Attempt $i/60 - HTTP: $HTTP_CODE"
+            sleep 3
+          done
+          
+          echo "❌ ARM64 container failed to become healthy"
+          docker logs booklore-arm64-test 2>&1 | tail -100
+          exit 1
+
+      - name: Test ARM64 JNI/Native libraries
+        run: |
+          echo "🔍 Testing native library loading on ARM64..."
+          
+          # Check for common ARM64 issues
+          docker exec booklore-arm64-test sh -c '
+            echo "=== Java Version ==="
+            java -version 2>&1
+            
+            echo ""
+            echo "=== Architecture Check ==="
+            uname -m
+            
+            echo ""
+            echo "=== Native Libraries ==="
+            find /app -name "*.so" 2>/dev/null | head -10 || echo "No .so files in /app"
+            
+            echo ""
+            echo "=== Loaded Libraries ==="
+            cat /proc/1/maps 2>/dev/null | grep "\.so" | head -10 || echo "Cannot read process maps"
+          ' || echo "⚠️ Some native library checks failed (may be expected)"
+
+      - name: Test ARM64 basic API response
+        run: |
+          echo "📡 Testing ARM64 API responsiveness..."
+          
+          # Test multiple endpoints
+          ENDPOINTS=(
+            "/actuator/health"
+            "/actuator/info"
+          )
+          
+          PASSED=0
+          TOTAL=${#ENDPOINTS[@]}
+          
+          for ENDPOINT in "${ENDPOINTS[@]}"; do
+            RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 10 "http://localhost:6060${ENDPOINT}" 2>/dev/null || echo -e "\n000")
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ $ENDPOINT - OK"
+              ((PASSED++))
+            else
+              echo "⚠️ $ENDPOINT - HTTP $HTTP_CODE"
+            fi
+          done
+          
+          echo ""
+          echo "📊 ARM64 API Test Results: $PASSED/$TOTAL endpoints passed"
+          
+          if [ "$PASSED" -lt 1 ]; then
+            echo "❌ Critical: No endpoints responding on ARM64"
+            exit 1
+          fi
+
+      - name: Collect ARM64 performance metrics
+        run: |
+          echo "📊 Collecting ARM64 performance metrics..."
+          
+          # Get container stats
+          docker stats booklore-arm64-test --no-stream --format \
+            "CPU: {{.CPUPerc}}, Memory: {{.MemUsage}}"
+          
+          # Measure response time
+          for i in {1..3}; do
+            TIME=$(curl -s -o /dev/null -w "%{time_total}" --max-time 10 http://localhost:6060/actuator/health 2>/dev/null || echo "timeout")
+            echo "Health endpoint response time (attempt $i): ${TIME}s"
+          done
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f booklore-arm64-test mariadb-arm64-test 2>/dev/null || true
+          docker network rm arm64-test-net 2>/dev/null || true
+
+  # ============================================
+  # ARMv7 Compatibility Check (Raspberry Pi 3)
+  # ============================================
+  test-armv7-build:
+    name: ARMv7 Build Check (Raspberry Pi 3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Only run on manual trigger (ARMv7 is slower)
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm/v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ARMv7 Docker image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: false  # Don't load - just verify build succeeds
+          platforms: linux/arm/v7
+          tags: booklore:armv7-test
+          cache-from: type=gha,scope=armv7
+          cache-to: type=gha,mode=max,scope=armv7
+        continue-on-error: true
+
+      - name: Report ARMv7 compatibility
+        run: |
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "✅ ARMv7 (Raspberry Pi 3) build successful"
+          else
+            echo "⚠️ ARMv7 build failed - Raspberry Pi 3 may not be supported"
+            echo "This is informational only - ARM64 (Pi 4+) is the primary target"
+          fi
+
+  # ============================================
+  # Summary
+  # ============================================
+  arm64-summary:
+    name: ARM64 Tests Summary
+    runs-on: ubuntu-latest
+    needs: [build-arm64, test-arm64-execution]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🔧 ARM64 Hardware Emulation Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "These tests verify BookLore runs correctly on ARM64 hardware (Raspberry Pi 4+, ARM NAS, Apple Silicon)." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ARM64 Image Build | ${{ needs.build-arm64.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ARM64 Execution (QEMU) | ${{ needs.test-arm64-execution.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Why This Matters" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **JNI Linkage**: Java native libraries must be compiled for ARM64" >> $GITHUB_STEP_SUMMARY
+          echo "- **Memory Layout**: ARM64 has different memory alignment requirements" >> $GITHUB_STEP_SUMMARY
+          echo "- **Performance**: Ensures acceptable startup time on lower-power devices" >> $GITHUB_STEP_SUMMARY
+

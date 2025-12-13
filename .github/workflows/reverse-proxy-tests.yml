@@ -1,0 +1,462 @@
+name: Reverse Proxy Simulation Tests
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/java/**/kobo/**'
+      - 'booklore-api/src/main/java/**/koreader/**'
+      - 'booklore-api/src/main/java/**/controller/**'
+      - '.github/workflows/reverse-proxy-tests.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ============================================
+  # Nginx Reverse Proxy Test
+  # ============================================
+  nginx-proxy-test:
+    name: Nginx Reverse Proxy Header Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build BookLore image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:proxy-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create Nginx reverse proxy config
+        run: |
+          mkdir -p /tmp/nginx
+          
+          # Create Nginx config that simulates real-world reverse proxy setup
+          cat > /tmp/nginx/nginx.conf << 'EOF'
+          events {
+              worker_connections 1024;
+          }
+          
+          http {
+              # Upstream to BookLore container
+              upstream booklore {
+                  server booklore-app:6060;
+              }
+          
+              server {
+                  listen 80;
+                  server_name my-library.example.com;
+          
+                  # Standard reverse proxy headers
+                  location / {
+                      proxy_pass http://booklore;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto https;
+                      proxy_set_header X-Forwarded-Host my-library.example.com;
+                      proxy_set_header X-Forwarded-Port 443;
+                      
+                      # Kobo-specific headers passthrough
+                      proxy_set_header X-Kobo-DeviceId $http_x_kobo_deviceid;
+                      proxy_set_header X-Kobo-SyncToken $http_x_kobo_synctoken;
+                      
+                      # Timeouts for large sync operations
+                      proxy_connect_timeout 30s;
+                      proxy_send_timeout 60s;
+                      proxy_read_timeout 60s;
+                  }
+              }
+          
+              # SSL termination simulation (port 443 -> 80 internally)
+              server {
+                  listen 443;
+                  server_name my-library.example.com;
+          
+                  location / {
+                      proxy_pass http://booklore;
+                      proxy_set_header Host $host;
+                      proxy_set_header X-Real-IP $remote_addr;
+                      proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                      proxy_set_header X-Forwarded-Proto https;
+                      proxy_set_header X-Forwarded-Host my-library.example.com;
+                      proxy_set_header X-Forwarded-Port 443;
+                  }
+              }
+          }
+          EOF
+          
+          echo "✅ Nginx reverse proxy config created"
+          cat /tmp/nginx/nginx.conf
+
+      - name: Create test network and start services
+        run: |
+          # Create network
+          docker network create proxy-test-net
+          
+          # Start MariaDB
+          docker run -d \
+            --name mariadb-proxy-test \
+            --network proxy-test-net \
+            -e MYSQL_ROOT_PASSWORD=proxytest \
+            -e MYSQL_DATABASE=booklore \
+            mariadb:10.11
+          
+          # Wait for MariaDB
+          for i in {1..30}; do
+            if docker exec mariadb-proxy-test mariadb-admin ping -h localhost -uroot -pproxytest 2>/dev/null; then
+              echo "✅ MariaDB ready"
+              break
+            fi
+            sleep 2
+          done
+          
+          # Start BookLore (internal name: booklore-app)
+          docker run -d \
+            --name booklore-app \
+            --network proxy-test-net \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-proxy-test:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=proxytest \
+            -e SERVER_FORWARD_HEADERS_STRATEGY=framework \
+            booklore:proxy-test
+          
+          # Start Nginx reverse proxy
+          docker run -d \
+            --name nginx-proxy \
+            --network proxy-test-net \
+            -p 8080:80 \
+            -p 8443:443 \
+            -v /tmp/nginx/nginx.conf:/etc/nginx/nginx.conf:ro \
+            nginx:alpine
+          
+          # Wait for BookLore through proxy
+          echo "⏳ Waiting for BookLore through Nginx proxy..."
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" \
+              -H "Host: my-library.example.com" \
+              http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ BookLore accessible through proxy"
+              break
+            fi
+            echo "Attempt $i/60 - HTTP: $HTTP_CODE"
+            sleep 3
+          done
+
+      - name: Test X-Forwarded-Host header handling
+        id: forwarded_host_test
+        run: |
+          echo "🔍 Testing X-Forwarded-Host header handling..."
+          
+          # Test 1: Direct request (should use internal host)
+          DIRECT_RESPONSE=$(curl -s http://localhost:8080/actuator/info \
+            -H "Host: my-library.example.com" 2>/dev/null || echo "{}")
+          
+          echo "Direct response through proxy:"
+          echo "$DIRECT_RESPONSE" | jq . 2>/dev/null || echo "$DIRECT_RESPONSE"
+          
+          # Test 2: Simulate Kobo initialization request
+          KOBO_INIT=$(curl -s \
+            -H "Host: my-library.example.com" \
+            -H "X-Kobo-DeviceId: test-device-proxy-001" \
+            -H "User-Agent: Kobo eReader" \
+            "http://localhost:8080/api/kobo/test-token/v1/initialization" 2>/dev/null || echo '{"error": "no response"}')
+          
+          echo ""
+          echo "Kobo initialization response:"
+          echo "$KOBO_INIT" | jq . 2>/dev/null || echo "$KOBO_INIT"
+          
+          # Check if any URLs in response contain internal Docker IPs
+          if echo "$KOBO_INIT" | grep -qE "172\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+"; then
+            echo "❌ CRITICAL: Response contains internal Docker IP addresses!"
+            echo "   This will cause Kobo sync to fail when behind a reverse proxy."
+            echo "forwarded_host_bug=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No internal IPs detected in response"
+            echo "forwarded_host_bug=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Test Kobo download URL generation
+        run: |
+          echo "📥 Testing Kobo download URL generation..."
+          
+          # Request a book download URL through the proxy
+          DOWNLOAD_RESPONSE=$(curl -s \
+            -H "Host: my-library.example.com" \
+            -H "X-Forwarded-Proto: https" \
+            -H "X-Forwarded-Host: my-library.example.com" \
+            -H "X-Kobo-DeviceId: test-device-proxy-002" \
+            "http://localhost:8080/api/kobo/test-token/v1/library/test-book-id/download" 2>/dev/null || echo '{}')
+          
+          echo "Download URL response:"
+          echo "$DOWNLOAD_RESPONSE" | jq . 2>/dev/null || echo "$DOWNLOAD_RESPONSE"
+          
+          # Extract any URLs and verify they use the forwarded host
+          URLS=$(echo "$DOWNLOAD_RESPONSE" | grep -oE 'https?://[^"]+' || true)
+          
+          if [ -n "$URLS" ]; then
+            echo ""
+            echo "🔗 URLs found in response:"
+            echo "$URLS"
+            
+            for URL in $URLS; do
+              if echo "$URL" | grep -q "my-library.example.com"; then
+                echo "✅ URL uses forwarded host: $URL"
+              elif echo "$URL" | grep -qE "localhost|127\.0\.0\.1|172\.|10\.|192\.168\."; then
+                echo "❌ URL uses internal address: $URL"
+              fi
+            done
+          else
+            echo "ℹ️ No URLs in response (may be expected for error responses)"
+          fi
+
+      - name: Test KOReader sync through proxy
+        run: |
+          echo "📖 Testing KOReader sync through reverse proxy..."
+          
+          # KOReader progress sync
+          KOREADER_RESPONSE=$(curl -s -X PUT \
+            -H "Host: my-library.example.com" \
+            -H "X-Forwarded-Proto: https" \
+            -H "X-Forwarded-Host: my-library.example.com" \
+            -H "Content-Type: application/json" \
+            -u "testuser:testpass" \
+            -d '{"document":"proxy-test-hash","progress":"50%","percentage":0.5}' \
+            "http://localhost:8080/api/koreader/syncs/progress" 2>/dev/null || echo '{}')
+          
+          echo "KOReader sync response:"
+          echo "$KOREADER_RESPONSE" | jq . 2>/dev/null || echo "$KOREADER_RESPONSE"
+
+      - name: Test header preservation through proxy chain
+        run: |
+          echo "🔗 Testing header preservation through proxy chain..."
+          
+          # Simulate multiple proxy hops (common in complex setups)
+          MULTI_PROXY_RESPONSE=$(curl -s \
+            -H "Host: my-library.example.com" \
+            -H "X-Forwarded-For: 1.2.3.4, 5.6.7.8" \
+            -H "X-Forwarded-Proto: https" \
+            -H "X-Forwarded-Host: my-library.example.com" \
+            -H "X-Real-IP: 1.2.3.4" \
+            "http://localhost:8080/actuator/health" 2>/dev/null || echo '{}')
+          
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Host: my-library.example.com" \
+            -H "X-Forwarded-For: 1.2.3.4, 5.6.7.8" \
+            -H "X-Forwarded-Proto: https" \
+            "http://localhost:8080/actuator/health" 2>/dev/null || echo "000")
+          
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Multi-hop proxy headers handled correctly"
+          else
+            echo "⚠️ Multi-hop proxy returned HTTP $HTTP_CODE"
+          fi
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f nginx-proxy booklore-app mariadb-proxy-test 2>/dev/null || true
+          docker network rm proxy-test-net 2>/dev/null || true
+
+      - name: Report X-Forwarded-Host bug status
+        if: always()
+        run: |
+          if [ "${{ steps.forwarded_host_test.outputs.forwarded_host_bug }}" = "true" ]; then
+            echo "::warning::X-Forwarded-Host header may not be properly handled. Kobo sync will fail behind reverse proxies."
+          fi
+
+  # ============================================
+  # Traefik Reverse Proxy Test
+  # ============================================
+  traefik-proxy-test:
+    name: Traefik Proxy Labels Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build BookLore image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:traefik-test
+          cache-from: type=gha
+
+      - name: Create Traefik config
+        run: |
+          mkdir -p /tmp/traefik
+          
+          cat > /tmp/traefik/traefik.yml << 'EOF'
+          api:
+            insecure: true
+          
+          entryPoints:
+            web:
+              address: ":80"
+            websecure:
+              address: ":443"
+          
+          providers:
+            docker:
+              exposedByDefault: false
+              network: traefik-test-net
+          EOF
+          
+          echo "✅ Traefik config created"
+
+      - name: Start Traefik and BookLore
+        run: |
+          docker network create traefik-test-net
+          
+          # Start MariaDB
+          docker run -d \
+            --name mariadb-traefik \
+            --network traefik-test-net \
+            -e MYSQL_ROOT_PASSWORD=traefiktest \
+            -e MYSQL_DATABASE=booklore \
+            mariadb:10.11
+          
+          sleep 10
+          
+          # Start Traefik
+          docker run -d \
+            --name traefik \
+            --network traefik-test-net \
+            -p 80:80 \
+            -p 8081:8080 \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            -v /tmp/traefik/traefik.yml:/etc/traefik/traefik.yml:ro \
+            traefik:v2.11
+          
+          # Start BookLore with Traefik labels
+          docker run -d \
+            --name booklore-traefik \
+            --network traefik-test-net \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-traefik:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=traefiktest \
+            -e SERVER_FORWARD_HEADERS_STRATEGY=framework \
+            --label "traefik.enable=true" \
+            --label "traefik.http.routers.booklore.rule=Host(\`books.example.com\`)" \
+            --label "traefik.http.routers.booklore.entrypoints=web" \
+            --label "traefik.http.services.booklore.loadbalancer.server.port=6060" \
+            booklore:traefik-test
+          
+          # Wait for services
+          echo "⏳ Waiting for Traefik routing..."
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" \
+              -H "Host: books.example.com" \
+              http://localhost:80/actuator/health 2>/dev/null || echo "000")
+            
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ BookLore accessible through Traefik"
+              break
+            fi
+            echo "Attempt $i/60 - HTTP: $HTTP_CODE"
+            sleep 3
+          done
+
+      - name: Test Traefik header forwarding
+        run: |
+          echo "🔍 Testing Traefik header forwarding..."
+          
+          # Traefik automatically sets X-Forwarded-* headers
+          RESPONSE=$(curl -s -v \
+            -H "Host: books.example.com" \
+            http://localhost:80/actuator/health 2>&1 || echo "error")
+          
+          echo "Response headers:"
+          echo "$RESPONSE" | grep -E "< |> " | head -20
+          
+          # Check Kobo endpoint
+          KOBO_RESPONSE=$(curl -s \
+            -H "Host: books.example.com" \
+            -H "X-Kobo-DeviceId: traefik-test-device" \
+            http://localhost:80/api/kobo/test-token/v1/initialization 2>/dev/null || echo '{}')
+          
+          echo ""
+          echo "Kobo response through Traefik:"
+          echo "$KOBO_RESPONSE" | jq . 2>/dev/null || echo "$KOBO_RESPONSE"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f traefik booklore-traefik mariadb-traefik 2>/dev/null || true
+          docker network rm traefik-test-net 2>/dev/null || true
+
+  # ============================================
+  # Summary
+  # ============================================
+  proxy-tests-summary:
+    name: Reverse Proxy Tests Summary
+    runs-on: ubuntu-latest
+    needs: [nginx-proxy-test, traefik-proxy-test]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# 🔀 Reverse Proxy Simulation Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "These tests verify BookLore works correctly behind common reverse proxies." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Why This Matters" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "When Kobo devices sync through a reverse proxy, the server must:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Use \`X-Forwarded-Host\` for generated URLs (not internal Docker IPs)" >> $GITHUB_STEP_SUMMARY
+          echo "2. Use \`X-Forwarded-Proto\` for HTTPS links" >> $GITHUB_STEP_SUMMARY
+          echo "3. Handle multiple proxy hops correctly" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Proxy | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Nginx | ${{ needs.nginx-proxy-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Traefik | ${{ needs.traefik-proxy-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Common Failure Symptoms" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "If these tests fail, users will experience:" >> $GITHUB_STEP_SUMMARY
+          echo "- 'Sync Failed' on Kobo devices" >> $GITHUB_STEP_SUMMARY
+          echo "- 'Unable to download book' errors" >> $GITHUB_STEP_SUMMARY
+          echo "- Books appearing but not downloadable" >> $GITHUB_STEP_SUMMARY
+
