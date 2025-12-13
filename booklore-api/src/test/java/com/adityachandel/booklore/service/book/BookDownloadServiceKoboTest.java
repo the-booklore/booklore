@@ -293,4 +293,62 @@ class BookDownloadServiceKoboTest {
         assertThat(response.getContentAsByteArray()).isNotEmpty();
     }
 
+    @Test
+    void downloadKoboBook_epubToKepub_persistConversion_true_importsKepub() throws Exception {
+        // Arrange
+        Path libraryDir = tempDir.resolve("library5");
+        Files.createDirectories(libraryDir);
+        Path sourceFile = Files.createFile(libraryDir.resolve("comic.epub"));
+        Files.write(sourceFile, "epub-source".getBytes());
+
+        BookEntity book = createBookEntity(libraryDir, "comic.epub", BookFileType.EPUB);
+        when(bookRepository.findById(101L)).thenReturn(Optional.of(book));
+
+        KoboSettings kobo = KoboSettings.builder()
+                .convertToKepub(true)
+                .persistConversion(true)
+                .conversionLimitInMb(10)
+                .build();
+        com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = new com.adityachandel.booklore.model.dto.settings.AppSettings();
+        appSettings.setKoboSettings(kobo);
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        // Simulate conversion output in temp dir (kepub file)
+        Path converted = Files.createFile(tempDir.resolve("comic.kepub.epub"));
+        Files.write(converted, "kepub-content".getBytes());
+        when(kepubConversionService.convertEpubToKepub(eq(sourceFile.toFile()), any(File.class), eq(kobo.isForceEnableHyphenation())))
+                .thenReturn(converted.toFile());
+
+        // authenticated user and conversion shelf
+        BookLoreUser user = BookLoreUser.builder().id(66L).build();
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+
+        ShelfEntity shelf = new ShelfEntity();
+        shelf.setId(88L);
+        when(shelfService.getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()))).thenReturn(Optional.of(shelf));
+
+        // map metadata
+        com.adityachandel.booklore.model.dto.Book bookDto = com.adityachandel.booklore.model.dto.Book.builder()
+                .metadata(new com.adityachandel.booklore.model.dto.BookMetadata())
+                .build();
+        when(bookMapper.toBook(book)).thenReturn(bookDto);
+
+        // Mock import to return an imported Book DTO with id
+        com.adityachandel.booklore.model.dto.Book importedDto = com.adityachandel.booklore.model.dto.Book.builder().id(1234L).build();
+        when(bookImportService.importFileToLibrary(any(File.class), anyLong(), anyLong(), any(), any())).thenReturn(importedDto);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        // Act
+        bookDownloadService.downloadKoboBook(101L, response);
+
+        // Assert
+        verify(kepubConversionService, atLeastOnce()).convertEpubToKepub(eq(sourceFile.toFile()), any(File.class), eq(kobo.isForceEnableHyphenation()));
+        verify(bookImportService, atLeastOnce()).importFileToLibrary(any(File.class), eq(11L), eq(22L), any(), eq(88L));
+        verify(shelfService, atLeastOnce()).getShelf(eq(user.getId()), eq(ShelfType.CONVERSION.getName()));
+
+        assertThat(response.getHeader("Content-Disposition")).isNotNull();
+        assertThat(response.getContentAsByteArray()).isNotEmpty();
+    }
+
 }
