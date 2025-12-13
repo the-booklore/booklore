@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -138,8 +137,8 @@ class FolderAsBookFileProcessorTest {
         assertThat(capturedFiles).hasSize(2);
         assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.epub", "cover.jpg");
-        assertThat(capturedFiles).extracting(BookFileEntity::getAdditionalFileType)
-                .containsExactly(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
+        assertThat(capturedFiles).extracting(BookFileEntity::isBookFormat)
+                .containsExactlyInAnyOrder(true, false);
     }
 
     @Test
@@ -202,8 +201,8 @@ class FolderAsBookFileProcessorTest {
 
         List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookFileEntity::getAdditionalFileType)
-                .containsOnly(AdditionalFileType.SUPPLEMENTARY);
+        assertThat(capturedFiles).extracting(BookFileEntity::isBookFormat)
+                .containsOnly(false);
     }
 
     @Test
@@ -306,7 +305,8 @@ class FolderAsBookFileProcessorTest {
                 .book(existingBook)
                 .fileName("book.epub")
                 .fileSubPath("books")
-                .additionalFileType(AdditionalFileType.ALTERNATIVE_FORMAT)
+                .isBookFormat(true)
+                .bookType(BookFileType.EPUB)
                 .build();
 
         when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))

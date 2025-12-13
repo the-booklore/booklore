@@ -85,7 +85,7 @@ public class LibraryTestBuilder {
                     return bookRepository.values()
                             .stream()
                             .filter(book -> book.getLibraryPath().getId().equals(libraryPathId) &&
-                                    book.getFileSubPath().startsWith(fileSubPath))
+                                    book.getPrimaryBookFile().getFileSubPath().startsWith(fileSubPath))
                             .toList();
                 });
 
@@ -192,20 +192,28 @@ public class LibraryTestBuilder {
                 .build();
 
         String hash = computeFileHash(Path.of(subPath, fileName));
+
         BookEntity bookEntity = BookEntity.builder()
                 .id(id)
-                .fileName(fileName)
-                .fileSubPath(subPath)
-                .bookType(getBookFileType(fileName))
-                .fileSizeKb(1024L)
                 .library(getLibraryEntity())
                 .libraryPath(getLibraryEntity().getLibraryPaths().getLast())
                 .addedOn(java.time.Instant.now())
+                .metadata(metadata)
+                .bookFiles(new ArrayList<>())
+                .build();
+
+        BookFileEntity primaryFile = BookFileEntity.builder()
+                .book(bookEntity)
+                .fileName(fileName)
+                .fileSubPath(subPath)
+                .isBookFormat(true)
+                .bookType(getBookFileType(fileName))
+                .fileSizeKb(1024L)
                 .initialHash(hash)
                 .currentHash(hash)
-                .metadata(metadata)
-                .additionalFiles(new ArrayList<>())
+                .addedOn(java.time.Instant.now())
                 .build();
+        bookEntity.getBookFiles().add(primaryFile);
 
         bookRepository.put(bookEntity.getId(), bookEntity);
         bookMap.put(metadata.getTitle(), bookEntity);
@@ -288,20 +296,28 @@ public class LibraryTestBuilder {
                 .title(FilenameUtils.removeExtension(libraryFile.getFileName()))
                 .bookId(id)
                 .build();
+
         BookEntity bookEntity = BookEntity.builder()
                 .id(id) // Simple ID generation based on index
-                .fileName(libraryFile.getFileName())
-                .fileSubPath(libraryFile.getFileSubPath())
-                .bookType(libraryFile.getBookFileType())
-                .fileSizeKb(1024L)
                 .library(libraryFile.getLibraryPathEntity().getLibrary())
                 .libraryPath(libraryFile.getLibraryPathEntity())
                 .addedOn(java.time.Instant.now())
+                .metadata(metadata)
+                .bookFiles(new ArrayList<>())
+                .build();
+
+        BookFileEntity primaryFile = BookFileEntity.builder()
+                .book(bookEntity)
+                .fileName(libraryFile.getFileName())
+                .fileSubPath(libraryFile.getFileSubPath())
+                .isBookFormat(true)
+                .bookType(libraryFile.getBookFileType())
+                .fileSizeKb(1024L)
                 .initialHash(hash)
                 .currentHash(hash)
-                .metadata(metadata)
-                .additionalFiles(new ArrayList<>())
+                .addedOn(java.time.Instant.now())
                 .build();
+        bookEntity.getBookFiles().add(primaryFile);
 
         bookRepository.put(bookEntity.getId(), bookEntity);
         bookMap.put(metadata.getTitle(), bookEntity);
@@ -322,7 +338,7 @@ public class LibraryTestBuilder {
         }
 
         // Do not allow files with duplicate hashes for alternative formats only
-        if (additionalFile.getAdditionalFileType() == AdditionalFileType.ALTERNATIVE_FORMAT &&
+        if (additionalFile.isBookFormat() &&
                 bookAdditionalFileRepository.values()
                         .stream()
                         .anyMatch(existingFile -> existingFile.getCurrentHash()
