@@ -42,7 +42,7 @@ class CbxConversionIntegrationTest {
         File testCbzFile = createTestComicCbzFile();
         BookEntity bookMetadata = createTestBookMetadata();
 
-        File epubFile = conversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), bookMetadata);
+        File epubFile = conversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), bookMetadata,85);
 
         assertThat(epubFile)
                 .exists()
