@@ -10,7 +10,6 @@ import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -21,6 +20,7 @@ import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,6 +73,9 @@ class FileUploadServiceTest {
     @Mock
     AdditionalFileMapper additionalFileMapper;
 
+    @Mock
+    MonitoringRegistrationService monitoringRegistrationService;
+
     AppProperties appProperties;
     FileUploadService service;
 
@@ -89,7 +92,7 @@ class FileUploadServiceTest {
 
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper
+                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper, monitoringRegistrationService
         );
     }
 
@@ -253,7 +256,7 @@ class FileUploadServiceTest {
             BookFile dto = mock(BookFile.class);
             when(additionalFileMapper.toAdditionalFile(any(BookFileEntity.class))).thenReturn(dto);
 
-            BookFile result = service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+            BookFile result = service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, "desc");
 
             assertThat(result).isEqualTo(dto);
             verify(bookAdditionalFileRepository).save(any(BookFileEntity.class));
@@ -290,7 +293,7 @@ class FileUploadServiceTest {
             when(bookAdditionalFileRepository.findByAltFormatCurrentHash("dup-hash")).thenReturn(Optional.of(existing));
 
             assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, null));
+                    .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, null));
         }
     }
 
