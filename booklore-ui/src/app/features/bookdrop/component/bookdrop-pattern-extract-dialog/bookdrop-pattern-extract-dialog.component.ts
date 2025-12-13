@@ -90,7 +90,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     {label: 'Series - Vol Number', pattern: '{SeriesName} - Vol {SeriesNumber}'},
     {label: '[Tag] Series - Chapter Number', pattern: '[*] {SeriesName} - Chapter {SeriesNumber}'},
     {label: 'Title by Author', pattern: '{Title} by {Authors}'},
-    {label: 'Series vX #Y', pattern: '{SeriesName} v{SeriesTotal} #{SeriesNumber}'},
+    {label: 'Series vX (of Total)', pattern: '{SeriesName} v{SeriesNumber} (of {SeriesTotal})'},
   ];
 
   ngOnInit(): void {

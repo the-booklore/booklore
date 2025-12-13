@@ -52,15 +52,15 @@ class FilenamePatternExtractorTest {
 
     @Test
     void extractFromFilename_WithVolumeAndIssuePattern_ShouldExtractCorrectly() {
-        String filename = "Chronicles of Earth Vol.3 #100.cbz";
-        String pattern = "{SeriesName} Vol.{SeriesTotal} #{SeriesNumber}";
+        String filename = "Chronicles of Earth Vol.3 (of 150).cbz";
+        String pattern = "{SeriesName} Vol.{SeriesNumber} (of {SeriesTotal})";
 
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
         assertNotNull(result);
         assertEquals("Chronicles of Earth", result.getSeriesName());
-        assertEquals(3, result.getSeriesTotal());
-        assertEquals(100.0f, result.getSeriesNumber());
+        assertEquals(3.0f, result.getSeriesNumber());
+        assertEquals(150, result.getSeriesTotal());
     }
 
     @Test
@@ -299,8 +299,8 @@ class FilenamePatternExtractorTest {
 
     @Test
     void extractFromFilename_PublisherBracketFormat_ShouldExtractCorrectly() {
-        String filename = "[Epic Press] Chronicles of Earth Vol.5.epub";
-        String pattern = "[{Publisher}] {SeriesName} Vol.{SeriesNumber}";
+        String filename = "[Epic Press] Chronicles of Earth Vol.5 [5 of 20].epub";
+        String pattern = "[{Publisher}] {SeriesName} Vol.{SeriesNumber} [* of {SeriesTotal}]";
 
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
@@ -308,6 +308,7 @@ class FilenamePatternExtractorTest {
         assertEquals("Epic Press", result.getPublisher());
         assertEquals("Chronicles of Earth", result.getSeriesName());
         assertEquals(5.0f, result.getSeriesNumber());
+        assertEquals(20, result.getSeriesTotal());
     }
 
     @Test
@@ -569,13 +570,13 @@ class FilenamePatternExtractorTest {
     @Test
     void extractFromFilename_WildcardAtEnd_SkipsTrailingText() {
         String filename = "Chronicles of Earth v1 - extra.cbz";
-        String pattern = "{SeriesName} v{SeriesTotal} - *";
+        String pattern = "{SeriesName} v{SeriesNumber} - *";
 
         BookMetadata result = extractor.extractFromFilename(filename, pattern);
 
         assertNotNull(result);
         assertEquals("Chronicles of Earth", result.getSeriesName());
-        assertEquals(1, result.getSeriesTotal());
+        assertEquals(1.0f, result.getSeriesNumber());
     }
 
     @Test
