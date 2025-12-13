@@ -292,10 +292,9 @@ jobs:
       - name: Set job status
         run: |
           if [ "${{ needs.arm64-tests.result }}" = "failure" ] || \
-             [ "${{ needs.proxy-tests.result }}" = "failure" ; then  # || \
-             # [ "${{ needs.eink-tests.result }}" = "failure" ]; then  # disabled\
-             [ "${{ needs.load-tests.result }}" = "failure" ] || \
-             [ "${{ needs.eink-tests.result }}" = "failure" ]; then
+             [ "${{ needs.proxy-tests.result }}" = "failure" ] || \
+             [ "${{ needs.corpus-tests.result }}" = "failure" ] || \
+             [ "${{ needs.load-tests.result }}" = "failure" ]; then
             echo "❌ Some tests failed"
             exit 1
           fi
