@@ -152,7 +152,7 @@ jobs:
           echo "canary_id=$CANARY_ID" >> $GITHUB_OUTPUT
           
           # Insert canary row directly into database
-          docker exec mariadb-persist mariadb -uroot -p persisttest booklore -e "
+          docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -e "
             CREATE TABLE IF NOT EXISTS _persistence_test_canary (
               id VARCHAR(255) PRIMARY KEY,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -163,7 +163,7 @@ jobs:
           echo "🐤 Created canary: $CANARY_ID"
           
           # Also verify a BookLore table exists
-          TABLES=$(docker exec mariadb-persist mariadb -uroot -p persisttest booklore -sN -e "SHOW TABLES;" | wc -l)
+          TABLES=$(docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -sN -e "SHOW TABLES;" | wc -l)
           echo "📋 Tables in database: $TABLES"
           echo "table_count=$TABLES" >> $GITHUB_OUTPUT
 
@@ -190,7 +190,7 @@ jobs:
           CANARY_ID="${{ steps.canary.outputs.canary_id }}"
           
           # Check if canary exists
-          FOUND=$(docker exec mariadb-persist mariadb -uroot -p persisttest booklore -sN -e "
+          FOUND=$(docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -sN -e "
             SELECT COUNT(*) FROM _persistence_test_canary WHERE id = '$CANARY_ID';
           " 2>/dev/null || echo "0")
           
@@ -202,13 +202,13 @@ jobs:
             echo "   Found count: $FOUND"
             
             # Debug: show what's in the table
-            docker exec mariadb-persist mariadb -uroot -p persisttest booklore -e "SELECT * FROM _persistence_test_canary;" || true
+            docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -e "SELECT * FROM _persistence_test_canary;" || true
             exit 1
           fi
           
           # Verify table count didn't change
           EXPECTED_TABLES="${{ steps.canary.outputs.table_count }}"
-          ACTUAL_TABLES=$(docker exec mariadb-persist mariadb -uroot -p persisttest booklore -sN -e "SHOW TABLES;" | wc -l)
+          ACTUAL_TABLES=$(docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -sN -e "SHOW TABLES;" | wc -l)
           
           if [ "$EXPECTED_TABLES" = "$ACTUAL_TABLES" ]; then
             echo "✅ Table count preserved: $ACTUAL_TABLES"
@@ -239,7 +239,7 @@ jobs:
           
           # Verify canary still exists
           CANARY_ID="${{ steps.canary.outputs.canary_id }}"
-          FOUND=$(docker exec mariadb-persist mariadb -uroot -p persisttest booklore -sN -e "
+          FOUND=$(docker exec -e MYSQL_PWD=persisttest mariadb-persist mariadb -uroot booklore -sN -e "
             SELECT COUNT(*) FROM _persistence_test_canary WHERE id = '$CANARY_ID';
           " 2>/dev/null || echo "0")
           
@@ -354,7 +354,7 @@ jobs:
           CANARY="replace_test_$(date +%s)"
           echo "canary=$CANARY" >> $GITHUB_OUTPUT
           
-          docker exec mariadb-replace mariadb -uroot -p replacetest booklore -e "
+          docker exec -e MYSQL_PWD=replacetest mariadb-replace mariadb -uroot booklore -e "
             CREATE TABLE IF NOT EXISTS _replacement_test (
               id VARCHAR(255) PRIMARY KEY,
               version VARCHAR(50),
@@ -398,7 +398,7 @@ jobs:
         run: |
           CANARY="${{ steps.v1data.outputs.canary }}"
           
-          FOUND=$(docker exec mariadb-replace mariadb -uroot -p replacetest booklore -sN -e "
+          FOUND=$(docker exec -e MYSQL_PWD=replacetest mariadb-replace mariadb -uroot booklore -sN -e "
             SELECT version FROM _replacement_test WHERE id = '$CANARY';
           " 2>/dev/null || echo "NOT_FOUND")
           
@@ -406,7 +406,7 @@ jobs:
             echo "✅ Data from v1 preserved in v2: $CANARY"
             
             # Update to mark v2 access
-            docker exec mariadb-replace mariadb -uroot -p replacetest booklore -e "
+            docker exec -e MYSQL_PWD=replacetest mariadb-replace mariadb -uroot booklore -e "
               UPDATE _replacement_test SET version = 'v2_verified' WHERE id = '$CANARY';
             "
           else
