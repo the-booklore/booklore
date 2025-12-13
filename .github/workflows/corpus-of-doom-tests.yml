@@ -298,12 +298,15 @@ jobs:
         run: |
           echo "📊 Capturing baseline state..."
           
-          # Get initial health
-          HEALTH=$(curl -s http://localhost:${{ env.APP_PORT }}/actuator/health)
-          echo "baseline_health=$HEALTH" >> $GITHUB_OUTPUT
+          # Get initial health - use -f to fail on HTTP errors, default to empty on failure
+          HEALTH=$(curl -sf http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo '{"status":"unknown"}')
+          
+          # Ensure output is single-line and valid JSON
+          HEALTH=$(echo "$HEALTH" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+          echo "baseline_health=${HEALTH}" >> $GITHUB_OUTPUT
           
           # Get initial memory
-          MEMORY=$(docker stats booklore-doom --no-stream --format '{{.MemUsage}}')
+          MEMORY=$(docker stats booklore-doom --no-stream --format '{{.MemUsage}}' 2>/dev/null || echo "N/A")
           echo "Baseline memory: $MEMORY"
 
       - name: Copy poison files to BookDrop

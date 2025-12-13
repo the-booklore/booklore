@@ -124,9 +124,11 @@ jobs:
 
       - name: Seed synthetic book data
         id: seed
+        env:
+          BOOK_COUNT: ${{ github.event.inputs.book_count || env.DEFAULT_BOOK_COUNT }}
         run: |
-          BOOK_COUNT=${{ github.event.inputs.book_count || env.DEFAULT_BOOK_COUNT }}
           echo "📚 Seeding $BOOK_COUNT synthetic books..."
+
           
           # Create seed script
           cat > /tmp/seed_books.sql << 'SEED_SQL'
@@ -298,17 +300,41 @@ jobs:
             -e MYSQL_DATABASE=booklore \
             mariadb:10.11
           
-          # Wait for MariaDB
+          # Wait for MariaDB with explicit success/failure handling
+          echo "⏳ Waiting for MariaDB to be ready..."
+          READY=false
           for i in {1..30}; do
-            if docker exec mariadb-artillery mariadb-admin ping -h localhost -uroot -partillerytest 2>/dev/null; then
+            if docker exec mariadb-artillery mariadb-admin ping -h localhost -uroot -partillerytest >/dev/null 2>&1; then
+              echo "✅ MariaDB is ready"
+              READY=true
               break
             fi
+            echo "  Attempt $i/30... waiting"
             sleep 2
           done
           
+          if [ "$READY" = "false" ]; then
+            echo "❌ MariaDB failed to start after 60 seconds"
+            docker logs mariadb-artillery
+            exit 1
+          fi
+          
+          # Verify database exists
+          docker exec mariadb-artillery mariadb -uroot -partillerytest -e "SHOW DATABASES;" | grep booklore || {
+            echo "❌ Database 'booklore' not found"
+            exit 1
+          }
+          
           # Import seeded database
           echo "📥 Importing seeded database..."
-          gunzip -c /tmp/seeded-db.sql.gz | docker exec -i mariadb-artillery mariadb -uroot -partillerytest booklore
+          if gunzip -c /tmp/seeded-db.sql.gz | docker exec -i mariadb-artillery mariadb -uroot -partillerytest booklore; then
+            echo "✅ Database import successful"
+          else
+            echo "❌ Database import failed"
+            docker logs mariadb-artillery | tail -20
+            exit 1
+          fi
+
           
           # Start BookLore
           docker run -d \

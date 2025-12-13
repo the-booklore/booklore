@@ -88,13 +88,31 @@ jobs:
 
     steps:
       - name: Generate Unified Summary
+        env:
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ARM64: ${{ inputs.run_arm64_tests }}
+          RUN_PROXY: ${{ inputs.run_proxy_tests }}
+          RUN_CORPUS: ${{ inputs.run_corpus_tests }}
+          RUN_LOAD: ${{ inputs.run_load_tests }}
+          RUN_EINK: ${{ inputs.run_eink_tests }}
+          BOOK_COUNT: ${{ inputs.book_count }}
+          ARM64_RESULT: ${{ needs.arm64-tests.result }}
+          PROXY_RESULT: ${{ needs.proxy-tests.result }}
+          CORPUS_RESULT: ${{ needs.corpus-tests.result }}
+          LOAD_RESULT: ${{ needs.load-tests.result }}
+          EINK_RESULT: ${{ needs.eink-tests.result }}
         run: |
           echo "# 🧪 Advanced Testing Suite Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Run ID:** [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** $ACTOR" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $COMMIT" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** [$RUN_ID]($SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "---" >> $GITHUB_STEP_SUMMARY
@@ -106,8 +124,8 @@ jobs:
           echo "|------------|--------|-------------|" >> $GITHUB_STEP_SUMMARY
           
           # ARM64 Tests
-          if [ "${{ inputs.run_arm64_tests }}" = "true" ]; then
-            ARM64_STATUS="${{ needs.arm64-tests.result }}"
+          if [ "$RUN_ARM64" = "true" ]; then
+            ARM64_STATUS="$ARM64_RESULT"
             case $ARM64_STATUS in
               success) ARM64_ICON="✅" ;;
               failure) ARM64_ICON="❌" ;;
@@ -120,8 +138,8 @@ jobs:
           fi
           
           # Reverse Proxy Tests
-          if [ "${{ inputs.run_proxy_tests }}" = "true" ]; then
-            PROXY_STATUS="${{ needs.proxy-tests.result }}"
+          if [ "$RUN_PROXY" = "true" ]; then
+            PROXY_STATUS="$PROXY_RESULT"
             case $PROXY_STATUS in
               success) PROXY_ICON="✅" ;;
               failure) PROXY_ICON="❌" ;;
@@ -134,8 +152,8 @@ jobs:
           fi
           
           # Corpus of Doom Tests
-          if [ "${{ inputs.run_corpus_tests }}" = "true" ]; then
-            CORPUS_STATUS="${{ needs.corpus-tests.result }}"
+          if [ "$RUN_CORPUS" = "true" ]; then
+            CORPUS_STATUS="$CORPUS_RESULT"
             case $CORPUS_STATUS in
               success) CORPUS_ICON="✅" ;;
               failure) CORPUS_ICON="❌" ;;
@@ -148,22 +166,22 @@ jobs:
           fi
           
           # Load Tests
-          if [ "${{ inputs.run_load_tests }}" = "true" ]; then
-            LOAD_STATUS="${{ needs.load-tests.result }}"
+          if [ "$RUN_LOAD" = "true" ]; then
+            LOAD_STATUS="$LOAD_RESULT"
             case $LOAD_STATUS in
               success) LOAD_ICON="✅" ;;
               failure) LOAD_ICON="❌" ;;
               skipped) LOAD_ICON="⏭️" ;;
               *) LOAD_ICON="⚠️" ;;
             esac
-            echo "| 📈 Load & Performance | $LOAD_ICON $LOAD_STATUS | Artillery load testing with ${{ inputs.book_count }} synthetic books |" >> $GITHUB_STEP_SUMMARY
+            echo "| 📈 Load & Performance | $LOAD_ICON $LOAD_STATUS | Artillery load testing with $BOOK_COUNT synthetic books |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| 📈 Load & Performance | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # E-Ink Tests
-          if [ "${{ inputs.run_eink_tests }}" = "true" ]; then
-            EINK_STATUS="${{ needs.eink-tests.result }}"
+          if [ "$RUN_EINK" = "true" ]; then
+            EINK_STATUS="$EINK_RESULT"
             case $EINK_STATUS in
               success) EINK_ICON="✅" ;;
               failure) EINK_ICON="❌" ;;
@@ -181,11 +199,11 @@ jobs:
           
           # Overall Status
           OVERALL="success"
-          if [ "${{ needs.arm64-tests.result }}" = "failure" ] || \
-             [ "${{ needs.proxy-tests.result }}" = "failure" ] || \
-             [ "${{ needs.corpus-tests.result }}" = "failure" ] || \
-             [ "${{ needs.load-tests.result }}" = "failure" ] || \
-             [ "${{ needs.eink-tests.result }}" = "failure" ]; then
+          if [ "$ARM64_RESULT" = "failure" ] || \
+             [ "$PROXY_RESULT" = "failure" ] || \
+             [ "$CORPUS_RESULT" = "failure" ] || \
+             [ "$LOAD_RESULT" = "failure" ] || \
+             [ "$EINK_RESULT" = "failure" ]; then
             OVERALL="failure"
           fi
           
@@ -244,7 +262,7 @@ jobs:
           echo "<summary><b>📈 Load & Performance Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests performance under load with large libraries:" >> $GITHUB_STEP_SUMMARY
-          echo "- Seeds ${{ inputs.book_count }} synthetic books" >> $GITHUB_STEP_SUMMARY
+          echo "- Seeds $BOOK_COUNT synthetic books" >> $GITHUB_STEP_SUMMARY
           echo "- Simulates concurrent Kobo sync, KOReader, web users" >> $GITHUB_STEP_SUMMARY
           echo "- Measures P50/P95/P99 latencies" >> $GITHUB_STEP_SUMMARY
           echo "- Target: P95 < 5s (Kobo timeout is ~30s)" >> $GITHUB_STEP_SUMMARY
@@ -267,7 +285,7 @@ jobs:
           
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "*Generated by Advanced Testing Suite - [View Workflow](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})*" >> $GITHUB_STEP_SUMMARY
+          echo "*Generated by Advanced Testing Suite - [View Workflow]($SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID)*" >> $GITHUB_STEP_SUMMARY
 
       - name: Set job status
         run: |
