@@ -66,12 +66,10 @@ public class KomgaService {
         // Paginate
         int totalElements = allSeries.size();
         int totalPages = (int) Math.ceil((double) totalElements / size);
-        int fromIndex = page * size;
+        int fromIndex = Math.min(page * size, totalElements);
         int toIndex = Math.min(fromIndex + size, totalElements);
         
-        List<KomgaSeriesDto> content = fromIndex < totalElements 
-                ? allSeries.subList(fromIndex, toIndex) 
-                : new ArrayList<>();
+        List<KomgaSeriesDto> content = allSeries.subList(fromIndex, toIndex);
         
         return KomgaPageableDto.<KomgaSeriesDto>builder()
                 .content(content)
@@ -181,10 +179,10 @@ public class KomgaService {
         // Manual pagination
         int totalElements = books.size();
         int totalPages = (int) Math.ceil((double) totalElements / size);
-        int fromIndex = page * size;
+        int fromIndex = Math.min(page * size, totalElements);
         int toIndex = Math.min(fromIndex + size, totalElements);
         
-        List<KomgaBookDto> content = books.subList(fromIndex < totalElements ? fromIndex : 0, toIndex).stream()
+        List<KomgaBookDto> content = books.subList(fromIndex, toIndex).stream()
                 .map(komgaMapper::toKomgaBookDto)
                 .collect(Collectors.toList());
         
@@ -214,7 +212,7 @@ public class KomgaService {
         Integer pageCount = metadata != null ? metadata.getPageCount() : 0;
         
         List<KomgaPageDto> pages = new ArrayList<>();
-        if (pageCount != null && pageCount > 0) {
+        if (pageCount > 0) {
             for (int i = 1; i <= pageCount; i++) {
                 pages.add(KomgaPageDto.builder()
                         .number(i)
