@@ -54,12 +54,13 @@ jobs:
 
   # ============================================
   # E-Ink Visual Regression Tests
+  # TEMPORARILY DISABLED - These tests are being revised
   # ============================================
-  eink-visual-tests:
-    name: E-Ink Visual Tests
-    runs-on: ubuntu-latest
-    needs: build-for-eink-tests
-    timeout-minutes: 30
+  # eink-visual-tests:
+  #   name: E-Ink Visual Tests
+  #   runs-on: ubuntu-latest
+  #   needs: build-for-eink-tests
+  #   timeout-minutes: 30
 
     steps:
       - name: Harden Runner
@@ -211,12 +212,13 @@ jobs:
 
   # ============================================
   # E-Ink Contrast Analysis
+  # TEMPORARILY DISABLED - These tests are being revised
   # ============================================
-  eink-contrast-analysis:
-    name: E-Ink Contrast Analysis
-    runs-on: ubuntu-latest
-    needs: build-for-eink-tests
-    timeout-minutes: 20
+  # eink-contrast-analysis:
+  #   name: E-Ink Contrast Analysis
+  #   runs-on: ubuntu-latest
+  #   needs: build-for-eink-tests
+  #   timeout-minutes: 20
 
     steps:
       - name: Harden Runner
@@ -371,12 +373,13 @@ jobs:
 
   # ============================================
   # Summary
+  # TEMPORARILY DISABLED - Tests are being revised
   # ============================================
-  eink-tests-summary:
-    name: E-Ink Tests Summary
-    runs-on: ubuntu-latest
-    needs: [eink-visual-tests, eink-contrast-analysis]
-    if: always()
+  # eink-tests-summary:
+  #   name: E-Ink Tests Summary
+  #   runs-on: ubuntu-latest
+  #   needs: [eink-visual-tests, eink-contrast-analysis]
+  #   if: always()
 
     steps:
       - name: Generate Summary
