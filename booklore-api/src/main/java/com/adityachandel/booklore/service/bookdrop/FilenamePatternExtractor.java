@@ -318,11 +318,11 @@ public class FilenamePatternExtractor {
             case "Title" -> metadata.setTitle(value);
             case "Subtitle" -> metadata.setSubtitle(value);
             case "Authors" -> metadata.setAuthors(parseAuthors(value));
-            case "SeriesNumber" -> parseAndSetSeriesNumber(metadata, value);
-            case "Published" -> parseAndSetPublishedDate(metadata, value, formatParameter);
+            case "SeriesNumber" -> setSeriesNumber(metadata, value);
+            case "Published" -> setPublishedDate(metadata, value, formatParameter);
             case "Publisher" -> metadata.setPublisher(value);
             case "Language" -> metadata.setLanguage(value);
-            case "SeriesTotal" -> parseAndSetSeriesTotal(metadata, value);
+            case "SeriesTotal" -> setSeriesTotal(metadata, value);
             case "ISBN10" -> metadata.setIsbn10(value);
             case "ISBN13" -> metadata.setIsbn13(value);
             case "ASIN" -> metadata.setAsin(value);
@@ -341,14 +341,14 @@ public class FilenamePatternExtractor {
         return authors;
     }
 
-    private void parseAndSetSeriesNumber(BookMetadata metadata, String value) {
+    private void setSeriesNumber(BookMetadata metadata, String value) {
         try {
             metadata.setSeriesNumber(Float.parseFloat(value));
         } catch (NumberFormatException ignored) {
         }
     }
 
-    private void parseAndSetPublishedDate(BookMetadata metadata, String value, String dateFormat) {
+    private void setPublishedDate(BookMetadata metadata, String value, String dateFormat) {
         String detectedFormat = (dateFormat == null || dateFormat.isBlank()) 
                 ? detectDateFormat(value) 
                 : dateFormat;
@@ -418,40 +418,56 @@ public class FilenamePatternExtractor {
         
         String format1, format2, format3;
         
-        if (part1.length() == 4 || val1 > 31) {
-            format1 = part1.length() == 4 ? "yyyy" : "yy";
+        if (isYearValue(part1, val1)) {
+            format1 = buildYearFormat(part1);
             if (val2 <= 12 && val3 > 12) {
-                format2 = part2.length() == 2 ? "MM" : "M";
-                format3 = part3.length() == 2 ? "dd" : "d";
+                format2 = buildMonthFormat(part2);
+                format3 = buildDayFormat(part3);
             } else if (val3 <= 12 && val2 > 12) {
-                format2 = part2.length() == 2 ? "dd" : "d";
-                format3 = part3.length() == 2 ? "MM" : "M";
+                format2 = buildDayFormat(part2);
+                format3 = buildMonthFormat(part3);
             } else {
-                format2 = part2.length() == 2 ? "MM" : "M";
-                format3 = part3.length() == 2 ? "dd" : "d";
+                format2 = buildMonthFormat(part2);
+                format3 = buildDayFormat(part3);
             }
-        } else if (part3.length() == 4 || val3 > 31) {
-            format3 = part3.length() == 4 ? "yyyy" : "yy";
+        } else if (isYearValue(part3, val3)) {
+            format3 = buildYearFormat(part3);
             if (val1 <= 12 && val2 > 12) {
-                format1 = part1.length() == 2 ? "MM" : "M";
-                format2 = part2.length() == 2 ? "dd" : "d";
+                format1 = buildMonthFormat(part1);
+                format2 = buildDayFormat(part2);
             } else if (val2 <= 12 && val1 > 12) {
-                format1 = part1.length() == 2 ? "dd" : "d";
-                format2 = part2.length() == 2 ? "MM" : "M";
+                format1 = buildDayFormat(part1);
+                format2 = buildMonthFormat(part2);
             } else {
-                format1 = part1.length() == 2 ? "dd" : "d";
-                format2 = part2.length() == 2 ? "MM" : "M";
+                format1 = buildDayFormat(part1);
+                format2 = buildMonthFormat(part2);
             }
         } else {
-            format1 = part1.length() == 2 ? "dd" : "d";
-            format2 = part2.length() == 2 ? "MM" : "M";
+            format1 = buildDayFormat(part1);
+            format2 = buildMonthFormat(part2);
             format3 = part3.length() == 2 ? "yy" : "y";
         }
         
         return format1 + separator + format2 + separator + format3;
     }
+    
+    private boolean isYearValue(String part, int value) {
+        return part.length() == 4 || value > 31;
+    }
+    
+    private String buildYearFormat(String part) {
+        return part.length() == 4 ? "yyyy" : "yy";
+    }
+    
+    private String buildMonthFormat(String part) {
+        return part.length() == 2 ? "MM" : "M";
+    }
+    
+    private String buildDayFormat(String part) {
+        return part.length() == 2 ? "dd" : "d";
+    }
 
-    private void parseAndSetSeriesTotal(BookMetadata metadata, String value) {
+    private void setSeriesTotal(BookMetadata metadata, String value) {
         try {
             metadata.setSeriesTotal(Integer.parseInt(value));
         } catch (NumberFormatException ignored) {

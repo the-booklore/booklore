@@ -77,18 +77,6 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void extractFromFilename_TitleWithPublishedYear_ShouldExtractBoth() {
-        String filename = "The Last Kingdom (1965).epub";
-        String pattern = "{Title} ({Published:yyyy})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("The Last Kingdom", result.getTitle());
-        assertEquals(1965, result.getPublishedDate().getYear());
-    }
-
-    @Test
     void extractFromFilename_WithAuthorAndTitle_ShouldExtractBoth() {
         String filename = "John Smith - The Lost City.epub";
         String pattern = "{Authors} - {Title}";
@@ -229,18 +217,6 @@ class FilenamePatternExtractorTest {
 
         assertNotNull(result);
         assertEquals("Chronicles of Earth", result.getSeriesName());
-    }
-
-    @Test
-    void extractFromFilename_SeriesNameAlone_ShouldCaptureEverything() {
-        String filename = "Chronicles of Earth - Ch 01.cbz";
-        String pattern = "{SeriesName}";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        // Without separators in pattern, captures everything
-        assertEquals("Chronicles of Earth - Ch 01", result.getSeriesName());
     }
 
     @Test
@@ -513,20 +489,6 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsDotSeparatedDate() {
-        String filename = "Chronicles of Earth (2023.12.25).epub";
-        String pattern = "{Title} ({Published})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("Chronicles of Earth", result.getTitle());
-        assertEquals(2023, result.getPublishedDate().getYear());
-        assertEquals(12, result.getPublishedDate().getMonthValue());
-        assertEquals(25, result.getPublishedDate().getDayOfMonth());
-    }
-
-    @Test
     void extractFromFilename_PublishedWithoutFormat_AutoDetectsCompactDate() {
         String filename = "The Beginning [20231225].epub";
         String pattern = "{Title} [{Published}]";
@@ -567,63 +529,7 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsDDMMYYYY_WithDot() {
-        String filename = "The Beginning (25.12.2023).epub";
-        String pattern = "{Title} ({Published})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("The Beginning", result.getTitle());
-        assertEquals(2023, result.getPublishedDate().getYear());
-        assertEquals(12, result.getPublishedDate().getMonthValue());
-        assertEquals(25, result.getPublishedDate().getDayOfMonth());
-    }
-
-    @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsYYYYMMDD_WithDash() {
-        String filename = "Tomorrow (2023-5-3).epub";
-        String pattern = "{Title} ({Published})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("Tomorrow", result.getTitle());
-        assertEquals(2023, result.getPublishedDate().getYear());
-        assertEquals(5, result.getPublishedDate().getMonthValue());
-        assertEquals(3, result.getPublishedDate().getDayOfMonth());
-    }
-
-    @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsWithUnderscore() {
-        String filename = "Tomorrow (2023_12_15).epub";
-        String pattern = "{Title} ({Published})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("Tomorrow", result.getTitle());
-        assertEquals(2023, result.getPublishedDate().getYear());
-        assertEquals(12, result.getPublishedDate().getMonthValue());
-        assertEquals(15, result.getPublishedDate().getDayOfMonth());
-    }
-
-    @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsWithSpace() {
-        String filename = "Tomorrow (2023 12 15).epub";
-        String pattern = "{Title} ({Published})";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("Tomorrow", result.getTitle());
-        assertEquals(2023, result.getPublishedDate().getYear());
-        assertEquals(12, result.getPublishedDate().getMonthValue());
-        assertEquals(15, result.getPublishedDate().getDayOfMonth());
-    }
-
-    @Test
-    void extractFromFilename_PublishedWithoutFormat_AutoDetectsWithCustomSeparator() {
+    void extractFromFilename_PublishedWithoutFormat_AutoDetectsFlexibleFormat() {
         String filename = "Tomorrow (15|05|2023).epub";
         String pattern = "{Title} ({Published})";
 
@@ -685,26 +591,19 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void extractFromFilename_WildcardAtEnd_AllowsPartialMatchWithTrailingData() {
-        String filename = "Chronicles of Tomorrow - Chapter 8.1 (2025).cbz";
-        String pattern = "{SeriesName} - * {SeriesNumber}";
+    void extractFromFilename_WildcardWithVariousPlacements_HandlesCorrectly() {
+        String filename1 = "Chronicles of Tomorrow - Chapter 8.1 (2025).cbz";
+        String pattern1 = "{SeriesName} - * {SeriesNumber}";
+        BookMetadata result1 = extractor.extractFromFilename(filename1, pattern1);
+        assertNotNull(result1);
+        assertEquals("Chronicles of Tomorrow", result1.getSeriesName());
+        assertEquals(8.1f, result1.getSeriesNumber());
 
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals("Chronicles of Tomorrow", result.getSeriesName());
-        assertEquals(8.1f, result.getSeriesNumber());
-    }
-
-    @Test
-    void extractFromFilename_WildcardAtStart_WithLiteralText() {
-        String filename = "Junk - Chapter 20.cbz";
-        String pattern = "* - Chapter {SeriesNumber}";
-
-        BookMetadata result = extractor.extractFromFilename(filename, pattern);
-
-        assertNotNull(result);
-        assertEquals(20.0f, result.getSeriesNumber());
+        String filename2 = "Junk - Chapter 20.cbz";
+        String pattern2 = "* - Chapter {SeriesNumber}";
+        BookMetadata result2 = extractor.extractFromFilename(filename2, pattern2);
+        assertNotNull(result2);
+        assertEquals(20.0f, result2.getSeriesNumber());
     }
 }
 

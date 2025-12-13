@@ -53,61 +53,46 @@ public class BookdropBulkEditService {
 
     private void updateFileMetadata(BookdropFileEntity file, BookdropBulkEditRequest request) {
         BookMetadata currentMetadata = metadataHelper.getCurrentMetadata(file);
-
         BookMetadata updates = request.getFields();
         Set<String> enabledFields = request.getEnabledFields();
         boolean mergeArrays = request.isMergeArrays();
 
-            if (enabledFields.contains("seriesName") && updates.getSeriesName() != null) {
-                currentMetadata.setSeriesName(updates.getSeriesName());
-            }
-            if (enabledFields.contains("seriesTotal") && updates.getSeriesTotal() != null) {
-                currentMetadata.setSeriesTotal(updates.getSeriesTotal());
-            }
-            if (enabledFields.contains("publisher") && updates.getPublisher() != null) {
-                currentMetadata.setPublisher(updates.getPublisher());
-            }
+        if (enabledFields.contains("seriesName") && updates.getSeriesName() != null) {
+            currentMetadata.setSeriesName(updates.getSeriesName());
+        }
+        if (enabledFields.contains("seriesTotal") && updates.getSeriesTotal() != null) {
+            currentMetadata.setSeriesTotal(updates.getSeriesTotal());
+        }
+        if (enabledFields.contains("publisher") && updates.getPublisher() != null) {
+            currentMetadata.setPublisher(updates.getPublisher());
+        }
         if (enabledFields.contains("language") && updates.getLanguage() != null) {
             currentMetadata.setLanguage(updates.getLanguage());
         }
 
-        if (enabledFields.contains("authors") && updates.getAuthors() != null) {
-            if (mergeArrays && currentMetadata.getAuthors() != null) {
-                Set<String> merged = new LinkedHashSet<>(currentMetadata.getAuthors());
-                merged.addAll(updates.getAuthors());
-                currentMetadata.setAuthors(merged);
-            } else {
-                currentMetadata.setAuthors(updates.getAuthors());
-            }
-        }
-        if (enabledFields.contains("categories") && updates.getCategories() != null) {
-            if (mergeArrays && currentMetadata.getCategories() != null) {
-                Set<String> merged = new LinkedHashSet<>(currentMetadata.getCategories());
-                merged.addAll(updates.getCategories());
-                currentMetadata.setCategories(merged);
-            } else {
-                currentMetadata.setCategories(updates.getCategories());
-            }
-        }
-        if (enabledFields.contains("moods") && updates.getMoods() != null) {
-            if (mergeArrays && currentMetadata.getMoods() != null) {
-                Set<String> merged = new LinkedHashSet<>(currentMetadata.getMoods());
-                merged.addAll(updates.getMoods());
-                currentMetadata.setMoods(merged);
-            } else {
-                currentMetadata.setMoods(updates.getMoods());
-            }
-        }
-        if (enabledFields.contains("tags") && updates.getTags() != null) {
-            if (mergeArrays && currentMetadata.getTags() != null) {
-                Set<String> merged = new LinkedHashSet<>(currentMetadata.getTags());
-                merged.addAll(updates.getTags());
-                currentMetadata.setTags(merged);
-            } else {
-                currentMetadata.setTags(updates.getTags());
-            }
-        }
+        updateArrayField("authors", enabledFields, currentMetadata.getAuthors(), updates.getAuthors(), 
+                currentMetadata::setAuthors, mergeArrays);
+        updateArrayField("categories", enabledFields, currentMetadata.getCategories(), updates.getCategories(), 
+                currentMetadata::setCategories, mergeArrays);
+        updateArrayField("moods", enabledFields, currentMetadata.getMoods(), updates.getMoods(), 
+                currentMetadata::setMoods, mergeArrays);
+        updateArrayField("tags", enabledFields, currentMetadata.getTags(), updates.getTags(), 
+                currentMetadata::setTags, mergeArrays);
 
         metadataHelper.updateFetchedMetadata(file, currentMetadata);
+    }
+
+    private void updateArrayField(String fieldName, Set<String> enabledFields, 
+                                  Set<String> currentValue, Set<String> newValue,
+                                  java.util.function.Consumer<Set<String>> setter, boolean mergeArrays) {
+        if (enabledFields.contains(fieldName) && newValue != null) {
+            if (mergeArrays && currentValue != null) {
+                Set<String> merged = new LinkedHashSet<>(currentValue);
+                merged.addAll(newValue);
+                setter.accept(merged);
+            } else {
+                setter.accept(newValue);
+            }
+        }
     }
 }

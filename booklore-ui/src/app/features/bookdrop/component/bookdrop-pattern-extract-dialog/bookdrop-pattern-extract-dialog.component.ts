@@ -107,55 +107,55 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     
     const textToInsert = placeholderName === '*' ? '*' : `{${placeholderName}}`;
     
-    if (placeholderName === '*') {
-      if (inputElement) {
-        const cursorPosition = inputElement.selectionStart ?? currentPattern.length;
-        const textBefore = currentPattern.substring(0, cursorPosition);
-        const textAfter = currentPattern.substring(cursorPosition);
-        const newPattern = textBefore + textToInsert + textAfter;
-        
-        patternControl?.setValue(newPattern);
-        
-        setTimeout(() => {
-          const newCursorPosition = cursorPosition + textToInsert.length;
-          inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
-          inputElement.focus();
-        }, 0);
-      } else {
-        patternControl?.setValue(currentPattern + textToInsert);
-      }
-    } else {
-      const existingPlaceholderRegex = new RegExp(`\\{${placeholderName}(?::[^}]*)?\\}`, 'g');
-      let patternWithoutExisting = currentPattern.replace(existingPlaceholderRegex, '');
+    const patternToModify = placeholderName === '*' 
+      ? currentPattern 
+      : this.removeExistingPlaceholder(currentPattern, placeholderName);
+    
+    if (inputElement) {
+      const cursorPosition = this.calculateCursorPosition(inputElement, currentPattern, patternToModify);
+      const newPattern = this.insertTextAtCursor(patternToModify, textToInsert, cursorPosition);
       
-      if (inputElement) {
-        let cursorPosition = inputElement.selectionStart ?? patternWithoutExisting.length;
-        
-        if (currentPattern !== patternWithoutExisting) {
-          const matchBefore = currentPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
-          if (matchBefore) {
-            cursorPosition -= matchBefore.reduce((sum, match) => sum + match.length, 0);
-          }
-          cursorPosition = Math.max(0, cursorPosition);
-        }
-        
-        const textBefore = patternWithoutExisting.substring(0, cursorPosition);
-        const textAfter = patternWithoutExisting.substring(cursorPosition);
-        const newPattern = textBefore + textToInsert + textAfter;
-        
-        patternControl?.setValue(newPattern);
-        
-        setTimeout(() => {
-          const newCursorPosition = cursorPosition + textToInsert.length;
-          inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
-          inputElement.focus();
-        }, 0);
-      } else {
-        patternControl?.setValue(patternWithoutExisting + textToInsert);
-      }
+      patternControl?.setValue(newPattern);
+      this.focusInputAfterInsertion(inputElement, cursorPosition, textToInsert.length);
+    } else {
+      patternControl?.setValue(patternToModify + textToInsert);
     }
     
     this.previewPattern();
+  }
+
+  private removeExistingPlaceholder(pattern: string, placeholderName: string): string {
+    const existingPlaceholderRegex = new RegExp(`\\{${placeholderName}(?::[^}]*)?\\}`, 'g');
+    return pattern.replace(existingPlaceholderRegex, '');
+  }
+
+  private calculateCursorPosition(inputElement: HTMLInputElement, originalPattern: string, modifiedPattern: string): number {
+    let cursorPosition = inputElement.selectionStart ?? modifiedPattern.length;
+    
+    if (originalPattern !== modifiedPattern) {
+      const existingPlaceholderRegex = new RegExp(`\\{\\w+(?::[^}]*)?\\}`, 'g');
+      const matchBefore = originalPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
+      if (matchBefore) {
+        cursorPosition -= matchBefore.reduce((sum, match) => sum + match.length, 0);
+      }
+      cursorPosition = Math.max(0, cursorPosition);
+    }
+    
+    return cursorPosition;
+  }
+
+  private insertTextAtCursor(pattern: string, text: string, cursorPosition: number): string {
+    const textBefore = pattern.substring(0, cursorPosition);
+    const textAfter = pattern.substring(cursorPosition);
+    return textBefore + text + textAfter;
+  }
+
+  private focusInputAfterInsertion(inputElement: HTMLInputElement, cursorPosition: number, insertedTextLength: number): void {
+    setTimeout(() => {
+      const newCursorPosition = cursorPosition + insertedTextLength;
+      inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
+      inputElement.focus();
+    }, 0);
   }
 
   applyCommonPattern(pattern: string): void {
@@ -240,11 +240,11 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   getPlaceholderLabel(name: string): string {
-    return name === '*' ? '*' : '{' + name + '}';
+    return name === '*' ? '*' : `{${name}}`;
   }
 
   getPlaceholderTooltip(placeholder: PatternPlaceholder): string {
-    return placeholder.description + ' (e.g., ' + placeholder.example + ')';
+    return `${placeholder.description} (e.g., ${placeholder.example})`;
   }
 
   getPreviewClass(preview: PreviewResult): Record<string, boolean> {
@@ -267,9 +267,6 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   getErrorTooltip(preview: PreviewResult): string {
-    if (preview.success) {
-      return '';
-    }
-    return preview.errorMessage || 'Pattern did not match filename structure';
+    return preview.success ? '' : (preview.errorMessage || 'Pattern did not match filename structure');
   }
 }
