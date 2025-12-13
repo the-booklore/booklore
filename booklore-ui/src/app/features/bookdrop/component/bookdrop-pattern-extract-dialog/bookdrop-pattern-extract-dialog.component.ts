@@ -21,6 +21,7 @@ interface PreviewResult {
   fileName: string;
   success: boolean;
   preview: Record<string, string>;
+  errorMessage?: string;
 }
 
 @Component({
@@ -106,36 +107,52 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     
     const textToInsert = placeholderName === '*' ? '*' : `{${placeholderName}}`;
     
-    const existingPlaceholderRegex = placeholderName === '*' 
-      ? /\*/g
-      : new RegExp(`\\{${placeholderName}(?::[^}]*)?\\}`, 'g');
-    
-    let patternWithoutExisting = currentPattern.replace(existingPlaceholderRegex, '');
-    
-    if (inputElement) {
-      let cursorPosition = inputElement.selectionStart ?? patternWithoutExisting.length;
-      
-      if (currentPattern !== patternWithoutExisting) {
-        const matchBefore = currentPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
-        if (matchBefore) {
-          cursorPosition -= matchBefore.reduce((sum, match) => sum + match.length, 0);
-        }
-        cursorPosition = Math.max(0, cursorPosition);
+    if (placeholderName === '*') {
+      if (inputElement) {
+        const cursorPosition = inputElement.selectionStart ?? currentPattern.length;
+        const textBefore = currentPattern.substring(0, cursorPosition);
+        const textAfter = currentPattern.substring(cursorPosition);
+        const newPattern = textBefore + textToInsert + textAfter;
+        
+        patternControl?.setValue(newPattern);
+        
+        setTimeout(() => {
+          const newCursorPosition = cursorPosition + textToInsert.length;
+          inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
+          inputElement.focus();
+        }, 0);
+      } else {
+        patternControl?.setValue(currentPattern + textToInsert);
       }
-      
-      const textBefore = patternWithoutExisting.substring(0, cursorPosition);
-      const textAfter = patternWithoutExisting.substring(cursorPosition);
-      const newPattern = textBefore + textToInsert + textAfter;
-      
-      patternControl?.setValue(newPattern);
-      
-      setTimeout(() => {
-        const newCursorPosition = cursorPosition + textToInsert.length;
-        inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
-        inputElement.focus();
-      }, 0);
     } else {
-      patternControl?.setValue(patternWithoutExisting + textToInsert);
+      const existingPlaceholderRegex = new RegExp(`\\{${placeholderName}(?::[^}]*)?\\}`, 'g');
+      let patternWithoutExisting = currentPattern.replace(existingPlaceholderRegex, '');
+      
+      if (inputElement) {
+        let cursorPosition = inputElement.selectionStart ?? patternWithoutExisting.length;
+        
+        if (currentPattern !== patternWithoutExisting) {
+          const matchBefore = currentPattern.substring(0, cursorPosition).match(existingPlaceholderRegex);
+          if (matchBefore) {
+            cursorPosition -= matchBefore.reduce((sum, match) => sum + match.length, 0);
+          }
+          cursorPosition = Math.max(0, cursorPosition);
+        }
+        
+        const textBefore = patternWithoutExisting.substring(0, cursorPosition);
+        const textAfter = patternWithoutExisting.substring(cursorPosition);
+        const newPattern = textBefore + textToInsert + textAfter;
+        
+        patternControl?.setValue(newPattern);
+        
+        setTimeout(() => {
+          const newCursorPosition = cursorPosition + textToInsert.length;
+          inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
+          inputElement.focus();
+        }, 0);
+      } else {
+        patternControl?.setValue(patternWithoutExisting + textToInsert);
+      }
     }
     
     this.previewPattern();
@@ -166,7 +183,8 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
         this.previewResults = result.results.map(r => ({
           fileName: r.fileName,
           success: r.success,
-          preview: r.extractedMetadata || {}
+          preview: r.extractedMetadata || {},
+          errorMessage: r.errorMessage
         }));
       },
       error: () => {
@@ -242,5 +260,16 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
 
   getPreviewEntries(preview: PreviewResult): Array<{key: string; value: string}> {
     return Object.entries(preview.preview).map(([key, value]) => ({key, value}));
+  }
+
+  getErrorMessage(preview: PreviewResult): string {
+    return preview.errorMessage || 'Pattern did not match';
+  }
+
+  getErrorTooltip(preview: PreviewResult): string {
+    if (preview.success) {
+      return '';
+    }
+    return preview.errorMessage || 'Pattern did not match filename structure';
   }
 }

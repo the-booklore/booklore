@@ -68,7 +68,11 @@
         @for (preview of previewResults; track preview.fileName) {
           <div class="preview-item" [ngClass]="getPreviewClass(preview)">
             <div class="preview-filename">
-              <i class="pi" [ngClass]="getPreviewIconClass(preview)"></i>
+              <i class="pi" 
+                 [ngClass]="getPreviewIconClass(preview)"
+                 [pTooltip]="getErrorTooltip(preview)"
+                 tooltipPosition="top"
+                 [tooltipOptions]="{showDelay: 300}"></i>
               <span>{{ preview.fileName }}</span>
             </div>
             @if (preview.success) {
@@ -81,7 +85,7 @@
                 }
               </div>
             } @else {
-              <div class="preview-error">Pattern did not match</div>
+              <div class="preview-error">{{ getErrorMessage(preview) }}</div>
             }
           </div>
         }

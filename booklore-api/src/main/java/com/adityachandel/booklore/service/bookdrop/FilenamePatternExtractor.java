@@ -53,9 +53,7 @@ public class FilenamePatternExtractor {
     private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
     private static final Pattern TWO_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{2}");
     private static final Pattern COMPACT_DATE_PATTERN = Pattern.compile("\\d{8}");
-    private static final Pattern ISO_DATE_PATTERN = Pattern.compile("(\\d{4})-(\\d{1,2})-(\\d{1,2})");
-    private static final Pattern DOT_DATE_PATTERN = Pattern.compile("(\\d{4})\\.(\\d{1,2})\\.(\\d{1,2})");
-    private static final Pattern SLASH_DATE_PATTERN = Pattern.compile("(\\d{4})/(\\d{1,2})/(\\d{1,2})");
+    private static final Pattern FLEXIBLE_DATE_PATTERN = Pattern.compile("(\\d{1,4})([^\\d])(\\d{1,2})\\2(\\d{1,4})");
 
     @Transactional
     public BookdropPatternExtractResult bulkExtract(BookdropPatternExtractRequest request) {
@@ -122,7 +120,8 @@ public class FilenamePatternExtractor {
         String nameOnly = FilenameUtils.getBaseName(filename);
         Matcher extractMatcher = parsedPattern.compiledPattern().matcher(nameOnly);
         
-        if (!extractMatcher.matches()) {
+        boolean matched = extractMatcher.find();
+        if (!matched) {
             return null;
         }
         
@@ -136,11 +135,13 @@ public class FilenamePatternExtractor {
             BookMetadata extracted = extractFromFilenameWithParsedPattern(file.getFileName(), parsedPattern);
             
             if (extracted == null) {
+                String errorMsg = "Pattern did not match filename structure. Check if the pattern aligns with the filename format.";
+                log.debug("Pattern mismatch for file '{}'", file.getFileName());
                 return BookdropPatternExtractResult.FileExtractionResult.builder()
                         .fileId(file.getId())
                         .fileName(file.getFileName())
                         .success(false)
-                        .errorMessage("Pattern did not match filename")
+                        .errorMessage(errorMsg)
                         .build();
             }
 
@@ -152,12 +153,13 @@ public class FilenamePatternExtractor {
                     .build();
 
         } catch (Exception e) {
-            log.error("Error extracting metadata from file {}: {}", file.getFileName(), e.getMessage());
+            String errorMsg = "Extraction failed: " + e.getMessage();
+            log.error("Error extracting metadata from file '{}': {}", file.getFileName(), e.getMessage(), e);
             return BookdropPatternExtractResult.FileExtractionResult.builder()
                     .fileId(file.getId())
                     .fileName(file.getFileName())
                     .success(false)
-                    .errorMessage("Extraction error: " + e.getMessage())
+                    .errorMessage(errorMsg)
                     .build();
         }
     }
@@ -352,6 +354,7 @@ public class FilenamePatternExtractor {
                 : dateFormat;
         
         if (detectedFormat == null) {
+            log.warn("Could not detect date format for value: '{}'", value);
             return;
         }
         
@@ -368,7 +371,10 @@ public class FilenamePatternExtractor {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
             LocalDate date = LocalDate.parse(value, formatter);
             metadata.setPublishedDate(date);
-        } catch (DateTimeParseException | IllegalArgumentException ignored) {
+        } catch (DateTimeParseException e) {
+            log.warn("Failed to parse date '{}' with format '{}': {}", value, detectedFormat, e.getMessage());
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid date format '{}' for value '{}': {}", detectedFormat, value, e.getMessage());
         }
     }
 
@@ -392,32 +398,57 @@ public class FilenamePatternExtractor {
             return "yyyyMMdd";
         }
         
-        Matcher isoMatcher = ISO_DATE_PATTERN.matcher(trimmed);
-        if (isoMatcher.matches()) {
-            return determineMonthDayFormat(isoMatcher, "yyyy", "MM", "dd", "-");
-        }
-        
-        Matcher dotMatcher = DOT_DATE_PATTERN.matcher(trimmed);
-        if (dotMatcher.matches()) {
-            return determineMonthDayFormat(dotMatcher, "yyyy", "MM", "dd", ".");
-        }
-        
-        Matcher slashMatcher = SLASH_DATE_PATTERN.matcher(trimmed);
-        if (slashMatcher.matches()) {
-            return determineMonthDayFormat(slashMatcher, "yyyy", "MM", "dd", "/");
+        Matcher flexibleMatcher = FLEXIBLE_DATE_PATTERN.matcher(trimmed);
+        if (flexibleMatcher.matches()) {
+            String separator = flexibleMatcher.group(2);
+            return determineFlexibleDateFormat(flexibleMatcher, separator);
         }
         
         return null;
     }
     
-    private String determineMonthDayFormat(Matcher matcher, String year, String paddedMonth, String paddedDay, String separator) {
-        String monthPart = matcher.group(2);
-        String dayPart = matcher.group(3);
+    private String determineFlexibleDateFormat(Matcher matcher, String separator) {
+        String part1 = matcher.group(1);
+        String part2 = matcher.group(3);
+        String part3 = matcher.group(4);
         
-        String monthFormat = monthPart.length() == 2 ? paddedMonth : "M";
-        String dayFormat = dayPart.length() == 2 ? paddedDay : "d";
+        int val1 = Integer.parseInt(part1);
+        int val2 = Integer.parseInt(part2);
+        int val3 = Integer.parseInt(part3);
         
-        return year + separator + monthFormat + separator + dayFormat;
+        String format1, format2, format3;
+        
+        if (part1.length() == 4 || val1 > 31) {
+            format1 = part1.length() == 4 ? "yyyy" : "yy";
+            if (val2 <= 12 && val3 > 12) {
+                format2 = part2.length() == 2 ? "MM" : "M";
+                format3 = part3.length() == 2 ? "dd" : "d";
+            } else if (val3 <= 12 && val2 > 12) {
+                format2 = part2.length() == 2 ? "dd" : "d";
+                format3 = part3.length() == 2 ? "MM" : "M";
+            } else {
+                format2 = part2.length() == 2 ? "MM" : "M";
+                format3 = part3.length() == 2 ? "dd" : "d";
+            }
+        } else if (part3.length() == 4 || val3 > 31) {
+            format3 = part3.length() == 4 ? "yyyy" : "yy";
+            if (val1 <= 12 && val2 > 12) {
+                format1 = part1.length() == 2 ? "MM" : "M";
+                format2 = part2.length() == 2 ? "dd" : "d";
+            } else if (val2 <= 12 && val1 > 12) {
+                format1 = part1.length() == 2 ? "dd" : "d";
+                format2 = part2.length() == 2 ? "MM" : "M";
+            } else {
+                format1 = part1.length() == 2 ? "dd" : "d";
+                format2 = part2.length() == 2 ? "MM" : "M";
+            }
+        } else {
+            format1 = part1.length() == 2 ? "dd" : "d";
+            format2 = part2.length() == 2 ? "MM" : "M";
+            format3 = part3.length() == 2 ? "yy" : "y";
+        }
+        
+        return format1 + separator + format2 + separator + format3;
     }
 
     private void parseAndSetSeriesTotal(BookMetadata metadata, String value) {
