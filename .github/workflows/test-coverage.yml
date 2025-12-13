@@ -181,14 +181,26 @@ jobs:
       # Note: PR comment step removed to reduce PR noise
       # Coverage metrics available in artifacts and job summary below
 
-      - name: Add Coverage to Job Summary
+      - name: Generate Summary Report
         env:
           BACKEND_COVERAGE: ${{ needs.backend-coverage.outputs.coverage }}
           FRONTEND_COVERAGE: ${{ needs.frontend-coverage.outputs.coverage }}
         run: |
-          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Coverage |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|----------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend (Java) | ${BACKEND_COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend (Angular) | ${FRONTEND_COVERAGE}% |" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## 📊 Test Coverage Summary"
+            echo ""
+            echo "### Coverage by Component"
+            echo ""
+            echo "| Component | Coverage |"
+            echo "|-----------|----------|"
+            echo "| Backend (Java) | ${BACKEND_COVERAGE}% |"
+            echo "| Frontend (Angular) | ${FRONTEND_COVERAGE}% |"
+            echo ""
+            echo "### Artifacts"
+            echo ""
+            echo "- **Backend Coverage Report** - JaCoCo detailed coverage metrics"
+            echo "- **Backend Test Results** - JUnit XML test reports"
+            echo "- **Frontend Coverage Report** - LCOV coverage data"
+            echo ""
+            echo "Download artifacts to view detailed reports."
+          } >> $GITHUB_STEP_SUMMARY
