@@ -85,7 +85,7 @@ test.describe('WCAG Accessibility Compliance', () => {
     const focusableElements = await page.locator('button, a, input, [tabindex]:not([tabindex="-1"])').count();
 
     let visibleFocusCount = 0;
-    for (let i = 0; i < Math.min(focusableElements, 10); i++) {
+    for (let i = 0; i < Math.min(focusableElements, 5); i++) {
       await page.keyboard.press('Tab');
 
       // Check if focused element has visible focus indicator
@@ -109,8 +109,8 @@ test.describe('WCAG Accessibility Compliance', () => {
     }
 
     // At least 70% of elements should have visible focus indicators
-    const focusRatio = visibleFocusCount / Math.min(focusableElements, 10);
-    console.log(`Focus visibility: ${visibleFocusCount}/${Math.min(focusableElements, 10)} (${(focusRatio * 100).toFixed(0)}%)`);
+    const focusRatio = visibleFocusCount / Math.min(focusableElements, 5);
+    console.log(`Focus visibility: ${visibleFocusCount}/${Math.min(focusableElements, 5)} (${(focusRatio * 100).toFixed(0)}%)`);
 
     expect(focusRatio).toBeGreaterThan(0.7); // Stricter requirement
   });

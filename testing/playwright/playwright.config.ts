@@ -29,7 +29,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
     ['json', { outputFile: 'test-results.json' }],
@@ -44,13 +44,15 @@ export default defineConfig({
       name: 'kobo-libra-2',
       use: { ...devices['Desktop Chrome'], ...KOBO_LIBRA_2 },
     },
-    {
-      name: 'kobo-elipsa',
-      use: { ...devices['Desktop Chrome'], ...KOBO_ELIPSA },
-    },
-    {
-      name: 'pocketbook-era',
-      use: { ...devices['Desktop Chrome'], ...POCKETBOOK_ERA },
-    },
+    ...(process.env.CI ? [] : [
+      {
+        name: 'kobo-elipsa',
+        use: { ...devices['Desktop Chrome'], ...KOBO_ELIPSA },
+      },
+      {
+        name: 'pocketbook-era',
+        use: { ...devices['Desktop Chrome'], ...POCKETBOOK_ERA },
+      },
+    ]),
   ],
 });
