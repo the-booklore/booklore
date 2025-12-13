@@ -1,10 +1,13 @@
 package com.adityachandel.booklore.mapper;
 
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +22,12 @@ class BookMapperTest {
 
         BookEntity entity = new BookEntity();
         entity.setId(1L);
-        entity.setFileName("Test Book");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setFileName("Test Book");
+        primaryFile.setFileSubPath(".");
+        entity.setBookFiles(List.of(primaryFile));
         entity.setLibrary(library);
 
         Book dto = mapper.toBook(entity);
