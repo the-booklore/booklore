@@ -7,6 +7,7 @@ import {API_CONFIG} from '../config/api-config';
 import {firstValueFrom} from 'rxjs';
 import {filter, take, timeout} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
+import {jwtDecode} from 'jwt-decode';
 
 const OIDC_BYPASS_KEY = 'booklore-oidc-bypass';
 const OIDC_ERROR_COUNT_KEY = 'booklore-oidc-error-count';
@@ -30,6 +31,29 @@ export function initializeAuthFactory() {
     const appSettingsService = inject(AppSettingsService);
     const authService = inject(AuthService);
     const authInitService = inject(AuthInitializationService);
+
+    // Pre-check internal token validity to prevent initial 401s
+    const internalToken = authService.getInternalAccessToken();
+    if (internalToken) {
+      try {
+        const decoded: any = jwtDecode(internalToken);
+        const now = Date.now() / 1000;
+        // Buffer of 10 seconds
+        if (decoded.exp && (decoded.exp - now) < 10) {
+          console.log('[Auth] Internal token expired or expiring soon, attempting refresh...');
+          try {
+            await firstValueFrom(authService.internalRefreshToken());
+            console.log('[Auth] Internal token refreshed successfully');
+          } catch (e) {
+            console.warn('[Auth] Failed to refresh internal token during init, logging out', e);
+            authService.logout();
+          }
+        }
+      } catch (e) {
+        console.error('[Auth] Failed to decode internal token, logging out', e);
+        authService.logout();
+      }
+    }
 
     try {
       // Use firstValueFrom with timeout for faster resolution
