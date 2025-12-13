@@ -5,6 +5,7 @@ import {API_CONFIG} from '../../core/config/api-config';
 
 export interface FileMoveRequest {
   bookIds: number[];
+  mode: 'MOVE' | 'COPY';
   moves: {
     bookId: number;
     targetLibraryId: number | null;

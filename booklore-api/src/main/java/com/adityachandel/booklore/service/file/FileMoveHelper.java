@@ -68,6 +68,19 @@ public class FileMoveHelper {
         executeWithRetry(() -> Files.move(source, target, StandardCopyOption.REPLACE_EXISTING));
     }
 
+    public void copyFile(Path source, Path target) throws IOException {
+        if (!waitForFileAccessible(source)) {
+            throw new NoSuchFileException(source.toString(), null, "Source file not accessible after retries");
+        }
+
+        if (target.getParent() != null) {
+            Files.createDirectories(target.getParent());
+        }
+
+        log.info("Copying file from {} to {}", source, target);
+        executeWithRetry(() -> Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING));
+    }
+
     public Path moveFileWithBackup(Path source) throws IOException {
         if (!waitForFileAccessible(source)) {
             throw new NoSuchFileException(source.toString(), null, "Source file not accessible after retries");

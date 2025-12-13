@@ -73,11 +73,29 @@
           optionLabel="path"
           optionValue="id"
           placeholder="Select default path"
-          (onChange)="onDefaultLibraryPathChange()"
-          class="min-w-[250px]"
-          size="small"
-          appendTo="body"
-        ></p-select>
+        (onChange)="onDefaultLibraryPathChange()"
+        class="min-w-[250px]"
+        size="small"
+        appendTo="body"
+      ></p-select>
+      }
+    </div>
+    <div class="flex items-center gap-3">
+      <label class="text-sm font-medium text-gray-300">Mode:</label>
+      <p-select
+        [options]="[{label: 'Move', value: 'MOVE'}, {label: 'Copy', value: 'COPY'}]"
+        [(ngModel)]="operationMode"
+        placeholder="Select mode"
+        class="min-w-[140px]"
+        size="small"
+        appendTo="body"
+      ></p-select>
+      @if (operationMode === 'COPY') {
+        <i
+          class="pi pi-info-circle text-blue-300 cursor-pointer"
+          pTooltip="The default mode is Move. Copy will duplicate the file, metadata, and images into the target library, leaving the original in place."
+          tooltipPosition="top"
+        ></i>
       }
     </div>
   </div>
@@ -162,7 +180,7 @@
   <div class="flex justify-end items-center gap-4 flex-shrink-0 px-4 pt-4">
     @if (movedFileCount > 0) {
       <span class="text-green-500 flex items-center font-semibold drop-shadow-sm select-none">
-        {{ movedFileCount }} file{{ movedFileCount > 1 ? 's' : '' }} successfully moved
+        {{ movedFileCount }} file{{ movedFileCount > 1 ? 's' : '' }} successfully {{ operationMode === 'MOVE' ? 'moved' : 'copied' }}
         <i
           class="pi pi-check-circle ml-2 text-green-500 animate-bounce"
           style="animation-duration: 1.5s;"
@@ -173,8 +191,8 @@
     }
     @if (movedFileCount === 0) {
       <p-button
-        [label]="loading ? 'Moving...' : 'Move Files'"
-        [icon]="loading ? 'pi pi-spin pi-spinner' : 'pi pi-arrows-h'"
+        [label]="loading ? (operationMode === 'MOVE' ? 'Moving...' : 'Copying...') : (operationMode === 'MOVE' ? 'Move Files' : 'Copy Files')"
+        [icon]="loading ? 'pi pi-spin pi-spinner' : (operationMode === 'MOVE' ? 'pi pi-arrows-h' : 'pi pi-copy')"
         severity="success"
         (click)="saveChanges()"
         [disabled]="loading || filePreviews.length === 0"
