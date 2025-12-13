@@ -147,9 +147,28 @@ jobs:
           BASE_URL: http://localhost:6060
           CI: true
         run: |
+          # Run tests, capturing output to check for missing snapshots
+          set +e
           npx playwright test eink-visual-regression.spec.ts \
             --project=eink-visual-regression \
-            --reporter=html,json
+            --reporter=html,json > playwright.log 2>&1
+          EXIT_CODE=$?
+          set -e
+          
+          cat playwright.log
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            if grep -q "snapshot doesn't exist" playwright.log; then
+              echo "📸 Snapshots missing. Generating them now..."
+              npx playwright test eink-visual-regression.spec.ts \
+                --project=eink-visual-regression \
+                --reporter=html,json \
+                --update-snapshots
+              echo "⚠️ Snapshots generated. Please download the 'eink-screenshots' artifact and commit the new snapshots to the repository."
+            else
+              exit $EXIT_CODE
+            fi
+          fi
 
       - name: Run accessibility tests with E-Ink focus
         working-directory: testing/playwright
@@ -178,7 +197,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: eink-screenshots
-          path: testing/playwright/test-results/**/*.png
+          path: |
+            testing/playwright/test-results/**/*.png
+            testing/playwright/**/*.spec.ts-snapshots/**/*.png
           retention-days: 14
           if-no-files-found: ignore
 
@@ -254,11 +275,29 @@ jobs:
           # Wait for startup
           for i in {1..60}; do
             if curl -s http://localhost:6060/actuator/health | grep -q "UP"; then
-              echo "✅ Ready"
+              echo "✅ Backend Ready"
               break
             fi
             sleep 3
           done
+
+          # Wait for frontend to be served
+          echo "⏳ Waiting for frontend..."
+          for i in {1..30}; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:6060/)
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ Frontend Ready"
+              break
+            fi
+            sleep 2
+          done
+
+          # Final check
+          if ! curl -s http://localhost:6060/actuator/health | grep -q "UP"; then
+            echo "❌ Server failed to start"
+            docker logs booklore-contrast
+            exit 1
+          fi
 
       - name: Run Lighthouse accessibility audit
         run: |

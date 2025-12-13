@@ -471,7 +471,7 @@ jobs:
             
             if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
               echo "✅ $ENDPOINT - HTTP $HTTP_CODE"
-              ((PASSED++))
+              PASSED=$((PASSED+1))
             else
               echo "❌ $ENDPOINT - HTTP $HTTP_CODE"
             fi
