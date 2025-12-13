@@ -6,28 +6,28 @@
 #       - "Build and Test"
 #       - "API Integration Tests"
 #       - "Database Migration Check"
-      - "Database Migration Full Test"
-      - "Database Migration Regression"
-      - "Docker Persistence Test"
-      - "Integration & Contract Tests"
-      - "WireMock Protocol Tests"
-      - "Advanced Testing Suite"
-      - "E-Ink Visual Regression Tests"
-      - "Load & Performance Tests"
-      - "Corpus of Doom - Malformed File Tests"
-      - "Reverse Proxy Tests"
-      - "ARM64 Binary Execution Test"
-      - "TypeScript Type Checking"
-      - "Test Coverage Report"
-      - "Security Scanning"
-      - "Security Enhanced Scanning"
-      - "CodeQL Analysis"
-    types:
-      - completed
-
-permissions:
-  actions: read
-  checks: read
+#       - "Database Migration Full Test"
+#       - "Database Migration Regression"
+#       - "Docker Persistence Test"
+#       - "Integration & Contract Tests"
+#       - "WireMock Protocol Tests"
+#       - "Advanced Testing Suite"
+#       - "E-Ink Visual Regression Tests"
+#       - "Load & Performance Tests"
+#       - "Corpus of Doom - Malformed File Tests"
+#       - "Reverse Proxy Tests"
+#       - "ARM64 Binary Execution Test"
+#       - "TypeScript Type Checking"
+#       - "Test Coverage Report"
+#       - "Security Scanning"
+#       - "Security Enhanced Scanning"
+#       - "CodeQL Analysis"
+#     types:
+#       - completed
+# 
+# permissions:
+#   actions: read
+#   checks: read
   contents: read
   pull-requests: write
 

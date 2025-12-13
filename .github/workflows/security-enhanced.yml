@@ -50,26 +50,27 @@ permissions:
 jobs:
   # ============================================
   # Secret Scanning (Gitleaks)
+  # DISABLED - Requires organization license
   # ============================================
-  secret-scanning:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
-        with:
-          egress-policy: audit
-
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # secret-scanning:
+  #   name: Secret Scanning
+  #   runs-on: ubuntu-latest
+  #   
+  #   steps:
+  #     - name: Harden Runner
+  #       uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+  #       with:
+  #         egress-policy: audit
+  #
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: Run Gitleaks
+  #       uses: gitleaks/gitleaks-action@v2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================
   # OWASP Dependency Check (Backend)
