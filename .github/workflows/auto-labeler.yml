@@ -1,0 +1,93 @@
+# Auto Labeler Workflow
+#
+# Purpose: Automatically applies labels to pull requests based on changed files and size
+# Significance: Improves PR triage efficiency and helps developers quickly identify PR scope
+# Key Functions:
+# - Labels PRs based on file paths changed (backend, frontend, infrastructure, etc.)
+# - Calculates and applies size labels based on number of changes (XS, S, M, L)
+# - Maintains consistent labeling across all PRs for easier filtering and management
+# - Updates labels when PR is synchronized to reflect any changes
+name: Auto Labeler
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label-by-files:
+    name: Label by Files Changed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Label PR based on file paths
+        uses: actions/labeler@8558fd74291d67161a8a78ce36a881fa63b766a9 # v5.0.0
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+
+  label-size:
+    name: Label by PR Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Label PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.issue.number;
+            const additions = context.payload.pull_request.additions;
+            const deletions = context.payload.pull_request.deletions;
+            const totalChanges = additions + deletions;
+            
+            // Determine size label
+            let sizeLabel = 'size/L';
+            if (totalChanges <= 10) {
+              sizeLabel = 'size/XS';
+            } else if (totalChanges <= 100) {
+              sizeLabel = 'size/S';
+            } else if (totalChanges <= 500) {
+              sizeLabel = 'size/M';
+            }
+            
+            // Remove old size labels
+            const labels = context.payload.pull_request.labels.map(l => l.name);
+            const oldSizeLabels = labels.filter(l => l.startsWith('size/'));
+            
+            for (const label of oldSizeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            }
+            
+            // Add new size label
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              labels: [sizeLabel]
+            });
+            
+            core.info(`Applied label: ${sizeLabel} (${totalChanges} total changes)`);

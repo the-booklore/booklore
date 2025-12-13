@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OWASP Dependency Check Suppression File
+  
+  This file contains suppressions for false positives in the OWASP Dependency Check.
+  Only add suppressions after careful review - each should include:
+  - A clear explanation of why it's a false positive
+  - A link to the CVE or advisory
+  - The date added and who reviewed it
+  
+  Suppression types:
+  - sha1: Suppress specific JAR by checksum (most precise)
+  - cpe: Suppress by CPE identifier
+  - cve: Suppress specific CVE across all dependencies
+  - vulnerabilityName: Suppress by vulnerability pattern
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!-- 
+      Template for adding new suppressions:
+      
+      <suppress>
+        <notes><![CDATA[
+          Reason: Explain why this is a false positive
+          CVE: CVE-XXXX-XXXXX
+          Reviewed by: Your Name
+          Date: YYYY-MM-DD
+        ]]></notes>
+        <cve>CVE-XXXX-XXXXX</cve>
+      </suppress>
+    -->
+
+    <!-- 
+      Example: Spring Boot embedded Tomcat CVEs that don't apply to embedded usage
+      Add real suppressions here after manual review
+    -->
+
+    <!--
+    <suppress>
+        <notes><![CDATA[
+          Reason: This CVE only affects standalone Tomcat, not embedded.
+          BookLore uses Spring Boot's embedded Tomcat which is not vulnerable.
+          CVE: CVE-2023-XXXXX (example)
+          Reviewed by: Security Team
+          Date: 2024-01-01
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.tomcat\.embed/.*$</packageUrl>
+        <cve>CVE-2023-XXXXX</cve>
+    </suppress>
+    -->
+
+    <!--
+      Common false positives for file parsing libraries
+      These should be reviewed case-by-case as PDF/EPUB parsers
+      can have real vulnerabilities.
+    -->
+
+    <!--
+    <suppress>
+        <notes><![CDATA[
+          Reason: This CVE requires malicious PDF with specific features not supported by our usage.
+          We only extract metadata and cover images, not executing embedded scripts.
+          CVE: CVE-XXXX-XXXXX
+          Reviewed by: Security Team
+          Date: YYYY-MM-DD
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.pdfbox/.*$</packageUrl>
+        <vulnerabilityName>CVE-XXXX-XXXXX</vulnerabilityName>
+    </suppress>
+    -->
+
+</suppressions>
+
+
+

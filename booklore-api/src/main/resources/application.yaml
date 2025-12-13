@@ -54,6 +54,8 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: '0'
 
 springdoc:
   swagger-ui:
@@ -73,3 +75,12 @@ logging:
     org.quartz.simpl.RAMJobStore: WARN
     org.hibernate.orm.connections.pooling: WARN
     org.springframework.security.config.annotation.authentication.configuration.InitializeUserDetailsBeanManagerConfigurer: ERROR
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized

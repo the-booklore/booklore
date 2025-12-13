@@ -1,0 +1,312 @@
+# Advanced Testing Suite Workflow
+#
+# Purpose: Single workflow to run all advanced testing suites for comprehensive QA
+# Significance: Consolidates multiple complex testing scenarios into one manual trigger
+# Key Functions:
+# - Orchestration workflow that triggers other specialized test suites
+# - Combines ARM64 hardware tests, malformed file tests, performance tests, etc.
+# - Allows manual selection of which test suites to run
+# - Provides consolidated view of advanced testing results
+# - Useful for pre-release validation and comprehensive regression testing
+name: Advanced Testing Suite
+
+# Single manual trigger for all advanced testing workflows
+on:
+  workflow_dispatch:
+    inputs:
+      run_arm64_tests:
+        description: 'Run ARM64 Hardware Emulation Tests'
+        type: boolean
+        default: true
+      run_proxy_tests:
+        description: 'Run Reverse Proxy Simulation Tests'
+        type: boolean
+        default: true
+      run_corpus_tests:
+        description: 'Run Corpus of Doom (Malformed Files) Tests'
+        type: boolean
+        default: true
+      run_load_tests:
+        description: 'Run Load & Performance Tests'
+        type: boolean
+        default: true
+      run_eink_tests:
+        description: 'Run E-Ink Visual Regression Tests'
+        type: boolean
+        default: true
+      book_count:
+        description: 'Number of synthetic books for load testing'
+        type: choice
+        options:
+          - '1000'
+          - '10000'
+          - '50000'
+        default: '10000'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  # ============================================
+  # Trigger Individual Test Suites
+  # ============================================
+  arm64-tests:
+    name: ARM64 Tests
+    if: ${{ inputs.run_arm64_tests }}
+    uses: ./.github/workflows/arm64-qemu-tests.yml
+    secrets: inherit
+
+  proxy-tests:
+    name: Reverse Proxy Tests
+    if: ${{ inputs.run_proxy_tests }}
+    uses: ./.github/workflows/reverse-proxy-tests.yml
+    secrets: inherit
+
+  corpus-tests:
+    name: Corpus of Doom Tests
+    if: ${{ inputs.run_corpus_tests }}
+    uses: ./.github/workflows/corpus-of-doom-tests.yml
+    secrets: inherit
+
+  load-tests:
+    name: Load & Performance Tests
+    if: ${{ inputs.run_load_tests }}
+    uses: ./.github/workflows/load-performance-tests.yml
+    with:
+      book_count: ${{ inputs.book_count }}
+    secrets: inherit
+
+  # eink-tests:
+  #   name: E-Ink Visual Tests
+  #   if: ${{ inputs.run_eink_tests }}
+  #   uses: ./.github/workflows/eink-visual-regression.yml
+  #   secrets: inherit
+
+  # ============================================
+  # Unified Summary
+  # ============================================
+  unified-summary:
+    name: Advanced Testing Summary
+    runs-on: ubuntu-latest
+    needs: [arm64-tests, proxy-tests, corpus-tests, load-tests] # eink-tests disabled
+    if: always()
+
+    steps:
+      - name: Generate Unified Summary
+        env:
+          ACTOR: ${{ github.actor }}
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ARM64: ${{ inputs.run_arm64_tests }}
+          RUN_PROXY: ${{ inputs.run_proxy_tests }}
+          RUN_CORPUS: ${{ inputs.run_corpus_tests }}
+          RUN_LOAD: ${{ inputs.run_load_tests }}
+          RUN_EINK: ${{ inputs.run_eink_tests }}
+          BOOK_COUNT: ${{ inputs.book_count }}
+          ARM64_RESULT: ${{ needs.arm64-tests.result }}
+          PROXY_RESULT: ${{ needs.proxy-tests.result }}
+          CORPUS_RESULT: ${{ needs.corpus-tests.result }}
+          LOAD_RESULT: ${{ needs.load-tests.result }}
+          # EINK_RESULT: ${{ needs.eink-tests.result }} # disabled
+        run: |
+          echo "# 🧪 Advanced Testing Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** $ACTOR" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** $BRANCH" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** $COMMIT" >> $GITHUB_STEP_SUMMARY
+          echo "**Run ID:** [$RUN_ID]($SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 📊 Test Results Overview" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status | Description |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|-------------|" >> $GITHUB_STEP_SUMMARY
+          
+          # ARM64 Tests
+          if [ "$RUN_ARM64" = "true" ]; then
+            ARM64_STATUS="$ARM64_RESULT"
+            case $ARM64_STATUS in
+              success) ARM64_ICON="✅" ;;
+              failure) ARM64_ICON="❌" ;;
+              skipped) ARM64_ICON="⏭️" ;;
+              *) ARM64_ICON="⚠️" ;;
+            esac
+            echo "| 🔧 ARM64 Hardware Emulation | $ARM64_ICON $ARM64_STATUS | Verifies JNI linkage and startup on ARM64 (Raspberry Pi, Apple Silicon) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔧 ARM64 Hardware Emulation | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Reverse Proxy Tests
+          if [ "$RUN_PROXY" = "true" ]; then
+            PROXY_STATUS="$PROXY_RESULT"
+            case $PROXY_STATUS in
+              success) PROXY_ICON="✅" ;;
+              failure) PROXY_ICON="❌" ;;
+              skipped) PROXY_ICON="⏭️" ;;
+              *) PROXY_ICON="⚠️" ;;
+            esac
+            echo "| 🔀 Reverse Proxy Simulation | $PROXY_ICON $PROXY_STATUS | Tests X-Forwarded-Host handling for Kobo/KOReader sync |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 🔀 Reverse Proxy Simulation | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Corpus of Doom Tests
+          if [ "$RUN_CORPUS" = "true" ]; then
+            CORPUS_STATUS="$CORPUS_RESULT"
+            case $CORPUS_STATUS in
+              success) CORPUS_ICON="✅" ;;
+              failure) CORPUS_ICON="❌" ;;
+              skipped) CORPUS_ICON="⏭️" ;;
+              *) CORPUS_ICON="⚠️" ;;
+            esac
+            echo "| ☠️ Corpus of Doom | $CORPUS_ICON $CORPUS_STATUS | Server survival against malformed EPUB/PDF files |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| ☠️ Corpus of Doom | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Load Tests
+          if [ "$RUN_LOAD" = "true" ]; then
+            LOAD_STATUS="$LOAD_RESULT"
+            case $LOAD_STATUS in
+              success) LOAD_ICON="✅" ;;
+              failure) LOAD_ICON="❌" ;;
+              skipped) LOAD_ICON="⏭️" ;;
+              *) LOAD_ICON="⚠️" ;;
+            esac
+            echo "| 📈 Load & Performance | $LOAD_ICON $LOAD_STATUS | Artillery load testing with $BOOK_COUNT synthetic books |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| 📈 Load & Performance | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # E-Ink Tests
+          # if [ "$RUN_EINK" = "true" ]; then
+          #   EINK_STATUS="$EINK_RESULT"
+          #   case $EINK_STATUS in
+          #     success) EINK_ICON="✅" ;;
+          #     failure) EINK_ICON="❌" ;;
+          #     skipped) EINK_ICON="⏭️" ;;
+          #     *) EINK_ICON="⚠️" ;;
+          #   esac
+          #   echo "| 📱 E-Ink Visual Regression | $EINK_ICON $EINK_STATUS | Grayscale rendering and contrast verification |" >> $GITHUB_STEP_SUMMARY
+          # else
+          #   echo "| 📱 E-Ink Visual Regression | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          # fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall Status
+          OVERALL="success"
+          if [ "$ARM64_RESULT" = "failure" ] || \
+             [ "$PROXY_RESULT" = "failure" ] || \
+             [ "$CORPUS_RESULT" = "failure" ] || \
+             [ "$LOAD_RESULT" = "failure" ]; then  # || \
+             # [ "$EINK_RESULT" = "failure" ]; then  # disabled
+            OVERALL="failure"
+          fi
+          
+          echo "## 🎯 Overall Result" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "$OVERALL" = "success" ]; then
+            echo "### ✅ All selected tests passed!" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Some tests failed - review individual results above" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "## 📋 Test Suite Details" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>🔧 ARM64 Hardware Emulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests BookLore on ARM64 architecture using QEMU emulation:" >> $GITHUB_STEP_SUMMARY
+          echo "- Builds ARM64 Docker image" >> $GITHUB_STEP_SUMMARY
+          echo "- Verifies JNI/native library linkage" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests container startup and health" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical for Raspberry Pi 4+, ARM NAS, Apple Silicon" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>🔀 Reverse Proxy Simulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests header handling when behind Nginx/Traefik:" >> $GITHUB_STEP_SUMMARY
+          echo "- X-Forwarded-Host header preservation" >> $GITHUB_STEP_SUMMARY
+          echo "- X-Forwarded-Proto (HTTPS) handling" >> $GITHUB_STEP_SUMMARY
+          echo "- Download URL generation (must not use internal IPs)" >> $GITHUB_STEP_SUMMARY
+          echo "- Prevents 'Kobo Sync Failed' behind reverse proxies" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>☠️ Corpus of Doom (Malformed Files) Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests server resilience against intentionally broken files:" >> $GITHUB_STEP_SUMMARY
+          echo "- Malformed EPUB (XML bombs, circular refs, truncated)" >> $GITHUB_STEP_SUMMARY
+          echo "- Corrupt PDF (wrong headers, huge page counts)" >> $GITHUB_STEP_SUMMARY
+          echo "- Edge cases (zero-byte, wrong extensions, Unicode names)" >> $GITHUB_STEP_SUMMARY
+          echo "- Verifies server survives without crash or DB corruption" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>📈 Load & Performance Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests performance under load with large libraries:" >> $GITHUB_STEP_SUMMARY
+          echo "- Seeds $BOOK_COUNT synthetic books" >> $GITHUB_STEP_SUMMARY
+          echo "- Simulates concurrent Kobo sync, KOReader, web users" >> $GITHUB_STEP_SUMMARY
+          echo "- Measures P50/P95/P99 latencies" >> $GITHUB_STEP_SUMMARY
+          echo "- Target: P95 < 5s (Kobo timeout is ~30s)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "<details>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>📱 E-Ink Visual Regression Tests (DISABLED)</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tests UI rendering on E-Ink displays:" >> $GITHUB_STEP_SUMMARY
+          echo "- Applies grayscale + contrast CSS filters" >> $GITHUB_STEP_SUMMARY
+          echo "- Verifies text contrast (WCAG AA: 4.5:1)" >> $GITHUB_STEP_SUMMARY
+          echo "- Checks button/input visibility" >> $GITHUB_STEP_SUMMARY
+          echo "- Tests dark mode (common E-Ink failure)" >> $GITHUB_STEP_SUMMARY
+          echo "- Validates touch target sizes (min 40x40px)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Currently disabled - under revision*" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "</details>" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "*Generated by Advanced Testing Suite - [View Workflow]($SERVER_URL/$REPOSITORY/actions/runs/$RUN_ID)*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Set job status
+        run: |
+          if [ "${{ needs.arm64-tests.result }}" = "failure" ] || \
+             [ "${{ needs.proxy-tests.result }}" = "failure" ] || \
+             [ "${{ needs.corpus-tests.result }}" = "failure" ] || \
+             [ "${{ needs.load-tests.result }}" = "failure" ]; then
+            echo "❌ Some tests failed"
+            exit 1
+          fi
+          echo "✅ All selected tests passed"
+

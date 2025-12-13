@@ -1,0 +1,399 @@
+# CI Summary Report Workflow
+#
+# **DEPRECATED/COMMENTED OUT** - This workflow was used to aggregate results from multiple CI runs
+# Purpose: Provided consolidated view of all CI pipeline results in a single summary
+# Significance: Was intended to give a comprehensive overview of all testing across the CI ecosystem
+# Key Functions (when active):
+# - Collected results from all individual CI workflows
+# - Generated unified dashboard-style report
+# - Posted aggregated status to pull requests
+# - Categorized workflows by function (Build, Test, Security, etc.)
+# NOTE: Currently disabled/commented out - may be reactivated if aggregation is needed again
+# name: CI Summary Report
+#
+# on:
+#   workflow_run:
+#     workflows:
+#       - "Build and Test"
+#       - "API Integration Tests"
+#       - "Database Migration Check"
+#       - "Database Migration Full Test"
+#       - "Database Migration Regression"
+#       - "Docker Persistence Test"
+#       - "Integration & Contract Tests"
+#       - "WireMock Protocol Tests"
+#       - "Advanced Testing Suite"
+#       - "E-Ink Visual Regression Tests"
+#       - "Load & Performance Tests"
+#       - "Corpus of Doom - Malformed File Tests"
+#       - "Reverse Proxy Tests"
+#       - "ARM64 Binary Execution Test"
+#       - "TypeScript Type Checking"
+#       - "Test Coverage Report"
+#       - "Security Scanning"
+#       - "Security Enhanced Scanning"
+#       - "CodeQL Analysis"
+#     types:
+#       - completed
+# 
+# permissions:
+#   actions: read
+#   checks: read
+  contents: read
+  pull-requests: write
+
+jobs:
+  generate-summary:
+    name: Generate CI Summary Report
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Gather workflow run data
+        id: gather
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const prNumber = context.payload.workflow_run.pull_requests[0]?.number;
+            
+            if (!prNumber) {
+              console.log('No PR number found, skipping summary');
+              return;
+            }
+            
+            // Get the PR's head SHA
+            const { data: pr } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+            
+            const headSha = pr.head.sha;
+            
+            // Fetch all workflow runs for this commit
+            const { data: workflowRuns } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              head_sha: headSha,
+              per_page: 100
+            });
+            
+            // Filter to relevant workflows (exclude this summary workflow)
+            const relevantWorkflows = workflowRuns.workflow_runs.filter(run => 
+              run.name !== 'CI Summary Report' &&
+              run.head_sha === headSha
+            );
+            
+            // Get unique workflows (latest run only)
+            const workflowMap = new Map();
+            for (const run of relevantWorkflows) {
+              if (!workflowMap.has(run.name) || 
+                  new Date(run.created_at) > new Date(workflowMap.get(run.name).created_at)) {
+                workflowMap.set(run.name, run);
+              }
+            }
+            
+            const workflows = Array.from(workflowMap.values());
+            
+            // Categorize workflows
+            const categories = {
+              'Build & Compile': ['Build and Test', 'TypeScript Type Checking'],
+              'Testing': [
+                'API Integration Tests',
+                'Integration & Contract Tests',
+                'WireMock Protocol Tests',
+                'Advanced Testing Suite',
+                'Test Coverage Report'
+              ],
+              'Database': [
+                'Database Migration Check',
+                'Database Migration Full Test',
+                'Database Migration Regression'
+              ],
+              'Platform & Compatibility': [
+                'Docker Persistence Test',
+                'ARM64 Binary Execution Test',
+                'Reverse Proxy Tests'
+              ],
+              'Quality & Resilience': [
+                'E-Ink Visual Regression Tests',
+                'Load & Performance Tests',
+                'Corpus of Doom - Malformed File Tests'
+              ],
+              'Security': [
+                'Security Scanning',
+                'Security Enhanced Scanning',
+                'CodeQL Analysis'
+              ]
+            };
+            
+            // Build summary data
+            const summaryData = {
+              prNumber,
+              headSha: headSha.substring(0, 7),
+              workflows: workflows.map(run => ({
+                name: run.name,
+                status: run.status,
+                conclusion: run.conclusion,
+                url: run.html_url,
+                duration: run.updated_at && run.created_at 
+                  ? Math.round((new Date(run.updated_at) - new Date(run.created_at)) / 1000)
+                  : 0
+              })),
+              categories,
+              totalCount: workflows.length,
+              passedCount: workflows.filter(r => r.conclusion === 'success').length,
+              failedCount: workflows.filter(r => r.conclusion === 'failure').length,
+              skippedCount: workflows.filter(r => r.conclusion === 'skipped').length,
+              cancelledCount: workflows.filter(r => r.conclusion === 'cancelled').length,
+              inProgressCount: workflows.filter(r => r.status === 'in_progress' || r.status === 'queued').length
+            };
+            
+            core.setOutput('summary_data', JSON.stringify(summaryData));
+            return summaryData;
+
+      - name: Generate summary markdown
+        if: steps.gather.outputs.summary_data
+        run: |
+          SUMMARY_DATA='${{ steps.gather.outputs.summary_data }}'
+          
+          # Parse JSON
+          PR_NUMBER=$(echo "$SUMMARY_DATA" | jq -r '.prNumber')
+          HEAD_SHA=$(echo "$SUMMARY_DATA" | jq -r '.headSha')
+          TOTAL=$(echo "$SUMMARY_DATA" | jq -r '.totalCount')
+          PASSED=$(echo "$SUMMARY_DATA" | jq -r '.passedCount')
+          FAILED=$(echo "$SUMMARY_DATA" | jq -r '.failedCount')
+          SKIPPED=$(echo "$SUMMARY_DATA" | jq -r '.skippedCount')
+          CANCELLED=$(echo "$SUMMARY_DATA" | jq -r '.cancelledCount')
+          IN_PROGRESS=$(echo "$SUMMARY_DATA" | jq -r '.inProgressCount')
+          
+          # Calculate success rate
+          if [ "$TOTAL" -gt 0 ]; then
+            SUCCESS_RATE=$(echo "scale=1; $PASSED * 100 / $TOTAL" | bc)
+          else
+            SUCCESS_RATE="0"
+          fi
+          
+          # Determine overall status emoji
+          if [ "$FAILED" -gt 0 ]; then
+            OVERALL_STATUS="❌ FAILURES DETECTED"
+            STATUS_EMOJI="🔴"
+          elif [ "$IN_PROGRESS" -gt 0 ]; then
+            OVERALL_STATUS="⏳ IN PROGRESS"
+            STATUS_EMOJI="🟡"
+          elif [ "$PASSED" -eq "$TOTAL" ]; then
+            OVERALL_STATUS="✅ ALL PASSED"
+            STATUS_EMOJI="🟢"
+          else
+            OVERALL_STATUS="⚠️ MIXED RESULTS"
+            STATUS_EMOJI="🟠"
+          fi
+          
+          # Start building summary
+          echo "# 📊 CI Test Suite Summary - PR #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`$HEAD_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** $OVERALL_STATUS" >> $GITHUB_STEP_SUMMARY
+          echo "**Success Rate:** ${SUCCESS_RATE}%" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Overall statistics
+          echo "## 📈 Overall Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Count | Percentage |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| ✅ Passed | $PASSED | $(echo "scale=1; $PASSED * 100 / $TOTAL" | bc)% |" >> $GITHUB_STEP_SUMMARY
+          echo "| ❌ Failed | $FAILED | $(echo "scale=1; $FAILED * 100 / $TOTAL" | bc)% |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⏭️ Skipped | $SKIPPED | $(echo "scale=1; $SKIPPED * 100 / $TOTAL" | bc)% |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🚫 Cancelled | $CANCELLED | $(echo "scale=1; $CANCELLED * 100 / $TOTAL" | bc)% |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⏳ In Progress | $IN_PROGRESS | $(echo "scale=1; $IN_PROGRESS * 100 / $TOTAL" | bc)% |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Total** | **$TOTAL** | **100%** |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Category breakdown
+          echo "## 🗂️ Results by Category" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Process each category
+          CATEGORIES=("Build & Compile" "Testing" "Database" "Platform & Compatibility" "Quality & Resilience" "Security")
+          
+          for CATEGORY in "${CATEGORIES[@]}"; do
+            echo "### $CATEGORY" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Workflow | Status | Duration |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|--------|----------|" >> $GITHUB_STEP_SUMMARY
+            
+            # Get workflows for this category
+            WORKFLOWS=$(echo "$SUMMARY_DATA" | jq -r --arg cat "$CATEGORY" '
+              .categories[$cat] as $cat_workflows |
+              .workflows[] | 
+              select(.name as $name | $cat_workflows | index($name)) |
+              "\(.name)|\(.conclusion)|\(.duration)|\(.url)"
+            ')
+            
+            if [ -z "$WORKFLOWS" ]; then
+              echo "| _No workflows in this category_ | - | - |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "$WORKFLOWS" | while IFS='|' read -r NAME CONCLUSION DURATION URL; do
+                # Determine status emoji
+                case "$CONCLUSION" in
+                  "success") STATUS="✅ Passed" ;;
+                  "failure") STATUS="❌ Failed" ;;
+                  "skipped") STATUS="⏭️ Skipped" ;;
+                  "cancelled") STATUS="🚫 Cancelled" ;;
+                  "in_progress"|"queued") STATUS="⏳ Running" ;;
+                  *) STATUS="❓ Unknown" ;;
+                esac
+                
+                # Format duration
+                if [ "$DURATION" -gt 0 ]; then
+                  MINUTES=$((DURATION / 60))
+                  SECONDS=$((DURATION % 60))
+                  if [ "$MINUTES" -gt 0 ]; then
+                    DURATION_STR="${MINUTES}m ${SECONDS}s"
+                  else
+                    DURATION_STR="${SECONDS}s"
+                  fi
+                else
+                  DURATION_STR="-"
+                fi
+                
+                echo "| [$NAME]($URL) | $STATUS | $DURATION_STR |" >> $GITHUB_STEP_SUMMARY
+              done
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          # Failed workflows details
+          FAILED_WORKFLOWS=$(echo "$SUMMARY_DATA" | jq -r '
+            .workflows[] | 
+            select(.conclusion == "failure") |
+            "\(.name)|\(.url)"
+          ')
+          
+          if [ -n "$FAILED_WORKFLOWS" ]; then
+            echo "## ❌ Failed Workflows - Action Required" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following workflows failed and require attention:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "$FAILED_WORKFLOWS" | while IFS='|' read -r NAME URL; do
+              echo "- ❌ **[$NAME]($URL)**" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # In-progress workflows
+          IN_PROGRESS_WORKFLOWS=$(echo "$SUMMARY_DATA" | jq -r '
+            .workflows[] | 
+            select(.status == "in_progress" or .status == "queued") |
+            "\(.name)|\(.url)"
+          ')
+          
+          if [ -n "$IN_PROGRESS_WORKFLOWS" ]; then
+            echo "## ⏳ In Progress" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following workflows are still running:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "$IN_PROGRESS_WORKFLOWS" | while IFS='|' read -r NAME URL; do
+              echo "- ⏳ **[$NAME]($URL)**" >> $GITHUB_STEP_SUMMARY
+            done
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Footer
+          echo "---" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "_Generated on $(date -u +"%Y-%m-%d %H:%M:%S UTC") by CI Summary Report workflow_" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: steps.gather.outputs.summary_data && github.event.workflow_run.pull_requests[0]
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const summaryData = JSON.parse('${{ steps.gather.outputs.summary_data }}');
+            const prNumber = summaryData.prNumber;
+            
+            // Build comment body
+            const failed = summaryData.failedCount;
+            const passed = summaryData.passedCount;
+            const total = summaryData.totalCount;
+            const successRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+            
+            let status = '';
+            if (failed > 0) {
+              status = '❌ **CI Failed**';
+            } else if (summaryData.inProgressCount > 0) {
+              status = '⏳ **CI In Progress**';
+            } else if (passed === total) {
+              status = '✅ **All CI Checks Passed**';
+            } else {
+              status = '⚠️ **Mixed CI Results**';
+            }
+            
+            const body = `## ${status}
+            
+            **Success Rate:** ${successRate}% (${passed}/${total} workflows passed)
+            
+            ${failed > 0 ? `### ❌ Failed Workflows\n${summaryData.workflows.filter(w => w.conclusion === 'failure').map(w => `- [${w.name}](${w.url})`).join('\n')}\n` : ''}
+            
+            ${summaryData.inProgressCount > 0 ? `### ⏳ In Progress\n${summaryData.workflows.filter(w => w.status === 'in_progress' || w.status === 'queued').map(w => `- [${w.name}](${w.url})`).join('\n')}\n` : ''}
+            
+            <details>
+            <summary>📊 View detailed CI summary</summary>
+            
+            | Category | Passed | Failed | Total |
+            |----------|--------|--------|-------|
+            ${Object.entries(summaryData.categories).map(([cat, workflows]) => {
+              const catWorkflows = summaryData.workflows.filter(w => workflows.includes(w.name));
+              const catPassed = catWorkflows.filter(w => w.conclusion === 'success').length;
+              const catFailed = catWorkflows.filter(w => w.conclusion === 'failure').length;
+              const catTotal = catWorkflows.length;
+              return `| ${cat} | ${catPassed} | ${catFailed} | ${catTotal} |`;
+            }).join('\n')}
+            
+            </details>
+            
+            ---
+            _Last updated: ${new Date().toUTCString()}_`;
+            
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            
+            const botComment = comments.find(comment => 
+              comment.user.type === 'Bot' && 
+              comment.body.includes('CI Summary Report')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: body
+              });
+            }

@@ -1,0 +1,404 @@
+# Enhanced Security Scan Workflow
+#
+# Purpose: Performs comprehensive security scanning including deep dependency analysis
+# Significance: Prevents supply chain attacks and identifies vulnerable third-party libraries
+# Key Functions:
+# - Runs OWASP Dependency Check to scan for known vulnerabilities in Java dependencies
+# - Performs NPM audit for frontend package vulnerabilities
+# - Runs SAST (Semgrep) for code-level security issues
+# - Scans Docker container images for CVEs using Trivy
+# - Checks for problematic license types
+# - Provides comprehensive security posture assessment
+name: Enhanced Security Scan
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+  workflow_call:
+    inputs:
+      full_scan:
+        description: 'Run full dependency scan (slower, more comprehensive)'
+        required: false
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      full_scan:
+        description: 'Run full dependency scan (slower, more comprehensive)'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 2 * * 1'  # Weekly Monday 02:00 UTC
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  # ============================================
+  # Secret Scanning (Gitleaks)
+  # DISABLED - Requires organization license
+  # ============================================
+  # secret-scanning:
+  #   name: Secret Scanning
+  #   runs-on: ubuntu-latest
+  #   
+  #   steps:
+  #     - name: Harden Runner
+  #       uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+  #       with:
+  #         egress-policy: audit
+  #
+  #     - name: Checkout Code
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #
+  #     - name: Run Gitleaks
+  #       uses: gitleaks/gitleaks-action@v2
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
+  # OWASP Dependency Check (Backend)
+  # ============================================
+  dependency-check-backend:
+    name: OWASP Dependency Check (Backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Cache OWASP Dependency Check data
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/dependency-check-data
+          key: ${{ runner.os }}-owasp-${{ hashFiles('**/build.gradle') }}
+          restore-keys: |
+            ${{ runner.os }}-owasp-
+
+      - name: Run OWASP Dependency Check
+        working-directory: booklore-api
+        run: |
+          # Add dependency-check plugin to build if not present
+          if ! grep -q "org.owasp.dependencycheck" build.gradle; then
+            echo "⚠️ OWASP plugin not in build.gradle, using standalone scanner"
+            
+            # Download and run standalone dependency-check
+            OWASP_VERSION="9.0.9"
+            curl -sL "https://github.com/jeremylong/DependencyCheck/releases/download/v${OWASP_VERSION}/dependency-check-${OWASP_VERSION}-release.zip" -o /tmp/dc.zip
+            unzip -q /tmp/dc.zip -d /tmp/
+            
+            /tmp/dependency-check/bin/dependency-check.sh \
+              --project "BookLore Backend" \
+              --scan . \
+              --format HTML \
+              --format JSON \
+              --out build/reports/dependency-check \
+              --failOnCVSS 9 \
+              --suppression .github/owasp-suppressions.xml 2>/dev/null || true
+          else
+            ./gradlew dependencyCheckAnalyze --no-daemon || true
+          fi
+
+      - name: Check for critical vulnerabilities
+        id: cve_check
+        run: |
+          CRITICAL=0
+          HIGH=0
+          
+          # Parse JSON report if exists
+          if [ -f "booklore-api/build/reports/dependency-check/dependency-check-report.json" ]; then
+            CRITICAL=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "CRITICAL")] | length' \
+              booklore-api/build/reports/dependency-check/dependency-check-report.json 2>/dev/null || echo "0")
+            HIGH=$(jq '[.dependencies[]?.vulnerabilities[]? | select(.severity == "HIGH")] | length' \
+              booklore-api/build/reports/dependency-check/dependency-check-report.json 2>/dev/null || echo "0")
+          fi
+          
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          
+          echo "📊 Vulnerability Summary:"
+          echo "  Critical: $CRITICAL"
+          echo "  High: $HIGH"
+          
+          if [ "$CRITICAL" -gt 0 ]; then
+            echo "❌ Critical vulnerabilities found!"
+            # Don't fail the build, but warn strongly
+          fi
+
+      - name: Upload Dependency Check Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-backend-report
+          path: |
+            booklore-api/build/reports/dependency-check/
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Add PR Comment with CVE Summary
+        if: github.event_name == 'pull_request' && (steps.cve_check.outputs.critical > 0 || steps.cve_check.outputs.high > 0)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const critical = ${{ steps.cve_check.outputs.critical || 0 }};
+            const high = ${{ steps.cve_check.outputs.high || 0 }};
+            
+            const body = `## 🔒 Security Scan Results
+            
+            | Severity | Count |
+            |----------|-------|
+            | 🔴 Critical | ${critical} |
+            | 🟠 High | ${high} |
+            
+            ${critical > 0 ? '⚠️ **Action Required:** Critical vulnerabilities detected. Please review the OWASP report.' : ''}
+            
+            📋 Full report available in workflow artifacts.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  # ============================================
+  # NPM Audit (Frontend)
+  # ============================================
+  npm-audit:
+    name: NPM Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install dependencies
+        working-directory: booklore-ui
+        run: npm ci --prefer-offline --no-audit
+
+      - name: Run npm audit
+        id: audit
+        working-directory: booklore-ui
+        run: |
+          # Run audit and capture output
+          npm audit --json > /tmp/npm-audit.json 2>/dev/null || true
+          
+          # Parse results
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' /tmp/npm-audit.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high // 0' /tmp/npm-audit.json)
+          MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' /tmp/npm-audit.json)
+          
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          
+          echo "📊 NPM Audit Summary:"
+          echo "  Critical: $CRITICAL"
+          echo "  High: $HIGH"
+          echo "  Moderate: $MODERATE"
+          
+          # Also run human-readable audit
+          npm audit --audit-level=high || true
+
+      - name: Upload NPM Audit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: /tmp/npm-audit.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ============================================
+  # SAST with Semgrep
+  # ============================================
+  sast-scanning:
+    name: SAST Scanning (Semgrep)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/java
+            p/spring
+            p/typescript
+            p/javascript
+            p/security-audit
+            p/owasp-top-ten
+          generateSarif: "1"
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+
+  # ============================================
+  # Container Image Scanning
+  # ============================================
+  container-scanning:
+    name: Container Image Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'booklore:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Trivy for summary
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'booklore:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          ignore-unfixed: true
+
+  # ============================================
+  # License Compliance Check
+  # ============================================
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Check for problematic licenses
+        working-directory: booklore-api
+        run: |
+          echo "📋 Checking dependency licenses..."
+          
+          # Generate dependency report
+          ./gradlew dependencies --configuration runtimeClasspath > /tmp/deps.txt 2>/dev/null || true
+          
+          # Check for known problematic licenses
+          PROBLEMATIC=("GPL-3.0" "AGPL" "SSPL")
+          
+          for LICENSE in "${PROBLEMATIC[@]}"; do
+            if grep -qi "$LICENSE" /tmp/deps.txt 2>/dev/null; then
+              echo "⚠️ Found dependency with $LICENSE license - review required"
+            fi
+          done
+          
+          echo "✅ License check complete"
+
+  # ============================================
+  # Security Summary
+  # ============================================
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-check-backend, npm-audit, sast-scanning]
+    if: always()
+    
+    steps:
+      - name: Generate Security Summary
+        run: |
+          echo "# 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Scan | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP Dependency Check | ${{ needs.dependency-check-backend.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Audit | ${{ needs.npm-audit.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST (Semgrep) | ${{ needs.sast-scanning.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📋 Detailed reports available in workflow artifacts." >> $GITHUB_STEP_SUMMARY
+

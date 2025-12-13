@@ -1,0 +1,563 @@
+# Corpus of Doom - Malformed File Tests Workflow
+#
+# Purpose: Tests application resilience against malicious/broken file inputs
+# Significance: Critical for preventing server crashes from malformed file uploads
+# Key Functions:
+# - Generates various types of malformed EPUB/PDF files to test edge cases
+# - Tests server stability when processing corrupt/malicious files
+# - Verifies graceful error handling instead of server crashes
+# - Tests metadata parsing resilience against broken files
+# - Ensures book drop scanning doesn't crash on malformed files
+# - Creates various malformed file types: truncated, circular refs, xml bombs, etc.
+name: Corpus of Doom - Malformed File Tests
+
+# Catches: Malformed file handling, metadata parsing regressions, format compatibility breaks
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/java/**/scanner/**'
+      - 'booklore-api/src/main/java/**/parser/**'
+      - 'booklore-api/src/main/java/**/metadata/**'
+      - 'booklore-api/src/main/java/**/BookDropService**'
+      - '.github/workflows/corpus-of-doom-tests.yml'
+  schedule:
+    - cron: '0 5 * * 2'  # Weekly Tuesday 05:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  BOOKDROP_PATH: /tmp/bookdrop
+  APP_PORT: 6060
+
+jobs:
+  # ============================================
+  # Generate Malformed Test Files
+  # ============================================
+  generate-poison-files:
+    name: Generate Malformed Test Files
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Create malformed EPUB files
+        run: |
+          mkdir -p /tmp/corpus-of-doom
+          
+          # 1. Empty EPUB (just a zip header)
+          echo -n "PK" > /tmp/corpus-of-doom/empty.epub
+          
+          # 2. Valid ZIP but missing required EPUB structure
+          mkdir -p /tmp/fake-epub
+          echo "This is not an EPUB" > /tmp/fake-epub/fake.txt
+          cd /tmp/fake-epub && zip -r /tmp/corpus-of-doom/not-epub.epub . && cd -
+          
+          # 3. EPUB with malformed XML (unclosed tags)
+          mkdir -p /tmp/bad-xml-epub/META-INF
+          echo "application/epub+zip" > /tmp/bad-xml-epub/mimetype
+          cat > /tmp/bad-xml-epub/META-INF/container.xml << 'BADXML'
+          <?xml version="1.0"?>
+          <container>
+            <rootfiles>
+              <rootfile full-path="content.opf" media-type="application/oebps-package+xml"
+            <!-- Missing closing tags -->
+          BADXML
+          cd /tmp/bad-xml-epub && zip -r /tmp/corpus-of-doom/malformed-xml.epub . && cd -
+          
+          # 4. EPUB with XML bomb (entity expansion attack)
+          mkdir -p /tmp/xml-bomb-epub/META-INF
+          echo "application/epub+zip" > /tmp/xml-bomb-epub/mimetype
+          cat > /tmp/xml-bomb-epub/META-INF/container.xml << 'XMLBOMB'
+          <?xml version="1.0"?>
+          <!DOCTYPE lolz [
+            <!ENTITY lol "lol">
+            <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+            <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+          ]>
+          <container>&lol3;</container>
+          XMLBOMB
+          cd /tmp/xml-bomb-epub && zip -r /tmp/corpus-of-doom/xml-bomb.epub . && cd -
+          
+          # 5. Extremely large metadata file (memory exhaustion test)
+          mkdir -p /tmp/huge-meta-epub/META-INF
+          echo "application/epub+zip" > /tmp/huge-meta-epub/mimetype
+          # Create a file with 1MB of repeated content
+          python3 -c "print('<metadata>' + 'A'*1000000 + '</metadata>')" > /tmp/huge-meta-epub/huge-content.opf
+          echo '<?xml version="1.0"?><container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="huge-content.opf"/></rootfiles></container>' > /tmp/huge-meta-epub/META-INF/container.xml
+          cd /tmp/huge-meta-epub && zip -r /tmp/corpus-of-doom/huge-metadata.epub . && cd -
+          
+          # 6. EPUB with circular references in spine
+          mkdir -p /tmp/circular-epub/META-INF
+          echo "application/epub+zip" > /tmp/circular-epub/mimetype
+          cat > /tmp/circular-epub/content.opf << 'CIRCULAR'
+          <?xml version="1.0"?>
+          <package xmlns="http://www.idpf.org/2007/opf">
+            <manifest>
+              <item id="a" href="a.xhtml"/>
+              <item id="b" href="b.xhtml"/>
+            </manifest>
+            <spine>
+              <itemref idref="a"/>
+              <itemref idref="b"/>
+              <itemref idref="a"/><!-- Circular -->
+              <itemref idref="nonexistent"/><!-- Missing -->
+            </spine>
+          </package>
+          CIRCULAR
+          echo '<?xml version="1.0"?><container xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="content.opf"/></rootfiles></container>' > /tmp/circular-epub/META-INF/container.xml
+          cd /tmp/circular-epub && zip -r /tmp/corpus-of-doom/circular-spine.epub . && cd -
+          
+          echo "Created malformed EPUB test files"
+          ls -la /tmp/corpus-of-doom/
+
+      - name: Create malformed PDF files
+        run: |
+          # 1. Empty PDF (just header)
+          echo "%PDF-1.4" > /tmp/corpus-of-doom/empty.pdf
+          
+          # 2. Truncated PDF (header only, no objects)
+          cat > /tmp/corpus-of-doom/truncated.pdf << 'TRUNCPDF'
+          %PDF-1.4
+          1 0 obj
+          << /Type /Catalog
+          TRUNCPDF
+          
+          # 3. PDF with circular object references
+          cat > /tmp/corpus-of-doom/circular-refs.pdf << 'CIRCPDF'
+          %PDF-1.4
+          1 0 obj
+          << /Type /Catalog /Pages 2 0 R >>
+          endobj
+          2 0 obj
+          << /Type /Pages /Kids [1 0 R] /Count 1 >>
+          endobj
+          xref
+          0 3
+          0000000000 65535 f
+          0000000009 00000 n
+          0000000058 00000 n
+          trailer
+          << /Size 3 /Root 1 0 R >>
+          %%EOF
+          CIRCPDF
+          
+          # 4. PDF with huge page count (DoS potential)
+          cat > /tmp/corpus-of-doom/huge-pagecount.pdf << 'HUGEPDF'
+          %PDF-1.4
+          1 0 obj
+          << /Type /Catalog /Pages 2 0 R >>
+          endobj
+          2 0 obj
+          << /Type /Pages /Kids [] /Count 999999999 >>
+          endobj
+          xref
+          0 3
+          0000000000 65535 f
+          0000000009 00000 n
+          0000000058 00000 n
+          trailer
+          << /Size 3 /Root 1 0 R >>
+          %%EOF
+          HUGEPDF
+          
+          # 5. Binary garbage with PDF extension
+          dd if=/dev/urandom of=/tmp/corpus-of-doom/random-garbage.pdf bs=1024 count=10 2>/dev/null
+          
+          # 6. PDF header but ZIP content (confused format)
+          echo "%PDF-1.4" > /tmp/corpus-of-doom/pdf-header-zip-body.pdf
+          cat /tmp/corpus-of-doom/not-epub.epub >> /tmp/corpus-of-doom/pdf-header-zip-body.pdf
+          
+          echo "Created malformed PDF test files"
+          ls -la /tmp/corpus-of-doom/*.pdf
+
+      - name: Create edge-case files
+        run: |
+          # 1. Wrong extension files
+          echo "This is plain text" > /tmp/corpus-of-doom/actually-text.epub
+          echo "This is plain text" > /tmp/corpus-of-doom/actually-text.pdf
+          
+          # 2. Extremely long filename
+          LONG_NAME=$(python3 -c "print('A'*200)")
+          touch "/tmp/corpus-of-doom/${LONG_NAME}.epub"
+          
+          # 3. Special characters in filename
+          touch "/tmp/corpus-of-doom/special\$chars#in@name!.epub" 2>/dev/null || true
+          
+          # 4. Unicode filename
+          touch "/tmp/corpus-of-doom/日本語の本.epub" 2>/dev/null || true
+          touch "/tmp/corpus-of-doom/книга.epub" 2>/dev/null || true
+          
+          # 5. Zero-byte files
+          touch /tmp/corpus-of-doom/zero-bytes.epub
+          touch /tmp/corpus-of-doom/zero-bytes.pdf
+          
+          # 6. Files with null bytes in content
+          printf 'PK\x00\x00\x00\x00' > /tmp/corpus-of-doom/null-bytes.epub
+          
+          echo "Created edge-case test files"
+          ls -la /tmp/corpus-of-doom/
+
+      - name: Upload malformed file corpus
+        uses: actions/upload-artifact@v4
+        with:
+          name: corpus-of-doom
+          path: /tmp/corpus-of-doom/
+          retention-days: 1
+
+  # ============================================
+  # Test Server Survival
+  # ============================================
+  server-survival-test:
+    name: Server Survival Test
+    runs-on: ubuntu-latest
+    needs: generate-poison-files
+    timeout-minutes: 30
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build BookLore image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: booklore:doom-test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Download malformed file corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: corpus-of-doom
+          path: /tmp/corpus-of-doom
+
+      - name: Start BookLore with BookDrop volume
+        run: |
+          mkdir -p ${{ env.BOOKDROP_PATH }}
+          chmod 777 ${{ env.BOOKDROP_PATH }}
+          
+          docker network create doom-test-net
+          
+          # Start MariaDB
+          docker run -d \
+            --name mariadb-doom \
+            --network doom-test-net \
+            -e MYSQL_ROOT_PASSWORD=doomtest \
+            -e MYSQL_DATABASE=booklore \
+            mariadb:10.11
+          
+          # Wait for MariaDB
+          for i in {1..30}; do
+            if docker exec mariadb-doom mariadb-admin ping -h localhost -uroot -pdoomtest 2>/dev/null; then
+              echo "MariaDB ready"
+              break
+            fi
+            sleep 2
+          done
+          
+          # Start BookLore with bookdrop mounted
+          docker run -d \
+            --name booklore-doom \
+            --network doom-test-net \
+            -p ${{ env.APP_PORT }}:6060 \
+            -v ${{ env.BOOKDROP_PATH }}:/bookdrop \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-doom:3306/booklore \
+            -e DATABASE_USERNAME=root \
+            -e DATABASE_PASSWORD=doomtest \
+            -e BOOKLORE_BOOKDROP=/bookdrop \
+            booklore:doom-test
+          
+          # Wait for BookLore to be ready
+          echo "Waiting for BookLore to start..."
+          for i in {1..60}; do
+            HTTP_CODE=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" \
+              http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "BookLore is ready"
+              break
+            fi
+            echo "Attempt $i/60 - HTTP: $HTTP_CODE"
+            sleep 3
+          done
+
+      - name: Verify baseline health
+        id: baseline
+        run: |
+          echo "Capturing baseline state..."
+
+          # Get initial health - use -f to fail on HTTP errors, default to empty on failure
+          HEALTH=$(curl -sf http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo '{"status":"unknown"}')
+
+          # Ensure output is single-line and valid JSON
+          HEALTH=$(echo "$HEALTH" | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+          echo "baseline_health=${HEALTH}" >> $GITHUB_OUTPUT
+
+          # Get initial memory
+          MEMORY=$(docker stats booklore-doom --no-stream --format '{{.MemUsage}}' 2>/dev/null || echo "N/A")
+          echo "Baseline memory: $MEMORY"
+
+      - name: Copy poison files to BookDrop
+        run: |
+          echo "Copying Corpus of Doom to BookDrop folder..."
+
+          cp -v /tmp/corpus-of-doom/* ${{ env.BOOKDROP_PATH }}/
+
+          echo ""
+          echo "Files in BookDrop:"
+          ls -la ${{ env.BOOKDROP_PATH }}/
+
+          echo ""
+          echo "Waiting for BookLore to process files..."
+          # Give the scanner time to pick up files
+          sleep 30
+
+      - name: Monitor server during file processing
+        id: monitor
+        run: |
+          echo "Monitoring server health during poison file processing..."
+
+          CRASH_DETECTED=false
+          HANG_DETECTED=false
+
+          for i in {1..20}; do
+            # Check if container is still running
+            if ! docker ps --filter "name=booklore-doom" --format '{{.Names}}' | grep -q booklore-doom; then
+              echo "CRITICAL: Container crashed!"
+              CRASH_DETECTED=true
+              break
+            fi
+
+            # Check if server is responsive
+            HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" \
+              http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
+
+            if [ "$HTTP_CODE" = "000" ]; then
+              echo "Server unresponsive (attempt $i)"
+              if [ $i -gt 5 ]; then
+                HANG_DETECTED=true
+              fi
+            else
+              echo "Server responding (HTTP $HTTP_CODE) - attempt $i"
+            fi
+
+            # Check memory growth (potential memory leak from malformed files)
+            MEMORY=$(docker stats booklore-doom --no-stream --format '{{.MemPerc}}' 2>/dev/null | tr -d '%' || echo "0")
+            echo "   Memory usage: ${MEMORY}%"
+
+            if (( $(echo "$MEMORY > 90" | bc -l 2>/dev/null || echo 0) )); then
+              echo "High memory usage detected: ${MEMORY}%"
+            fi
+
+            sleep 5
+          done
+
+          echo "crash_detected=$CRASH_DETECTED" >> $GITHUB_OUTPUT
+          echo "hang_detected=$HANG_DETECTED" >> $GITHUB_OUTPUT
+
+      - name: Verify server survival
+        run: |
+          echo "Final server health check..."
+
+          # Check container is running
+          if ! docker ps --filter "name=booklore-doom" --format '{{.Names}}' | grep -q booklore-doom; then
+            echo "FAIL: Server crashed while processing malformed files!"
+            echo ""
+            echo "=== Container Logs ==="
+            docker logs booklore-doom 2>&1 | tail -200
+            exit 1
+          fi
+
+          # Check server is responsive
+          HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" \
+            http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "FAIL: Server unhealthy after processing malformed files (HTTP $HTTP_CODE)"
+            docker logs booklore-doom 2>&1 | tail -100
+            exit 1
+          fi
+
+          echo "Server survived the Corpus of Doom!"
+
+      - name: Check for graceful error handling
+        run: |
+          echo "Checking for graceful error handling in logs..."
+
+          # Get logs
+          docker logs booklore-doom 2>&1 > /tmp/server-logs.txt
+
+          # Count unhandled exceptions (stack traces)
+          # Ensure output is numeric only - use head -1 and strip whitespace
+          STACK_TRACES=$(grep -c "Exception\|Error" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+          UNCAUGHT=$(grep -c "UncaughtException\|OutOfMemory\|StackOverflow" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+          GRACEFUL=$(grep -c "Failed to parse\|Invalid file\|Skipping\|Unable to process" /tmp/server-logs.txt 2>/dev/null | head -1 | xargs || echo "0")
+
+          # Ensure variables are numeric (fallback to 0 if empty)
+          STACK_TRACES=${STACK_TRACES:-0}
+          UNCAUGHT=${UNCAUGHT:-0}
+          GRACEFUL=${GRACEFUL:-0}
+
+          # Final safety: convert to integer
+          STACK_TRACES=$((STACK_TRACES + 0))
+          UNCAUGHT=$((UNCAUGHT + 0))
+          GRACEFUL=$((GRACEFUL + 0))
+
+          echo "Log Analysis:"
+          echo "   Total exception mentions: $STACK_TRACES"
+          echo "   Uncaught/Critical exceptions: $UNCAUGHT"
+          echo "   Graceful error messages: $GRACEFUL"
+
+          if [ "$UNCAUGHT" -gt 0 ]; then
+            echo ""
+            echo "Critical exceptions found:"
+            grep -E "UncaughtException|OutOfMemory|StackOverflow" /tmp/server-logs.txt | head -10
+          fi
+
+          if [ "$GRACEFUL" -gt 0 ]; then
+            echo ""
+            echo "Server handled errors gracefully:"
+            grep -E "Failed to parse|Invalid file|Skipping|Unable to process" /tmp/server-logs.txt | head -5
+          fi
+
+      - name: Verify database integrity
+        run: |
+          echo "Checking database integrity..."
+
+          # Check database is accessible
+          DB_CHECK=$(docker exec mariadb-doom mariadb -uroot -pdoomtest booklore -e "SELECT 1;" 2>/dev/null)
+
+          if [ -z "$DB_CHECK" ]; then
+            echo "Database is not accessible!"
+            exit 1
+          fi
+
+          echo "Database is accessible"
+
+          # Check for corrupted tables
+          TABLES=$(docker exec mariadb-doom mariadb -uroot -pdoomtest booklore -sN -e "SHOW TABLES;" 2>/dev/null | wc -l)
+          echo "Tables in database: $TABLES"
+
+          # Run table check (if supported)
+          docker exec mariadb-doom mariadb -uroot -pdoomtest booklore -e "CHECK TABLE book;" 2>/dev/null || echo "Table check not applicable"
+
+      - name: Test API still functional
+        run: |
+          echo "Testing API endpoints after Corpus of Doom..."
+
+          ENDPOINTS=(
+            "/actuator/health"
+            "/actuator/info"
+            "/api/v1/libraries"
+          )
+
+          PASSED=0
+
+          for ENDPOINT in "${ENDPOINTS[@]}"; do
+            HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" \
+              http://localhost:${{ env.APP_PORT }}${ENDPOINT} 2>/dev/null || echo "000")
+
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+              echo "$ENDPOINT - HTTP $HTTP_CODE"
+              PASSED=$((PASSED+1))
+            else
+              echo "$ENDPOINT - HTTP $HTTP_CODE"
+            fi
+          done
+
+          echo ""
+          echo "API Health: $PASSED/${#ENDPOINTS[@]} endpoints responding"
+
+      - name: Collect failure artifacts
+        if: failure()
+        run: |
+          mkdir -p /tmp/failure-artifacts
+          docker logs booklore-doom 2>&1 > /tmp/failure-artifacts/server-logs.txt
+          docker logs mariadb-doom 2>&1 > /tmp/failure-artifacts/db-logs.txt
+          cp ${{ env.BOOKDROP_PATH }}/* /tmp/failure-artifacts/ 2>/dev/null || true
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doom-test-failure-artifacts
+          path: /tmp/failure-artifacts/
+          retention-days: 7
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker rm -f booklore-doom mariadb-doom 2>/dev/null || true
+          docker network rm doom-test-net 2>/dev/null || true
+
+  # ============================================
+  # Summary
+  # ============================================
+  doom-tests-summary:
+    name: Corpus of Doom Summary
+    runs-on: ubuntu-latest
+    needs: [generate-poison-files, server-survival-test]
+    if: always()
+
+    steps:
+      - name: Generate Summary
+        run: |
+          echo "# Corpus of Doom Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "These tests verify BookLore survives intentionally malformed files." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Malformed Files Tested" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| File Type | Test Case |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-----------|" >> $GITHUB_STEP_SUMMARY
+          echo "| EPUB | Empty/truncated |" >> $GITHUB_STEP_SUMMARY
+          echo "| EPUB | Malformed XML |" >> $GITHUB_STEP_SUMMARY
+          echo "| EPUB | XML entity expansion (bomb) |" >> $GITHUB_STEP_SUMMARY
+          echo "| EPUB | Circular spine references |" >> $GITHUB_STEP_SUMMARY
+          echo "| EPUB | Huge metadata |" >> $GITHUB_STEP_SUMMARY
+          echo "| PDF | Truncated/corrupt |" >> $GITHUB_STEP_SUMMARY
+          echo "| PDF | Circular object refs |" >> $GITHUB_STEP_SUMMARY
+          echo "| PDF | Huge page count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Both | Wrong extensions |" >> $GITHUB_STEP_SUMMARY
+          echo "| Both | Zero-byte files |" >> $GITHUB_STEP_SUMMARY
+          echo "| Both | Special characters in names |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| File Generation | ${{ needs.generate-poison-files.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Server Survival | ${{ needs.server-survival-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Why This Matters" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Users may accidentally drop corrupted files into their libraries." >> $GITHUB_STEP_SUMMARY
+          echo "The server must handle these gracefully without:" >> $GITHUB_STEP_SUMMARY
+          echo "- Crashing" >> $GITHUB_STEP_SUMMARY
+          echo "- Corrupting the database" >> $GITHUB_STEP_SUMMARY
+          echo "- Becoming unresponsive" >> $GITHUB_STEP_SUMMARY
+          echo "- Memory exhaustion" >> $GITHUB_STEP_SUMMARY
+

@@ -1,0 +1,82 @@
+# Link Checker Workflow
+#
+# Purpose: Validates that all links in documentation are valid and functional
+# Significance: Maintains quality of documentation by catching broken links early
+# Key Functions:
+# - Scans all Markdown files and documentation for broken links
+# - Validates both internal and external links
+# - Runs on documentation changes to catch immediate issues
+# - Scheduled weekly to catch external link rot (broken external links)
+# - Reports broken links as part of pull request checks
+name: Link Checker
+
+on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - "**.md"
+      - "docs/**"
+  # Run weekly to catch broken external links
+  schedule:
+    - cron: "0 0 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref_name || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  link-checker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
+      - name: Check out code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Check links in Markdown files
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # v2.3.0
+        with:
+          args: >
+            --verbose
+            --no-progress
+            --accept 200,204,206,301,302,307,308,429
+            --exclude-loopback
+            --exclude-mail
+            --exclude 'localhost'
+            --exclude '127\.0\.0\.1'
+            --exclude 'demo\.booklore\.dev'
+            --exclude 'discord\.gg'
+            --exclude 'opencollective\.com'
+            --exclude 'gnu\.org'
+            --timeout 30
+            --max-retries 3
+            --retry-wait-time 5
+            '*.md'
+            'docs/**/*.md'
+            'CONTRIBUTING.md'
+            'SECURITY.md'
+          fail: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload link check results
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: link-check-report
+          path: ./lychee/out.md
+          retention-days: 7

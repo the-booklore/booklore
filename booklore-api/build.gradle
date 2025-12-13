@@ -1,9 +1,20 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.flywaydb:flyway-mysql:11.12.0'
+    }
+}
+
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.8'
+    id 'org.springframework.boot' version '3.5.6'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.hibernate.orm' version '6.6.36.Final'
     id 'com.github.ben-manes.versions' version '0.53.0'
+    id 'org.flywaydb.flyway' version '11.12.0'
+    id 'jacoco'
 }
 
 group = 'com.adityachandel'
@@ -23,6 +34,7 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+    flywayMigration
 }
 
 dependencies {
@@ -37,9 +49,15 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+    // --- Flyway for runtime (required by Spring Boot for the flyway bean) ---
+    implementation 'org.flywaydb:flyway-core:11.12.0'
+    implementation 'org.flywaydb:flyway-mysql:11.12.0'
+
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
-    implementation 'org.flywaydb:flyway-mysql:11.18.0'
+
+    // Flyway Gradle plugin runtime
+    flywayMigration 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
 
     // --- Security & Authentication ---
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
@@ -82,6 +100,11 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.assertj:assertj-core:3.27.3'
     testImplementation "org.mockito:mockito-inline:5.2.0"
+    
+    // --- Testcontainers for Integration Tests ---
+    testImplementation 'org.testcontainers:testcontainers:1.21.0'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.0'
+    testImplementation 'org.testcontainers:mariadb:1.21.0'
 }
 
 hibernate {
@@ -93,6 +116,26 @@ hibernate {
 test {
     useJUnitPlatform()
     jvmArgs("-XX:+EnableDynamicAgentLoading")
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/config/**',
+                '**/dto/**',
+                '**/entity/**',
+                '**/model/**'
+            ])
+        }))
+    }
 }
 
 bootRun {
@@ -100,4 +143,13 @@ bootRun {
     if (debug.equals("true")) { 
         jvmArgs("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005")
     }
+}
+
+flyway {
+    configurations = ['flywayMigration']
+    url = System.getenv('FLYWAY_URL') ?: 'jdbc:mariadb://localhost:3306/booklore'
+    user = System.getenv('FLYWAY_USER') ?: 'root'
+    password = System.getenv('FLYWAY_PASSWORD') ?: 'root'
+    locations = ['filesystem:src/main/resources/db/migration']
+    cleanDisabled = (System.getenv('FLYWAY_CLEAN_DISABLED') ?: 'true').toBoolean()
 }
