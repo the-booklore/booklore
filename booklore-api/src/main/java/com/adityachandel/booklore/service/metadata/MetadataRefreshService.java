@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.metadata;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.exception.ComicvineRateLimitException;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.MetadataUpdateWrapper;
@@ -99,8 +100,12 @@ public class MetadataRefreshService {
 
             TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
             int completedCount = 0;
+            List<Long> bookIdList = new ArrayList<>(actualBookIds);
+            int rateLimitRetries = 0;
+            final int MAX_RATE_LIMIT_RETRIES = 3;
 
-            for (Long bookId : actualBookIds) {
+            for (int i = 0; i < bookIdList.size(); i++) {
+                Long bookId = bookIdList.get(i);
                 if (cancellationManager.isTaskCancelled(jobId)) {
                     log.info("RefreshMetadataTask {} was cancelled, stopping execution", jobId);
                     cancelTask(task);
@@ -109,65 +114,101 @@ public class MetadataRefreshService {
                 }
 
                 int finalCompletedCount = completedCount;
-                txTemplate.execute(status -> {
-                    BookEntity book = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId))
-                            .stream().findFirst()
-                            .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-                    try {
-                        if (book.getMetadata().areAllFieldsLocked()) {
-                            log.info("Skipping locked book: {}", book.getFileName());
-                            sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Skipped locked book: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
-                            return null;
-                        }
+                try {
+                    txTemplate.execute(status -> {
+                        BookEntity book = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId))
+                                .stream().findFirst()
+                                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+                        try {
+                            if (book.getMetadata().areAllFieldsLocked()) {
+                                log.info("Skipping locked book: {}", book.getFileName());
+                                sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Skipped locked book: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
+                                return null;
+                            }
 
-                        MetadataRefreshOptions refreshOptions;
-                        List<MetadataProvider> providers;
+                            MetadataRefreshOptions refreshOptions;
+                            List<MetadataProvider> providers;
 
-                        if (useRequestOptions) {
-                            refreshOptions = requestRefreshOptions;
-                            providers = fixedProviders;
-                        } else if (isLibraryRefresh) {
-                            refreshOptions = libraryRefreshOptions;
-                            providers = fixedProviders;
-                        } else {
-                            refreshOptions = resolveMetadataRefreshOptions(book.getLibrary().getId(), appSettings);
-                            providers = prepareProviders(refreshOptions);
-                        }
+                            if (useRequestOptions) {
+                                refreshOptions = requestRefreshOptions;
+                                providers = fixedProviders;
+                            } else if (isLibraryRefresh) {
+                                refreshOptions = libraryRefreshOptions;
+                                providers = fixedProviders;
+                            } else {
+                                refreshOptions = resolveMetadataRefreshOptions(book.getLibrary().getId(), appSettings);
+                                providers = prepareProviders(refreshOptions);
+                            }
 
-                        reportProgressIfNeeded(task, jobId, finalCompletedCount, totalBooks, book, isReviewMode);
-                        Map<MetadataProvider, BookMetadata> metadataMap = fetchMetadataForBook(providers, book);
-                        if (providers.contains(GoodReads)) {
-                            try {
-                                Thread.sleep(ThreadLocalRandom.current().nextLong(500, 1500));
-                            } catch (InterruptedException e) {
-                                Thread.currentThread().interrupt();
+                            reportProgressIfNeeded(task, jobId, finalCompletedCount, totalBooks, book, isReviewMode);
+                            Map<MetadataProvider, BookMetadata> metadataMap = fetchMetadataForBook(providers, book);
+                            if (providers.contains(GoodReads)) {
+                                try {
+                                    Thread.sleep(ThreadLocalRandom.current().nextLong(500, 1500));
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                    status.setRollbackOnly();
+                                    return null;
+                                }
+                            }
+                            BookMetadata fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+
+                            boolean bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
+                            if (bookReviewMode) {
+                                saveProposal(task, book.getId(), fetched);
+                            } else {
+                                updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories());
+                            }
+
+                            sendBatchProgressNotification(jobId, finalCompletedCount + 1, totalBooks, "Processed: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, bookReviewMode);
+                        } catch (Exception e) {
+                            if (e instanceof ComicvineRateLimitException) {
+                                throw (RuntimeException) e;
+                            }
+                            if (Thread.currentThread().isInterrupted()) {
+                                log.info("Processing interrupted for book: {}", book.getFileName());
                                 status.setRollbackOnly();
                                 return null;
                             }
+                            log.error("Metadata update failed for book: {}", book.getFileName(), e);
+                            sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, String.format("Failed to process: %s - %s", book.getMetadata().getTitle(), e.getMessage()), MetadataFetchTaskStatus.ERROR, isReviewMode);
                         }
-                        BookMetadata fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
-
-                        boolean bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
-                        if (bookReviewMode) {
-                            saveProposal(task, book.getId(), fetched);
-                        } else {
-                            updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories());
-                        }
-
-                        sendBatchProgressNotification(jobId, finalCompletedCount + 1, totalBooks, "Processed: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, bookReviewMode);
-                    } catch (Exception e) {
-                        if (Thread.currentThread().isInterrupted()) {
-                            log.info("Processing interrupted for book: {}", book.getFileName());
-                            status.setRollbackOnly();
-                            return null;
-                        }
-                        log.error("Metadata update failed for book: {}", book.getFileName(), e);
-                        sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, String.format("Failed to process: %s - %s", book.getMetadata().getTitle(), e.getMessage()), MetadataFetchTaskStatus.ERROR, isReviewMode);
+                        bookRepository.saveAndFlush(book);
+                        return null;
+                    });
+                    completedCount++;
+                    rateLimitRetries = 0; // Reset retries on success
+                } catch (ComicvineRateLimitException e) {
+                    rateLimitRetries++;
+                    if (rateLimitRetries > MAX_RATE_LIMIT_RETRIES) {
+                        log.error("Max rate limit retries exceeded. Aborting.");
+                        sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Aborted: Too many rate limit errors", MetadataFetchTaskStatus.ERROR, isReviewMode);
+                        return;
                     }
-                    bookRepository.saveAndFlush(book);
-                    return null;
-                });
-                completedCount++;
+
+                    log.warn("Comicvine rate limit hit ({}/{})".formatted(rateLimitRetries, MAX_RATE_LIMIT_RETRIES) + ". Pausing for 15 minutes...");
+                    sendBatchProgressNotification(jobId, finalCompletedCount, totalBooks, "Comicvine rate limit hit. Pausing for 15 minutes...", MetadataFetchTaskStatus.IN_PROGRESS, isReviewMode);
+
+                    // Sleep in chunks to allow cancellation checks
+                    for (int s = 0; s < 15 * 60; s++) {
+                        if (cancellationManager.isTaskCancelled(jobId)) {
+                            log.info("Task cancelled during rate limit pause");
+                            cancelTask(task);
+                            cancellationManager.clearCancellation(jobId);
+                            return;
+                        }
+                        try {
+                            Thread.sleep(1000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            log.info("Sleep interrupted during rate limit pause");
+                            return;
+                        }
+                    }
+                    i--; // Retry the same book
+                } catch (RuntimeException e) {
+                    throw e;
+                }
             }
 
             completeTask(task, completedCount, totalBooks, isReviewMode);

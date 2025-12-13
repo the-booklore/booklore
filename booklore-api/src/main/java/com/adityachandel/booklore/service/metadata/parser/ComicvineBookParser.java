@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.metadata.parser;
 
+import com.adityachandel.booklore.exception.ComicvineRateLimitException;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
@@ -85,6 +86,9 @@ public class ComicvineBookParser implements BookParser {
 
             if (response.statusCode() == 200) {
                 return parseComicvineApiResponse(response.body());
+            } else if (response.statusCode() == 420) {
+                log.warn("Comicvine API rate limit reached (Status 420). Response body: {}", response.body());
+                throw new ComicvineRateLimitException("Comicvine API rate limit reached");
             } else {
                 log.error("Comicvine Search API returned status code {}", response.statusCode());
             }
