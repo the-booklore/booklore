@@ -25,8 +25,8 @@ export class AuthService {
   public token$ = this.tokenSubject.asObservable();
 
 
-  internalLogin(credentials: { username: string; password: string }): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
-    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/login`, credentials).pipe(
+  internalLogin(credentials: { username: string; password: string }): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }> {
+    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }>(`${this.apiUrl}/login`, credentials).pipe(
       tap((response) => {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);
@@ -47,8 +47,8 @@ export class AuthService {
     );
   }
 
-  remoteLogin(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
-    return this.http.get<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/remote`).pipe(
+  remoteLogin(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }> {
+    return this.http.get<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }>(`${this.apiUrl}/remote`).pipe(
       tap((response) => {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);
@@ -58,13 +58,13 @@ export class AuthService {
     );
   }
 
-  exchangeOidcToken(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
+  exchangeOidcToken(): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }> {
     const oidcToken = this.getOidcAccessToken();
     if (!oidcToken) {
       throw new Error('No OIDC token available for exchange');
     }
 
-    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/oidc/token`, { token: oidcToken }).pipe(
+    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }>(`${this.apiUrl}/oidc/token`, { token: oidcToken }).pipe(
       tap((response) => {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);

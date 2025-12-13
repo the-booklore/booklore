@@ -158,10 +158,18 @@ async function handleOidcFlow(
   };
 
   // We check for 'code' and 'state' in the URL to identify a callback
-  const isCallback = window.location.search.includes('code=') && window.location.search.includes('state=');
+  const params = new URLSearchParams(window.location.search);
+  const isCallback = params.has('code') && params.has('state');
   const hasToken = oauthService.hasValidAccessToken();
 
-  if (hasToken && !isCallback) {
+  if (isCallback) {
+    // For callback, do not block app initialization.
+    // OidcCallbackComponent will handle discovery loading and token exchange.
+    authInitService.markAsInitialized();
+    return;
+  }
+
+  if (hasToken) {
     authInitService.markAsInitialized();
     runOidcSetup(true);
   } else {

@@ -10,7 +10,39 @@
 </head>
 
 <body>
-<app-root></app-root>
+<app-root>
+  <style>
+    body { margin: 0; background: #1a1a1a; }
+    .app-loading {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #ffffff;
+      font-family: sans-serif;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      border: 4px solid #ffffff;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      display: inline-block;
+      box-sizing: border-box;
+      animation: rotation 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes rotation {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  <div class="app-loading">
+    <span class="spinner"></span>
+    <span>BookLore is loading...</span>
+  </div>
+</app-root>
 </body>
 
 </html>

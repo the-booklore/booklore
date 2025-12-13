@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, DestroyRef, inject, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {Message} from 'primeng/message';
@@ -7,6 +7,7 @@ import {Password} from 'primeng/password';
 import {MessageService} from 'primeng/api';
 import {UserService} from '../../../features/settings/user-management/user.service';
 import {AuthService} from '../../service/auth.service';
+import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-change-password',
@@ -21,16 +22,28 @@ import {AuthService} from '../../service/auth.service';
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss'
 })
-export class ChangePasswordComponent {
+export class ChangePasswordComponent implements OnInit {
   currentPassword: string = '';
   newPassword: string = '';
   confirmNewPassword: string = '';
   errorMessage: string | null = null;
   successMessage: string | null = null;
+  isOidcUser: boolean = false;
 
   protected userService = inject(UserService);
   protected authService = inject(AuthService);
   protected messageService = inject(MessageService);
+  private destroyRef = inject(DestroyRef);
+
+  ngOnInit(): void {
+    this.userService.userState$.pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(state => {
+      if (state.user) {
+        this.isOidcUser = state.user.provisioningMethod === 'OIDC';
+      }
+    });
+  }
 
   get passwordsMatch(): boolean {
     return this.newPassword === this.confirmNewPassword;
@@ -40,7 +53,7 @@ export class ChangePasswordComponent {
     this.errorMessage = null;
     this.successMessage = null;
 
-    if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
+    if ((!this.isOidcUser && !this.currentPassword) || !this.newPassword || !this.confirmNewPassword) {
       this.errorMessage = 'All fields are required.';
       return;
     }
@@ -50,12 +63,12 @@ export class ChangePasswordComponent {
       return;
     }
 
-    if (this.currentPassword === this.newPassword) {
+    if (!this.isOidcUser && this.currentPassword === this.newPassword) {
       this.errorMessage = 'New password cannot be the same as the current password.';
       return;
     }
 
-    this.userService.changePassword(this.currentPassword, this.newPassword).subscribe({
+    this.userService.changePassword(this.isOidcUser ? '' : this.currentPassword, this.newPassword).subscribe({
       next: () => {
         this.successMessage = 'Password changed successfully!';
         this.logout();
