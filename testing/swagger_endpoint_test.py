@@ -82,11 +82,56 @@ class ResponseValidator:
         return schema
 
 
+
+
+@dataclass
+class TestConfig:
+    base_url: str = "http://localhost:6060"
+    openapi_url: str = "/api/v1/api-docs"
+    username: str = "admin"
+    password: str = "admin"
+    enable_auth: bool = False
+    verbose: bool = False
+    skip_setup: bool = False
+    skip_destructive: bool = True
+    timeout: int = 30
+    retry_count: int = 3
+    retry_delay: float = 2.0
+    max_workers: int = 10
+    output_format: str = "console"
+    output_file: str = "test_report"
+    validate_response_schema: bool = True
+
+
+@dataclass
+class EndpointResult:
+    path: str
+    method: str
+    status_code: int
+    success: bool
+    response_time: float
+    error: Optional[str] = None
+    skipped: bool = False
+    skip_reason: Optional[str] = None
+    schema_valid: Optional[bool] = None
+    schema_error: Optional[str] = None
+
+
+@dataclass
+class TestSummary:
+    total: int = 0
+    passed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    auth_required: int = 0
+    results: List[EndpointResult] = field(default_factory=list)
+
+
 class ReportGenerator:
     """Generate test reports in various formats"""
     
     @staticmethod
-    def generate_json_report(summary: 'TestSummary', config: TestConfig, 
+    def generate_json_report(summary: TestSummary, config: 'TestConfig', 
                             output_path: str = "test_report.json") -> str:
         """Generate JSON report"""
         report = {
@@ -124,7 +169,7 @@ class ReportGenerator:
         return output_path
     
     @staticmethod
-    def generate_html_report(summary: 'TestSummary', config: TestConfig,
+    def generate_html_report(summary: TestSummary, config: 'TestConfig',
                             output_path: str = "test_report.html") -> str:
         """Generate HTML report"""
         success_rate = (summary.passed / max(summary.total - summary.skipped, 1)) * 100
@@ -240,49 +285,6 @@ class ReportGenerator:
 
 
 
-@dataclass
-class TestConfig:
-    base_url: str = "http://localhost:6060"
-    openapi_url: str = "/api/v1/api-docs"
-    username: str = "admin"
-    password: str = "admin"
-    enable_auth: bool = False
-    verbose: bool = False
-    skip_setup: bool = False
-    skip_destructive: bool = True
-    timeout: int = 30
-    retry_count: int = 3
-    retry_delay: float = 2.0
-    max_workers: int = 10
-    output_format: str = "console"
-    output_file: str = "test_report"
-    validate_response_schema: bool = True
-
-
-@dataclass
-class EndpointResult:
-    path: str
-    method: str
-    status_code: int
-    success: bool
-    response_time: float
-    error: Optional[str] = None
-    skipped: bool = False
-    skip_reason: Optional[str] = None
-    schema_valid: Optional[bool] = None
-    schema_error: Optional[str] = None
-
-
-@dataclass
-class TestSummary:
-    total: int = 0
-    passed: int = 0
-    failed: int = 0
-    skipped: int = 0
-    auth_required: int = 0
-    results: List[EndpointResult] = field(default_factory=list)
-
-class TestDataGenerator:
 
     DEFAULTS = {
         "integer": 1,
