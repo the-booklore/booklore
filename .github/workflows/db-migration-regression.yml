@@ -3,10 +3,6 @@ name: Database Migration Regression Test
 on:
   pull_request:
     branches: [develop, main]
-    paths:
-      - 'booklore-api/src/main/resources/db/migration/**'
-      - 'booklore-api/src/test/**/migration/**'
-      - '.github/workflows/db-migration-regression.yml'
   push:
     branches: [develop, main]
     paths:

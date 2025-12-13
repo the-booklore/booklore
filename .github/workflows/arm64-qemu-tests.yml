@@ -4,6 +4,8 @@ name: ARM64 Hardware Emulation Tests
 on:
   pull_request:
     branches: [develop, main]
+  push:
+    branches: [develop, main]
     paths:
       - 'Dockerfile'
       - 'booklore-api/**'

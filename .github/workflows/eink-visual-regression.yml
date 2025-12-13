@@ -121,7 +121,7 @@ jobs:
           docker run -d \
             --name booklore-eink \
             --network eink-test-net \
-            -p 6060:6060 \
+            -p 6060:8080 \
             -e DATABASE_URL=jdbc:mariadb://mariadb-eink:3306/booklore \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=einktest \
@@ -266,7 +266,7 @@ jobs:
           docker run -d \
             --name booklore-contrast \
             --network contrast-test-net \
-            -p 6060:6060 \
+            -p 6060:8080 \
             -e DATABASE_URL=jdbc:mariadb://mariadb-contrast:3306/booklore \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=contrasttest \

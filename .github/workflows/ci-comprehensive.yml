@@ -276,7 +276,8 @@ jobs:
     needs: [quick-checks, build-verification]
     if: |
       always() && !failure() && !cancelled() &&
-      (needs.quick-checks.outputs.migration_changed == 'true' || 
+      (github.event_name == 'pull_request' ||
+       needs.quick-checks.outputs.migration_changed == 'true' || 
        github.event.inputs.run_migration_tests == 'true' ||
        github.event_name == 'push')
     timeout-minutes: 30
@@ -354,7 +355,8 @@ jobs:
     needs: [quick-checks, build-verification]
     if: |
       always() && !failure() && !cancelled() &&
-      (needs.quick-checks.outputs.docker_changed == 'true' || 
+      (github.event_name == 'pull_request' ||
+       needs.quick-checks.outputs.docker_changed == 'true' || 
        github.event_name == 'push')
     timeout-minutes: 30
 
