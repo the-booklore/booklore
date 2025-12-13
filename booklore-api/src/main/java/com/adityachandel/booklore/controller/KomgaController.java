@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "Komga API", description = "Komga-compatible API endpoints")
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/komga/api")
 @RequiredArgsConstructor
 public class KomgaController {
 

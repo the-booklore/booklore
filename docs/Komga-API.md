@@ -2,30 +2,36 @@
 
 Booklore provides a Komga-compatible API that allows you to use Komga clients (like Tachiyomi, Tachidesk, Komelia, etc.) to access your Booklore library.
 
+## API Base Path
+
+The Komga API is available at: `/komga/api/v1/` and `/komga/api/v2/`
+
+This differs from standard Komga installations to avoid conflicts with Booklore's native API. When configuring Komga clients, use the full URL including the `/komga` prefix.
+
 ## Features
 
 The Komga API implementation in Booklore provides the following endpoints:
 
 ### Libraries
-- `GET /api/v1/libraries` - List all libraries
-- `GET /api/v1/libraries/{libraryId}` - Get library details
+- `GET /komga/api/v1/libraries` - List all libraries
+- `GET /komga/api/v1/libraries/{libraryId}` - Get library details
 
 ### Series
-- `GET /api/v1/series` - List series (supports pagination and library filtering)
-- `GET /api/v1/series/{seriesId}` - Get series details
-- `GET /api/v1/series/{seriesId}/books` - List books in a series
-- `GET /api/v1/series/{seriesId}/thumbnail` - Get series thumbnail
+- `GET /komga/api/v1/series` - List series (supports pagination and library filtering)
+- `GET /komga/api/v1/series/{seriesId}` - Get series details
+- `GET /komga/api/v1/series/{seriesId}/books` - List books in a series
+- `GET /komga/api/v1/series/{seriesId}/thumbnail` - Get series thumbnail
 
 ### Books
-- `GET /api/v1/books` - List all books (supports pagination and library filtering)
-- `GET /api/v1/books/{bookId}` - Get book details
-- `GET /api/v1/books/{bookId}/pages` - Get book pages metadata
-- `GET /api/v1/books/{bookId}/pages/{pageNumber}` - Get book page image
-- `GET /api/v1/books/{bookId}/file` - Download book file
-- `GET /api/v1/books/{bookId}/thumbnail` - Get book thumbnail
+- `GET /komga/api/v1/books` - List all books (supports pagination and library filtering)
+- `GET /komga/api/v1/books/{bookId}` - Get book details
+- `GET /komga/api/v1/books/{bookId}/pages` - Get book pages metadata
+- `GET /komga/api/v1/books/{bookId}/pages/{pageNumber}` - Get book page image
+- `GET /komga/api/v1/books/{bookId}/file` - Download book file
+- `GET /komga/api/v1/books/{bookId}/thumbnail` - Get book thumbnail
 
 ### Users
-- `GET /api/v2/users/me` - Get current user details
+- `GET /komga/api/v2/users/me` - Get current user details
 
 ## Data Model Mapping
 
@@ -54,12 +60,14 @@ Authentication uses HTTP Basic Auth, the same as OPDS.
 
 ## Using with Komga Clients
 
+**Important:** Booklore's Komga API uses the `/komga` path prefix. When configuring clients, use `http://your-booklore-server/komga` as the base URL.
+
 ### Tachiyomi / TachiyomiSY / TachiyomiJ2K
 
 1. Install the Tachiyomi app
 2. Add a source → Browse → Sources → Komga
 3. Configure the source:
-   - Server URL: `http://your-booklore-server/`
+   - Server URL: `http://your-booklore-server/komga`
    - Username: Your OPDS username
    - Password: Your OPDS password
 
@@ -67,7 +75,7 @@ Authentication uses HTTP Basic Auth, the same as OPDS.
 
 1. Install Komelia
 2. Add a server:
-   - URL: `http://your-booklore-server/`
+   - URL: `http://your-booklore-server/komga`
    - Username: Your OPDS username
    - Password: Your OPDS password
 
@@ -76,7 +84,7 @@ Authentication uses HTTP Basic Auth, the same as OPDS.
 1. Install Tachidesk
 2. Add Komga extension
 3. Configure:
-   - Server URL: `http://your-booklore-server/`
+   - Server URL: `http://your-booklore-server/komga`
    - Username: Your OPDS username
    - Password: Your OPDS password
 
