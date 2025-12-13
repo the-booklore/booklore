@@ -1,3 +1,13 @@
+# Test Coverage Report Workflow
+#
+# Purpose: Measures and reports code test coverage across backend and frontend
+# Significance: Ensures adequate testing of new code changes and maintains quality standards
+# Key Functions:
+# - Measures Java backend test coverage using JaCoCo
+# - Measures TypeScript frontend test coverage using Istanbul/Jest
+# - Generates coverage badges for repository status
+# - Reports coverage metrics to pull requests for review
+# - Tracks coverage trends over time to identify areas needing more tests
 name: Test Coverage Report
 
 on:
@@ -50,7 +60,9 @@ jobs:
 
       - name: Run Tests with Coverage
         working-directory: ./booklore-api
-        run: ./gradlew test jacocoTestReport --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test jacocoTestReport --no-daemon
         continue-on-error: false
 
       - name: Generate JaCoCo Badge

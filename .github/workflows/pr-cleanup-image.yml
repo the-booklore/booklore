@@ -1,3 +1,12 @@
+# PR Cleanup Docker Image Workflow
+#
+# Purpose: Cleans up Docker images created for closed pull requests
+# Significance: Prevents accumulation of unused Docker images and saves registry space
+# Key Functions:
+# - Triggers automatically when a pull request is closed
+# - Deletes the associated PR-specific Docker image from Docker Hub
+# - Uses Docker Hub API to programmatically remove the tagged image
+# - Maintains clean container registry by removing temporary PR images
 name: PR Cleanup Docker Image
 
 on:

@@ -1,3 +1,13 @@
+# Security Scan Workflow
+#
+# Purpose: Performs automated security scanning of code and dependencies
+# Significance: Proactively identifies security vulnerabilities before they reach production
+# Key Functions:
+# - Runs Semgrep SAST (Static Application Security Testing) analysis
+# - Identifies potential security issues in source code
+# - Uploads findings to GitHub Security tab as SARIF format for code scanning
+# - Runs on every pull request to catch vulnerabilities early
+# - Scheduled weekly to catch newly discovered vulnerabilities
 name: Security Scan
 
 on:
@@ -17,30 +27,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  # ============================================
-  # Secret Scanning (Gitleaks)
-  # DISABLED - Requires organization license
-  # ============================================
-  # gitleaks-scan:
-  #   name: Secret Scanning (Gitleaks)
-  #   runs-on: ubuntu-latest
-  #   
-  #   steps:
-  #     - name: Harden Runner
-  #       uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863 # v2.12.1
-  #       with:
-  #         egress-policy: audit
-  #
-  #     - name: Checkout Code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 0
-  #
-  #     - name: Run Gitleaks
-  #       uses: gitleaks/gitleaks-action@v2
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   semgrep-scan:
     name: SAST Scanning (Semgrep)
     runs-on: ubuntu-latest

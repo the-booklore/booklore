@@ -1,3 +1,13 @@
+# Link Checker Workflow
+#
+# Purpose: Validates that all links in documentation are valid and functional
+# Significance: Maintains quality of documentation by catching broken links early
+# Key Functions:
+# - Scans all Markdown files and documentation for broken links
+# - Validates both internal and external links
+# - Runs on documentation changes to catch immediate issues
+# - Scheduled weekly to catch external link rot (broken external links)
+# - Reports broken links as part of pull request checks
 name: Link Checker
 
 on:

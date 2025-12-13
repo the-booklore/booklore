@@ -1,3 +1,13 @@
+# Database Migration Check Workflow
+#
+# Purpose: Validates database migration SQL files before merging
+# Significance: Prevents database corruption and ensures migration integrity
+# Key Functions:
+# - Checks SQL syntax for basic correctness
+# - Runs Flyway migration validation against a test database
+# - Verifies migration order and dependencies
+# - Tests clean migration from baseline to current state
+# - Ensures no breaking changes to existing schema
 name: Database Migration Check
 
 on:
@@ -91,9 +101,9 @@ jobs:
           done
           
           if [ $issues_found -eq 0 ]; then
-            echo "✅ No basic SQL syntax issues found"
+            echo "No basic SQL syntax issues found"
           else
-            echo "⚠️  Found $issues_found potential SQL syntax issues"
+            echo "Found $issues_found potential SQL syntax issues"
           fi
 
       - name: Run Flyway Migrations
@@ -105,6 +115,7 @@ jobs:
           FLYWAY_PASSWORD: root
           FLYWAY_CLEAN_DISABLED: 'false'
         run: |
+          chmod +x ./gradlew
           ./gradlew flywayClean flywayMigrate flywayValidate --info \
             -Dorg.gradle.jvmargs="-Xmx1024m"
 
@@ -115,6 +126,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Integrity | ${{ steps.integrity.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SQL lint | ${{ steps.sql_lint.outcome == 'success' && '✅' || '⚠️' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Flyway | ${{ steps.flyway.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integrity | ${{ steps.integrity.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL lint | ${{ steps.sql_lint.outcome == 'success' && 'Pass' || 'Warning' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Flyway | ${{ steps.flyway.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY

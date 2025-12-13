@@ -1,3 +1,14 @@
+# WireMock Protocol Tests Workflow
+#
+# Purpose: Tests Kobo and KOReader sync protocols with comprehensive edge case coverage
+# Significance: Ensures robust error handling when communicating with hardware readers
+# Key Functions:
+# - Uses WireMock to simulate various Kobo and KOReader sync scenarios
+# - Tests error responses (401, 404, 500, 503) to verify graceful failure handling
+# - Tests edge cases like invalid credentials, missing resources, server errors
+# - Validates proper response structure for each sync endpoint
+# - Tests header handling and authentication flow simulation
+# - Ensures application handles malformed device requests without crashing
 name: WireMock Protocol Tests
 
 # Tests Kobo and KOReader sync protocols using WireMock for deterministic edge case testing

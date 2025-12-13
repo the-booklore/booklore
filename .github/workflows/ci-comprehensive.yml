@@ -1,3 +1,14 @@
+# Comprehensive CI Workflow
+#
+# Purpose: Runs a full suite of tests covering all aspects of the application
+# Significance: Main CI pipeline that ensures quality before merging to develop/main
+# Key Functions:
+# - Performs quick checks (linting, code formatting, commit message validation)
+# - Runs unit tests for both frontend and backend
+# - Builds application artifacts and verifies compilation
+# - Executes database migration tests to ensure schema compatibility
+# - Runs Docker build verification to ensure containerization works
+# - Provides comprehensive test coverage across all application layers
 name: Comprehensive CI
 
 on:
@@ -83,18 +94,18 @@ jobs:
         working-directory: booklore-ui
         run: |
           if ! npm ci --dry-run 2>/dev/null; then
-            echo "❌ package-lock.json is out of sync with package.json"
+            echo "package-lock.json is out of sync with package.json"
             echo "Run 'npm install' and commit the updated lockfile"
             exit 1
           fi
-          echo "✅ Lockfile is in sync"
+          echo "Lockfile is in sync"
 
       - name: Frontend lint check
         if: steps.changes.outputs.frontend == 'true'
         working-directory: booklore-ui
         run: |
           npm ci --prefer-offline --no-audit
-          npm run lint 2>&1 || echo "⚠️ Lint issues found (non-blocking)"
+          npm run lint 2>&1 || echo "Lint issues found (non-blocking)"
 
       - name: Commit message check
         if: github.event_name == 'pull_request'
@@ -104,9 +115,9 @@ jobs:
           # Check for conventional commit format (optional but recommended)
           TITLE="$PR_TITLE"
           if [[ "$TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:\ .+ ]]; then
-            echo "✅ PR title follows conventional commit format"
+            echo "PR title follows conventional commit format"
           else
-            echo "⚠️ PR title doesn't follow conventional commit format (optional)"
+            echo "PR title doesn't follow conventional commit format (optional)"
           fi
 
   # ============================================
@@ -141,7 +152,9 @@ jobs:
 
       - name: Run unit tests
         working-directory: booklore-api
-        run: ./gradlew test --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --no-daemon
 
       - name: Generate coverage report
         if: always()
@@ -253,10 +266,11 @@ jobs:
         id: build
         working-directory: booklore-api
         run: |
+          chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
           JAR_PATH=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
           echo "jar_path=$JAR_PATH" >> $GITHUB_OUTPUT
-          echo "✅ Built: $JAR_PATH"
+          echo "Built: $JAR_PATH"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -347,6 +361,7 @@ jobs:
           FLYWAY_PASSWORD: testroot
           FLYWAY_CLEAN_DISABLED: 'false'
         run: |
+          chmod +x ./gradlew
           ./gradlew flywayClean flywayMigrate flywayValidate --no-daemon
 
   docker-build-test:
@@ -395,9 +410,9 @@ jobs:
 
           # Wait for container to be healthy or timeout
           timeout 60 bash -c 'until docker inspect test-container --format="{{.State.Health.Status}}" | grep -q healthy; do sleep 2; done' && {
-            echo "✅ Container started and is healthy"
+            echo "Container started and is healthy"
           } || {
-            echo "⚠️ Container may have exited (expected without DB)"
+            echo "Container may have exited (expected without DB)"
             docker logs test-container | head -20
           }
 
@@ -415,27 +430,27 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "# 🔄 Comprehensive CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "# Comprehensive CI Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## Changes Detected" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Changed |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|---------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | ${{ needs.quick-checks.outputs.backend_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ${{ needs.quick-checks.outputs.frontend_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Migrations | ${{ needs.quick-checks.outputs.migration_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker | ${{ needs.quick-checks.outputs.docker_changed == 'true' && '✅ Yes' || '➖ No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ${{ needs.quick-checks.outputs.backend_changed == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.quick-checks.outputs.frontend_changed == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations | ${{ needs.quick-checks.outputs.migration_changed == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker | ${{ needs.quick-checks.outputs.docker_changed == 'true' && 'Yes' || 'No' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "## Test Results" >> $GITHUB_STEP_SUMMARY
           echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Quick Checks | ${{ needs.quick-checks.result == 'success' && '✅ Pass' || (needs.quick-checks.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend Tests | ${{ needs.backend-unit-tests.result == 'success' && '✅ Pass' || (needs.backend-unit-tests.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend Tests | ${{ needs.frontend-unit-tests.result == 'success' && '✅ Pass' || (needs.frontend-unit-tests.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Build | ${{ needs.build-verification.result == 'success' && '✅ Pass' || (needs.build-verification.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Migration Test | ${{ needs.database-migration-test.result == 'success' && '✅ Pass' || (needs.database-migration-test.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Docker Build | ${{ needs.docker-build-test.result == 'success' && '✅ Pass' || (needs.docker-build-test.result == 'skipped' && '⏭️ Skip' || '❌ Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Quick Checks | ${{ needs.quick-checks.result == 'success' && 'Pass' || (needs.quick-checks.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend Tests | ${{ needs.backend-unit-tests.result == 'success' && 'Pass' || (needs.backend-unit-tests.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend Tests | ${{ needs.frontend-unit-tests.result == 'success' && 'Pass' || (needs.frontend-unit-tests.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build | ${{ needs.build-verification.result == 'success' && 'Pass' || (needs.build-verification.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migration Test | ${{ needs.database-migration-test.result == 'success' && 'Pass' || (needs.database-migration-test.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker Build | ${{ needs.docker-build-test.result == 'success' && 'Pass' || (needs.docker-build-test.result == 'skipped' && 'Skip' || 'Fail') }} |" >> $GITHUB_STEP_SUMMARY
 
       - name: Check for failures
         run: |
@@ -444,9 +459,9 @@ jobs:
              [[ "${{ needs.backend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.frontend-unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.build-verification.result }}" == "failure" ]]; then
-            echo "❌ CI pipeline failed"
+            echo "CI pipeline failed"
             exit 1
           fi
-          
-          echo "✅ CI pipeline passed"
+
+          echo "CI pipeline passed"
 

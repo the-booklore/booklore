@@ -1,3 +1,13 @@
+# CodeQL Analysis Workflow
+#
+# Purpose: Performs comprehensive static analysis to identify security vulnerabilities and code issues
+# Significance: Automated security scanning that helps identify potential vulnerabilities early
+# Key Functions:
+# - Analyzes Java codebase for security vulnerabilities and bugs
+# - Analyzes JavaScript/TypeScript frontend for common security issues
+# - Runs sophisticated data-flow analysis to identify potential security risks
+# - Uploads results to GitHub Security tab for centralized vulnerability tracking
+# - Scheduled weekly to catch newly discovered patterns in the code
 name: CodeQL Analysis
 
 on:

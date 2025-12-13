@@ -1,3 +1,22 @@
+/*
+ * WCAG Accessibility Compliance Tests
+ *
+ * Purpose: Ensures the BookLore web interface is accessible to users with disabilities
+ * Significance: Critical for inclusive design and compliance with accessibility standards
+ * Key Functions:
+ * - Tests WCAG 2.1 AA compliance using axe-core automated testing
+ * - Validates color contrast ratios for readability
+ * - Checks for proper text alternatives (alt text) for non-text content
+ * - Verifies keyboard navigation functionality
+ * - Tests visible focus indicators for keyboard users
+ * - Special considerations for e-ink display compatibility
+ *
+ * Requirements:
+ * - Passes all automated WCAG A/AA checks
+ * - Maintains 4.5:1 contrast ratio for normal text, 3:1 for large text
+ * - Provides alternative text for all meaningful images
+ * - Ensures all functionality is keyboard accessible
+ */
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 

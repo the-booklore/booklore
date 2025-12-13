@@ -1,3 +1,13 @@
+# PR Build Docker Image Workflow
+#
+# Purpose: Builds Docker images for pull requests to enable testing in containerized environment
+# Significance: Allows testing of changes in containerized environment before merge
+# Key Functions:
+# - Builds multi-architecture Docker images (AMD64 and ARM64) for PR changes
+# - Tags images with PR number for identification and isolated testing
+# - Pushes images to Docker Hub with PR-specific tags
+# - Runs automatically when PR is opened, updated, or reopened
+# - Provides Docker images for PR reviewers to test with
 name: PR Build Docker Image
 
 on:

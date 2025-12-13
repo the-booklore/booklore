@@ -1,3 +1,14 @@
+# Swagger API Tests Workflow
+#
+# Purpose: Validates all API endpoints documented in the OpenAPI specification
+# Significance: Ensures API compliance with documented interfaces and functional endpoints
+# Key Functions:
+# - Fetches OpenAPI specification from the running server
+# - Tests all documented endpoints with appropriate request data
+# - Verifies proper HTTP status codes and response formats
+# - Tests both authenticated and unauthenticated endpoints
+# - Validates API responses match the documented schema
+# - Ensures no broken or undocumented API endpoints are introduced
 name: Swagger API Tests
 
 on:
@@ -91,9 +102,12 @@ jobs:
       - name: Copy frontend to backend
         run: |
           mkdir -p booklore-api/src/main/resources/static
-          if [ -d "booklore-ui/dist/booklore" ]; then
+          if [ -d "booklore-ui/dist/booklore/browser" ]; then
+            echo "Copying from dist/booklore/browser..."
+            cp -r booklore-ui/dist/booklore/browser/* booklore-api/src/main/resources/static/
+          elif [ -d "booklore-ui/dist/booklore" ]; then
+            echo "Copying from dist/booklore..."
             cp -r booklore-ui/dist/booklore/* booklore-api/src/main/resources/static/
-            echo "Frontend copied successfully"
           else
             echo "Warning: Frontend dist not found at booklore-ui/dist/booklore"
             ls -la booklore-ui/dist/ || echo "dist directory doesn't exist"

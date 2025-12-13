@@ -1,3 +1,13 @@
+# Docker Persistence Smoke Test Workflow
+#
+# Purpose: Verifies that user data persists correctly across container lifecycle events
+# Significance: Prevents data loss during routine operations like container restarts, updates, and replacements
+# Key Functions:
+# - Tests data survival during graceful container restarts
+# - Tests data recovery from forced termination scenarios
+# - Verifies container replacement preserves user data (docker-compose pull && up -d)
+# - Validates volume mounting schemes for persistent storage
+# - Critical for users who rely on stable data persistence across deployments
 name: Docker Persistence Smoke Test
 
 on:
@@ -113,7 +123,7 @@ jobs:
           # Wait for MariaDB
           for i in {1..30}; do
             if docker exec mariadb-persist mariadb-admin ping -h localhost -uroot -ppersisttest 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               break
             fi
             echo "Waiting for MariaDB... ($i/30)"
@@ -133,11 +143,11 @@ jobs:
             booklore:persistence-test
           
           # Wait for application to be ready
-          echo "⏳ Waiting for BookLore to start..."
+          echo "Waiting for BookLore to start..."
           for i in {1..60}; do
             HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:6060/actuator/health 2>/dev/null || echo "000")
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore is ready"
+              echo "BookLore is ready"
               break
             fi
             echo "Attempt $i/60 - HTTP: $HTTP_CODE"
@@ -160,25 +170,25 @@ jobs:
             INSERT INTO _persistence_test_canary (id) VALUES ('$CANARY_ID');
           "
           
-          echo "🐤 Created canary: $CANARY_ID"
-          
+          echo "Created canary: $CANARY_ID"
+
           # Also verify a BookLore table exists
           TABLES=$(docker exec mariadb-persist mariadb -uroot -ppersisttest booklore -sN -e "SHOW TABLES;" | wc -l)
-          echo "📋 Tables in database: $TABLES"
+          echo "Tables in database: $TABLES"
           echo "table_count=$TABLES" >> $GITHUB_OUTPUT
 
       - name: Graceful restart (docker restart)
         run: |
-          echo "🔄 Performing graceful restart..."
+          echo "Performing graceful restart..."
           docker restart booklore-persist
-          
+
           # Wait for restart
           sleep 5
 
           for i in {1..60}; do
             HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:6060/actuator/health 2>/dev/null || echo "000")
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore restarted successfully"
+              echo "BookLore restarted successfully"
               break
             fi
             echo "Waiting for restart... ($i/60) - HTTP: $HTTP_CODE"
@@ -195,58 +205,58 @@ jobs:
           " 2>/dev/null || echo "0")
           
           if [ "$FOUND" = "1" ]; then
-            echo "✅ Canary data preserved after restart: $CANARY_ID"
+            echo "Canary data preserved after restart: $CANARY_ID"
           else
-            echo "❌ CRITICAL: Canary data LOST after restart!"
+            echo "CRITICAL: Canary data LOST after restart!"
             echo "   Expected: $CANARY_ID"
             echo "   Found count: $FOUND"
-            
+
             # Debug: show what's in the table
             docker exec mariadb-persist mariadb -uroot -ppersisttest booklore -e "SELECT * FROM _persistence_test_canary;" || true
             exit 1
           fi
-          
+
           # Verify table count didn't change
           EXPECTED_TABLES="${{ steps.canary.outputs.table_count }}"
           ACTUAL_TABLES=$(docker exec mariadb-persist mariadb -uroot -ppersisttest booklore -sN -e "SHOW TABLES;" | wc -l)
-          
+
           if [ "$EXPECTED_TABLES" = "$ACTUAL_TABLES" ]; then
-            echo "✅ Table count preserved: $ACTUAL_TABLES"
+            echo "Table count preserved: $ACTUAL_TABLES"
           else
-            echo "⚠️ Table count changed: $EXPECTED_TABLES -> $ACTUAL_TABLES"
+            echo "Table count changed: $EXPECTED_TABLES -> $ACTUAL_TABLES"
           fi
 
       - name: Force kill and restart test
         run: |
-          echo "💀 Testing recovery from forced kill..."
-          
+          echo "Testing recovery from forced kill..."
+
           # Force kill (simulates crash)
           docker kill booklore-persist
-          
+
           # Restart
           docker start booklore-persist
-          
+
           # Wait for recovery
           for i in {1..60}; do
             HTTP_CODE=$(curl -s --max-time 10 -o /dev/null -w "%{http_code}" http://localhost:6060/actuator/health 2>/dev/null || echo "000")
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore recovered from forced kill"
+              echo "BookLore recovered from forced kill"
               break
             fi
             echo "Waiting for recovery... ($i/60)"
             sleep 3
           done
-          
+
           # Verify canary still exists
           CANARY_ID="${{ steps.canary.outputs.canary_id }}"
           FOUND=$(docker exec mariadb-persist mariadb -uroot -ppersisttest booklore -sN -e "
             SELECT COUNT(*) FROM _persistence_test_canary WHERE id = '$CANARY_ID';
           " 2>/dev/null || echo "0")
-          
+
           if [ "$FOUND" = "1" ]; then
-            echo "✅ Data preserved after forced kill"
+            echo "Data preserved after forced kill"
           else
-            echo "❌ Data LOST after forced kill!"
+            echo "Data LOST after forced kill!"
             exit 1
           fi
 
@@ -261,14 +271,14 @@ jobs:
       - name: Persistence Test Summary
         if: always()
         run: |
-          echo "## 💾 Persistence Restart Test" >> $GITHUB_STEP_SUMMARY
+          echo "## Persistence Restart Test" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Initial Start | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Canary Creation | ✅ |" >> $GITHUB_STEP_SUMMARY
-          echo "| Graceful Restart | ${{ job.status == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Force Kill Recovery | ${{ job.status == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Initial Start | Pass |" >> $GITHUB_STEP_SUMMARY
+          echo "| Canary Creation | Pass |" >> $GITHUB_STEP_SUMMARY
+          echo "| Graceful Restart | ${{ job.status == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Force Kill Recovery | ${{ job.status == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
 
   # ============================================
   # Test 2: Container Replacement (docker-compose up -d)
@@ -342,7 +352,7 @@ jobs:
           # Wait for ready
           for i in {1..60}; do
             if curl -s --max-time 10 http://localhost:6061/actuator/health | grep -q "UP"; then
-              echo "✅ BookLore v1 ready"
+              echo "BookLore v1 ready"
               break
             fi
             sleep 3
@@ -367,12 +377,12 @@ jobs:
 
       - name: Replace container (simulate docker-compose pull && up -d)
         run: |
-          echo "🔄 Simulating container replacement (upgrade scenario)..."
-          
+          echo "Simulating container replacement (upgrade scenario)..."
+
           # Stop and remove old container (but keep volume!)
           docker stop booklore-v1
           docker rm booklore-v1
-          
+
           # Start new container with same volume
           docker run -d \
             --name booklore-v2 \
@@ -383,11 +393,11 @@ jobs:
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=replacetest \
             booklore:persistence-test
-          
+
           # Wait for v2
           for i in {1..60}; do
             if curl -s --max-time 10 http://localhost:6062/actuator/health | grep -q "UP"; then
-              echo "✅ BookLore v2 ready after replacement"
+              echo "BookLore v2 ready after replacement"
               break
             fi
             echo "Waiting for v2... ($i/60)"
@@ -403,14 +413,14 @@ jobs:
           " 2>/dev/null || echo "NOT_FOUND")
           
           if [ "$FOUND" = "v1" ]; then
-            echo "✅ Data from v1 preserved in v2: $CANARY"
-            
+            echo "Data from v1 preserved in v2: $CANARY"
+
             # Update to mark v2 access
             docker exec -e MYSQL_PWD=replacetest mariadb-replace mariadb -uroot booklore -e "
               UPDATE _replacement_test SET version = 'v2_verified' WHERE id = '$CANARY';
             "
           else
-            echo "❌ Data LOST during container replacement!"
+            echo "Data LOST during container replacement!"
             echo "   Expected: v1"
             echo "   Found: $FOUND"
             docker logs booklore-v2 | tail -50
@@ -472,13 +482,13 @@ jobs:
           sleep 15
           
           # Verify database files exist on host
-          echo "📂 Checking database files on host..."
+          echo "Checking database files on host..."
           ls -la /tmp/booklore-host-db/
-          
+
           if [ -d "/tmp/booklore-host-db/booklore" ] || [ -f "/tmp/booklore-host-db/ibdata1" ]; then
-            echo "✅ Database files created on host mount"
+            echo "Database files created on host mount"
           else
-            echo "⚠️ Database directory structure may differ"
+            echo "Database directory structure may differ"
             find /tmp/booklore-host-db -type f | head -10
           fi
 
@@ -500,17 +510,17 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "# 💾 Docker Persistence Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "# Docker Persistence Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "These tests verify that user data survives container lifecycle events." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Restart Persistence | ${{ needs.persistence-restart-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Replacement | ${{ needs.persistence-replacement-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Volume Mounts | ${{ needs.volume-mount-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Restart Persistence | ${{ needs.persistence-restart-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Container Replacement | ${{ needs.persistence-replacement-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Volume Mounts | ${{ needs.volume-mount-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Interpretation:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ All tests passing means data persists correctly across upgrades" >> $GITHUB_STEP_SUMMARY
-          echo "- ❌ Failures indicate potential data loss during container lifecycle events" >> $GITHUB_STEP_SUMMARY
+          echo "- All tests passing means data persists correctly across upgrades" >> $GITHUB_STEP_SUMMARY
+          echo "- Failures indicate potential data loss during container lifecycle events" >> $GITHUB_STEP_SUMMARY
 

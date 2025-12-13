@@ -1,3 +1,12 @@
+# Shared Setup Workflow
+#
+# Purpose: Provides a reusable setup for common environment configuration across workflows
+# Significance: Reduces duplication of setup steps across multiple workflows
+# Key Functions:
+# - Checks out repository code
+# - Sets up specified Java version with caching
+# - Configures Gradle with appropriate cache settings based on branch
+# - Used as a reusable component by other workflows via workflow_call
 name: Shared Setup
 
 on:

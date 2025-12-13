@@ -1,3 +1,13 @@
+# Type Checking & Compilation Workflow
+#
+# Purpose: Ensures code quality through type checking and successful compilation
+# Significance: Prevents type-related errors and ensures build integrity
+# Key Functions:
+# - Performs TypeScript type checking for the frontend application
+# - Compiles the Angular frontend to ensure no build errors
+# - Compiles the Java backend to verify successful compilation
+# - Ensures all type annotations are correct before merging
+# - Acts as a gatekeeper for type-safe code changes
 name: Type Checking & Compilation
 
 on:
@@ -79,5 +89,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
 
       - name: Compile Backend
-        run: ./gradlew compileJava compileTestJava --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew compileJava compileTestJava --no-daemon
         continue-on-error: false

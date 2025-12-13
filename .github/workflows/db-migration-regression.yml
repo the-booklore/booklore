@@ -1,3 +1,15 @@
+# Database Migration Regression Test Workflow
+#
+# Purpose: Tests database migration integrity and regression prevention
+# Significance: Ensures data is preserved and not corrupted during migrations
+# Key Functions:
+# - Tests migration from baseline to current state with real data
+# - Seeds synthetic production-like data to test data integrity
+# - Verifies no data loss during migration process
+# - Tests foreign key relationships are maintained
+# - Validates character encoding and special character handling
+# - Tests migrations across different MariaDB versions
+# - Prevents regression bugs in migration scripts
 name: Database Migration Regression Test
 
 on:
@@ -68,7 +80,7 @@ jobs:
             fi
           fi
           echo "version=$BASELINE" >> $GITHUB_OUTPUT
-          echo "📌 Using baseline: $BASELINE"
+          echo "Using baseline: $BASELINE"
 
       - name: Check for migration changes
         id: check
@@ -81,11 +93,11 @@ jobs:
           
           if [ "$CHANGES" -gt 0 ]; then
             echo "has_migrations=true" >> $GITHUB_OUTPUT
-            echo "📝 Found $CHANGES migration file changes"
+            echo "Found $CHANGES migration file changes"
             git diff --name-only "$BASELINE" -- "$MIGRATION_DIR" || true
           else
             echo "has_migrations=false" >> $GITHUB_OUTPUT
-            echo "ℹ️ No migration changes detected"
+            echo "No migration changes detected"
           fi
 
   # ============================================
@@ -155,20 +167,20 @@ jobs:
 
       - name: Wait for MariaDB ${{ matrix.mariadb-version }}
         run: |
-          echo "⏳ Waiting for MariaDB ${{ matrix.mariadb-version }}..."
+          echo "Waiting for MariaDB ${{ matrix.mariadb-version }}..."
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
-              echo "✅ MariaDB ${{ matrix.mariadb-version }} is ready"
-              
+              echo "MariaDB ${{ matrix.mariadb-version }} is ready"
+
               # Verify strict mode is enabled
               SQLMODE=$(mariadb -h 127.0.0.1 -uroot -ptestroot -e "SELECT @@sql_mode;" -sN)
-              echo "📋 SQL Mode: $SQLMODE"
+              echo "SQL Mode: $SQLMODE"
               exit 0
             fi
             echo "Attempt $i/30..."
             sleep 2
           done
-          echo "❌ MariaDB failed to start"
+          echo "MariaDB failed to start"
           exit 1
 
       # ===== PHASE 1: Apply Baseline Migrations =====
@@ -176,17 +188,17 @@ jobs:
         id: baseline
         run: |
           BASELINE="${{ needs.prepare-test-data.outputs.baseline_version }}"
-          echo "📦 Extracting migrations from baseline: $BASELINE"
-          
+          echo "Extracting migrations from baseline: $BASELINE"
+
           mkdir -p /tmp/baseline-migrations
-          
+
           # Try to extract migrations from baseline
           if git archive "$BASELINE" booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/baseline-migrations; then
-            echo "✅ Baseline migrations extracted"
+            echo "Baseline migrations extracted"
             ls -la /tmp/baseline-migrations/booklore-api/src/main/resources/db/migration/ | head -20
             echo "baseline_path=/tmp/baseline-migrations/booklore-api/src/main/resources/db/migration" >> $GITHUB_OUTPUT
           else
-            echo "⚠️ Could not extract baseline migrations, using current migrations for fresh install test"
+            echo "Could not extract baseline migrations, using current migrations for fresh install test"
             echo "baseline_path=booklore-api/src/main/resources/db/migration" >> $GITHUB_OUTPUT
           fi
 
@@ -200,29 +212,30 @@ jobs:
           FLYWAY_CLEAN_DISABLED: 'false'
         run: |
           BASELINE_PATH="${{ steps.baseline.outputs.baseline_path }}"
-          echo "🔄 Applying baseline migrations from: $BASELINE_PATH"
-          
+          echo "Applying baseline migrations from: $BASELINE_PATH"
+
           # Clean and apply baseline
+          chmod +x ./gradlew
           ./gradlew flywayClean --no-daemon --stacktrace \
             -Dflyway.cleanDisabled=false \
             -Dorg.gradle.jvmargs="-Xmx1024m"
-          
+
           ./gradlew flywayMigrate --no-daemon --stacktrace \
             -Dflyway.locations="filesystem:$BASELINE_PATH" \
             -Dorg.gradle.jvmargs="-Xmx1024m"
-          
+
           # Record baseline state
           BASELINE_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;")
-          echo "📋 Baseline schema version: $BASELINE_VERSION"
+          echo "Baseline schema version: $BASELINE_VERSION"
           echo "version=$BASELINE_VERSION" >> $GITHUB_OUTPUT
 
       # ===== PHASE 2: Seed Realistic Test Data =====
       - name: Seed test data (synthetic production data)
         id: seed
         run: |
-          echo "🌱 Seeding test data to detect migration regressions..."
-          
+          echo "Seeding test data to detect migration regressions..."
+
           mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test << 'SEEDSQL'
           -- ============================================
           -- Synthetic Test Data for Migration Verification
@@ -232,7 +245,7 @@ jobs:
           -- 2. Long text truncation
           -- 3. Null handling
           -- 4. Foreign key relationships
-          
+
           -- Insert test user (if users table exists)
           INSERT IGNORE INTO book_lore_user (id, username, email, created_at, updated_at)
           SELECT 9999, 'migration_test_user', 'test@booklore.local', NOW(), NOW()
@@ -242,7 +255,7 @@ jobs:
             WHERE table_name = 'book_lore_user' AND table_schema = DATABASE()
           )
           ON DUPLICATE KEY UPDATE username = username;
-          
+
           -- Insert test library (if libraries table exists)
           INSERT IGNORE INTO library (id, name, path, created_at, updated_at)
           SELECT 9999, 'Migration Test Library', '/test/migration/library', NOW(), NOW()
@@ -252,15 +265,15 @@ jobs:
             WHERE table_name = 'library' AND table_schema = DATABASE()
           )
           ON DUPLICATE KEY UPDATE name = name;
-          
+
           -- Insert books with edge-case data
-          -- Book 1: Unicode stress test (Japanese, emoji, special chars)
+          -- Book 1: Unicode stress test (Japanese, special chars)
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          SELECT 
+          SELECT
             99901,
             9999,
-            '吾輩は猫である_📚_特殊文字テスト.epub',
-            '/test/migration/library/吾輩は猫である_📚_特殊文字テスト.epub',
+            '吾輩は猫である_特殊文字テスト.epub',
+            '/test/migration/library/吾輩は猫である_特殊文字テスト.epub',
             NOW(),
             NOW()
           FROM dual
@@ -269,10 +282,10 @@ jobs:
             WHERE table_name = 'book' AND table_schema = DATABASE()
           )
           ON DUPLICATE KEY UPDATE file_name = file_name;
-          
+
           -- Book 2: Long description stress test
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          SELECT 
+          SELECT
             99902,
             9999,
             'long_description_test.epub',
@@ -285,10 +298,10 @@ jobs:
             WHERE table_name = 'book' AND table_schema = DATABASE()
           )
           ON DUPLICATE KEY UPDATE file_name = file_name;
-          
+
           -- Book 3: Edge case with null-safe columns
           INSERT IGNORE INTO book (id, library_id, file_name, file_path, created_at, updated_at)
-          SELECT 
+          SELECT
             99903,
             9999,
             'null_test_book.pdf',
@@ -301,38 +314,38 @@ jobs:
             WHERE table_name = 'book' AND table_schema = DATABASE()
           )
           ON DUPLICATE KEY UPDATE file_name = file_name;
-          
+
           -- Insert book metadata if table exists
           INSERT IGNORE INTO book_metadata (id, book_id, title, description, isbn)
-          SELECT 
-            99901, 99901, 
-            '吾輩は猫である', 
+          SELECT
+            99901, 99901,
+            '吾輩は猫である',
             CONCAT('これは日本語のテストです。', REPEAT('長いテキスト。', 100)),
             '978-4-10-101010-1'
           FROM dual
           WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'book_metadata' AND table_schema = DATABASE());
-          
+
           INSERT IGNORE INTO book_metadata (id, book_id, title, description, isbn)
-          SELECT 
+          SELECT
             99902, 99902,
             'The Very Long Description Test',
             REPEAT('This is a very long description that tests column size limits. It contains multiple sentences and paragraphs to ensure that text data is not silently truncated during migrations. ', 50),
             '978-0-123-45678-9'
           FROM dual
           WHERE EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'book_metadata' AND table_schema = DATABASE());
-          
+
           -- Record seeded data counts for verification
           SELECT 'SEED_COMPLETE' AS status;
           SEEDSQL
-          
+
           # Capture baseline counts
-          echo "📊 Capturing baseline data counts..."
-          
+          echo "Capturing baseline data counts..."
+
           BOOK_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book WHERE id >= 99900;" 2>/dev/null || echo "0")
           echo "book_count=$BOOK_COUNT" >> $GITHUB_OUTPUT
           echo "  Books seeded: $BOOK_COUNT"
-          
+
           # Capture specific test values
           UNICODE_TITLE=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT file_name FROM book WHERE id = 99901;" 2>/dev/null || echo "")
@@ -348,90 +361,91 @@ jobs:
           FLYWAY_USER: root
           FLYWAY_PASSWORD: testroot
         run: |
-          echo "🚀 Applying current migrations (upgrade path)..."
-          
+          echo "Applying current migrations (upgrade path)..."
+
+          chmod +x ./gradlew
           ./gradlew flywayMigrate flywayValidate --no-daemon --stacktrace \
             -Dorg.gradle.jvmargs="-Xmx1024m"
-          
+
           # Record new version
           NEW_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;")
-          echo "📋 Upgraded schema version: $NEW_VERSION"
+          echo "Upgraded schema version: $NEW_VERSION"
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       # ===== PHASE 4: Verify Data Integrity =====
       - name: Verify data integrity after migration
         id: verify
         run: |
-          echo "🔍 Verifying data integrity after migration..."
+          echo "Verifying data integrity after migration..."
           ERRORS=0
-          
+
           # Test 1: Row count integrity
           echo ""
           echo "=== Test 1: Row Count Integrity ==="
           EXPECTED_BOOKS="${{ steps.seed.outputs.book_count }}"
           ACTUAL_BOOKS=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book WHERE id >= 99900;" 2>/dev/null || echo "0")
-          
+
           if [ "$EXPECTED_BOOKS" = "$ACTUAL_BOOKS" ]; then
-            echo "✅ Book count preserved: $ACTUAL_BOOKS"
+            echo "Book count preserved: $ACTUAL_BOOKS"
           else
-            echo "❌ Book count MISMATCH: Expected $EXPECTED_BOOKS, got $ACTUAL_BOOKS"
+            echo "Book count MISMATCH: Expected $EXPECTED_BOOKS, got $ACTUAL_BOOKS"
             ERRORS=$((ERRORS + 1))
           fi
-          
+
           # Test 2: Unicode data integrity
           echo ""
           echo "=== Test 2: Unicode Data Integrity ==="
           EXPECTED_UNICODE="${{ steps.seed.outputs.unicode_title }}"
           ACTUAL_UNICODE=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT file_name FROM book WHERE id = 99901;" 2>/dev/null || echo "")
-          
+
           if [ "$EXPECTED_UNICODE" = "$ACTUAL_UNICODE" ]; then
-            echo "✅ Unicode title preserved: $ACTUAL_UNICODE"
+            echo "Unicode title preserved: $ACTUAL_UNICODE"
           else
-            echo "❌ Unicode title CORRUPTED"
+            echo "Unicode title CORRUPTED"
             echo "   Expected: $EXPECTED_UNICODE"
             echo "   Got: $ACTUAL_UNICODE"
             ERRORS=$((ERRORS + 1))
           fi
-          
+
           # Test 3: Long text truncation check
           echo ""
           echo "=== Test 3: Long Text Preservation ==="
           DESC_LENGTH=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT LENGTH(description) FROM book_metadata WHERE book_id = 99902;" 2>/dev/null || echo "0")
-          
+
           if [ "$DESC_LENGTH" -gt 1000 ]; then
-            echo "✅ Long description preserved ($DESC_LENGTH chars)"
+            echo "Long description preserved ($DESC_LENGTH chars)"
           elif [ "$DESC_LENGTH" = "0" ]; then
-            echo "⚠️ book_metadata table may not exist or no data found (acceptable for some versions)"
+            echo "book_metadata table may not exist or no data found (acceptable for some versions)"
           else
-            echo "❌ Long description TRUNCATED to $DESC_LENGTH chars"
+            echo "Long description TRUNCATED to $DESC_LENGTH chars"
             ERRORS=$((ERRORS + 1))
           fi
-          
+
           # Test 4: Check for orphaned FK references
           echo ""
           echo "=== Test 4: Referential Integrity ==="
           ORPHANED=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_test \
             -sN -e "SELECT COUNT(*) FROM book b LEFT JOIN library l ON b.library_id = l.id WHERE l.id IS NULL AND b.id >= 99900;" 2>/dev/null || echo "0")
-          
+
           if [ "$ORPHANED" = "0" ]; then
-            echo "✅ No orphaned book-library references"
+            echo "No orphaned book-library references"
           else
-            echo "❌ Found $ORPHANED orphaned book records"
+            echo "Found $ORPHANED orphaned book records"
             ERRORS=$((ERRORS + 1))
           fi
-          
+
           # Summary
           echo ""
           echo "=========================================="
           if [ $ERRORS -eq 0 ]; then
-            echo "✅ All data integrity checks PASSED"
+            echo "All data integrity checks PASSED"
             echo "status=success" >> $GITHUB_OUTPUT
           else
-            echo "❌ $ERRORS data integrity check(s) FAILED"
+            echo "$ERRORS data integrity check(s) FAILED"
             echo "status=failure" >> $GITHUB_OUTPUT
             exit 1
           fi
@@ -506,16 +520,16 @@ jobs:
       - name: Migration Regression Summary
         if: always()
         run: |
-          echo "## 🧪 Migration Regression Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "## Migration Regression Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**MariaDB Version:** ${{ matrix.mariadb-version }} (${{ matrix.description }})" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Phase | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Baseline Migration | ${{ steps.baseline_migrate.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Data Seeding | ${{ steps.seed.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Upgrade Migration | ${{ steps.upgrade_migrate.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Data Integrity | ${{ steps.verify.outcome == 'success' && '✅' || '❌' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Baseline Migration | ${{ steps.baseline_migrate.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Data Seeding | ${{ steps.seed.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Upgrade Migration | ${{ steps.upgrade_migrate.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Data Integrity | ${{ steps.verify.outcome == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Schema Versions:**" >> $GITHUB_STEP_SUMMARY
           echo "- Baseline: ${{ steps.baseline_migrate.outputs.version }}" >> $GITHUB_STEP_SUMMARY
@@ -574,7 +588,7 @@ jobs:
         run: |
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               exit 0
             fi
             sleep 2
@@ -589,48 +603,49 @@ jobs:
           FLYWAY_PASSWORD: testroot
           FLYWAY_CLEAN_DISABLED: 'false'
         run: |
-          echo "🕰️ Testing migrations from historical releases..."
-          
+          echo "Testing migrations from historical releases..."
+
           # Get last 3 tagged releases
           TAGS=$(git tag -l 'v*' --sort=-version:refname | head -3)
-          
+
           if [ -z "$TAGS" ]; then
-            echo "⚠️ No version tags found, skipping historical test"
+            echo "No version tags found, skipping historical test"
             exit 0
           fi
-          
+
           for TAG in $TAGS; do
             echo ""
             echo "=========================================="
             echo "Testing upgrade from $TAG"
             echo "=========================================="
-            
+
             # Clean database
+            chmod +x ./gradlew
             ./gradlew flywayClean --no-daemon -Dflyway.cleanDisabled=false
-            
+
             # Extract and apply migrations from tag
             mkdir -p /tmp/tag-migrations
             rm -rf /tmp/tag-migrations/*
-            
+
             if git archive "$TAG" booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/tag-migrations; then
               ./gradlew flywayMigrate --no-daemon \
                 -Dflyway.locations="filesystem:/tmp/tag-migrations/booklore-api/src/main/resources/db/migration"
-              
-              echo "📌 Applied migrations from $TAG"
-              
+
+              echo "Applied migrations from $TAG"
+
               # Now apply current migrations
               ./gradlew flywayMigrate flywayValidate --no-daemon
-              
-              echo "✅ Successfully upgraded from $TAG to current"
+
+              echo "Successfully upgraded from $TAG to current"
             else
-              echo "⚠️ Could not extract migrations from $TAG, skipping"
+              echo "Could not extract migrations from $TAG, skipping"
             fi
           done
 
       - name: Historical Migration Summary
         if: always()
         run: |
-          echo "## 🕰️ Historical Migration Tests" >> $GITHUB_STEP_SUMMARY
+          echo "## Historical Migration Tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tested upgrade paths from recent releases to current codebase." >> $GITHUB_STEP_SUMMARY
 

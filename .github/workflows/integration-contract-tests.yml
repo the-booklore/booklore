@@ -1,3 +1,13 @@
+# Integration Contract Tests Workflow
+#
+# Purpose: Ensures API compatibility with hardware readers (Kobo, KOReader)
+# Significance: Critical for maintaining compatibility with e-reader sync protocols
+# Key Functions:
+# - Tests Kobo sync protocol implementation against device expectations
+# - Tests KOReader sync protocol implementation for cross-platform compatibility
+# - Validates proper handling of device-specific headers and authentication
+# - Tests API response structure matches hardware reader requirements
+# - Verifies backward compatibility of sync endpoints
 name: Integration Contract Tests
 
 on:
@@ -96,6 +106,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: testroot
         run: |
+          chmod +x ./gradlew
           ./gradlew test --tests "*Kobo*" --no-daemon -Dspring.profiles.active=test || {
             echo "⚠️ Some Kobo tests failed or no Kobo tests found"
           }
@@ -138,6 +149,7 @@ jobs:
           SWAGGER_ENABLED: true
         run: |
           # Build the application
+          chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
           
           # Find the JAR
@@ -330,6 +342,7 @@ jobs:
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: testroot
         run: |
+          chmod +x ./gradlew
           ./gradlew test --tests "*Koreader*" --no-daemon || {
             echo "⚠️ Some KOReader tests failed"
           }
@@ -361,14 +374,8 @@ jobs:
 
           echo "✅ Test user created for KOReader authentication"
 
-      - name: Build and start application
-        working-directory: booklore-api
-        env:
-          SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/booklore
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: testroot
-          SWAGGER_ENABLED: true
         run: |
+          chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
           
           JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
@@ -606,6 +613,7 @@ jobs:
         env:
           SWAGGER_ENABLED: true
         run: |
+          chmod +x ./gradlew
           ./gradlew bootJar -x test --no-daemon
           JAR=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
 

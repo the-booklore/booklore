@@ -1,3 +1,12 @@
+# Auto Labeler Workflow
+#
+# Purpose: Automatically applies labels to pull requests based on changed files and size
+# Significance: Improves PR triage efficiency and helps developers quickly identify PR scope
+# Key Functions:
+# - Labels PRs based on file paths changed (backend, frontend, infrastructure, etc.)
+# - Calculates and applies size labels based on number of changes (XS, S, M, L)
+# - Maintains consistent labeling across all PRs for easier filtering and management
+# - Updates labels when PR is synchronized to reflect any changes
 name: Auto Labeler
 
 on:

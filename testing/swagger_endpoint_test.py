@@ -10,6 +10,25 @@ Usage:
                                     [--skip-destructive] [--openapi-url URL]
 """
 
+# Swagger/OpenAPI Endpoint Test Suite
+#
+# Purpose: Tests all API endpoints documented in the OpenAPI specification
+# Significance: Ensures API compliance with documented interfaces and validates all endpoints are functional
+# Key Functions:
+# - Fetches OpenAPI specification from running server
+# - Automatically tests all documented endpoints with appropriate test data
+# - Validates API responses against OpenAPI schema definitions
+# - Includes authentication testing capabilities
+# - Runs in parallel to efficiently test large numbers of endpoints
+# - Generates comprehensive test reports in JSON and HTML formats
+# - Identifies endpoints that require authentication vs. public endpoints
+# - Tests destructive endpoints safely (skipped by default)
+#
+# Requirements:
+# - Server must have Swagger enabled (SWAGGER_ENABLED=true)
+# - Access to running BookLore API instance
+# - Optional: Credentials for authenticated endpoints
+
 import argparse
 import json
 import logging
@@ -204,7 +223,7 @@ class ReportGenerator:
 </head>
 <body>
     <div class="container">
-        <h1>📊 BookLore API Test Report</h1>
+        <h1>BookLore API Test Report</h1>
         <div class="summary">
             <h2>Summary</h2>
             <p><strong>Test Date:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>

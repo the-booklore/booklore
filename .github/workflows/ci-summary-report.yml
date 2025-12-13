@@ -1,5 +1,16 @@
+# CI Summary Report Workflow
+#
+# **DEPRECATED/COMMENTED OUT** - This workflow was used to aggregate results from multiple CI runs
+# Purpose: Provided consolidated view of all CI pipeline results in a single summary
+# Significance: Was intended to give a comprehensive overview of all testing across the CI ecosystem
+# Key Functions (when active):
+# - Collected results from all individual CI workflows
+# - Generated unified dashboard-style report
+# - Posted aggregated status to pull requests
+# - Categorized workflows by function (Build, Test, Security, etc.)
+# NOTE: Currently disabled/commented out - may be reactivated if aggregation is needed again
 # name: CI Summary Report
-# 
+#
 # on:
 #   workflow_run:
 #     workflows:

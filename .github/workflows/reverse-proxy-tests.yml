@@ -1,3 +1,13 @@
+# Reverse Proxy Simulation Tests Workflow
+#
+# Purpose: Ensures BookLore works correctly when deployed behind reverse proxies (Nginx, Traefik)
+# Significance: Critical for users running BookLore behind reverse proxies which is common deployment
+# Key Functions:
+# - Tests proper handling of X-Forwarded-* headers for correct URL generation
+# - Simulates real-world reverse proxy configurations with common headers
+# - Ensures Kobo sync works correctly when BookLore is behind a proxy
+# - Tests download URL generation respects proxy settings for external access
+# - Validates multi-hop proxy configurations
 name: Reverse Proxy Simulation Tests
 
 on:

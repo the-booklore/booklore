@@ -45,7 +45,7 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
-RUN apk update && apk add nginx gettext su-exec
+RUN apk update && apk add nginx gettext su-exec curl
 
 COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html

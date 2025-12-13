@@ -1,3 +1,13 @@
+# Advanced Testing Suite Workflow
+#
+# Purpose: Single workflow to run all advanced testing suites for comprehensive QA
+# Significance: Consolidates multiple complex testing scenarios into one manual trigger
+# Key Functions:
+# - Orchestration workflow that triggers other specialized test suites
+# - Combines ARM64 hardware tests, malformed file tests, performance tests, etc.
+# - Allows manual selection of which test suites to run
+# - Provides consolidated view of advanced testing results
+# - Useful for pre-release validation and comprehensive regression testing
 name: Advanced Testing Suite
 
 # Single manual trigger for all advanced testing workflows

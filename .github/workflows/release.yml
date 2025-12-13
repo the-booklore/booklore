@@ -1,3 +1,13 @@
+# Release Workflow
+#
+# Purpose: Automates the creation of GitHub releases with changelog and Docker images
+# Significance: Streamlines the release process and ensures consistent build artifacts
+# Key Functions:
+# - Creates GitHub release with automatically generated changelog
+# - Generates release notes from conventional commit messages
+# - Builds and publishes Docker images for the release version
+# - Pushes to both Docker Hub and GitHub Container Registry
+# - Creates multi-architecture images (AMD64 and ARM64) for broad compatibility
 name: Release
 
 on:
@@ -57,27 +67,27 @@ jobs:
             {
               "categories": [
                 {
-                  "title": "## 🚀 Features",
+                  "title": "## Features",
                   "labels": ["feature", "enhancement"]
                 },
                 {
-                  "title": "## 🐛 Bug Fixes",
+                  "title": "## Bug Fixes",
                   "labels": ["bug", "fix"]
                 },
                 {
-                  "title": "## 🔒 Security",
+                  "title": "## Security",
                   "labels": ["security"]
                 },
                 {
-                  "title": "## 📚 Documentation",
+                  "title": "## Documentation",
                   "labels": ["documentation"]
                 },
                 {
-                  "title": "## 🧪 Tests",
+                  "title": "## Tests",
                   "labels": ["test"]
                 },
                 {
-                  "title": "## 🔧 Maintenance",
+                  "title": "## Maintenance",
                   "labels": ["chore", "dependencies"]
                 }
               ],
@@ -96,7 +106,7 @@ jobs:
 
             ${{ steps.changelog.outputs.changelog }}
 
-            ## 🐳 Docker Images
+            ## Docker Images
 
             ```bash
             # Docker Hub

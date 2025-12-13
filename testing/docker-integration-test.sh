@@ -1,5 +1,20 @@
 #!/bin/bash
-# This script tests the Docker container health and basic functionality
+# Docker Integration and Health Tests
+#
+# Purpose: Validates the BookLore Docker container functions correctly in isolation
+# Significance: Ensures Docker image builds properly and containerized application works as expected
+# Key Functions:
+# - Starts BookLore in a container with linked MariaDB database
+# - Tests container health check functionality
+# - Validates HTTP endpoints are accessible from outside container
+# - Tests application boot and database connectivity in containerized environment
+# - Verifies application can serve requests once healthy
+# - Includes cleanup routines to prevent resource leaks
+#
+# Requirements:
+# - Docker daemon running locally
+# - Built BookLore Docker image (or Dockerfile accessible)
+# - Available network ports for testing
 
 set -e
 

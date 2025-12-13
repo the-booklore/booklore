@@ -1,3 +1,13 @@
+# Database Migration Full Matrix Workflow
+#
+# Purpose: Tests database migration from various baselines to current state
+# Significance: Ensures compatibility when upgrading from older versions
+# Key Functions:
+# - Tests migration from develop branch baseline to current state
+# - Verifies upgrade path compatibility across version transitions
+# - Runs migrations in a matrix to test different scenarios
+# - Validates that users can upgrade from older versions to current
+# - Ensures no data loss during migration process
 name: Database Migration Full Matrix
 
 on:
@@ -61,13 +71,13 @@ jobs:
         run: |
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               exit 0
             fi
-            echo "⏳ Waiting for MariaDB... ($i/30)"
+            echo "Waiting for MariaDB... ($i/30)"
             sleep 2
           done
-          echo "❌ MariaDB failed to start"
+          echo "MariaDB failed to start"
           exit 1
 
       - name: Prepare baseline migrations from develop
@@ -85,6 +95,7 @@ jobs:
           FLYWAY_USER: root
           FLYWAY_PASSWORD: root
         run: |
+          chmod +x ./gradlew
           ./gradlew flywayClean --no-daemon --stacktrace \
             -Dflyway.cleanDisabled=false \
             -Dorg.gradle.jvmargs="-Xmx1024m"
@@ -101,6 +112,7 @@ jobs:
           FLYWAY_USER: root
           FLYWAY_PASSWORD: root
         run: |
+          chmod +x ./gradlew
           ./gradlew flywayMigrate flywayValidate --no-daemon --stacktrace \
             -Dorg.gradle.jvmargs="-Xmx1024m"
 

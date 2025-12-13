@@ -1,18 +1,14 @@
-# ============================================
-# Enhanced Security Scan
-# ============================================
-# This workflow provides comprehensive security scanning including:
-# 1. OWASP Dependency Check for known CVEs in libraries
-# 2. Secret scanning with Gitleaks
-# 3. SAST scanning with Semgrep
-# 4. Container image vulnerability scanning
-# 5. License compliance checking
+# Enhanced Security Scan Workflow
 #
-# Critical for Booklore because:
-# - PDF/EPUB parsing libraries frequently have CVEs
-# - Self-hosted apps must be secure by default
-# ============================================
-
+# Purpose: Performs comprehensive security scanning including deep dependency analysis
+# Significance: Prevents supply chain attacks and identifies vulnerable third-party libraries
+# Key Functions:
+# - Runs OWASP Dependency Check to scan for known vulnerabilities in Java dependencies
+# - Performs NPM audit for frontend package vulnerabilities
+# - Runs SAST (Semgrep) for code-level security issues
+# - Scans Docker container images for CVEs using Trivy
+# - Checks for problematic license types
+# - Provides comprehensive security posture assessment
 name: Enhanced Security Scan
 
 on:

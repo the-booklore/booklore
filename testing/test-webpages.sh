@@ -1,5 +1,18 @@
 #!/bin/bash
-# Tests that all expected routes return valid responses
+# Webpage Accessibility and API Endpoint Tests
+#
+# Purpose: Verifies that all expected web routes and API endpoints return valid responses
+# Significance: Ensures basic functionality and accessibility of all pages/routes in BookLore
+# Key Functions:
+# - Tests public endpoints that should be accessible without authentication
+# - Tests protected endpoints to verify proper authentication requirements
+# - Validates HTTP status codes for different routes
+# - Confirms server connectivity and general health
+# - Provides basic smoke test for entire application surface
+#
+# Requirements:
+# - Running BookLore instance accessible via BASE_URL
+# - Network access to test server
 
 set -e
 

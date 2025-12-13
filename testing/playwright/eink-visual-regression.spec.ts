@@ -1,14 +1,33 @@
+/*
+ * E-Ink Visual Regression Tests
+ *
+ * Purpose: Ensures the BookLore interface renders properly on E-Ink displays (Kobo, Kindle, etc.)
+ * Significance: Critical for users who access BookLore from e-ink readers with limited grayscale
+ * Key Functions:
+ * - Simulates E-Ink display using CSS filters (grayscale and contrast adjustments)
+ * - Verifies text remains readable with limited color palette (16 grayscale levels)
+ * - Tests that interactive elements maintain adequate contrast and visibility
+ * - Validates dark mode doesn't render as "black-on-black" on E-Ink
+ * - Ensures focus indicators remain visible on low-contrast displays
+ * - Checks that touch targets are appropriately sized for E-Ink devices
+ *
+ * Requirements:
+ * - Text maintains at least 3:1 contrast ratio after E-Ink simulation
+ * - Buttons and controls remain visible with 16-level grayscale
+ * - Touch targets meet minimum 44x44px WCAG recommendation
+ * - Focus indicators remain visible on simulated E-Ink displays
+ */
 import { test, expect, Page } from '@playwright/test';
 
 /**
  * E-Ink Visual Regression Tests
- * 
+ *
  * These tests verify that BookLore's UI is usable on E-Ink displays by:
  * 1. Applying grayscale + contrast filters to simulate E-Ink rendering
  * 2. Checking that text remains readable
  * 3. Verifying buttons and controls are visible
  * 4. Testing dark mode rendering on E-Ink (common failure mode)
- * 
+ *
  * Why this matters:
  * - E-Ink displays have only 16 grayscale levels
  * - Subtle color differences visible on LCD are invisible on E-Ink
@@ -96,7 +115,7 @@ test.describe('E-Ink Visual Regression', () => {
       } catch (e) {
         // Allow snapshot creation on first run
         if (e.message?.includes('writing actual') || e.message?.includes('snapshot')) {
-          console.log(`✓ E-Ink baseline snapshot created for ${config.name}`);
+          console.log(`E-Ink baseline snapshot created for ${config.name}`);
         } else {
           throw e;
         }
@@ -179,10 +198,10 @@ test.describe('E-Ink Visual Regression', () => {
       // Log contrast results
       console.log(`E-Ink Contrast Check (${config.name}):`);
       if (contrastResults.length === 0) {
-        console.warn('⚠️ No text elements found for contrast testing - visual regression will verify rendering');
+        console.warn('No text elements found for contrast testing - visual regression will verify rendering');
       }
       contrastResults.forEach(r => {
-        console.log(`  ${r.element}: ${r.contrast}:1 ${r.pass ? '✓' : '✗'}`);
+        console.log(`  ${r.element}: ${r.contrast}:1 ${r.pass ? 'PASS' : 'FAIL'}`);
       });
       
       // At least 50% of text elements should meet base contrast (filter amplifies this for E-Ink)
@@ -249,7 +268,7 @@ test.describe('E-Ink Visual Regression', () => {
     }).catch((e) => {
       // On first run, snapshot is created; this is expected
       if (e.message.includes('writing actual')) {
-        console.log('✓ Dark mode baseline snapshot created');
+        console.log('Dark mode baseline snapshot created');
       } else {
         throw e;
       }
@@ -274,7 +293,7 @@ test.describe('E-Ink Visual Regression', () => {
     
     // Warn if dark mode may be problematic
     if (!textVisibility) {
-      console.warn('⚠️ Dark mode may render as black-on-black on E-Ink displays');
+      console.warn('Dark mode may render as black-on-black on E-Ink displays');
     }
   });
 

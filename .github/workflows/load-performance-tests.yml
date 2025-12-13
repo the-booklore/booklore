@@ -1,3 +1,14 @@
+# Load & Performance Tests Workflow
+#
+# Purpose: Validates application performance under load with large libraries and concurrent users
+# Significance: Critical for preventing Kobo sync timeouts and ensuring responsive UI with large libraries
+# Key Functions:
+# - Seeds synthetic libraries with configurable number of books (1k-50k+)
+# - Simulates concurrent Kobo, KOReader, and web users accessing the application
+# - Measures response time percentiles (P50, P95, P99) to identify performance bottlenecks
+# - Ensures Kobo sync endpoints respond quickly enough to avoid 30s timeout
+# - Tests performance degradation in large libraries (30k+ books) which previously caused freezes
+# - Runs scheduled weekly to catch performance regressions
 name: Load & Performance Tests
 
 # Catches: Large Library Freeze bug (30k+ books, P95 < 500ms, Kobo 30s timeout)

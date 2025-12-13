@@ -1,3 +1,13 @@
+# Push BookLore Docker Workflow
+#
+# Purpose: Builds and pushes Docker images for BookLore to container registries
+# Significance: Enables deployment of the application to containerized environments
+# Key Functions:
+# - Builds multi-architecture images (AMD64 and ARM64) in parallel for speed
+# - Pushes images to both Docker Hub and GitHub Container Registry
+# - Creates multi-arch manifests combining AMD64 and ARM64 images
+# - Runs on both branch pushes and version tag events
+# - Uses build cache to speed up builds on native architecture runners
 name: Push BookLore Docker
 
 on:

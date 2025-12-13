@@ -1,3 +1,13 @@
+# Build and Test BookLore Workflow
+#
+# Purpose: Runs comprehensive build and test suite for every pull request to ensure code quality
+# Significance: Critical quality gate that prevents broken code from being merged to develop/main
+# Key Functions:
+# - Tests frontend with Jest and builds Angular application
+# - Tests backend with JUnit and builds Spring Boot JAR
+# - Creates Docker image to verify build process works in containerized environment
+# - Runs on both AMD64 and ARM64 architectures to ensure platform compatibility
+# - Publishes test results to GitHub for easy review
 name: Build and Test BookLore
 
 on:
@@ -91,7 +101,9 @@ jobs:
           cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
           
       - name: Run tests with Gradle
-        run: ./gradlew test --no-daemon
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --no-daemon
         
       - name: Build JAR artifact
         run: ./gradlew bootJar -x test --no-daemon
