@@ -1,5 +1,5 @@
-INSERT INTO app_setting (name, val)
+INSERT INTO app_settings (name, val)
 SELECT 'komga_api_enabled', 'false'
 WHERE NOT EXISTS (
-    SELECT 1 FROM app_setting WHERE name = 'komga_api_enabled'
+    SELECT 1 FROM app_settings WHERE name = 'komga_api_enabled'
 );
