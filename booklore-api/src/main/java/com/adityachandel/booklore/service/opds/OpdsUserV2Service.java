@@ -64,4 +64,8 @@ public class OpdsUserV2Service {
         }
         opdsUserV2Repository.delete(user);
     }
+
+    public OpdsUserV2Entity findByUsername(String username) {
+        return opdsUserV2Repository.findByUsername(username).orElse(null);
+    }
 }
