@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, inject, OnInit, ChangeDetectorRef} from '@angular/core';
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Button} from 'primeng/button';
@@ -42,6 +42,7 @@ export class BookdropBulkEditDialogComponent implements OnInit {
 
   private readonly dialogRef = inject(DynamicDialogRef);
   private readonly config = inject(DynamicDialogConfig);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   fileCount: number = 0;
   mergeArrays = true;
@@ -83,6 +84,41 @@ export class BookdropBulkEditDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.fileCount = this.config.data?.fileCount ?? 0;
+    this.setupFormValueChangeListeners();
+  }
+
+  private setupFormValueChangeListeners(): void {
+    Object.keys(this.bulkEditForm.controls).forEach(fieldName => {
+      const control = this.bulkEditForm.get(fieldName);
+      control?.valueChanges.subscribe(value => {
+        const hasValue = Array.isArray(value) ? value.length > 0 : (value !== null && value !== '' && value !== undefined);
+        if (hasValue && !this.enabledFields.has(fieldName)) {
+          this.enabledFields.add(fieldName);
+          this.cdr.detectChanges();
+        }
+      });
+    });
+  }
+
+  onAutoCompleteBlur(fieldName: string, event: any): void {
+    const inputValue = event.target?.value?.trim();
+    if (inputValue) {
+      const control = this.bulkEditForm.get(fieldName);
+      const currentValue = (control?.value as string[]) || [];
+      if (!currentValue.includes(inputValue)) {
+        control?.setValue([...currentValue, inputValue]);
+      }
+      event.target.value = '';
+    }
+    
+    if (!this.enabledFields.has(fieldName)) {
+      const control = this.bulkEditForm.get(fieldName);
+      const value = control?.value;
+      if (Array.isArray(value) && value.length > 0) {
+        this.enabledFields.add(fieldName);
+        this.cdr.detectChanges();
+      }
+    }
   }
 
   toggleField(fieldName: string): void {
@@ -111,6 +147,7 @@ export class BookdropBulkEditDialogComponent implements OnInit {
 
     this.enabledFields.forEach(fieldName => {
       const value = formValue[fieldName as keyof typeof formValue];
+
       if (value !== undefined && value !== null) {
         (fields as Record<string, unknown>)[fieldName] = value;
       }

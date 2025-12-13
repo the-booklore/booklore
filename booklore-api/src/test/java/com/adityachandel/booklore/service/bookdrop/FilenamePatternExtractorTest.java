@@ -24,6 +24,9 @@ class FilenamePatternExtractorTest {
     @Mock
     private BookdropFileRepository bookdropFileRepository;
 
+    @Mock
+    private BookdropMetadataHelper metadataHelper;
+
     @InjectMocks
     private FilenamePatternExtractor extractor;
 

@@ -20,7 +20,6 @@
           <input
             pInputText
             [formControl]="$any(bulkEditForm.get(field.controlName))"
-            [disabled]="!isFieldEnabled(field.name)"
             class="field-input"/>
         </div>
       }
@@ -44,7 +43,6 @@
             pInputText
             type="number"
             [formControl]="$any(bulkEditForm.get(field.controlName))"
-            [disabled]="!isFieldEnabled(field.name)"
             class="field-input field-input-small"/>
         </div>
       }
@@ -66,6 +64,7 @@
         </p-selectButton>
       </div>
     </div>
+    <p class="helper-text"><i class="pi pi-info-circle"></i> Type and press Enter to add each item.</p>
     <div class="field-grid">
       @for (field of chipFields; track field.name) {
         <div class="field-row">
@@ -78,8 +77,11 @@
           <p-autoComplete
             [formControl]="$any(bulkEditForm.get(field.controlName))"
             [multiple]="true"
-            [disabled]="!isFieldEnabled(field.name)"
             [suggestions]="[]"
+            [forceSelection]="false"
+            [typeahead]="false"
+            [dropdown]="false"
+            (onBlur)="onAutoCompleteBlur(field.name, $event)"
             class="field-input">
           </p-autoComplete>
         </div>

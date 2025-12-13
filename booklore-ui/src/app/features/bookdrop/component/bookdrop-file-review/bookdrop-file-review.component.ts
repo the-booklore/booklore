@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 
-import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService, FileExtractionResult} from '../../service/bookdrop.service';
+import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService, FileExtractionResult, BulkEditRequest as BackendBulkEditRequest, BulkEditResult as BackendBulkEditResult} from '../../service/bookdrop.service';
 import {LibraryService} from '../../../book/service/library.service';
 import {Library} from '../../../book/model/library.model';
 
@@ -596,7 +596,11 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openBulkEditDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    if (selectedFiles.length === 0) {
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'No files selected',
@@ -606,23 +610,27 @@ export class BookdropFileReviewComponent implements OnInit {
     }
 
     const dialogRef = this.dialogService.open(BookdropBulkEditDialogComponent, {
-      header: `Bulk Edit ${selectedFiles.length} Files`,
+      header: `Bulk Edit ${totalCount} Files`,
       width: '600px',
       modal: true,
       closable: true,
-      data: {fileCount: selectedFiles.length},
+      data: {fileCount: totalCount},
     });
 
     dialogRef?.onClose.subscribe((result: BulkEditResult | null) => {
       if (result) {
-        this.applyBulkMetadata(result);
+        this.applyBulkMetadataViaBackend(result);
       }
     });
   }
 
   openPatternExtractDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    if (selectedFiles.length === 0) {
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',
         summary: 'No files selected',
@@ -641,7 +649,7 @@ export class BookdropFileReviewComponent implements OnInit {
       closable: true,
       data: {
         sampleFiles,
-        fileCount: selectedFiles.length,
+        fileCount: totalCount,
         selectAll: this.selectAllAcrossPages,
         excludedIds: Array.from(this.excludedFiles),
         selectedIds,
@@ -664,14 +672,51 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  private applyBulkMetadata(result: BulkEditResult): void {
+  private applyBulkMetadataViaBackend(result: BulkEditResult): void {
     const selectedFiles = this.getSelectedFiles();
-    let updatedCount = 0;
+    const selectedIds = selectedFiles.map(f => f.file.id);
 
+    this.applyBulkMetadataToUI(result, selectedFiles);
+
+    const enabledFieldsArray = Array.from(result.enabledFields);
+
+    const payload: BackendBulkEditRequest = {
+      fields: result.fields,
+      enabledFields: enabledFieldsArray,
+      mergeArrays: result.mergeArrays,
+      selectAll: this.selectAllAcrossPages,
+      excludedIds: this.selectAllAcrossPages ? Array.from(this.excludedFiles) : undefined,
+      selectedIds: !this.selectAllAcrossPages ? selectedIds : undefined,
+    };
+
+    this.bookdropService.bulkEditMetadata(payload).subscribe({
+      next: (backendResult: BackendBulkEditResult) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Bulk Edit Applied',
+          detail: `Updated metadata for ${backendResult.successfullyUpdated} of ${backendResult.totalFiles} file(s).`,
+        });
+      },
+      error: (err) => {
+        console.error('Error applying bulk edit:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bulk Edit Failed',
+          detail: 'An error occurred while applying bulk edits.',
+        });
+      },
+    });
+  }
+
+  private applyBulkMetadataToUI(result: BulkEditResult, selectedFiles: BookdropFileUI[]): void {
     selectedFiles.forEach(fileUi => {
       result.enabledFields.forEach(fieldName => {
         const value = result.fields[fieldName as keyof BookMetadata];
-        if (value === undefined) {
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        if (Array.isArray(value) && value.length === 0) {
           return;
         }
 
@@ -688,13 +733,6 @@ export class BookdropFileReviewComponent implements OnInit {
           control.setValue(value);
         }
       });
-      updatedCount++;
-    });
-
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Bulk Edit Applied',
-      detail: `Updated metadata for ${updatedCount} file(s).`,
     });
   }
 

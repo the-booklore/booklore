@@ -79,6 +79,21 @@ export interface PatternExtractResult {
   results: FileExtractionResult[];
 }
 
+export interface BulkEditRequest {
+  fields: Partial<BookMetadata>;
+  enabledFields: string[];
+  mergeArrays: boolean;
+  selectAll?: boolean;
+  excludedIds?: number[];
+  selectedIds?: number[];
+}
+
+export interface BulkEditResult {
+  totalFiles: number;
+  successfullyUpdated: number;
+  failed: number;
+}
+
 @Injectable({providedIn: 'root'})
 export class BookdropService {
   private readonly url = `${API_CONFIG.BASE_URL}/api/v1/bookdrop`;
@@ -102,5 +117,9 @@ export class BookdropService {
 
   extractFromPattern(payload: PatternExtractRequest): Observable<PatternExtractResult> {
     return this.http.post<PatternExtractResult>(`${this.url}/files/extract-pattern`, payload);
+  }
+
+  bulkEditMetadata(payload: BulkEditRequest): Observable<BulkEditResult> {
+    return this.http.post<BulkEditResult>(`${this.url}/files/bulk-edit`, payload);
   }
 }

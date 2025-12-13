@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
 public class FilenamePatternExtractor {
 
     private final BookdropFileRepository bookdropFileRepository;
+    private final BookdropMetadataHelper metadataHelper;
     
     private static final int PREVIEW_FILE_LIMIT = 5;
     private static final int TWO_DIGIT_YEAR_CUTOFF = 50;
@@ -55,8 +57,13 @@ public class FilenamePatternExtractor {
     private static final Pattern DOT_DATE_PATTERN = Pattern.compile("(\\d{4})\\.(\\d{1,2})\\.(\\d{1,2})");
     private static final Pattern SLASH_DATE_PATTERN = Pattern.compile("(\\d{4})/(\\d{1,2})/(\\d{1,2})");
 
+    @Transactional
     public BookdropPatternExtractResult bulkExtract(BookdropPatternExtractRequest request) {
-        List<Long> fileIds = resolveFileIds(request);
+        List<Long> fileIds = metadataHelper.resolveFileIds(
+                Boolean.TRUE.equals(request.getSelectAll()),
+                request.getExcludedIds(),
+                request.getSelectedIds()
+        );
         List<BookdropFileEntity> files = bookdropFileRepository.findAllById(fileIds);
         
         boolean isPreview = Boolean.TRUE.equals(request.getPreview());
@@ -79,6 +86,10 @@ public class FilenamePatternExtractor {
             if (result.isSuccess()) {
                 successCount++;
             }
+        }
+
+        if (!isPreview) {
+            persistExtractedMetadata(results, files);
         }
 
         return BookdropPatternExtractResult.builder()
@@ -149,18 +160,6 @@ public class FilenamePatternExtractor {
                     .errorMessage("Extraction error: " + e.getMessage())
                     .build();
         }
-    }
-
-    private List<Long> resolveFileIds(BookdropPatternExtractRequest request) {
-        if (Boolean.TRUE.equals(request.getSelectAll())) {
-            List<Long> excludedIds = request.getExcludedIds() != null 
-                    ? request.getExcludedIds() 
-                    : Collections.emptyList();
-            return bookdropFileRepository.findAllExcludingIdsFlat(excludedIds);
-        }
-        return request.getSelectedIds() != null 
-                ? request.getSelectedIds() 
-                : Collections.emptyList();
     }
 
     private ParsedPattern parsePattern(String pattern) {
@@ -426,6 +425,36 @@ public class FilenamePatternExtractor {
             metadata.setSeriesTotal(Integer.parseInt(value));
         } catch (NumberFormatException ignored) {
         }
+    }
+
+    private void persistExtractedMetadata(List<BookdropPatternExtractResult.FileExtractionResult> results, List<BookdropFileEntity> files) {
+        Map<Long, BookdropFileEntity> fileMap = new HashMap<>();
+        for (BookdropFileEntity file : files) {
+            fileMap.put(file.getId(), file);
+        }
+
+        for (BookdropPatternExtractResult.FileExtractionResult result : results) {
+            if (!result.isSuccess() || result.getExtractedMetadata() == null) {
+                continue;
+            }
+
+            BookdropFileEntity file = fileMap.get(result.getFileId());
+            if (file == null) {
+                continue;
+            }
+
+            try {
+                BookMetadata currentMetadata = metadataHelper.getCurrentMetadata(file);
+                BookMetadata extractedMetadata = result.getExtractedMetadata();
+                metadataHelper.mergeMetadata(currentMetadata, extractedMetadata);
+                metadataHelper.updateFetchedMetadata(file, currentMetadata);
+
+            } catch (Exception e) {
+                log.error("Error persisting extracted metadata for file {}: {}", file.getId(), e.getMessage());
+            }
+        }
+
+        bookdropFileRepository.saveAll(files);
     }
 
     private record PlaceholderConfig(String regex, String metadataField) {}
