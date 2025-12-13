@@ -6,6 +6,7 @@ import {ToastModule} from 'primeng/toast';
 import {ViewPreferencesComponent} from './view-preferences/view-preferences.component';
 import {SidebarSortingPreferencesComponent} from './sidebar-sorting-preferences/sidebar-sorting-preferences.component';
 import {MetaCenterViewModeComponent} from './meta-center-view-mode/meta-center-view-mode-component';
+import {FilterPreferencesComponent} from './filter-preferences/filter-preferences.component';
 
 @Component({
   selector: 'app-view-preferences-parent',
@@ -17,7 +18,8 @@ import {MetaCenterViewModeComponent} from './meta-center-view-mode/meta-center-v
     ToastModule,
     ViewPreferencesComponent,
     SidebarSortingPreferencesComponent,
-    MetaCenterViewModeComponent
+    MetaCenterViewModeComponent,
+    FilterPreferencesComponent,
   ],
   templateUrl: './view-preferences-parent.component.html',
   styleUrl: './view-preferences-parent.component.scss'

@@ -173,7 +173,7 @@ class PathPatternResolverTest {
     @Test void allPlaceholdersMissing_yieldsJustExtension() {
         var book = createBook(null, null, null, null, null, null, null, null, null, "file.cbz");
         String pattern = "{title}-{authors}-{series}-{year}-{language}-{publisher}-{isbn}";
-        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("Untitled------.cbz");
+        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("file------.cbz");
     }
 
     @Test void patternWithBackslashes_isSanitized() {

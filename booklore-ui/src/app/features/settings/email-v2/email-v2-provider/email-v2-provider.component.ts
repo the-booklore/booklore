@@ -128,7 +128,8 @@ export class EmailV2ProviderComponent implements OnInit {
       header: 'Create Email Provider',
       modal: true,
       closable: true,
-      style: {position: 'absolute', top: '15%'},
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
     });
     this.ref?.onClose.subscribe((result) => {
       if (result) {

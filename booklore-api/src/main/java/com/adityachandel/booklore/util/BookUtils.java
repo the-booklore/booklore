@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 
 import java.util.regex.Pattern;
@@ -8,8 +10,48 @@ import java.util.regex.Pattern;
 public class BookUtils {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
-    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
+    private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[!@$%^&*_=|~`<>?/\"]");
     private static final Pattern PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN = Pattern.compile("\\s?\\(.*?\\)");
+
+    public static String buildSearchText(BookMetadataEntity e) {
+        if (e == null) return null;
+        
+        StringBuilder sb = new StringBuilder();
+        if (e.getTitle() != null) sb.append(e.getTitle()).append(" ");
+        if (e.getSubtitle() != null) sb.append(e.getSubtitle()).append(" ");
+        if (e.getSeriesName() != null) sb.append(e.getSeriesName()).append(" ");
+        
+        try {
+            if (e.getAuthors() != null) {
+                for (AuthorEntity author : e.getAuthors()) {
+                    if (author != null && author.getName() != null) {
+                        sb.append(author.getName()).append(" ");
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // LazyInitializationException or similar - authors won't be included in search text
+        }
+        
+        return normalizeForSearch(sb.toString().trim());
+    }
+
+    public static String normalizeForSearch(String term) {
+        if (term == null) {
+            return null;
+        }
+        String s = java.text.Normalizer.normalize(term, java.text.Normalizer.Form.NFD);
+        s = s.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        s = s.replace("ø", "o").replace("Ø", "O")
+                .replace("ł", "l").replace("Ł", "L")
+                .replace("æ", "ae").replace("Æ", "AE")
+                .replace("œ", "oe").replace("Œ", "OE")
+                .replace("ß", "ss");
+        
+        // Use cleanSearchTerm instead of cleanAndTruncateSearchTerm
+        s = cleanSearchTerm(s);
+        return s.toLowerCase();
+    }
 
     public static String cleanFileName(String fileName) {
         String name = fileName;
@@ -25,13 +67,18 @@ public class BookUtils {
         return name;
     }
 
-    public static String cleanAndTruncateSearchTerm(String term) {
+    public static String cleanSearchTerm(String term) {
         if (term == null) {
             return "";
         }
         String s = term;
         s = SPECIAL_CHARACTERS_PATTERN.matcher(s).replaceAll("").trim();
         s = WHITESPACE_PATTERN.matcher(s).replaceAll(" ");
+        return s;
+    }
+
+    public static String cleanAndTruncateSearchTerm(String term) {
+        String s = cleanSearchTerm(term);
         if (s.length() > 60) {
             String[] words = WHITESPACE_PATTERN.split(s);
             if (words.length > 1) {

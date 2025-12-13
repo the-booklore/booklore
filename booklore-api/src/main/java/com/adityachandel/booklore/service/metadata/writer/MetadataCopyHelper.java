@@ -112,13 +112,6 @@ public class MetadataCopyHelper {
         }
     }
 
-    public void copyPersonalRating(boolean clear, Consumer<Double> consumer) {
-        if (!isLocked(metadata.getPersonalRatingLocked())) {
-            if (clear) consumer.accept(null);
-            else if (metadata.getPersonalRating() != null) consumer.accept(metadata.getPersonalRating());
-        }
-    }
-
     public void copyGoodreadsId(boolean clear, Consumer<String> consumer) {
         if (!isLocked(metadata.getGoodreadsIdLocked())) {
             if (clear) consumer.accept(null);

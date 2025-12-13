@@ -348,7 +348,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   get defaultTabValue(): number {
-    return this.bookInSeries && this.bookInSeries.length > 0 ? 1 : 2;
+    return this.bookInSeries && this.bookInSeries.length > 1 ? 1 : 2;
   }
 
   toggleExpand(): void {
@@ -427,11 +427,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   assignShelf(bookId: number) {
     this.dialogService.open(ShelfAssignerComponent, {
       header: `Update Book's Shelves`,
+      showHeader: false,
+      dismissableMask: true,
       modal: true,
       closable: true,
-      contentStyle: {overflow: 'auto'},
+      contentStyle: {overflow: 'hidden'},
       baseZIndex: 10,
-      style: {position: 'absolute', top: '15%'},
       data: {book: this.bookService.getBookByIdFromState(bookId)}
     });
   }
@@ -501,12 +502,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   onPersonalRatingChange(book: Book, {value: personalRating}: RatingRateEvent): void {
-    if (!book?.metadata) return;
-    const updatedMetadata = {...book.metadata, personalRating};
-    this.bookService.updateBookMetadata(book.id, {
-      metadata: updatedMetadata,
-      clearFlags: {personalRating: false}
-    }, false).subscribe({
+    this.bookService.updatePersonalRating(book.id, personalRating).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'success',
@@ -526,12 +522,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   resetPersonalRating(book: Book): void {
-    if (!book?.metadata) return;
-    const updatedMetadata = {...book.metadata, personalRating: null};
-    this.bookService.updateBookMetadata(book.id, {
-      metadata: updatedMetadata,
-      clearFlags: {personalRating: true}
-    }, false).subscribe({
+    this.bookService.resetPersonalRating(book.id).subscribe({
       next: () => {
         this.messageService.add({
           severity: 'info',

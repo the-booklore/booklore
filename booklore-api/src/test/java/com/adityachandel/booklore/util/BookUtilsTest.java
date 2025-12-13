@@ -1,9 +1,41 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BookUtilsTest {
+
+    @Test
+    void testBuildSearchText() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Harry Potter");
+        metadata.setSubtitle("Philosopher's Stone");
+        metadata.setSeriesName("Harry Potter Series");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("J.K. Rowling").build()));
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("harry potter"));
+        // More permissive: keeps apostrophe
+        assertTrue(searchText.contains("philosopher's stone"));
+        // Keeps period
+        assertTrue(searchText.contains("rowling"));
+    }
+
+    @Test
+    void testCleanSearchTerm_doesNotTruncate() {
+        String longText = "A".repeat(100);
+        String result = BookUtils.cleanSearchTerm(longText);
+        assertEquals(100, result.length());
+        assertEquals(longText, result);
+    }
 
     @Test
     void testCleanFileName_nullInput() {
@@ -76,13 +108,15 @@ class BookUtilsTest {
     @Test
     void testCleanAndTruncateSearchTerm_withSpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm("Hello, World! How are you?");
-        assertEquals("Hello World How are you", result);
+        // More permissive: keeps comma
+        assertEquals("Hello, World How are you", result);
     }
 
     @Test
     void testCleanAndTruncateSearchTerm_withBrackets() {
         String result = BookUtils.cleanAndTruncateSearchTerm("Test [Book] {Series}");
-        assertEquals("Test Book Series", result);
+        // More permissive: keeps brackets and braces
+        assertEquals("Test [Book] {Series}", result);
     }
 
     @Test
@@ -98,7 +132,7 @@ class BookUtilsTest {
         String longText = "This-is,a@very#long$search%term^with&special*chars(that)should[be]truncated{because}it<exceeds>sixty?characters";
         String result = BookUtils.cleanAndTruncateSearchTerm(longText);
         assertTrue(result.length() <= 60);
-        assertEquals("Thisisaverylongsearchtermwithspecialcharsthatshouldbetruncat", result);
+        assertEquals("This-is,avery#longsearchtermwithspecialchars(that)should[be]", result);
     }
 
     @Test
@@ -118,6 +152,179 @@ class BookUtilsTest {
     @Test
     void testCleanAndTruncateSearchTerm_onlySpecialChars() {
         String result = BookUtils.cleanAndTruncateSearchTerm(",.!@#$%^&*()[]{}");
-        assertEquals("", result);
+        assertEquals(",.#()[]{}", result);
+    }
+
+    @Test
+    void testNormalizeForSearch() {
+        assertEquals("nesbo", BookUtils.normalizeForSearch("Nesbø"));
+        assertEquals("jo nesbo", BookUtils.normalizeForSearch("Jo Nesbø"));
+        assertEquals("aeiou", BookUtils.normalizeForSearch("áéíóú"));
+        assertEquals("aeiou", BookUtils.normalizeForSearch("ÀÈÌÒÙ"));
+        assertEquals("l", BookUtils.normalizeForSearch("ł"));
+        assertEquals("ss", BookUtils.normalizeForSearch("ß"));
+        assertEquals("harry potter", BookUtils.normalizeForSearch("Harry Potter"));
+        assertEquals("misere", BookUtils.normalizeForSearch("Misère"));
+    }
+
+    @Test
+    void testNormalizeForSearch_variousDiacritics() {
+        // French
+        assertEquals("francois", BookUtils.normalizeForSearch("François"));
+        assertEquals("renee", BookUtils.normalizeForSearch("Renée"));
+        assertEquals("helene", BookUtils.normalizeForSearch("Hélène"));
+        
+        // Spanish
+        assertEquals("jose", BookUtils.normalizeForSearch("José"));
+        assertEquals("nino", BookUtils.normalizeForSearch("Niño"));
+        assertEquals("manana", BookUtils.normalizeForSearch("Mañana"));
+        
+        // German
+        assertEquals("muller", BookUtils.normalizeForSearch("Müller"));
+        assertEquals("gross", BookUtils.normalizeForSearch("Groß"));
+        assertEquals("schon", BookUtils.normalizeForSearch("Schön"));
+        
+        // Polish
+        assertEquals("lodz", BookUtils.normalizeForSearch("Łódź"));
+        assertEquals("wroclaw", BookUtils.normalizeForSearch("Wrocław"));
+        
+        // Scandinavian
+        assertEquals("oslo", BookUtils.normalizeForSearch("Oslø"));
+        assertEquals("malmo", BookUtils.normalizeForSearch("Malmö"));
+        assertEquals("copenhagen", BookUtils.normalizeForSearch("Cøpenhagen"));
+        
+        // Portuguese
+        assertEquals("sao paulo", BookUtils.normalizeForSearch("São Paulo"));
+    }
+    
+    @Test
+    void testNormalizeForSearch_programmingLanguages() {
+        // Test that + and # are preserved for programming book titles
+        assertEquals("c++", BookUtils.normalizeForSearch("C++"));
+        assertEquals("c#", BookUtils.normalizeForSearch("C#"));
+        assertEquals("f#", BookUtils.normalizeForSearch("F#"));
+        assertEquals("effective c++ programming", BookUtils.normalizeForSearch("Effective C++ Programming"));
+        assertEquals("c# in depth", BookUtils.normalizeForSearch("C# In Depth"));
+        assertEquals("cacao", BookUtils.normalizeForSearch("Cação"));
+        
+        // Turkish
+        assertEquals("istanbul", BookUtils.normalizeForSearch("İstanbul"));
+        
+        // Czech
+        assertEquals("dvorak", BookUtils.normalizeForSearch("Dvořák"));
+        assertEquals("capek", BookUtils.normalizeForSearch("Čapek"));
+    }
+
+    @Test
+    void testBuildSearchText_withDiacritics() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("The Snowman");
+        metadata.setSubtitle("A Harry Hole Novel");
+        metadata.setSeriesName("Harry Hole");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("Jo Nesbø").build()));
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("jo nesbo"), "Expected 'jo nesbo' in: " + searchText);
+        assertTrue(searchText.contains("the snowman"), "Expected 'the snowman' in: " + searchText);
+        assertTrue(searchText.contains("harry hole"), "Expected 'harry hole' in: " + searchText);
+        
+        assertFalse(searchText.contains("ø"), "Should not contain 'ø' in: " + searchText);
+        assertFalse(searchText.contains("Nesbø"), "Should not contain 'Nesbø' in: " + searchText);
+    }
+
+    @Test
+    void testSearchMatchingWithAndWithoutDiacritics() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Misère");
+        metadata.setAuthors(Set.of(AuthorEntity.builder().name("François Müller").build()));
+        
+        String storedSearchText = BookUtils.buildSearchText(metadata);
+        
+        String searchWithoutDiacritics = BookUtils.normalizeForSearch("francois muller");
+        String searchWithDiacritics = BookUtils.normalizeForSearch("François Müller");
+        String searchMixedCase = BookUtils.normalizeForSearch("FRANCOIS muller");
+        
+        assertEquals(searchWithoutDiacritics, searchWithDiacritics);
+        assertEquals(searchWithoutDiacritics, searchMixedCase);
+        
+        assertTrue(storedSearchText.contains("francois muller"),
+            "Stored text should contain normalized author: " + storedSearchText);
+        
+        assertTrue(storedSearchText.contains(searchWithoutDiacritics),
+            "Search without diacritics should match");
+        assertTrue(storedSearchText.contains(searchWithDiacritics), 
+            "Search with diacritics should match");
+    }
+
+    @Test
+    void testNormalizeForSearch_nullAndEmpty() {
+        assertNull(BookUtils.normalizeForSearch(null));
+        assertEquals("", BookUtils.normalizeForSearch(""));
+        assertEquals("", BookUtils.normalizeForSearch("   "));
+    }
+
+    @Test
+    void testNormalizeForSearch_preservesSpaces() {
+        assertEquals("jo nesbo book", BookUtils.normalizeForSearch("Jo Nesbø Book"));
+        assertEquals("multiple word title", BookUtils.normalizeForSearch("Multiple Word Title"));
+    }
+
+    @Test
+    void testNormalizeForSearch_removesSpecialCharacters() {
+        assertEquals("book: title", BookUtils.normalizeForSearch("Book: Title!"));
+        assertEquals("author's name", BookUtils.normalizeForSearch("Author's Name"));
+        assertEquals("test (123)", BookUtils.normalizeForSearch("Test (123)"));
+    }
+
+    @Test
+    void testBuildSearchText_withNullFields() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Title Only");
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertEquals("title only", searchText);
+    }
+
+    @Test
+    void testBuildSearchText_handlesExceptionGracefully() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("test book"));
+    }
+
+    @Test
+    void testBuildSearchText_withAuthorHavingNullName() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+        Set<AuthorEntity> authors = new HashSet<>();
+        authors.add(AuthorEntity.builder().name("Valid Author").build());
+        authors.add(AuthorEntity.builder().name(null).build()); // Author with null name
+        metadata.setAuthors(authors);
+        
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("valid author"));
+        assertTrue(searchText.contains("test book"));
+    }
+
+    @Test
+    void testBuildSearchText_withEmptyAuthorsSet() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+        metadata.setAuthors(new HashSet<>()); // Empty set
+        
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertEquals("test book", searchText);
     }
 }

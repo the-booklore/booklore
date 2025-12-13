@@ -100,6 +100,7 @@ public class BookService {
             book.setLastReadTime(progress.getLastReadTime());
             book.setReadStatus(progress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(progress.getReadStatus()));
             book.setDateFinished(progress.getDateFinished());
+            book.setPersonalRating(progress.getPersonalRating());
         }
     }
 
@@ -191,6 +192,7 @@ public class BookService {
         book.setFilePath(FileUtils.getBookFullPath(bookEntity));
         book.setReadStatus(userProgress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(userProgress.getReadStatus()));
         book.setDateFinished(userProgress.getDateFinished());
+        book.setPersonalRating(userProgress.getPersonalRating());
 
         if (!withDescription) {
             book.getMetadata().setDescription(null);
@@ -429,13 +431,7 @@ public class BookService {
                             .findByUserIdAndBookId(user.getId(), bookEntity.getId())
                             .orElse(null);
 
-                    if (progress != null) {
-                        setBookProgress(book, progress);
-                        book.setLastReadTime(progress.getLastReadTime());
-                        book.setReadStatus(progress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(progress.getReadStatus()));
-                        book.setDateFinished(progress.getDateFinished());
-                    }
-
+                    this.enrichBookWithProgress(book, progress);
                     return book;
                 })
                 .collect(Collectors.toList());
@@ -484,6 +480,65 @@ public class BookService {
                 progress.setKoboProgressReceivedTime(null);
                 koboReadingStateService.deleteReadingState(bookId);
             }
+            userBookProgressRepository.save(progress);
+            updatedBooks.add(bookMapper.toBook(bookEntity));
+        }
+
+        return updatedBooks;
+    }
+
+   @Transactional
+    public List<Book> updatePersonalRating(List<Long> bookIds, Integer rating) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+
+        List<BookEntity> books = bookRepository.findAllById(bookIds);
+        if (books.size() != bookIds.size()) {
+            throw ApiError.BOOK_NOT_FOUND.createException("One or more books not found");
+        }
+
+        BookLoreUserEntity userEntity = userRepository.findById(user.getId()).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        for (BookEntity book : books) {
+            UserBookProgressEntity progress = userBookProgressRepository
+                    .findByUserIdAndBookId(user.getId(), book.getId())
+                    .orElse(new UserBookProgressEntity());
+
+            progress.setUser(userEntity);
+            progress.setBook(book);
+            progress.setPersonalRating(rating);
+            userBookProgressRepository.save(progress);
+        }
+
+        return books.stream()
+                .map(bookEntity -> {
+                    Book book = bookMapper.toBook(bookEntity);
+                    book.setFilePath(FileUtils.getBookFullPath(bookEntity));
+
+                    UserBookProgressEntity progress = userBookProgressRepository
+                            .findByUserIdAndBookId(user.getId(), bookEntity.getId())
+                            .orElse(null);
+
+                    this.enrichBookWithProgress(book, progress);
+                    return book;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<Book> resetPersonalRating(List<Long> bookIds) {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+        List<Book> updatedBooks = new ArrayList<>();
+        Optional<BookLoreUserEntity> userEntity = userRepository.findById(user.getId());
+
+        for (Long bookId : bookIds) {
+            BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+            UserBookProgressEntity progress = userBookProgressRepository
+                    .findByUserIdAndBookId(user.getId(), bookId)
+                    .orElse(new UserBookProgressEntity());
+
+            progress.setBook(bookEntity);
+            progress.setUser(userEntity.orElseThrow());
+            progress.setPersonalRating(null);
+
             userBookProgressRepository.save(progress);
             updatedBooks.add(bookMapper.toBook(bookEntity));
         }

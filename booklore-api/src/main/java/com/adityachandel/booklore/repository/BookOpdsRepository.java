@@ -20,7 +20,7 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // ALL BOOKS - Two Query Pattern
     // ============================================
 
-    @Query("SELECT b.id FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false)")
+    @Query("SELECT b.id FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
     Page<Long> findBookIds(Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "additionalFiles", "shelves"})
@@ -40,7 +40,7 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // BOOKS BY LIBRARY IDs - Two Query Pattern
     // ============================================
 
-    @Query("SELECT b.id FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
+    @Query("SELECT b.id FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
     Page<Long> findBookIdsByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "additionalFiles", "shelves"})
@@ -60,7 +60,7 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // BOOKS BY SHELF ID - Two Query Pattern
     // ============================================
 
-    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false)")
+    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.shelves s WHERE s.id = :shelfId AND (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
     Page<Long> findBookIdsByShelfId(@Param("shelfId") Long shelfId, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "additionalFiles", "shelves"})
@@ -74,13 +74,10 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     @Query("""
             SELECT DISTINCT b.id FROM BookEntity b
             LEFT JOIN b.metadata m
-            LEFT JOIN m.authors a
             WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                  LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                  m.searchText LIKE CONCAT('%', :text, '%')
             )
+            ORDER BY b.addedOn DESC
             """)
     Page<Long> findBookIdsByMetadataSearch(@Param("text") String text, Pageable pageable);
 
@@ -95,15 +92,12 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     @Query("""
             SELECT DISTINCT b.id FROM BookEntity b
             LEFT JOIN b.metadata m
-            LEFT JOIN m.authors a
             WHERE (b.deleted IS NULL OR b.deleted = false)
               AND b.library.id IN :libraryIds
               AND (
-                  LOWER(m.title) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.subtitle) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(m.seriesName) LIKE LOWER(CONCAT('%', :text, '%'))
-               OR LOWER(a.name) LIKE LOWER(CONCAT('%', :text, '%'))
+                  m.searchText LIKE CONCAT('%', :text, '%')
               )
+            ORDER BY b.addedOn DESC
             """)
     Page<Long> findBookIdsByMetadataSearchAndLibraryIds(@Param("text") String text, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 
@@ -120,4 +114,52 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
 
     @Query(value = "SELECT b.id FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY function('RAND')", nativeQuery = false)
     List<Long> findRandomBookIdsByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
+
+    // ============================================
+    // AUTHORS - Distinct Authors List
+    // ============================================
+
+    @Query("""
+            SELECT DISTINCT a FROM AuthorEntity a
+            JOIN a.bookMetadataEntityList m
+            JOIN m.book b
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY a.name
+            """)
+    List<com.adityachandel.booklore.model.entity.AuthorEntity> findDistinctAuthors();
+
+    @Query("""
+            SELECT DISTINCT a FROM AuthorEntity a
+            JOIN a.bookMetadataEntityList m
+            JOIN m.book b
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+              AND b.library.id IN :libraryIds
+            ORDER BY a.name
+            """)
+    List<com.adityachandel.booklore.model.entity.AuthorEntity> findDistinctAuthorsByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
+
+    // ============================================
+    // BOOKS BY AUTHOR - Two Query Pattern
+    // ============================================
+
+    @Query("""
+            SELECT DISTINCT b.id FROM BookEntity b
+            JOIN b.metadata m
+            JOIN m.authors a
+            WHERE a.name = :authorName
+              AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY b.addedOn DESC
+            """)
+    Page<Long> findBookIdsByAuthorName(@Param("authorName") String authorName, Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT b.id FROM BookEntity b
+            JOIN b.metadata m
+            JOIN m.authors a
+            WHERE a.name = :authorName
+              AND b.library.id IN :libraryIds
+              AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY b.addedOn DESC
+            """)
+    Page<Long> findBookIdsByAuthorNameAndLibraryIds(@Param("authorName") String authorName, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 }

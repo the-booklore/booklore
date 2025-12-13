@@ -3,16 +3,20 @@ package com.adityachandel.booklore.service.migration;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.entity.AppMigrationEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.AppMigrationRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -23,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -38,6 +43,49 @@ public class AppMigrationService {
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
     private FileService fileService;
+
+    @Transactional
+    public void populateSearchTextOnce() {
+        if (migrationRepository.existsById("populateSearchText")) return;
+
+        int batchSize = 1000;
+        int processedCount = 0;
+        int offset = 0;
+        
+        while (true) {
+            List<BookEntity> bookBatch = bookRepository.findBooksForMigrationBatch(offset, batchSize);
+            if (bookBatch.isEmpty()) break;
+            
+            List<Long> bookIds = bookBatch.stream().map(BookEntity::getId).toList();
+            List<BookEntity> books = bookRepository.findBooksWithMetadataAndAuthors(bookIds);
+            
+            for (BookEntity book : books) {
+                BookMetadataEntity m = book.getMetadata();
+                if (m != null) {
+                    try {
+                        m.setSearchText(BookUtils.buildSearchText(m));
+                    } catch (Exception ex) {
+                        log.warn("Failed to build search text for book {}: {}", book.getId(), ex.getMessage());
+                    }
+                }
+            }
+            
+            bookRepository.saveAll(books);
+            processedCount += books.size();
+            offset += batchSize;
+            
+            log.info("Migration progress: {} books processed", processedCount);
+            
+            if (bookBatch.size() < batchSize) break;
+        }
+
+        log.info("Migration 'populateSearchText' completed. Total books processed: {}", processedCount);
+        migrationRepository.save(new AppMigrationEntity(
+                "populateSearchText",
+                LocalDateTime.now(),
+                "Populate search_text column for all books"
+        ));
+    }
 
     @Transactional
     public void populateMissingFileSizesOnce() {
@@ -192,6 +240,53 @@ public class AppMigrationService {
 
         long elapsedMs = (System.nanoTime() - start) / 1_000_000;
         log.info("Completed migration: populateCoversAndResizeThumbnails in {} ms", elapsedMs);
+    }
+
+    @Transactional
+    public void moveIconsToDataFolder() {
+        if (migrationRepository.existsById("moveIconsToDataFolder")) return;
+
+        long start = System.nanoTime();
+        log.info("Starting migration: moveIconsToDataFolder");
+
+        try {
+            String targetFolder = fileService.getIconsSvgFolder();
+            Path targetDir = Paths.get(targetFolder);
+            Files.createDirectories(targetDir);
+
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            Resource[] resources = resolver.getResources("classpath:static/images/icons/svg/*.svg");
+
+            int copiedCount = 0;
+            for (Resource resource : resources) {
+                String filename = resource.getFilename();
+                if (filename == null) continue;
+
+                Path targetFile = targetDir.resolve(filename);
+
+                try (var inputStream = resource.getInputStream()) {
+                    Files.copy(inputStream, targetFile, StandardCopyOption.REPLACE_EXISTING);
+                    copiedCount++;
+                    log.debug("Copied icon: {} to {}", filename, targetFile);
+                } catch (IOException e) {
+                    log.error("Failed to copy icon: {}", filename, e);
+                }
+            }
+
+            log.info("Copied {} SVG icons from resources to data folder", copiedCount);
+
+            migrationRepository.save(new AppMigrationEntity(
+                    "moveIconsToDataFolder",
+                    LocalDateTime.now(),
+                    "Move SVG icons from resources/static/images/icons/svg to data/icons/svg"
+            ));
+
+            long elapsedMs = (System.nanoTime() - start) / 1_000_000;
+            log.info("Completed migration: moveIconsToDataFolder in {} ms", elapsedMs);
+        } catch (IOException e) {
+            log.error("Error during migration moveIconsToDataFolder", e);
+            throw new UncheckedIOException(e);
+        }
     }
 
 }

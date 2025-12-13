@@ -4,21 +4,28 @@
     <div class="flex items-center justify-between w-full gap-4 py-2 px-2 md:px-4 rounded-t-xl md:mb-4 mb-2 bg-[var(--card-background)] border-[1px] border-solid border-[var(--p-content-border-color)]">
       <div class="flex items-center min-w-0 max-w-full flex-shrink">
         @if (entityType$ | async; as entityType) {
-          <p class="text-xl whitespace-nowrap overflow-hidden text-ellipsis w-full">
-            @if (entityType === EntityType.ALL_BOOKS) {
-              @if (currentFilterLabel && rawFilterParamFromUrl) {
-                {{ currentFilterLabel }}
-              } @else if (hasSidebarFilters || hasSearchTerm) {
-                {{ computedFilterLabel }}
+          <div class="flex flex-col gap-0.5">
+            <p class="text-xl whitespace-nowrap overflow-hidden text-ellipsis w-full">
+              @if (entityType === EntityType.ALL_BOOKS) {
+                @if (currentFilterLabel && rawFilterParamFromUrl) {
+                  {{ currentFilterLabel }}
+                } @else if (isFilterActive || hasSearchTerm) {
+                  {{ computedFilterLabel }}
+                } @else {
+                  All Books
+                }
+              } @else if (entityType === EntityType.UNSHELVED) {
+                {{ (isFilterActive || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
               } @else {
-                All Books
+                {{ entityType }}: {{ (entity$ | async)?.name }}{{ (isFilterActive || hasSearchTerm) ? ' (Filtered)' : '' }}
               }
-            } @else if (entityType === EntityType.UNSHELVED) {
-              {{ (hasSidebarFilters || hasSearchTerm) ? 'Unshelved Books (Filtered)' : 'Unshelved Books' }}
-            } @else {
-              {{ entityType }}: {{ (entity$ | async)?.name }}{{ (hasSidebarFilters || hasSearchTerm) ? ' (Filtered)' : '' }}
+            </p>
+            @if (seriesCollapseFilter.isSeriesCollapsed && (bookState$ | async)?.books; as books) {
+              <p class="text-sm text-gray-500">
+                Showing {{ books.length }} {{ books.length === 1 ? 'item' : 'items' }} (series collapsed)
+              </p>
             }
-          </p>
+          </div>
 
           @if (userService.userState$ | async; as userState) {
             @if (entityType !== EntityType.ALL_BOOKS && entityType !== EntityType.UNSHELVED &&
@@ -262,7 +269,7 @@
                         [index]="books.indexOf(book)"
                         [book]="book"
                         [isCheckboxEnabled]="true"
-                        [readButtonHidden]="!!book.seriesCount"
+                        [seriesViewEnabled]="seriesViewEnabled"
                         [onBookSelect]="handleBookSelect.bind(this)"
                         [isSeriesCollapsed]="seriesCollapseFilter.isSeriesCollapsed"
                         (checkboxClick)="onCheckboxClicked($event)"

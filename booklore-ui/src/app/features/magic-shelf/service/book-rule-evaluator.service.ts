@@ -201,7 +201,7 @@ export class BookRuleEvaluatorService {
       case 'metadataScore':
         return book.metadataMatchScore;
       case 'personalRating':
-        return book.metadata?.personalRating;
+        return book.personalRating;
       case 'title':
         return book.metadata?.title?.toLowerCase() ?? null;
       case 'subtitle':

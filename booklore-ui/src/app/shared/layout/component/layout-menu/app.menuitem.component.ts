@@ -10,8 +10,9 @@ import {Button} from 'primeng/button';
 import {Menu} from 'primeng/menu';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
-import {ShelfCreatorComponent} from '../../../../features/book/components/shelf-creator/shelf-creator.component';
 import {BookDialogHelperService} from '../../../../features/book/components/book-browser/BookDialogHelperService';
+import {IconDisplayComponent} from '../../../components/icon-display/icon-display.component';
+import {IconSelection} from '../../../service/icon-picker.service';
 
 @Component({
   selector: '[app-menuitem]',
@@ -24,7 +25,8 @@ import {BookDialogHelperService} from '../../../../features/book/components/book
     Ripple,
     AsyncPipe,
     Button,
-    Menu
+    Menu,
+    IconDisplayComponent
   ],
   animations: [
     trigger('children', [
@@ -43,6 +45,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   @Input() index!: number;
   @Input() @HostBinding('class.layout-root-menuitem') root!: boolean;
   @Input() parentKey!: string;
+  @Input() menuKey!: string;
   @ViewChild('linkRef') linkRef!: ElementRef<HTMLAnchorElement>;
 
   hovered = false;
@@ -93,7 +96,8 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.key = this.parentKey ? this.parentKey + '-' + this.index : String(this.index);
+    const rootKey = this.menuKey ? this.menuKey + '-' : '';
+    this.key = this.parentKey ? this.parentKey + '-' + this.index : rootKey + String(this.index);
     this.expandedItems.add(this.key);
     if (this.item.routerLink) {
       this.updateActiveStateFromRoute();
@@ -143,6 +147,8 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     }
     if (this.item.items) {
       this.active = !this.active;
+    } else {
+      this.active = true;
     }
     this.menuService.onMenuStateChange({key: this.key});
   }
@@ -163,6 +169,15 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
     if (this.item.routerLink && !this.item.items && this.linkRef) {
       this.linkRef.nativeElement.click();
     }
+  }
+
+  getIconSelection(): IconSelection | null {
+    if (!this.item.icon) return null;
+
+    return {
+      type: this.item.iconType || 'PRIME_NG',
+      value: this.item.icon
+    };
   }
 
   @HostBinding('class.active-menuitem')

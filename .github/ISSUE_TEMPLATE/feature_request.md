@@ -4,14 +4,9 @@ about: Suggest an idea for this project
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
-# ✨ Feature Request for Booklore
-
-Thank you for contributing to Booklore's development. Your suggestions help shape the future of this project.
-
----
+# ✨ Feature Request
 
 ## 📝 Description
 <!-- Describe the problem you're facing and the solution you're proposing -->
@@ -36,5 +31,5 @@ Thank you for contributing to Booklore's development. Your suggestions help shap
 <!-- Share implementation ideas, alternative solutions, or related features -->
 
 
-## 📌 Additional Context
+## 📌 Additional Context _(Optional)_
 <!-- Any other information, research, or context that would be helpful -->

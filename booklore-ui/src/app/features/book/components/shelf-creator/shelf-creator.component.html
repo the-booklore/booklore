@@ -7,6 +7,15 @@
       <h2 class="panel-title">Create New Shelf</h2>
       <p class="panel-description">Add a custom shelf to organize your books</p>
     </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="cancel()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      pTooltip="Close"
+      tooltipPosition="left"/>
   </div>
 
   <div class="form-container">
@@ -33,7 +42,7 @@
       </div>
     </div>
 
-    <div class="divider"></div>
+    <div class="gradient-divider"></div>
 
     <div class="form-group highlight-group">
       <label class="form-label">
@@ -51,11 +60,20 @@
       } @else {
         <div class="selected-icon-display">
           <div class="icon-preview">
-            <i [class]="selectedIcon"></i>
+            <app-icon-display
+              [icon]="selectedIcon"
+              size="24px"
+            />
           </div>
           <div class="icon-info">
             <span class="icon-label">Selected Icon</span>
-            <span class="icon-name">{{ selectedIcon }}</span>
+            <span class="icon-name">
+              @if (selectedIcon.type === 'PRIME_NG') {
+                {{ selectedIcon.value }}
+              } @else {
+                {{ selectedIcon.value }}
+              }
+            </span>
           </div>
           <p-button
             icon="pi pi-times"
@@ -97,7 +115,7 @@
         label="Create Shelf"
         icon="pi pi-plus"
         severity="success"
-        (onClick)="saveNewShelf()"
+        (onClick)="createShelf()"
         [disabled]="!shelfName.trim()"
       />
     </div>

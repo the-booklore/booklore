@@ -198,51 +198,47 @@ public class CbxMetadataWriter implements MetadataWriter {
 
             if (rarAvailable) {
                 tempDir = Files.createTempDirectory("cbx_rar_");
-                try {
-                    // Extract entire RAR into a temp directory
-                    try (Archive archive = new Archive(file)) {
-                        for (FileHeader fh : archive.getFileHeaders()) {
-                            String name = fh.getFileName();
-                            if (name == null || name.isBlank()) continue;
-                            if (!isSafeEntryName(name)) {
-                                log.warn("Skipping unsafe RAR entry name: {}", name);
-                                continue;
-                            }
-                            Path out = tempDir.resolve(name).normalize();
-                            if (!out.startsWith(tempDir)) {
-                                log.warn("Skipping traversal entry outside tempDir: {}", name);
-                                continue;
-                            }
-                            if (fh.isDirectory()) {
-                                Files.createDirectories(out);
-                            } else {
-                                Files.createDirectories(out.getParent());
-                                try (OutputStream os = Files.newOutputStream(out, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
-                                    archive.extractFile(fh, os);
-                                }
+                // Extract entire RAR into a temp directory
+                try (Archive archive = new Archive(file)) {
+                    for (FileHeader fh : archive.getFileHeaders()) {
+                        String name = fh.getFileName();
+                        if (name == null || name.isBlank()) continue;
+                        if (!isSafeEntryName(name)) {
+                            log.warn("Skipping unsafe RAR entry name: {}", name);
+                            continue;
+                        }
+                        Path out = tempDir.resolve(name).normalize();
+                        if (!out.startsWith(tempDir)) {
+                            log.warn("Skipping traversal entry outside tempDir: {}", name);
+                            continue;
+                        }
+                        if (fh.isDirectory()) {
+                            Files.createDirectories(out);
+                        } else {
+                            Files.createDirectories(out.getParent());
+                            try (OutputStream os = Files.newOutputStream(out, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+                                archive.extractFile(fh, os);
                             }
                         }
                     }
+                }
 
-                    // Write/replace ComicInfo.xml in extracted tree root
-                    Path comicInfo = tempDir.resolve("ComicInfo.xml");
-                    Files.write(comicInfo, xmlBytes);
+                // Write/replace ComicInfo.xml in extracted tree root
+                Path comicInfo = tempDir.resolve("ComicInfo.xml");
+                Files.write(comicInfo, xmlBytes);
 
-                    // Rebuild RAR in-place (replace original file)
-                    Path targetRar = file.toPath().toAbsolutePath().normalize();
-                    String rarExec = isSafeExecutable(rarBin) ? rarBin : "rar"; // prefer validated path, then PATH lookup
-                    ProcessBuilder pb = new ProcessBuilder(rarExec, "a", "-idq", "-ep1", "-ma5", targetRar.toString(), ".");
-                    pb.directory(tempDir.toFile());
-                    Process p = pb.start();
-                    int code = p.waitFor();
-                    if (code == 0) {
-                        writeSucceeded = true;
-                        return;
-                    } else {
-                        log.warn("RAR creation failed with exit code {}. Falling back to CBZ conversion for {}", code, file.getName());
-                    }
-                } finally {
-                    // tempDir cleanup will be handled in outer finally block
+                // Rebuild RAR in-place (replace original file)
+                Path targetRar = file.toPath().toAbsolutePath().normalize();
+                String rarExec = isSafeExecutable(rarBin) ? rarBin : "rar"; // prefer validated path, then PATH lookup
+                ProcessBuilder pb = new ProcessBuilder(rarExec, "a", "-idq", "-ep1", "-ma5", targetRar.toString(), ".");
+                pb.directory(tempDir.toFile());
+                Process p = pb.start();
+                int code = p.waitFor();
+                if (code == 0) {
+                    writeSucceeded = true;
+                    return;
+                } else {
+                    log.warn("RAR creation failed with exit code {}. Falling back to CBZ conversion for {}", code, file.getName());
                 }
             } else {
                 log.warn("`rar` binary not found. Falling back to CBZ conversion for {}", file.getName());

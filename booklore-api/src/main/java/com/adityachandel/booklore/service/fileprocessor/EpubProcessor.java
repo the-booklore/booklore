@@ -14,14 +14,13 @@ import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
-import io.documentnode.epub4j.domain.Resource;
-import io.documentnode.epub4j.epub.EpubReader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -63,34 +62,28 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
     public boolean generateCover(BookEntity bookEntity) {
         try {
             File epubFile = new File(FileUtils.getBookFullPath(bookEntity));
-            io.documentnode.epub4j.domain.Book epub;
-            try (FileInputStream fis = new FileInputStream(epubFile)) {
-                epub = new EpubReader().readEpub(fis);
-            }
-            Resource coverImage = epub.getCoverImage();
+            byte[] coverData = epubMetadataExtractor.extractCover(epubFile);
 
-            if (coverImage == null) {
-                for (Resource res : epub.getResources().getAll()) {
-                    String id = res.getId();
-                    String href = res.getHref();
-                    if ((id != null && id.toLowerCase().contains("cover")) ||
-                            (href != null && href.toLowerCase().contains("cover"))) {
-                        if (res.getMediaType() != null && res.getMediaType().getName().startsWith("image")) {
-                            coverImage = res;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (coverImage == null) {
+            if (coverData == null) {
                 log.warn("No cover image found in EPUB '{}'", bookEntity.getFileName());
                 return false;
             }
 
-            boolean saved = saveCoverImage(coverImage, bookEntity.getId());
-            bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
-            bookMetadataRepository.save(bookEntity.getMetadata());
+            boolean saved;
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
+                BufferedImage originalImage = ImageIO.read(bais);
+                if (originalImage == null) {
+                    log.warn("Cover image found but could not be decoded (possibly SVG or unsupported format) in EPUB '{}'", bookEntity.getFileName());
+                    return false;
+                }
+                saved = fileService.saveCoverImages(originalImage, bookEntity.getId());
+                originalImage.flush();
+            }
+
+            if (saved) {
+                bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+                bookMetadataRepository.save(bookEntity.getMetadata());
+            }
             return saved;
 
         } catch (Exception e) {
@@ -127,7 +120,6 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setLanguage(truncate((lang == null || "UND".equalsIgnoreCase(lang)) ? "en" : lang, 1000));
 
         metadata.setAsin(truncate(epubMetadata.getAsin(), 20));
-        metadata.setPersonalRating(epubMetadata.getPersonalRating());
         metadata.setAmazonRating(epubMetadata.getAmazonRating());
         metadata.setAmazonReviewCount(epubMetadata.getAmazonReviewCount());
         metadata.setGoodreadsId(truncate(epubMetadata.getGoodreadsId(), 100));
@@ -146,17 +138,6 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
                     .filter(s -> s != null && !s.isBlank() && s.length() <= 100 && !s.contains("\n") && !s.contains("\r") && !s.contains("  "))
                     .collect(Collectors.toSet());
             bookCreatorService.addCategoriesToBook(validSubjects, bookEntity);
-        }
-    }
-
-    private boolean saveCoverImage(Resource coverImage, long bookId) throws IOException {
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(coverImage.getData()));
-        try {
-            return fileService.saveCoverImages(originalImage, bookId);
-        } finally {
-            if (originalImage != null) {
-                originalImage.flush(); // Release resources after processing
-            }
         }
     }
 }

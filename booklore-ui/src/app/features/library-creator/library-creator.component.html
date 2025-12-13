@@ -1,4 +1,24 @@
 <div class="library-creator">
+  <div class="main-header">
+    <div class="main-header-icon">
+      <i class="pi pi-book"></i>
+    </div>
+    <div class="main-header-content">
+      <h1 class="main-header-title">
+        {{ mode === 'edit' ? 'Edit Library' : 'Create New Library' }}
+      </h1>
+      <p class="main-header-subtitle">Set up a new library to organize and manage your book collection</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+      (onClick)="closeDialog()"
+      class="close-button"
+    />
+  </div>
+
   <p-stepper [value]="1" class="custom-stepper">
     <p-step-list>
       <p-step [value]="1">
@@ -27,149 +47,167 @@
                   <i class="pi pi-bookmark header-icon"></i>
                 </div>
                 <div class="header-text">
-                  <h2 class="panel-title">Library Information</h2>
-                  <p class="panel-description">Configure your library name, icon import mode and monitoring</p>
+                  <h2 class="panel-title">Step 1: Library Information</h2>
+                  <p class="panel-description">Set up your library name, icon, and import preferences</p>
                 </div>
               </div>
 
               <div class="form-container">
-                <div class="form-group highlight-group">
-                  <label class="form-label">
-                    <i class="pi pi-tag label-icon"></i>
-                    1. Library Name
-                    <span class="required-indicator">*</span>
-                  </label>
-                  <div class="input-wrapper">
-                    <input
-                      pInputText
-                      fluid
-                      [(ngModel)]="chosenLibraryName"
-                      placeholder="e.g., My Personal Library"
-                      [class.filled]="chosenLibraryName.trim()"
-                    />
-                    @if (chosenLibraryName.trim()) {
-                      <i class="pi pi-check-circle input-icon success"></i>
+                <div class="form-section">
+                  <div class="form-group highlight-group">
+                    <label class="form-label">
+                      <i class="pi pi-tag label-icon"></i>
+                      1. Library Name
+                      <span class="required-indicator">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input
+                        pInputText
+                        fluid
+                        [(ngModel)]="chosenLibraryName"
+                        placeholder="e.g., My Personal Library"
+                        [class.filled]="chosenLibraryName.trim()"
+                        class="input-full"
+                      />
+                      @if (chosenLibraryName.trim()) {
+                        <i class="pi pi-check-circle input-icon success"></i>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="gradient-divider"></div>
+
+                  <div class="form-group highlight-group">
+                    <label class="form-label">
+                      <i class="pi pi-palette label-icon"></i>
+                      2. Library Icon
+                      <span class="required-indicator">*</span>
+                    </label>
+                    @if (!selectedIcon) {
+                      <button class="icon-select-btn" (click)="openIconPicker()" type="button">
+                        <i class="pi pi-plus"></i>
+                        <div class="btn-content">
+                          <span class="btn-title">Choose an Icon</span>
+                          <span class="btn-subtitle">Select from available icons</span>
+                        </div>
+                      </button>
+                    } @else {
+                      <div class="selected-icon-display">
+                        <div class="icon-preview">
+                          <app-icon-display
+                            [icon]="selectedIcon"
+                            size="24px"
+                          />
+                        </div>
+                        <div class="icon-info">
+                          <span class="icon-label">Selected Icon</span>
+                          <span class="icon-name">
+                            @if (selectedIcon.type === 'PRIME_NG') {
+                              {{ selectedIcon.value }}
+                            } @else {
+                              {{ selectedIcon.value }} (Custom)
+                            }
+                          </span>
+                        </div>
+                        <p-button
+                          icon="pi pi-times"
+                          severity="danger"
+                          [outlined]="true"
+                          [rounded]="true"
+                          size="small"
+                          (onClick)="clearSelectedIcon()"
+                          pTooltip="Remove icon"
+                          tooltipPosition="left"
+                        />
+                      </div>
                     }
                   </div>
                 </div>
 
-                <div class="form-group highlight-group">
-                  <label class="form-label">
-                    <i class="pi pi-palette label-icon"></i>
-                    2. Library Icon
-                    <span class="required-indicator">*</span>
-                  </label>
-                  @if (!selectedIcon) {
-                    <p-button
-                      class="icon-select-btn"
-                      (onClick)="openIconPicker()"
-                    >
-                      <i class="pi pi-plus"></i>
-                      <span>Choose an Icon</span>
-                    </p-button>
-                  } @else {
-                    <div class="selected-icon-display">
-                      <div class="icon-preview">
-                        <i [class]="selectedIcon"></i>
-                      </div>
-                      <div class="icon-info">
-                        <span class="icon-label">Selected Icon</span>
-                        <span class="icon-name">{{ selectedIcon }}</span>
-                      </div>
-                      <p-button
-                        icon="pi pi-times"
-                        severity="danger"
-                        outlined="true"
-                        rounded
-                        size="small"
-                        (onClick)="clearSelectedIcon()"
-                        pTooltip="Remove icon"
-                        tooltipPosition="left"
-                      />
-                    </div>
-                  }
-                </div>
+                <div class="gradient-divider"></div>
 
-                <div class="divider"></div>
-
-                <div class="form-group">
-                  <label class="form-label">
-                    <i class="pi pi-cog label-icon"></i>
-                    3. Import Mode
-                  </label>
-                  <div class="input-with-info">
-                    <p-select
-                      [(ngModel)]="scanMode"
-                      [options]="scanModeOptions"
-                      optionLabel="label"
-                      optionValue="value"
-                      placeholder="Choose scan mode"
-                      class="w-full"
-                      [showClear]="false"
-                    />
-                    <div class="info-tooltip large">
-                      <i
-                        class="pi pi-question-circle"
-                        pTooltip="File as Book: Each file becomes a separate book.&#10;Folder as Book: Each folder is treated as one book with multiple formats."
-                        [escape]="false"
-                        tooltipPosition="right"
-                      ></i>
-                    </div>
-                  </div>
-                </div>
-
-                @if (scanMode === 'FOLDER_AS_BOOK') {
-                  <div class="form-group nested-group">
+                <div class="form-section">
+                  <div class="form-group">
                     <label class="form-label">
-                      <i class="pi pi-file label-icon"></i>
-                      Preferred Format
+                      <i class="pi pi-cog label-icon"></i>
+                      3. Import Mode
                     </label>
                     <div class="input-with-info">
                       <p-select
-                        [(ngModel)]="defaultBookFormat"
-                        [options]="bookFormatOptions"
+                        [(ngModel)]="scanMode"
+                        [options]="scanModeOptions"
                         optionLabel="label"
                         optionValue="value"
-                        placeholder="Select preferred format"
+                        placeholder="Choose scan mode"
                         class="w-full"
-                        appendTo="body"
+                        [showClear]="false"
                       />
-                      <div class="info-tooltip">
+                      <div class="info-tooltip large">
                         <i
                           class="pi pi-question-circle"
-                          pTooltip="If a folder has multiple formats, this determines the primary format to use"
+                          pTooltip="File as Book: Each file becomes a separate book.&#10;Folder as Book: Each folder is treated as one book with multiple formats."
+                          [escape]="false"
                           tooltipPosition="right"
                         ></i>
                       </div>
                     </div>
                   </div>
-                }
 
-                <div class="divider"></div>
-
-                <div class="form-group">
-                  <label class="form-label">
-                    <i class="pi pi-eye label-icon"></i>
-                    4. Monitor Folders
-                  </label>
-                  <div class="toggle-group">
-                    <div class="toggle-wrapper">
-                      <p-toggleswitch [(ngModel)]="watch" inputId="watch-toggle"/>
-                      <label for="watch-toggle" class="toggle-label">
-                        @if (watch) {
-                          <span class="toggle-status active">Enabled</span>
-                        } @else {
-                          <span class="toggle-status inactive">Disabled</span>
-                        }
+                  @if (scanMode === 'FOLDER_AS_BOOK') {
+                    <div class="form-group nested-group">
+                      <label class="form-label">
+                        <i class="pi pi-file label-icon"></i>
+                        Preferred Format
                       </label>
+                      <div class="input-with-info">
+                        <p-select
+                          [(ngModel)]="defaultBookFormat"
+                          [options]="bookFormatOptions"
+                          optionLabel="label"
+                          optionValue="value"
+                          placeholder="Select preferred format"
+                          class="w-full"
+                          appendTo="body"
+                        />
+                        <div class="info-tooltip">
+                          <i
+                            class="pi pi-question-circle"
+                            pTooltip="If a folder has multiple formats, this determines the primary format to use"
+                            tooltipPosition="right"
+                          ></i>
+                        </div>
+                      </div>
                     </div>
-                    <div class="info-tooltip large">
-                      <i
-                        class="pi pi-question-circle"
-                        pTooltip="Automatically detect and import new books when files are added to watched folders"
-                        [escape]="false"
-                        tooltipPosition="right"
-                      ></i>
+                  }
+                </div>
+
+                <div class="gradient-divider"></div>
+
+                <div class="form-section">
+                  <div class="form-group">
+                    <label class="form-label">
+                      <i class="pi pi-eye label-icon"></i>
+                      4. Monitor Folders
+                    </label>
+                    <div class="toggle-group">
+                      <div class="toggle-wrapper">
+                        <p-toggleswitch [(ngModel)]="watch" inputId="watch-toggle"/>
+                        <label for="watch-toggle" class="toggle-label">
+                          @if (watch) {
+                            <span class="toggle-status active">Enabled</span>
+                          } @else {
+                            <span class="toggle-status inactive">Disabled</span>
+                          }
+                        </label>
+                      </div>
+                      <div class="info-tooltip large">
+                        <i
+                          class="pi pi-question-circle"
+                          pTooltip="Automatically detect and import new books when files are added to watched folders"
+                          [escape]="false"
+                          tooltipPosition="right"
+                        ></i>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -212,7 +250,7 @@
                   <i class="pi pi-folder-open header-icon"></i>
                 </div>
                 <div class="header-text">
-                  <h2 class="panel-title">Book Directories</h2>
+                  <h2 class="panel-title">Step 2: Book Directories</h2>
                   <p class="panel-description">Add folders containing your book files</p>
                 </div>
               </div>
@@ -221,6 +259,8 @@
                 <div class="add-folder-section">
                   <p-button
                     class="add-folder-btn"
+                    outlined
+                    severity="info"
                     (onClick)="openDirectoryPicker()"
                   >
                     <i class="pi pi-plus-circle"></i>

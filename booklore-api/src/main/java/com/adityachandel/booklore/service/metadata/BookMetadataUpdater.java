@@ -74,8 +74,6 @@ public class BookMetadataUpdater {
         MetadataClearFlags clearFlags = wrapper.getClearFlags();
         BookMetadataEntity metadata = bookEntity.getMetadata();
 
-        updateLocks(newMetadata, metadata);
-
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
         boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
@@ -84,14 +82,14 @@ public class BookMetadataUpdater {
             return;
         }
 
-        if (metadata.areAllFieldsLocked()) {
+        // If all fields are locked we must allow unlocking, hasValueChanges will be false
+        if (metadata.areAllFieldsLocked() && hasValueChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
             return;
         }
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         boolean writeToFile = settings.isSaveToOriginalFile();
-        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
         BookFileType bookType = bookEntity.getBookType();
 
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
@@ -103,6 +101,7 @@ public class BookMetadataUpdater {
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
         updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
+        updateLocks(newMetadata, metadata);
 
         bookRepository.save(bookEntity);
 
@@ -164,7 +163,6 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getGoogleIdLocked(), clear.isGoogleId(), m.getGoogleId(), v -> e.setGoogleId(nullIfBlank(v)), e::getGoogleId, replaceMode);
         handleFieldUpdate(e.getPageCountLocked(), clear.isPageCount(), m.getPageCount(), e::setPageCount, e::getPageCount, replaceMode);
         handleFieldUpdate(e.getLanguageLocked(), clear.isLanguage(), m.getLanguage(), v -> e.setLanguage(nullIfBlank(v)), e::getLanguage, replaceMode);
-        handleFieldUpdate(e.getPersonalRatingLocked(), clear.isPersonalRating(), m.getPersonalRating(), e::setPersonalRating, e::getPersonalRating, replaceMode);
         handleFieldUpdate(e.getAmazonRatingLocked(), clear.isAmazonRating(), m.getAmazonRating(), e::setAmazonRating, e::getAmazonRating, replaceMode);
         handleFieldUpdate(e.getAmazonReviewCountLocked(), clear.isAmazonReviewCount(), m.getAmazonReviewCount(), e::setAmazonReviewCount, e::getAmazonReviewCount, replaceMode);
         handleFieldUpdate(e.getGoodreadsRatingLocked(), clear.isGoodreadsRating(), m.getGoodreadsRating(), e::setGoodreadsRating, e::getGoodreadsRating, replaceMode);
@@ -226,11 +224,14 @@ public class BookMetadataUpdater {
         if (replaceAll) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMissing && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
+            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
         }
     }
 
@@ -377,7 +378,6 @@ public class BookMetadataUpdater {
                 Pair.of(m.getGoogleIdLocked(), e::setGoogleIdLocked),
                 Pair.of(m.getPageCountLocked(), e::setPageCountLocked),
                 Pair.of(m.getLanguageLocked(), e::setLanguageLocked),
-                Pair.of(m.getPersonalRatingLocked(), e::setPersonalRatingLocked),
                 Pair.of(m.getAmazonRatingLocked(), e::setAmazonRatingLocked),
                 Pair.of(m.getAmazonReviewCountLocked(), e::setAmazonReviewCountLocked),
                 Pair.of(m.getGoodreadsRatingLocked(), e::setGoodreadsRatingLocked),

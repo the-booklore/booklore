@@ -93,10 +93,10 @@
               <div class="rating-group">
                 <i class="pi pi-thumbs-up-fill rating-icon" pTooltip="Personal Rating" tooltipPosition="top"></i>
                 <p-rating
-                  [ngModel]="book?.metadata!.personalRating"
+                  [ngModel]="book?.personalRating"
                   (onRate)="onPersonalRatingChange(book, $event)"
                   stars="10"
-                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.metadata!.personalRating, 10)">
+                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.personalRating, 10)">
                 </p-rating>
               </div>
               <p-button
@@ -112,7 +112,7 @@
             </div>
 
             @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.googleId) {
-              <div class="divider"></div>
+              <div class="gradient-divider"></div>
             }
 
             <div class="external-ratings">
@@ -125,7 +125,7 @@
                   [pTooltip]="getRatingTooltip(book, 'amazon')"
                   tooltipPosition="top"
                 >
-                  <img src="https://www.amazon.com/favicon.ico" alt="Amazon" class="rating-favicon" />
+                  <img src="https://www.amazon.com/favicon.ico" alt="Amazon" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.amazonRating) }}%</span>
                 </a>
               }
@@ -139,7 +139,7 @@
                   [pTooltip]="getRatingTooltip(book, 'goodreads')"
                   tooltipPosition="top"
                 >
-                  <img src="https://www.goodreads.com/favicon.ico" alt="Goodreads" class="rating-favicon" />
+                  <img src="https://www.goodreads.com/favicon.ico" alt="Goodreads" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.goodreadsRating) }}%</span>
                 </a>
               }
@@ -153,7 +153,7 @@
                   [pTooltip]="getRatingTooltip(book, 'hardcover')"
                   tooltipPosition="top"
                 >
-                  <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon" />
+                  <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
                 </a>
               }
@@ -165,7 +165,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img src="https://books.google.com/favicon.ico" alt="Google Books" class="rating-favicon" />
+                  <img src="https://books.google.com/favicon.ico" alt="Google Books" class="rating-favicon"/>
                 </a>
               }
 
@@ -176,7 +176,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img src="https://www.comicvine.com/favicon.ico" alt="Comic Vine" class="rating-favicon" />
+                  <img src="https://www.comicvine.com/favicon.ico" alt="Comic Vine" class="rating-favicon"/>
                 </a>
               }
             </div>
@@ -328,7 +328,9 @@
               @if (book?.metadata?.isbn13 || book?.metadata?.isbn10) {
                 <span class="metadata-value">
                   {{ book.metadata!.isbn13 }}
-                  @if (book?.metadata?.isbn13 && book?.metadata?.isbn10) { / }
+                  @if (book?.metadata?.isbn13 && book?.metadata?.isbn10) {
+                    /
+                  }
                   {{ book.metadata!.isbn10 }}
                 </span>
               } @else {
@@ -523,7 +525,7 @@
 
     <p-tabs lazy="true" class="custom-p-tabs" [value]="defaultTabValue" scrollable>
       <p-tablist>
-        @if (bookInSeries.length > 0) {
+        @if (bookInSeries.length > 1) {
           <p-tab [value]="1">
             <i class="pi pi-ethereum"></i> More in Series
           </p-tab>
@@ -541,12 +543,14 @@
       <p-tabpanels>
         <p-tabpanel [value]="1">
           <div class="tab-content">
-            @if (bookInSeries.length > 0) {
+            @if (bookInSeries.length > 1) {
               <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
                 @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                  <div class="dashboard-scroller-card">
-                    <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                  </div>
+                  @if (bookInSeriesItem.id !== book.id) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                    </div>
+                  }
                 }
               </div>
             }

@@ -112,6 +112,7 @@ public class MetadataManagementService {
             for (BookMetadataEntity metadata : booksWithOldAuthor) {
                 metadata.getAuthors().remove(oldAuthor);
                 metadata.getAuthors().addAll(targetAuthors);
+                metadata.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
             }
 
             bookMetadataRepository.saveAll(booksWithOldAuthor);

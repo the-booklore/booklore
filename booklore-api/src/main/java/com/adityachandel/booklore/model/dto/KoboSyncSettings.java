@@ -11,4 +11,5 @@ public class KoboSyncSettings {
     private boolean syncEnabled;
     private Float progressMarkAsReadingThreshold;
     private Float progressMarkAsFinishedThreshold;
+    private boolean autoAddToShelf;
 }

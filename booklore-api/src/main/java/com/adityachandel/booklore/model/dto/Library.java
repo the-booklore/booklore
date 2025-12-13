@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.IconType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
@@ -16,6 +17,7 @@ public class Library {
     private String name;
     private Sort sort;
     private String icon;
+    private IconType iconType;
     private String fileNamingPattern;
     private boolean watch;
     private List<LibraryPath> paths;

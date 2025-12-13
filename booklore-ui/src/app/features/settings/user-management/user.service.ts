@@ -36,6 +36,11 @@ export interface SidebarShelfSorting {
   order: string;
 }
 
+export interface SidebarMagicShelfSorting {
+  field: string;
+  order: string;
+}
+
 export interface PerBookSetting {
   pdf: string;
   epub: string;
@@ -43,6 +48,8 @@ export interface PerBookSetting {
 }
 
 export type PageSpread = 'off' | 'even' | 'odd';
+export type BookFilterMode = 'and' | 'or' | 'single';
+export type FilterSortingMode = 'alphabetical' | 'count';
 
 export enum CbxBackgroundColor {
   GRAY = 'GRAY',
@@ -127,8 +134,11 @@ export interface UserSettings {
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;
   sidebarShelfSorting: SidebarShelfSorting;
-  filterSortingMode: 'alphabetical' | 'count';
+  sidebarMagicShelfSorting: SidebarMagicShelfSorting;
+  filterMode: BookFilterMode;
+  filterSortingMode: FilterSortingMode;
   metadataCenterViewMode: 'route' | 'dialog';
+  enableSeriesView: boolean;
   entityViewPreferences: EntityViewPreferences;
   tableColumnPreference?: TableColumnPreference[];
   dashboardConfig?: DashboardConfig;
@@ -173,7 +183,7 @@ export class UserService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
 
-  private userStateSubject = new BehaviorSubject<UserState>({
+  userStateSubject = new BehaviorSubject<UserState>({
     user: null,
     loaded: false,
     error: null,

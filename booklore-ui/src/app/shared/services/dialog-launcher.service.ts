@@ -13,14 +13,15 @@ export class DialogLauncherService {
 
   dialogService = inject(DialogService);
 
-  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean }): DynamicDialogRef | null {
+  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean; styleClass?: string }): DynamicDialogRef | null {
     const isMobile = window.innerWidth <= 768;
-    const {component, header, top, width, showHeader = true} = options;
+    const {component, header, top, width, showHeader = true, styleClass} = options;
     return this.dialogService.open(component, {
       header,
       showHeader,
       modal: true,
       closable: true,
+      styleClass: styleClass,
       style: {
         position: 'absolute',
         ...(top ? {top} : {}),
@@ -41,6 +42,7 @@ export class DialogLauncherService {
     this.open({
       component: GithubSupportDialog,
       header: 'Support Booklore',
+      showHeader: true,
       top: '15%'
     });
   }
@@ -48,7 +50,9 @@ export class DialogLauncherService {
   openLibraryCreatorDialog(): void {
     this.open({
       component: LibraryCreatorComponent,
-      header: 'Create New Library'
+      header: 'Create New Library',
+      styleClass: 'dynamic-dialog-minimal',
+      showHeader: false
     });
   }
 
@@ -56,7 +60,8 @@ export class DialogLauncherService {
     this.open({
       component: BookUploaderComponent,
       header: 'Book Uploader',
-      top: '10%'
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal'
     });
   }
 
@@ -64,14 +69,17 @@ export class DialogLauncherService {
     this.open({
       component: UserProfileDialogComponent,
       header: 'User Profile Information',
-      top: '10%'
+      styleClass: 'dynamic-dialog-minimal',
+      showHeader: false
     });
   }
 
   openMagicShelfDialog(): void {
     this.open({
       component: MagicShelfComponent,
-      header: 'Magic Shelf Creator'
+      header: 'Magic Shelf Creator',
+      styleClass: 'dynamic-dialog-minimal',
+      showHeader: false
     });
   }
 }

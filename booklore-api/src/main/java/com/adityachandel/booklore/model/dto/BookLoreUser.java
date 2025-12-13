@@ -47,11 +47,14 @@ public class BookLoreUser {
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
+        public SidebarSortOption sidebarMagicShelfSorting;
         public EntityViewPreferences entityViewPreferences;
         public List<TableColumnPreference> tableColumnPreference;
+        public String filterMode;
         public String filterSortingMode;
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
+        public boolean enableSeriesView;
         public DashboardConfig dashboardConfig;
 
         @Data

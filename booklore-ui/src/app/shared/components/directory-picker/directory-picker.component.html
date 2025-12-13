@@ -1,64 +1,58 @@
 <div class="directory-picker">
-  <div class="picker-header">
-    <div class="header-title">
-      <i class="pi pi-folder-open text-2xl"></i>
-      <h3 class="text-xl font-semibold m-0">Select Directories</h3>
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-folder-open header-icon"></i>
     </div>
-    <p class="text-sm text-secondary mt-2 mb-0">Choose one or more directories from your file system</p>
+    <div class="header-text">
+      <h2 class="panel-title">Select Directories</h2>
+      <p class="panel-description">Choose one or more directories from your file system</p>
+    </div>
   </div>
 
-  <div class="breadcrumb-container">
-    <p-breadcrumb [model]="breadcrumbItems" [home]="home" class="breadcrumb-custom">
-      <ng-template pTemplate="item" let-item>
-        <a class="breadcrumb-item" (click)="item.command && item.command()">
-          <i [class]="item.icon" *ngIf="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </ng-template>
-    </p-breadcrumb>
-  </div>
+  <div class="picker-controls">
+    <div class="current-path">
+      <div class="path-label">
+        <i class="pi pi-map-marker"></i>
+        <span>Current Path:</span>
+      </div>
+      <div class="path-value">
+        {{ selectedProductName || '/' }}
+      </div>
+    </div>
 
-  <div class="search-bar">
-    <p-iconfield class="search-input-wrapper">
-      <p-inputicon class="pi pi-search"/>
-      <input
-        fluid
-        type="text"
-        pInputText
-        [(ngModel)]="searchQuery"
-        (input)="onSearch()"
-        placeholder="Search folders..."
+    <div class="controls-row">
+      <p-iconfield class="search-input-wrapper">
+        <p-inputicon class="pi pi-search"/>
+        <input
+          fluid
+          type="text"
+          pInputText
+          [(ngModel)]="searchQuery"
+          (input)="onSearch()"
+          placeholder="Search folders..."
+        />
+        @if (searchQuery) {
+          <i class="pi pi-times clear-icon" (click)="searchQuery = ''; onSearch()"></i>
+        }
+      </p-iconfield>
+      <p-button
+        icon="pi pi-arrow-up"
+        (click)="goUp()"
+        [disabled]="selectedProductName === '/' || selectedProductName === ''"
+        pTooltip="Go up one level"
+        tooltipPosition="bottom"
       />
-      @if (searchQuery) {
-        <i class="pi pi-times clear-icon" (click)="searchQuery = ''; onSearch()"></i>
-      }
-    </p-iconfield>
-    <p-button
-      icon="pi pi-arrow-up"
-      (click)="goUp()"
-      [disabled]="selectedProductName === '/' || selectedProductName === ''"
-      pTooltip="Go up one level"
-      tooltipPosition="bottom"
-    />
-  </div>
+    </div>
 
-  <div class="current-path">
-    <div class="path-label">
-      <i class="pi pi-map-marker"></i>
-      <span>Current Path:</span>
-    </div>
-    <div class="path-value">
-      {{ selectedProductName || '/' }}
-    </div>
     @if (selectedFolders.length > 0) {
-      <div class="selected-count">
+      <div class="selection-badge">
         <i class="pi pi-check-circle"></i>
-        <span>{{ selectedFolders.length }} selected</span>
+        <span>{{ selectedFolders.length }} {{ selectedFolders.length === 1 ? 'folder' : 'folders' }} selected</span>
       </div>
     }
   </div>
 
-  <div class="directory-list">
+  <div class="directories-container">
     @if (isLoading) {
       <div class="loading-state">
         <p-progressSpinner
@@ -70,61 +64,79 @@
       </div>
     } @else if (filteredPaths.length === 0) {
       <div class="empty-state">
-        <i class="pi pi-folder-open empty-icon"></i>
-        <p class="empty-text">
+        <div class="empty-icon-wrapper">
+          <i class="pi pi-folder-open empty-icon"></i>
+        </div>
+        <h3 class="empty-title">
           @if (searchQuery) {
-            No folders match your search
+            No Matches Found
           } @else {
-            This directory is empty
+            Directory is Empty
+          }
+        </h3>
+        <p class="empty-description">
+          @if (searchQuery) {
+            No folders match your search criteria.<br/>Try adjusting your search terms.
+          } @else {
+            This directory doesn't contain any subfolders.
           }
         </p>
       </div>
     } @else {
-      <div class="folder-grid">
-        @for (folder of filteredPaths; track folder) {
-          <div
-            class="folder-item"
-            [class.selected]="selectedProductName === folder"
-            [class.checked]="isFolderSelected(folder)"
-          >
-            <div class="folder-checkbox">
-              <p-checkbox
-                [binary]="true"
-                [(ngModel)]="selectedFoldersMap[folder]"
-                (ngModelChange)="onCheckboxChange(folder, $event)"
-                (click)="$event.stopPropagation()"
-              />
-            </div>
-            <div class="folder-content" (click)="onRowClick(folder)">
-              <div class="folder-icon-wrapper">
-                <i class="pi pi-folder folder-icon"></i>
+      <div class="directories-list">
+        <div class="list-header">
+          <span class="folder-count">
+            <i class="pi pi-folder"></i>
+            {{ filteredPaths.length }} {{ filteredPaths.length === 1 ? 'folder' : 'folders' }} available
+          </span>
+        </div>
+
+        <div class="directories-grid">
+          @for (folder of filteredPaths; track folder) {
+            <div
+              class="directory-item"
+              [class.selected]="isFolderSelected(folder)"
+            >
+              <div class="directory-checkbox">
+                <p-checkbox
+                  [inputId]="'folder-' + folder"
+                  [binary]="true"
+                  [(ngModel)]="selectedFoldersMap[folder]"
+                  (ngModelChange)="onCheckboxChange(folder, $event)"
+                  (click)="$event.stopPropagation()"
+                />
               </div>
-              <div class="folder-info">
-                <span class="folder-name">{{ getFolderName(folder) }}</span>
-                <span class="folder-path">{{ folder }}</span>
-              </div>
-              <i class="pi pi-chevron-right navigate-icon"></i>
+              <label [for]="'folder-' + folder" class="directory-label" (click)="onRowClick(folder)">
+                <div class="directory-icon-wrapper">
+                  <i class="pi pi-folder directory-icon"></i>
+                </div>
+                <div class="directory-info">
+                  <span class="directory-name">{{ getFolderName(folder) }}</span>
+                  <span class="directory-path">{{ folder }}</span>
+                </div>
+                <i class="pi pi-chevron-right navigate-icon"></i>
+              </label>
             </div>
-          </div>
-        }
+          }
+        </div>
       </div>
     }
   </div>
 
-  <div class="picker-footer">
+  <div class="dialog-footer">
     <div class="footer-info">
       @if (selectedFolders.length > 0) {
         <span class="selection-info">
           <i class="pi pi-info-circle"></i>
-          {{ selectedFolders.length }} folder{{ selectedFolders.length !== 1 ? 's' : '' }} selected
+          {{ selectedFolders.length }} folder{{ selectedFolders.length !== 1 ? 's' : '' }} will be selected
         </span>
       }
     </div>
     <div class="footer-actions">
       <p-button
         label="Cancel"
-        icon="pi pi-times"
         severity="secondary"
+        [outlined]="true"
         (click)="onCancel()"
       />
       <p-button

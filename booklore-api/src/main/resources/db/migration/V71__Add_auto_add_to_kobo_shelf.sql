@@ -1,0 +1,2 @@
+ALTER TABLE kobo_user_settings
+    ADD COLUMN IF NOT EXISTS auto_add_to_shelf BOOLEAN NOT NULL DEFAULT FALSE;

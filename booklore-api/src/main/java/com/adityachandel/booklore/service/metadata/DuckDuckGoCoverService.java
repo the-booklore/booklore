@@ -64,15 +64,14 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
             siteFilteredImages = siteFilteredImages.subList(0, 7);
         }
 
-        String generalQuery = searchTerm;
-        String encodedGeneralQuery = URLEncoder.encode(generalQuery, StandardCharsets.UTF_8);
+        String encodedGeneralQuery = URLEncoder.encode(searchTerm, StandardCharsets.UTF_8);
         String generalUrl = SEARCH_BASE_URL + encodedGeneralQuery + SEARCH_PARAMS;
         Document generalDoc = getDocument(generalUrl);
         Matcher generalMatcher = tokenPattern.matcher(generalDoc.html());
         List<CoverImage> generalBookImages = new ArrayList<>();
         if (generalMatcher.find()) {
             String generalSearchToken = generalMatcher.group(1);
-            generalBookImages = fetchImagesFromApi(generalQuery, generalSearchToken);
+            generalBookImages = fetchImagesFromApi(searchTerm, generalSearchToken);
             generalBookImages.removeIf(dto -> dto.getWidth() < 350);
             generalBookImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
             Set<String> siteUrls = siteFilteredImages.stream().map(CoverImage::getUrl).collect(Collectors.toSet());
