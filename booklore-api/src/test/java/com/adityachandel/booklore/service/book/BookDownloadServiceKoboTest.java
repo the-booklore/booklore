@@ -163,6 +163,13 @@ class BookDownloadServiceKoboTest {
         // response should contain content-disposition
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
+
+        // Verify that the converted file was moved into the library path
+        Path destPath = libraryDir.resolve("comic.cbz.epub");
+        assertThat(Files.exists(destPath)).isTrue();
+        assertThat(Files.size(destPath)).isGreaterThan(0);
+        // temp converted file should have been moved (no longer exists at temp location)
+        assertThat(Files.exists(converted)).isFalse();
     }
 
     @Test
@@ -287,10 +294,14 @@ class BookDownloadServiceKoboTest {
         bookDownloadService.downloadKoboBook(101L, response);
 
         // Assert
-        // import was attempted but failure should not prevent streaming
         // import may fail; primary assertion is that streaming still occurs
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
+
+        // Even if import failed, the converted file should have been moved into the library path
+        Path destPath = libraryDir.resolve("comic4.cbz.epub");
+        assertThat(Files.exists(destPath)).isTrue();
+        assertThat(Files.size(destPath)).isGreaterThan(0);
     }
 
     @Test
@@ -349,6 +360,12 @@ class BookDownloadServiceKoboTest {
 
         assertThat(response.getHeader("Content-Disposition")).isNotNull();
         assertThat(response.getContentAsByteArray()).isNotEmpty();
+
+        // Verify that kepub file was moved into library path
+        Path destPath = libraryDir.resolve("comic.kepub.epub");
+        assertThat(Files.exists(destPath)).isTrue();
+        assertThat(Files.size(destPath)).isGreaterThan(0);
+        assertThat(Files.exists(converted)).isFalse();
     }
 
 }
