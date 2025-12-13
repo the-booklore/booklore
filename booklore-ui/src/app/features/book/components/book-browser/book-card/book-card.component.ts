@@ -4,8 +4,6 @@ import {AdditionalFile, Book, ReadStatus} from '../../../model/book.model';
 import {Button} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
-import {DialogService} from 'primeng/dynamicdialog';
-import {ShelfAssignerComponent} from '../../shelf-assigner/shelf-assigner.component';
 import {BookService} from '../../../service/book.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
@@ -16,16 +14,13 @@ import {UserService} from '../../../../settings/user-management/user.service';
 import {filter, Subject} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
-import {BookSenderComponent} from '../../book-sender/book-sender.component';
 import {Router} from '@angular/router';
 import {ProgressBar} from 'primeng/progressbar';
-import {BookMetadataCenterComponent} from '../../../../metadata/component/book-metadata-center/book-metadata-center.component';
 import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
-import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -59,7 +54,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   private bookService = inject(BookService);
   private taskHelperService = inject(TaskHelperService);
-  private dialogService = inject(DialogService);
   private userService = inject(UserService);
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
@@ -293,18 +287,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
               label: 'Custom Send',
               icon: 'pi pi-envelope',
               command: () => {
-                this.dialogService.open(BookSenderComponent, {
-                  header: 'Send Book to Email',
-                  modal: true,
-                  closable: true,
-                  style: {
-                    position: 'absolute',
-                    top: '15%',
-                  },
-                  data: {
-                    bookId: this.book.id,
-                  }
-                });
+                this.bookDialogHelperService.openCustomSendDialog(this.book.id);
               }
             }
           ]
@@ -341,15 +324,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: 'Custom Fetch',
             icon: 'pi pi-sync',
             command: () => {
-              this.dialogService.open(MetadataFetchOptionsComponent, {
-                header: 'Metadata Refresh Options',
-                modal: true,
-                closable: true,
-                data: {
-                  bookIds: [this.book!.id],
-                  metadataRefreshType: MetadataRefreshType.BOOKS,
-                },
-              });
+              this.bookDialogHelperService.openMetadataRefreshDialog(new Set([this.book!.id]))
             },
           }
         ]
@@ -457,19 +432,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private openShelfDialog(): void {
-    this.dialogService.open(ShelfAssignerComponent, {
-      header: `Update Book's Shelves`,
-      showHeader: false,
-      modal: true,
-      dismissableMask: true,
-      closable: true,
-      contentStyle: {overflow: 'hidden'},
-      styleClass: 'dynamic-dialog-minimal',
-      baseZIndex: 10,
-      data: {
-        book: this.book,
-      },
-    });
+    this.bookDialogHelperService.openShelfAssignerDialog(this.book, null);
   }
 
   openSeriesInfo(): void {
@@ -488,21 +451,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         queryParams: {tab: 'view'}
       });
     } else {
-      this.dialogService.open(BookMetadataCenterComponent, {
-        width: '90%',
-        height: '90%',
-        data: {bookId: book.id},
-        modal: true,
-        dismissableMask: true,
-        showHeader: true,
-        closable: true,
-        closeOnEscape: true,
-        draggable: false,
-        maximizable: false,
-        resizable: false,
-        header: 'Book Details',
-        styleClass: 'book-details-dialog'
-      });
+      this.bookDialogHelperService.openBookDetailsDialog(book.id);
     }
   }
 

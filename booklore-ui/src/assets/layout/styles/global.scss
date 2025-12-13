@@ -12,6 +12,13 @@
   }
 }
 
+.dialog-maximal.p-dialog {
+  width: 95vw;
+  max-width: 1200px;
+  height: 95vh;
+  max-height: 95vh;
+}
+
 .gradient-divider {
   min-height: 1px;
   height: 1px;
