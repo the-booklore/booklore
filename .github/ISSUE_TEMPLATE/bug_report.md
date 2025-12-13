@@ -2,37 +2,31 @@
 name: Bug report
 about: Create a report to help us improve
 title: ''
-labels: ''
+labels: bug
 assignees: ''
-
 ---
 
-# 🐛 Bug Report for Booklore
+# 🐛 Bug Report
 
-Thank you for taking the time to report this bug. Your feedback helps make Booklore better for everyone! 
-
-Let's squash this bug together! 🔨
-
----
-
-## 📝 What happened?
+## 📝 Description
 <!-- Describe what went wrong -->
 
 
 ## 🔄 Steps to Reproduce
 <!-- Provide detailed steps to reproduce the behavior. Be specific about what you clicked, typed, or configured -->
-1. 
-2. 
-3. 
-4. 
+1.
+2.
+3.
+4.
 
 **Result:** <!-- What happened after these steps? -->
+
 
 ## ✅ Expected Behavior
 <!-- Describe what should have happened instead -->
 
 
-## 📸 Screenshots / Error Messages
+## 📸 Screenshots / Error Messages _(Optional)_
 <!-- Share any screenshots or error messages here (just drag & drop) -->
 
 
@@ -44,9 +38,10 @@ Let's squash this bug together! 🔨
 - **Installation:** (e.g., Docker, Unraid, Manual)
 - **Storage Type:** (e.g., Local HDD/SSD, Synology NAS, SMB Share, NFS Mount, S3 Bucket)
 
-## 📌 Additional Context
-<!-- Add any other relevant information: recent changes, specific books, configuration details, etc. -->
 
-
-## ✨ Possible Solution _(Optional)_
+## 💡 Possible Solution _(Optional)_
 <!-- Share any ideas on how to fix this issue -->
+
+
+## 📌 Additional Context _(Optional)_
+<!-- Add any other relevant information: recent changes, specific books, configuration details, etc. -->
