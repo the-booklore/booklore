@@ -28,6 +28,18 @@ public class KomgaEnabledInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    private static final String[] KOMGA_ENDPOINT_PREFIXES = {
+        "/api/v1/libraries", "/api/v1/series", "/api/v1/books",
+        "/api/v1/authors", "/api/v1/publishers", "/api/v1/genres",
+        "/api/v1/languages", "/api/v1/tags", "/api/v1/age-ratings",
+        "/api/v1/collections", "/api/v1/readlists", "/api/v1/history",
+        "/api/v1/filesystem", "/api/v1/settings", "/api/v1/releases",
+        "/api/v1/announcements", "/api/v1/tasks", "/api/v1/page-hashes",
+        "/api/v1/client-settings", "/api/v1/syncpoints", "/api/v1/claim",
+        "/api/v1/oauth2", "/api/v1/fonts", "/api/v1/transient-books",
+        "/api/v2/users/me"
+    };
+    
     private boolean isKomgaEndpoint(String uri) {
         // Exclude existing endpoints
         if (uri.startsWith("/api/v1/opds") || uri.startsWith("/api/v2/opds")) {
@@ -37,7 +49,12 @@ public class KomgaEnabledInterceptor implements HandlerInterceptor {
             return false;
         }
         
-        // Include Komga API endpoints
-        return uri.matches("^/api/v[12]/(libraries|series|books|authors|publishers|genres|languages|tags|age-ratings|users|collections|readlists|history|filesystem|settings|releases|announcements|tasks|page-hashes|client-settings|syncpoints|claim|oauth2|fonts|transient-books)(/.*)?$");
+        // Check if URI starts with any Komga endpoint prefix
+        for (String prefix : KOMGA_ENDPOINT_PREFIXES) {
+            if (uri.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -5,8 +5,7 @@ import com.adityachandel.booklore.model.entity.*;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -183,8 +182,8 @@ public class KomgaMapper {
     }
 
     private KomgaBookMetadataAggregationDto aggregateBooksMetadata(List<BookEntity> books) {
-        List<KomgaAuthorDto> allAuthors = new ArrayList<>();
-        List<String> allTags = new ArrayList<>();
+        Set<String> authorNames = new HashSet<>();
+        Set<String> allTags = new HashSet<>();
         String releaseDate = null;
         String summary = null;
         
@@ -192,23 +191,11 @@ public class KomgaMapper {
             BookMetadataEntity metadata = book.getMetadata();
             if (metadata != null) {
                 if (metadata.getAuthors() != null) {
-                    metadata.getAuthors().forEach(author -> {
-                        KomgaAuthorDto authorDto = KomgaAuthorDto.builder()
-                                .name(author.getName())
-                                .role("writer")
-                                .build();
-                        if (!allAuthors.contains(authorDto)) {
-                            allAuthors.add(authorDto);
-                        }
-                    });
+                    metadata.getAuthors().forEach(author -> authorNames.add(author.getName()));
                 }
                 
                 if (metadata.getTags() != null) {
-                    metadata.getTags().forEach(tag -> {
-                        if (!allTags.contains(tag.getName())) {
-                            allTags.add(tag.getName());
-                        }
-                    });
+                    metadata.getTags().forEach(tag -> allTags.add(tag.getName()));
                 }
                 
                 if (releaseDate == null && metadata.getPublishedDate() != null) {
@@ -221,9 +208,13 @@ public class KomgaMapper {
             }
         }
         
+        List<KomgaAuthorDto> authors = authorNames.stream()
+                .map(name -> KomgaAuthorDto.builder().name(name).role("writer").build())
+                .collect(Collectors.toList());
+        
         return KomgaBookMetadataAggregationDto.builder()
-                .authors(allAuthors)
-                .tags(allTags)
+                .authors(authors)
+                .tags(new ArrayList<>(allTags))
                 .releaseDate(releaseDate)
                 .summary(summary)
                 .summaryLock(false)
