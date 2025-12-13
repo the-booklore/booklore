@@ -18,6 +18,7 @@ public class AppSettings {
     private boolean autoBookSearch;
     private boolean similarBookRecommendation;
     private boolean opdsServerEnabled;
+    private boolean komgaApiEnabled;
     private String uploadPattern;
     private Integer cbxCacheSizeInMb;
     private Integer pdfCacheSizeInMb;

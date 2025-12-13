@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.config;
 
+import com.adityachandel.booklore.interceptor.KomgaEnabledInterceptor;
 import com.adityachandel.booklore.interceptor.OpdsEnabledInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -11,10 +12,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
     private final OpdsEnabledInterceptor opdsEnabledInterceptor;
+    private final KomgaEnabledInterceptor komgaEnabledInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(opdsEnabledInterceptor)
                 .addPathPatterns("/api/v1/opds/**", "/api/v2/opds/**");
+        registry.addInterceptor(komgaEnabledInterceptor)
+                .addPathPatterns("/api/v1/**", "/api/v2/**");
     }
 }
