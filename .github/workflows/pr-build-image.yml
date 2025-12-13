@@ -105,52 +105,28 @@ jobs:
           build-args: |
             COMMIT_HASH=${{ steps.commit-hash.outputs.short }}
 
-      - name: Comment on PR - Image Built
+      - name: Add Docker Image Info to Summary
         if: steps.pr-info.outputs.pr_number != '0'
-        uses: actions/github-script@v7
         env:
           PR_NUMBER: ${{ steps.pr-info.outputs.pr_number }}
           COMMIT_HASH: ${{ steps.commit-hash.outputs.short }}
           DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
-        with:
-          script: |
-            const prNumber = parseInt(process.env.PR_NUMBER);
-            const commitHash = process.env.COMMIT_HASH;
-            const dockerUser = process.env.DOCKER_USER;
-            
-            // Delete previous build comments
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              per_page: 100
-            });
-
-            const buildComments = comments.filter(comment => 
-              comment.body.includes('🐳 **Docker Image Built**') &&
-              comment.user.type === 'Bot'
-            );
-
-            for (const comment of buildComments) {
-              await github.rest.issues.deleteComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: comment.id
-              });
-            }
-            
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              body: `## 🐳 **Docker Images Built**\n\n` +
-                    `Multi-architecture Docker images have been built with the latest changes from this PR!\n\n` +
-                    `### Pull Command\n` +
-                    `\`\`\`bash\n` +
-                    `docker pull ${dockerUser}/booklore:pr-${prNumber}\n` +
-                    `\`\`\`\n\n` +
-                    `📦 **Latest Commit:** \`${commitHash}\`\n` +
-                    `🏗️ **Platforms:** \`linux/arm64\`, \`linux/amd64\`\n\n` +
-                    `These images are automatically updated on each push to the PR.`
-            });
+        run: |
+          {
+            echo "## 🐳 Docker Images Built"
+            echo ""
+            echo "Multi-architecture Docker images have been built with the latest changes from this PR!"
+            echo ""
+            echo "### Pull Command"
+            echo ""
+            echo "\`\`\`bash"
+            echo "docker pull ${DOCKER_USER}/booklore:pr-${PR_NUMBER}"
+            echo "\`\`\`"
+            echo ""
+            echo "📦 **Latest Commit:** \`${COMMIT_HASH}\`"
+            echo ""
+            echo "🏗️ **Platforms:** \`linux/arm64\`, \`linux/amd64\`"
+            echo ""
+            echo "These images are automatically updated on each push to the PR."
+          } >> $GITHUB_STEP_SUMMARY
 
