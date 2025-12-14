@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -25,8 +26,10 @@ public class FilenamePatternExtractor {
 
     private final BookdropFileRepository bookdropFileRepository;
     private final BookdropMetadataHelper metadataHelper;
+    private final ExecutorService regexExecutor = Executors.newCachedThreadPool();
     
     private static final int PREVIEW_FILE_LIMIT = 5;
+    private static final long REGEX_TIMEOUT_SECONDS = 5;
     private static final int TWO_DIGIT_YEAR_CUTOFF = 50;
     private static final int TWO_DIGIT_YEAR_CENTURY_BASE = 1900;
     private static final int FOUR_DIGIT_YEAR_LENGTH = 4;
@@ -172,14 +175,37 @@ public class FilenamePatternExtractor {
     
     private BookMetadata extractFromFilenameWithParsedPattern(String filename, ParsedPattern parsedPattern) {
         String nameOnly = FilenameUtils.getBaseName(filename);
-        Matcher extractMatcher = parsedPattern.compiledPattern().matcher(nameOnly);
         
-        boolean matched = extractMatcher.find();
-        if (!matched) {
+        Optional<Matcher> matcherResult = executeRegexMatchingWithTimeout(parsedPattern.compiledPattern(), nameOnly);
+        
+        if (matcherResult.isEmpty()) {
             return null;
         }
         
-        return buildMetadataFromMatch(extractMatcher, parsedPattern.placeholderOrder());
+        Matcher matcher = matcherResult.get();
+        return buildMetadataFromMatch(matcher, parsedPattern.placeholderOrder());
+    }
+
+    private Optional<Matcher> executeRegexMatchingWithTimeout(Pattern pattern, String input) {
+        Future<Optional<Matcher>> future = regexExecutor.submit(() -> {
+            Matcher matcher = pattern.matcher(input);
+            return matcher.find() ? Optional.of(matcher) : Optional.empty();
+        });
+        
+        try {
+            return future.get(REGEX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            future.cancel(true);
+            log.warn("Pattern matching exceeded timeout for input: '{}'", input.substring(0, Math.min(50, input.length())));
+            return Optional.empty();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Pattern matching interrupted for input: '{}'", input);
+            return Optional.empty();
+        } catch (ExecutionException e) {
+            log.error("Pattern matching failed for input: '{}'", input, e.getCause());
+            return Optional.empty();
+        }
     }
 
     private BookdropPatternExtractResult.FileExtractionResult extractFromFile(
