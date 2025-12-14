@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -81,7 +82,7 @@ public class BookdropFileController {
     @ApiResponse(responseCode = "200", description = "Pattern extraction completed")
     @PostMapping("/files/extract-pattern")
     public ResponseEntity<BookdropPatternExtractResult> extractFromPattern(
-            @Parameter(description = "Pattern extraction request") @RequestBody BookdropPatternExtractRequest request) {
+            @Parameter(description = "Pattern extraction request") @Valid @RequestBody BookdropPatternExtractRequest request) {
         BookdropPatternExtractResult result = filenamePatternExtractor.bulkExtract(request);
         return ResponseEntity.ok(result);
     }
@@ -90,7 +91,7 @@ public class BookdropFileController {
     @ApiResponse(responseCode = "200", description = "Bulk edit completed")
     @PostMapping("/files/bulk-edit")
     public ResponseEntity<BookdropBulkEditResult> bulkEditMetadata(
-            @Parameter(description = "Bulk edit request") @RequestBody BookdropBulkEditRequest request) {
+            @Parameter(description = "Bulk edit request") @Valid @RequestBody BookdropBulkEditRequest request) {
         BookdropBulkEditResult result = bookdropBulkEditService.bulkEdit(request);
         return ResponseEntity.ok(result);
     }
