@@ -4,6 +4,8 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.junit.jupiter.api.Test;
 import org.mapstruct.factory.Mappers;
 
@@ -19,6 +21,11 @@ class BookMapperTest {
     void shouldMapExistingFieldsCorrectly() {
         LibraryEntity library = new LibraryEntity();
         library.setId(123L);
+        library.setName("Test Library");
+
+        LibraryPathEntity libraryPath = new LibraryPathEntity();
+        libraryPath.setId(1L);
+        libraryPath.setPath("/tmp");
 
         BookEntity entity = new BookEntity();
         entity.setId(1L);
@@ -27,15 +34,23 @@ class BookMapperTest {
         primaryFile.setBook(entity);
         primaryFile.setFileName("Test Book");
         primaryFile.setFileSubPath(".");
+        primaryFile.setBookFormat(true);
+        primaryFile.setBookType(BookFileType.EPUB);
         entity.setBookFiles(List.of(primaryFile));
         entity.setLibrary(library);
+        entity.setLibraryPath(libraryPath);
 
         Book dto = mapper.toBook(entity);
 
         assertThat(dto).isNotNull();
         assertThat(dto.getId()).isEqualTo(1L);
-        assertThat(dto.getFileName()).isEqualTo("Test Book");
         assertThat(dto.getLibraryId()).isEqualTo(123L);
+        assertThat(dto.getLibraryName()).isEqualTo("Test Library");
+        assertThat(dto.getLibraryPath()).isNotNull();
+        assertThat(dto.getLibraryPath().getId()).isEqualTo(1L);
+        assertThat(dto.getBookType()).isEqualTo(BookFileType.EPUB);
+        assertThat(dto.getAlternativeFormats()).isEmpty();
+        assertThat(dto.getSupplementaryFiles()).isEmpty();
 
     }
 }
