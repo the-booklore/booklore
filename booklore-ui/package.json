@@ -49,7 +49,7 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "^20.3.5",
     "@angular/cli": "^20.3.5",
-    "@angular/compiler-cli": "^20.3.5",
+    "@angular/compiler-cli": "^21.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/jasmine": "^5.1.13",
     "@types/showdown": "^2.0.6",
