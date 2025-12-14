@@ -603,7 +603,7 @@ export class BookdropFileReviewComponent implements OnInit {
       return;
     }
 
-    const dialogRef = this.dialogService.open(BookdropBulkEditDialogComponent, {
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropBulkEditDialogComponent, {
       header: `Bulk Edit ${totalCount} Files`,
       width: '600px',
       modal: true,
@@ -636,7 +636,7 @@ export class BookdropFileReviewComponent implements OnInit {
     const sampleFiles = selectedFiles.slice(0, 5).map(f => f.file.fileName);
     const selectedIds = selectedFiles.map(f => f.file.id);
 
-    const dialogRef = this.dialogService.open(BookdropPatternExtractDialogComponent, {
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropPatternExtractDialogComponent, {
       header: 'Extract Metadata from Filenames',
       width: '700px',
       modal: true,
