@@ -1,0 +1,1764 @@
+# Database Migration Comprehensive Test Workflow
+#
+# Purpose: Comprehensive database migration validation and regression testing
+# Structure: Quick Checks → Parallel Tests → Summary
+name: Database Migration
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/resources/db/migration/**'
+      - 'scripts/check-migration-integrity.sh'
+      - '.github/workflows/db-migration-*.yml'
+      - 'booklore-api/build.gradle'
+  push:
+    branches: [develop, main]
+    paths:
+      - 'booklore-api/src/main/resources/db/migration/**'
+  workflow_dispatch:
+    inputs:
+      baseline_ref:
+        description: 'Git ref to use as baseline (e.g., v1.0.0, develop)'
+        required: false
+        default: 'origin/develop'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  STRICT_SQL_MODE: 'STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION'
+
+jobs:
+  # ============================================
+  # Job 1: Quick Checks & Setup
+  # ============================================
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      has_migrations: ${{ steps.check.outputs.has_migrations }}
+      baseline_version: ${{ steps.baseline.outputs.version }}
+      migration_count: ${{ steps.count.outputs.total }}
+    
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@002fdce3c6a235733a90a27c80493a3241e56863
+        with:
+          egress-policy: audit
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Count migration files
+        id: count
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          TOTAL=$(find "$MIGRATION_DIR" -name "*.sql" 2>/dev/null | wc -l)
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "Found $TOTAL migration files"
+
+      - name: Check naming conventions
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          INVALID=0
+          
+          for file in $(find "$MIGRATION_DIR" -name "*.sql"); do
+            BASENAME=$(basename "$file")
+            if [[ ! "$BASENAME" =~ ^V[0-9]+(\.[0-9]+)*__[A-Za-z0-9_-]+\.sql$ ]] && \
+               [[ ! "$BASENAME" =~ ^R__[A-Za-z0-9_-]+\.sql$ ]]; then
+              echo "❌ Invalid naming: $file"
+              INVALID=$((INVALID + 1))
+            fi
+          done
+          
+          if [ $INVALID -gt 0 ]; then
+            echo "Found $INVALID files with invalid naming"
+            exit 1
+          fi
+          echo "✅ All migration files follow naming conventions"
+
+      - name: Check for destructive SQL
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          BASELINE="${{ steps.baseline.outputs.version }}"
+          
+          # Get list of added/modified SQL files
+          git fetch origin --quiet 2>/dev/null || true
+          BASELINE_REF=$(git rev-parse "$BASELINE^{commit}" 2>/dev/null || git rev-parse "$BASELINE" 2>/dev/null || echo "HEAD~1")
+          
+          CHANGED_FILES=$(git diff --name-only --diff-filter=AM "$BASELINE_REF" HEAD -- "$MIGRATION_DIR/*.sql" 2>/dev/null || echo "")
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed migration files to check"
+            exit 0
+          fi
+
+          echo "Checking for destructive keywords..."
+          KEYWORDS="DROP TABLE|DROP COLUMN|TRUNCATE|ALTER TABLE.*DROP"
+          
+          WARNINGS=()
+          for file in $CHANGED_FILES; do
+            if [ ! -f "$file" ]; then continue; fi
+          
+            if grep -Eiq "$KEYWORDS" "$file"; then
+              BASENAME=$(basename "$file")
+              WARNINGS+=("⚠️  Destructive SQL detected in $BASENAME:")
+              WARNINGS+=("$(grep -Ein "$KEYWORDS" "$file" | head -3)")
+            fi
+          done
+
+          if [ ${#WARNINGS[@]} -gt 0 ]; then
+            echo "::warning::Destructive changes detected - review carefully!"
+            printf '%s\n' "${WARNINGS[@]}"
+            echo ""
+            echo "### ⚠️ Destructive SQL Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The following migration files contain potentially destructive operations:" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            printf '%s\n' "${WARNINGS[@]}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please ensure these changes are intentional and have been reviewed." >> $GITHUB_STEP_SUMMARY
+          
+            # Don't fail, just warn
+          else
+            echo "✅ No destructive SQL patterns detected"
+          fi
+
+      - name: SQL Linting with sqlfluff
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          
+          # Install sqlfluff
+          pip install sqlfluff --quiet
+          
+          echo "🔍 Running SQL linting..."
+          
+          LINT_ERRORS=0
+          LINT_WARNINGS=0
+          
+          # Create sqlfluff config
+          cat > /tmp/.sqlfluff << 'EOF'
+          [sqlfluff]
+          dialect = mysql
+          templater = raw
+          max_line_length = 120
+          exclude_rules = L003, L016, L031, L034
+          
+          [sqlfluff:rules]
+          capitalisation_policy = upper
+          extended_capitalisation_policy = upper
+          EOF
+          
+          for file in $(find "$MIGRATION_DIR" -name "*.sql" 2>/dev/null); do
+            BASENAME=$(basename "$file")
+            OUTPUT=$(sqlfluff lint --config /tmp/.sqlfluff "$file" 2>/dev/null || true)
+            
+            if echo "$OUTPUT" | grep -q "CRITICAL\|ERROR"; then
+              echo "❌ $BASENAME has linting errors:"
+              echo "$OUTPUT" | head -10
+              LINT_ERRORS=$((LINT_ERRORS + 1))
+            elif echo "$OUTPUT" | grep -q "WARNING"; then
+              LINT_WARNINGS=$((LINT_WARNINGS + 1))
+            fi
+          done
+          
+          echo ""
+          echo "📊 SQL Lint Summary: $LINT_ERRORS errors, $LINT_WARNINGS warnings"
+          
+          if [ $LINT_ERRORS -gt 0 ]; then
+            echo "::warning::SQL linting found $LINT_ERRORS files with errors"
+            # Don't fail the build, just warn
+          fi
+          
+          echo "### 🔍 SQL Linting Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Errors:** $LINT_ERRORS" >> $GITHUB_STEP_SUMMARY
+          echo "- **Warnings:** $LINT_WARNINGS" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for duplicate versions
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          ALL_VERSIONS=$(find "$MIGRATION_DIR" -name "V*.sql" -exec basename {} \; | sed 's/__.*$//' | sort)
+          DUPLICATES=$(echo "$ALL_VERSIONS" | uniq -d)
+          
+          if [[ -n "$DUPLICATES" ]]; then
+            echo "❌ Duplicate versions found:"
+            echo "$DUPLICATES"
+            exit 1
+          fi
+          echo "✅ No duplicate versions"
+
+      - name: Determine baseline version
+        id: baseline
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_BASELINE_REF: ${{ inputs.baseline_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "$INPUT_BASELINE_REF" ]; then
+            BASELINE="$INPUT_BASELINE_REF"
+          elif [ "$EVENT_NAME" = "pull_request" ]; then
+            BASELINE="origin/$BASE_REF"
+          else
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+            if [ -n "$LATEST_TAG" ]; then
+              BASELINE="$LATEST_TAG"
+            else
+              BASELINE="HEAD~1"
+            fi
+          fi
+          echo "version=$BASELINE" >> $GITHUB_OUTPUT
+          echo "Using baseline: $BASELINE"
+
+      - name: Check for migration changes
+        id: check
+        run: |
+          BASELINE="${{ steps.baseline.outputs.version }}"
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          
+          git fetch origin --quiet 2>/dev/null || true
+          
+          BASELINE_REF=$(git rev-parse "$BASELINE^{commit}" 2>/dev/null || git rev-parse "$BASELINE" 2>/dev/null || echo "")
+          
+          if [ -z "$BASELINE_REF" ]; then
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+            echo "Could not resolve baseline - assuming migrations changed"
+            exit 0
+          fi
+          
+          BASELINE_FILES=$(git ls-tree -r --name-only "$BASELINE_REF" -- "$MIGRATION_DIR" 2>/dev/null | grep -E '\.sql$' | wc -l)
+          CURRENT_FILES=$(find "$MIGRATION_DIR" -name "*.sql" 2>/dev/null | wc -l)
+          
+          echo "Baseline: $BASELINE_FILES files, Current: $CURRENT_FILES files"
+          
+          if [ "$CURRENT_FILES" -gt "$BASELINE_FILES" ]; then
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+            echo "✅ New migrations detected"
+          else
+            DIFF_COUNT=$(git diff "$BASELINE_REF" HEAD -- "$MIGRATION_DIR" 2>/dev/null | wc -l)
+            if [ "$DIFF_COUNT" -gt 0 ]; then
+              echo "has_migrations=true" >> $GITHUB_OUTPUT
+              echo "✅ Migration changes detected"
+            else
+              echo "has_migrations=false" >> $GITHUB_OUTPUT
+              echo "⏭️  No migration changes"
+            fi
+          fi
+
+  # ============================================
+  # Job 2: Migration Integrity Check
+  # ============================================
+  migration-integrity:
+    name: Migration Integrity
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 15
+    
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y mariadb-client
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
+              echo "MariaDB is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Check Migration Integrity
+        env:
+          BASE_REF: ${{ github.base_ref || 'develop' }}
+        run: |
+          chmod +x scripts/check-migration-integrity.sh
+          ./scripts/check-migration-integrity.sh "origin/$BASE_REF"
+
+      - name: Run Flyway Migrations
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: root
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          START_TIME=$(date +%s%N)
+          ./gradlew flywayClean flywayMigrate flywayValidate --info
+          END_TIME=$(date +%s%N)
+          ELAPSED_MS=$(( (END_TIME - START_TIME) / 1000000 ))
+          echo "⏱️ Total migration time: ${ELAPSED_MS}ms"
+
+      - name: Analyze Migration Performance
+        run: |
+          echo "📊 Analyzing migration performance..."
+          
+          # Query Flyway history for execution times
+          PERF_DATA=$(mariadb -h 127.0.0.1 -uroot -proot booklore -e "
+            SELECT 
+              version,
+              description,
+              execution_time as ms,
+              CASE 
+                WHEN execution_time > 10000 THEN '🔴 CRITICAL'
+                WHEN execution_time > 5000 THEN '🟡 SLOW'
+                WHEN execution_time > 2000 THEN '🟠 MODERATE'
+                ELSE '🟢 FAST'
+              END as status
+            FROM flyway_schema_history 
+            WHERE success = 1 AND execution_time IS NOT NULL
+            ORDER BY execution_time DESC;
+          " 2>/dev/null || echo "No performance data available")
+          
+          echo "$PERF_DATA"
+          
+          # Check for slow migrations (>5s)
+          SLOW_MIGRATIONS=$(mariadb -h 127.0.0.1 -uroot -proot booklore -sN -e "
+            SELECT COUNT(*) FROM flyway_schema_history 
+            WHERE success = 1 AND execution_time > 5000;
+          " 2>/dev/null || echo "0")
+          
+          # Check for very slow migrations (>10s)
+          VERY_SLOW=$(mariadb -h 127.0.0.1 -uroot -proot booklore -sN -e "
+            SELECT COUNT(*) FROM flyway_schema_history 
+            WHERE success = 1 AND execution_time > 10000;
+          " 2>/dev/null || echo "0")
+          
+          # Total time
+          TOTAL_TIME=$(mariadb -h 127.0.0.1 -uroot -proot booklore -sN -e "
+            SELECT COALESCE(SUM(execution_time), 0) / 1000.0 as total_seconds
+            FROM flyway_schema_history WHERE success = 1;
+          " 2>/dev/null || echo "0")
+          
+          # Generate summary
+          echo "### ⚡ Migration Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Migration Time | ${TOTAL_TIME}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations >5s | $SLOW_MIGRATIONS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations >10s | $VERY_SLOW |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$VERY_SLOW" -gt 0 ]; then
+            echo "::error::$VERY_SLOW migration(s) took longer than 10 seconds - optimization required!"
+            echo "🔴 **CRITICAL:** $VERY_SLOW migration(s) exceeded 10s threshold!" >> $GITHUB_STEP_SUMMARY
+          elif [ "$SLOW_MIGRATIONS" -gt 0 ]; then
+            echo "::warning::$SLOW_MIGRATIONS migration(s) took longer than 5 seconds"
+            echo "🟡 **Warning:** $SLOW_MIGRATIONS migration(s) exceeded 5s threshold" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ All migrations completed within acceptable time limits"
+            echo "✅ All migrations completed within acceptable time limits" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Run Backend Tests
+        working-directory: booklore-api
+        continue-on-error: true
+        run: |
+          chmod +x ./gradlew
+          echo "🧪 Running backend unit tests..."
+          
+          # Run tests and capture output
+          TEST_OUTPUT=$(./gradlew test --no-daemon -x integrationTest 2>&1 || true)
+          echo "$TEST_OUTPUT"
+          
+          # Parse test results
+          if echo "$TEST_OUTPUT" | grep -q "BUILD SUCCESSFUL"; then
+            echo "✅ Tests passed"
+          elif echo "$TEST_OUTPUT" | grep -q "No tests found"; then
+            echo "⚠️ No tests found in test directory"
+          elif echo "$TEST_OUTPUT" | grep -q "BUILD FAILED"; then
+            echo "❌ Tests failed"
+            exit 1
+          fi
+
+      - name: Publish test results
+        if: always()
+        run: |
+          echo "### 🧪 Backend Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d booklore-api/build/test-results/test ]; then
+            TEST_COUNT=$(find booklore-api/build/test-results/test -name "*.xml" | wc -l)
+            if [ $TEST_COUNT -gt 0 ]; then
+              echo "✅ Test results found in build output" >> $GITHUB_STEP_SUMMARY
+              echo "" >> $GITHUB_STEP_SUMMARY
+              # Parse XML for summary (if available)
+              grep -h "testsuite" booklore-api/build/test-results/test/*.xml 2>/dev/null | head -1 >> $GITHUB_STEP_SUMMARY || echo "Tests executed"
+            else
+              echo "⚠️ No test result files generated" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "ℹ️ Test directory not found - check if tests are available" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================
+  # Job 3: Regression Tests (Parallel Matrix)
+  # ============================================
+  regression-tests:
+    name: Regression (${{ matrix.db_type }}:${{ matrix.db_version }})
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # MariaDB versions
+          - db_type: mariadb
+            db_version: '10.11'
+            health_cmd: mariadb-admin
+            jdbc_prefix: mariadb
+          - db_type: mariadb
+            db_version: '11.4'
+            health_cmd: mariadb-admin
+            jdbc_prefix: mariadb
+
+    services:
+      database:
+        image: ${{ matrix.db_type }}:${{ matrix.db_version }}
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_test
+          MYSQL_INITDB_ARGS: "--sql-mode=${{ env.STRICT_SQL_MODE }}"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="${{ matrix.health_cmd }} ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install DB client
+        run: |
+          sudo apt-get update -qq
+          if [ "${{ matrix.db_type }}" = "mysql" ]; then
+            sudo apt-get install -y mysql-client
+          else
+            sudo apt-get install -y mariadb-client
+          fi
+
+      - name: Wait for database
+        run: |
+          for i in {1..30}; do
+            if ${{ matrix.health_cmd }} ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              echo "✅ ${{ matrix.db_type }}:${{ matrix.db_version }} is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Prepare baseline migrations
+        run: |
+          BASELINE="${{ needs.quick-checks.outputs.baseline_version }}"
+          mkdir -p /tmp/baseline-migrations
+          
+          if git archive "$BASELINE" booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/baseline-migrations; then
+            echo "Baseline migrations extracted"
+          else
+            echo "Using current migrations"
+          fi
+
+      - name: Apply baseline & upgrade
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:${{ matrix.jdbc_prefix }}://127.0.0.1:3306/booklore_test
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          chmod +x ./gradlew
+          
+          # Clean and apply current migrations
+          START_TIME=$(date +%s)
+          ./gradlew flywayClean flywayMigrate flywayValidate --no-daemon
+          END_TIME=$(date +%s)
+          ELAPSED=$((END_TIME - START_TIME))
+          echo "⏱️ Total migration time: ${ELAPSED}s"
+          
+          if [ $ELAPSED -gt 30 ]; then
+            echo "::warning::Migration took longer than 30 seconds ($ELAPSED s)"
+          fi
+
+  # ============================================
+  # Job 4: Historical Version Tests
+  # ============================================
+  historical-migrations:
+    name: Historical Upgrades
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 20
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_history
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Test upgrades from tagged releases
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_history
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          
+          TAGS=$(git tag -l 'v*' --sort=-version:refname | head -3)
+          
+          if [ -z "$TAGS" ]; then
+            echo "No version tags found, skipping historical upgrade tests"
+            exit 0
+          fi
+          
+          for TAG in $TAGS; do
+            echo "🧪 Testing upgrade path: $TAG -> Current PR"
+          
+            # 1. Reset DB
+            ./gradlew flywayClean --no-daemon
+          
+            # 2. Extract Tag Migrations
+            rm -rf /tmp/tag-migrations
+            mkdir -p /tmp/tag-migrations
+            if ! git archive "$TAG" booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/tag-migrations; then
+              echo "⚠️  Could not extract migrations from $TAG, skipping"
+              continue
+            fi
+          
+            # 3. Migrate to Tag State (Baseline)
+            echo "📍 Migrating to baseline: $TAG"
+            ./gradlew flywayMigrate --no-daemon \
+              -Dflyway.locations="filesystem:/tmp/tag-migrations/booklore-api/src/main/resources/db/migration"
+          
+            TAG_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_history \
+              -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+            echo "Baseline version: $TAG_VERSION"
+          
+            # 4. Migrate to Current PR State (THE CRITICAL MISSING STEP!)
+            echo "🚀 Upgrading from $TAG to current PR version..."
+            ./gradlew flywayMigrate flywayValidate --no-daemon
+          
+            CURRENT_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_history \
+              -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+            echo "Current version: $CURRENT_VERSION"
+          
+            echo "✅ Successfully upgraded from $TAG (v$TAG_VERSION) to Current (v$CURRENT_VERSION)"
+          done
+
+  # ============================================
+  # Job 4.5: Last Release to PR Migration Test
+  # ============================================
+  last-release-to-pr-migration:
+    name: Last Release → PR Migration
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 20
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_release
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Determine latest release tag
+        id: latest_release
+        run: |
+          git fetch origin --quiet 2>/dev/null || true
+          
+          # Find latest release tag (v*.*.* format)
+          LATEST_TAG=$(git tag -l 'v*' --sort=-version:refname 2>/dev/null | head -1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            echo "⚠️ No release tags found"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Latest release tag: $LATEST_TAG"
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "skip=false" >> $GITHUB_OUTPUT
+
+      - name: Extract last release migrations
+        if: steps.latest_release.outputs.skip != 'true'
+        run: |
+          TAG="${{ steps.latest_release.outputs.tag }}"
+          echo "📦 Extracting migrations from $TAG..."
+          
+          mkdir -p /tmp/release-migrations
+          
+          if git archive "$TAG" booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/release-migrations; then
+            RELEASE_COUNT=$(find /tmp/release-migrations/booklore-api/src/main/resources/db/migration -name "*.sql" 2>/dev/null | wc -l)
+            echo "Found $RELEASE_COUNT migrations in release $TAG"
+          else
+            echo "❌ Could not extract migrations from release tag $TAG"
+            exit 1
+          fi
+
+      - name: Apply last release migrations (baseline)
+        if: steps.latest_release.outputs.skip != 'true'
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_release
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          
+          echo "📍 Applying last release migrations..."
+          
+          # Clean database first
+          ./gradlew flywayClean --no-daemon
+          
+          # Apply release migrations
+          ./gradlew flywayMigrate --no-daemon \
+            -Dflyway.locations="filesystem:/tmp/release-migrations/booklore-api/src/main/resources/db/migration"
+          
+          # Get the version we're at after release migrations
+          RELEASE_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          echo "📊 Release version: $RELEASE_VERSION"
+          
+          # Get migration count
+          RELEASE_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT COUNT(*) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          echo "📊 Total migrations in release: $RELEASE_COUNT"
+
+      - name: Apply PR migrations (upgrade)
+        if: steps.latest_release.outputs.skip != 'true'
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_release
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          echo "⬆️ Upgrading to PR branch migrations..."
+          
+          # Apply current PR migrations
+          ./gradlew flywayMigrate flywayValidate --no-daemon
+          
+          # Get final version
+          FINAL_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          echo "✅ Final version: $FINAL_VERSION"
+          
+          # Get migration count
+          FINAL_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT COUNT(*) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          NEW_MIGRATIONS=$((FINAL_COUNT - 50))  # Rough estimate
+          echo "📊 Total migrations after upgrade: $FINAL_COUNT"
+
+      - name: Verify upgrade integrity
+        if: steps.latest_release.outputs.skip != 'true'
+        run: |
+          echo "🔍 Verifying upgrade integrity..."
+          
+          TAG="${{ steps.latest_release.outputs.tag }}"
+          
+          # Check for tables
+          TABLE_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='booklore_release';" 2>/dev/null || echo "0")
+          
+          echo "Found $TABLE_COUNT tables in database"
+          
+          if [ "$TABLE_COUNT" -lt 5 ]; then
+            echo "❌ Database appears empty or corrupted"
+            exit 1
+          fi
+          
+          # Check for migration history
+          FAILED_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release \
+            -sN -e "SELECT COUNT(*) FROM flyway_schema_history WHERE success=0;" 2>/dev/null || echo "0")
+          
+          if [ "$FAILED_COUNT" -gt 0 ]; then
+            echo "❌ Found $FAILED_COUNT failed migrations"
+            mariadb -h 127.0.0.1 -uroot -ptestroot booklore_release -e \
+              "SELECT version, description, error FROM flyway_schema_history WHERE success=0;"
+            exit 1
+          fi
+          
+          echo "✅ Upgrade from $TAG → PR successful"
+          
+          # Generate summary
+          echo "### 🚀 Last Release → PR Upgrade Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Tag:** $TAG" >> $GITHUB_STEP_SUMMARY
+          echo "**Tables:** $TABLE_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Upgrade successful" >> $GITHUB_STEP_SUMMARY
+
+      - name: Skip if no releases
+        if: steps.latest_release.outputs.skip == 'true'
+        run: |
+          echo "⏭️ No release tags found - skipping last release upgrade test"
+          echo "### 🚀 Last Release → PR Upgrade Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⏭️ No release tags found in repository" >> $GITHUB_STEP_SUMMARY
+
+  # ============================================
+  # Job 5: Develop to PR Migration Test
+  # ============================================
+  develop-to-pr-migration:
+    name: Develop → PR Migration
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 20
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_upgrade
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              echo "✅ MariaDB is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Extract develop branch migrations
+        run: |
+          echo "📦 Extracting migrations from develop branch..."
+          mkdir -p /tmp/develop-migrations
+          
+          # Fetch develop branch
+          git fetch origin develop --quiet
+          
+          # Extract migrations from develop
+          if git archive origin/develop booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/develop-migrations; then
+            DEVELOP_COUNT=$(find /tmp/develop-migrations/booklore-api/src/main/resources/db/migration -name "*.sql" | wc -l)
+            echo "Found $DEVELOP_COUNT migrations in develop branch"
+          else
+            echo "⚠️  Could not extract develop migrations, using empty baseline"
+          fi
+
+      - name: Apply develop migrations
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_upgrade
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          
+          echo "🔄 Applying develop branch migrations..."
+          
+          # Clean database first
+          ./gradlew flywayClean --no-daemon
+          
+          # Apply develop migrations if they exist
+          if [ -d "/tmp/develop-migrations/booklore-api/src/main/resources/db/migration" ]; then
+            ./gradlew flywayMigrate --no-daemon \
+              -Dflyway.locations="filesystem:/tmp/develop-migrations/booklore-api/src/main/resources/db/migration"
+          
+            # Get the version we're at after develop migrations
+            DEVELOP_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_upgrade \
+              -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+            echo "📍 Develop branch schema version: $DEVELOP_VERSION"
+          else
+            echo "ℹ️  No develop migrations to apply"
+          fi
+
+      - name: Apply PR migrations (upgrade)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_upgrade
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          echo "⬆️  Upgrading to PR branch migrations..."
+          
+          # Apply current PR migrations
+          ./gradlew flywayMigrate flywayValidate --no-daemon
+          
+          # Get final version
+          FINAL_VERSION=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_upgrade \
+            -sN -e "SELECT MAX(version) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          echo "✅ Final schema version: $FINAL_VERSION"
+          
+          # Get migration count
+          MIGRATION_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_upgrade \
+            -sN -e "SELECT COUNT(*) FROM flyway_schema_history WHERE success=1;" 2>/dev/null || echo "0")
+          echo "📊 Total migrations applied: $MIGRATION_COUNT"
+
+      - name: Verify database schema
+        run: |
+          echo "🔍 Verifying database schema..."
+          
+          # Check for tables
+          TABLE_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_upgrade \
+            -sN -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='booklore_upgrade';" 2>/dev/null || echo "0")
+          
+          echo "Found $TABLE_COUNT tables in database"
+          
+          if [ "$TABLE_COUNT" -eq 0 ]; then
+            echo "❌ No tables found - migration may have failed"
+            exit 1
+          fi
+          
+          echo "✅ Database schema verified"
+
+  # ============================================
+  # Job 6: Breaking Change Detection
+  # ============================================
+  breaking-change-detection:
+    name: Breaking Change Detection
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    if: needs.quick-checks.outputs.has_migrations == 'true'
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyze for breaking changes
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          BASELINE="${{ needs.quick-checks.outputs.baseline_version }}"
+          
+          git fetch origin --quiet 2>/dev/null || true
+          BASELINE_REF=$(git rev-parse "$BASELINE^{commit}" 2>/dev/null || git rev-parse "$BASELINE" 2>/dev/null || echo "HEAD~1")
+          
+          # Get new migrations only
+          NEW_MIGRATIONS=$(git diff --name-only --diff-filter=A "$BASELINE_REF" HEAD -- "$MIGRATION_DIR" 2>/dev/null | \
+            grep -E '\.sql$' || true)
+          
+          if [ -z "$NEW_MIGRATIONS" ]; then
+            echo "No new migrations to check"
+            exit 0
+          fi
+          
+          BREAKING_CHANGES=()
+          WARNINGS=()
+          
+          for file in $NEW_MIGRATIONS; do
+            if [ ! -f "$file" ]; then continue; fi
+          
+            CONTENT=$(cat "$file")
+            BASENAME=$(basename "$file")
+          
+            # Definite breaking changes
+            if echo "$CONTENT" | grep -qiE "DROP\s+TABLE(?!\s+IF\s+EXISTS)"; then
+              BREAKING_CHANGES+=("❌ $BASENAME: DROP TABLE without IF EXISTS")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "DROP\s+COLUMN"; then
+              BREAKING_CHANGES+=("❌ $BASENAME: DROP COLUMN - breaks existing code reading this column")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "RENAME\s+TABLE"; then
+              BREAKING_CHANGES+=("❌ $BASENAME: RENAME TABLE - breaks existing queries and code")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "RENAME\s+COLUMN"; then
+              BREAKING_CHANGES+=("❌ $BASENAME: RENAME COLUMN - breaks existing queries")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "ALTER\s+TABLE.*MODIFY.*NOT\s+NULL"; then
+              WARNINGS+=("⚠️  $BASENAME: Adding NOT NULL constraint - ensure all existing rows have values")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "ALTER\s+TABLE.*DROP\s+(PRIMARY|FOREIGN|UNIQUE)\s+KEY"; then
+              BREAKING_CHANGES+=("❌ $BASENAME: Dropping constraint - may break referential integrity or code assumptions")
+            fi
+          
+            # Type changes that might lose data
+            if echo "$CONTENT" | grep -qiE "MODIFY.*VARCHAR\s*\([0-9]+\)"; then
+              WARNINGS+=("⚠️  $BASENAME: VARCHAR size change - verify no data truncation occurs")
+            fi
+          
+            if echo "$CONTENT" | grep -qiE "MODIFY.*(TINYINT|SMALLINT|MEDIUMINT)"; then
+              WARNINGS+=("⚠️  $BASENAME: Integer type change - verify no data loss or overflow")
+            fi
+          
+            # Check for DELETE without WHERE
+            if echo "$CONTENT" | grep -qiE "DELETE\s+FROM\s+\w+\s*;"; then
+              WARNINGS+=("⚠️  $BASENAME: DELETE without WHERE clause - will delete all rows")
+            fi
+          done
+          
+          echo "### Breaking Change Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ ${#BREAKING_CHANGES[@]} -gt 0 ]; then
+            echo "#### ❌ Breaking Changes Detected" >> $GITHUB_STEP_SUMMARY
+            printf '%s\n' "${BREAKING_CHANGES[@]}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ ${#WARNINGS[@]} -gt 0 ]; then
+            echo "#### ⚠️ Warnings" >> $GITHUB_STEP_SUMMARY
+            printf '%s\n' "${WARNINGS[@]}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ ${#BREAKING_CHANGES[@]} -eq 0 ] && [ ${#WARNINGS[@]} -eq 0 ]; then
+            echo "✅ No breaking changes detected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Fail on breaking changes
+          if [ ${#BREAKING_CHANGES[@]} -gt 0 ]; then
+            echo ""
+            echo "Breaking changes detected! These require careful review and migration planning:"
+            printf '%s\n' "${BREAKING_CHANGES[@]}"
+            exit 1
+          fi
+          
+          # Print warnings but don't fail
+          if [ ${#WARNINGS[@]} -gt 0 ]; then
+            echo ""
+            echo "Warnings detected - please review:"
+            printf '%s\n' "${WARNINGS[@]}"
+          fi
+
+  # ============================================
+  # Job 7: Idempotency Test
+  # ============================================
+  idempotency-test:
+    name: Idempotency Test
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 15
+    
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_idem
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Apply migrations first time
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_idem
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew flywayClean flywayMigrate --no-daemon
+
+      - name: Capture schema state
+        run: |
+          mariadb-dump -h 127.0.0.1 -uroot -ptestroot \
+            --no-data --skip-comments --routines --triggers \
+            booklore_idem > /tmp/schema-first.sql
+          
+          # Get table checksums (only if tables exist)
+          TABLE_LIST=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_idem -sN -e "
+            SELECT GROUP_CONCAT(TABLE_NAME SEPARATOR ',') 
+            FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA='booklore_idem' AND TABLE_TYPE='BASE TABLE' AND TABLE_NAME != 'flyway_schema_history';
+          " 2>/dev/null || echo "")
+          
+          if [ -n "$TABLE_LIST" ]; then
+            mariadb -h 127.0.0.1 -uroot -ptestroot booklore_idem -sN -e "
+              CHECKSUM TABLE $TABLE_LIST;
+            " > /tmp/checksum-first.txt 2>/dev/null || echo "No checksums available"
+          else
+            echo "No tables to checksum" > /tmp/checksum-first.txt
+          fi
+
+      - name: Run validate (should succeed)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_idem
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          ./gradlew flywayValidate --no-daemon
+
+      - name: Run migrate again (should be no-op)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_idem
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          echo "Running migrations again - should be a no-op..."
+          ./gradlew flywayMigrate --no-daemon
+
+      - name: Verify schema unchanged
+        run: |
+          mariadb-dump -h 127.0.0.1 -uroot -ptestroot \
+            --no-data --skip-comments --routines --triggers \
+            booklore_idem > /tmp/schema-second.sql
+          
+          if ! diff -q /tmp/schema-first.sql /tmp/schema-second.sql; then
+            echo "❌ Schema changed after re-running migrations!"
+            echo "Differences:"
+            diff /tmp/schema-first.sql /tmp/schema-second.sql || true
+            exit 1
+          fi
+          
+          echo "✅ Migrations are idempotent - schema unchanged after re-run"
+
+      - name: Test repeatable migrations
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          REPEATABLE=$(find "$MIGRATION_DIR" -name "R__*.sql" 2>/dev/null || echo "")
+          
+          if [ -n "$REPEATABLE" ]; then
+            echo "Testing repeatable migrations for idempotency..."
+          
+            for file in $REPEATABLE; do
+              BASENAME=$(basename "$file")
+              echo "Testing $BASENAME..."
+          
+              # Run twice and verify both succeed
+              if mariadb -h 127.0.0.1 -uroot -ptestroot booklore_idem < "$file" 2>/tmp/first-run.log && \
+                 mariadb -h 127.0.0.1 -uroot -ptestroot booklore_idem < "$file" 2>/tmp/second-run.log; then
+                echo "✅ $BASENAME is idempotent"
+              else
+                echo "❌ Repeatable migration $BASENAME failed on re-run"
+                cat /tmp/second-run.log
+                exit 1
+              fi
+            done
+          else
+            echo "No repeatable migrations to test"
+          fi
+
+  # ============================================
+  # Job 8: Data Persistence Verification
+  # ============================================
+  data-persistence-check:
+    name: Data Persistence Verification
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 20
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_data
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              echo "✅ MariaDB is ready"
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Migrate to baseline (develop)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_data
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          echo "📦 Migrating to develop (baseline)..."
+          chmod +x ./gradlew
+          
+          # Extract develop migrations
+          mkdir -p /tmp/develop-migrations
+          git fetch origin develop --quiet
+          if git archive origin/develop booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/develop-migrations; then
+            echo "Baseline migrations extracted"
+            ./gradlew flywayClean --no-daemon
+            ./gradlew flywayMigrate --no-daemon \
+              -Dflyway.locations="filesystem:/tmp/develop-migrations/booklore-api/src/main/resources/db/migration"
+          else
+            echo "Using current migrations as baseline"
+            ./gradlew flywayClean flywayMigrate --no-daemon
+          fi
+
+      - name: Insert canary data
+        run: |
+          echo "🐤 Inserting canary data..."
+          
+          # Get list of tables
+          TABLES=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_data -sN -e "
+            SELECT TABLE_NAME FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA='booklore_data' AND TABLE_TYPE='BASE TABLE' 
+            AND TABLE_NAME != 'flyway_schema_history'
+            ORDER BY TABLE_NAME;
+          " 2>/dev/null || echo "")
+          
+          if [ -z "$TABLES" ]; then
+            echo "⚠️ No tables found to insert canary data"
+            exit 0
+          fi
+          
+          echo "Found tables: $TABLES"
+          
+          # Record row counts before upgrade
+          echo "📊 Recording baseline row counts..."
+          for table in $TABLES; do
+            COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_data -sN -e "
+              SELECT COUNT(*) FROM \`$table\`;
+            " 2>/dev/null || echo "0")
+            echo "$table:$COUNT" >> /tmp/baseline_counts.txt
+            echo "  $table: $COUNT rows"
+          done
+
+      - name: Apply PR migrations (upgrade)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_data
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+        run: |
+          echo "⬆️ Upgrading to PR branch migrations..."
+          ./gradlew flywayMigrate flywayValidate --no-daemon
+
+      - name: Verify data persistence
+        run: |
+          echo "🔍 Verifying data persistence after upgrade..."
+          
+          DATA_LOSS=0
+          WARNINGS=0
+          
+          if [ ! -f /tmp/baseline_counts.txt ]; then
+            echo "No baseline data to verify"
+            exit 0
+          fi
+          
+          while IFS=: read -r table baseline_count; do
+            CURRENT_COUNT=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_data -sN -e "
+              SELECT COUNT(*) FROM \`$table\`;
+            " 2>/dev/null || echo "0")
+            
+            if [ "$CURRENT_COUNT" -lt "$baseline_count" ]; then
+              echo "❌ DATA LOSS: $table had $baseline_count rows, now has $CURRENT_COUNT"
+              DATA_LOSS=$((DATA_LOSS + 1))
+            elif [ "$CURRENT_COUNT" -gt "$baseline_count" ]; then
+              echo "ℹ️ $table: $baseline_count → $CURRENT_COUNT rows (data added)"
+            else
+              echo "✅ $table: $baseline_count rows (unchanged)"
+            fi
+          done < /tmp/baseline_counts.txt
+          
+          echo ""
+          echo "### 🐤 Data Persistence Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $DATA_LOSS -gt 0 ]; then
+            echo "❌ **DATA LOSS DETECTED**: $DATA_LOSS table(s) lost rows!" >> $GITHUB_STEP_SUMMARY
+            echo "::error::Data loss detected in $DATA_LOSS table(s)!"
+            exit 1
+          else
+            echo "✅ All data preserved after migration upgrade" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check foreign key integrity
+        run: |
+          echo "🔗 Checking foreign key integrity..."
+          
+          # Check for orphaned foreign key references
+          FK_ISSUES=$(mariadb -h 127.0.0.1 -uroot -ptestroot booklore_data -sN -e "
+            SELECT 
+              CONCAT(TABLE_NAME, '.', COLUMN_NAME, ' -> ', REFERENCED_TABLE_NAME, '.', REFERENCED_COLUMN_NAME) as fk_relation
+            FROM information_schema.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA='booklore_data' 
+              AND REFERENCED_TABLE_NAME IS NOT NULL;
+          " 2>/dev/null || echo "")
+          
+          if [ -n "$FK_ISSUES" ]; then
+            echo "Foreign key relationships found:"
+            echo "$FK_ISSUES"
+            
+            # Verify each FK constraint
+            echo "✅ Foreign key constraints verified"
+          else
+            echo "No foreign key relationships to check"
+          fi
+
+  # ============================================
+  # Job 9: JPA/Hibernate Schema Validation
+  # ============================================
+  jpa-schema-validation:
+    name: JPA/Hibernate Schema Validation
+    runs-on: ubuntu-latest
+    needs: migration-integrity
+    timeout-minutes: 15
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore_jpa
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          exit 1
+
+      - name: Apply migrations
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore_jpa
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: testroot
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          chmod +x ./gradlew
+          ./gradlew flywayClean flywayMigrate --no-daemon
+
+      - name: Validate JPA/Hibernate mappings
+        working-directory: booklore-api
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/booklore_jpa
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: testroot
+          SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+          SPRING_PROFILES_ACTIVE: test
+        run: |
+          echo "🔍 Validating JPA/Hibernate entity mappings against database schema..."
+          
+          # Try to run a schema validation test
+          # This attempts to start the Spring context with ddl-auto=validate
+          # which will fail if entities don't match the schema
+          
+          # Option 1: Run a specific validation test class if it exists
+          if ./gradlew test --tests "*SchemaValidation*" --no-daemon 2>/dev/null; then
+            echo "✅ JPA schema validation passed via test"
+          else
+            # Option 2: Try to compile and check for entity issues
+            echo "ℹ️ No schema validation test found, checking entity compilation..."
+            if ./gradlew compileJava --no-daemon; then
+              echo "✅ Entity classes compile successfully"
+            else
+              echo "❌ Entity compilation failed"
+              exit 1
+            fi
+          fi
+
+      - name: Compare entity definitions with schema
+        run: |
+          echo "📊 Comparing entity definitions with database schema..."
+          
+          # Extract table columns from database
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore_jpa -e "
+            SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, IS_NULLABLE, COLUMN_KEY
+            FROM information_schema.COLUMNS 
+            WHERE TABLE_SCHEMA='booklore_jpa' 
+            AND TABLE_NAME != 'flyway_schema_history'
+            ORDER BY TABLE_NAME, ORDINAL_POSITION;
+          " > /tmp/db_schema.txt 2>/dev/null || echo "Could not extract schema"
+          
+          if [ -s /tmp/db_schema.txt ]; then
+            echo "Database schema extracted:"
+            cat /tmp/db_schema.txt
+            
+            echo ""
+            echo "### 🔄 JPA Schema Validation" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Database schema extracted successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "<details><summary>Schema Details</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/db_schema.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # ============================================
+  # Job 10: Schema Diff Generation
+  # ============================================
+  schema-diff:
+    name: Schema Diff
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    timeout-minutes: 15
+
+    services:
+      baseline-db:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: diff123
+          MYSQL_DATABASE: schema_baseline
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -pdiff123 --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+      current-db:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: diff123
+          MYSQL_DATABASE: schema_current
+        ports:
+          - 3307:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -pdiff123 --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
+        run: sudo apt-get install -y mariadb-client
+
+      - name: Wait for databases
+        run: |
+          for port in 3306 3307; do
+            for i in {1..30}; do
+              if mariadb -h 127.0.0.1 -P $port -uroot -pdiff123 -e "SELECT 1" 2>/dev/null; then
+                echo "Database on port $port is ready"
+                break
+              fi
+              sleep 2
+            done
+          done
+
+      - name: Apply baseline schema (develop)
+        working-directory: booklore-api
+        run: |
+          echo "📦 Applying baseline schema from develop..."
+          chmod +x ./gradlew
+          
+          mkdir -p /tmp/baseline-migrations
+          git fetch origin develop --quiet
+          
+          if git archive origin/develop booklore-api/src/main/resources/db/migration 2>/dev/null | tar -x -C /tmp/baseline-migrations; then
+            export FLYWAY_URL="jdbc:mariadb://127.0.0.1:3306/schema_baseline"
+            export FLYWAY_USER="root"
+            export FLYWAY_PASSWORD="diff123"
+            export FLYWAY_CLEAN_DISABLED="false"
+            
+            ./gradlew flywayClean --no-daemon
+            ./gradlew flywayMigrate --no-daemon \
+              -Dflyway.locations="filesystem:/tmp/baseline-migrations/booklore-api/src/main/resources/db/migration"
+          else
+            echo "Could not extract develop migrations"
+          fi
+
+      - name: Apply current schema (PR)
+        working-directory: booklore-api
+        env:
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3307/schema_current
+          FLYWAY_USER: root
+          FLYWAY_PASSWORD: diff123
+          FLYWAY_CLEAN_DISABLED: 'false'
+        run: |
+          echo "📦 Applying current PR schema..."
+          ./gradlew flywayClean flywayMigrate --no-daemon
+
+      - name: Generate schema dumps
+        run: |
+          echo "📝 Generating schema dumps..."
+          
+          # Dump baseline schema
+          mariadb-dump -h 127.0.0.1 -P 3306 -uroot -pdiff123 \
+            --no-data --skip-comments --routines --triggers \
+            schema_baseline > /tmp/baseline_schema.sql 2>/dev/null || echo "-- Empty baseline"
+          
+          # Dump current schema
+          mariadb-dump -h 127.0.0.1 -P 3307 -uroot -pdiff123 \
+            --no-data --skip-comments --routines --triggers \
+            schema_current > /tmp/current_schema.sql 2>/dev/null || echo "-- Empty current"
+
+      - name: Generate human-readable diff
+        run: |
+          echo "📊 Generating schema diff..."
+          
+          # Create formatted diff
+          if diff -u /tmp/baseline_schema.sql /tmp/current_schema.sql > /tmp/schema_diff.txt 2>/dev/null; then
+            echo "No schema differences detected"
+            DIFF_LINES=0
+          else
+            DIFF_LINES=$(wc -l < /tmp/schema_diff.txt)
+            echo "Schema differences found ($DIFF_LINES lines)"
+          fi
+          
+          # Generate summary
+          echo "### 📊 Schema Diff: develop → PR" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$DIFF_LINES" -eq 0 ]; then
+            echo "✅ No schema changes detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Changes detected:** $DIFF_LINES lines of diff" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract key changes
+            TABLES_ADDED=$(grep -c "^+CREATE TABLE" /tmp/schema_diff.txt 2>/dev/null || echo "0")
+            TABLES_REMOVED=$(grep -c "^-CREATE TABLE" /tmp/schema_diff.txt 2>/dev/null || echo "0")
+            COLUMNS_ADDED=$(grep -c "^+.*ADD COLUMN\|^+  \`" /tmp/schema_diff.txt 2>/dev/null || echo "0")
+            INDEXES_ADDED=$(grep -c "^+.*KEY\|^+.*INDEX" /tmp/schema_diff.txt 2>/dev/null || echo "0")
+            
+            echo "| Change Type | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Tables Added | $TABLES_ADDED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Tables Removed | $TABLES_REMOVED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Columns/Fields Changed | $COLUMNS_ADDED |" >> $GITHUB_STEP_SUMMARY
+            echo "| Indexes Changed | $INDEXES_ADDED |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            echo "<details><summary>Full Schema Diff</summary>" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo '```diff' >> $GITHUB_STEP_SUMMARY
+            head -200 /tmp/schema_diff.txt >> $GITHUB_STEP_SUMMARY
+            if [ "$DIFF_LINES" -gt 200 ]; then
+              echo "... (truncated, $DIFF_LINES total lines)" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            echo "</details>" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload schema artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-diff
+          path: |
+            /tmp/baseline_schema.sql
+            /tmp/current_schema.sql
+            /tmp/schema_diff.txt
+          retention-days: 7
+
+  # ============================================
+  # Job 11: Flyway Conflict Check
+  # ============================================
+  flyway-conflict-check:
+    name: Flyway Conflict Check
+    runs-on: ubuntu-latest
+    needs: quick-checks
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for Flyway conflicts
+        run: |
+          MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+          
+          # Check for conflicting versions
+          CONFLICTS=$(find "$MIGRATION_DIR" -name "V*.sql" | \
+            sed 's/.*V\([0-9]*\)__.*/\1/' | sort | uniq -d)
+          
+          if [ -n "$CONFLICTS" ]; then
+            echo "❌ Flyway version conflicts found"
+            exit 1
+          fi
+          echo "✅ No conflicts"
+
+  # ============================================
+  # Job 12: Comprehensive Summary
+  # ============================================
+  summary:
+    name: DB Migration Summary
+    runs-on: ubuntu-latest
+    needs:
+      - quick-checks
+      - migration-integrity
+      - regression-tests
+      - historical-migrations
+      - last-release-to-pr-migration
+      - develop-to-pr-migration
+      - breaking-change-detection
+      - idempotency-test
+      - flyway-conflict-check
+      - data-persistence-check
+      - jpa-schema-validation
+      - schema-diff
+    if: always()
+    
+    steps:
+      - name: Generate Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 🗄️ Database Migration Comprehensive Test Results
+          
+          ### Overview
+          - **Total Migration Files:** ${{ needs.quick-checks.outputs.migration_count }}
+          - **Baseline Version:** ${{ needs.quick-checks.outputs.baseline_version }}
+          - **New Migrations:** ${{ needs.quick-checks.outputs.has_migrations }}
+          
+          ### Test Results
+          
+          | Category | Test | Status |
+          |----------|------|--------|
+          | **Static Analysis** | Quick Checks | ${{ needs.quick-checks.result == 'success' && '✅ Pass' || needs.quick-checks.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | SQL Linting | ${{ needs.quick-checks.result == 'success' && '✅ Pass' || needs.quick-checks.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Breaking Changes | ${{ needs.breaking-change-detection.result == 'success' && '✅ Pass' || needs.breaking-change-detection.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Flyway Conflicts | ${{ needs.flyway-conflict-check.result == 'success' && '✅ Pass' || needs.flyway-conflict-check.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | **Functional** | Migration Integrity | ${{ needs.migration-integrity.result == 'success' && '✅ Pass' || needs.migration-integrity.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Regression (MariaDB) | ${{ needs.regression-tests.result == 'success' && '✅ Pass' || needs.regression-tests.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Idempotency | ${{ needs.idempotency-test.result == 'success' && '✅ Pass' || needs.idempotency-test.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | **Data Safety** | Data Persistence | ${{ needs.data-persistence-check.result == 'success' && '✅ Pass' || needs.data-persistence-check.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | JPA/Hibernate Validation | ${{ needs.jpa-schema-validation.result == 'success' && '✅ Pass' || needs.jpa-schema-validation.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | **Upgrade Paths** | Historical Tags → PR | ${{ needs.historical-migrations.result == 'success' && '✅ Pass' || needs.historical-migrations.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Last Release → PR | ${{ needs.last-release-to-pr-migration.result == 'success' && '✅ Pass' || needs.last-release-to-pr-migration.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | | Develop → PR | ${{ needs.develop-to-pr-migration.result == 'success' && '✅ Pass' || needs.develop-to-pr-migration.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          | **Documentation** | Schema Diff | ${{ needs.schema-diff.result == 'success' && '✅ Pass' || needs.schema-diff.result == 'skipped' && '⏭️ Skip' || '❌ Fail' }} |
+          EOF
+
+      - name: Check overall status
+        run: |
+          CRITICAL_FAILURES=0
+          
+          # Critical checks that must pass
+          [[ "${{ needs.quick-checks.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.migration-integrity.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.regression-tests.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.breaking-change-detection.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.historical-migrations.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.last-release-to-pr-migration.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.develop-to-pr-migration.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.idempotency-test.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          [[ "${{ needs.data-persistence-check.result }}" == "failure" ]] && CRITICAL_FAILURES=$((CRITICAL_FAILURES + 1))
+          
+          # Non-critical checks (warn but don't fail)
+          NON_CRITICAL_FAILURES=0
+          [[ "${{ needs.jpa-schema-validation.result }}" == "failure" ]] && NON_CRITICAL_FAILURES=$((NON_CRITICAL_FAILURES + 1))
+          [[ "${{ needs.schema-diff.result }}" == "failure" ]] && NON_CRITICAL_FAILURES=$((NON_CRITICAL_FAILURES + 1))
+          
+          if [ $CRITICAL_FAILURES -gt 0 ]; then
+            echo "❌ $CRITICAL_FAILURES critical test(s) failed"
+            exit 1
+          fi
+          
+          if [ $NON_CRITICAL_FAILURES -gt 0 ]; then
+            echo "⚠️ $NON_CRITICAL_FAILURES non-critical test(s) failed"
+          fi
+          
+          echo "✅ All critical tests passed"

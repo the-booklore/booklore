@@ -1,0 +1,79 @@
+#!/bin/bash
+set -euo pipefail
+
+TARGET_BRANCH="${1:-origin/develop}"
+MIGRATION_DIR="booklore-api/src/main/resources/db/migration"
+
+echo "=== Flyway Migration Integrity Check ==="
+
+REMOTE_BRANCH="${TARGET_BRANCH#origin/}"
+echo "Fetching origin/$REMOTE_BRANCH..."
+git fetch origin "$REMOTE_BRANCH" --quiet 2>/dev/null || true
+
+mapfile -t BASE_FILES < <(git ls-tree -r --name-only "$TARGET_BRANCH" -- "$MIGRATION_DIR" 2>/dev/null | grep -E "\.sql$" || true)
+
+if [[ ${#BASE_FILES[@]} -eq 0 ]]; then
+    echo "ℹ️  No existing migrations in $TARGET_BRANCH, checking current branch..."
+fi
+
+EXIT_CODE=0
+
+for FILE in "${BASE_FILES[@]}"; do
+    if [[ "$(basename "$FILE")" =~ ^R__ ]]; then
+        echo "⏭️  Skipping repeatable: $FILE"
+        continue
+    fi
+
+    if [[ ! -f "$FILE" ]]; then
+        echo "⚠️  MISSING: $FILE"
+        echo "   → File exists in $TARGET_BRANCH but not in current branch (possibly renamed or deleted)"
+        continue
+    fi
+
+    BASE_HASH=$(git show "$TARGET_BRANCH:$FILE" 2>/dev/null | sha256sum | cut -d' ' -f1)
+    CURRENT_HASH=$(sha256sum "$FILE" | cut -d' ' -f1)
+
+    if [[ "$BASE_HASH" != "$CURRENT_HASH" ]]; then
+        echo "❌ MODIFIED: $FILE"
+        echo "   → Create a new migration instead of modifying existing ones"
+        EXIT_CODE=1
+    else
+        echo "✅ OK: $FILE"
+    fi
+done
+
+echo ""
+echo "=== Checking New Migrations ==="
+mapfile -t NEW_FILES < <(git diff --name-only --diff-filter=A "$TARGET_BRANCH" -- "$MIGRATION_DIR" | grep -E "\.sql$" || true)
+
+for FILE in "${NEW_FILES[@]}"; do
+    BASENAME=$(basename "$FILE")
+    if [[ ! "$BASENAME" =~ ^V[0-9]+(\.[0-9]+)*__[A-Za-z0-9_-]+\.sql$ ]] && \
+       [[ ! "$BASENAME" =~ ^R__[A-Za-z0-9_-]+\.sql$ ]]; then
+        echo "❌ INVALID NAME: $FILE"
+        echo "   → Expected: V{version}__{description}.sql or R__{description}.sql"
+        EXIT_CODE=1
+    else
+        echo "✅ NEW: $FILE"
+    fi
+done
+
+echo ""
+echo "=== Checking for Version Conflicts ==="
+ALL_VERSIONS=$(find "$MIGRATION_DIR" -name "V*.sql" -exec basename {} \; | sed 's/__.*$//' | sort)
+DUPLICATES=$(echo "$ALL_VERSIONS" | uniq -d)
+
+if [[ -n "$DUPLICATES" ]]; then
+    echo "❌ DUPLICATE VERSIONS FOUND:"
+    echo "$DUPLICATES"
+    EXIT_CODE=1
+fi
+
+echo ""
+if [[ $EXIT_CODE -eq 0 ]]; then
+    echo "✅ Migration integrity check passed"
+else
+    echo "❌ Migration integrity check failed"
+fi
+
+exit $EXIT_CODE
