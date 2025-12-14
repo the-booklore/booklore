@@ -134,6 +134,8 @@ public class CbxConversionService {
             throw new IllegalStateException("No valid images found in CBX file: " + cbxFile.getName());
         }
 
+        log.debug("Extracted {} images from CBX file to disk", imagePaths.size());
+
         int threads = Math.max(2, Math.min(Runtime.getRuntime().availableProcessors(), 8));
         ExecutorService pool = Executors.newFixedThreadPool(threads, new ThreadFactory() {
             private final AtomicInteger n = new AtomicInteger(1);
