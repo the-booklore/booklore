@@ -20,7 +20,7 @@ on:
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'booklore-api/src/main/java/**/controller/**'
       - 'booklore-api/src/main/java/**/repository/**'
-      - '.github/workflows/load-performance-tests.yml'
+      - '.github/workflows/advanced-performance.yml'
   schedule:
     - cron: '0 4 * * 6'  # Weekly Saturday 04:00 UTC
   workflow_dispatch:

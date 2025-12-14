@@ -58,25 +58,25 @@ jobs:
   arm64-tests:
     name: ARM64 Tests
     if: ${{ inputs.run_arm64_tests }}
-    uses: ./.github/workflows/arm64-qemu-tests.yml
+    uses: ./.github/workflows/advanced-arm64-tests.yml
     secrets: inherit
 
   proxy-tests:
     name: Reverse Proxy Tests
     if: ${{ inputs.run_proxy_tests }}
-    uses: ./.github/workflows/reverse-proxy-tests.yml
+    uses: ./.github/workflows/advanced-proxy-tests.yml
     secrets: inherit
 
   corpus-tests:
     name: Corpus of Doom Tests
     if: ${{ inputs.run_corpus_tests }}
-    uses: ./.github/workflows/corpus-of-doom-tests.yml
+    uses: ./.github/workflows/advanced-malformed-files.yml
     secrets: inherit
 
   load-tests:
     name: Load & Performance Tests
     if: ${{ inputs.run_load_tests }}
-    uses: ./.github/workflows/load-performance-tests.yml
+    uses: ./.github/workflows/advanced-performance.yml
     with:
       book_count: ${{ inputs.book_count }}
     secrets: inherit

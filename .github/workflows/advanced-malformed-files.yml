@@ -20,7 +20,7 @@ on:
       - 'booklore-api/src/main/java/**/parser/**'
       - 'booklore-api/src/main/java/**/metadata/**'
       - 'booklore-api/src/main/java/**/BookDropService**'
-      - '.github/workflows/corpus-of-doom-tests.yml'
+      - '.github/workflows/advanced-malformed-files.yml'
   schedule:
     - cron: '0 5 * * 2'  # Weekly Tuesday 05:00 UTC
   workflow_dispatch:

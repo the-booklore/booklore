@@ -17,14 +17,14 @@ on:
       - 'Dockerfile'
       - 'start.sh'
       - 'booklore-api/src/main/resources/application.yaml'
-      - '.github/workflows/docker-persistence-test.yml'
+      - '.github/workflows/advanced-docker-persistence.yml'
   pull_request:
     branches: [develop, main]
     paths:
       - 'Dockerfile'
       - 'start.sh'
       - 'booklore-api/src/main/resources/application.yaml'
-      - '.github/workflows/docker-persistence-test.yml'
+      - '.github/workflows/advanced-docker-persistence.yml'
   workflow_dispatch:
   # Run weekly to catch container registry issues
   schedule:

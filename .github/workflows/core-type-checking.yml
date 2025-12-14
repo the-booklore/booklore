@@ -15,7 +15,7 @@ on:
     branches: [develop, main]
     paths:
       - 'booklore-ui/**'
-      - '.github/workflows/type-checking.yml'
+      - '.github/workflows/core-type-checking.yml'
 
 # Cancel in-progress runs when a new run is triggered
 concurrency:

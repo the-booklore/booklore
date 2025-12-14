@@ -21,14 +21,14 @@ on:
       - 'booklore-api/src/main/java/**/kobo/**'
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'testing/wiremock/**'
-      - '.github/workflows/wiremock-protocol-tests.yml'
+      - '.github/workflows/api-wiremock-tests.yml'
   pull_request:
     branches: [develop, main]
     paths:
       - 'booklore-api/src/main/java/**/kobo/**'
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'testing/wiremock/**'
-      - '.github/workflows/wiremock-protocol-tests.yml'
+      - '.github/workflows/api-wiremock-tests.yml'
   workflow_dispatch:
 
 concurrency:

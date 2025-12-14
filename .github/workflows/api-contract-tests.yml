@@ -18,7 +18,7 @@ on:
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'booklore-api/src/main/java/**/controller/Kobo*.java'
       - 'booklore-api/src/main/java/**/controller/Koreader*.java'
-      - '.github/workflows/integration-contract-tests.yml'
+      - '.github/workflows/api-contract-tests.yml'
   pull_request:
     branches: [develop, main]
     paths:
@@ -26,7 +26,7 @@ on:
       - 'booklore-api/src/main/java/**/koreader/**'
       - 'booklore-api/src/main/java/**/controller/Kobo*.java'
       - 'booklore-api/src/main/java/**/controller/Koreader*.java'
-      - '.github/workflows/integration-contract-tests.yml'
+      - '.github/workflows/api-contract-tests.yml'
   workflow_dispatch:
 
 concurrency:

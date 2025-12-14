@@ -18,13 +18,13 @@ on:
       - 'booklore-api/**'
       - 'booklore-ui/**'
       - 'build.gradle'
-      - '.github/workflows/api-tests.yml'
+      - '.github/workflows/api-protocol-tests.yml'
   pull_request:
     branches: [develop]
     paths:
       - 'booklore-api/**'
       - 'booklore-ui/**'
-      - '.github/workflows/api-tests.yml'
+      - '.github/workflows/api-protocol-tests.yml'
   workflow_dispatch:
     inputs:
       enable_auth:

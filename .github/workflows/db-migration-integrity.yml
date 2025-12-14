@@ -15,7 +15,7 @@ on:
     paths:
       - 'booklore-api/src/main/resources/db/migration/**'
       - 'scripts/check-migration-integrity.sh'
-      - '.github/workflows/db-migration-check.yml'
+      - '.github/workflows/db-migration-integrity.yml'
 
 jobs:
   migration-check:

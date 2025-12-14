@@ -19,7 +19,7 @@ on:
     paths:
       - 'Dockerfile'
       - 'booklore-api/**'
-      - '.github/workflows/arm64-qemu-tests.yml'
+      - '.github/workflows/advanced-arm64-tests.yml'
   schedule:
     - cron: '0 3 * * 0'  # Weekly Sunday 03:00 UTC
   workflow_dispatch:
