@@ -48,6 +48,33 @@ jobs:
             sleep 2
           done
 
+      - name: Setup test user
+        run: |
+          # Wait for MariaDB to be ready
+          for i in {1..30}; do
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
+              break
+            fi
+            sleep 2
+          done
+
+          # Create test user for concurrency testing
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "
+            CREATE TABLE IF NOT EXISTS book_lore_user (
+              id BIGINT PRIMARY KEY AUTO_INCREMENT,
+              username VARCHAR(255) UNIQUE NOT NULL,
+              email VARCHAR(255) UNIQUE NOT NULL,
+              password_hash VARCHAR(255),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+
+            INSERT IGNORE INTO book_lore_user (username, email, password_hash)
+            VALUES ('test-user', 'test@example.com', 'test-password-hash');
+          "
+
+          echo "Test user created for concurrency testing"
+
       - name: Build and start application
         id: start_app
         working-directory: booklore-api
