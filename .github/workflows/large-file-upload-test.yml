@@ -7,23 +7,16 @@ on:
 jobs:
   upload-test:
     runs-on: ubuntu-latest
-    services:
-      # Simple service to mimic the app if we had a pre-built image, 
-      # but here we will build and run in the steps.
-      mariadb:
-        image: mariadb:11.4
-        env:
-          MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: booklore
-        ports:
-          - 3306:3306
-        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Create test network
+        run: |
+          docker network create booklore-test-net || true
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
@@ -34,15 +27,37 @@ jobs:
           tags: booklore-api-test:latest
           load: true # Load image into Docker daemon
 
+      - name: Start MariaDB
+        run: |
+          docker run -d \
+            --name mariadb-test \
+            --network booklore-test-net \
+            -e MARIADB_ROOT_PASSWORD=root \
+            -e MARIADB_DATABASE=booklore \
+            mariadb:11.4
+
+          # Wait for MariaDB to be ready
+          for i in {1..30}; do
+            if docker exec mariadb-test mariadb-admin ping -h localhost -uroot -proot 2>/dev/null; then
+              echo "MariaDB is ready"
+              break
+            fi
+            echo "Waiting for MariaDB... ($i/30)"
+            sleep 2
+          done
+
       - name: Run Application in Docker Container
         id: run_app_container
         run: |
-          docker run -d --name booklore-app --network host \
-            -e DATABASE_URL=jdbc:mariadb://localhost:3306/booklore \
+          docker run -d \
+            --name booklore-app \
+            --network booklore-test-net \
+            -p 8080:6060 \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-test:3306/booklore \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=root \
             booklore-api-test:latest
-          timeout 240 bash -c 'until curl -s http://localhost:6060/actuator/health | grep "UP"; do sleep 5; done'
+          timeout 240 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
 
       - name: Capture App Logs on Failure
         if: failure() && steps.run_app_container.outcome == 'failure'
@@ -59,11 +74,13 @@ jobs:
 
       - name: Run Large File Upload Test
         run: |
-          chmod +x testing/large_upload_test.sh
+          chmod +x booklore-api/testing/large_upload_test.sh
           # Target the bookdrop upload which usually handles large raw imports
-          ./testing/large_upload_test.sh "http://localhost:8080/api/v1/files/upload/bookdrop"
+          ./booklore-api/testing/large_upload_test.sh "http://localhost:8080/api/v1/files/upload/bookdrop"
       
       - name: Stop Application
         if: always()
-        run: docker rm -f booklore-app
+        run: |
+          docker rm -f booklore-app mariadb-test 2>/dev/null || true
+          docker network rm booklore-test-net 2>/dev/null || true
 

@@ -7,21 +7,16 @@ on:
 jobs:
   concurrency-test:
     runs-on: ubuntu-latest
-    services:
-      mariadb:
-        image: mariadb:11.4
-        env:
-          MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: booklore
-        ports:
-          - 3306:3306
-        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Create test network
+        run: |
+          docker network create booklore-concurrency-net || true
 
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
@@ -32,21 +27,43 @@ jobs:
           tags: booklore-api-test:latest
           load: true
 
+      - name: Start MariaDB
+        run: |
+          docker run -d \
+            --name mariadb-concurrency-test \
+            --network booklore-concurrency-net \
+            -e MARIADB_ROOT_PASSWORD=root \
+            -e MARIADB_DATABASE=booklore \
+            mariadb:11.4
+
+          # Wait for MariaDB to be ready
+          for i in {1..30}; do
+            if docker exec mariadb-concurrency-test mariadb-admin ping -h localhost -uroot -proot 2>/dev/null; then
+              echo "MariaDB is ready"
+              break
+            fi
+            echo "Waiting for MariaDB... ($i/30)"
+            sleep 2
+          done
+
       - name: Run Application in Docker Container
         id: run_app_container
         run: |
-          docker run -d --name booklore-app --network host \
-            -e DATABASE_URL=jdbc:mariadb://localhost:3306/booklore \
+          docker run -d \
+            --name booklore-app \
+            --network booklore-concurrency-net \
+            -p 8080:6060 \
+            -e DATABASE_URL=jdbc:mariadb://mariadb-concurrency-test:3306/booklore \
             -e DATABASE_USERNAME=root \
             -e DATABASE_PASSWORD=root \
             booklore-api-test:latest
-          timeout 240 bash -c 'until curl -s http://localhost:6060/actuator/health | grep "UP"; do sleep 5; done'
+          timeout 240 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
 
       - name: Capture App Logs on Failure
         if: failure() && steps.run_app_container.outcome == 'failure'
         run: |
           docker logs booklore-app > booklore-app.log
-        
+
       - name: Upload App Logs on Failure
         if: failure() && steps.run_app_container.outcome == 'failure'
         uses: actions/upload-artifact@v4
@@ -56,9 +73,11 @@ jobs:
           retention-days: 7
 
       - name: Run Concurrency Hammer Script
-        run: python3 booklore-api/testing/concurrency_hammer.py http://localhost:6060
-      
+        run: python3 booklore-api/testing/concurrency_hammer.py http://localhost:8080
+
       - name: Stop Application
         if: always()
-        run: docker rm -f booklore-app
+        run: |
+          docker rm -f booklore-app mariadb-concurrency-test 2>/dev/null || true
+          docker network rm booklore-concurrency-net 2>/dev/null || true
 
