@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.service.kobo;
 
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.CategoryEntity;
@@ -115,9 +117,12 @@ public class CbxConversionService {
         return outputFile;
     }
 
-    private File executeCbxConversion(File cbxFile, File tempDir, BookEntity bookEntity,int compressionPercentage)
+
+    private record PagePayload(int index, byte[] jpegBytes, byte[] htmlBytes) {}
+
+    private File executeCbxConversion(File cbxFile, File tempDir, BookEntity bookEntity, int compressionPercentage)
             throws IOException, TemplateException, RarException {
-        
+
         Path epubFilePath = Paths.get(tempDir.getAbsolutePath(), cbxFile.getName() + ".epub");
         File epubFile = epubFilePath.toFile();
 
@@ -129,25 +134,147 @@ public class CbxConversionService {
             throw new IllegalStateException("No valid images found in CBX file: " + cbxFile.getName());
         }
 
-        log.debug("Extracted {} images from CBX file to disk", imagePaths.size());
+        int threads = Math.max(2, Math.min(Runtime.getRuntime().availableProcessors(), 8));
+        ExecutorService pool = Executors.newFixedThreadPool(threads, new ThreadFactory() {
+            private final AtomicInteger n = new AtomicInteger(1);
+            @Override public Thread newThread(Runnable r) {
+                Thread t = new Thread(r, "cbx-epub-worker-" + n.getAndIncrement());
+                t.setDaemon(true);
+                return t;
+            }
+        });
 
         try (ZipArchiveOutputStream zipOut = new ZipArchiveOutputStream(new FileOutputStream(epubFile))) {
             addMimetypeEntry(zipOut);
             addMetaInfContainer(zipOut);
             addStylesheet(zipOut);
-            
-            List<EpubContentFileGroup> contentGroups = addImagesAndPages(zipOut, imagePaths,compressionPercentage);
-            
+            List<EpubContentFileGroup> contentGroups =
+                    addImagesAndPagesParallel(zipOut, imagePaths, compressionPercentage, pool);
             addContentOpf(zipOut, bookEntity, contentGroups);
             addTocNcx(zipOut, bookEntity, contentGroups);
             addNavXhtml(zipOut, bookEntity, contentGroups);
+        } finally {
+            pool.shutdown();
+            try {
+                pool.awaitTermination(60, TimeUnit.SECONDS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+            deleteDirectory(extractedImagesDir);
         }
-
-        deleteDirectory(extractedImagesDir);
 
         return epubFile;
     }
-    
+
+    private List<EpubContentFileGroup> addImagesAndPagesParallel(
+            ZipArchiveOutputStream zipOut,
+            List<Path> imagePaths,
+            int compressionPercentage,
+            ExecutorService pool
+    ) throws IOException, TemplateException {
+
+        float quality = Math.max(0.0f, Math.min(1.0f, compressionPercentage / 100f));
+        @SuppressWarnings("unchecked")
+        Future<PagePayload>[] futures = new Future[imagePaths.size()];
+
+        for (int i = 0; i < imagePaths.size(); i++) {
+            final int index = i;
+            final Path src = imagePaths.get(i);
+
+            futures[i] = pool.submit(() -> {
+                byte[] jpegBytes = readAsJpegBytes(src, quality);
+                String contentKey = String.format("page-%04d", index + 1);
+                String imageFileName = contentKey + ".jpg";
+                String html = generatePageHtml(imageFileName, index + 1);
+                return new PagePayload(index, jpegBytes, html.getBytes(StandardCharsets.UTF_8));
+            });
+        }
+
+        List<EpubContentFileGroup> contentGroups = new ArrayList<>(imagePaths.size());
+        for (int i = 0; i < imagePaths.size(); i++) {
+            String contentKey = String.format("page-%04d", i + 1);
+            String imagePath = IMAGE_ROOT_PATH + contentKey + ".jpg";
+            String htmlPath = HTML_ROOT_PATH + contentKey + ".xhtml";
+            contentGroups.add(new EpubContentFileGroup(contentKey, imagePath, htmlPath));
+        }
+
+        PagePayload first = getFuture(futures[0]);
+        writeBytesEntry(zipOut, COVER_IMAGE_PATH, first.jpegBytes);
+
+        for (int i = 0; i < futures.length; i++) {
+            PagePayload payload = getFuture(futures[i]);
+            EpubContentFileGroup grp = contentGroups.get(i);
+
+            writeBytesEntry(zipOut, grp.imagePath(), payload.jpegBytes);
+            writeBytesEntry(zipOut, grp.htmlPath(), payload.htmlBytes);
+        }
+
+        return contentGroups;
+    }
+
+    private PagePayload getFuture(Future<PagePayload> f) throws IOException {
+        try {
+            return f.get();
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while building EPUB pages", ie);
+        } catch (ExecutionException ee) {
+            Throwable cause = ee.getCause() != null ? ee.getCause() : ee;
+            if (cause instanceof IOException ioe) throw ioe;
+            throw new IOException("Failed while building EPUB pages", cause);
+        }
+    }
+
+    private void writeBytesEntry(ZipArchiveOutputStream zipOut, String path, byte[] bytes) throws IOException {
+        ZipArchiveEntry e = new ZipArchiveEntry(path);
+        zipOut.putArchiveEntry(e);
+        zipOut.write(bytes);
+        zipOut.closeArchiveEntry();
+    }
+
+    private byte[] readAsJpegBytes(Path sourceImagePath, float quality) throws IOException {
+        if (isJpegFile(sourceImagePath)) {
+            return Files.readAllBytes(sourceImagePath);
+        }
+        try (InputStream fis = Files.newInputStream(sourceImagePath)) {
+            BufferedImage image = ImageIO.read(fis);
+            if (image == null) {
+                return Files.readAllBytes(sourceImagePath);
+            }
+            return encodeBufferedImageToJpegBytes(image, quality);
+        }
+    }
+
+    private byte[] encodeBufferedImageToJpegBytes(BufferedImage image, float quality) throws IOException {
+        BufferedImage rgbImage = image;
+        if (image.getType() != BufferedImage.TYPE_INT_RGB) {
+            rgbImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_RGB);
+            rgbImage.getGraphics().drawImage(image, 0, 0, null);
+            rgbImage.getGraphics().dispose();
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(256 * 1024);
+
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpg");
+        if (!writers.hasNext()) throw new IOException("No JPEG image writer available");
+        ImageWriter writer = writers.next();
+
+        ImageWriteParam param = writer.getDefaultWriteParam();
+        if (param.canWriteCompressed()) {
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionQuality(quality);
+        }
+
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(baos)) {
+            writer.setOutput(ios);
+            writer.write(null, new IIOImage(rgbImage, null, null), param);
+        } finally {
+            writer.dispose();
+        }
+
+        return baos.toByteArray();
+    }
+
     private void deleteDirectory(Path directory) {
         try {
             FileSystemUtils.deleteRecursively(directory);
