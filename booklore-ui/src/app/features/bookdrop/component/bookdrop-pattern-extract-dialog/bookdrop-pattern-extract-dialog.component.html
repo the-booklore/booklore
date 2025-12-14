@@ -17,6 +17,8 @@
         pInputText
         [formControl]="$any(patternForm.get('pattern'))"
         [placeholder]="patternPlaceholderText"
+        id="pattern-input"
+        aria-label="Filename pattern for metadata extraction"
         class="pattern-input"
         (input)="previewPattern()"/>
       <p-button
@@ -24,6 +26,7 @@
         label="Preview"
         severity="secondary"
         [disabled]="!hasValidPattern"
+        [ariaLabel]="'Preview pattern extraction on sample files'"
         (click)="previewPattern()">
       </p-button>
     </div>

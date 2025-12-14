@@ -14,12 +14,15 @@
           <p-checkbox
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
-            (ngModelChange)="toggleField(field.name)">
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
           </p-checkbox>
-          <label class="field-label">{{ field.label }}</label>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <input
             pInputText
             [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
             class="field-input"/>
         </div>
       }
@@ -36,13 +39,16 @@
           <p-checkbox
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
-            (ngModelChange)="toggleField(field.name)">
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
           </p-checkbox>
-          <label class="field-label">{{ field.label }}</label>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <input
             pInputText
             type="number"
             [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
             class="field-input field-input-small"/>
         </div>
       }
@@ -55,12 +61,13 @@
     <div class="section-header">
       <h4>Array Fields</h4>
       <div class="merge-toggle">
-        <span class="merge-label">Mode:</span>
+        <span class="merge-label" id="merge-mode-label">Mode:</span>
         <p-selectButton
           [options]="mergeOptions"
           [(ngModel)]="mergeArrays"
           optionLabel="label"
-          optionValue="value">
+          optionValue="value"
+          ariaLabelledBy="merge-mode-label">
         </p-selectButton>
       </div>
     </div>
@@ -71,9 +78,10 @@
           <p-checkbox
             [binary]="true"
             [ngModel]="isFieldEnabled(field.name)"
-            (ngModelChange)="toggleField(field.name)">
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
           </p-checkbox>
-          <label class="field-label">{{ field.label }}</label>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <p-autoComplete
             [formControl]="$any(bulkEditForm.get(field.controlName))"
             [multiple]="true"
@@ -81,6 +89,7 @@
             [forceSelection]="false"
             [typeahead]="false"
             [dropdown]="false"
+            [ariaLabel]="field.label"
             (onBlur)="onAutoCompleteBlur(field.name, $event)"
             class="field-input">
           </p-autoComplete>

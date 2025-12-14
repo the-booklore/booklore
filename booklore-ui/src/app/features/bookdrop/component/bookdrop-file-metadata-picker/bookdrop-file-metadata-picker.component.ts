@@ -153,8 +153,9 @@ export class BookdropFileMetadataPickerComponent {
     }
   }
 
-  onAutoCompleteBlur(fieldName: string, event: any) {
-    const inputValue = event.target.value?.trim();
+  onAutoCompleteBlur(fieldName: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const inputValue = target?.value?.trim();
     if (inputValue) {
       const currentValue = this.metadataForm.get(fieldName)?.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
@@ -163,7 +164,9 @@ export class BookdropFileMetadataPickerComponent {
         values.push(inputValue);
         this.metadataForm.get(fieldName)?.setValue(values);
       }
-      event.target.value = '';
+      if (target) {
+        target.value = '';
+      }
     }
   }
 

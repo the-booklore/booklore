@@ -100,15 +100,18 @@ export class BookdropBulkEditDialogComponent implements OnInit {
     });
   }
 
-  onAutoCompleteBlur(fieldName: string, event: any): void {
-    const inputValue = event.target?.value?.trim();
+  onAutoCompleteBlur(fieldName: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const inputValue = target?.value?.trim();
     if (inputValue) {
       const control = this.bulkEditForm.get(fieldName);
       const currentValue = (control?.value as string[]) || [];
       if (!currentValue.includes(inputValue)) {
         control?.setValue([...currentValue, inputValue]);
       }
-      event.target.value = '';
+      if (target) {
+        target.value = '';
+      }
     }
     
     if (!this.enabledFields.has(fieldName)) {

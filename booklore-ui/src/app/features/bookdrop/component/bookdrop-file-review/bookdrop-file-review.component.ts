@@ -385,7 +385,7 @@ export class BookdropFileReviewComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        const payload: any = {
+        const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
         };
 
