@@ -93,20 +93,12 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_API }}
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/amd64
-          # FIX IS HERE: Disable provenance to prevent "manifest list" error
           provenance: false
           tags: ${{ env.IMAGE_NAME }}:pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}-amd64
           cache-from: type=gha,scope=amd64
@@ -134,20 +126,12 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_API }}
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
       - name: Build and Push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           platforms: linux/arm64
-          # FIX IS HERE: Disable provenance to prevent "manifest list" error
           provenance: false
           tags: ${{ env.IMAGE_NAME }}:pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}-arm64
           cache-from: type=gha,scope=arm64
@@ -158,7 +142,6 @@ jobs:
   # -------------------------------------------------------------------------
   finalize:
     needs: [prepare, build-amd64, build-arm64]
-    # Run if prepare succeeded, even if builds were skipped (cached)
     if: always() && needs.prepare.result == 'success' && (needs.build-amd64.result == 'success' || needs.build-amd64.result == 'skipped')
     name: Manifest & Notify
     runs-on: ubuntu-latest
@@ -169,12 +152,9 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_API }}
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
+      # FIX START: Ensure Buildx is available for imagetools
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Create Multi-Arch Manifest
         if: needs.prepare.outputs.should_build == 'true'
@@ -182,17 +162,18 @@ jobs:
           TAG_SPECIFIC: pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}
           TAG_LATEST: pr-${{ needs.prepare.outputs.pr_number }}
         run: |
-          docker manifest create ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC} \
+          # 1. Create and push the specific tag
+          docker buildx imagetools create \
+            --tag ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC} \
             ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-amd64 \
             ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-arm64
-          
-          docker manifest push ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}
-          
-          docker manifest create ${{ env.IMAGE_NAME }}:${TAG_LATEST} \
+
+          # 2. Create and push the latest/pr tag
+          docker buildx imagetools create \
+            --tag ${{ env.IMAGE_NAME }}:${TAG_LATEST} \
             ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-amd64 \
             ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-arm64
-          
-          docker manifest push ${{ env.IMAGE_NAME }}:${TAG_LATEST}
+      # FIX END
 
       - name: Comment on PR
         if: needs.prepare.outputs.pr_number != 'manual'
