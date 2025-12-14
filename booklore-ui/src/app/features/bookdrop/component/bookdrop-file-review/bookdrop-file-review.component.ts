@@ -18,7 +18,6 @@ import {Observable, Subscription} from 'rxjs';
 
 import {AppSettings} from '../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
-import {DialogService} from 'primeng/dynamicdialog';
 import {BookMetadata} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {Checkbox} from 'primeng/checkbox';
@@ -29,6 +28,7 @@ import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-pic
 import {BookdropFinalizeResultDialogComponent} from '../bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog-component';
 import {BookdropBulkEditDialogComponent, BulkEditResult} from '../bookdrop-bulk-edit-dialog/bookdrop-bulk-edit-dialog.component';
 import {BookdropPatternExtractDialogComponent} from '../bookdrop-pattern-extract-dialog/bookdrop-pattern-extract-dialog.component';
+import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 
 export interface BookdropFileUI {
   file: BookdropFile;
@@ -66,7 +66,7 @@ export class BookdropFileReviewComponent implements OnInit {
   private readonly libraryService = inject(LibraryService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly dialogService = inject(DialogService);
+  private readonly dialogLauncherService = inject(DialogLauncherService);
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly messageService = inject(MessageService);
   private readonly urlHelper = inject(UrlHelperService);
@@ -496,13 +496,7 @@ export class BookdropFileReviewComponent implements OnInit {
           detail: 'Import process finished. See details below.',
         });
 
-        this.dialogService.open(BookdropFinalizeResultDialogComponent, {
-          header: 'Import Summary',
-          modal: true,
-          closable: true,
-          closeOnEscape: true,
-          data: {result: result},
-        });
+        this.dialogLauncherService.openBookdropFinalizeResultDialog(result);
 
         const finalizedIds = new Set(files.map(f => f.fileId));
         Object.keys(this.fileUiCache).forEach(idStr => {
