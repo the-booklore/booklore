@@ -28,7 +28,7 @@ jobs:
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./testing
+          context: .
           file: ./testing/Dockerfile
           push: false # Don't push to registry, just build locally
           tags: booklore-api-test:latest
