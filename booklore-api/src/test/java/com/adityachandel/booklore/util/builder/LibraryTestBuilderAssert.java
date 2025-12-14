@@ -1,12 +1,12 @@
 package com.adityachandel.booklore.util.builder;
 
 import com.adityachandel.booklore.model.entity.BookFileEntity;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.Assertions;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderAssert, LibraryTestBuilder> {
 
@@ -40,14 +40,15 @@ public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderA
                 .describedAs("Book with title '%s' should exist", bookTitle)
                 .isNotNull();
 
-        Assertions.assertThat(book.getBookFiles()
-                    .stream()
-                    .filter(BookFileEntity::isBookFormat)
-                    .map(BookFileEntity::getFileName)
-                    .map(BookFileExtension::fromFileName)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .map(BookFileExtension::getType))
+        List<BookFileType> additionalFormatTypesActual = book.getBookFiles()
+                .stream()
+                .filter(BookFileEntity::isBookFormat)
+                .filter(a -> !a.equals(book.getPrimaryBookFile()))
+                .map(BookFileEntity::getBookType)
+                .filter(a -> a != null)
+                .collect(Collectors.toList());
+
+        Assertions.assertThat(additionalFormatTypesActual)
                 .describedAs("Book '%s' should have additional formats: %s", bookTitle, additionalFormatTypes)
                 .containsExactlyInAnyOrder(additionalFormatTypes);
 
@@ -83,9 +84,15 @@ public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderA
                 .describedAs("Book with title '%s' should exist", bookTitle)
                 .isNotNull();
 
-        Assertions.assertThat(book.getBookFiles()
-                    .stream()
-                    .filter(BookFileEntity::isBookFormat))
+        List<BookFileType> additionalFormatTypesActual = book.getBookFiles()
+                .stream()
+                .filter(BookFileEntity::isBookFormat)
+                .filter(a -> !a.equals(book.getPrimaryBookFile()))
+                .map(BookFileEntity::getBookType)
+                .filter(a -> a != null)
+                .collect(Collectors.toList());
+
+        Assertions.assertThat(additionalFormatTypesActual)
                 .describedAs("Book '%s' should have no additional formats", bookTitle)
                 .isEmpty();
 
@@ -113,7 +120,8 @@ public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderA
 
         Assertions.assertThat(book.getBookFiles())
                 .describedAs("Book '%s' should have no additional files", bookTitle)
-                .isEmpty();
+                .allMatch(BookFileEntity::isBookFormat)
+                .containsOnly(book.getPrimaryBookFile());
 
         return this;
     }
