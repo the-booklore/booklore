@@ -62,40 +62,94 @@ public class FilenamePatternExtractor {
                 request.getExcludedIds(),
                 request.getSelectedIds()
         );
-        List<BookdropFileEntity> files = bookdropFileRepository.findAllById(fileIds);
         
         boolean isPreview = Boolean.TRUE.equals(request.getPreview());
-        List<BookdropFileEntity> filesToProcess = isPreview && files.size() > PREVIEW_FILE_LIMIT
-                ? files.subList(0, PREVIEW_FILE_LIMIT)
-                : files;
-
         ParsedPattern cachedPattern = parsePattern(request.getPattern());
+        
         if (cachedPattern == null) {
             log.error("Failed to parse pattern: '{}'", request.getPattern());
-            return buildEmptyResult(files.size());
+            return buildEmptyResult(fileIds.size());
         }
 
+        return isPreview 
+                ? processPreviewExtraction(fileIds, cachedPattern)
+                : processFullExtractionInBatches(fileIds, cachedPattern);
+    }
+
+    private BookdropPatternExtractResult processPreviewExtraction(List<Long> fileIds, ParsedPattern pattern) {
+        List<Long> limitedFileIds = fileIds.size() > PREVIEW_FILE_LIMIT
+                ? fileIds.subList(0, PREVIEW_FILE_LIMIT)
+                : fileIds;
+        
+        List<BookdropFileEntity> previewFiles = bookdropFileRepository.findAllById(limitedFileIds);
         List<BookdropPatternExtractResult.FileExtractionResult> results = new ArrayList<>();
         int successCount = 0;
-
-        for (BookdropFileEntity file : filesToProcess) {
-            BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, cachedPattern);
+        
+        for (BookdropFileEntity file : previewFiles) {
+            BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, pattern);
             results.add(result);
             if (result.isSuccess()) {
                 successCount++;
             }
         }
-
-        if (!isPreview) {
-            persistExtractedMetadata(results, files);
-        }
-
+        
+        int failureCount = previewFiles.size() - successCount;
+        
         return BookdropPatternExtractResult.builder()
-                .totalFiles(files.size())
+                .totalFiles(fileIds.size())
                 .successfullyExtracted(successCount)
-                .failed(filesToProcess.size() - successCount)
+                .failed(failureCount)
                 .results(results)
                 .build();
+    }
+
+    private BookdropPatternExtractResult processFullExtractionInBatches(List<Long> fileIds, ParsedPattern pattern) {
+        final int BATCH_SIZE = 500;
+        List<BookdropPatternExtractResult.FileExtractionResult> allResults = new ArrayList<>();
+        int totalSuccessCount = 0;
+        int totalFailureCount = 0;
+        int totalFiles = fileIds.size();
+        
+        for (int batchStart = 0; batchStart < fileIds.size(); batchStart += BATCH_SIZE) {
+            int batchEnd = Math.min(batchStart + BATCH_SIZE, fileIds.size());
+            
+            BatchExtractionResult batchResult = processSingleExtractionBatch(fileIds, batchStart, batchEnd, pattern);
+            
+            allResults.addAll(batchResult.results());
+            totalSuccessCount += batchResult.successCount();
+            totalFailureCount += batchResult.failureCount();
+            
+            log.debug("Processed pattern extraction batch {}-{} of {}: {} successful, {} failed", 
+                    batchStart, batchEnd, totalFiles, batchResult.successCount(), batchResult.failureCount());
+        }
+        
+        return BookdropPatternExtractResult.builder()
+                .totalFiles(totalFiles)
+                .successfullyExtracted(totalSuccessCount)
+                .failed(totalFailureCount)
+                .results(allResults)
+                .build();
+    }
+
+    private BatchExtractionResult processSingleExtractionBatch(List<Long> allFileIds, int batchStart, 
+                                                                int batchEnd, ParsedPattern pattern) {
+        List<Long> batchIds = allFileIds.subList(batchStart, batchEnd);
+        List<BookdropFileEntity> batchFiles = bookdropFileRepository.findAllById(batchIds);
+        List<BookdropPatternExtractResult.FileExtractionResult> batchResults = new ArrayList<>();
+        int successCount = 0;
+        
+        for (BookdropFileEntity file : batchFiles) {
+            BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, pattern);
+            batchResults.add(result);
+            if (result.isSuccess()) {
+                successCount++;
+            }
+        }
+        
+        persistExtractedMetadata(batchResults, batchFiles);
+        
+        int failureCount = batchFiles.size() - successCount;
+        return new BatchExtractionResult(batchResults, successCount, failureCount);
     }
     
     private BookdropPatternExtractResult buildEmptyResult(int totalFiles) {
@@ -509,4 +563,7 @@ public class FilenamePatternExtractor {
     private record ParsedPattern(Pattern compiledPattern, List<String> placeholderOrder) {}
     
     private record PlaceholderMatch(int start, int end, String name, String formatParameter) {}
+    
+    private record BatchExtractionResult(List<BookdropPatternExtractResult.FileExtractionResult> results, 
+                                         int successCount, int failureCount) {}
 }

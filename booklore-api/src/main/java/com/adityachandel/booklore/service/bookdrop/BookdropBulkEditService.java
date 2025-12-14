@@ -17,6 +17,8 @@ import java.util.*;
 @RequiredArgsConstructor
 public class BookdropBulkEditService {
 
+    private static final int BATCH_SIZE = 500;
+
     private final BookdropFileRepository bookdropFileRepository;
     private final BookdropMetadataHelper metadataHelper;
 
@@ -27,28 +29,55 @@ public class BookdropBulkEditService {
                 request.getExcludedIds(),
                 request.getSelectedIds()
         );
-        List<BookdropFileEntity> files = bookdropFileRepository.findAllById(fileIds);
+        
+        return processBulkEditInBatches(fileIds, request);
+    }
+
+    private BookdropBulkEditResult processBulkEditInBatches(List<Long> fileIds, BookdropBulkEditRequest request) {
+        int totalSuccessCount = 0;
+        int totalFailedCount = 0;
+        int totalFiles = fileIds.size();
+
+        for (int batchStart = 0; batchStart < fileIds.size(); batchStart += BATCH_SIZE) {
+            int batchEnd = Math.min(batchStart + BATCH_SIZE, fileIds.size());
+            
+            BatchEditResult batchResult = processSingleBatch(fileIds, batchStart, batchEnd, request);
+            
+            totalSuccessCount += batchResult.successCount();
+            totalFailedCount += batchResult.failureCount();
+            
+            log.debug("Processed batch {}-{} of {}: {} successful, {} failed", 
+                    batchStart, batchEnd, totalFiles, batchResult.successCount(), batchResult.failureCount());
+        }
+
+        return BookdropBulkEditResult.builder()
+                .totalFiles(totalFiles)
+                .successfullyUpdated(totalSuccessCount)
+                .failed(totalFailedCount)
+                .build();
+    }
+
+    private BatchEditResult processSingleBatch(List<Long> allFileIds, int batchStart, int batchEnd, 
+                                                BookdropBulkEditRequest request) {
+        List<Long> batchIds = allFileIds.subList(batchStart, batchEnd);
+        List<BookdropFileEntity> batchFiles = bookdropFileRepository.findAllById(batchIds);
         
         int successCount = 0;
-        int failedCount = 0;
+        int failureCount = 0;
 
-        for (BookdropFileEntity file : files) {
+        for (BookdropFileEntity file : batchFiles) {
             try {
                 updateFileMetadata(file, request);
                 successCount++;
             } catch (Exception e) {
                 log.error("Failed to update metadata for file {}: {}", file.getId(), e.getMessage());
-                failedCount++;
+                failureCount++;
             }
         }
 
-        bookdropFileRepository.saveAll(files);
-
-        return BookdropBulkEditResult.builder()
-                .totalFiles(files.size())
-                .successfullyUpdated(successCount)
-                .failed(failedCount)
-                .build();
+        bookdropFileRepository.saveAll(batchFiles);
+        
+        return new BatchEditResult(successCount, failureCount);
     }
 
     private void updateFileMetadata(BookdropFileEntity file, BookdropBulkEditRequest request) {
@@ -95,4 +124,6 @@ public class BookdropBulkEditService {
             }
         }
     }
+
+    private record BatchEditResult(int successCount, int failureCount) {}
 }
