@@ -295,8 +295,8 @@ public class OpdsFeedService {
         // Apply user's preferred sort order
         booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
-        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author);
-        String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author);
+        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author, series);
+        String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author, series);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
