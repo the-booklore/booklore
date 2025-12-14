@@ -213,7 +213,7 @@ jobs:
             booklore/booklore
             ghcr.io/booklore-app/booklore
           tags: |
-            type=sha,enable={{is_default_branch != true}}
+            type=sha,enable=${{ github.ref != github.event.repository.default_branch }}
             type=raw,value={{branch}}-{{sha_short}},enable=${{ github.ref_name == 'develop' }}
             type=raw,value=${{ env.new_tag }},enable=${{ github.ref_name == 'master' }}
             type=raw,value=latest,enable=${{ github.ref_name == 'master' }}
