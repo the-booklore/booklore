@@ -8,6 +8,7 @@ import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -28,6 +29,14 @@ public class KomgaController {
     private final BookService bookService;
     private final OpdsUserV2Service opdsUserV2Service;
     private final KomgaMapper komgaMapper;
+
+    @PostConstruct
+    public void init() {
+        log.info("=================================================");
+        log.info("KomgaController initialized successfully!");
+        log.info("Komga API endpoints registered at: /komga/api/v1/** and /komga/api/v2/**");
+        log.info("=================================================");
+    }
 
     // ==================== Libraries ====================
     

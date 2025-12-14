@@ -8,6 +8,7 @@ import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
 import com.adityachandel.booklore.config.security.service.OpdsUserDetailsService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @AllArgsConstructor
+@Slf4j
 @EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
@@ -90,6 +92,11 @@ public class SecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain komgaBasicAuthSecurityChain(HttpSecurity http) throws Exception {
+        log.info("=================================================");
+        log.info("Configuring Komga API Security Filter Chain (Order 2)");
+        log.info("Security matcher: /komga/api/v1/**, /komga/api/v2/**");
+        log.info("=================================================");
+        
         http
                 .securityMatcher("/komga/api/v1/**", "/komga/api/v2/**")
                 .csrf(AbstractHttpConfigurer::disable)
