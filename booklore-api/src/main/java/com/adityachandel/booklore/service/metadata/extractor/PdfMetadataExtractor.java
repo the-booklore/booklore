@@ -234,11 +234,6 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
     private void extractCalibreMetadata(XPath xpath, Document doc, BookMetadata.BookMetadataBuilder builder) {
         try {
-            String rating = xpath.evaluate("//calibre:rating/text()", doc);
-            if (StringUtils.isNotBlank(rating)) {
-                builder.personalRating(Double.valueOf(rating));
-            }
-
             String series = xpath.evaluate("//calibre:series/rdf:value/text()", doc);
             if (StringUtils.isNotBlank(series)) {
                 builder.seriesName(series);

@@ -93,7 +93,7 @@ export class SideBarFilter implements BookFilter {
               case 'hardcoverRating':
                 return filterValues.some(range => isRatingInRange(book.metadata?.hardcoverRating, range));
               case 'personalRating':
-                return filterValues.some(range => isRatingInRange10(book.metadata?.personalRating, range));
+                return filterValues.some(range => isRatingInRange10(book.personalRating, range));
               case 'publishedDate':
                 const bookYear = book.metadata?.publishedDate
                   ? new Date(book.metadata.publishedDate).getFullYear()

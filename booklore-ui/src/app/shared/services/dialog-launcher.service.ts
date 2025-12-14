@@ -5,6 +5,19 @@ import {LibraryCreatorComponent} from '../../features/library-creator/library-cr
 import {BookUploaderComponent} from '../components/book-uploader/book-uploader.component';
 import {UserProfileDialogComponent} from '../../features/settings/user-profile-dialog/user-profile-dialog.component';
 import {MagicShelfComponent} from '../../features/magic-shelf/component/magic-shelf-component';
+import {DashboardSettingsComponent} from '../../features/dashboard/components/dashboard-settings/dashboard-settings.component';
+import {VersionChangelogDialogComponent} from '../layout/component/layout-menu/version-changelog-dialog/version-changelog-dialog.component';
+import {CreateUserDialogComponent} from '../../features/settings/user-management/create-user-dialog/create-user-dialog.component';
+import {CreateEmailRecipientDialogComponent} from '../../features/settings/email-v2/create-email-recipient-dialog/create-email-recipient-dialog.component';
+import {CreateEmailProviderDialogComponent} from '../../features/settings/email-v2/create-email-provider-dialog/create-email-provider-dialog.component';
+import {DirectoryPickerComponent} from '../components/directory-picker/directory-picker.component';
+import {BookdropFinalizeResultDialogComponent} from '../../features/bookdrop/component/bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog-component';
+import {BookdropFinalizeResult} from '../../features/bookdrop/service/bookdrop.service';
+import {MetadataReviewDialogComponent} from '../../features/metadata/component/metadata-review-dialog/metadata-review-dialog-component';
+import {MetadataRefreshType} from '../../features/metadata/model/request/metadata-refresh-type.enum';
+import {MetadataFetchOptionsComponent} from '../../features/metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
+import {ShelfEditDialogComponent} from '../../features/book/components/shelf-edit-dialog/shelf-edit-dialog.component';
+import {IconPickerComponent} from '../components/icon-picker/icon-picker-component';
 
 @Injectable({
   providedIn: 'root',
@@ -13,73 +26,164 @@ export class DialogLauncherService {
 
   dialogService = inject(DialogService);
 
-  open(options: { component: any; header: string; top?: string; width?: string; showHeader?: boolean; styleClass?: string }): DynamicDialogRef | null {
-    const isMobile = window.innerWidth <= 768;
-    const {component, header, top, width, showHeader = true, styleClass} = options;
+  private defaultDialogOptions = {
+    baseZIndex: 10,
+    closable: true,
+    dismissableMask: true,
+    draggable: false,
+    modal: true,
+    resizable: false,
+    showHeader: true,
+  }
+
+  openDialog(component: any, options: {}): DynamicDialogRef | null {
     return this.dialogService.open(component, {
-      header,
-      showHeader,
-      modal: true,
-      closable: true,
-      styleClass: styleClass,
-      style: {
-        position: 'absolute',
-        ...(top ? {top} : {}),
-        ...(isMobile
-          ? {
-            width: '90vw',
-            maxWidth: '90vw',
-            minWidth: '90vw',
-          }
-          : width
-            ? {width}
-            : {}),
+      ...this.defaultDialogOptions, 
+      ...options,
+    });
+  }
+
+  openDashboardSettingsDialog(): DynamicDialogRef | null {
+    return this.openDialog(DashboardSettingsComponent, {
+      header: 'Configure Dashboard',
+    });
+  }
+
+  openGithubSupportDialog(): DynamicDialogRef | null {
+    return this.openDialog(GithubSupportDialog, {
+      header: 'Support Booklore',
+    });
+  }
+
+  openLibraryCreateDialog(): DynamicDialogRef | null {
+    return this.openDialog(LibraryCreatorComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openDirectoryPickerDialog(): DynamicDialogRef | null {
+    return this.openDialog(DirectoryPickerComponent, {
+      header: 'Select Media Directory',
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openLibraryEditDialog(libraryId: number): DynamicDialogRef | null {
+    return this.openDialog(LibraryCreatorComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+      data: {
+        mode: 'edit',
+        libraryId: libraryId
+      }
+    });
+  }
+
+  openLibraryMetadataFetchDialog(libraryId: number): DynamicDialogRef | null {
+    return this.openDialog(MetadataFetchOptionsComponent, {
+      header: 'Metadata Refresh Options',
+      data: {
+        libraryId: libraryId,
+        metadataRefreshType: MetadataRefreshType.LIBRARY,
+      }
+    });
+  }
+
+  openShelfEditDialog(shelfId: number): DynamicDialogRef | null {
+    return this.openDialog(ShelfEditDialogComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+      data: {
+        shelfId: shelfId
+      },
+    })
+  }
+
+  openFileUploadDialog(): DynamicDialogRef | null {
+    return this.openDialog(BookUploaderComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openCreateUserDialog(): DynamicDialogRef | null {
+    return this.openDialog(CreateUserDialogComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openUserProfileDialog(): DynamicDialogRef | null {
+    return this.openDialog(UserProfileDialogComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openMagicShelfCreateDialog(): DynamicDialogRef | null {
+    return this.openDialog(MagicShelfComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openMagicShelfEditDialog(shelfId: number): DynamicDialogRef | null {
+    return this.openDialog(MagicShelfComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+      data: {
+        id: shelfId,
+        editMode: true,
+      }
+    })
+  }
+
+  openVersionChangelogDialog(): DynamicDialogRef | null {
+    return this.openDialog(VersionChangelogDialogComponent, {
+      header: "What's New",
+      styleClass: 'dialog-maximal',
+    });
+  }
+
+  openEmailRecipientDialog(): DynamicDialogRef | null {
+    return this.openDialog(CreateEmailRecipientDialogComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openEmailProviderDialog(): DynamicDialogRef | null {
+    return this.openDialog(CreateEmailProviderDialogComponent, {
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
+    });
+  }
+
+  openBookdropFinalizeResultDialog(result: BookdropFinalizeResult): DynamicDialogRef | null {
+    return this.openDialog(BookdropFinalizeResultDialogComponent, {
+      header: 'Import Summary',
+      data: {
+        result: result,
       },
     });
   }
 
-  openGithubSupportDialog(): void {
-    this.open({
-      component: GithubSupportDialog,
-      header: 'Support Booklore',
-      showHeader: true,
-      top: '15%'
+  openMetadataReviewDialog(taskId: string): DynamicDialogRef | null {
+    return this.openDialog(MetadataReviewDialogComponent, {
+      header: 'Review Metadata Proposal',
+      data: {
+        taskId,
+      },
+      styleClass: 'dialog-maximal',
     });
   }
 
-  openLibraryCreatorDialog(): void {
-    this.open({
-      component: LibraryCreatorComponent,
-      header: 'Create New Library',
-      styleClass: 'dynamic-dialog-minimal',
-      showHeader: false
+  openIconPickerDialog(): DynamicDialogRef | null {
+    return this.openDialog(IconPickerComponent, {
+      header: 'Choose an Icon',
+      styleClass: 'dialog-maximal',
     });
   }
 
-  openFileUploadDialog(): void {
-    this.open({
-      component: BookUploaderComponent,
-      header: 'Book Uploader',
-      showHeader: false,
-      styleClass: 'dynamic-dialog-minimal'
-    });
-  }
-
-  openUserProfileDialog(): void {
-    this.open({
-      component: UserProfileDialogComponent,
-      header: 'User Profile Information',
-      styleClass: 'dynamic-dialog-minimal',
-      showHeader: false
-    });
-  }
-
-  openMagicShelfDialog(): void {
-    this.open({
-      component: MagicShelfComponent,
-      header: 'Magic Shelf Creator',
-      styleClass: 'dynamic-dialog-minimal',
-      showHeader: false
-    });
-  }
 }

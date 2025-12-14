@@ -93,10 +93,10 @@
               <div class="rating-group">
                 <i class="pi pi-thumbs-up-fill rating-icon" pTooltip="Personal Rating" tooltipPosition="top"></i>
                 <p-rating
-                  [ngModel]="book?.metadata!.personalRating"
+                  [ngModel]="book?.personalRating"
                   (onRate)="onPersonalRatingChange(book, $event)"
                   stars="10"
-                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.metadata!.personalRating, 10)">
+                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.personalRating, 10)">
                 </p-rating>
               </div>
               <p-button
@@ -459,7 +459,7 @@
                 <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF') {
+            @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
               <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
             <p-button label="Shelf" icon="pi pi-folder" severity="secondary" outlined (onClick)="assignShelf(book.id)"></p-button>

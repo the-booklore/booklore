@@ -32,6 +32,7 @@ public class Book {
     private CbxProgress cbxProgress;
     private KoProgress koreaderProgress;
     private KoboProgress koboProgress;
+    private Integer personalRating;
     private Set<Shelf> shelves;
     private String readStatus;
     private Instant dateFinished;
