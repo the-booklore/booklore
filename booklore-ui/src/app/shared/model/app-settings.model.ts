@@ -114,6 +114,7 @@ export interface AppSettings {
   libraryMetadataRefreshOptions: MetadataRefreshOptions[];
   uploadPattern: string;
   opdsServerEnabled: boolean;
+  komgaApiEnabled: boolean;
   remoteAuthEnabled: boolean;
   oidcEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
@@ -135,6 +136,7 @@ export enum AppSettingKey {
   LIBRARY_METADATA_REFRESH_OPTIONS = 'LIBRARY_METADATA_REFRESH_OPTIONS',
   UPLOAD_FILE_PATTERN = 'UPLOAD_FILE_PATTERN',
   OPDS_SERVER_ENABLED = 'OPDS_SERVER_ENABLED',
+  KOMGA_API_ENABLED = 'KOMGA_API_ENABLED',
   OIDC_ENABLED = 'OIDC_ENABLED',
   OIDC_PROVIDER_DETAILS = 'OIDC_PROVIDER_DETAILS',
   OIDC_AUTO_PROVISION_DETAILS = 'OIDC_AUTO_PROVISION_DETAILS',
