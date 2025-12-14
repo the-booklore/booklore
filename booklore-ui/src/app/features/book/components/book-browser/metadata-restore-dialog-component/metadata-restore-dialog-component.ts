@@ -30,10 +30,10 @@ export class MetadataRestoreDialogComponent implements OnInit {
     this.book = this.bookService.getBookByIdFromState(this.bookId);
 
     this.bookService.getBackupMetadata(this.bookId).subscribe({
-      next: (data) => {
+      next: (data: BookMetadata) => {
         this.backupMetadata = data;
       },
-      error: err => {
+      error: (err: any) => {
         this.messageService.add({
           severity: 'warn',
           summary: 'No Backup Found',
@@ -46,7 +46,7 @@ export class MetadataRestoreDialogComponent implements OnInit {
 
   onRestore(): void {
     this.bookService.restoreMetadata(this.bookId).subscribe({
-      next: () => {
+      next: (data: BookMetadata) => {
         this.messageService.add({
           severity: 'success',
           summary: 'Restore Successful',
@@ -54,7 +54,7 @@ export class MetadataRestoreDialogComponent implements OnInit {
         });
         this.dynamicDialogRef.close({ action: 'restore', bookId: this.bookId });
       },
-      error: err => {
+      error: (err: any) => {
         const errorMessage = err?.error?.message || err?.message || 'Unknown error';
         this.messageService.add({
           severity: 'error',

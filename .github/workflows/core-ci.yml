@@ -1,0 +1,89 @@
+name: Java CI with Gradle & Integrity Checks
+
+on:
+  push:
+    branches: [ "develop" ]
+  pull_request:
+    branches: [ "develop" ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  build-and-test:
+    name: Build, Test & Asset Integrity
+    runs-on: ubuntu-latest
+
+    services:
+      # While tests use Testcontainers, having a service definition helps with other tools
+      # or if we want to run manual psql checks. keeping it minimal for now.
+      # We rely on Testcontainers for the actual integration tests.
+      
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: Install Asset Validation Tools (Report 3.2, 3.3)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y p7zip-full unrar-free imagemagick
+        
+        # Install EpubCheck (Report 3.1)
+        mkdir -p lib
+        wget -q https://github.com/w3c/epubcheck/releases/download/v5.1.0/epubcheck-5.1.0.zip
+        unzip -q epubcheck-5.1.0.zip
+        mv epubcheck-5.1.0/epubcheck.jar lib/
+        mv epubcheck-5.1.0/lib/* lib/
+        rm -rf epubcheck-5.1.0*
+        echo "EpubCheck installed to lib/epubcheck.jar"
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Build with Gradle (Includes Unit & Integration Tests)
+      run: ./gradlew clean build --info
+      # This step covers:
+      # - Unit Tests
+      # - Integration Tests (FlywayMigrationIntegrationTest using Testcontainers)
+      # - Asset Extraction Logic Tests (EpubMetadataExtractorTest)
+
+    - name: Run Asset Validation Script (Structure Check)
+      run: |
+        chmod +x testing/validate_assets.sh
+        # Create a dummy fixture directory to prove the script runs
+        mkdir -p tests/fixtures/bad_books
+        ./testing/validate_assets.sh tests/fixtures/bad_books
+
+    - name: Upload Test Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: build/test-results/test/
+        retention-days: 7
+
+  security-scan:
+    name: Security & Dependency Scan
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy Vulnerability Scanner (Report 8.1)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        exit-code: '0' # Don't fail build yet, just report
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
