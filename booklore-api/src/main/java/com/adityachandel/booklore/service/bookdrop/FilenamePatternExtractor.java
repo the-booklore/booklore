@@ -451,6 +451,8 @@ public class FilenamePatternExtractor {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
             LocalDate date = LocalDate.parse(value, formatter);
             metadata.setPublishedDate(date);
+        } catch (NumberFormatException e) {
+            log.warn("Failed to parse year value '{}': {}", value, e.getMessage());
         } catch (DateTimeParseException e) {
             log.warn("Failed to parse date '{}' with format '{}': {}", value, detectedFormat, e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -492,9 +494,14 @@ public class FilenamePatternExtractor {
         String part2 = matcher.group(3);
         String part3 = matcher.group(4);
         
-        int val1 = Integer.parseInt(part1);
-        int val2 = Integer.parseInt(part2);
-        int val3 = Integer.parseInt(part3);
+        int val1, val2, val3;
+        try {
+            val1 = Integer.parseInt(part1);
+            val2 = Integer.parseInt(part2);
+            val3 = Integer.parseInt(part3);
+        } catch (NumberFormatException e) {
+            return null;
+        }
         
         String format1, format2, format3;
         
