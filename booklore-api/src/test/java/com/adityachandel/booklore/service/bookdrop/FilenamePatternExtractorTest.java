@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class FilenamePatternExtractorTest {
@@ -114,7 +115,7 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void extractFromFilename_WhenPatternDoesNotMatch_ShouldReturnNull() {
+    void extractFromFilename_WithNonMatchingPattern_ShouldReturnNull() {
         String filename = "Random File Name.pdf";
         String pattern = "{SeriesName} - Ch {SeriesNumber}";
 
@@ -169,7 +170,7 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
-    void bulkExtract_WithSelectedFiles_ShouldProcessAll() {
+    void bulkExtract_WithPreviewMode_ShouldReturnExtractionResults() {
         BookdropFileEntity file1 = createFileEntity(1L, "Chronicles A - Ch 1.cbz");
         BookdropFileEntity file2 = createFileEntity(2L, "Chronicles B - Ch 2.cbz");
         BookdropFileEntity file3 = createFileEntity(3L, "Random Name.cbz");
@@ -178,7 +179,10 @@ class FilenamePatternExtractorTest {
         request.setPattern("{SeriesName} - Ch {SeriesNumber}");
         request.setSelectAll(false);
         request.setSelectedIds(List.of(1L, 2L, 3L));
+        request.setPreview(true);
 
+        when(metadataHelper.resolveFileIds(false, null, List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(1L, 2L, 3L));
         when(bookdropFileRepository.findAllById(anyList())).thenReturn(List.of(file1, file2, file3));
 
         BookdropPatternExtractResult result = extractor.bulkExtract(request);
@@ -192,6 +196,36 @@ class FilenamePatternExtractorTest {
                 .filter(BookdropPatternExtractResult.FileExtractionResult::isSuccess)
                 .toList();
         assertEquals(2, successResults.size());
+    }
+
+    @Test
+    void bulkExtract_WithFullExtraction_ShouldProcessAndPersistAll() {
+        BookdropFileEntity file1 = createFileEntity(1L, "Chronicles A - Ch 1.cbz");
+        BookdropFileEntity file2 = createFileEntity(2L, "Chronicles B - Ch 2.cbz");
+        BookdropFileEntity file3 = createFileEntity(3L, "Random Name.cbz");
+
+        BookdropPatternExtractRequest request = new BookdropPatternExtractRequest();
+        request.setPattern("{SeriesName} - Ch {SeriesNumber}");
+        request.setSelectAll(false);
+        request.setSelectedIds(List.of(1L, 2L, 3L));
+        request.setPreview(false);
+
+        when(metadataHelper.resolveFileIds(false, null, List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(1L, 2L, 3L));
+        when(bookdropFileRepository.findAllById(anyList())).thenReturn(List.of(file1, file2, file3));
+        when(metadataHelper.getCurrentMetadata(any())).thenReturn(new BookMetadata());
+
+        BookdropPatternExtractResult result = extractor.bulkExtract(request);
+
+        assertNotNull(result);
+        assertEquals(3, result.getTotalFiles());
+        assertEquals(2, result.getSuccessfullyExtracted());
+        assertEquals(1, result.getFailed());
+
+        // Verify metadata was updated for successful extractions (2 files matched pattern)
+        verify(metadataHelper, times(2)).updateFetchedMetadata(any(), any());
+        // Verify all files were saved (even the one that failed extraction keeps original metadata)
+        verify(bookdropFileRepository, times(1)).saveAll(anyList());
     }
 
     @Test
