@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -238,7 +239,7 @@ class FileUploadServiceTest {
         primaryFile.setFileName("primary.epub");
         primaryFile.setFileSubPath(".");
         primaryFile.setBookType(BookFileType.EPUB);
-        book.setBookFiles(List.of(primaryFile));
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
@@ -281,7 +282,7 @@ class FileUploadServiceTest {
         primaryFile.setFileName("primary.epub");
         primaryFile.setFileSubPath(".");
         primaryFile.setBookType(BookFileType.EPUB);
-        book.setBookFiles(List.of(primaryFile));
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
