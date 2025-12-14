@@ -7,90 +7,98 @@ on:
 jobs:
   concurrency-test:
     runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Create test network
-        run: |
-          docker network create booklore-concurrency-net || true
-
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v5
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
         with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: booklore-api-test:latest
-          load: true
+          java-version: '21'
+          distribution: 'temurin'
 
-      - name: Start MariaDB
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Install MariaDB client
         run: |
-          docker run -d \
-            --name mariadb-concurrency-test \
-            --network booklore-concurrency-net \
-            -e MYSQL_ROOT_PASSWORD=testroot \
-            -e MYSQL_DATABASE=booklore \
-            -e MYSQL_USER=booklore \
-            -e MYSQL_PASSWORD=booklore \
-            mariadb:10.11
+          sudo apt-get update
+          sudo apt-get install -y mariadb-client
 
-          # Wait for MariaDB to be ready
+      - name: Wait for MariaDB
+        run: |
           for i in {1..30}; do
-            if docker exec mariadb-concurrency-test mariadb-admin ping -h localhost -uroot -ptestroot 2>/dev/null; then
+            if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
               echo "MariaDB is ready"
               break
             fi
-            echo "Waiting for MariaDB... ($i/30)"
             sleep 2
           done
 
-      - name: Run Application in Docker Container
-        id: run_app_container
+      - name: Build and start application
+        id: start_app
+        working-directory: booklore-api
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mariadb://127.0.0.1:3306/booklore
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: testroot
+          SPRING_FLYWAY_ENABLED: 'true'
         run: |
-          docker run -d \
-            --name booklore-app \
-            --network booklore-concurrency-net \
-            -p 8080:6060 \
-            -e DATABASE_URL=jdbc:mariadb://mariadb-concurrency-test:3306/booklore \
-            -e DATABASE_USERNAME=booklore \
-            -e DATABASE_PASSWORD=booklore \
-            booklore-api-test:latest
+          # Build the application
+          chmod +x ./gradlew
+          ./gradlew bootJar -x test --no-daemon
 
-          # Wait a bit to allow the container to start
-          sleep 10
+          # Find the JAR
+          JAR_FILE=$(find build/libs -name "*.jar" ! -name "*-plain.jar" | head -1)
+          echo "Starting: $JAR_FILE"
 
-          # Check if the container is running
-          echo "Checking if container is running..."
-          docker ps
+          # Start in background
+          java -jar "$JAR_FILE" \
+            --spring.datasource.url=jdbc:mariadb://127.0.0.1:3306/booklore \
+            --spring.datasource.username=root \
+            --spring.datasource.password=testroot \
+            --app.bookdrop-folder=/tmp/bookdrop \
+            --app.path-config=/tmp/booklore-data \
+            > /tmp/booklore.log 2>&1 &
 
-          # Try to check the health endpoint
-          echo "Attempting health check..."
-          timeout 300 bash -c 'while true; do
-            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null || echo "000")
-            echo "Health check response: $HTTP_CODE"
-            if [ "$HTTP_CODE" = "200" ]; then
-              curl -s http://localhost:8080/actuator/health
-              echo "Health check passed"
-              exit 0
+          echo $! > /tmp/booklore.pid
+          echo "pid=$(cat /tmp/booklore.pid)" >> $GITHUB_OUTPUT
+
+          # Wait for startup
+          for i in {1..60}; do
+            if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
+              echo "Application started"
+              break
             fi
-            sleep 10
-          done'
+            echo "Waiting for app to start... ($i/60)"
+            sleep 3
+          done
+          echo "App is ready"
 
       - name: Capture App Logs on Failure
-        if: failure() && steps.run_app_container.outcome == 'failure'
+        if: failure()
         run: |
-          docker logs booklore-app > booklore-app.log
+          cat /tmp/booklore.log || echo "No log file found"
 
       - name: Upload App Logs on Failure
-        if: failure() && steps.run_app_container.outcome == 'failure'
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: booklore-app-logs
-          path: booklore-app.log
+          path: /tmp/booklore.log
           retention-days: 7
 
       - name: Run Concurrency Hammer Script
@@ -99,6 +107,7 @@ jobs:
       - name: Stop Application
         if: always()
         run: |
-          docker rm -f booklore-app mariadb-concurrency-test 2>/dev/null || true
-          docker network rm booklore-concurrency-net 2>/dev/null || true
+          if [ -f /tmp/booklore.pid ]; then
+            kill $(cat /tmp/booklore.pid) 2>/dev/null || true
+          fi
 
