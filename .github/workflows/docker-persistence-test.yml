@@ -120,15 +120,19 @@ jobs:
             -e MYSQL_PASSWORD=booklore \
             mariadb:10.11
           
-          # Wait for MariaDB
-          for i in {1..30}; do
-            if docker exec mariadb-persist mariadb-admin ping -h localhost -uroot -ppersisttest 2>/dev/null; then
-              echo "MariaDB is ready"
+          # Wait for MariaDB to be ready AND authenticated
+          echo "Waiting for MariaDB to initialize..."
+          for i in {1..45}; do
+            if docker exec mariadb-persist mariadb -uroot -ppersisttest -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MariaDB is ready and authenticated"
               break
             fi
-            echo "Waiting for MariaDB... ($i/30)"
+            echo "Waiting for MariaDB... ($i/45)"
             sleep 2
           done
+          
+          # Additional wait to ensure complete initialization
+          sleep 3
 
       - name: Start BookLore (Initial)
         run: |
@@ -328,15 +332,19 @@ jobs:
             -e MYSQL_DATABASE=booklore \
             mariadb:10.11
           
-          sleep 10
-          
-          # Wait for MariaDB
-          for i in {1..30}; do
-            if docker exec mariadb-replace mariadb-admin ping -h localhost -uroot -preplacetest 2>/dev/null; then
+          # Wait for MariaDB to be ready AND authenticated
+          echo "Waiting for MariaDB to initialize..."
+          for i in {1..45}; do
+            if docker exec mariadb-replace mariadb -uroot -preplacetest -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MariaDB is ready and authenticated"
               break
             fi
+            echo "Waiting for MariaDB... ($i/45)"
             sleep 2
           done
+          
+          # Additional wait to ensure complete initialization
+          sleep 3
           
           # Start BookLore v1 (simulated)
           docker run -d \
@@ -479,7 +487,19 @@ jobs:
             -e MYSQL_DATABASE=booklore \
             mariadb:10.11
           
-          sleep 15
+          # Wait for MariaDB to be ready AND authenticated
+          echo "Waiting for MariaDB to initialize..."
+          for i in {1..45}; do
+            if docker exec mariadb-mount mariadb -uroot -pmounttest -e "SELECT 1" >/dev/null 2>&1; then
+              echo "MariaDB is ready and authenticated"
+              break
+            fi
+            echo "Waiting for MariaDB... ($i/45)"
+            sleep 2
+          done
+          
+          # Additional wait to ensure complete initialization
+          sleep 3
           
           # Verify database files exist on host
           echo "Checking database files on host..."
