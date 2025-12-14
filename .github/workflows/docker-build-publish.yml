@@ -3,10 +3,69 @@ name: Build, Tag, Push, and Release to GitHub Container Registry
 on:
   push:
     branches:
+      - 'master'
+      - 'develop'
+  pull_request:
+    branches:
       - '**'
 
 jobs:
+  flyway-conflict-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine comparison reference
+        id: compare_ref
+        run: |
+          bash .github/scripts/determine-compare-ref.sh "${{ github.base_ref }}"
+
+      - name: Check for migration changes
+        id: check_migrations
+        if: steps.compare_ref.outputs.has_ref == 'true'
+        run: |
+          # Check for changes in the migration directory
+          if git diff --name-only --diff-filter=AMRCD ${{ env.COMPARE_REF }}...HEAD | grep -q "booklore-api/src/main/resources/db/migration/"; then
+            echo "Migration file changes detected."
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "No migration file changes detected. Skipping conflict check."
+            echo "has_migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Analyze migration changes
+        if: steps.check_migrations.outputs.has_migrations == 'true'
+        id: analyze_changes
+        env:
+          COMPARE_REF: ${{ env.COMPARE_REF }}
+        run: |
+          bash .github/scripts/analyze-changes.sh
+
+      - name: Extract and validate versions
+        if: steps.check_migrations.outputs.has_migrations == 'true'
+        id: validate_versions
+        run: |
+          bash .github/scripts/validate-versions.sh
+
+      - name: Check for version conflicts with base
+        if: steps.validate_versions.outputs.has_versions == 'true'
+        env:
+          COMPARE_REF: ${{ env.COMPARE_REF }}
+        run: |
+          bash .github/scripts/check-conflicts.sh
+
+      - name: Cleanup
+        if: always() && steps.check_migrations.outputs.has_migrations == 'true'
+        run: |
+          rm -f /tmp/all_changes.txt /tmp/pr_files.txt /tmp/base_files.txt
+          rm -f /tmp/versions_*.txt /tmp/duplicates_in_pr.txt
+
   build-and-push:
+    needs: flyway-conflict-check
+    if: success() || (needs.flyway-conflict-check.result == 'skipped')
     runs-on: ubuntu-latest
 
     permissions:
@@ -196,42 +255,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release edit ${{ env.new_tag }} --draft=false
-
-      - name: Notify Discord of New Release
-        if: false
-        continue-on-error: true
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          NEW_TAG: ${{ env.new_tag }}
-        run: |
-          set -euo pipefail
-          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
-            echo "DISCORD_WEBHOOK_URL not set, skipping Discord notification."
-            exit 0
-          fi
-          release_json=$(gh release view "$NEW_TAG" --json name,body,url)
-          release_name=$(jq -r '.name' <<< "$release_json")
-          release_body=$(jq -r '.body' <<< "$release_json")
-          release_url=$(jq -r '.url' <<< "$release_json")
-          clean_body=$(echo "$release_body" | tr -d '\r')
-          max_length=1800
-          if [ ${#clean_body} -gt $max_length ]; then
-            clean_body="${clean_body:0:$((max_length-12))}… [truncated]"
-          fi
-          payload=$(jq -n \
-            --arg title "New Release: $release_name" \
-            --arg url   "$release_url" \
-            --arg desc  "$clean_body" \
-            '{
-              content: null,
-              embeds: [{
-                title: $title,
-                url: $url,
-                description: $desc,
-                color: 3066993
-              }]
-            }')
-          curl -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+          gh release edit ${{ env.new_tag }} --draft=true
