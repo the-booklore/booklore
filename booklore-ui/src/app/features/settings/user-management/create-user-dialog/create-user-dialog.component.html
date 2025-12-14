@@ -1,120 +1,254 @@
-<form [formGroup]="userForm" (ngSubmit)="createUser()" class="space-y-6 p-6">
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Full Name:</label>
-    <input type="text" pInputText formControlName="name" placeholder="Enter full name..." class="w-full md:w-80"/>
-  </div>
-  @if (userForm.get('name')?.invalid && (userForm.get('name')?.dirty || userForm.get('name')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Name is required and must be at least 3 characters.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Email:</label>
-    <input type="email" pInputText formControlName="email" placeholder="Enter email..." class="w-full md:w-80"/>
-  </div>
-  @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Enter a valid email address.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Username:</label>
-    <input type="text" pInputText formControlName="username" placeholder="Enter username..." class="w-full md:w-80"/>
-  </div>
-  @if (userForm.get('username')?.invalid && (userForm.get('username')?.dirty || userForm.get('username')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Username is required.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Password:</label>
-    <input type="password" pInputText formControlName="password" placeholder="Enter password..." class="w-full md:w-80"/>
-  </div>
-  @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Password must be at least 6 characters long.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Accessible Libraries:</label>
-    <p-multiselect
-      [options]="libraries"
-      formControlName="selectedLibraries"
-      placeholder="Select Libraries"
-      optionLabel="name"
-      display="chip"
-      class="w-full md:w-80"
-      appendTo="body">
-    </p-multiselect>
-  </div>
-  @if (userForm.get('selectedLibraries')?.invalid && (userForm.get('selectedLibraries')?.dirty || userForm.get('selectedLibraries')?.touched)) {
-    <small class="text-red-500 pl-44">
-      At least one library must be selected.
-    </small>
-  }
-
-  <div>
-    <p class="text-right w-40 font-medium">Permissions:</p>
-    <div class="flex flex-col gap-2 pl-44">
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionUpload" [binary]="true"></p-checkbox>
-        <label>Upload Books</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionDownload" [binary]="true"></p-checkbox>
-        <label>Download Books</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionEditMetadata" [binary]="true"></p-checkbox>
-        <label>Edit Metadata</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionManipulateLibrary" [binary]="true"></p-checkbox>
-        <label>Manage Library</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionEmailBook" [binary]="true"></p-checkbox>
-        <label>Email Book</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionDeleteBook" [binary]="true"></p-checkbox>
-        <label>Delete Book</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionAccessOpds" [binary]="true"></p-checkbox>
-        <label>Access OPDS</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionSyncKoreader" [binary]="true"></p-checkbox>
-        <label>KOReader Sync</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionSyncKobo" [binary]="true"></p-checkbox>
-        <label>Kobo Sync</label>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <p-checkbox formControlName="permissionAdmin" [binary]="true"></p-checkbox>
-        <label class="text-orange-500 font-bold">Admin</label>
-      </div>
+<div class="create-user-dialog">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-user-plus header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Create New User</h2>
+      <p class="panel-description">
+        Set up a new user account with permissions and library access
+      </p>
     </div>
   </div>
 
-  <div class="flex justify-end">
-    <p-button label="Create User" [disabled]="userForm.invalid" type="submit">
-    </p-button>
-  </div>
-</form>
+  <form [formGroup]="userForm" (ngSubmit)="createUser()">
+    <div class="form-container">
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="pi pi-id-card"></i>
+          Basic Information
+        </h3>
+
+        <div class="form-field">
+          <label class="field-label">Full Name</label>
+          <input
+            type="text"
+            pInputText
+            formControlName="name"
+            placeholder="Enter full name..."
+            class="field-input"
+          />
+          @if (userForm.get('name')?.invalid && (userForm.get('name')?.dirty || userForm.get('name')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              Name is required and must be at least 3 characters.
+            </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">Email</label>
+          <input
+            type="email"
+            pInputText
+            formControlName="email"
+            placeholder="Enter email..."
+            class="field-input"
+          />
+          @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              Enter a valid email address.
+            </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">Username</label>
+          <input
+            type="text"
+            pInputText
+            formControlName="username"
+            placeholder="Enter username..."
+            class="field-input"
+          />
+          @if (userForm.get('username')?.invalid && (userForm.get('username')?.dirty || userForm.get('username')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              Username is required.
+            </small>
+          }
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">Password</label>
+          <input
+            type="password"
+            pInputText
+            formControlName="password"
+            placeholder="Enter password..."
+            class="field-input"
+          />
+          @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              Password must be at least 6 characters long.
+            </small>
+          }
+        </div>
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="pi pi-book"></i>
+          Library Access
+        </h3>
+
+        <div class="form-field">
+          <label class="field-label">Accessible Libraries</label>
+          <p-multiselect
+            [options]="libraries"
+            formControlName="selectedLibraries"
+            placeholder="Select Libraries"
+            optionLabel="name"
+            display="chip"
+            class="field-input"
+            appendTo="body">
+          </p-multiselect>
+          @if (userForm.get('selectedLibraries')?.invalid && (userForm.get('selectedLibraries')?.dirty || userForm.get('selectedLibraries')?.touched)) {
+            <small class="field-error">
+              <i class="pi pi-exclamation-circle"></i>
+              At least one library must be selected.
+            </small>
+          }
+        </div>
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-section">
+        <h3 class="section-title">
+          <i class="pi pi-shield"></i>
+          Permissions
+        </h3>
+
+        <div class="permissions-grid">
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionUpload" [binary]="true" inputId="perm-upload"></p-checkbox>
+            <label for="perm-upload" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-upload permission-icon"></i>
+              </div>
+              <span class="permission-name">Upload Books</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionDownload" [binary]="true" inputId="perm-download"></p-checkbox>
+            <label for="perm-download" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-download permission-icon"></i>
+              </div>
+              <span class="permission-name">Download Books</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionEditMetadata" [binary]="true" inputId="perm-edit"></p-checkbox>
+            <label for="perm-edit" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-pencil permission-icon"></i>
+              </div>
+              <span class="permission-name">Edit Metadata</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionManipulateLibrary" [binary]="true" inputId="perm-library"></p-checkbox>
+            <label for="perm-library" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-folder permission-icon"></i>
+              </div>
+              <span class="permission-name">Manage Library</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionEmailBook" [binary]="true" inputId="perm-email"></p-checkbox>
+            <label for="perm-email" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-envelope permission-icon"></i>
+              </div>
+              <span class="permission-name">Email Book</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionDeleteBook" [binary]="true" inputId="perm-delete"></p-checkbox>
+            <label for="perm-delete" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-trash permission-icon"></i>
+              </div>
+              <span class="permission-name">Delete Book</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionAccessOpds" [binary]="true" inputId="perm-opds"></p-checkbox>
+            <label for="perm-opds" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-globe permission-icon"></i>
+              </div>
+              <span class="permission-name">Access OPDS</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionSyncKoreader" [binary]="true" inputId="perm-koreader"></p-checkbox>
+            <label for="perm-koreader" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-sync permission-icon"></i>
+              </div>
+              <span class="permission-name">KOReader Sync</span>
+            </label>
+          </div>
+
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionSyncKobo" [binary]="true" inputId="perm-kobo"></p-checkbox>
+            <label for="perm-kobo" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-tablet permission-icon"></i>
+              </div>
+              <span class="permission-name">Kobo Sync</span>
+            </label>
+          </div>
+
+          <div class="permission-item admin-permission">
+            <p-checkbox formControlName="permissionAdmin" [binary]="true" inputId="perm-admin"></p-checkbox>
+            <label for="perm-admin" class="permission-label">
+              <div class="permission-icon-wrapper admin-icon">
+                <i class="pi pi-shield permission-icon"></i>
+              </div>
+              <span class="permission-name admin-name">Admin</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <div class="footer-info">
+        <i class="pi pi-info-circle"></i>
+        <span>All fields are required to create a user</span>
+      </div>
+      <div class="footer-actions">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          type="button"
+          (click)="closeDialog()"
+        />
+        <p-button
+          label="Create User"
+          icon="pi pi-check"
+          severity="success"
+          [disabled]="userForm.invalid"
+          type="submit"
+        />
+      </div>
+    </div>
+  </form>
+</div>

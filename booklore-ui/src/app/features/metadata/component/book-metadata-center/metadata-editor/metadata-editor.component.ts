@@ -14,17 +14,15 @@ import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
 import {filter, take} from "rxjs/operators";
-import {DialogService} from "primeng/dynamicdialog";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
-import {IftaLabel} from "primeng/iftalabel";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
-import {CoverSearchComponent} from '../../cover-search/cover-search.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {BookDialogHelperService} from "../../../../book/components/book-browser/BookDialogHelperService";
 
 @Component({
   selector: "app-metadata-editor",
@@ -44,7 +42,6 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
     AutoComplete,
     DatePicker,
     Textarea,
-    IftaLabel,
     Image,
     LazyLoadImageModule,
   ],
@@ -63,7 +60,7 @@ export class MetadataEditorComponent implements OnInit {
   private bookService = inject(BookService);
   private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
-  private dialogService = inject(DialogService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
   private destroyRef = inject(DestroyRef);
 
   metadataForm: FormGroup;
@@ -148,7 +145,6 @@ export class MetadataEditorComponent implements OnInit {
       pageCount: new FormControl(""),
       language: new FormControl(""),
       asin: new FormControl(""),
-      personalRating: new FormControl(""),
       amazonRating: new FormControl(""),
       amazonReviewCount: new FormControl(""),
       goodreadsId: new FormControl(""),
@@ -178,7 +174,6 @@ export class MetadataEditorComponent implements OnInit {
       pageCountLocked: new FormControl(false),
       languageLocked: new FormControl(false),
       asinLocked: new FormControl(false),
-      personalRatingLocked: new FormControl(false),
       amazonRatingLocked: new FormControl(false),
       amazonReviewCountLocked: new FormControl(false),
       goodreadsIdLocked: new FormControl(""),
@@ -269,7 +264,6 @@ export class MetadataEditorComponent implements OnInit {
       rating: metadata.rating ?? null,
       reviewCount: metadata.reviewCount ?? null,
       asin: metadata.asin ?? null,
-      personalRating: metadata.personalRating ?? null,
       amazonRating: metadata.amazonRating ?? null,
       amazonReviewCount: metadata.amazonReviewCount ?? null,
       goodreadsId: metadata.goodreadsId ?? null,
@@ -297,7 +291,6 @@ export class MetadataEditorComponent implements OnInit {
       pageCountLocked: metadata.pageCountLocked ?? false,
       languageLocked: metadata.languageLocked ?? false,
       asinLocked: metadata.asinLocked ?? false,
-      personalRatingLocked: metadata.personalRatingLocked ?? false,
       amazonRatingLocked: metadata.amazonRatingLocked ?? false,
       amazonReviewCountLocked: metadata.amazonReviewCountLocked ?? false,
       goodreadsIdLocked: metadata.goodreadsIdLocked ?? false,
@@ -330,7 +323,6 @@ export class MetadataEditorComponent implements OnInit {
       {key: "asinLocked", control: "asin"},
       {key: "amazonReviewCountLocked", control: "amazonReviewCount"},
       {key: "amazonRatingLocked", control: "amazonRating"},
-      {key: "personalRatingLocked", control: "personalRating"},
       {key: "goodreadsIdLocked", control: "goodreadsId"},
       {key: "comicvineIdLocked", control: "comicvineId"},
       {key: "goodreadsReviewCountLocked", control: "goodreadsReviewCount"},
@@ -467,7 +459,6 @@ export class MetadataEditorComponent implements OnInit {
       rating: form.get("rating")?.value,
       reviewCount: form.get("reviewCount")?.value,
       asin: form.get("asin")?.value,
-      personalRating: form.get("personalRating")?.value,
       amazonRating: form.get("amazonRating")?.value,
       amazonReviewCount: form.get("amazonReviewCount")?.value,
       goodreadsId: form.get("goodreadsId")?.value,
@@ -500,7 +491,6 @@ export class MetadataEditorComponent implements OnInit {
       languageLocked: form.get("languageLocked")?.value,
       asinLocked: form.get("asinLocked")?.value,
       amazonRatingLocked: form.get("amazonRatingLocked")?.value,
-      personalRatingLocked: form.get("personalRatingLocked")?.value,
       amazonReviewCountLocked: form.get("amazonReviewCountLocked")?.value,
       goodreadsIdLocked: form.get("goodreadsIdLocked")?.value,
       comicvineIdLocked: form.get("comicvineIdLocked")?.value,
@@ -548,7 +538,6 @@ export class MetadataEditorComponent implements OnInit {
       pageCount: wasCleared("pageCount"),
       language: wasCleared("language"),
       asin: wasCleared("asin"),
-      personalRating: wasCleared("personalRating"),
       amazonRating: wasCleared("amazonRating"),
       amazonReviewCount: wasCleared("amazonReviewCount"),
       goodreadsId: wasCleared("goodreadsId"),
@@ -694,21 +683,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   openCoverSearch() {
-    const ref = this.dialogService.open(CoverSearchComponent, {
-      header: "Search Cover",
-      modal: true,
-      closable: true,
-      data: {
-        bookId: [this.currentBookId],
-      },
-      style: {
-        width: "90vw",
-        height: "90vh",
-        maxWidth: "1200px",
-        position: "absolute",
-      },
-    });
-
+    const ref = this.bookDialogHelperService.openCoverSearchDialog(this.currentBookId);
     ref?.onClose.subscribe((result) => {
       if (result) {
         this.metadataForm.get("thumbnailUrl")?.setValue(result);

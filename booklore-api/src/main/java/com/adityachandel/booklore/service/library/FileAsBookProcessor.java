@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
 
     private final BookEventBroadcaster bookEventBroadcaster;
     private final BookFileProcessorRegistry processorRegistry;
+    private final KoboAutoShelfService koboAutoShelfService;
 
     @Override
     public LibraryScanMode getScanMode() {
@@ -32,17 +34,22 @@ public class FileAsBookProcessor implements LibraryFileProcessor {
     @Transactional
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         for (LibraryFile libraryFile : libraryFiles) {
-            log.info("Processing file: {}", libraryFile.getFileName());
+            processFileWithErrorHandling(libraryFile);
+        }
+        log.info("Finished processing library '{}'", libraryEntity.getName());
+    }
 
+    private void processFileWithErrorHandling(LibraryFile libraryFile) {
+        log.info("Processing file: {}", libraryFile.getFileName());
+        try {
             FileProcessResult result = processLibraryFile(libraryFile);
-
             if (result != null) {
                 bookEventBroadcaster.broadcastBookAddEvent(result.getBook());
-                log.debug("Processed file: {}", libraryFile.getFileName());
+                koboAutoShelfService.autoAddBookToKoboShelves(result.getBook().getId());
             }
+        } catch (Exception e) {
+            log.error("Failed to process file '{}': {}", libraryFile.getFileName(), e.getMessage());
         }
-
-        log.info("Finished processing library '{}'", libraryEntity.getName());
     }
 
     @Transactional

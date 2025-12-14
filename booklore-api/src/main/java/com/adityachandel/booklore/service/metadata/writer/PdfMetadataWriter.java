@@ -200,11 +200,6 @@ public class PdfMetadataWriter implements MetadataWriter {
         calibreDescription.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:calibreSI", "http://calibre-ebook.com/xmp-namespace-series-index");
         calibreDescription.setAttributeNS("http://www.w3.org/1999/02/22-rdf-syntax-ns#", "rdf:about", "");
 
-        helper.copyPersonalRating(clear != null && clear.isPersonalRating(), rating -> {
-            String value = (rating != null) ? String.valueOf((int) Math.round(rating)) : "";
-            calibreDescription.appendChild(createSimpleElement(doc, "calibre:rating", value));
-        });
-
         helper.copySeriesName(clear != null && clear.isSeriesName(), series -> {
             Element seriesElem = doc.createElementNS("http://calibre-ebook.com/xmp-namespace", "calibre:series");
             seriesElem.setAttributeNS("http://www.w3.org/2000/xmlns/", "xmlns:calibreSI", "http://calibre-ebook.com/xmp-namespace-series-index");

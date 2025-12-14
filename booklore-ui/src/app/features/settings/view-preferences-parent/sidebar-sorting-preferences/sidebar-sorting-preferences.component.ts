@@ -1,7 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {Tooltip} from 'primeng/tooltip';
-import {SidebarLibrarySorting, SidebarShelfSorting, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
+import {SidebarLibrarySorting, SidebarMagicShelfSorting, SidebarShelfSorting, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
@@ -11,7 +10,6 @@ import {filter, takeUntil} from 'rxjs/operators';
   selector: 'app-sidebar-sorting-preferences',
   imports: [
     Select,
-    Tooltip,
     FormsModule
   ],
   templateUrl: './sidebar-sorting-preferences.component.html',
@@ -28,6 +26,7 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
   selectedLibrarySorting: SidebarLibrarySorting = {field: 'id', order: 'asc'};
   selectedShelfSorting: SidebarShelfSorting = {field: 'id', order: 'asc'};
+  selectedMagicShelfSorting: SidebarMagicShelfSorting = {field: 'id', order: 'asc'};
 
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
@@ -54,6 +53,7 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
   private loadPreferences(settings: UserSettings): void {
     this.selectedLibrarySorting = settings.sidebarLibrarySorting;
     this.selectedShelfSorting = settings.sidebarShelfSorting;
+    this.selectedMagicShelfSorting = settings.sidebarMagicShelfSorting;
   }
 
   private updatePreference(path: string[], value: any): void {
@@ -81,5 +81,9 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
 
   onShelfSortingChange() {
     this.updatePreference(['sidebarShelfSorting'], this.selectedShelfSorting);
+  }
+
+  onMagicShelfSortingChange() {
+    this.updatePreference(['sidebarMagicShelfSorting'], this.selectedMagicShelfSorting);
   }
 }

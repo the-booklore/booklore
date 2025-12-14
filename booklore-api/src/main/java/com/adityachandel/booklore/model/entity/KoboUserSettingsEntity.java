@@ -33,4 +33,8 @@ public class KoboUserSettingsEntity {
     @Column(name = "progress_mark_as_finished_threshold")
     @Builder.Default
     private Float progressMarkAsFinishedThreshold = 99f;
+
+    @Column(name = "auto_add_to_shelf")
+    @Builder.Default
+    private boolean autoAddToShelf = false;
 }

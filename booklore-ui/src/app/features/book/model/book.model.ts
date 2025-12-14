@@ -3,7 +3,7 @@ import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrol
 import {BookReview} from '../components/book-reviews/book-review-service';
 import {ZoomType} from 'ngx-extended-pdf-viewer';
 
-export type BookType = "PDF" | "EPUB" | "CBX";
+export type BookType = "PDF" | "EPUB" | "CBX" | "FB2";
 
 export enum AdditionalFileType {
   ALTERNATIVE_FORMAT = 'ALTERNATIVE_FORMAT',
@@ -41,6 +41,7 @@ export interface Book extends FileInfo {
   koboProgress?: KoboProgress;
   seriesCount?: number | null;
   metadataMatchScore?: number | null;
+  personalRating?: number | null;
   readStatus?: ReadStatus;
   dateFinished?: string;
   libraryPath?: { id: number };
@@ -98,7 +99,6 @@ export interface BookMetadata {
   goodreadsReviewCount?: number | null;
   hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
-  personalRating?: number | null;
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
@@ -125,7 +125,6 @@ export interface BookMetadata {
   googleIdLocked?: boolean;
   pageCountLocked?: boolean;
   languageLocked?: boolean;
-  personalRatingLocked?: boolean;
   amazonRatingLocked?: boolean;
   amazonReviewCountLocked?: boolean;
   goodreadsRatingLocked?: boolean;
@@ -166,7 +165,6 @@ export interface MetadataClearFlags {
   goodreadsReviewCount?: boolean;
   hardcoverRating?: boolean;
   hardcoverReviewCount?: boolean;
-  personalRating?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;

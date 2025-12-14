@@ -1,6 +1,5 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {DialogService, DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {DirectoryPickerComponent} from '../../shared/components/directory-picker/directory-picker.component';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
@@ -11,26 +10,27 @@ import {InputText} from 'primeng/inputtext';
 import {BookFileType, Library, LibraryScanMode} from '../book/model/library.model';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {Tooltip} from 'primeng/tooltip';
-import {IconPickerService} from '../../shared/service/icon-picker.service';
+import {IconPickerService, IconSelection} from '../../shared/service/icon-picker.service';
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
+import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
+import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button],
+  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button, IconDisplayComponent],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
   chosenLibraryName: string = '';
   folders: string[] = [];
-  selectedIcon: string | null = null;
+  selectedIcon: IconSelection | null = null;
 
   mode!: string;
   library!: Library | undefined;
   editModeLibraryName: string = '';
-  directoryPickerDialogRef!: DynamicDialogRef<DirectoryPickerComponent> | null;
   watch: boolean = false;
   scanMode: LibraryScanMode = 'FILE_AS_BOOK';
   defaultBookFormat: BookFileType | undefined = undefined;
@@ -47,7 +47,7 @@ export class LibraryCreatorComponent implements OnInit {
     {label: 'CBX/CBZ/CBR', value: 'CBX'}
   ];
 
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private dynamicDialogRef = inject(DynamicDialogRef);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   private libraryService = inject(LibraryService);
@@ -61,10 +61,16 @@ export class LibraryCreatorComponent implements OnInit {
       this.mode = data.mode;
       this.library = this.libraryService.findLibraryById(data.libraryId);
       if (this.library) {
-        const {name, icon, paths, watch, scanMode, defaultBookFormat} = this.library;
+        const {name, icon, iconType, paths, watch, scanMode, defaultBookFormat} = this.library;
         this.chosenLibraryName = name;
         this.editModeLibraryName = name;
-        this.selectedIcon = `pi pi-${icon}`;
+
+        if (iconType === 'CUSTOM_SVG') {
+          this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
+        } else {
+          this.selectedIcon = {type: 'PRIME_NG', value: `pi pi-${icon}`};
+        }
+
         this.watch = watch;
         this.scanMode = scanMode || 'FILE_AS_BOOK';
         this.defaultBookFormat = defaultBookFormat || undefined;
@@ -73,15 +79,13 @@ export class LibraryCreatorComponent implements OnInit {
     }
   }
 
+  closeDialog(): void {
+    this.dynamicDialogRef.close();
+  }
+
   openDirectoryPicker(): void {
-    this.directoryPickerDialogRef = this.dialogService.open(DirectoryPickerComponent, {
-      header: 'Select Media Directory',
-      modal: true,
-      closable: true,
-      contentStyle: {overflow: 'hidden'},
-      baseZIndex: 10
-    });
-    this.directoryPickerDialogRef?.onClose.subscribe((selectedFolders: string[] | null) => {
+    const ref = this.dialogLauncherService.openDirectoryPickerDialog();
+    ref?.onClose.subscribe((selectedFolders: string[] | null) => {
       if (selectedFolders && selectedFolders.length > 0) {
         selectedFolders.forEach(folder => {
           if (!this.folders.includes(folder)) {
@@ -139,10 +143,14 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   createOrUpdateLibrary(): void {
+    const iconValue = this.selectedIcon?.value || 'heart';
+    const iconType = this.selectedIcon?.type || 'PRIME_NG';
+
     if (this.mode === 'edit') {
       const library: Library = {
         name: this.chosenLibraryName,
-        icon: this.selectedIcon?.replace('pi pi-', '') || 'heart',
+        icon: iconValue,
+        iconType: iconType,
         paths: this.folders.map(folder => ({path: folder})),
         watch: this.watch,
         scanMode: this.scanMode,
@@ -161,7 +169,8 @@ export class LibraryCreatorComponent implements OnInit {
     } else {
       const library: Library = {
         name: this.chosenLibraryName,
-        icon: this.selectedIcon?.replace('pi pi-', '') || 'heart',
+        icon: iconValue,
+        iconType: iconType,
         paths: this.folders.map(folder => ({path: folder})),
         watch: this.watch,
         scanMode: this.scanMode,

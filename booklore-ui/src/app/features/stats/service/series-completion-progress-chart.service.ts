@@ -275,13 +275,13 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
 
     // Calculate average rating
     const ratedBooks = books.filter(book => {
-      const rating = book.metadata?.personalRating || book.metadata?.goodreadsRating;
+      const rating = book.personalRating || book.metadata?.goodreadsRating;
       return rating && rating > 0;
     });
 
     const averageRating = ratedBooks.length > 0
       ? Number((ratedBooks.reduce((sum, book) => {
-          const rating = book.metadata?.personalRating || book.metadata?.goodreadsRating || 0;
+          const rating = book.personalRating || book.metadata?.goodreadsRating || 0;
           return sum + rating;
         }, 0) / ratedBooks.length).toFixed(1))
       : 0;

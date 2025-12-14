@@ -165,14 +165,18 @@
   background-color: var(--primary-color);
   color: var(--primary-text-color-dark);
   font-size: 0.75rem;
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 3px 8px;
+  border-radius: 4px;
   z-index: 3;
   white-space: nowrap;
   user-select: none;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .read-status-indicator {

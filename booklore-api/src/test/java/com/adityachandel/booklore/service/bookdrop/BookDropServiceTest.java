@@ -286,7 +286,7 @@ class BookDropServiceTest {
         request.setDefaultLibraryId(999L);
         request.setDefaultPathId(1L);
 
-        when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(1L));
+        when(bookdropFileRepository.findAllIds()).thenReturn(List.of(1L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(bookdropFileEntity));
         when(libraryRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -387,7 +387,7 @@ class BookDropServiceTest {
         missingFileEntity.setOriginalMetadata("{\"title\":\"Missing Book\"}");
         missingFileEntity.setFetchedMetadata(null);
 
-        when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(2L));
+        when(bookdropFileRepository.findAllIds()).thenReturn(List.of(2L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(missingFileEntity));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(libraryEntity));
 
@@ -419,7 +419,7 @@ class BookDropServiceTest {
         request.setDefaultLibraryId(1L);
         request.setDefaultPathId(1L);
 
-        when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(1L));
+        when(bookdropFileRepository.findAllIds()).thenReturn(List.of(1L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(bookdropFileEntity));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(libraryEntity));
 
@@ -451,7 +451,7 @@ class BookDropServiceTest {
         request.setDefaultPathId(1L);
         request.setExcludedIds(List.of());
 
-        when(bookdropFileRepository.findAllExcludingIdsFlat(any())).thenReturn(List.of(1L));
+        when(bookdropFileRepository.findAllIds()).thenReturn(List.of(1L));
         when(bookdropFileRepository.findAllById(any())).thenReturn(List.of(bookdropFileEntity));
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(libraryEntity));
         

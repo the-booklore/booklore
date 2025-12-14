@@ -61,7 +61,8 @@
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="copyText(koreaderEndpoint)">
+                      (onClick)="copyText(koreaderEndpoint, 'API Path')"
+                      [disabled]="!koreaderEndpoint">
                     </p-button>
                   </div>
                 </div>
@@ -91,7 +92,8 @@
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="copyText(koReaderUsername)">
+                      (onClick)="copyText(koReaderUsername, 'Username')"
+                      [disabled]="!koReaderUsername">
                     </p-button>
                   </div>
                 </div>
@@ -128,14 +130,16 @@
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="copyText(koReaderPassword)">
+                      (onClick)="copyText(koReaderPassword, 'Password')"
+                      [disabled]="!koReaderPassword">
                     </p-button>
                     <p-button
                       [icon]="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="toggleShowPassword()">
+                      (onClick)="toggleShowPassword()"
+                      [disabled]="!koReaderPassword">
                     </p-button>
                   </div>
                 </div>

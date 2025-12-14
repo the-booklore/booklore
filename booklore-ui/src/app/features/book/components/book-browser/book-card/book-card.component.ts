@@ -4,30 +4,23 @@ import {AdditionalFile, Book, ReadStatus} from '../../../model/book.model';
 import {Button} from 'primeng/button';
 import {MenuModule} from 'primeng/menu';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
-import {DialogService} from 'primeng/dynamicdialog';
-import {ShelfAssignerComponent} from '../../shelf-assigner/shelf-assigner.component';
 import {BookService} from '../../../service/book.service';
 import {CheckboxChangeEvent, CheckboxModule} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
-import {MetadataRefreshRequest} from '../../../../metadata/model/request/metadata-refresh-request.model';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {filter, Subject} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
-import {BookSenderComponent} from '../../book-sender/book-sender.component';
 import {Router} from '@angular/router';
 import {ProgressBar} from 'primeng/progressbar';
-import {BookMetadataCenterComponent} from '../../../../metadata/component/book-metadata-center/book-metadata-center.component';
 import {take, takeUntil} from 'rxjs/operators';
 import {readStatusLabels} from '../book-filter/book-filter.component';
 import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress-type';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
-import {MetadataFetchOptionsComponent} from '../../../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
-import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -40,6 +33,7 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   @Output() checkboxClick = new EventEmitter<{ index: number; bookId: number; selected: boolean; shiftKey: boolean }>();
+  @Output() menuToggled = new EventEmitter<boolean>();
 
   @Input() index!: number;
   @Input() book!: Book;
@@ -47,7 +41,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
-  @Input() readButtonHidden: boolean = false;
+  @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
@@ -60,7 +54,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   private bookService = inject(BookService);
   private taskHelperService = inject(TaskHelperService);
-  private dialogService = inject(DialogService);
   private userService = inject(UserService);
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
@@ -128,6 +121,14 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this.bookService.readBook(book.id);
   }
 
+  onMenuShow(): void {
+    this.menuToggled.emit(true);
+  }
+
+  onMenuHide(): void {
+    this.menuToggled.emit(false);
+  }
+
   onMenuToggle(event: Event, menu: TieredMenu): void {
     menu.toggle(event);
 
@@ -172,19 +173,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         icon: 'pi pi-info-circle',
         command: () => {
           setTimeout(() => {
-            if (this.metadataCenterViewMode === 'route') {
-              this.router.navigate(['/book', this.book.id], {
-                queryParams: {tab: 'view'}
-              });
-            } else {
-              this.dialogService.open(BookMetadataCenterComponent, {
-                width: '95%',
-                data: {bookId: this.book.id},
-                modal: true,
-                dismissableMask: true,
-                showHeader: false
-              });
-            }
+            this.openBookInfo(this.book);
           }, 150);
         },
       },
@@ -298,18 +287,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
               label: 'Custom Send',
               icon: 'pi pi-envelope',
               command: () => {
-                this.dialogService.open(BookSenderComponent, {
-                  header: 'Send Book to Email',
-                  modal: true,
-                  closable: true,
-                  style: {
-                    position: 'absolute',
-                    top: '15%',
-                  },
-                  data: {
-                    bookId: this.book.id,
-                  }
-                });
+                this.bookDialogHelperService.openCustomSendDialog(this.book.id);
               }
             }
           ]
@@ -346,15 +324,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             label: 'Custom Fetch',
             icon: 'pi pi-sync',
             command: () => {
-              this.dialogService.open(MetadataFetchOptionsComponent, {
-                header: 'Metadata Refresh Options',
-                modal: true,
-                closable: true,
-                data: {
-                  bookIds: [this.book!.id],
-                  metadataRefreshType: MetadataRefreshType.BOOKS,
-                },
-              });
+              this.bookDialogHelperService.openMetadataRefreshDialog(new Set([this.book!.id]))
             },
           }
         ]
@@ -462,20 +432,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private openShelfDialog(): void {
-    this.dialogService.open(ShelfAssignerComponent, {
-      header: `Update Book's Shelves`,
-      modal: true,
-      closable: true,
-      contentStyle: {overflow: 'auto'},
-      baseZIndex: 10,
-      style: {
-        position: 'absolute',
-        top: '15%',
-      },
-      data: {
-        book: this.book,
-      },
-    });
+    this.bookDialogHelperService.openShelfAssignerDialog(this.book, null);
   }
 
   openSeriesInfo(): void {
@@ -494,18 +451,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         queryParams: {tab: 'view'}
       });
     } else {
-      this.dialogService.open(BookMetadataCenterComponent, {
-        width: '90%',
-        data: {bookId: book.id},
-        modal: true,
-        dismissableMask: false,
-        showHeader: true,
-        closable: true,
-        closeOnEscape: true,
-        maximizable: true,
-        header: 'Book Details',
-        styleClass: 'book-details-dialog'
-      });
+      this.bookDialogHelperService.openBookDetailsDialog(book.id);
     }
   }
 
@@ -672,6 +618,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
       case 'epub':
       case 'mobi':
       case 'azw3':
+      case 'fb2':
         return 'pi pi-book';
       case 'cbz':
       case 'cbr':
@@ -693,6 +640,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   private hasEditMetadataPermission(): boolean {
     return this.isAdmin() || (this.userPermissions?.canEditMetadata ?? false);
+  }
+
+  canReadBook(): boolean {
+    return this.book?.bookType !== 'FB2';
   }
 
   private hasDownloadPermission(): boolean {
@@ -766,5 +717,9 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   shouldShowStatusIcon(): boolean {
     return this.readStatusHelper.shouldShowStatusIcon(this.book.readStatus);
+  }
+
+  isSeriesViewActive(): boolean {
+    return this.seriesViewEnabled && !!this.book.seriesCount && this.book.seriesCount! >= 1;
   }
 }

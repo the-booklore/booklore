@@ -4,6 +4,7 @@ import {BookFilter} from './BookFilter';
 import {BookState} from '../../../model/state/book-state.model';
 import {fileSizeRanges, matchScoreRanges, pageCountRanges, ratingRanges} from '../book-filter/book-filter.component';
 import {Book, ReadStatus} from '../../../model/book.model';
+import {BookFilterMode} from '../../../../settings/user-management/user.service';
 
 export function isRatingInRange(rating: number | undefined | null, rangeId: string): boolean {
   if (rating == null) return false;
@@ -46,7 +47,7 @@ export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean
 
 export class SideBarFilter implements BookFilter {
 
-  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<'and' | 'or' | 'single'>) {
+  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<BookFilterMode>) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
@@ -60,29 +61,29 @@ export class SideBarFilter implements BookFilter {
             }
             switch (filterType) {
               case 'author':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.authors?.includes(val))
-                  : filterValues.some(val => book.metadata?.authors?.includes(val));
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.authors?.includes(val))
+                  : filterValues.every(val => book.metadata?.authors?.includes(val));
               case 'category':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.categories?.includes(val))
-                  : filterValues.some(val => book.metadata?.categories?.includes(val));
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.categories?.includes(val))
+                  : filterValues.every(val => book.metadata?.categories?.includes(val));
               case 'mood':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.moods?.includes(val))
-                  : filterValues.some(val => book.metadata?.moods?.includes(val));
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.moods?.includes(val))
+                  : filterValues.every(val => book.metadata?.moods?.includes(val));
               case 'tag':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.tags?.includes(val))
-                  : filterValues.some(val => book.metadata?.tags?.includes(val));
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.tags?.includes(val))
+                  : filterValues.every(val => book.metadata?.tags?.includes(val));
               case 'publisher':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.publisher === val)
-                  : filterValues.some(val => book.metadata?.publisher === val);
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.publisher === val)
+                  : filterValues.every(val => book.metadata?.publisher === val);
               case 'series':
-                return mode === 'and'
-                  ? filterValues.every(val => book.metadata?.seriesName === val)
-                  : filterValues.some(val => book.metadata?.seriesName === val);
+                return mode === 'or'
+                  ? filterValues.some(val => book.metadata?.seriesName === val)
+                  : filterValues.every(val => book.metadata?.seriesName === val);
               case 'readStatus':
                 return doesBookMatchReadStatus(book, filterValues);
               case 'amazonRating':
@@ -92,7 +93,7 @@ export class SideBarFilter implements BookFilter {
               case 'hardcoverRating':
                 return filterValues.some(range => isRatingInRange(book.metadata?.hardcoverRating, range));
               case 'personalRating':
-                return filterValues.some(range => isRatingInRange10(book.metadata?.personalRating, range));
+                return filterValues.some(range => isRatingInRange10(book.personalRating, range));
               case 'publishedDate':
                 const bookYear = book.metadata?.publishedDate
                   ? new Date(book.metadata.publishedDate).getFullYear()
@@ -115,7 +116,7 @@ export class SideBarFilter implements BookFilter {
                 return false;
             }
           });
-          return mode === 'and' ? matches.every(m => m) : matches.some(m => m);
+          return mode === 'or' ? matches.some(m => m) : matches.every(m => m);
         });
         return {...bookState, books: filteredBooks};
       })

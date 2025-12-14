@@ -97,6 +97,26 @@ public class OpdsController {
                 .body(feed);
     }
 
+    @Operation(summary = "Get OPDS authors navigation", description = "Retrieve the OPDS authors navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Authors navigation feed returned successfully")
+    @GetMapping(value = "/authors", produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getAuthorsNavigation(@Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateAuthorsNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
+    }
+
+    @Operation(summary = "Get OPDS series navigation", description = "Retrieve the OPDS series navigation feed.")
+    @ApiResponse(responseCode = "200", description = "Series navigation feed returned successfully")
+    @GetMapping(value = "/series", produces = OPDS_CATALOG_MEDIA_TYPE)
+    public ResponseEntity<String> getSeriesNavigation(@Parameter(hidden = true) HttpServletRequest request) {
+        String feed = opdsFeedService.generateSeriesNavigation(request);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(OPDS_CATALOG_MEDIA_TYPE))
+                .body(feed);
+    }
+
     @Operation(summary = "Get OPDS catalog feed", description = "Retrieve the OPDS acquisition catalog feed.")
     @ApiResponse(responseCode = "200", description = "Catalog feed returned successfully")
     @GetMapping(value = "/catalog", produces = OPDS_ACQUISITION_MEDIA_TYPE)

@@ -6,15 +6,14 @@ import {ProgressBarModule} from 'primeng/progressbar';
 import {ButtonModule} from 'primeng/button';
 import {Divider} from 'primeng/divider';
 import {Tooltip} from 'primeng/tooltip';
-import {DialogService} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 
 import {MetadataBatchProgressNotification, MetadataBatchStatus, MetadataBatchStatusLabels} from '../../model/metadata-batch-progress.model';
 import {MetadataProgressService} from '../../service/metadata-progress-service';
-import {MetadataReviewDialogComponent} from '../../../features/metadata/component/metadata-review-dialog/metadata-review-dialog-component';
 import {MetadataTaskService} from '../../../features/book/service/metadata-task';
 import {Tag} from 'primeng/tag';
 import {TaskService} from '../../../features/settings/task-management/task.service';
+import {DialogLauncherService} from '../../services/dialog-launcher.service';
 
 @Component({
   selector: 'app-metadata-progress-widget',
@@ -27,7 +26,7 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
   activeTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
 
   private destroy$ = new Subject<void>();
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private metadataProgressService = inject(MetadataProgressService);
   private metadataTaskService = inject(MetadataTaskService);
   private taskService = inject(TaskService);
@@ -102,14 +101,7 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
   }
 
   reviewTask(taskId: string): void {
-    this.dialogService.open(MetadataReviewDialogComponent, {
-      showHeader: false,
-      width: '90vw',
-      height: '90vh',
-      data: {taskId},
-      closable: false,
-      modal: true
-    });
+    this.dialogLauncherService.openMetadataReviewDialog(taskId);
   }
 
   cancelTask(taskId: string): void {

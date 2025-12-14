@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,8 +36,8 @@ public class LibraryController {
 
     @Operation(summary = "Get a library by ID", description = "Retrieve details of a specific library by its ID.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Library details returned successfully"),
-        @ApiResponse(responseCode = "404", description = "Library not found")
+            @ApiResponse(responseCode = "200", description = "Library details returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Library not found")
     })
     @GetMapping("/{libraryId}")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
@@ -50,7 +51,7 @@ public class LibraryController {
     @PostMapping
     @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<Library> createLibrary(
-            @Parameter(description = "Library creation request") @RequestBody CreateLibraryRequest request) {
+            @Parameter(description = "Library creation request") @Validated @RequestBody CreateLibraryRequest request) {
         return ResponseEntity.ok(libraryService.createLibrary(request));
     }
 
@@ -60,7 +61,7 @@ public class LibraryController {
     @CheckLibraryAccess(libraryIdParam = "libraryId")
     @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<Library> updateLibrary(
-            @Parameter(description = "Library update request") @RequestBody CreateLibraryRequest request,
+            @Parameter(description = "Library update request") @Validated @RequestBody CreateLibraryRequest request,
             @Parameter(description = "ID of the library") @PathVariable Long libraryId) {
         return ResponseEntity.ok(libraryService.updateLibrary(request, libraryId));
     }

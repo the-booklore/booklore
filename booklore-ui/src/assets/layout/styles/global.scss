@@ -3,3 +3,34 @@
 .hidden {
   display: none;
 }
+
+.p-dialog {
+  @media (max-width: 768px) {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 95vh !important;
+  }
+}
+
+.dynamic-dialog-minimal.p-dialog {
+  border: none;
+
+  .p-dialog-content {
+    padding: 0;
+  }
+}
+
+.dialog-maximal.p-dialog {
+  width: 95vw;
+  max-width: 1200px;
+  height: 95vh;
+  max-height: 95vh;
+}
+
+.gradient-divider {
+  min-height: 1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+  margin: 0.25rem 0;
+  flex-shrink: 0;
+}

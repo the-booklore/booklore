@@ -13,6 +13,14 @@
         }
       </p>
     </div>
+    <p-button
+      icon="pi pi-times"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+      (onClick)="closeDialog()"
+      styleClass="close-button">
+    </p-button>
   </div>
 
   <div class="shelves-container">
@@ -69,6 +77,7 @@
       label="Create Shelf"
       icon="pi pi-plus"
       [outlined]="true"
+      severity="info"
       (onClick)="createShelfDialog()"
     />
     <div class="footer-actions">

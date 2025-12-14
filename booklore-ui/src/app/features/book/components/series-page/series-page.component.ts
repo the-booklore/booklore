@@ -13,7 +13,7 @@ import { Tab, TabList, TabPanel, TabPanels, Tabs } from "primeng/tabs";
 import { Tag } from "primeng/tag";
 import { VirtualScrollerModule } from "@iharbeck/ngx-virtual-scroller";
 import { ProgressSpinner } from "primeng/progressspinner";
-import { DialogService, DynamicDialogRef } from "primeng/dynamicdialog";
+import { DynamicDialogRef } from "primeng/dynamicdialog";
 import { Router } from "@angular/router";
 
 @Component({

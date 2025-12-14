@@ -296,7 +296,7 @@ export class ReadingDNAChartService implements OnDestroy {
       if (!metadata) return false;
       return (metadata.goodreadsRating && metadata.goodreadsRating >= 4.0) ||
         (metadata.amazonRating && metadata.amazonRating >= 4.0) ||
-        (metadata.personalRating && metadata.personalRating >= 4);
+        (book.personalRating && book.personalRating >= 4);
     });
 
     const qualityRate = qualityBooks.length / books.length;
@@ -366,7 +366,7 @@ export class ReadingDNAChartService implements OnDestroy {
     });
 
     // Personal rating engagement shows emotional connection
-    const personallyRatedBooks = books.filter(book => book.metadata?.personalRating);
+    const personallyRatedBooks = books.filter(book => book.personalRating);
 
     const emotionalRate = emotionalBooks.length / books.length;
     const ratingEngagement = personallyRatedBooks.length / books.length;

@@ -1,13 +1,11 @@
 .dashboard-settings {
-  width: 1000px;
-  max-width: 1200px;
+  max-width: 600px;
   min-height: 300px;
   padding: 2rem 1rem 0 1rem;
   margin: 0 auto;
 
   @media (max-width: 768px) {
     width: 100%;
-    max-width: 100%;
     padding: 3rem 1rem 0 1rem;
     box-sizing: border-box;
   }

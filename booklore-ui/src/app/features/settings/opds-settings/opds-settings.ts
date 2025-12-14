@@ -9,7 +9,7 @@ import {Dialog} from 'primeng/dialog';
 import {FormsModule} from '@angular/forms';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {ConfirmationService, MessageService} from 'primeng/api';
-import {OpdsUserV2, OpdsUserV2CreateRequest, OpdsService} from './opds.service';
+import {OpdsService, OpdsUserV2, OpdsUserV2CreateRequest} from './opds.service';
 import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
 import {of, Subject} from 'rxjs';

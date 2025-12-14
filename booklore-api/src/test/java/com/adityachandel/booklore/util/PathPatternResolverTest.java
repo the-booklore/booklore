@@ -184,7 +184,7 @@ class PathPatternResolverTest {
     void testResolvePattern_nullMetadata() {
         String result = PathPatternResolver.resolvePattern((BookMetadata) null, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
@@ -195,7 +195,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
@@ -466,5 +466,48 @@ class PathPatternResolverTest {
 
         int byteLen = result.getBytes(StandardCharsets.UTF_8).length;
         assertTrue(byteLen <= 245, "Total filename bytes " + byteLen + " should be <= 245");
+    }
+
+    @Test
+    @DisplayName("Should remove trailing dots from path components for Windows compatibility")
+    void testResolvePattern_removesTrailingDots() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .authors(Set.of("Author Name Jr."))
+                .build();
+
+        // Pattern: {authors}/{title}
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{title}", "original.pdf");
+
+        // Expected: Author Name Jr/Book Title.pdf
+        // Windows does not allow folder names ending in '.'
+        // So "Author Name Jr." should become "Author Name Jr"
+
+        String[] components = result.split("/");
+        assertTrue(components.length >= 1);
+
+        String authorDir = components[0];
+        assertFalse(authorDir.endsWith("."), "Directory name should not end with a dot: " + authorDir);
+        assertTrue(authorDir.equals("Author Name Jr"), "Expected 'Author Name Jr' but got '" + authorDir + "'");
+    }
+
+    @Test
+    @DisplayName("Should remove trailing dots from multiple path components")
+    void testResolvePattern_removesTrailingDotsFromMultipleComponents() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title.")
+                .seriesName("Series.")
+                .authors(Set.of("Author."))
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{series}/{title}", "original.pdf");
+
+        String[] components = result.split("/");
+        for (int i = 0; i < components.length - 1; i++) { // Check directories
+            assertFalse(components[i].endsWith("."), "Component " + i + " should not end with dot: " + components[i]);
+        }
+
+        assertTrue(components[0].equals("Author"));
+        assertTrue(components[1].equals("Series"));
     }
 }
