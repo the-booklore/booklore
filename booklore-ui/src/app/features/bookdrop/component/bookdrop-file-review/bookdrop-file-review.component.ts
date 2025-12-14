@@ -25,7 +25,7 @@ import {NgClass, NgStyle} from '@angular/common';
 import {Paginator} from 'primeng/paginator';
 import {ActivatedRoute} from '@angular/router';
 import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-picker/bookdrop-file-metadata-picker.component';
-import {BookdropFinalizeResultDialogComponent} from '../bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog-component';
+import {BookdropFinalizeResultDialogComponent} from '../bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog.component';
 import {BookdropBulkEditDialogComponent, BulkEditResult} from '../bookdrop-bulk-edit-dialog/bookdrop-bulk-edit-dialog.component';
 import {BookdropPatternExtractDialogComponent} from '../bookdrop-pattern-extract-dialog/bookdrop-pattern-extract-dialog.component';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
