@@ -172,20 +172,45 @@ jobs:
           # Install jq for JSON parsing
           sudo apt-get install -y jq
           
+          # Wait for application to be fully ready (auth endpoint available)
+          echo "Waiting for auth endpoint to be available..."
+          for i in {1..30}; do
+            if curl -s -f http://localhost:8080/api/v1/auth/login > /dev/null 2>&1 || \
+               curl -s http://localhost:8080/api/v1/auth/login 2>&1 | grep -q "400\|405\|401"; then
+              echo "Auth endpoint is ready"
+              break
+            fi
+            echo "Waiting for auth endpoint... ($i/30)"
+            sleep 2
+          done
+          
+          # Additional wait to ensure database is ready
+          sleep 5
+          
           # Login to get JWT token
           echo "Logging in as test-user..."
-          LOGIN_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+          LOGIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:8080/api/v1/auth/login \
             -H "Content-Type: application/json" \
             -d '{"username":"test-user","password":"testpass"}')
           
-          echo "Login response: $LOGIN_RESPONSE"
+          HTTP_CODE=$(echo "$LOGIN_RESPONSE" | tail -n1)
+          BODY=$(echo "$LOGIN_RESPONSE" | sed '$d')
+          
+          echo "Login HTTP Status: $HTTP_CODE"
+          echo "Login response body: $BODY"
+          
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "FAILURE: Login failed with HTTP $HTTP_CODE"
+            echo "Full response: $LOGIN_RESPONSE"
+            exit 1
+          fi
           
           # Extract access token using jq
-          ACCESS_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken // empty')
+          ACCESS_TOKEN=$(echo "$BODY" | jq -r '.accessToken // empty')
           
           if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
-            echo "FAILURE: Could not obtain access token"
-            echo "Login response: $LOGIN_RESPONSE"
+            echo "FAILURE: Could not extract access token from response"
+            echo "Response body: $BODY"
             exit 1
           fi
           
