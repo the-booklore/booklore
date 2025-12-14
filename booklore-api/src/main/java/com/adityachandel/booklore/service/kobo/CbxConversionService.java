@@ -102,20 +102,20 @@ public class CbxConversionService {
      * @throws IllegalArgumentException if the file format is not supported
      * @throws IllegalStateException if no valid images are found in the archive
      */
-    public File convertCbxToEpub(File cbxFile, File tempDir, BookEntity bookEntity) 
+    public File convertCbxToEpub(File cbxFile, File tempDir, BookEntity bookEntity, int compressionPercentage)
             throws IOException, TemplateException, RarException {
         validateInputs(cbxFile, tempDir);
         
         log.info("Starting CBX to EPUB conversion for: {}", cbxFile.getName());
         
-        File outputFile = executeCbxConversion(cbxFile, tempDir, bookEntity);
+        File outputFile = executeCbxConversion(cbxFile, tempDir, bookEntity,compressionPercentage);
         
         log.info("Successfully converted {} to {} (size: {} bytes)",
                 cbxFile.getName(), outputFile.getName(), outputFile.length());
         return outputFile;
     }
 
-    private File executeCbxConversion(File cbxFile, File tempDir, BookEntity bookEntity) 
+    private File executeCbxConversion(File cbxFile, File tempDir, BookEntity bookEntity,int compressionPercentage)
             throws IOException, TemplateException, RarException {
         
         Path epubFilePath = Paths.get(tempDir.getAbsolutePath(), cbxFile.getName() + ".epub");
@@ -136,7 +136,7 @@ public class CbxConversionService {
             addMetaInfContainer(zipOut);
             addStylesheet(zipOut);
             
-            List<EpubContentFileGroup> contentGroups = addImagesAndPages(zipOut, imagePaths);
+            List<EpubContentFileGroup> contentGroups = addImagesAndPages(zipOut, imagePaths,compressionPercentage);
             
             addContentOpf(zipOut, bookEntity, contentGroups);
             addTocNcx(zipOut, bookEntity, contentGroups);
@@ -340,13 +340,13 @@ public class CbxConversionService {
         zipOut.closeArchiveEntry();
     }
 
-    private List<EpubContentFileGroup> addImagesAndPages(ZipArchiveOutputStream zipOut, List<Path> imagePaths) 
+    private List<EpubContentFileGroup> addImagesAndPages(ZipArchiveOutputStream zipOut, List<Path> imagePaths,int compressionPercentage)
             throws IOException, TemplateException {
         
         List<EpubContentFileGroup> contentGroups = new ArrayList<>();
 
         if (!imagePaths.isEmpty()) {
-            addImageToZipFromPath(zipOut, COVER_IMAGE_PATH, imagePaths.getFirst());
+            addImageToZipFromPath(zipOut, COVER_IMAGE_PATH, imagePaths.getFirst(),compressionPercentage);
         }
 
         for (int i = 0; i < imagePaths.size(); i++) {
@@ -358,7 +358,7 @@ public class CbxConversionService {
             String imagePath = IMAGE_ROOT_PATH + imageFileName;
             String htmlPath = HTML_ROOT_PATH + htmlFileName;
 
-            addImageToZipFromPath(zipOut, imagePath, imageSourcePath);
+            addImageToZipFromPath(zipOut, imagePath, imageSourcePath,compressionPercentage);
 
             String htmlContent = generatePageHtml(imageFileName, i + 1);
             ZipArchiveEntry htmlEntry = new ZipArchiveEntry(htmlPath);
@@ -372,7 +372,7 @@ public class CbxConversionService {
         return contentGroups;
     }
 
-    private void addImageToZipFromPath(ZipArchiveOutputStream zipOut, String epubImagePath, Path sourceImagePath) 
+    private void addImageToZipFromPath(ZipArchiveOutputStream zipOut, String epubImagePath, Path sourceImagePath,int compressionPercentage)
             throws IOException {
         ZipArchiveEntry imageEntry = new ZipArchiveEntry(epubImagePath);
         zipOut.putArchiveEntry(imageEntry);
@@ -385,7 +385,7 @@ public class CbxConversionService {
             try (InputStream fis = Files.newInputStream(sourceImagePath)) {
                 BufferedImage image = ImageIO.read(fis);
                 if (image != null) {
-                    writeJpegImage(image, zipOut, 0.85f);
+                    writeJpegImage(image, zipOut, compressionPercentage/100f);
                 } else {
                     log.warn("Could not decode image {}, copying raw bytes", sourceImagePath.getFileName());
                     try (InputStream rawStream = Files.newInputStream(sourceImagePath)) {

@@ -1,8 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {CreateUserDialogComponent} from './create-user-dialog/create-user-dialog.component';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
 import {User, UserService} from './user.service';
@@ -16,6 +15,7 @@ import {Password} from 'primeng/password';
 import {filter, take, takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
+import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-user-management',
@@ -36,7 +36,7 @@ import {Tooltip} from 'primeng/tooltip';
 })
 export class UserManagementComponent implements OnInit, OnDestroy {
   ref: DynamicDialogRef | undefined | null;
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private libraryService = inject(LibraryService);
   private messageService = inject(MessageService);
@@ -105,13 +105,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   }
 
   openCreateUserDialog() {
-    this.ref = this.dialogService.open(CreateUserDialogComponent, {
-      header: 'Create New User',
-      showHeader: false,
-      modal: true,
-      closable: true,
-      styleClass: 'dynamic-dialog-minimal',
-    });
+    this.ref = this.dialogLauncherService.openCreateUserDialog();
     this.ref?.onClose.subscribe((result) => {
       if (result) {
         this.loadUsers();

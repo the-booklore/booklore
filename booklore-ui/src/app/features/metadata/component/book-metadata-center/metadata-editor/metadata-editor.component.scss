@@ -10,6 +10,10 @@
   width: 250px;
 }
 
+::ng-deep .cover-item p-image {
+  width: 150px;
+}
+
 ::ng-deep p-image img {
   margin: 0 auto;
 }

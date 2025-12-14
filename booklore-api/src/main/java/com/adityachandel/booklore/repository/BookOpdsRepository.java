@@ -162,4 +162,52 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
             ORDER BY b.addedOn DESC
             """)
     Page<Long> findBookIdsByAuthorNameAndLibraryIds(@Param("authorName") String authorName, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+
+    // ============================================
+    // SERIES - Distinct Series List
+    // ============================================
+
+    @Query("""
+            SELECT DISTINCT m.seriesName FROM BookMetadataEntity m
+            JOIN m.book b
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+              AND m.seriesName IS NOT NULL
+              AND m.seriesName != ''
+            ORDER BY m.seriesName
+            """)
+    List<String> findDistinctSeries();
+
+    @Query("""
+            SELECT DISTINCT m.seriesName FROM BookMetadataEntity m
+            JOIN m.book b
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+              AND b.library.id IN :libraryIds
+              AND m.seriesName IS NOT NULL
+              AND m.seriesName != ''
+            ORDER BY m.seriesName
+            """)
+    List<String> findDistinctSeriesByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
+
+    // ============================================
+    // BOOKS BY SERIES - Two Query Pattern (sorted by series number)
+    // ============================================
+
+    @Query("""
+            SELECT DISTINCT b.id FROM BookEntity b
+            JOIN b.metadata m
+            WHERE m.seriesName = :seriesName
+              AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 999999), b.addedOn DESC
+            """)
+    Page<Long> findBookIdsBySeriesName(@Param("seriesName") String seriesName, Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT b.id FROM BookEntity b
+            JOIN b.metadata m
+            WHERE m.seriesName = :seriesName
+              AND b.library.id IN :libraryIds
+              AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 999999), b.addedOn DESC
+            """)
+    Page<Long> findBookIdsBySeriesNameAndLibraryIds(@Param("seriesName") String seriesName, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
 }

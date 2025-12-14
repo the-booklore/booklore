@@ -13,8 +13,6 @@ import {MessageService} from 'primeng/api';
 import {Router, RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
-import {BookMetadataCenterComponent} from '../../../../metadata/component/book-metadata-center/book-metadata-center.component';
-import {DialogService} from 'primeng/dynamicdialog';
 import {take, takeUntil} from 'rxjs/operators';
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 

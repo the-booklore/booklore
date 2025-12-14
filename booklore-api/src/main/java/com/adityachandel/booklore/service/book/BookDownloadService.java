@@ -111,6 +111,7 @@ public class BookDownloadService {
         boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
         boolean persistConversion = koboSettings.isPersistConversion();
 
+        int compressionPercentage = koboSettings.getConversionImageCompressionPercentage();
         Path tempDir = null;
         try {
             File inputFile = new File(FileUtils.getBookFullPath(bookEntity));
@@ -159,7 +160,7 @@ public class BookDownloadService {
             }
 
             if (convertCbxToEpub && !convertedExists) {
-                fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity);
+                fileToSend = cbxConversionService.convertCbxToEpub(inputFile, tempDir.toFile(), bookEntity,compressionPercentage);
             }
 
             if (convertEpubToKepub && !convertedExists) {

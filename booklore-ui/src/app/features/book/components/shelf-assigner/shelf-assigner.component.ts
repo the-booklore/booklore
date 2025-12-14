@@ -91,7 +91,7 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   createShelfDialog(): void {
-    const dialogRef = this.bookDialogHelper.openShelfCreator();
+    const dialogRef = this.bookDialogHelper.openShelfCreatorDialog();
 
     dialogRef.onClose.subscribe((created: boolean) => {
       if (created) {
