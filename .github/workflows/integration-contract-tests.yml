@@ -92,7 +92,7 @@ jobs:
         run: |
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               exit 0
             fi
             sleep 2
@@ -108,7 +108,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test --tests "*Kobo*" --no-daemon -Dspring.profiles.active=test || {
-            echo "⚠️ Some Kobo tests failed or no Kobo tests found"
+            echo "Some Kobo tests failed or no Kobo tests found"
           }
 
       - name: Setup test user
@@ -136,7 +136,7 @@ jobs:
             VALUES ('kobo-test-user', 'kobo-test@example.com', 'hashed_password_for_testing');
           "
 
-          echo "✅ Test user created for Kobo authentication"
+          echo "Test user created for Kobo authentication"
 
       - name: Build and start application for API testing
         id: start_app
@@ -171,7 +171,7 @@ jobs:
           # Wait for startup
           for i in {1..60}; do
             if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
-              echo "✅ Application started"
+              echo "Application started"
               exit 0
             fi
             echo "Waiting... ($i/60)"
@@ -183,7 +183,7 @@ jobs:
 
       - name: Test Kobo initialization endpoint contract
         run: |
-          echo "📱 Testing Kobo initialization endpoint..."
+          echo "Testing Kobo initialization endpoint..."
           
           # Create a test token (simulating device registration)
           TEST_TOKEN="test-kobo-token-$(date +%s)"
@@ -202,21 +202,21 @@ jobs:
           
           # Kobo expects 401 for unregistered tokens, or 200 with proper auth
           if [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
-            echo "✅ Initialization endpoint correctly rejects unauthorized token"
+            echo "Initialization endpoint correctly rejects unauthorized token"
           elif [ "$HTTP_CODE" = "200" ]; then
             # Verify response structure matches Kobo expectations
             if echo "$BODY" | jq -e '.Resources // .affiliate // .image_url_template' > /dev/null 2>&1; then
-              echo "✅ Initialization response has expected Kobo structure"
+              echo "Initialization response has expected Kobo structure"
             else
-              echo "⚠️ Response structure may not match Kobo expectations"
+              echo "Response structure may not match Kobo expectations"
             fi
           else
-            echo "⚠️ Unexpected status code: $HTTP_CODE"
+            echo "Unexpected status code: $HTTP_CODE"
           fi
 
       - name: Test Kobo sync endpoint contract
         run: |
-          echo "📱 Testing Kobo sync endpoint..."
+          echo "Testing Kobo sync endpoint..."
           
           TEST_TOKEN="test-kobo-sync-token"
           
@@ -229,16 +229,16 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
-            echo "✅ Sync endpoint correctly requires authentication"
+            echo "Sync endpoint correctly requires authentication"
           elif [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Sync endpoint accessible"
+            echo "Sync endpoint accessible"
           else
-            echo "⚠️ Unexpected status: $HTTP_CODE"
+            echo "Unexpected status: $HTTP_CODE"
           fi
 
       - name: Test Kobo header requirements
         run: |
-          echo "📱 Testing Kobo-specific header handling..."
+          echo "Testing Kobo-specific header handling..."
           
           # Kobo devices send specific headers that must be handled
           HEADERS_TO_TEST=(
@@ -258,7 +258,7 @@ jobs:
             
             # Any response that's not 500 means the header was handled
             if [ "$RESPONSE" != "500" ]; then
-              echo "✅ $HEADER_NAME header handled correctly (HTTP $RESPONSE)"
+              echo "$HEADER_NAME header handled correctly (HTTP $RESPONSE)"
             else
               echo "❌ $HEADER_NAME header caused server error"
             fi
@@ -328,7 +328,7 @@ jobs:
         run: |
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -ptestroot --silent 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               exit 0
             fi
             sleep 2
@@ -344,7 +344,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew test --tests "*Koreader*" --no-daemon || {
-            echo "⚠️ Some KOReader tests failed"
+            echo "Some KOReader tests failed"
           }
 
       - name: Setup test user
@@ -372,7 +372,7 @@ jobs:
             VALUES ('koreader-test-user', 'koreader-test@example.com', MD5('testpassword'));
           "
 
-          echo "✅ Test user created for KOReader authentication"
+          echo "Test user created for KOReader authentication"
 
         run: |
           chmod +x ./gradlew
@@ -392,7 +392,7 @@ jobs:
           
           for i in {1..60}; do
             if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
-              echo "✅ Application started"
+              echo "Application started"
               exit 0
             fi
             sleep 3
@@ -401,7 +401,7 @@ jobs:
 
       - name: Test KOReader auth endpoint
         run: |
-          echo "📖 Testing KOReader auth endpoint..."
+          echo "Testing KOReader auth endpoint..."
           
           # KOReader uses basic auth with username:password (MD5)
           RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -416,20 +416,20 @@ jobs:
           
           # Should return 401 for invalid credentials or 200 for valid
           if [ "$HTTP_CODE" = "401" ]; then
-            echo "✅ Auth endpoint correctly rejects invalid credentials"
+            echo "Auth endpoint correctly rejects invalid credentials"
           elif [ "$HTTP_CODE" = "200" ]; then
             if echo "$BODY" | grep -q "username"; then
-              echo "✅ Auth response contains expected 'username' field"
+              echo "Auth response contains expected 'username' field"
             else
-              echo "⚠️ Auth response missing expected fields"
+              echo "Auth response missing expected fields"
             fi
           else
-            echo "⚠️ Unexpected status: $HTTP_CODE"
+            echo "Unexpected status: $HTTP_CODE"
           fi
 
       - name: Test KOReader progress sync protocol
         run: |
-          echo "📖 Testing KOReader progress sync protocol..."
+          echo "Testing KOReader progress sync protocol..."
           
           # Test GET progress endpoint format
           BOOK_HASH="abc123def456"
@@ -442,22 +442,22 @@ jobs:
           
           # Should return 401/404 for unauthorized/not found, or 200 with progress
           if [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "404" ]; then
-            echo "✅ Progress endpoint handles missing/unauthorized correctly ($HTTP_CODE)"
+            echo "Progress endpoint handles missing/unauthorized correctly ($HTTP_CODE)"
           elif [ "$HTTP_CODE" = "200" ]; then
             BODY=$(echo "$RESPONSE" | sed '$d')
             # Verify KOReader progress response structure
             if echo "$BODY" | jq -e '.document // .progress // .percentage' > /dev/null 2>&1; then
-              echo "✅ Progress response has expected KOReader structure"
+              echo "Progress response has expected KOReader structure"
             else
-              echo "⚠️ Progress response structure may not match KOReader expectations"
+              echo "Progress response structure may not match KOReader expectations"
             fi
           else
-            echo "⚠️ Unexpected status: $HTTP_CODE"
+            echo "Unexpected status: $HTTP_CODE"
           fi
 
       - name: Test KOReader progress update contract
         run: |
-          echo "📖 Testing KOReader progress update..."
+          echo "Testing KOReader progress update..."
           
           # KOReader sends progress updates in this format
           PROGRESS_JSON='{
@@ -479,21 +479,21 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" = "401" ]; then
-            echo "✅ Progress update requires authentication"
+            echo "Progress update requires authentication"
           elif [ "$HTTP_CODE" = "200" ]; then
             BODY=$(echo "$RESPONSE" | sed '$d')
             if echo "$BODY" | grep -q "status"; then
-              echo "✅ Progress update returns expected response"
+              echo "Progress update returns expected response"
             fi
           elif [ "$HTTP_CODE" = "400" ]; then
-            echo "⚠️ Progress update validation error (expected for test data)"
+            echo "Progress update validation error (expected for test data)"
           else
-            echo "⚠️ Unexpected status: $HTTP_CODE"
+            echo "Unexpected status: $HTTP_CODE"
           fi
 
       - name: Test multi-device sync scenario
         run: |
-          echo "📖 Testing multi-device sync scenario..."
+          echo "Testing multi-device sync scenario..."
           
           # Simulate two devices syncing the same book
           # This tests the "last write wins" vs "timestamp-based" resolution
@@ -535,7 +535,7 @@ jobs:
             "http://localhost:8080/api/koreader/syncs/progress" 2>/dev/null || true
           
           # Note: Actual verification would require valid auth
-          echo "✅ Multi-device sync scenario executed"
+          echo "Multi-device sync scenario executed"
           echo "   (Full verification requires valid test credentials)"
 
       - name: Stop application
@@ -639,7 +639,7 @@ jobs:
         env:
           APP_PORT: ${{ env.APP_PORT }}
         run: |
-          echo "📋 Validating OpenAPI schema..."
+          echo "Validating OpenAPI schema..."
 
           SCHEMA=$(curl -sf "http://localhost:$APP_PORT/api/v1/api-docs" 2>/dev/null || \
                    curl -sf "http://localhost:$APP_PORT/v3/api-docs" 2>/dev/null || \
@@ -647,22 +647,22 @@ jobs:
                    curl -sf "http://localhost:$APP_PORT/swagger.json" 2>/dev/null)
           
           if echo "$SCHEMA" | grep -q "openapi"; then
-            echo "✅ OpenAPI schema is accessible"
+            echo "OpenAPI schema is accessible"
             
             # Check for Kobo and KOReader paths
             if echo "$SCHEMA" | grep -q "/api/kobo"; then
-              echo "✅ Kobo API paths documented"
+              echo "Kobo API paths documented"
             else
-              echo "⚠️ Kobo API paths not found in schema"
+              echo "Kobo API paths not found in schema"
             fi
             
             if echo "$SCHEMA" | grep -q "/api/koreader"; then
-              echo "✅ KOReader API paths documented"
+              echo "KOReader API paths documented"
             else
-              echo "⚠️ KOReader API paths not found in schema"
+              echo "KOReader API paths not found in schema"
             fi
           else
-            echo "⚠️ OpenAPI schema not accessible"
+            echo "OpenAPI schema not accessible"
           fi
 
       - name: Stop application
@@ -684,16 +684,16 @@ jobs:
     steps:
       - name: Generate Summary
         run: |
-          echo "# 📱 Integration Contract Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "# Integration Contract Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "These tests verify API compatibility with hardware devices." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Integration | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Kobo API Contract | ${{ needs.kobo-contract-tests.result == 'success' && '✅ Pass' || '⚠️ Check' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| KOReader Protocol | ${{ needs.koreader-contract-tests.result == 'success' && '✅ Pass' || '⚠️ Check' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| API Schema | ${{ needs.api-schema-validation.result == 'success' && '✅ Pass' || '⚠️ Check' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Kobo API Contract | ${{ needs.kobo-contract-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| KOReader Protocol | ${{ needs.koreader-contract-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Schema | ${{ needs.api-schema-validation.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⚠️ **Note:** Some tests may show warnings if authentication is required." >> $GITHUB_STEP_SUMMARY
+          echo "**Note:** Some tests may show warnings if authentication is required." >> $GITHUB_STEP_SUMMARY
           echo "This is expected behavior - the tests verify endpoint existence and error handling." >> $GITHUB_STEP_SUMMARY
 

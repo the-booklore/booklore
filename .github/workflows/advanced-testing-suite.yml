@@ -117,7 +117,7 @@ jobs:
           LOAD_RESULT: ${{ needs.load-tests.result }}
           # EINK_RESULT: ${{ needs.eink-tests.result }} # disabled
         run: |
-          echo "# 🧪 Advanced Testing Suite Results" >> $GITHUB_STEP_SUMMARY
+          echo "# Advanced Testing Suite Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Triggered by:** $ACTOR" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** $BRANCH" >> $GITHUB_STEP_SUMMARY
@@ -137,70 +137,70 @@ jobs:
           if [ "$RUN_ARM64" = "true" ]; then
             ARM64_STATUS="$ARM64_RESULT"
             case $ARM64_STATUS in
-              success) ARM64_ICON="✅" ;;
-              failure) ARM64_ICON="❌" ;;
-              skipped) ARM64_ICON="⏭️" ;;
-              *) ARM64_ICON="⚠️" ;;
+              success) ARM64_ICON="Pass" ;;
+              failure) ARM64_ICON="Fail" ;;
+              skipped) ARM64_ICON="Skipped" ;;
+              *) ARM64_ICON="Check" ;;
             esac
-            echo "| 🔧 ARM64 Hardware Emulation | $ARM64_ICON $ARM64_STATUS | Verifies JNI linkage and startup on ARM64 (Raspberry Pi, Apple Silicon) |" >> $GITHUB_STEP_SUMMARY
+            echo "| ARM64 Hardware Emulation | $ARM64_ICON | Verifies JNI linkage and startup on ARM64 (Raspberry Pi, Apple Silicon) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🔧 ARM64 Hardware Emulation | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+            echo "| ARM64 Hardware Emulation | Skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Reverse Proxy Tests
           if [ "$RUN_PROXY" = "true" ]; then
             PROXY_STATUS="$PROXY_RESULT"
             case $PROXY_STATUS in
-              success) PROXY_ICON="✅" ;;
-              failure) PROXY_ICON="❌" ;;
-              skipped) PROXY_ICON="⏭️" ;;
-              *) PROXY_ICON="⚠️" ;;
+              success) PROXY_ICON="Pass" ;;
+              failure) PROXY_ICON="Fail" ;;
+              skipped) PROXY_ICON="Skipped" ;;
+              *) PROXY_ICON="Check" ;;
             esac
-            echo "| 🔀 Reverse Proxy Simulation | $PROXY_ICON $PROXY_STATUS | Tests X-Forwarded-Host handling for Kobo/KOReader sync |" >> $GITHUB_STEP_SUMMARY
+            echo "| Reverse Proxy Simulation | $PROXY_ICON | Tests X-Forwarded-Host handling for Kobo/KOReader sync |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 🔀 Reverse Proxy Simulation | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+            echo "| Reverse Proxy Simulation | Skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Corpus of Doom Tests
           if [ "$RUN_CORPUS" = "true" ]; then
             CORPUS_STATUS="$CORPUS_RESULT"
             case $CORPUS_STATUS in
-              success) CORPUS_ICON="✅" ;;
-              failure) CORPUS_ICON="❌" ;;
-              skipped) CORPUS_ICON="⏭️" ;;
-              *) CORPUS_ICON="⚠️" ;;
+              success) CORPUS_ICON="Pass" ;;
+              failure) CORPUS_ICON="Fail" ;;
+              skipped) CORPUS_ICON="Skipped" ;;
+              *) CORPUS_ICON="Check" ;;
             esac
-            echo "| ☠️ Corpus of Doom | $CORPUS_ICON $CORPUS_STATUS | Server survival against malformed EPUB/PDF files |" >> $GITHUB_STEP_SUMMARY
+            echo "| Corpus of Doom | $CORPUS_ICON | Server survival against malformed EPUB/PDF files |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| ☠️ Corpus of Doom | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+            echo "| Corpus of Doom | Skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # Load Tests
           if [ "$RUN_LOAD" = "true" ]; then
             LOAD_STATUS="$LOAD_RESULT"
             case $LOAD_STATUS in
-              success) LOAD_ICON="✅" ;;
-              failure) LOAD_ICON="❌" ;;
-              skipped) LOAD_ICON="⏭️" ;;
-              *) LOAD_ICON="⚠️" ;;
+              success) LOAD_ICON="Pass" ;;
+              failure) LOAD_ICON="Fail" ;;
+              skipped) LOAD_ICON="Skipped" ;;
+              *) LOAD_ICON="Check" ;;
             esac
-            echo "| 📈 Load & Performance | $LOAD_ICON $LOAD_STATUS | Artillery load testing with $BOOK_COUNT synthetic books |" >> $GITHUB_STEP_SUMMARY
+            echo "| Load & Performance | $LOAD_ICON | Artillery load testing with $BOOK_COUNT synthetic books |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| 📈 Load & Performance | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+            echo "| Load & Performance | Skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           fi
           
           # E-Ink Tests
           # if [ "$RUN_EINK" = "true" ]; then
           #   EINK_STATUS="$EINK_RESULT"
           #   case $EINK_STATUS in
-          #     success) EINK_ICON="✅" ;;
-          #     failure) EINK_ICON="❌" ;;
-          #     skipped) EINK_ICON="⏭️" ;;
-          #     *) EINK_ICON="⚠️" ;;
+          #     success) EINK_ICON="PASS" ;;
+          #     failure) EINK_ICON="FAIL" ;;
+          #     skipped) EINK_ICON="SKIPPED" ;;
+          #     *) EINK_ICON="CHECK" ;;
           #   esac
-          #   echo "| 📱 E-Ink Visual Regression | $EINK_ICON $EINK_STATUS | Grayscale rendering and contrast verification |" >> $GITHUB_STEP_SUMMARY
+          #   echo "| E-Ink Visual Regression | $EINK_ICON $EINK_STATUS | Grayscale rendering and contrast verification |" >> $GITHUB_STEP_SUMMARY
           # else
-          #   echo "| 📱 E-Ink Visual Regression | ⏭️ skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
+          #   echo "| E-Ink Visual Regression | SKIPPED skipped | Not selected |" >> $GITHUB_STEP_SUMMARY
           # fi
           
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -217,23 +217,23 @@ jobs:
             OVERALL="failure"
           fi
           
-          echo "## 🎯 Overall Result" >> $GITHUB_STEP_SUMMARY
+          echo "## Overall Result" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ "$OVERALL" = "success" ]; then
-            echo "### ✅ All selected tests passed!" >> $GITHUB_STEP_SUMMARY
+            echo "### All selected tests passed!" >> $GITHUB_STEP_SUMMARY
           else
-            echo "### ❌ Some tests failed - review individual results above" >> $GITHUB_STEP_SUMMARY
+            echo "### Some tests failed - review individual results above" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "---" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          echo "## 📋 Test Suite Details" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Suite Details" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          
+
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>🔧 ARM64 Hardware Emulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>ARM64 Hardware Emulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests BookLore on ARM64 architecture using QEMU emulation:" >> $GITHUB_STEP_SUMMARY
           echo "- Builds ARM64 Docker image" >> $GITHUB_STEP_SUMMARY
@@ -245,7 +245,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>🔀 Reverse Proxy Simulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>Reverse Proxy Simulation Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests header handling when behind Nginx/Traefik:" >> $GITHUB_STEP_SUMMARY
           echo "- X-Forwarded-Host header preservation" >> $GITHUB_STEP_SUMMARY
@@ -257,7 +257,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>☠️ Corpus of Doom (Malformed Files) Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>Corpus of Doom (Malformed Files) Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests server resilience against intentionally broken files:" >> $GITHUB_STEP_SUMMARY
           echo "- Malformed EPUB (XML bombs, circular refs, truncated)" >> $GITHUB_STEP_SUMMARY
@@ -269,7 +269,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>📈 Load & Performance Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>Load & Performance Tests</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests performance under load with large libraries:" >> $GITHUB_STEP_SUMMARY
           echo "- Seeds $BOOK_COUNT synthetic books" >> $GITHUB_STEP_SUMMARY
@@ -281,7 +281,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           
           echo "<details>" >> $GITHUB_STEP_SUMMARY
-          echo "<summary><b>📱 E-Ink Visual Regression Tests (DISABLED)</b></summary>" >> $GITHUB_STEP_SUMMARY
+          echo "<summary><b>E-Ink Visual Regression Tests (DISABLED)</b></summary>" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Tests UI rendering on E-Ink displays:" >> $GITHUB_STEP_SUMMARY
           echo "- Applies grayscale + contrast CSS filters" >> $GITHUB_STEP_SUMMARY
@@ -308,5 +308,5 @@ jobs:
             echo "❌ Some tests failed"
             exit 1
           fi
-          echo "✅ All selected tests passed"
+          echo "All selected tests passed"
 

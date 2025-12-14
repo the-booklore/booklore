@@ -107,7 +107,7 @@ jobs:
         run: |
           # Add dependency-check plugin to build if not present
           if ! grep -q "org.owasp.dependencycheck" build.gradle; then
-            echo "⚠️ OWASP plugin not in build.gradle, using standalone scanner"
+            echo "OWASP plugin not in build.gradle, using standalone scanner"
             
             # Download and run standalone dependency-check
             OWASP_VERSION="9.0.9"
@@ -177,9 +177,9 @@ jobs:
             | 🔴 Critical | ${critical} |
             | 🟠 High | ${high} |
             
-            ${critical > 0 ? '⚠️ **Action Required:** Critical vulnerabilities detected. Please review the OWASP report.' : ''}
+            ${critical > 0 ? '**Action Required:** Critical vulnerabilities detected. Please review the OWASP report.' : ''}
             
-            📋 Full report available in workflow artifacts.`;
+            Full report available in workflow artifacts.`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -364,7 +364,7 @@ jobs:
       - name: Check for problematic licenses
         working-directory: booklore-api
         run: |
-          echo "📋 Checking dependency licenses..."
+          echo "Checking dependency licenses..."
           
           # Generate dependency report
           ./gradlew dependencies --configuration runtimeClasspath > /tmp/deps.txt 2>/dev/null || true
@@ -374,11 +374,11 @@ jobs:
           
           for LICENSE in "${PROBLEMATIC[@]}"; do
             if grep -qi "$LICENSE" /tmp/deps.txt 2>/dev/null; then
-              echo "⚠️ Found dependency with $LICENSE license - review required"
+              echo "Found dependency with $LICENSE license - review required"
             fi
           done
           
-          echo "✅ License check complete"
+          echo "License check complete"
 
   # ============================================
   # Security Summary
@@ -396,9 +396,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Scan | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| OWASP Dependency Check | ${{ needs.dependency-check-backend.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| NPM Audit | ${{ needs.npm-audit.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SAST (Semgrep) | ${{ needs.sast-scanning.result == 'success' && '✅ Pass' || '⚠️ Review' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP Dependency Check | ${{ needs.dependency-check-backend.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| NPM Audit | ${{ needs.npm-audit.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SAST (Semgrep) | ${{ needs.sast-scanning.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📋 Detailed reports available in workflow artifacts." >> $GITHUB_STEP_SUMMARY
+          echo "Detailed reports available in workflow artifacts." >> $GITHUB_STEP_SUMMARY
 

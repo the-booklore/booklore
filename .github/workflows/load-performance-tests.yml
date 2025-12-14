@@ -104,7 +104,7 @@ jobs:
           # Wait for MariaDB
           for i in {1..30}; do
             if docker exec mariadb-load mariadb-admin ping -h localhost -uroot -ploadtest 2>/dev/null; then
-              echo "✅ MariaDB ready"
+              echo "MariaDB ready"
               break
             fi
             sleep 2
@@ -127,7 +127,7 @@ jobs:
               http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore ready"
+              echo "BookLore ready"
               break
             fi
             sleep 3
@@ -317,7 +317,7 @@ jobs:
           for i in {1..45}; do
             # Try to authenticate - this ensures password is initialized
             if docker exec mariadb-artillery mariadb -uroot -partillerytest -e "SELECT 1" >/dev/null 2>&1; then
-              echo "✅ MariaDB is ready and authenticated"
+              echo "MariaDB is ready and authenticated"
               READY=true
               break
             fi
@@ -342,7 +342,7 @@ jobs:
           # Import seeded database
           echo "📥 Importing seeded database..."
           if gunzip -c /tmp/seeded-db.sql.gz | docker exec -i mariadb-artillery mariadb -uroot -partillerytest booklore; then
-            echo "✅ Database import successful"
+            echo "Database import successful"
           else
             echo "❌ Database import failed"
             docker logs mariadb-artillery | tail -20
@@ -367,7 +367,7 @@ jobs:
               http://localhost:${{ env.APP_PORT }}/actuator/health 2>/dev/null || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore ready with seeded data"
+              echo "BookLore ready with seeded data"
               break
             fi
             sleep 3
@@ -451,13 +451,13 @@ jobs:
                     url: "/actuator/health"
           ARTILLERY_CONFIG
           
-          echo "✅ Artillery config created"
+          echo "Artillery config created"
           cat /tmp/load-test.yml
 
       - name: Run Artillery load test
         id: artillery
         run: |
-          echo "🚀 Starting Artillery load test..."
+          echo "Starting Artillery load test..."
           echo "   Book count: ${{ needs.setup-large-library.outputs.book_count }}"
           echo "   Duration: ~210 seconds"
           echo ""
@@ -506,16 +506,16 @@ jobs:
             # Check against thresholds
             if (( $(echo "$P95 > ${{ env.MAX_P95_RESPONSE_TIME_MS }}" | bc -l 2>/dev/null || echo 1) )); then
               echo ""
-              echo "⚠️ WARNING: P95 latency ($P95 ms) exceeds threshold (${{ env.MAX_P95_RESPONSE_TIME_MS }} ms)"
+              echo "WARNING: P95 latency ($P95 ms) exceeds threshold (${{ env.MAX_P95_RESPONSE_TIME_MS }} ms)"
               echo "   Kobo devices may experience sync timeouts!"
               echo "threshold_exceeded=true" >> $GITHUB_OUTPUT
             else
               echo ""
-              echo "✅ P95 latency within acceptable limits"
+              echo "P95 latency within acceptable limits"
               echo "threshold_exceeded=false" >> $GITHUB_OUTPUT
             fi
           else
-            echo "⚠️ Artillery report not found"
+            echo "Artillery report not found"
           fi
 
       - name: Collect server metrics
@@ -525,7 +525,7 @@ jobs:
             "CPU: {{.CPUPerc}}, Memory: {{.MemUsage}}"
           
           echo ""
-          echo "📋 Server logs (last 50 lines):"
+          echo "Server logs (last 50 lines):"
           docker logs booklore-artillery 2>&1 | tail -50
 
       - name: Upload Artillery reports
@@ -571,8 +571,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Test | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Library Seeding | ${{ needs.setup-large-library.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Load Test | ${{ needs.run-load-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Library Seeding | ${{ needs.setup-large-library.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Load Test | ${{ needs.run-load-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Why This Matters" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

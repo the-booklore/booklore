@@ -135,7 +135,7 @@ jobs:
             echo ""
             echo "📦 **Latest Commit:** \`${COMMIT_HASH}\`"
             echo ""
-            echo "🏗️ **Platforms:** \`linux/arm64\`, \`linux/amd64\`"
+            echo "**Platforms:** \`linux/arm64\`, \`linux/amd64\`"
             echo ""
             echo "These images are automatically updated on each push to the PR."
           } >> $GITHUB_STEP_SUMMARY

@@ -373,7 +373,7 @@ jobs:
             INSERT INTO _replacement_test (id, version) VALUES ('$CANARY', 'v1');
           "
           
-          echo "📝 Created v1 data: $CANARY"
+          echo "Created v1 data: $CANARY"
 
       - name: Replace container (simulate docker-compose pull && up -d)
         run: |

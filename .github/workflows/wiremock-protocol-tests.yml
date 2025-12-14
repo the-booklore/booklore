@@ -224,7 +224,7 @@ jobs:
           # Wait for WireMock to be ready
           for i in {1..30}; do
             if curl -s http://localhost:8089/__admin/mappings | grep -q "mappings"; then
-              echo "✅ WireMock Kobo server is ready"
+              echo "WireMock Kobo server is ready"
               break
             fi
             sleep 1
@@ -232,30 +232,30 @@ jobs:
 
       - name: Test Kobo initialization response structure
         run: |
-          echo "📱 Testing Kobo initialization endpoint..."
+          echo "Testing Kobo initialization endpoint..."
           
           RESPONSE=$(curl -s http://localhost:8089/v1/initialization)
           
           # Verify required fields exist
           if echo "$RESPONSE" | jq -e '.Resources.image_host' > /dev/null; then
-            echo "✅ Resources.image_host present"
+            echo "Resources.image_host present"
           else
             echo "❌ Resources.image_host missing"
             exit 1
           fi
           
           if echo "$RESPONSE" | jq -e '.affiliate' > /dev/null; then
-            echo "✅ affiliate field present"
+            echo "affiliate field present"
           else
             echo "❌ affiliate field missing"
             exit 1
           fi
           
-          echo "✅ Kobo initialization response structure validated"
+          echo "Kobo initialization response structure validated"
 
       - name: Test Kobo sync token handling
         run: |
-          echo "📱 Testing Kobo sync token flow..."
+          echo "Testing Kobo sync token flow..."
           
           # Request with sync token
           RESPONSE=$(curl -s -w "\n%{http_code}" \
@@ -266,27 +266,27 @@ jobs:
           HEADERS=$(curl -sI -H "X-Kobo-SyncToken: old-token-123" http://localhost:8089/v1/library/sync)
           
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Sync request accepted with token"
+            echo "Sync request accepted with token"
           else
             echo "❌ Expected 200, got $HTTP_CODE"
             exit 1
           fi
           
           if echo "$HEADERS" | grep -qi "X-Kobo-SyncToken"; then
-            echo "✅ New sync token returned in headers"
+            echo "New sync token returned in headers"
           else
-            echo "⚠️ No sync token in response headers"
+            echo "No sync token in response headers"
           fi
 
       - name: Test Kobo 401 handling
         run: |
-          echo "📱 Testing Kobo unauthorized handling..."
+          echo "Testing Kobo unauthorized handling..."
           
           RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:8089/v1/library/books)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" = "401" ]; then
-            echo "✅ Correctly returns 401 for unauthenticated requests"
+            echo "Correctly returns 401 for unauthenticated requests"
           else
             echo "❌ Expected 401, got $HTTP_CODE"
             exit 1
@@ -294,21 +294,21 @@ jobs:
 
       - name: Test Kobo 500 error handling
         run: |
-          echo "📱 Testing Kobo server error handling..."
+          echo "Testing Kobo server error handling..."
           
           RESPONSE=$(curl -s -w "\n%{http_code}" http://localhost:8089/v1/library/sync-error-simulation)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | sed '$d')
           
           if [ "$HTTP_CODE" = "500" ]; then
-            echo "✅ Returns 500 for server errors"
+            echo "Returns 500 for server errors"
           else
             echo "❌ Expected 500, got $HTTP_CODE"
             exit 1
           fi
           
           if echo "$BODY" | jq -e '.error' > /dev/null; then
-            echo "✅ Error response contains error field"
+            echo "Error response contains error field"
           else
             echo "❌ Error response missing error field"
             exit 1
@@ -316,19 +316,19 @@ jobs:
 
       - name: Test Kobo 503 with Retry-After
         run: |
-          echo "📱 Testing Kobo service unavailable with retry..."
+          echo "Testing Kobo service unavailable with retry..."
           
           HEADERS=$(curl -sI http://localhost:8089/v1/library/sync-retry-test)
           
           if echo "$HEADERS" | grep -qi "Retry-After: 5"; then
-            echo "✅ Retry-After header present with correct value"
+            echo "Retry-After header present with correct value"
           else
-            echo "⚠️ Retry-After header missing or incorrect"
+            echo "Retry-After header missing or incorrect"
           fi
           
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8089/v1/library/sync-retry-test)
           if [ "$HTTP_CODE" = "503" ]; then
-            echo "✅ Returns 503 for service unavailable"
+            echo "Returns 503 for service unavailable"
           else
             echo "❌ Expected 503, got $HTTP_CODE"
           fi
@@ -516,7 +516,7 @@ jobs:
           # Wait for WireMock to be ready
           for i in {1..30}; do
             if curl -s http://localhost:8090/__admin/mappings | grep -q "mappings"; then
-              echo "✅ WireMock KOReader server is ready"
+              echo "WireMock KOReader server is ready"
               break
             fi
             sleep 1
@@ -531,14 +531,14 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
           
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Auth returns 200 for valid credentials"
+            echo "Auth returns 200 for valid credentials"
           else
             echo "❌ Expected 200, got $HTTP_CODE"
             exit 1
           fi
           
           if echo "$BODY" | jq -e '.username == "testuser"' > /dev/null; then
-            echo "✅ Response contains correct username"
+            echo "Response contains correct username"
           else
             echo "❌ Username mismatch in response"
             exit 1
@@ -552,7 +552,7 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" = "401" ]; then
-            echo "✅ Auth returns 401 for invalid credentials"
+            echo "Auth returns 401 for invalid credentials"
           else
             echo "❌ Expected 401, got $HTTP_CODE"
             exit 1
@@ -567,7 +567,7 @@ jobs:
           # Verify KOReader progress response structure
           for field in document progress percentage device device_id timestamp; do
             if echo "$RESPONSE" | jq -e ".$field" > /dev/null; then
-              echo "✅ Field '$field' present"
+              echo "Field '$field' present"
             else
               echo "❌ Field '$field' missing"
               exit 1
@@ -588,16 +588,16 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
           
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Progress PUT returns 200"
+            echo "Progress PUT returns 200"
           else
             echo "❌ Expected 200, got $HTTP_CODE"
             exit 1
           fi
           
           if echo "$BODY" | jq -e '.status == "OK"' > /dev/null; then
-            echo "✅ Response status is OK"
+            echo "Response status is OK"
           else
-            echo "⚠️ Response status not OK"
+            echo "Response status not OK"
           fi
 
       - name: Test KOReader 404 for missing progress
@@ -608,7 +608,7 @@ jobs:
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           
           if [ "$HTTP_CODE" = "404" ]; then
-            echo "✅ Returns 404 for non-existent book progress"
+            echo "Returns 404 for non-existent book progress"
           else
             echo "❌ Expected 404, got $HTTP_CODE"
             exit 1
@@ -628,16 +628,16 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
           
           if [ "$HTTP_CODE" = "409" ]; then
-            echo "✅ Returns 409 for timestamp conflict"
+            echo "Returns 409 for timestamp conflict"
           else
             echo "❌ Expected 409, got $HTTP_CODE"
             exit 1
           fi
           
           if echo "$BODY" | jq -e '.server_timestamp > .client_timestamp' > /dev/null; then
-            echo "✅ Response includes timestamp comparison data"
+            echo "Response includes timestamp comparison data"
           else
-            echo "⚠️ Missing timestamp comparison in conflict response"
+            echo "Missing timestamp comparison in conflict response"
           fi
 
       - name: Cleanup KOReader WireMock
@@ -665,19 +665,19 @@ jobs:
           echo "### Kobo Protocol" >> $GITHUB_STEP_SUMMARY
           echo "| Scenario | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Initialization Response | ${{ needs.kobo-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Sync Token Handling | ${{ needs.kobo-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 401 Unauthorized | ${{ needs.kobo-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 500 Server Error | ${{ needs.kobo-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 503 Retry-After | ${{ needs.kobo-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Initialization Response | ${{ needs.kobo-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Sync Token Handling | ${{ needs.kobo-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 401 Unauthorized | ${{ needs.kobo-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 500 Server Error | ${{ needs.kobo-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 503 Retry-After | ${{ needs.kobo-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### KOReader Protocol" >> $GITHUB_STEP_SUMMARY
           echo "| Scenario | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Auth Success | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Auth Failure | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Progress GET | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Progress PUT | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 404 Not Found | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| 409 Conflict | ${{ needs.koreader-wiremock-tests.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auth Success | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auth Failure | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Progress GET | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Progress PUT | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 404 Not Found | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 409 Conflict | ${{ needs.koreader-wiremock-tests.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
 

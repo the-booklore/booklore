@@ -63,7 +63,7 @@ jobs:
           sleep 10
           for i in {1..30}; do
             if mariadb-admin ping -h 127.0.0.1 -uroot -proot --silent 2>/dev/null; then
-              echo "✅ MariaDB is ready"
+              echo "MariaDB is ready"
               exit 0
             fi
             echo "⏳ Waiting for MariaDB... ($i/30)"
@@ -95,7 +95,7 @@ jobs:
             
             # Check if file ends with semicolon (basic check)
             if ! tail -1 "$file" | grep -q ";[[:space:]]*$"; then
-              echo "⚠️  $file: May be missing semicolon at end"
+              echo "$file: May be missing semicolon at end"
               issues_found=$((issues_found + 1))
             fi
           done

@@ -1,0 +1,51 @@
+name: Large File Upload Regression Test
+
+on:
+  pull_request:
+    branches: [ "develop" ]
+
+jobs:
+  upload-test:
+    runs-on: ubuntu-latest
+    services:
+      # Simple service to mimic the app if we had a pre-built image, 
+      # but here we will build and run in the steps.
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./testing
+          file: ./testing/Dockerfile
+          push: false # Don't push to registry, just build locally
+          tags: booklore-api-test:latest
+          load: true # Load image into Docker daemon
+
+      - name: Run Application in Docker Container
+        run: |
+          docker run -d --name booklore-app -p 8080:8080 booklore-api-test:latest
+          timeout 120 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
+
+      - name: Run Large File Upload Test
+        run: |
+          chmod +x testing/large_upload_test.sh
+          # Target the bookdrop upload which usually handles large raw imports
+          ./testing/large_upload_test.sh "http://localhost:8080/api/v1/files/upload/bookdrop"
+      
+      - name: Stop Application
+        if: always()
+        run: docker rm -f booklore-app
+

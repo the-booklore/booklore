@@ -119,7 +119,7 @@ jobs:
           }
           EOF
           
-          echo "✅ Nginx reverse proxy config created"
+          echo "Nginx reverse proxy config created"
           cat /tmp/nginx/nginx.conf
 
       - name: Create test network and start services
@@ -138,7 +138,7 @@ jobs:
           # Wait for MariaDB
           for i in {1..30}; do
             if docker exec mariadb-proxy-test mariadb-admin ping -h localhost -uroot -pproxytest 2>/dev/null; then
-              echo "✅ MariaDB ready"
+              echo "MariaDB ready"
               break
             fi
             sleep 2
@@ -171,7 +171,7 @@ jobs:
               http://localhost:8080/actuator/health 2>/dev/null || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore accessible through proxy"
+              echo "BookLore accessible through proxy"
               break
             fi
             echo "Attempt $i/60 - HTTP: $HTTP_CODE"
@@ -181,7 +181,7 @@ jobs:
       - name: Test X-Forwarded-Host header handling
         id: forwarded_host_test
         run: |
-          echo "🔍 Testing X-Forwarded-Host header handling..."
+          echo "Testing X-Forwarded-Host header handling..."
           
           # Test 1: Direct request (should use internal host)
           DIRECT_RESPONSE=$(curl -s http://localhost:8080/actuator/info \
@@ -207,7 +207,7 @@ jobs:
             echo "   This will cause Kobo sync to fail when behind a reverse proxy."
             echo "forwarded_host_bug=true" >> $GITHUB_OUTPUT
           else
-            echo "✅ No internal IPs detected in response"
+            echo "No internal IPs detected in response"
             echo "forwarded_host_bug=false" >> $GITHUB_OUTPUT
           fi
 
@@ -236,7 +236,7 @@ jobs:
             
             for URL in $URLS; do
               if echo "$URL" | grep -q "my-library.example.com"; then
-                echo "✅ URL uses forwarded host: $URL"
+                echo "URL uses forwarded host: $URL"
               elif echo "$URL" | grep -qE "localhost|127\.0\.0\.1|172\.|10\.|192\.168\."; then
                 echo "❌ URL uses internal address: $URL"
               fi
@@ -282,9 +282,9 @@ jobs:
             "http://localhost:8080/actuator/health" 2>/dev/null || echo "000")
           
           if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Multi-hop proxy headers handled correctly"
+            echo "Multi-hop proxy headers handled correctly"
           else
-            echo "⚠️ Multi-hop proxy returned HTTP $HTTP_CODE"
+            echo "Multi-hop proxy returned HTTP $HTTP_CODE"
           fi
 
       - name: Cleanup
@@ -350,7 +350,7 @@ jobs:
               network: traefik-test-net
           EOF
           
-          echo "✅ Traefik config created"
+          echo "Traefik config created"
 
       - name: Start Traefik and BookLore
         run: |
@@ -398,7 +398,7 @@ jobs:
               http://localhost:80/actuator/health 2>/dev/null || echo "000")
             
             if [ "$HTTP_CODE" = "200" ]; then
-              echo "✅ BookLore accessible through Traefik"
+              echo "BookLore accessible through Traefik"
               break
             fi
             echo "Attempt $i/60 - HTTP: $HTTP_CODE"
@@ -407,7 +407,7 @@ jobs:
 
       - name: Test Traefik header forwarding
         run: |
-          echo "🔍 Testing Traefik header forwarding..."
+          echo "Testing Traefik header forwarding..."
           
           # Traefik automatically sets X-Forwarded-* headers
           RESPONSE=$(curl -s -v \
@@ -460,8 +460,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Proxy | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Nginx | ${{ needs.nginx-proxy-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Traefik | ${{ needs.traefik-proxy-test.result == 'success' && '✅ Pass' || '❌ Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Nginx | ${{ needs.nginx-proxy-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Traefik | ${{ needs.traefik-proxy-test.result == 'success' && 'Pass' || 'Fail' }} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## Common Failure Symptoms" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

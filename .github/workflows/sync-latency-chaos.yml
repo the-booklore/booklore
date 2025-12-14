@@ -1,0 +1,95 @@
+name: Sync Latency Chaos Test (Toxiproxy)
+
+on:
+  schedule:
+    - cron: '0 0 * * 0' # Weekly
+  workflow_dispatch:
+
+jobs:
+  chaos-test:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: booklore
+        ports:
+          - 3306:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      toxiproxy:
+        image: ghcr.io/shopify/toxiproxy:2.5.0
+        ports:
+          - 8474:8474 # API
+          - 8081:8081 # Proxy to App
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./testing
+          file: ./testing/Dockerfile
+          push: false
+          tags: booklore-api-test:latest
+          load: true
+
+      - name: Run Application in Docker Container
+        run: |
+          docker run -d --name booklore-app -p 8080:8080 booklore-api-test:latest
+          timeout 120 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
+
+      - name: Configure Toxiproxy
+        run: |
+          # Create a proxy on port 8081 that points to the local app on 8080
+          # Since toxiproxy is in a container, we need to point it to the host (172.17.0.1 usually)
+          # OR simpler: we use toxiproxy as a sidecar to a test runner. 
+          # For this demo, we assume we are running curl commands THROUGH toxiproxy.
+          
+          # Register the proxy
+          curl -X POST -d '{"name": "booklore_api", "listen": "0.0.0.0:8081", "upstream": "host.docker.internal:8080", "enabled": true}' http://localhost:8474/proxies
+
+      - name: Inject High Latency (Scenario A)
+        run: |
+          # Add 5000ms latency downstream
+          curl -X POST -d '{"name": "latency_down", "type": "latency", "stream": "downstream", "attributes": {"latency": 5000}}' http://localhost:8474/proxies/booklore_api/toxics
+
+      - name: Test Sync Endpoint with Latency
+        run: |
+          # We call the proxy (8081) instead of the app (8080)
+          # We expect it to NOT timeout immediately, but handle the delay.
+          # We simulate a "Sync" by hitting the progress endpoint.
+          START=$(date +%s)
+          curl -v http://localhost:8081/api/koreader/syncs/progress/dummy_hash || echo "Request failed"
+          END=$(date +%s)
+          DURATION=$((END-START))
+          
+          if [ $DURATION -lt 5 ]; then
+             echo "FAILURE: Latency was not applied. Duration: $DURATION"
+             exit 1
+          fi
+          echo "SUCCESS: Latency handled (Duration: $DURATION)"
+
+      - name: Inject Connection Reset (Scenario B)
+        run: |
+          # Remove latency
+          curl -X DELETE http://localhost:8474/proxies/booklore_api/toxics/latency_down
+          # Add Reset
+          curl -X POST -d '{"name": "reset_peer", "type": "reset_peer", "stream": "downstream", "attributes": {"timeout": 1000}}' http://localhost:8474/proxies/booklore_api/toxics
+
+      - name: Test Connection Reset Handling
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/api/koreader/syncs/progress/dummy_hash || echo "000")
+          echo "Response during Reset: $HTTP_CODE"
+          # We check if the server is still UP after this event (it shouldn't crash)
+          curl -f http://localhost:8080/actuator/health
+
+      - name: Stop Application
+        if: always()
+        run: docker rm -f booklore-app
+
