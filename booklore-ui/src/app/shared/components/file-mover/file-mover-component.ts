@@ -14,6 +14,7 @@ import {FileMoveRequest, FileOperationsService} from '../../service/file-operati
 import {LibraryService} from "../../../features/book/service/library.service";
 import {AppSettingsService} from '../../service/app-settings.service';
 import {Select} from 'primeng/select';
+import {TooltipModule} from 'primeng/tooltip';
 import {Library, LibraryPath} from '../../../features/book/model/library.model';
 
 interface FilePreview {
@@ -36,7 +37,7 @@ interface FilePreview {
 @Component({
   selector: 'app-file-mover-component',
   standalone: true,
-  imports: [Button, FormsModule, TableModule, Divider, Select],
+  imports: [Button, FormsModule, TableModule, Divider, Select, TooltipModule],
   templateUrl: './file-mover-component.html',
   styleUrl: './file-mover-component.scss'
 })
@@ -60,6 +61,7 @@ export class FileMoverComponent implements OnDestroy {
   defaultMovePattern = '';
   loading = false;
   patternsCollapsed = true;
+  operationMode: 'MOVE' | 'COPY' = 'MOVE';
 
   bookIds: Set<number> = new Set();
   books: Book[] = [];
@@ -354,6 +356,7 @@ export class FileMoverComponent implements OnDestroy {
 
     const request: FileMoveRequest = {
       bookIds: [...this.bookIds],
+      mode: this.operationMode,
       moves: this.filePreviews.map(preview => ({
         bookId: preview.bookId,
         targetLibraryId: preview.targetLibraryId,
@@ -369,8 +372,8 @@ export class FileMoverComponent implements OnDestroy {
         this.filePreviews.forEach(p => (p.isMoved = true));
         this.messageService.add({
           severity: 'success',
-          summary: 'Files Organized!',
-          detail: `Successfully organized ${this.filePreviews.length} file${this.filePreviews.length === 1 ? '' : 's'}.`,
+          summary: this.operationMode === 'MOVE' ? 'Files Organized!' : 'Files Copied!',
+          detail: `${this.operationMode === 'MOVE' ? 'Moved' : 'Copied'} ${this.filePreviews.length} file${this.filePreviews.length === 1 ? '' : 's'}.`,
           life: 3000
         });
       },

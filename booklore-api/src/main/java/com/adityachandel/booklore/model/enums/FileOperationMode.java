@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.enums;
 
-public enum BookFileType {
-    PDF, EPUB, CBX, FB2
+public enum FileOperationMode {
+    MOVE,
+    COPY
 }

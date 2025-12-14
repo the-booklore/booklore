@@ -459,7 +459,7 @@
                 <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF') {
+            @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
               <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
             <p-button label="Shelf" icon="pi pi-folder" severity="secondary" outlined (onClick)="assignShelf(book.id)"></p-button>

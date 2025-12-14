@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.dto.request;
 
+import com.adityachandel.booklore.model.enums.FileOperationMode;
 import lombok.Data;
 
 import java.util.List;
@@ -9,6 +10,7 @@ import java.util.Set;
 public class FileMoveRequest {
     private Set<Long> bookIds;
     private List<Move> moves;
+    private FileOperationMode mode;
 
     @Data
     public static class Move {

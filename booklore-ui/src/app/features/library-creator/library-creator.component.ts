@@ -1,6 +1,5 @@
 import {Component, inject, OnInit} from '@angular/core';
-import {DialogService, DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {DirectoryPickerComponent} from '../../shared/components/directory-picker/directory-picker.component';
+import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {Router} from '@angular/router';
 import {LibraryService} from '../book/service/library.service';
@@ -15,6 +14,7 @@ import {IconPickerService, IconSelection} from '../../shared/service/icon-picker
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
 import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
+import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-library-creator',
@@ -31,7 +31,6 @@ export class LibraryCreatorComponent implements OnInit {
   mode!: string;
   library!: Library | undefined;
   editModeLibraryName: string = '';
-  directoryPickerDialogRef!: DynamicDialogRef<DirectoryPickerComponent> | null;
   watch: boolean = false;
   scanMode: LibraryScanMode = 'FILE_AS_BOOK';
   defaultBookFormat: BookFileType | undefined = undefined;
@@ -48,7 +47,7 @@ export class LibraryCreatorComponent implements OnInit {
     {label: 'CBX/CBZ/CBR', value: 'CBX'}
   ];
 
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private dynamicDialogRef = inject(DynamicDialogRef);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   private libraryService = inject(LibraryService);
@@ -85,16 +84,8 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   openDirectoryPicker(): void {
-    this.directoryPickerDialogRef = this.dialogService.open(DirectoryPickerComponent, {
-      header: 'Select Media Directory',
-      showHeader: false,
-      modal: true,
-      closable: true,
-      styleClass: 'dynamic-dialog-minimal',
-      contentStyle: {overflow: 'hidden'},
-      baseZIndex: 10
-    });
-    this.directoryPickerDialogRef?.onClose.subscribe((selectedFolders: string[] | null) => {
+    const ref = this.dialogLauncherService.openDirectoryPickerDialog();
+    ref?.onClose.subscribe((selectedFolders: string[] | null) => {
       if (selectedFolders && selectedFolders.length > 0) {
         selectedFolders.forEach(folder => {
           if (!this.folders.includes(folder)) {
