@@ -1,17 +1,16 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {Checkbox} from 'primeng/checkbox';
-
 import {MessageService, PrimeTemplate} from 'primeng/api';
 import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
 import {Tooltip} from 'primeng/tooltip';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2ProviderService} from './email-v2-provider.service';
-import {CreateEmailProviderDialogComponent} from '../create-email-provider-dialog/create-email-provider-dialog.component';
 import {EmailProvider} from '../email-provider.model';
 import {UserService} from '../../user-management/user.service';
+import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-email-v2-provider',
@@ -32,7 +31,7 @@ export class EmailV2ProviderComponent implements OnInit {
   emailProviders: EmailProvider[] = [];
   editingProviderIds: number[] = [];
   ref: DynamicDialogRef | undefined | null;
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private emailProvidersService = inject(EmailV2ProviderService);
   private messageService = inject(MessageService);
   private userService = inject(UserService);
@@ -124,13 +123,7 @@ export class EmailV2ProviderComponent implements OnInit {
   }
 
   openCreateProviderDialog() {
-    this.ref = this.dialogService.open(CreateEmailProviderDialogComponent, {
-      header: 'Create Email Provider',
-      modal: true,
-      closable: true,
-      showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
-    });
+    this.ref = this.dialogLauncherService.openEmailProviderDialog();
     this.ref?.onClose.subscribe((result) => {
       if (result) {
         this.loadEmailProviders();

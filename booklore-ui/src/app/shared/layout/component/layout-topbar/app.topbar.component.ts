@@ -2,7 +2,7 @@ import {Component, ElementRef, OnDestroy, ViewChild} from '@angular/core';
 import {MenuItem} from 'primeng/api';
 import {LayoutService} from '../layout-main/service/app.layout.service';
 import {Router, RouterLink} from '@angular/router';
-import {DialogService as PrimeDialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TooltipModule} from 'primeng/tooltip';
 import {FormsModule} from '@angular/forms';
 import {InputTextModule} from 'primeng/inputtext';
@@ -72,7 +72,6 @@ export class AppTopBarComponent implements OnDestroy {
 
   constructor(
     public layoutService: LayoutService,
-    public dialogService: PrimeDialogService,
     private notificationService: NotificationEventService,
     private router: Router,
     private authService: AuthService,
@@ -120,7 +119,7 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   openLibraryCreatorDialog(): void {
-    this.dialogLauncher.openLibraryCreatorDialog();
+    this.dialogLauncher.openLibraryCreateDialog();
   }
 
   openFileUploadDialog(): void {

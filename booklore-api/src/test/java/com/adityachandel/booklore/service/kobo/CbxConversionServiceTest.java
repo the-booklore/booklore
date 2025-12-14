@@ -42,7 +42,7 @@ class CbxConversionServiceTest {
 
     @Test
     void convertCbxToEpub_WithValidCbzFile_ShouldGenerateValidEpub() throws IOException, TemplateException, RarException {
-        File epubFile = cbxConversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), testBookEntity);
+        File epubFile = cbxConversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), testBookEntity,85);
 
         assertThat(epubFile).exists();
         assertThat(epubFile.getName()).endsWith(".epub");
@@ -53,7 +53,7 @@ class CbxConversionServiceTest {
 
     @Test
     void convertCbxToEpub_WithNullCbxFile_ShouldThrowException() {
-        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(null, tempDir.toFile(), testBookEntity))
+        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(null, tempDir.toFile(), testBookEntity,85))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid CBX file");
     }
@@ -62,7 +62,7 @@ class CbxConversionServiceTest {
     void convertCbxToEpub_WithNonExistentFile_ShouldThrowException() {
         File nonExistentFile = new File(tempDir.toFile(), "non-existent.cbz");
 
-        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(nonExistentFile, tempDir.toFile(), testBookEntity))
+        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(nonExistentFile, tempDir.toFile(), testBookEntity,85))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid CBX file");
     }
@@ -71,14 +71,14 @@ class CbxConversionServiceTest {
     void convertCbxToEpub_WithUnsupportedFileFormat_ShouldThrowException() throws IOException {
         File unsupportedFile = Files.createFile(tempDir.resolve("test.txt")).toFile();
 
-        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(unsupportedFile, tempDir.toFile(), testBookEntity))
+        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(unsupportedFile, tempDir.toFile(), testBookEntity,85))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unsupported file format");
     }
 
     @Test
     void convertCbxToEpub_WithNullTempDir_ShouldThrowException() {
-        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(testCbzFile, null, testBookEntity))
+        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(testCbzFile, null, testBookEntity,85))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Invalid temp directory");
     }
@@ -87,7 +87,7 @@ class CbxConversionServiceTest {
     void convertCbxToEpub_WithEmptyCbzFile_ShouldThrowException() throws IOException {
         File emptyCbzFile = createEmptyCbzFile();
 
-        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(emptyCbzFile, tempDir.toFile(), testBookEntity))
+        assertThatThrownBy(() -> cbxConversionService.convertCbxToEpub(emptyCbzFile, tempDir.toFile(), testBookEntity,85))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("No valid images found");
     }
@@ -118,7 +118,7 @@ class CbxConversionServiceTest {
 
     @Test
     void convertCbxToEpub_WithNullBookEntity_ShouldUseDefaultMetadata() throws IOException, TemplateException, RarException {
-        File epubFile = cbxConversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), null);
+        File epubFile = cbxConversionService.convertCbxToEpub(testCbzFile, tempDir.toFile(), null,85);
 
         assertThat(epubFile).exists();
         verifyEpubStructure(epubFile);
@@ -128,7 +128,7 @@ class CbxConversionServiceTest {
     void convertCbxToEpub_WithMultipleImages_ShouldPreservePageOrder() throws IOException, TemplateException, RarException {
         File multiPageCbzFile = createMultiPageCbzFile();
 
-        File epubFile = cbxConversionService.convertCbxToEpub(multiPageCbzFile, tempDir.toFile(), testBookEntity);
+        File epubFile = cbxConversionService.convertCbxToEpub(multiPageCbzFile, tempDir.toFile(), testBookEntity,85);
 
         assertThat(epubFile).exists();
         verifyPageOrderInEpub(epubFile, 5);

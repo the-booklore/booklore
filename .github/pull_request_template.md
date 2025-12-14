@@ -1,35 +1,35 @@
 # 🚀 Pull Request
 
 ## 📝 Description
-<!-- Provide a clear, concise description of what this PR accomplishes -->
+<!-- Provide a clear and concise summary of the changes introduced in this pull request -->
 <!-- Reference related issues using "Fixes #123", "Closes #456", or "Relates to #789" -->
 
 
-## 🛠️ Changes Made
-<!-- Summarize the key changes in this pull request -->
+## 🛠️ Changes Implemented
+<!-- Detail the specific modifications, additions, or removals made in this pull request -->
 - 
 
 
-## 🧪 Testing
-<!-- Describe how you verified these changes work correctly -->
-- [ ] Tested manually in local environment
-- [ ] Added/updated automated unit/integration tests
-- [ ] All existing tests pass
+## 🧪 Testing Strategy
+<!-- Describe the testing methodology used to verify the correctness of these changes -->
+<!-- Include testing approach, scenarios covered, and edge cases considered -->
 
 
 ## 📸 Visual Changes _(if applicable)_
-<!-- Include screenshots or videos for UI/UX changes -->
+<!-- Attach screenshots or videos demonstrating UI/UX modifications -->
 
 
-## ✅ Pre-submission Checklist
-<!-- Ensure all items are completed before requesting review -->
-- [ ] Code follows project style guidelines and conventions
-- [ ] Tests added/updated to cover changes
+## ⚠️ Required Pre-Submission Checklist
+<!-- ⛔ Pull requests will NOT be considered for review unless ALL required items are completed -->
+<!-- All items below are MANDATORY prerequisites for submission -->
+- [ ] Code adheres to project style guidelines and conventions
+- [ ] Branch synchronized with latest `develop` branch
+- [ ] Automated unit/integration tests added/updated to cover changes
 - [ ] All tests pass locally (`./gradlew test` for backend)
-- [ ] Flyway migration versioning is correct _(if database changes made)_
-- [ ] Branch is synced with latest `develop` branch
-- [ ] Documentation PR created at [booklore-docs](https://github.com/booklore-app/booklore-docs) _(for major features)_
+- [ ] Manual testing completed in local development environment
+- [ ] Flyway migration versioning follows correct sequence _(if database schema modified)_
+- [ ] Documentation pull request submitted to [booklore-docs](https://github.com/booklore-app/booklore-docs) _(required for features or enhancements that introduce user-facing or visual changes)_
 
 
-## 💬 Additional Notes _(optional)_
-<!-- Add any context, considerations, or discussion points for reviewers -->
+## 💬 Additional Context _(optional)_
+<!-- Provide any supplementary information, implementation considerations, or discussion points for reviewers -->
