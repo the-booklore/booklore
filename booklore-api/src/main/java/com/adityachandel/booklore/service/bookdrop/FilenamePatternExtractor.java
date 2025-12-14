@@ -139,18 +139,15 @@ public class FilenamePatternExtractor {
         List<Long> batchIds = allFileIds.subList(batchStart, batchEnd);
         List<BookdropFileEntity> batchFiles = bookdropFileRepository.findAllById(batchIds);
         List<BookdropPatternExtractResult.FileExtractionResult> batchResults = new ArrayList<>();
-        int successCount = 0;
         
         for (BookdropFileEntity file : batchFiles) {
             BookdropPatternExtractResult.FileExtractionResult result = extractFromFile(file, pattern);
             batchResults.add(result);
-            if (result.isSuccess()) {
-                successCount++;
-            }
         }
         
         persistExtractedMetadata(batchResults, batchFiles);
         
+        int successCount = (int) batchResults.stream().filter(BookdropPatternExtractResult.FileExtractionResult::isSuccess).count();
         int failureCount = batchFiles.size() - successCount;
         return new BatchExtractionResult(batchResults, successCount, failureCount);
     }
@@ -232,9 +229,9 @@ public class FilenamePatternExtractor {
                     .extractedMetadata(extracted)
                     .build();
 
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             String errorMsg = "Extraction failed: " + e.getMessage();
-            log.error("Error extracting metadata from file '{}': {}", file.getFileName(), e.getMessage(), e);
+            log.debug("Pattern extraction failed for file '{}': {}", file.getFileName(), e.getMessage());
             return BookdropPatternExtractResult.FileExtractionResult.builder()
                     .fileId(file.getId())
                     .fileName(file.getFileName())
@@ -290,8 +287,8 @@ public class FilenamePatternExtractor {
         try {
             Pattern compiledPattern = Pattern.compile(regexBuilder.toString());
             return new ParsedPattern(compiledPattern, placeholderOrder);
-        } catch (Exception e) {
-            log.error("Failed to compile regex pattern from user input '{}': {}", pattern, e.getMessage());
+        } catch (PatternSyntaxException e) {
+            log.warn("Invalid regex pattern from user input '{}': {}", pattern, e.getMessage());
             return null;
         }
     }
@@ -567,6 +564,8 @@ public class FilenamePatternExtractor {
             fileMap.put(file.getId(), file);
         }
 
+        Set<Long> failedFileIds = new HashSet<>();
+
         for (BookdropPatternExtractResult.FileExtractionResult result : results) {
             if (!result.isSuccess() || result.getExtractedMetadata() == null) {
                 continue;
@@ -583,12 +582,22 @@ public class FilenamePatternExtractor {
                 metadataHelper.mergeMetadata(currentMetadata, extractedMetadata);
                 metadataHelper.updateFetchedMetadata(file, currentMetadata);
 
-            } catch (Exception e) {
-                log.error("Error persisting extracted metadata for file {}: {}", file.getId(), e.getMessage());
+            } catch (RuntimeException e) {
+                log.error("Error persisting extracted metadata for file {} ({}): {}", 
+                         file.getId(), file.getFileName(), e.getMessage(), e);
+                failedFileIds.add(file.getId());
+                result.setSuccess(false);
+                result.setErrorMessage("Failed to save metadata: " + e.getMessage());
             }
         }
 
-        bookdropFileRepository.saveAll(files);
+        List<BookdropFileEntity> filesToSave = files.stream()
+                .filter(file -> !failedFileIds.contains(file.getId()))
+                .toList();
+
+        if (!filesToSave.isEmpty()) {
+            bookdropFileRepository.saveAll(filesToSave);
+        }
     }
 
     private record PlaceholderConfig(String regex, String metadataField) {}

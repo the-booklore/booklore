@@ -64,18 +64,27 @@ public class BookdropBulkEditService {
         
         int successCount = 0;
         int failureCount = 0;
+        Set<Long> failedFileIds = new HashSet<>();
 
         for (BookdropFileEntity file : batchFiles) {
             try {
                 updateFileMetadata(file, request);
                 successCount++;
-            } catch (Exception e) {
-                log.error("Failed to update metadata for file {}: {}", file.getId(), e.getMessage());
+            } catch (RuntimeException e) {
+                log.error("Failed to update metadata for file {} ({}): {}", 
+                         file.getId(), file.getFileName(), e.getMessage(), e);
                 failureCount++;
+                failedFileIds.add(file.getId());
             }
         }
 
-        bookdropFileRepository.saveAll(batchFiles);
+        List<BookdropFileEntity> filesToSave = batchFiles.stream()
+                .filter(file -> !failedFileIds.contains(file.getId()))
+                .toList();
+
+        if (!filesToSave.isEmpty()) {
+            bookdropFileRepository.saveAll(filesToSave);
+        }
         
         return new BatchEditResult(successCount, failureCount);
     }
