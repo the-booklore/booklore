@@ -35,7 +35,7 @@ jobs:
       - name: Run Application in Docker Container
         id: run_app_container
         run: |
-          docker run -d --name booklore-app -p 8080:8080 booklore-api-test:latest
+          docker run -d --name booklore-app -p 8080:6060 booklore-api-test:latest
           timeout 120 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
 
       - name: Capture App Logs on Failure
