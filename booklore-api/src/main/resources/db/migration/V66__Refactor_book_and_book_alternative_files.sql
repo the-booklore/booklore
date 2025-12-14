@@ -1,5 +1,4 @@
 -- Migrate file specific data from book to book_file
-
 ALTER TABLE book_additional_file RENAME TO book_file;
 ALTER TABLE book_file ADD COLUMN is_book boolean DEFAULT false;
 
@@ -16,11 +15,7 @@ SELECT id, file_name, file_sub_path, true, CASE when book_type = 0 then 'PDF' wh
 -- Prevent duplicates of book files (is_book=true) by (library_id, library_path_id, file_sub_path, file_name)
 -- MariaDB/MySQL do not support UNIQUE constraints across multiple tables, so we need to enforce via triggers.
 DELIMITER $$
-DROP TRIGGER IF EXISTS trg_book_file_prevent_duplicate_book_insert$$
-DROP TRIGGER IF EXISTS trg_book_file_prevent_duplicate_book_update$$
-DROP PROCEDURE IF EXISTS assert_no_duplicate_book_file$$
-
-CREATE PROCEDURE assert_no_duplicate_book_file(
+CREATE OR REPLACE PROCEDURE assert_no_duplicate_book_file(
     IN p_book_file_id BIGINT,
     IN p_book_id BIGINT,
     IN p_file_name VARCHAR(1000),
@@ -55,14 +50,14 @@ BEGIN
     END IF;
 END$$
 
-CREATE TRIGGER trg_book_file_prevent_duplicate_book_insert
+CREATE OR REPLACE TRIGGER trg_book_file_prevent_duplicate_book_insert
 BEFORE INSERT ON book_file
 FOR EACH ROW
 BEGIN
     CALL assert_no_duplicate_book_file(NULL, NEW.book_id, NEW.file_name, NEW.file_sub_path, NEW.is_book);
 END$$
 
-CREATE TRIGGER trg_book_file_prevent_duplicate_book_update
+CREATE OR REPLACE TRIGGER trg_book_file_prevent_duplicate_book_update
 BEFORE UPDATE ON book_file
 FOR EACH ROW
 BEGIN
@@ -74,7 +69,7 @@ DELIMITER ;
 ALTER TABLE book_file ADD COLUMN alt_format_current_hash VARCHAR(128) AS (CASE WHEN is_book = true THEN current_hash END) STORED;
 
 -- Remove constraint from book table
-ALTER TABLE book DROP CONSTRAINT unique_library_file_path;
+ALTER TABLE book DROP INDEX IF EXISTS unique_library_file_path;
 
 -- Remove migrated fields from the book table
 ALTER TABLE book DROP COLUMN file_name;
