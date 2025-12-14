@@ -23,6 +23,7 @@ public enum AppSettingKey {
     UPLOAD_FILE_PATTERN("upload_file_pattern", false, false),
     MOVE_FILE_PATTERN("move_file_pattern", false, false),
     OPDS_SERVER_ENABLED("opds_server_enabled", false, false),
+    KOMGA_API_ENABLED("komga_api_enabled", false, false),
     OIDC_ENABLED("oidc_enabled", false, true),
     CBX_CACHE_SIZE_IN_MB("cbx_cache_size_in_mb", false, false),
     PDF_CACHE_SIZE_IN_MB("pdf_cache_size_in_mb", false, false),
