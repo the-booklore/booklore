@@ -57,7 +57,7 @@ public class SecurityConfig {
             "/api/v1/auth/oidc/discovery", // OIDC discovery endpoint (must be public for frontend)
             // Note: /api/v1/auth/oidc/token is intentionally excluded - it requires OIDC JWT authentication
             "/api/v1/public-settings",   // Public endpoint for checking OIDC or other app settings
-            "/api/v1/setup/**"
+            "/api/v1/setup/**"           // Setup wizard endpoints (must remain accessible before initial setup)
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
