@@ -64,7 +64,7 @@ export class DialogLauncherService {
 
   openDirectoryPickerDialog(): DynamicDialogRef | null {
     return this.openDialog(DirectoryPickerComponent, {
-      header: 'Select Media Directory',
+      showHeader: false,
       styleClass: 'dynamic-dialog-minimal',
     });
   }
