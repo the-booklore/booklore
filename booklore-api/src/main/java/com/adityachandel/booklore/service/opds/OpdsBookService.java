@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.repository.BookOpdsRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.service.library.LibraryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -79,19 +80,19 @@ public class OpdsBookService {
         if (libraryId != null) {
             validateLibraryAccess(libraryId, userLibraryIds, isAdmin);
             Page<Book> books = query != null && !query.isBlank()
-                    ? searchByMetadataInLibrariesPageInternal(query, Set.of(libraryId), page, size)
+                    ? searchByMetadataInLibrariesPageInternal(BookUtils.normalizeForSearch(query), Set.of(libraryId), page, size)
                     : getBooksByLibraryIdsPageInternal(Set.of(libraryId), page, size);
             return applyBookFilters(books, userId);
         }
 
         if (isAdmin) {
             return query != null && !query.isBlank()
-                    ? searchByMetadataPageInternal(query, page, size)
+                    ? searchByMetadataPageInternal(BookUtils.normalizeForSearch(query), page, size)
                     : getAllBooksPageInternal(page, size);
         }
 
         Page<Book> books = query != null && !query.isBlank()
-                ? searchByMetadataInLibrariesPageInternal(query, userLibraryIds, page, size)
+                ? searchByMetadataInLibrariesPageInternal(BookUtils.normalizeForSearch(query), userLibraryIds, page, size)
                 : getBooksByLibraryIdsPageInternal(userLibraryIds, page, size);
         return applyBookFilters(books, userId);
     }
