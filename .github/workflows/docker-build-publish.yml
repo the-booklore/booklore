@@ -64,7 +64,7 @@ jobs:
           echo "Applying migrations from '${{ github.base_ref }}' branch..."
           docker run --network host \
             -v ${{ github.workspace }}:/flyway/sql \
-            flyway/flyway:10.15.0 \
+            flyway/flyway:11.19.0-alpine \
             -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
             -user=root -password=root \
             -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
@@ -78,7 +78,7 @@ jobs:
           echo "Applying new migrations from PR branch..."
           docker run --network host \
             -v ${{ github.workspace }}:/flyway/sql \
-            flyway/flyway:10.15.0 \
+            flyway/flyway:11.19.0-alpine \
             -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
             -user=root -password=root \
             -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
