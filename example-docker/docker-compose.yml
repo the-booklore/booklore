@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   mariadb:
-    image: lscr.io/linuxserver/mariadb:11.4.5
+    image: lscr.io/linuxserver/mariadb:11.4.8
     container_name: mariadb
     environment:
       - PUID=1000

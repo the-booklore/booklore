@@ -9,10 +9,10 @@ import {ShelfService} from '../../../../features/book/service/shelf.service';
 import {BookService} from '../../../../features/book/service/book.service';
 import {LibraryShelfMenuService} from '../../../../features/book/service/library-shelf-menu.service';
 import {AppVersion, VersionService} from '../../../service/version.service';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
-import {VersionChangelogDialogComponent} from './version-changelog-dialog/version-changelog-dialog.component';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
+import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 
 @Component({
   selector: 'app-menu',
@@ -34,7 +34,7 @@ export class AppMenuComponent implements OnInit {
   private bookService = inject(BookService);
   private versionService = inject(VersionService);
   private libraryShelfMenuService = inject(LibraryShelfMenuService);
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private userService = inject(UserService);
   private magicShelfService = inject(MagicShelfService);
 
@@ -198,20 +198,7 @@ export class AppMenuComponent implements OnInit {
   }
 
   openChangelogDialog() {
-    const isMobile = window.innerWidth <= 768;
-    this.dynamicDialogRef = this.dialogService.open(VersionChangelogDialogComponent, {
-      header: 'What’s New',
-      modal: true,
-      closable: true,
-      style: {
-        position: 'absolute',
-        top: '10%',
-        bottom: '10%',
-        width: isMobile ? '90vw' : '800px',
-        maxWidth: isMobile ? '90vw' : '800px',
-        minWidth: isMobile ? '90vw' : '800px',
-      },
-    });
+    this.dialogLauncherService.openVersionChangelogDialog();
   }
 
   getVersionUrl(version: string | undefined): string {

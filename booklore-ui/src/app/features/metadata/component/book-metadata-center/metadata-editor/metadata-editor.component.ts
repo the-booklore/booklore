@@ -14,7 +14,6 @@ import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
 import {filter, take} from "rxjs/operators";
-import {DialogService} from "primeng/dynamicdialog";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
@@ -22,8 +21,8 @@ import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
-import {CoverSearchComponent} from '../../cover-search/cover-search.component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {BookDialogHelperService} from "../../../../book/components/book-browser/BookDialogHelperService";
 
 @Component({
   selector: "app-metadata-editor",
@@ -61,7 +60,7 @@ export class MetadataEditorComponent implements OnInit {
   private bookService = inject(BookService);
   private taskHelperService = inject(TaskHelperService);
   protected urlHelper = inject(UrlHelperService);
-  private dialogService = inject(DialogService);
+  private bookDialogHelperService = inject(BookDialogHelperService);
   private destroyRef = inject(DestroyRef);
 
   metadataForm: FormGroup;
@@ -684,21 +683,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   openCoverSearch() {
-    const ref = this.dialogService.open(CoverSearchComponent, {
-      header: "Search Cover",
-      modal: true,
-      closable: true,
-      data: {
-        bookId: [this.currentBookId],
-      },
-      style: {
-        width: "90vw",
-        height: "90vh",
-        maxWidth: "1200px",
-        position: "absolute",
-      },
-    });
-
+    const ref = this.bookDialogHelperService.openCoverSearchDialog(this.currentBookId);
     ref?.onClose.subscribe((result) => {
       if (result) {
         this.metadataForm.get("thumbnailUrl")?.setValue(result);

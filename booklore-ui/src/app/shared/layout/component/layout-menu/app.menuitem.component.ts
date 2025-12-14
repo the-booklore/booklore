@@ -155,13 +155,13 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
 
   openDialog(item: any) {
     if (item.type === 'library' && this.canManipulateLibrary) {
-      this.dialogLauncher.openLibraryCreatorDialog();
+      this.dialogLauncher.openLibraryCreateDialog();
     }
     if (item.type === 'magicShelf') {
-      this.dialogLauncher.openMagicShelfDialog();
+      this.dialogLauncher.openMagicShelfCreateDialog();
     }
     if (item.type === 'shelf') {
-      this.bookDialogHelperService.openShelfCreator();
+      this.bookDialogHelperService.openShelfCreatorDialog();
     }
   }
 
