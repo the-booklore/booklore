@@ -55,7 +55,7 @@ public class OidcHealthController {
                 return ResponseEntity.ok(health);
             } else {
                 health.put("status", "unhealthy");
-                health.put("message", "OIDC provider configuration failed validation");
+                health.put("message", dynamicOidcJwtProcessor.getHealthStatus());
                 return ResponseEntity.status(503).body(health);
             }
         } catch (Exception e) {

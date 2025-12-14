@@ -255,10 +255,15 @@ public class DynamicOidcJwtProcessor {
             log.error("JWT Verification Failed: {}", e.getMessage());
 
             // Add hints for common configuration errors
-            if (e.getMessage().contains("Issuer")) {
+            String msg = e.getMessage();
+            if (msg.contains("Issuer")) {
                 log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", currentIssuerUri);
-            } else if (e.getMessage().contains("Audience")) {
+            } else if (msg.contains("Audience")) {
                 log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", currentClientId);
+            } else if (msg.contains("Expired JWT")) {
+                log.error("Token Expired Hint: The token is no longer valid. If this happens immediately after login, check if the server time is synchronized with the OIDC provider.");
+            } else if (msg.contains("nbf") || msg.contains("Not Before")) {
+                log.error("Token Not Yet Valid Hint: The token's 'nbf' claim is in the future. Check if the server time is synchronized with the OIDC provider (possible clock skew).");
             }
             throw e;
         } catch (Exception e) {

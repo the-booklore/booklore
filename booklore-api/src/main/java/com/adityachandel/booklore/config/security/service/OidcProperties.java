@@ -69,7 +69,14 @@ public record OidcProperties(
             String trustedCertificates,
             String proxyUsername,
             String proxyPassword
-    ) {}
+    ) {
+        public Jwks {
+            if (cacheRefresh != null && cacheTtl != null && !cacheRefresh.minus(cacheTtl).isNegative()) {
+                 throw new IllegalArgumentException("Jwks cacheRefresh must be strictly less than cacheTtl to allow for background refresh. " +
+                        "Configured: refresh=" + cacheRefresh + ", ttl=" + cacheTtl);
+            }
+        }
+    }
 
     public record Jwt(
             Duration clockSkew,
