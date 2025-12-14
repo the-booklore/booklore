@@ -112,7 +112,7 @@ jobs:
         working-directory: ./booklore-api
         run: |
           echo "Running backend tests with testcontainers..."
-          ./gradlew test
+          ./gradlew test --no-daemon --parallel --build-cache
         continue-on-error: true
 
       - name: Publish Test Results
@@ -229,8 +229,12 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
             APP_REVISION=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
       - name: Update Release Draft (Only for Master)
         if: github.ref == 'refs/heads/master'

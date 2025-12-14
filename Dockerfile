@@ -4,11 +4,10 @@ FROM node:22-alpine AS angular-build
 WORKDIR /angular-app
 
 COPY ./booklore-ui/package.json ./booklore-ui/package-lock.json ./
-RUN npm config set registry http://registry.npmjs.org/ \
-    && npm config set fetch-retries 5 \
-    && npm config set fetch-retry-mintimeout 20000 \
-    && npm config set fetch-retry-maxtimeout 120000 \
-    && npm install --force
+RUN --mount=type=cache,target=/root/.npm \
+    npm config set registry http://registry.npmjs.org/ \
+    && npm ci --force
+
 COPY ./booklore-ui /angular-app/
 
 RUN npm run build --configuration=production
@@ -18,7 +17,13 @@ FROM gradle:8.14.3-jdk21-alpine AS springboot-build
 
 WORKDIR /springboot-app
 
+# Copy only build files first to cache dependencies
 COPY ./booklore-api/build.gradle ./booklore-api/settings.gradle /springboot-app/
+
+# Download dependencies (cached layer)
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    gradle dependencies --no-daemon
+
 COPY ./booklore-api/src /springboot-app/src
 
 # Inject version into application.yaml using yq
@@ -26,7 +31,8 @@ ARG APP_VERSION
 RUN apk add --no-cache yq && \
     yq eval '.app.version = strenv(APP_VERSION)' -i /springboot-app/src/main/resources/application.yaml
 
-RUN gradle clean build -x test
+RUN --mount=type=cache,target=/home/gradle/.gradle \
+    gradle clean build -x test --no-daemon --parallel
 
 # Stage 3: Final image
 FROM eclipse-temurin:21.0.9_10-jre-alpine
