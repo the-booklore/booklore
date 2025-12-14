@@ -7,3 +7,6 @@ booklore:
         cache-ttl: 1s
       jwt:
         clock-skew: 60s
+        # For testing, we might want to be less strict or test specific algorithms.
+        # A broader set or even leaving it empty (to rely on discovery) might be suitable.
+        allowed-algorithms: "RS256,ES256"

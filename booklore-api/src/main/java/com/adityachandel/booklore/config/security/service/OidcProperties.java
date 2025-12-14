@@ -2,6 +2,7 @@ package com.adityachandel.booklore.config.security.service;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.Set;
 import java.time.Duration;
 
 /**
@@ -42,7 +43,7 @@ public record OidcProperties(
             );
         }
         if (jwt == null) {
-            jwt = new Jwt(Duration.ofSeconds(60), false, 10000);
+            jwt = new Jwt(Duration.ofSeconds(60), false, 10000, null); // Default to null for allowedAlgorithms
         }
     }
     
@@ -81,7 +82,8 @@ public record OidcProperties(
     public record Jwt(
             Duration clockSkew,
             boolean enableReplayPrevention,
-            int replayCacheSize
+            int replayCacheSize,
+            Set<String> allowedAlgorithms // New field for algorithm whitelisting
     ) {
         public Jwt {
             if (replayCacheSize <= 0) {

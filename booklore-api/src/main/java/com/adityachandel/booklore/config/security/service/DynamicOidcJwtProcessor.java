@@ -39,6 +39,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
@@ -144,12 +145,19 @@ public class DynamicOidcJwtProcessor {
                 ? Duration.between(now, Instant.ofEpochMilli(claims.getExpirationTime().getTime())).getSeconds()
                 : 0;
 
+            String maskedSub = claims.getSubject() != null ? mask(claims.getSubject()) : "null";
+            String maskedAud = claims.getAudience() != null && !claims.getAudience().isEmpty() ? mask(String.join(",", claims.getAudience())) : "null";
+            String maskedAzp = claims.getClaim("azp") instanceof String azpString ? mask(azpString) : "null";
+
             // Only log at debug level to reduce log spam in production
             if (log.isDebugEnabled()) {
-                log.debug("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub=***, aud=***, azp=***, exp_in={}s]",
+                log.debug("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub={}, aud={}, azp={}, exp_in={}s]",
                         header.getAlgorithm(),
                         header.getKeyID(),
                         claims.getIssuer(),
+                        maskedSub,
+                        maskedAud,
+                        maskedAzp,
                         secondsLeft
                 );
             }
@@ -357,11 +365,35 @@ public class DynamicOidcJwtProcessor {
 
         URI jwksUri = discoveryConfiguration.jwksUri();
 
-        Set<JWSAlgorithm> supportedAlgorithms = discoveryConfiguration.supportedAlgorithms().isEmpty()
+        // 1. Start with Advertised Algorithms
+        // Use LinkedHashSet to maintain order and allow modification
+        Set<JWSAlgorithm> supportedAlgorithms = new LinkedHashSet<>(discoveryConfiguration.supportedAlgorithms().isEmpty()
             ? Set.of(JWSAlgorithm.RS256)
-            : discoveryConfiguration.supportedAlgorithms();
+            : discoveryConfiguration.supportedAlgorithms());
 
-        // Fetch JWKS once to avoid double network call
+        // 2. Filter by Configured Allowed Algorithms (Fail Fast)
+        // We do this BEFORE fetching JWKS to avoid unnecessary network calls if configuration denies all advertised algorithms
+        if (oidcProperties.jwt().allowedAlgorithms() != null && !oidcProperties.jwt().allowedAlgorithms().isEmpty()) {
+            Set<JWSAlgorithm> configuredAllowed = oidcProperties.jwt().allowedAlgorithms().stream()
+                .map(JWSAlgorithm::parse)
+                .collect(Collectors.toSet());
+            
+            Set<JWSAlgorithm> originalSupported = new LinkedHashSet<>(supportedAlgorithms);
+            supportedAlgorithms.retainAll(configuredAllowed);
+            
+            if (!originalSupported.equals(supportedAlgorithms)) {
+                log.info("Filtered advertised algorithms from {} to {} based on 'allowed-algorithms' config.", 
+                        originalSupported, supportedAlgorithms);
+            }
+            
+            if (supportedAlgorithms.isEmpty()) {
+                throw new IllegalStateException("No supported JWS algorithms remaining after applying 'booklore.security.oidc.jwt.allowed-algorithms' filter. " +
+                                                "Advertised: " + discoveryConfiguration.supportedAlgorithms() + 
+                                                ", Allowed: " + oidcProperties.jwt().allowedAlgorithms());
+            }
+        }
+
+        // 3. Fetch JWKS
         Resource jwksResource;
         try {
             jwksResource = resourceRetriever.retrieveResource(jwksUri.toURL());
@@ -370,7 +402,7 @@ public class DynamicOidcJwtProcessor {
         }
         var jwkSet = JWKSet.parse(jwksResource.getContent());
 
-        // Filter advertised algorithms against the actual key material to avoid alg/key mismatches (e.g. HS tokens with RSA keys)
+        // 4. Filter by Actual Keys (Safety check to avoid mismatch exceptions later)
         supportedAlgorithms = filterAlgorithmsByJwks(jwkSet, jwksUri, supportedAlgorithms);
 
         log.debug("Configuring JWKS retrieval from {} with timeouts: connect={}ms, read={}ms, sizeLimit={}bytes, algorithms={}",
@@ -784,8 +816,26 @@ public class DynamicOidcJwtProcessor {
                 int responseCode = connection.getResponseCode();
                 if (responseCode < 200 || responseCode >= 300) {
                     String errorMsg = connection.getResponseMessage();
-                    throw new IOException("HTTP " + responseCode +
-                        (errorMsg != null ? " (" + errorMsg + ")" : "") + " from " + url);
+                    String errorBody = "";
+                    try (InputStream errorStream = connection.getErrorStream()) {
+                        if (errorStream != null) {
+                            errorBody = new String(errorStream.readAllBytes(), StandardCharsets.UTF_8);
+                        }
+                    } catch (IOException e) {
+                        log.debug("Could not read error stream for {}: {}", url, e.getMessage());
+                    }
+                    String fullError = String.format("HTTP %d%s from %s. Body: %s",
+                            responseCode,
+                            (errorMsg != null ? " (" + errorMsg + ")" : ""),
+                            url,
+                            errorBody.isEmpty() ? "(empty)" : errorBody.chars()
+                                    .filter(c -> c >= 32 && c <= 126) // Printable ASCII only
+                                    .limit(500) // Limit length
+                                    .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                                    .toString());
+                    
+                    log.warn("JWKS fetching failed: {}", fullError); // Log at warn level for visibility
+                    throw new IOException(fullError);
                 }
 
                 try (InputStream inputStream = connection.getInputStream()) {
@@ -853,6 +903,12 @@ public class DynamicOidcJwtProcessor {
         } catch (Exception e) {
             return "OIDC provider unreachable or misconfigured: " + e.getMessage();
         }
+    }
+
+    private static String mask(String text) {
+        if (text == null) return "null";
+        if (text.length() <= 4) return "***";
+        return text.substring(0, 2) + "***" + text.substring(text.length() - 2);
     }
 
     /**

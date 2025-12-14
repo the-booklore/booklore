@@ -69,6 +69,13 @@ booklore:
         # Clock skew tolerance for JWT timestamp validation (default 60s)
         # Handles clock drift between services and authentication servers
         clock-skew: ${OIDC_JWT_CLOCK_SKEW:60s}
+
+        # Optional: List of allowed JWS algorithms (e.g., RS256, ES256).
+        # If set, tokens signed with algorithms NOT in this list will be rejected,
+        # even if the OIDC provider advertises them and JWKS keys are available.
+        # This provides an extra layer of security to restrict algorithm usage.
+        # Example: allowed-algorithms: "RS256,ES256"
+        allowed-algorithms: ${OIDC_JWT_ALLOWED_ALGORITHMS:}
         
         # SECURITY: JWT replay prevention using JTI (JWT ID) cache
         # When enabled, tokens with the same JTI cannot be used twice
