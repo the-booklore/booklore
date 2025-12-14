@@ -1,0 +1,34 @@
+# Development files
+.git
+.gitignore
+.gitattributes
+README.md
+CONTRIBUTING.md
+SECURITY.md
+LICENSE
+
+# Documentation
+docs/
+assets/
+
+# IDE files
+.idea
+.vscode
+*.iml
+*.ipr
+*.iws
+
+# Build artifacts
+build/
+target/
+.gradle/
+out/
+
+# Testing and discovery scripts
+check_calibre_fields.py
+example.epub
+
+# Dev config
+booklore-api/src/main/resources/application-local.yaml
+local/
+shared/

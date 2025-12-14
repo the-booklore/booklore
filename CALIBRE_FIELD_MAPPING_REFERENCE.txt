@@ -1,0 +1,167 @@
+================================================================================
+BOOKLORE - CALIBRE USER METADATA FIELD MAPPING REFERENCE
+================================================================================
+
+This document lists all available BookMetadata fields that can be extracted from
+Calibre user_metadata custom columns in EPUB files.
+
+To use these, create custom columns in Calibre with the field names listed below
+(e.g., #seriesTotal, #pageCount, #isbn13) and configure them to export to the
+EPUB metadata.
+
+================================================================================
+CONFIGURATION
+================================================================================
+
+The field mappings are defined in:
+  booklore-api/src/main/java/com/adityachandel/booklore/service/metadata/extractor/EpubMetadataExtractor.java
+
+In the CALIBRE_FIELD_MAPPINGS constant.
+
+================================================================================
+AVAILABLE FIELD MAPPINGS
+================================================================================
+
+CORE BOOK FIELDS (String)
+- #title              → Book title
+- #subtitle           → Book subtitle
+- #publisher          → Publisher name
+- #description        → Book description/summary
+- #language           → Language code (e.g., "en", "es")
+
+SERIES FIELDS
+- #seriesName         → Series/collection name (String)
+- #seriesNumber       → Book number in series (Float)
+- #seriesTotal        → Total books in series (Integer)
+
+IDENTIFIER FIELDS (String)
+- #isbn13             → ISBN-13
+- #isbn10             → ISBN-10
+- #asin               → Amazon ASIN
+- #goodreadsId        → Goodreads ID
+- #comicvineId        → ComicVine ID
+- #hardcoverId        → Hardcover.app ID
+- #doubanId           → Douban ID
+- #googleId           → Google Books ID
+
+CONTENT FIELDS
+- #pageCount          → Number of pages (Integer)
+- #authors            → Author names (Set<String>, comma-separated)
+- #categories         → Categories/genres (Set<String>, comma-separated or JSON array)
+- #tags               → General tags (Set<String>, comma-separated or JSON array)
+
+RATING FIELDS
+- #amazonRating       → Amazon rating (Double, 0.0-5.0)
+- #amazonReviewCount  → Amazon review count (Integer)
+- #goodreadsRating    → Goodreads rating (Double, 0.0-5.0)
+- #goodreadsReviewCount → Goodreads review count (Integer)
+- #hardcoverRating    → Hardcover rating (Double, 0.0-5.0)
+- #hardcoverReviewCount → Hardcover review count (Integer)
+- #doubanRating       → Douban rating (Double, 0.0-10.0)
+- #doubanReviewCount  → Douban review count (Integer)
+
+================================================================================
+DATA TYPES & FORMATS
+================================================================================
+
+String Fields:
+  - Extracted directly from the "#value#" in the Calibre JSON
+
+Integer Fields:
+  - Parsed from string to integer
+  - Invalid values are ignored (no error thrown)
+
+Float Fields:
+  - Parsed from string to float
+  - Invalid values are ignored (no error thrown)
+
+Double Fields:
+  - Parsed from string to double
+  - Invalid values are ignored (no error thrown)
+
+Set<String> Fields (categories, tags, authors):
+  - Can be provided as:
+    * JSON array: ["value1", "value2", "value3"]
+    * Comma-separated: "value1, value2, value3"
+  - Both formats are supported automatically
+
+LocalDate Fields:
+  - Should be in ISO format: "YYYY-MM-DD"
+  - Year-only format also supported: "YYYY"
+
+================================================================================
+CALIBRE CUSTOM COLUMN CONFIGURATION
+================================================================================
+
+1. In Calibre, go to Preferences → Add your own columns
+2. Create a new column with:
+   - Lookup name: Match the field name above (e.g., "seriesTotal")
+   - Column heading: User-friendly name
+   - Column type: Match the data type (e.g., Integer, Text, etc.)
+3. Configure the column to "Store in book file" (in plugboard/metadata options)
+4. The field will be exported to the EPUB's user_metadata JSON
+
+================================================================================
+EXAMPLE CALIBRE CUSTOM COLUMN SETUP
+================================================================================
+
+For Series Total:
+  Lookup name: seriesTotal
+  Column heading: Series Total
+  Column type: Integer
+  Store in book file: Yes
+
+For ISBN-13:
+  Lookup name: isbn13
+  Column heading: ISBN-13
+  Column type: Text
+  Store in book file: Yes
+
+================================================================================
+HOW IT WORKS
+================================================================================
+
+When an EPUB is processed:
+1. Booklore extracts the calibre:user_metadata property from the OPF file
+2. The JSON is parsed to find matching field names
+3. Each field's "#value#" is extracted from the JSON structure
+4. The value is converted to the appropriate type
+5. The value is set on the BookMetadata object using the builder
+
+Example JSON structure in EPUB:
+{
+  "#seriesTotal": {
+    "#value#": 6,
+    "datatype": "int",
+    "name": "Series Total",
+    ...
+  }
+}
+
+================================================================================
+ADDING NEW FIELD MAPPINGS
+================================================================================
+
+To add support for a new Calibre custom column:
+
+1. Ensure the field exists in BookMetadata.java model
+2. Add the mapping to CALIBRE_FIELD_MAPPINGS in EpubMetadataExtractor.java
+3. Follow the pattern:
+   - String: (builder, value) -> builder.fieldName(value)
+   - Integer: (builder, value) -> safeParseInt(value, builder::fieldName)
+   - Float: (builder, value) -> safeParseFloat(value, builder::fieldName)
+   - Double: (builder, value) -> safeParseDouble(value, builder::fieldName)
+   - Sets: Use extractSetField() helper for comma-separated or JSON arrays
+
+================================================================================
+NOTES
+================================================================================
+
+- Field names are case-sensitive (use exact names as listed above)
+- The "#" prefix is required in Calibre column names
+- Not all fields need to be configured - only add what you need
+- Standard EPUB properties are still extracted (dc:title, dc:creator, etc.)
+- Calibre user_metadata provides an additional/override source for metadata
+- If a field is set from both sources, the last processed value wins
+
+================================================================================
