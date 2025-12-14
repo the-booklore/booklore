@@ -236,7 +236,12 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
   }
 
   get hasValidPattern(): boolean {
-    return this.patternForm.valid && (this.patternForm.get('pattern')?.value?.includes('{') ?? false);
+    const pattern: string = this.patternForm.get('pattern')?.value ?? '';
+    if (!this.patternForm.valid || !pattern) {
+      return false;
+    }
+    const placeholderRegex = /\{[a-zA-Z0-9_]+(?::[^{}]+)?\}|\*/;
+    return placeholderRegex.test(pattern);
   }
 
   getPlaceholderLabel(name: string): string {
