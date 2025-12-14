@@ -108,7 +108,6 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         metadata.setLanguage(truncate((lang == null || "UND".equalsIgnoreCase(lang)) ? "en" : lang, 1000));
 
         metadata.setAsin(truncate(fb2Metadata.getAsin(), 20));
-        metadata.setPersonalRating(fb2Metadata.getPersonalRating());
         metadata.setAmazonRating(fb2Metadata.getAmazonRating());
         metadata.setAmazonReviewCount(fb2Metadata.getAmazonReviewCount());
         metadata.setGoodreadsId(truncate(fb2Metadata.getGoodreadsId(), 100));
