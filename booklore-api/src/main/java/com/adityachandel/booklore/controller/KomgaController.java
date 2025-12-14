@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "Komga API", description = "Komga-compatible API endpoints")
 @Slf4j
 @RestController
-@RequestMapping("/komga/api")
+@RequestMapping(value = "/komga/api", produces = "application/json")
 @RequiredArgsConstructor
 public class KomgaController {
 
@@ -34,13 +34,17 @@ public class KomgaController {
     @Operation(summary = "List all libraries")
     @GetMapping("/v1/libraries")
     public ResponseEntity<List<KomgaLibraryDto>> getAllLibraries() {
-        return ResponseEntity.ok(komgaService.getAllLibraries());
+        log.info("Komga API - getAllLibraries called");
+        List<KomgaLibraryDto> libraries = komgaService.getAllLibraries();
+        log.info("Komga API - returning {} libraries", libraries.size());
+        return ResponseEntity.ok(libraries);
     }
 
     @Operation(summary = "Get library details")
     @GetMapping("/v1/libraries/{libraryId}")
     public ResponseEntity<KomgaLibraryDto> getLibrary(
             @Parameter(description = "Library ID") @PathVariable Long libraryId) {
+        log.info("Komga API - getLibrary called with libraryId: {}", libraryId);
         return ResponseEntity.ok(komgaService.getLibraryById(libraryId));
     }
 
@@ -52,7 +56,10 @@ public class KomgaController {
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(komgaService.getAllSeries(libraryId, page, size));
+        log.info("Komga API - getAllSeries called with libraryId: {}, page: {}, size: {}", libraryId, page, size);
+        KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(libraryId, page, size);
+        log.info("Komga API - returning {} series (total: {})", result.getContent().size(), result.getTotalElements());
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get series details")
@@ -96,13 +103,17 @@ public class KomgaController {
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(komgaService.getAllBooks(libraryId, page, size));
+        log.info("Komga API - getAllBooks called with libraryId: {}, page: {}, size: {}", libraryId, page, size);
+        KomgaPageableDto<KomgaBookDto> result = komgaService.getAllBooks(libraryId, page, size);
+        log.info("Komga API - returning {} books (total: {})", result.getContent().size(), result.getTotalElements());
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get book details")
     @GetMapping("/v1/books/{bookId}")
     public ResponseEntity<KomgaBookDto> getBook(
             @Parameter(description = "Book ID") @PathVariable Long bookId) {
+        log.info("Komga API - getBook called with bookId: {}", bookId);
         return ResponseEntity.ok(komgaService.getBookById(bookId));
     }
 
