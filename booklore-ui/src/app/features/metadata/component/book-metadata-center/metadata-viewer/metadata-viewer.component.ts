@@ -10,10 +10,8 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {UserService} from '../../../../settings/user-management/user.service';
 import {SplitButton} from 'primeng/splitbutton';
 import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
-import {BookSenderComponent} from '../../../../book/components/book-sender/book-sender.component';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailService} from '../../../../settings/email-v2/email.service';
-import {ShelfAssignerComponent} from '../../../../book/components/shelf-assigner/shelf-assigner.component';
 import {Tooltip} from 'primeng/tooltip';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {Editor} from 'primeng/editor';
@@ -29,13 +27,10 @@ import {DatePicker} from 'primeng/datepicker';
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {BookReviewsComponent} from '../../../../book/components/book-reviews/book-reviews.component';
 import {ProgressSpinner} from 'primeng/progressspinner';
-
 import {TieredMenu} from 'primeng/tieredmenu';
-import {AdditionalFileUploaderComponent} from '../../../../book/components/additional-file-uploader/additional-file-uploader.component';
 import {Image} from 'primeng/image';
 import {BookDialogHelperService} from '../../../../book/components/book-browser/BookDialogHelperService';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
-import {MetadataFetchOptionsComponent} from '../../metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {
@@ -57,7 +52,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   @ViewChild(Editor) quillEditor!: Editor;
   private originalRecommendedBooks: BookRecommendation[] = [];
 
-  private dialogService = inject(DialogService);
+  private bookDialogHelperService = inject(BookDialogHelperService)
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
@@ -65,7 +60,6 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   protected urlHelper = inject(UrlHelperService);
   protected userService = inject(UserService);
   private confirmationService = inject(ConfirmationService);
-  private bookDialogHelperService = inject(BookDialogHelperService);
 
   private router = inject(Router);
   private destroyRef = inject(DestroyRef);
@@ -105,13 +99,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         {
           label: 'Custom Send',
           command: () => {
-            this.dialogService.open(BookSenderComponent, {
-              header: 'Send Book to Email',
-              modal: true,
-              closable: true,
-              style: {position: 'absolute', top: '20%'},
-              data: {bookId: metadata.bookId}
-            });
+            this.bookDialogHelperService.openCustomSendDialog(metadata.bookId);
           }
         }
       ])
@@ -124,15 +112,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           label: 'Custom Fetch',
           icon: 'pi pi-sync',
           command: () => {
-            this.dialogService.open(MetadataFetchOptionsComponent, {
-              header: 'Metadata Refresh Options',
-              modal: true,
-              closable: true,
-              data: {
-                bookIds: [book.id],
-                metadataRefreshType: MetadataRefreshType.BOOKS,
-              },
-            });
+            this.bookDialogHelperService.openMetadataFetchOptionsDialog(book.id);
           }
         }
       ])
@@ -197,16 +177,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
             label: 'Upload File',
             icon: 'pi pi-upload',
             command: () => {
-              this.dialogService.open(AdditionalFileUploaderComponent, {
-                header: 'Upload Additional File',
-                modal: true,
-                closable: true,
-                style: {
-                  position: 'absolute',
-                  top: '10%',
-                },
-                data: {book}
-              });
+              this.bookDialogHelperService.openAdditionalFileUploaderDialog(book);
             },
           },
           {
@@ -425,16 +396,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   assignShelf(bookId: number) {
-    this.dialogService.open(ShelfAssignerComponent, {
-      header: `Update Book's Shelves`,
-      showHeader: false,
-      dismissableMask: true,
-      modal: true,
-      closable: true,
-      contentStyle: {overflow: 'hidden'},
-      baseZIndex: 10,
-      data: {book: this.bookService.getBookByIdFromState(bookId)}
-    });
+    this.bookDialogHelperService.openShelfAssignerDialog(<Book>this.bookService.getBookByIdFromState(bookId), null);
   }
 
   updateReadStatus(status: ReadStatus): void {

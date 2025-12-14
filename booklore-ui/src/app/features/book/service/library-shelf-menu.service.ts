@@ -5,19 +5,13 @@ import {LibraryService} from './library.service';
 import {ShelfService} from './shelf.service';
 import {Library} from '../model/library.model';
 import {Shelf} from '../model/shelf.model';
-import {DialogService} from 'primeng/dynamicdialog';
 import {MetadataRefreshType} from '../../metadata/model/request/metadata-refresh-type.enum';
-import {LibraryCreatorComponent} from '../../library-creator/library-creator.component';
-import {ShelfEditDialogComponent} from '../components/shelf-edit-dialog/shelf-edit-dialog.component';
 import {MagicShelf, MagicShelfService} from '../../magic-shelf/service/magic-shelf.service';
-import {MetadataFetchOptionsComponent} from '../../metadata/component/metadata-options-dialog/metadata-fetch-options/metadata-fetch-options.component';
-import {MagicShelfComponent} from '../../magic-shelf/component/magic-shelf-component';
-import {TaskCreateRequest, TaskType} from '../../settings/task-management/task.service';
-import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {TaskHelperService} from '../../settings/task-management/task-helper.service';
 import {UserService} from "../../settings/user-management/user.service";
 import {LoadingService} from '../../../core/services/loading.service';
 import {finalize} from 'rxjs';
+import {DialogLauncherService} from '../../../shared/services/dialog-launcher.service';
 
 @Injectable({
   providedIn: 'root',
@@ -30,7 +24,7 @@ export class LibraryShelfMenuService {
   private shelfService = inject(ShelfService);
   private taskHelperService = inject(TaskHelperService);
   private router = inject(Router);
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private magicShelfService = inject(MagicShelfService);
   private userService = inject(UserService);
   private loadingService = inject(LoadingService);
@@ -44,17 +38,7 @@ export class LibraryShelfMenuService {
             label: 'Edit Library',
             icon: 'pi pi-pen-to-square',
             command: () => {
-              this.dialogService.open(LibraryCreatorComponent, {
-                header: 'Edit Library',
-                modal: true,
-                closable: true,
-                showHeader: false,
-                styleClass: 'dynamic-dialog-minimal',
-                data: {
-                  mode: 'edit',
-                  libraryId: entity?.id
-                }
-              });
+              this.dialogLauncherService.openLibraryEditDialog(<number>entity?.id);
             }
           },
           {
@@ -93,15 +77,7 @@ export class LibraryShelfMenuService {
             label: 'Custom Fetch Metadata',
             icon: 'pi pi-sync',
             command: () => {
-              this.dialogService.open(MetadataFetchOptionsComponent, {
-                header: 'Metadata Refresh Options',
-                modal: true,
-                closable: true,
-                data: {
-                  libraryId: entity?.id,
-                  metadataRefreshType: MetadataRefreshType.LIBRARY
-                }
-              })
+              this.dialogLauncherService.openLibraryMetadataFetchDialog(<number>entity?.id);
             }
           },
           {
@@ -168,16 +144,7 @@ export class LibraryShelfMenuService {
             label: 'Edit Shelf',
             icon: 'pi pi-pen-to-square',
             command: () => {
-              this.dialogService.open(ShelfEditDialogComponent, {
-                header: 'Edit Shelf',
-                modal: true,
-                closable: true,
-                showHeader: false,
-                styleClass: 'dynamic-dialog-minimal',
-                data: {
-                  shelfId: entity?.id
-                },
-              })
+              this.dialogLauncherService.openShelfEditDialog(<number>entity?.id);
             }
           },
           {
@@ -230,17 +197,7 @@ export class LibraryShelfMenuService {
             icon: 'pi pi-pen-to-square',
             disabled: disableOptions,
             command: () => {
-              this.dialogService.open(MagicShelfComponent, {
-                header: 'Edit Magic Shelf',
-                modal: true,
-                closable: true,
-                showHeader: false,
-                styleClass: 'dynamic-dialog-minimal',
-                data: {
-                  id: entity?.id,
-                  editMode: true,
-                }
-              })
+              this.dialogLauncherService.openMagicShelfEditDialog(<number>entity?.id);
             }
           },
           {

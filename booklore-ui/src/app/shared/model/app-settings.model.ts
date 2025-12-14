@@ -104,6 +104,7 @@ export interface PublicReviewSettings {
 export interface KoboSettings {
   convertToKepub: boolean;
   conversionLimitInMb: number;
+  conversionImageCompressionPercentage: number;
   convertCbxToEpub: boolean;
   conversionLimitInMbForCbx: number;
   forceEnableHyphenation: boolean;

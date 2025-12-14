@@ -1,15 +1,14 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
-
 import {MessageService, PrimeTemplate} from 'primeng/api';
 import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
 import {Tooltip} from 'primeng/tooltip';
-import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {EmailV2RecipientService} from './email-v2-recipient.service';
 import {EmailRecipient} from '../email-recipient.model';
-import {CreateEmailRecipientDialogComponent} from '../create-email-recipient-dialog/create-email-recipient-dialog.component';
+import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 
 @Component({
   selector: 'app-email-v2-recipient',
@@ -29,7 +28,7 @@ export class EmailV2RecipientComponent implements OnInit {
   recipientEmails: EmailRecipient[] = [];
   editingRecipientIds: number[] = [];
   ref: DynamicDialogRef | undefined | null;
-  private dialogService = inject(DialogService);
+  private dialogLauncherService = inject(DialogLauncherService);
   private emailRecipientService = inject(EmailV2RecipientService);
   private messageService = inject(MessageService);
   defaultRecipientId: any;
@@ -111,13 +110,7 @@ export class EmailV2RecipientComponent implements OnInit {
   }
 
   openAddRecipientDialog() {
-    this.ref = this.dialogService.open(CreateEmailRecipientDialogComponent, {
-      header: 'Add New Recipient',
-      modal: true,
-      closable: true,
-      showHeader: false,
-      styleClass: 'dynamic-dialog-minimal',
-    });
+    this.ref = this.dialogLauncherService.openEmailRecipientDialog();
     this.ref?.onClose.subscribe((result) => {
       if (result) {
         this.loadRecipientEmails();
