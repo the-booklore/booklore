@@ -58,22 +58,61 @@ jobs:
             sleep 2
           done
 
-          # Create test user for uploads
-          mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "
+          # Install Python and bcrypt for password hashing
+          sudo apt-get install -y python3 python3-pip
+          pip3 install bcrypt
+
+          # Generate BCrypt hash for password 'testpass'
+          BCRYPT_HASH=$(python3 -c "import bcrypt; print(bcrypt.hashpw(b'testpass', bcrypt.gensalt()).decode('utf-8'))")
+
+          # Create test user with BCrypt hashed password and required permissions
+          mariadb -h 127.0.0.1 -uroot -ptestroot booklore << EOF
+            -- Note: Flyway will create the proper schema, but we need to ensure it's created
             CREATE TABLE IF NOT EXISTS book_lore_user (
               id BIGINT PRIMARY KEY AUTO_INCREMENT,
               username VARCHAR(255) UNIQUE NOT NULL,
+              name VARCHAR(255) NOT NULL,
               email VARCHAR(255) UNIQUE NOT NULL,
-              password_hash VARCHAR(255),
-              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              password_hash VARCHAR(255) NOT NULL,
+              is_default_password BOOLEAN DEFAULT FALSE,
+              provisioning_method VARCHAR(50),
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
-            INSERT IGNORE INTO book_lore_user (username, email, password_hash)
-            VALUES ('test-user', 'test@example.com', 'test-password-hash');
-          "
+            CREATE TABLE IF NOT EXISTS user_permissions (
+              id BIGINT PRIMARY KEY AUTO_INCREMENT,
+              user_id BIGINT NOT NULL,
+              permission_upload BOOLEAN DEFAULT FALSE,
+              permission_download BOOLEAN DEFAULT FALSE,
+              permission_edit_metadata BOOLEAN DEFAULT FALSE,
+              permission_manipulate_library BOOLEAN DEFAULT FALSE,
+              permission_email_book BOOLEAN DEFAULT FALSE,
+              permission_delete_book BOOLEAN DEFAULT FALSE,
+              permission_access_opds BOOLEAN DEFAULT FALSE,
+              permission_sync_koreader BOOLEAN DEFAULT FALSE,
+              permission_sync_kobo BOOLEAN DEFAULT FALSE,
+              permission_admin BOOLEAN DEFAULT FALSE,
+              UNIQUE KEY uk_user_permissions (user_id),
+              FOREIGN KEY (user_id) REFERENCES book_lore_user(id) ON DELETE CASCADE
+            );
 
-          echo "Test user created for upload testing"
+            -- Insert test user with BCrypt hashed password
+            INSERT IGNORE INTO book_lore_user (username, name, email, password_hash, is_default_password, provisioning_method)
+            VALUES ('test-user', 'Test User', 'test@example.com', '$BCRYPT_HASH', FALSE, 'LOCAL');
+
+            -- Get the user ID
+            SET @user_id = (SELECT id FROM book_lore_user WHERE username = 'test-user');
+
+            -- Grant all permissions for upload testing
+            INSERT IGNORE INTO user_permissions (user_id, permission_upload, permission_download, permission_admin)
+            VALUES (@user_id, TRUE, TRUE, TRUE)
+            ON DUPLICATE KEY UPDATE 
+              permission_upload = TRUE,
+              permission_download = TRUE,
+              permission_admin = TRUE;
+          EOF
+
+          echo "Test user created with BCrypt password for upload testing"
 
       - name: Build and start application
         id: start_app
@@ -128,11 +167,34 @@ jobs:
           path: /tmp/booklore.log
           retention-days: 7
 
-      - name: Run Large File Upload Test
+      - name: Authenticate and Run Large File Upload Test
         run: |
+          # Install jq for JSON parsing
+          sudo apt-get install -y jq
+          
+          # Login to get JWT token
+          echo "Logging in as test-user..."
+          LOGIN_RESPONSE=$(curl -s -X POST http://localhost:8080/api/v1/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"test-user","password":"testpass"}')
+          
+          echo "Login response: $LOGIN_RESPONSE"
+          
+          # Extract access token using jq
+          ACCESS_TOKEN=$(echo "$LOGIN_RESPONSE" | jq -r '.accessToken // empty')
+          
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "null" ]; then
+            echo "FAILURE: Could not obtain access token"
+            echo "Login response: $LOGIN_RESPONSE"
+            exit 1
+          fi
+          
+          echo "Successfully authenticated (token length: ${#ACCESS_TOKEN})"
+          
+          # Run upload test with authentication
           chmod +x booklore-api/testing/large_upload_test.sh
           # Target the bookdrop upload which usually handles large raw imports
-          ./booklore-api/testing/large_upload_test.sh "http://localhost:8080/api/v1/files/upload/bookdrop"
+          ./booklore-api/testing/large_upload_test.sh "http://localhost:8080/api/v1/files/upload/bookdrop" "$ACCESS_TOKEN"
 
       - name: Stop Application
         if: always()
