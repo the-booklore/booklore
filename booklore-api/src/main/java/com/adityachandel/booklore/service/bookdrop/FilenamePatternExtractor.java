@@ -46,9 +46,9 @@ public class FilenamePatternExtractor {
             Map.entry("Publisher", new PlaceholderConfig("(.+?)", "publisher")),
             Map.entry("Language", new PlaceholderConfig("([a-zA-Z]+)", "language")),
             Map.entry("SeriesTotal", new PlaceholderConfig("(\\d+)", "seriesTotal")),
-            Map.entry("ISBN10", new PlaceholderConfig("([0-9X]{10})", "isbn10")),
+            Map.entry("ISBN10", new PlaceholderConfig("(\\d{9}[0-9Xx])", "isbn10")),
             Map.entry("ISBN13", new PlaceholderConfig("([0-9]{13})", "isbn13")),
-            Map.entry("ASIN", new PlaceholderConfig("([A-Z0-9]{10})", "asin"))
+            Map.entry("ASIN", new PlaceholderConfig("(B[A-Za-z0-9]{9}|\\d{9}[0-9Xx])", "asin"))
     );
 
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(\\w+)(?::(.*?))?}|\\*");
