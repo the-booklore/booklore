@@ -32,13 +32,15 @@ jobs:
           docker run -d \
             --name mariadb-test \
             --network booklore-test-net \
-            -e MARIADB_ROOT_PASSWORD=root \
-            -e MARIADB_DATABASE=booklore \
-            mariadb:11.4
+            -e MYSQL_ROOT_PASSWORD=testroot \
+            -e MYSQL_DATABASE=booklore \
+            -e MYSQL_USER=booklore \
+            -e MYSQL_PASSWORD=booklore \
+            mariadb:10.11
 
           # Wait for MariaDB to be ready
           for i in {1..30}; do
-            if docker exec mariadb-test mariadb-admin ping -h localhost -uroot -proot 2>/dev/null; then
+            if docker exec mariadb-test mariadb-admin ping -h localhost -uroot -ptestroot 2>/dev/null; then
               echo "MariaDB is ready"
               break
             fi
@@ -54,10 +56,29 @@ jobs:
             --network booklore-test-net \
             -p 8080:6060 \
             -e DATABASE_URL=jdbc:mariadb://mariadb-test:3306/booklore \
-            -e DATABASE_USERNAME=root \
-            -e DATABASE_PASSWORD=root \
+            -e DATABASE_USERNAME=booklore \
+            -e DATABASE_PASSWORD=booklore \
             booklore-api-test:latest
-          timeout 240 bash -c 'until curl -s http://localhost:8080/actuator/health | grep "UP"; do sleep 5; done'
+
+          # Wait a bit to allow the container to start
+          sleep 10
+
+          # Check if the container is running
+          echo "Checking if container is running..."
+          docker ps
+
+          # Try to check the health endpoint
+          echo "Attempting health check..."
+          timeout 300 bash -c 'while true; do
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/actuator/health 2>/dev/null || echo "000")
+            echo "Health check response: $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              curl -s http://localhost:8080/actuator/health
+              echo "Health check passed"
+              exit 0
+            fi
+            sleep 10
+          done'
 
       - name: Capture App Logs on Failure
         if: failure() && steps.run_app_container.outcome == 'failure'
