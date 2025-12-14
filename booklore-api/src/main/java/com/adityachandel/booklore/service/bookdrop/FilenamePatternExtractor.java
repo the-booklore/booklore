@@ -11,6 +11,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PreDestroy;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -27,7 +28,11 @@ public class FilenamePatternExtractor {
 
     private final BookdropFileRepository bookdropFileRepository;
     private final BookdropMetadataHelper metadataHelper;
-    private final ExecutorService regexExecutor = Executors.newCachedThreadPool();
+    private final ExecutorService regexExecutor = Executors.newCachedThreadPool(runnable -> {
+        Thread thread = new Thread(runnable);
+        thread.setDaemon(true);
+        return thread;
+    });
     
     private static final int PREVIEW_FILE_LIMIT = 5;
     private static final long REGEX_TIMEOUT_SECONDS = 5;
@@ -194,15 +199,28 @@ public class FilenamePatternExtractor {
             return future.get(REGEX_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             future.cancel(true);
-            log.warn("Pattern matching exceeded timeout for input: '{}'", input.substring(0, Math.min(50, input.length())));
+            log.warn("Pattern matching exceeded {} second timeout for: {}", 
+                    REGEX_TIMEOUT_SECONDS, input.substring(0, Math.min(50, input.length())));
             return Optional.empty();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.error("Pattern matching interrupted for input: '{}'", input);
             return Optional.empty();
         } catch (ExecutionException e) {
-            log.error("Pattern matching failed for input: '{}'", input, e.getCause());
+            log.error("Pattern matching failed: {}", e.getCause() != null ? e.getCause().getMessage() : "Unknown");
             return Optional.empty();
+        }
+    }
+
+    @PreDestroy
+    public void shutdownRegexExecutor() {
+        regexExecutor.shutdown();
+        try {
+            if (!regexExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                regexExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            regexExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -289,7 +307,7 @@ public class FilenamePatternExtractor {
             Pattern compiledPattern = Pattern.compile(regexBuilder.toString());
             return new ParsedPattern(compiledPattern, placeholderOrder);
         } catch (PatternSyntaxException e) {
-            log.warn("Invalid regex pattern from user input '{}': {}", pattern, e.getMessage());
+            log.error("Invalid regex syntax from user input '{}': {}", pattern, e.getMessage());
             return null;
         }
     }
