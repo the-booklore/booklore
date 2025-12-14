@@ -52,6 +52,19 @@ public class SecurityConfig {
             "/api/v2/opds/search.opds"
     };
 
+    private static final String[] COMMON_PUBLIC_ENDPOINTS = {
+            "/ws/**",                    // WebSocket connections (auth handled in WebSocketAuthInterceptor)
+            "/kobo/**",                  // Kobo API requests (auth handled in KoboAuthFilter)
+            "/api/v1/auth/login",        // Local username/password login
+            "/api/v1/auth/refresh",      // Token refresh endpoint
+            "/api/v1/auth/remote",       // Remote auth (forward-auth proxy)
+            "/api/v1/auth/register",     // User registration (admin only, but needs to be accessible)
+            "/api/v1/auth/oidc/discovery", // OIDC discovery endpoint (must be public for frontend)
+            // Note: /api/v1/auth/oidc/token is intentionally excluded - it requires OIDC JWT authentication
+            "/api/v1/public-settings",   // Public endpoint for checking OIDC or other app settings
+            "/api/v1/setup/**"           // Setup wizard endpoints (must remain accessible before initial setup)
+    };
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
