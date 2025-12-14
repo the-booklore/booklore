@@ -356,7 +356,7 @@ jobs:
       - name: Run Flyway migrations
         working-directory: booklore-api
         env:
-          FLYWAY_URL: jdbc:mysql://127.0.0.1:3306/booklore
+          FLYWAY_URL: jdbc:mariadb://127.0.0.1:3306/booklore
           FLYWAY_USER: root
           FLYWAY_PASSWORD: testroot
           FLYWAY_CLEAN_DISABLED: 'false'
