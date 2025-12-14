@@ -10,62 +10,86 @@ on:
       - '**'
 
 jobs:
-  flyway-conflict-check:
+  check-for-migrations:
+    name: Check for DB Migrations
+    if: github.event_name == 'pull_request' && ((github.base_ref == 'master' && github.head_ref == 'develop') || github.base_ref == 'develop')
     runs-on: ubuntu-latest
+    outputs:
+      has_migrations: ${{ steps.check_migrations.outputs.has_migrations }}
     steps:
-      - name: Checkout PR branch
+      - name: Checkout Repository for Diff
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Determine comparison reference
-        id: compare_ref
-        run: |
-          bash .github/scripts/determine-compare-ref.sh "${{ github.base_ref }}"
-
-      - name: Check for migration changes
+      - name: Detect Flyway Migration Changes
         id: check_migrations
-        if: steps.compare_ref.outputs.has_ref == 'true'
         run: |
-          # Check for changes in the migration directory
-          if git diff --name-only --diff-filter=AMRCD ${{ env.COMPARE_REF }}...HEAD | grep -q "booklore-api/src/main/resources/db/migration/"; then
-            echo "Migration file changes detected."
+          # Compare PR head with the target base branch
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "booklore-api/src/main/resources/db/migration/V.*.sql"; then
+            echo "Migration file changes detected. Proceeding with migration preview."
             echo "has_migrations=true" >> $GITHUB_OUTPUT
           else
-            echo "No migration file changes detected. Skipping conflict check."
+            echo "No migration file changes detected. Skipping migration preview."
             echo "has_migrations=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Analyze migration changes
-        if: steps.check_migrations.outputs.has_migrations == 'true'
-        id: analyze_changes
+  flyway-migration-preview:
+    name: Flyway DB Migration Preview
+    needs: [check-for-migrations]
+    if: needs.check-for-migrations.outputs.has_migrations == 'true'
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.6
         env:
-          COMPARE_REF: ${{ env.COMPARE_REF }}
-        run: |
-          bash .github/scripts/analyze-changes.sh
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: booklore_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
 
-      - name: Extract and validate versions
-        if: steps.check_migrations.outputs.has_migrations == 'true'
-        id: validate_versions
-        run: |
-          bash .github/scripts/validate-versions.sh
+    steps:
+      - name: Checkout Base Branch
+        uses: actions/checkout@v6
+        with:
+          ref: '${{ github.base_ref }}'
 
-      - name: Check for version conflicts with base
-        if: steps.validate_versions.outputs.has_versions == 'true'
-        env:
-          COMPARE_REF: ${{ env.COMPARE_REF }}
+      - name: Apply Migrations from Base Branch
         run: |
-          bash .github/scripts/check-conflicts.sh
+          echo "Applying migrations from '${{ github.base_ref }}' branch..."
+          docker run --network host \
+            -v ${{ github.workspace }}:/flyway/sql \
+            flyway/flyway:11.19.0-alpine \
+            -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
+            -user=root -password=root \
+            -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
+            migrate
 
-      - name: Cleanup
-        if: always() && steps.check_migrations.outputs.has_migrations == 'true'
+      - name: Checkout Pull Request Branch
+        uses: actions/checkout@v6
+
+      - name: Apply Migrations from PR Branch
         run: |
-          rm -f /tmp/all_changes.txt /tmp/pr_files.txt /tmp/base_files.txt
-          rm -f /tmp/versions_*.txt /tmp/duplicates_in_pr.txt
+          echo "Applying new migrations from PR branch..."
+          docker run --network host \
+            -v ${{ github.workspace }}:/flyway/sql \
+            flyway/flyway:11.19.0-alpine \
+            -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
+            -user=root -password=root \
+            -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
+            migrate
+      
+      - name: Confirm Flyway Dry Run Success
+        run: echo "✅ Flyway migration preview successful. Migrations can be applied cleanly."
 
   build-and-push:
-    needs: flyway-conflict-check
-    if: success() || (needs.flyway-conflict-check.result == 'skipped')
+    needs: [check-for-migrations, flyway-migration-preview]
+    if: always() && (needs.flyway-migration-preview.result == 'success' || needs.flyway-migration-preview.result == 'skipped')
     runs-on: ubuntu-latest
 
     permissions:
@@ -81,33 +105,33 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Log in to Docker Hub
+      - name: Authenticate to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Log in to GitHub Container Registry
+      - name: Authenticate to GitHub Container Registry
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Set up QEMU for multi-arch builds
+      - name: Set Up QEMU for Multi-Architecture Builds
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
+      - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up JDK 21
+      - name: Set Up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Run Backend Tests
+      - name: Execute Backend Tests
         id: backend_tests
         working-directory: ./booklore-api
         run: |
@@ -115,7 +139,7 @@ jobs:
           ./gradlew test --no-daemon --parallel --build-cache
         continue-on-error: true
 
-      - name: Publish Test Results
+      - name: Publish Backend Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
@@ -125,7 +149,7 @@ jobs:
           report_individual_runs: true
           report_suite_logs: 'any'
 
-      - name: Upload Test Reports
+      - name: Upload Backend Test Reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -135,13 +159,13 @@ jobs:
             booklore-api/build/test-results/
           retention-days: 30
 
-      - name: Check Test Results
+      - name: Validate Backend Test Results
         if: steps.backend_tests.outcome == 'failure'
         run: |
           echo "❌ Backend tests failed! Check the test results above."
           exit 1
 
-      - name: Get Latest Master Version
+      - name: Retrieve Latest Master Version Tag
         id: get_version
         run: |
           latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
@@ -149,7 +173,7 @@ jobs:
           echo "latest_tag=$latest_tag" >> $GITHUB_ENV
           echo "Latest master tag: $latest_tag"
 
-      - name: Determine Version Bump (Only for Master)
+      - name: Determine Version Bump (Master Only)
         if: github.ref == 'refs/heads/master'
         id: determine_bump
         env:
@@ -236,7 +260,7 @@ jobs:
             type=gha,mode=max
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
-      - name: Update Release Draft (Only for Master)
+      - name: Update GitHub Release Draft (Master Only)
         if: github.ref == 'refs/heads/master'
         uses: release-drafter/release-drafter@v6
         with:
@@ -245,7 +269,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Publish Draft Release (Only for Master)
+      - name: Publish GitHub Draft Release (Master Only)
         if: github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ github.token }}
