@@ -88,8 +88,35 @@ jobs:
           done
           echo "App is ready"
 
-      - name: Create test user after Flyway migrations
+      - name: Check application logs
+        if: always()
         run: |
+          echo "=== Application Logs (last 100 lines) ==="
+          tail -100 /tmp/booklore.log || echo "No log file found"
+
+      - name: Wait for Flyway migrations and create test user
+        run: |
+          # Wait for Flyway to complete migrations (check for table existence)
+          echo "Waiting for Flyway to create database schema..."
+          for i in {1..60}; do
+            if mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "SHOW TABLES LIKE 'book_lore_user';" | grep -q "book_lore_user"; then
+              echo "Database schema created by Flyway"
+              break
+            fi
+            echo "Waiting for schema creation... ($i/60)"
+            sleep 2
+          done
+
+          # Verify table exists
+          if ! mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "SHOW TABLES LIKE 'book_lore_user';" | grep -q "book_lore_user"; then
+            echo "ERROR: book_lore_user table was not created by Flyway"
+            echo "Checking application logs..."
+            tail -200 /tmp/booklore.log
+            echo "Checking database tables..."
+            mariadb -h 127.0.0.1 -uroot -ptestroot booklore -e "SHOW TABLES;"
+            exit 1
+          fi
+
           # Install Python and bcrypt for password hashing
           sudo apt-get install -y python3 python3-pip
           pip3 install bcrypt
