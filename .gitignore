@@ -49,3 +49,6 @@ booklore-api/src/main/resources/application-local.yaml
 
 ### Testing and discovery scripts ###
 check_calibre_fields.py
+
+### Reference Documentation ###
+CALIBRE_FIELD_MAPPING_REFERENCE.txt

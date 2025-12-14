@@ -1,13 +1,26 @@
-================================================================================
 BOOKLORE - CALIBRE USER METADATA FIELD MAPPING REFERENCE
 ================================================================================
 
 This document lists all available BookMetadata fields that can be extracted from
 Calibre user_metadata custom columns in EPUB files.
 
-To use these, create custom columns in Calibre with the field names listed below
-(e.g., #seriesTotal, #pageCount, #isbn13) and configure them to export to the
-EPUB metadata.
+⚠️  IMPORTANT NOTE ABOUT FIELD NAMING ⚠️
+================================================================================
+
+While this document shows field examples in camelCase (e.g., #seriesTotal, #pageCount),
+Calibre requires custom column lookup names to be in LOWERCASE. The actual mapping
+implementation in EpubMetadataExtractor.java uses lowercase field names with
+underscores where applicable (e.g., #series_total, #page_count, #isbn_13).
+
+For successful Calibre integration:
+- Use EXACTLY the lowercase field names as defined in CALIBRE_FIELD_MAPPINGS
+- Convert camelCase to lowercase_underscore format
+- Example: #seriesTotal becomes #series_total, #isbn13 becomes #isbn_13
+
+================================================================================
+
+To use these fields, create custom columns in Calibre with the LOWERCASE field names
+listed below and configure them to export to the EPUB metadata.
 
 ================================================================================
 CONFIGURATION
@@ -95,7 +108,7 @@ CALIBRE CUSTOM COLUMN CONFIGURATION
 
 1. In Calibre, go to Preferences → Add your own columns
 2. Create a new column with:
-   - Lookup name: Match the field name above (e.g., "seriesTotal")
+   - Lookup name: Use the lowercase field names from CALIBRE_FIELD_MAPPINGS (e.g., "series_total")
    - Column heading: User-friendly name
    - Column type: Match the data type (e.g., Integer, Text, etc.)
 3. Configure the column to "Store in book file" (in plugboard/metadata options)
@@ -105,14 +118,14 @@ CALIBRE CUSTOM COLUMN CONFIGURATION
 EXAMPLE CALIBRE CUSTOM COLUMN SETUP
 ================================================================================
 
-For Series Total:
-  Lookup name: seriesTotal
+For Series Total (correct lowercase naming):
+  Lookup name: series_total
   Column heading: Series Total
   Column type: Integer
   Store in book file: Yes
 
-For ISBN-13:
-  Lookup name: isbn13
+For ISBN-13 (correct lowercase naming):
+  Lookup name: isbn_13
   Column heading: ISBN-13
   Column type: Text
   Store in book file: Yes
@@ -130,7 +143,7 @@ When an EPUB is processed:
 
 Example JSON structure in EPUB:
 {
-  "#seriesTotal": {
+  "#series_total": {
     "#value#": 6,
     "datatype": "int",
     "name": "Series Total",
@@ -150,14 +163,14 @@ To add support for a new Calibre custom column:
    - String: (builder, value) -> builder.fieldName(value)
    - Integer: (builder, value) -> safeParseInt(value, builder::fieldName)
    - Float: (builder, value) -> safeParseFloat(value, builder::fieldName)
-   - Double: (builder, value) -> safeParseDouble(value, builder::fieldName)
+   - Double: (builder, value) -> safeParseDouble(value, builder::doubleField)
    - Sets: Use extractSetField() helper for comma-separated or JSON arrays
 
 ================================================================================
 NOTES
 ================================================================================
 
-- Field names are case-sensitive (use exact names as listed above)
+- Field names must use the EXACT lowercase names from CALIBRE_FIELD_MAPPINGS
 - The "#" prefix is required in Calibre column names
 - Not all fields need to be configured - only add what you need
 - Standard EPUB properties are still extracted (dc:title, dc:creator, etc.)
