@@ -105,13 +105,14 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
 
       - name: Run Backend Tests
         id: backend_tests
         working-directory: ./booklore-api
         run: |
           echo "Running backend tests with testcontainers..."
-          ./gradlew test
+          ./gradlew test --no-daemon --parallel --build-cache
         continue-on-error: true
 
       - name: Publish Test Results
@@ -204,42 +205,36 @@ jobs:
           echo "bump=$bump" >> $GITHUB_ENV
           echo "new_tag=$next_version" >> $GITHUB_ENV
 
-      - name: Generate Image Tag
-        id: set_image_tag
-        run: |
-          branch="${GITHUB_REF#refs/heads/}"
-          if [[ "$branch" == "master" ]]; then
-            image_tag="${{ env.new_tag }}"
-          elif [[ "$branch" == "develop" ]]; then
-            short_sha=$(git rev-parse --short HEAD)
-            image_tag="${{ env.latest_tag }}-develop-${short_sha}"
-          else
-            short_sha=$(git rev-parse --short HEAD)
-            image_tag="${short_sha}"
-          fi
-          echo "image_tag=$image_tag" >> $GITHUB_ENV
-          echo "Image tag: $image_tag"
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            booklore/booklore
+            ghcr.io/booklore-app/booklore
+          tags: |
+            type=sha,enable=${{ github.ref != github.event.repository.default_branch }}
+            type=raw,value={{branch}}-{{sha_short}},enable=${{ github.ref_name == 'develop' }}
+            type=raw,value=${{ env.new_tag }},enable=${{ github.ref_name == 'master' }}
+            type=raw,value=latest,enable=${{ github.ref_name == 'master' }}
 
-      - name: Build and Push Docker Image
-        run: |
-          docker buildx create --use
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg APP_VERSION=${{ env.image_tag }} \
-            --build-arg APP_REVISION=${{ github.sha }} \
-            --tag booklore/booklore:${{ env.image_tag }} \
-            --tag ghcr.io/booklore-app/booklore:${{ env.image_tag }} \
-            --push .
-
-      - name: Push Latest Tag (Only for Master)
-        if: github.ref == 'refs/heads/master'
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg APP_VERSION=${{ env.new_tag }} \
-            --tag booklore/booklore:latest \
-            --tag ghcr.io/booklore-app/booklore:latest \
-            --push .
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+            APP_REVISION=${{ github.sha }}
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
       - name: Update Release Draft (Only for Master)
         if: github.ref == 'refs/heads/master'
