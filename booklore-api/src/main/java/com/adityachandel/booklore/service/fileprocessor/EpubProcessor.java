@@ -70,7 +70,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
                 BufferedImage originalImage = FileService.readImage(bais);
                 if (originalImage == null) {
-                    log.warn("Failed to decode cover image for EPUB '{}'", bookEntity.getFileName());
+                    log.warn("Failed to decode cover image for EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
                     return false;
                 }
                 saved = fileService.saveCoverImages(originalImage, bookEntity.getId());

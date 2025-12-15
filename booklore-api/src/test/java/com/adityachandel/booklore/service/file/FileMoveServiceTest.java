@@ -5,8 +5,10 @@ import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -22,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Set;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,14 +91,20 @@ class FileMoveServiceTest {
         bookEntity.setId(999L);
         bookEntity.setLibrary(library);
         bookEntity.setLibraryPath(libraryPath);
-        bookEntity.setFileSubPath("SciFi");
-        bookEntity.setFileName("Original.epub");
 
-        expectedFilePath = Paths.get(libraryPath.getPath(), bookEntity.getFileSubPath(), "Renamed.epub");
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("SciFi");
+        primaryFile.setFileName("Original.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        expectedFilePath = Paths.get(libraryPath.getPath(), bookEntity.getPrimaryBookFile().getFileSubPath(), "Renamed.epub");
 
         when(fileMoveHelper.getFileNamingPattern(library)).thenReturn("{title}");
         when(fileMoveHelper.generateNewFilePath(bookEntity, libraryPath, "{title}")).thenReturn(expectedFilePath);
-        when(fileMoveHelper.extractSubPath(expectedFilePath, libraryPath)).thenReturn(bookEntity.getFileSubPath());
+        when(fileMoveHelper.extractSubPath(expectedFilePath, libraryPath)).thenReturn(bookEntity.getPrimaryBookFile().getFileSubPath());
         doNothing().when(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
         doNothing().when(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(Path.class), anySet());
     }
