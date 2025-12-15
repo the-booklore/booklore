@@ -450,7 +450,7 @@ jobs:
         include:
           # MariaDB versions
           - db_type: mariadb
-            db_version: '10.11'
+            db_version: '12.1.2'
             health_cmd: mariadb-admin
             jdbc_prefix: mariadb
           - db_type: mariadb
