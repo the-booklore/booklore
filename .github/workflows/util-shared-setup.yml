@@ -35,4 +35,4 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          cache-read-only: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/main' }}
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/master' }}

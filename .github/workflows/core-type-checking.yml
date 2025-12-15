@@ -12,7 +12,7 @@ name: Type Checking & Compilation
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, master]
     paths:
       - 'booklore-ui/**'
       - '.github/workflows/core-type-checking.yml'

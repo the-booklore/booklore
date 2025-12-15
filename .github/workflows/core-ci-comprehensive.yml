@@ -1,7 +1,7 @@
 # Comprehensive CI Workflow
 #
 # Purpose: Runs a full suite of tests covering all aspects of the application
-# Significance: Main CI pipeline that ensures quality before merging to develop/main
+# Significance: Main CI pipeline that ensures quality before merging to develop/master
 # Key Functions:
 # - Performs quick checks (linting, code formatting, commit message validation)
 # - Runs unit tests for both frontend and backend
@@ -13,9 +13,9 @@ name: Core-CI
 
 on:
   push:
-    branches: [develop, main]
+    branches: [develop, master]
   pull_request:
-    branches: [develop, main]
+    branches: [develop, master]
   workflow_dispatch:
     inputs:
       run_migration_tests:
@@ -148,7 +148,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          cache-read-only: ${{ !contains(fromJSON('["refs/heads/develop", "refs/heads/main"]'), github.ref) }}
+          cache-read-only: ${{ !contains(fromJSON('["refs/heads/develop", "refs/heads/master"]'), github.ref) }}
 
       - name: Run unit tests
         working-directory: booklore-api
