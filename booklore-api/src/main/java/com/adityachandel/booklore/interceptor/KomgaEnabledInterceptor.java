@@ -16,13 +16,12 @@ public class KomgaEnabledInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String uri = request.getRequestURI();
-        if (uri.startsWith("/api/v1/") || uri.startsWith("/api/v2/")) {
-            // Check if it's a Komga API endpoint (not OPDS, auth, or other existing endpoints)
-            if (isKomgaEndpoint(uri)) {
-                if (!appSettingService.getAppSettings().isKomgaApiEnabled()) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Komga API is disabled.");
-                    return false;
-                }
+        
+        if (uri.startsWith("/komga/api/")) {
+            boolean komgaEnabled = appSettingService.getAppSettings().isKomgaApiEnabled();
+            if (!komgaEnabled) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Komga API is disabled.");
+                return false;
             }
         }
         return true;
@@ -39,22 +38,4 @@ public class KomgaEnabledInterceptor implements HandlerInterceptor {
         "/api/v1/oauth2", "/api/v1/fonts", "/api/v1/transient-books",
         "/api/v2/users/me"
     };
-    
-    private boolean isKomgaEndpoint(String uri) {
-        // Exclude existing endpoints
-        if (uri.startsWith("/api/v1/opds") || uri.startsWith("/api/v2/opds")) {
-            return false;
-        }
-        if (uri.startsWith("/api/v1/auth") || uri.startsWith("/api/v1/public-settings") || uri.startsWith("/api/v1/setup")) {
-            return false;
-        }
-        
-        // Check if URI starts with any Komga endpoint prefix
-        for (String prefix : KOMGA_ENDPOINT_PREFIXES) {
-            if (uri.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
 }
