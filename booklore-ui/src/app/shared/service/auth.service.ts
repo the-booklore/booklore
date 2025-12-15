@@ -94,7 +94,9 @@ export class AuthService {
     this.oAuthStorage.removeItem("id_token");
     this.tokenSubject.next(null);
     this.getRxStompService().deactivate();
-    this.router.navigate(['/login']);
+
+    // Force reload so user's data is not cached for next user that logs in
+    window.location.href = '/login';
   }
 
   getRxStompService(): RxStompService {

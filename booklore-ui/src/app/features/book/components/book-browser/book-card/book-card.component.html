@@ -38,7 +38,7 @@
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
     }
 
-    <p-button [hidden]="isSeriesViewActive()" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
+    <p-button [hidden]="isSeriesViewActive() || !canReadBook()" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
 
     @if (isCheckboxEnabled) {
       <p-checkbox
