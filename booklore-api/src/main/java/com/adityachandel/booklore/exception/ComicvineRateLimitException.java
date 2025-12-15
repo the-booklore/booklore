@@ -1,7 +1,9 @@
 package com.adityachandel.booklore.exception;
 
-public class ComicvineRateLimitException extends RuntimeException {
+import org.springframework.http.HttpStatus;
+
+public class ComicvineRateLimitException extends APIException {
     public ComicvineRateLimitException(String message) {
-        super(message);
+        super(message, HttpStatus.TOO_MANY_REQUESTS);
     }
 }
