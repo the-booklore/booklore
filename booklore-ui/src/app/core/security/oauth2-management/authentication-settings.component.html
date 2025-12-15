@@ -113,6 +113,21 @@
                   class="w-full"/>
               </div>
               <div class="form-field form-field-full">
+                <label for="discoveryUri">Discovery URI (Optional)</label>
+                <input
+                  pInputText
+                  id="discoveryUri"
+                  [(ngModel)]="oidcProvider.discoveryUri"
+                  placeholder="e.g. https://authentik.domain.com/application/o/booklore/.well-known/openid-configuration"
+                  class="w-full"/>
+                <div class="field-info">
+                  <i class="pi pi-info-circle text-blue-500"></i>
+                  <span>
+                    Explicitly set the discovery URL. If left empty, BookLore will attempt to append /.well-known/openid-configuration to the Issuer URI.
+                  </span>
+                </div>
+              </div>
+              <div class="form-field form-field-full">
                 <div class="claims-grid">
                   <div class="form-field">
                     <label for="claimUsername">Username Claim</label>

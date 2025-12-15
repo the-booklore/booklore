@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.config.security.service;
 
+import com.adityachandel.booklore.util.OidcUtils;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -341,7 +342,11 @@ public class DynamicOidcJwtProcessor {
             throw new IllegalStateException("OIDC client ID is not configured in app settings for issuer: " + normalizedIssuerUri);
         }
 
-        String discoveryUri = normalizedIssuerUri + "/.well-known/openid-configuration";
+        String discoveryUri = resolveDiscoveryUri(providerDetails, normalizedIssuerUri);
+        
+        // Validate discovery URI security
+        OidcUtils.validateDiscoveryUri(discoveryUri, isDevelopmentEnvironment());
+        
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
 
         var resourceRetriever = createResourceRetriever();
@@ -461,6 +466,17 @@ public class DynamicOidcJwtProcessor {
         });
 
         return processor;
+    }
+
+    private String resolveDiscoveryUri(OidcProviderDetails providerDetails, String normalizedIssuerUri) {
+        // 1. Explicitly configured discovery URI takes precedence
+        if (providerDetails.getDiscoveryUri() != null && !providerDetails.getDiscoveryUri().isEmpty()) {
+            log.debug("Using explicitly configured OIDC discovery URI: {}", providerDetails.getDiscoveryUri());
+            return providerDetails.getDiscoveryUri();
+        }
+        
+        // Use OidcUtils for standard resolution
+        return OidcUtils.resolveDiscoveryUri(normalizedIssuerUri);
     }
 
     private DefaultResourceRetriever createResourceRetriever() {
@@ -686,24 +702,21 @@ public class DynamicOidcJwtProcessor {
 
         // Check if this is a protocol upgrade scenario (http -> https)
         if (isProtocolUpgrade(issuer, this.currentIssuerUri)) {
-            String[] activeProfiles = environment.getActiveProfiles();
-            boolean isDevelopment = activeProfiles.length > 0 && (Arrays.asList(activeProfiles).contains("dev") || Arrays.asList(activeProfiles).contains("development") || Arrays.asList(activeProfiles).contains("local"));
-            
-            if (!isDevelopment) {
-                throw new IllegalStateException(
-                    "SECURITY: Protocol mismatch (HTTP to HTTPS upgrade) is only allowed in development profiles. " +
-                    "Token issuer: " + issuer + ", Configured: " + this.currentIssuerUri + ". " +
-                    "Either fix your OIDC provider configuration or set an active profile to 'dev', 'development', or 'local'.");
-            }
-            
-            log.warn("DEVELOPMENT ONLY: JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
-                    "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true. " +
-                    "This is ONLY allowed in development profiles.", 
+            log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
+                    "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true.", 
                     issuer, this.currentIssuerUri);
             return issuer.replace("http://", "https://");
         }
 
         return issuer;
+    }
+    
+    private boolean isDevelopmentEnvironment() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        return activeProfiles.length > 0 && 
+               (Arrays.asList(activeProfiles).contains("dev") || 
+                Arrays.asList(activeProfiles).contains("development") || 
+                Arrays.asList(activeProfiles).contains("local"));
     }
 
     private static boolean isProtocolUpgrade(String tokenIssuer, String configIssuer) {
@@ -732,17 +745,7 @@ public class DynamicOidcJwtProcessor {
     }
 
     private static String normalizeIssuerUri(String issuerUri) {
-        if (issuerUri == null) {
-            return null;
-        }
-        int end = issuerUri.length();
-        while (end > 0 && issuerUri.charAt(end - 1) == '/') {
-            end--;
-        }
-        if (end == 0) {
-            return "/";
-        }
-        return end == issuerUri.length() ? issuerUri : issuerUri.substring(0, end);
+        return OidcUtils.normalizeIssuerUri(issuerUri);
     }
 
     private static final class DiscoveryConfiguration {

@@ -72,6 +72,7 @@
               <th class="permission-header">Access OPDS</th>
               <th class="permission-header">KOReader Sync</th>
               <th class="permission-header">Kobo Sync</th>
+              <th class="permission-header">Change Password</th>
               <th class="actions-header">
                 <div class="header-content">
                   <i class="pi pi-cog"></i>
@@ -169,6 +170,9 @@
               </td>
               <td class="text-center">
                 <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="!user.isEditing"></p-checkbox>
+              </td>
+              <td class="text-center">
+                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canChangePassword" [disabled]="!user.isEditing"></p-checkbox>
               </td>
               <td class="actions-cell">
                 @if (!user.isEditing) {

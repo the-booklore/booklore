@@ -162,6 +162,7 @@ export interface User {
     canSyncKoReader: boolean;
     canSyncKobo: boolean;
     canAccessOpds: boolean;
+    canChangePassword: boolean;
   };
   userSettings: UserSettings;
   provisioningMethod?: 'LOCAL' | 'OIDC' | 'REMOTE';

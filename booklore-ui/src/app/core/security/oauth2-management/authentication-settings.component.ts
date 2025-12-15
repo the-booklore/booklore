@@ -56,6 +56,7 @@ export class AuthenticationSettingsComponent implements OnInit {
     providerName: '',
     clientId: '',
     issuerUri: '',
+    discoveryUri: '',
     claimMapping: {
       username: '',
       email: '',
@@ -104,6 +105,7 @@ export class AuthenticationSettingsComponent implements OnInit {
       providerName: settings.oidcProviderDetails?.providerName || '',
       clientId: settings.oidcProviderDetails?.clientId || '',
       issuerUri: settings.oidcProviderDetails?.issuerUri || '',
+      discoveryUri: settings.oidcProviderDetails?.discoveryUri || '',
       claimMapping: {
         ...defaultClaimMapping,
         ...settings.oidcProviderDetails?.claimMapping

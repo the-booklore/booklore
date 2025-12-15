@@ -30,6 +30,7 @@ export interface OidcProviderDetails {
   providerName: string;
   clientId: string;
   issuerUri: string;
+  discoveryUri: string;
   claimMapping: {
     username: string;
     email: string;

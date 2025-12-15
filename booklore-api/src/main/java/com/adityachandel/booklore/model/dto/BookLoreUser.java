@@ -36,6 +36,7 @@ public class BookLoreUser {
         private boolean canEmailBook;
         private boolean canDeleteBook;
         private boolean canAccessOpds;
+        private boolean canChangePassword;
     }
 
     @Data

@@ -5,7 +5,9 @@ import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.ChangePasswordRequest;
+import com.adityachandel.booklore.model.dto.request.UserUpdateRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
+import com.adityachandel.booklore.model.entity.UserPermissionsEntity;
 import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
@@ -19,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -53,6 +56,7 @@ class UserServiceTest {
         userEntity.setId(userId);
         userEntity.setProvisioningMethod(ProvisioningMethod.OIDC);
         userEntity.setPasswordHash(UserPersistenceService.OIDC_LOCKED_PASSWORD_HASH);
+        userEntity.setPermissions(UserPermissionsEntity.builder().permissionChangePassword(true).build());
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         
@@ -79,6 +83,7 @@ class UserServiceTest {
         userEntity.setId(userId);
         userEntity.setProvisioningMethod(ProvisioningMethod.OIDC);
         userEntity.setPasswordHash("existingHash"); // Not the locked hash
+        userEntity.setPermissions(UserPermissionsEntity.builder().permissionChangePassword(true).build());
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         when(passwordEncoder.matches("wrongCurrent", "existingHash")).thenReturn(false);
@@ -100,6 +105,7 @@ class UserServiceTest {
         userEntity.setId(userId);
         userEntity.setProvisioningMethod(ProvisioningMethod.LOCAL);
         userEntity.setPasswordHash("correctHash");
+        userEntity.setPermissions(UserPermissionsEntity.builder().permissionChangePassword(true).build());
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         when(passwordEncoder.matches("wrongPass", "correctHash")).thenReturn(false);
@@ -109,5 +115,75 @@ class UserServiceTest {
         request.setNewPassword("newPass");
 
         assertThrows(APIException.class, () -> userService.changePassword(request));
+    }
+
+    @Test
+    void changePassword_UserWithoutPermission_ThrowsException() {
+        Long userId = 1L;
+        BookLoreUser authenticatedUser = BookLoreUser.builder().id(userId).build();
+        when(authenticationService.getAuthenticatedUser()).thenReturn(authenticatedUser);
+
+        BookLoreUserEntity userEntity = new BookLoreUserEntity();
+        userEntity.setId(userId);
+        userEntity.setProvisioningMethod(ProvisioningMethod.LOCAL);
+        userEntity.setPermissions(UserPermissionsEntity.builder().permissionChangePassword(false).build());
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+
+        ChangePasswordRequest request = new ChangePasswordRequest();
+
+        APIException exception = assertThrows(APIException.class, () -> userService.changePassword(request));
+        // Verify generic message
+        assert(exception.getMessage().contains("You do not have permission"));
+    }
+
+    @Test
+    void changePassword_OidcUserWithoutPermission_ThrowsSpecificException() {
+        Long userId = 1L;
+        BookLoreUser authenticatedUser = BookLoreUser.builder().id(userId).build();
+        when(authenticationService.getAuthenticatedUser()).thenReturn(authenticatedUser);
+
+        BookLoreUserEntity userEntity = new BookLoreUserEntity();
+        userEntity.setId(userId);
+        userEntity.setProvisioningMethod(ProvisioningMethod.OIDC);
+        userEntity.setPermissions(UserPermissionsEntity.builder().permissionChangePassword(false).build());
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
+
+        ChangePasswordRequest request = new ChangePasswordRequest();
+
+        APIException exception = assertThrows(APIException.class, () -> userService.changePassword(request));
+        // Verify specific OIDC message
+        assert(exception.getMessage().contains("managed by your SSO provider"));
+    }
+
+    @Test
+    void updateUser_UpdatesChangePasswordPermission() {
+        Long userId = 1L;
+        Long targetUserId = 2L;
+        
+        // Admin user doing the update
+        BookLoreUser.UserPermissions adminPermissions = new BookLoreUser.UserPermissions();
+        adminPermissions.setAdmin(true);
+        
+        BookLoreUser adminUser = BookLoreUser.builder()
+                .id(userId)
+                .permissions(adminPermissions)
+                .build();
+        when(authenticationService.getAuthenticatedUser()).thenReturn(adminUser);
+
+        BookLoreUserEntity targetUser = new BookLoreUserEntity();
+        targetUser.setId(targetUserId);
+        targetUser.setPermissions(new UserPermissionsEntity());
+        when(userRepository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
+
+        UserUpdateRequest request = new UserUpdateRequest();
+        UserUpdateRequest.Permissions permissions = new UserUpdateRequest.Permissions();
+        permissions.setCanChangePassword(false);
+        request.setPermissions(permissions);
+
+        userService.updateUser(targetUserId, request);
+
+        assertFalse(targetUser.getPermissions().isPermissionChangePassword());
     }
 }

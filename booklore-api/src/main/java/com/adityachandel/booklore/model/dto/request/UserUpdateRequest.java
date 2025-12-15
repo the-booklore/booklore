@@ -23,5 +23,6 @@ public class UserUpdateRequest {
         private boolean canAccessOpds;
         private boolean canSyncKoReader;
         private boolean canSyncKobo;
+        private boolean canChangePassword;
     }
 }

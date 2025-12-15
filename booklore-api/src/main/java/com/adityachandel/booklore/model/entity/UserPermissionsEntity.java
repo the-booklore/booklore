@@ -56,6 +56,10 @@ public class UserPermissionsEntity {
     @Builder.Default
     private boolean permissionSyncKobo = false;
 
+    @Column(name = "permission_change_password", nullable = false)
+    @Builder.Default
+    private boolean permissionChangePassword = true;
+
     @Column(name = "permission_admin", nullable = false)
     private boolean permissionAdmin;
 }

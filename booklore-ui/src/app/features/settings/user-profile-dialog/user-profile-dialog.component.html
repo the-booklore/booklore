@@ -76,91 +76,205 @@
       </div>
     </div>
 
-    <div class="gradient-divider"></div>
+        <div class="gradient-divider"></div>
 
-    <div class="form-section">
-      <h3 class="section-title">
-        <i class="pi pi-shield"></i>
-        Security Settings
-      </h3>
+    
 
-      <form [formGroup]="changePasswordForm" (ngSubmit)="submitPasswordChange()">
-        <div class="form-field">
-          <label class="field-label" for="currentPassword">Current Password</label>
-          <p-password
-            id="currentPassword"
-            formControlName="currentPassword"
-            [feedback]="false"
-            class="field-input"
-            [inputStyle]="{'width': '100%'}">
-          </p-password>
-          @if (changePasswordForm.get('currentPassword')?.invalid &&
-                (changePasswordForm.get('currentPassword')?.dirty || changePasswordForm.get('currentPassword')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              @if (changePasswordForm.get('currentPassword')?.errors?.['required']) {
-                <span>Current password is required.</span>
+        @if (currentUser?.permissions?.canChangePassword) {
+
+          <div class="form-section">
+
+            <h3 class="section-title">
+
+              <i class="pi pi-shield"></i>
+
+              Security Settings
+
+            </h3>
+
+    
+
+            <form [formGroup]="changePasswordForm" (ngSubmit)="submitPasswordChange()">
+
+              <div class="form-field">
+
+                <label class="field-label" for="currentPassword">Current Password</label>
+
+                <p-password
+
+                  id="currentPassword"
+
+                  formControlName="currentPassword"
+
+                  [feedback]="false"
+
+                  class="field-input"
+
+                  [inputStyle]="{'width': '100%'}">
+
+                </p-password>
+
+                @if (changePasswordForm.get('currentPassword')?.invalid &&
+
+                      (changePasswordForm.get('currentPassword')?.dirty || changePasswordForm.get('currentPassword')?.touched)) {
+
+                  <small class="field-error">
+
+                    <i class="pi pi-exclamation-circle"></i>
+
+                    @if (changePasswordForm.get('currentPassword')?.errors?.['required']) {
+
+                      <span>Current password is required.</span>
+
+                    }
+
+                  </small>
+
+                }
+
+              </div>
+
+    
+
+              <div class="form-field">
+
+                <label class="field-label" for="newPassword">New Password</label>
+
+                <p-password
+
+                  id="newPassword"
+
+                  formControlName="newPassword"
+
+                  [feedback]="false"
+
+                  class="field-input"
+
+                  [inputStyle]="{'width': '100%'}">
+
+                </p-password>
+
+                @if (changePasswordForm.get('newPassword')?.invalid &&
+
+                      (changePasswordForm.get('newPassword')?.dirty || changePasswordForm.get('newPassword')?.touched)) {
+
+                  <small class="field-error">
+
+                    <i class="pi pi-exclamation-circle"></i>
+
+                    @if (changePasswordForm.get('newPassword')?.errors?.['required']) {
+
+                      <span>New password is required.</span>
+
+                    }
+
+                    @if (changePasswordForm.get('newPassword')?.errors?.['minlength']) {
+
+                      <span>Password must be at least 6 characters long.</span>
+
+                    }
+
+                  </small>
+
+                }
+
+              </div>
+
+    
+
+              <div class="form-field">
+
+                <label class="field-label" for="confirmNewPassword">Confirm New Password</label>
+
+                <p-password
+
+                  id="confirmNewPassword"
+
+                  formControlName="confirmNewPassword"
+
+                  [feedback]="false"
+
+                  styleClass="field-input"
+
+                  [inputStyle]="{'width': '100%'}">
+
+                </p-password>
+
+                @if (changePasswordForm.get('confirmNewPassword')?.invalid &&
+
+                      (changePasswordForm.get('confirmNewPassword')?.dirty || changePasswordForm.get('confirmNewPassword')?.touched)) {
+
+                  <small class="field-error">
+
+                    <i class="pi pi-exclamation-circle"></i>
+
+                    @if (changePasswordForm.get('confirmNewPassword')?.errors?.['required']) {
+
+                      <span>Please confirm your new password.</span>
+
+                    }
+
+                  </small>
+
+                }
+
+                @if (changePasswordForm.errors?.['passwordMismatch'] &&
+
+                      changePasswordForm.get('confirmNewPassword')?.touched) {
+
+                  <small class="field-error">
+
+                    <i class="pi pi-exclamation-circle"></i>
+
+                    <span>Passwords do not match.</span>
+
+                  </small>
+
+                }
+
+              </div>
+
+    
+
+              <div class="password-actions">
+
+                <p-button type="submit" severity="info" [outlined]="true" label="Change Password" icon="pi pi-key" [disabled]="changePasswordForm.invalid"></p-button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        } @else {
+
+          <div class="form-section">
+            <h3 class="section-title">
+              <i class="pi pi-shield"></i>
+              Security Settings
+            </h3>
+            <div class="p-4 bg-gray-100 rounded-lg border border-gray-200 text-center">
+              <i class="pi pi-lock text-3xl text-gray-400 mb-2"></i>
+              
+              @if (currentUser?.provisioningMethod === 'OIDC') {
+                 <p class="text-gray-600 font-medium">Managed by Identity Provider</p>
+                 <p class="text-sm text-gray-500 mt-1">
+                   Please change your password via your SSO provider.
+                 </p>
+              } @else {
+                 <p class="text-gray-600 font-medium">Password changes are disabled</p>
+                 <p class="text-sm text-gray-500 mt-1">
+                   Contact your administrator to reset your password.
+                 </p>
               }
-            </small>
-          }
-        </div>
+            </div>
+          </div>
 
-        <div class="form-field">
-          <label class="field-label" for="newPassword">New Password</label>
-          <p-password
-            id="newPassword"
-            formControlName="newPassword"
-            [feedback]="false"
-            class="field-input"
-            [inputStyle]="{'width': '100%'}">
-          </p-password>
-          @if (changePasswordForm.get('newPassword')?.invalid &&
-                (changePasswordForm.get('newPassword')?.dirty || changePasswordForm.get('newPassword')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              @if (changePasswordForm.get('newPassword')?.errors?.['required']) {
-                <span>New password is required.</span>
-              }
-              @if (changePasswordForm.get('newPassword')?.errors?.['minlength']) {
-                <span>Password must be at least 6 characters long.</span>
-              }
-            </small>
-          }
-        </div>
+        }
 
-        <div class="form-field">
-          <label class="field-label" for="confirmNewPassword">Confirm New Password</label>
-          <p-password
-            id="confirmNewPassword"
-            formControlName="confirmNewPassword"
-            [feedback]="false"
-            styleClass="field-input"
-            [inputStyle]="{'width': '100%'}">
-          </p-password>
-          @if (changePasswordForm.get('confirmNewPassword')?.invalid &&
-                (changePasswordForm.get('confirmNewPassword')?.dirty || changePasswordForm.get('confirmNewPassword')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              @if (changePasswordForm.get('confirmNewPassword')?.errors?.['required']) {
-                <span>Please confirm your new password.</span>
-              }
-            </small>
-          }
-          @if (changePasswordForm.errors?.['passwordMismatch'] &&
-                changePasswordForm.get('confirmNewPassword')?.touched) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              <span>Passwords do not match.</span>
-            </small>
-          }
-        </div>
+    
 
-        <div class="password-actions">
-          <p-button type="submit" severity="info" [outlined]="true" label="Change Password" icon="pi pi-key" [disabled]="changePasswordForm.invalid"></p-button>
-        </div>
-      </form>
-    </div>
-  </div>
+      </div>
 
 </div>
 

@@ -1,10 +1,12 @@
 package com.adityachandel.booklore.service.oidc;
 
+import com.adityachandel.booklore.util.OidcUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.core.env.Environment;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -13,8 +15,8 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -23,14 +25,14 @@ public class OidcDiscoveryService {
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
-    private static final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/+$");
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final Environment environment;
     private final AtomicReference<CachedDiscovery> discoveryCache = new AtomicReference<>();
     private volatile String cachedIssuerUri;
 
-    public OidcDiscoveryService(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
+    public OidcDiscoveryService(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper, Environment environment) {
         this.restTemplate = restTemplateBuilder
                 .requestFactory(() -> {
                     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -40,6 +42,7 @@ public class OidcDiscoveryService {
                 })
                 .build();
         this.objectMapper = objectMapper;
+        this.environment = environment;
     }
 
     public void invalidateCache() {
@@ -81,7 +84,10 @@ public class OidcDiscoveryService {
     }
 
     private String fetchDiscoveryDocument(String issuerUri) {
-        String discoveryUrl = TRAILING_SLASH_PATTERN.matcher(issuerUri).replaceAll("") + "/.well-known/openid-configuration";
+        String discoveryUrl = OidcUtils.resolveDiscoveryUri(issuerUri);
+        
+        // Validate URI security
+        OidcUtils.validateDiscoveryUri(discoveryUrl, isDevelopmentEnvironment());
         
         try {
             log.info("Fetching OIDC discovery document from: {}", discoveryUrl);
@@ -96,7 +102,7 @@ public class OidcDiscoveryService {
             }
         } catch (Exception ex) {
             log.warn("OIDC discovery failed for {}: {}", discoveryUrl, ex.getMessage());
-            throw new RuntimeException("Failed to fetch OIDC discovery document", ex);
+            throw new RuntimeException("Failed to fetch OIDC discovery document: " + ex.getMessage(), ex);
         }
     }
 
@@ -115,8 +121,8 @@ public class OidcDiscoveryService {
             }
             
             String actualIssuer = rootNode.get("issuer").asText();
-            String normalizedExpectedIssuer = TRAILING_SLASH_PATTERN.matcher(expectedIssuerUri).replaceAll("");
-            String normalizedActualIssuer = TRAILING_SLASH_PATTERN.matcher(actualIssuer).replaceAll("");
+            String normalizedExpectedIssuer = OidcUtils.normalizeIssuerUri(expectedIssuerUri);
+            String normalizedActualIssuer = OidcUtils.normalizeIssuerUri(actualIssuer);
             
             if (!normalizedActualIssuer.equals(normalizedExpectedIssuer)) {
                 log.debug("Rewriting issuer in discovery document from '{}' to '{}' for frontend compatibility. " +
@@ -135,6 +141,14 @@ public class OidcDiscoveryService {
                     ex.getMessage());
             return discoveryDocumentJson;
         }
+    }
+
+    private boolean isDevelopmentEnvironment() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        return activeProfiles.length > 0 && 
+               (Arrays.asList(activeProfiles).contains("dev") || 
+                Arrays.asList(activeProfiles).contains("development") || 
+                Arrays.asList(activeProfiles).contains("local"));
     }
 
     private record CachedDiscovery(String body, Instant fetchedAt) {

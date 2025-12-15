@@ -53,6 +53,7 @@ export class CreateUserDialogComponent implements OnInit {
       permissionAccessOpds: [false],
       permissionSyncKoreader: [false],
       permissionSyncKobo: [false],
+      permissionChangePassword: [true],
       permissionAdmin: [false],
     });
   }

@@ -20,6 +20,7 @@ public class UserCreateRequest {
     private boolean permissionAccessOpds;
     private boolean permissionSyncKoreader;
     private boolean permissionSyncKobo;
+    private boolean permissionChangePassword;
     private boolean permissionAdmin;
 
     private Set<Long> selectedLibraries;

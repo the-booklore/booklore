@@ -218,6 +218,7 @@ public class UserProvisioningService {
         perms.setPermissionAccessOpds(true);
         perms.setPermissionSyncKoreader(true);
         perms.setPermissionSyncKobo(true);
+        perms.setPermissionChangePassword(true);
 
         user.setPermissions(perms);
         createUser(user);
@@ -249,6 +250,7 @@ public class UserProvisioningService {
         permissions.setPermissionAccessOpds(request.isPermissionAccessOpds());
         permissions.setPermissionSyncKoreader(request.isPermissionSyncKoreader());
         permissions.setPermissionSyncKobo(request.isPermissionSyncKobo());
+        permissions.setPermissionChangePassword(request.isPermissionChangePassword());
         permissions.setPermissionAdmin(request.isPermissionAdmin());
         user.setPermissions(permissions);
 
@@ -490,6 +492,8 @@ public class UserProvisioningService {
 
         UserPermissionsEntity permissions = new UserPermissionsEntity();
         permissions.setUser(user);
+        // Remote users (header auth) should not change their password in BookLore
+        permissions.setPermissionChangePassword(false);
 
         if (oidcAutoProvisionDetails != null && oidcAutoProvisionDetails.getDefaultPermissions() != null) {
             List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();

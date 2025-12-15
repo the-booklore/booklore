@@ -215,6 +215,16 @@
             </label>
           </div>
 
+          <div class="permission-item">
+            <p-checkbox formControlName="permissionChangePassword" [binary]="true" inputId="perm-change-password"></p-checkbox>
+            <label for="perm-change-password" class="permission-label">
+              <div class="permission-icon-wrapper">
+                <i class="pi pi-key permission-icon"></i>
+              </div>
+              <span class="permission-name">Change Password</span>
+            </label>
+          </div>
+
           <div class="permission-item admin-permission">
             <p-checkbox formControlName="permissionAdmin" [binary]="true" inputId="perm-admin"></p-checkbox>
             <label for="perm-admin" class="permission-label">

@@ -16,6 +16,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
     private final UserRepository userRepository;
@@ -56,6 +58,7 @@ public class UserService {
             user.getPermissions().setPermissionAccessOpds(updateRequest.getPermissions().isCanAccessOpds());
             user.getPermissions().setPermissionSyncKoreader(updateRequest.getPermissions().isCanSyncKoReader());
             user.getPermissions().setPermissionSyncKobo(updateRequest.getPermissions().isCanSyncKobo());
+            user.getPermissions().setPermissionChangePassword(updateRequest.getPermissions().isCanChangePassword());
         }
 
         if (updateRequest.getAssignedLibraries() != null && getMyself().getPermissions().isAdmin()) {
@@ -94,6 +97,19 @@ public class UserService {
         BookLoreUser bookLoreUser = authenticationService.getAuthenticatedUser();
         BookLoreUserEntity bookLoreUserEntity = userRepository.findById(bookLoreUser.getId())
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(bookLoreUser.getId()));
+
+        if (!bookLoreUserEntity.getPermissions().isPermissionChangePassword()) {
+            log.warn("User '{}' (ID: {}) attempted password change without permission", bookLoreUser.getUsername(), bookLoreUser.getId());
+            
+            if (bookLoreUserEntity.getProvisioningMethod() == com.adityachandel.booklore.model.enums.ProvisioningMethod.OIDC) {
+                throw ApiError.GENERIC_UNAUTHORIZED.createException(
+                    "Password changes are managed by your SSO provider. Please change your password through your organization's identity provider."
+                );
+            }
+            throw ApiError.GENERIC_UNAUTHORIZED.createException(
+                "You do not have permission to change your password. Please contact your administrator."
+            );
+        }
 
         boolean isOidcUserSettingInitialPassword = bookLoreUserEntity.getProvisioningMethod() == com.adityachandel.booklore.model.enums.ProvisioningMethod.OIDC &&
                 UserPersistenceService.hasLockedOidcPassword(bookLoreUserEntity);

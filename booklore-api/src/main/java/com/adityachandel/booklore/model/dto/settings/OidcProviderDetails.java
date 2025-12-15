@@ -10,6 +10,7 @@ public class OidcProviderDetails {
     private String providerName;
     private String clientId;
     private String issuerUri;
+    private String discoveryUri;
     private ClaimMapping claimMapping;
     
     /**

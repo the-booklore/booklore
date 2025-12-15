@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.util.OidcUtils;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
+import com.adityachandel.booklore.config.security.service.RateLimitingService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
@@ -9,6 +11,7 @@ import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
 import com.adityachandel.booklore.service.user.UserProvisioningService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +22,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -33,7 +37,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Pattern;
 
 /**
  * Controller for handling OIDC authentication for mobile applications.
@@ -54,13 +57,14 @@ import java.util.regex.Pattern;
 @RequestMapping("/api/v1/auth/mobile")
 public class MobileOidcController {
 
-    private static final Pattern TRAILING_SLASHES_PATTERN = Pattern.compile("/+$");
     private final AppSettingService appSettingService;
     private final UserRepository userRepository;
     private final UserProvisioningService userProvisioningService;
     private final AuthenticationService authenticationService;
     private final BookLoreUserTransformer bookLoreUserTransformer;
     private final ObjectMapper objectMapper;
+    private final OidcDiscoveryService oidcDiscoveryService;
+    private final RateLimitingService rateLimitingService;
 
     private static final ConcurrentMap<String, Object> userLocks = new ConcurrentHashMap<>();
 
@@ -75,7 +79,7 @@ public class MobileOidcController {
         @ApiResponse(responseCode = "200", description = "Tokens issued successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid request or OIDC error"),
         @ApiResponse(responseCode = "401", description = "Authentication failed"),
-        @ApiResponse(responseCode = "403", description = "OIDC is not enabled")
+        @ApiResponse(responseCode = "403", description = "OIDC is not enabled or Rate limit exceeded")
     })
     @PostMapping("/oidc/callback")
     public ResponseEntity<Map<String, String>> handleOidcCallback(
@@ -84,7 +88,14 @@ public class MobileOidcController {
             @Parameter(description = "PKCE code verifier used when initiating the auth request")
             @RequestParam("code_verifier") String codeVerifier,
             @Parameter(description = "Redirect URI that was used in the authorization request")
-            @RequestParam("redirect_uri") String redirectUri) {
+            @RequestParam("redirect_uri") String redirectUri,
+            HttpServletRequest request) {
+
+        String clientIp = getClientIp(request);
+        if (!rateLimitingService.tryAcquire(clientIp, 10)) {
+            log.warn("Rate limit exceeded for IP: {}", clientIp);
+            throw ApiError.FORBIDDEN.createException("Rate limit exceeded. Please try again later.");
+        }
 
         log.info("Mobile OIDC callback received");
 
@@ -172,11 +183,22 @@ public class MobileOidcController {
             @Parameter(description = "Redirect URI that was used in the authorization request")
             @RequestParam("redirect_uri") String redirectUri,
             @Parameter(description = "Mobile app URL scheme to redirect to (e.g., booknexus://callback)")
-            @RequestParam("app_redirect_uri") String appRedirectUri) {
+            @RequestParam("app_redirect_uri") String appRedirectUri,
+            HttpServletRequest request) {
+
+        String clientIp = getClientIp(request);
+        if (!rateLimitingService.tryAcquire(clientIp, 10)) {
+            log.warn("Rate limit exceeded for IP: {}", clientIp);
+            // Redirect with error
+            String errorRedirect = appRedirectUri +
+                (appRedirectUri.contains("?") ? "&" : "?") +
+                "error=" + URLEncoder.encode("Rate limit exceeded", StandardCharsets.UTF_8);
+            return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(errorRedirect)).build();
+        }
 
         try {
             // Use the callback handler to get tokens
-            ResponseEntity<Map<String, String>> tokenResponse = handleOidcCallback(code, codeVerifier, redirectUri);
+            ResponseEntity<Map<String, String>> tokenResponse = handleOidcCallback(code, codeVerifier, redirectUri, request);
             Map<String, String> tokens = tokenResponse.getBody();
 
             if (tokens == null) {
@@ -215,24 +237,26 @@ public class MobileOidcController {
      * Discover the token endpoint from the OIDC provider's well-known configuration.
      */
     private String discoverTokenEndpoint(String issuerUri) throws Exception {
-        String discoveryUrl = TRAILING_SLASHES_PATTERN.matcher(issuerUri).replaceAll("") + "/.well-known/openid-configuration";
-
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<String> response = restTemplate.getForEntity(discoveryUrl, String.class);
-
-        if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new RuntimeException("Failed to fetch OIDC discovery document");
-        }
-
-        JsonNode discoveryDoc = objectMapper.readTree(response.getBody());
+        // Use the centralized OIDC discovery service which handles caching and validation
+        String discoveryJson = oidcDiscoveryService.getDiscoveryDocument(issuerUri);
+        
+        JsonNode discoveryDoc = objectMapper.readTree(discoveryJson);
         JsonNode tokenEndpointNode = discoveryDoc.get("token_endpoint");
 
         if (tokenEndpointNode == null || tokenEndpointNode.isNull()) {
             // Fall back to standard path
-            return TRAILING_SLASHES_PATTERN.matcher(issuerUri).replaceAll("") + "/protocol/openid-connect/token";
+            return OidcUtils.normalizeIssuerUri(issuerUri) + "/protocol/openid-connect/token";
         }
 
         return tokenEndpointNode.asText();
+    }
+    
+    private String getClientIp(HttpServletRequest request) {
+        String xfHeader = request.getHeader("X-Forwarded-For");
+        if (xfHeader == null) {
+            return request.getRemoteAddr();
+        }
+        return xfHeader.split(",")[0];
     }
 
     /**
