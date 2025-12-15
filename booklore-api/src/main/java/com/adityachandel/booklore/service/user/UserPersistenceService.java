@@ -33,7 +33,11 @@ public class UserPersistenceService {
             .expireAfterAccess(Duration.ofMinutes(5))
             .build();
             
-    private static final String OIDC_LOCKED_PASSWORD_HASH = "$OIDC_LOCKED$";
+    public static final String OIDC_LOCKED_PASSWORD_HASH = "$OIDC_LOCKED$";
+
+    public static boolean hasLockedOidcPassword(BookLoreUserEntity user) {
+        return OIDC_LOCKED_PASSWORD_HASH.equals(user.getPasswordHash());
+    }
 
     private final UserRepository userRepository;
     private final LibraryRepository libraryRepository;
@@ -92,7 +96,7 @@ public class UserPersistenceService {
             user.setOidcSubject(oidcSubject); // Store the immutable subject identifier
             // Set an invalid password hash that explicitly fails bcrypt validation
             user.setPasswordHash(OIDC_LOCKED_PASSWORD_HASH);
-            user.setDefaultPassword(false);
+            user.setDefaultPassword(true);
             user.setProvisioningMethod(ProvisioningMethod.OIDC);
 
             // Assign default libraries if specified

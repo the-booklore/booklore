@@ -95,8 +95,13 @@ public class UserService {
         BookLoreUserEntity bookLoreUserEntity = userRepository.findById(bookLoreUser.getId())
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(bookLoreUser.getId()));
 
-        if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), bookLoreUserEntity.getPasswordHash())) {
-            throw ApiError.PASSWORD_INCORRECT.createException();
+        boolean isOidcUserSettingInitialPassword = bookLoreUserEntity.getProvisioningMethod() == com.adityachandel.booklore.model.enums.ProvisioningMethod.OIDC &&
+                UserPersistenceService.hasLockedOidcPassword(bookLoreUserEntity);
+
+        if (!isOidcUserSettingInitialPassword) {
+            if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), bookLoreUserEntity.getPasswordHash())) {
+                throw ApiError.PASSWORD_INCORRECT.createException();
+            }
         }
 
         if (passwordEncoder.matches(changePasswordRequest.getNewPassword(), bookLoreUserEntity.getPasswordHash())) {

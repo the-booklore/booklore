@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.RefreshTokenRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.user.DefaultSettingInitializer;
+import com.adityachandel.booklore.service.user.UserPersistenceService;
 import com.adityachandel.booklore.service.user.UserProvisioningService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -149,10 +150,15 @@ public class AuthenticationService {
 
         refreshTokenRepository.save(refreshTokenEntity);
 
+        boolean isDefaultPassword = user.isDefaultPassword();
+        if (user.getProvisioningMethod() == ProvisioningMethod.OIDC && UserPersistenceService.hasLockedOidcPassword(user)) {
+            isDefaultPassword = true;
+        }
+
         return ResponseEntity.ok(Map.of(
                 "accessToken", accessToken,
                 "refreshToken", refreshTokenEntity.getToken(),
-                "isDefaultPassword", String.valueOf(user.isDefaultPassword())
+                "isDefaultPassword", String.valueOf(isDefaultPassword)
         ));
     }
 
