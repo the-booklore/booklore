@@ -241,8 +241,6 @@ public class KomgaMapper {
             case PDF -> "application/pdf";
             case EPUB -> "application/epub+zip";
             case CBX -> "application/x-cbz";
-            case CBR -> "application/x-cbr"; 
-            case CB7 -> "application/x-cb7";
             case FB2 -> "application/fictionbook2+zip";
         };
     }
@@ -256,6 +254,7 @@ public class KomgaMapper {
             case PDF -> "PDF";
             case EPUB -> "EPUB";
             case CBX -> "DIVINA"; // DIVINA is for comic books
+            case FB2 -> "DIVINA";
         };
     }
 
