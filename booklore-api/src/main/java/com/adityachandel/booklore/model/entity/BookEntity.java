@@ -73,6 +73,7 @@ public class BookEntity {
     private Set<BookRecommendationLite> similarBooksJson;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
     private List<BookFileEntity> bookFiles;
 
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
