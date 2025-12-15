@@ -18,6 +18,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -47,6 +48,7 @@ public class JwtUtils {
                 .claim("isDefaultPassword", user.isDefaultPassword())
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
+                .id(UUID.randomUUID().toString()) // Add JTI to ensure uniqueness
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationTime)))
                 .signWith(getSigningKey(), Jwts.SIG.HS256)

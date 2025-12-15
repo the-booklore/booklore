@@ -56,7 +56,7 @@ class UserServiceTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         
-        when(passwordEncoder.matches("newPass", UserPersistenceService.OIDC_LOCKED_PASSWORD_HASH)).thenReturn(false);
+        // Check for same password is now also skipped for locked OIDC users, so we don't expect matches to be called at all
         when(passwordEncoder.encode("newPass")).thenReturn("newHash");
 
         ChangePasswordRequest request = new ChangePasswordRequest();

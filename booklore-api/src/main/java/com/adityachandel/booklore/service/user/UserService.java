@@ -104,7 +104,7 @@ public class UserService {
             }
         }
 
-        if (passwordEncoder.matches(changePasswordRequest.getNewPassword(), bookLoreUserEntity.getPasswordHash())) {
+        if (!isOidcUserSettingInitialPassword && passwordEncoder.matches(changePasswordRequest.getNewPassword(), bookLoreUserEntity.getPasswordHash())) {
             throw ApiError.PASSWORD_SAME_AS_CURRENT.createException();
         }
 
