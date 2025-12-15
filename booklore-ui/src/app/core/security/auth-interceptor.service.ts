@@ -73,7 +73,6 @@ function handle401Error(authService: AuthService, request: HttpRequest<any>, nex
 }
 
 function forceLogout(authService: AuthService, router: Router, message?: string): void {
-  authService.logout();
-  router.navigate(['/login']);
   if (message) console.warn(message);
+  authService.logout();
 }
