@@ -86,6 +86,5 @@ export class ChangePasswordComponent implements OnInit {
 
   logout() {
     this.authService.logout();
-    window.location.href = '/login';
   }
 }
