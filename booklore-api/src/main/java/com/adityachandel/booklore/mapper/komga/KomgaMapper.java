@@ -241,6 +241,7 @@ public class KomgaMapper {
             case PDF -> "application/pdf";
             case EPUB -> "application/epub+zip";
             case CBX -> "application/x-cbz"; // CBX is a generic format for comic book archives
+            case FB2 -> "application/fictionbook2+zip";
         };
     }
 
