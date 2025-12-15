@@ -240,7 +240,9 @@ public class KomgaMapper {
         return switch (bookType) {
             case PDF -> "application/pdf";
             case EPUB -> "application/epub+zip";
-            case CBX -> "application/x-cbz"; // CBX is a generic format for comic book archives
+            case CBX -> "application/x-cbz";
+            case CBR -> "application/x-cbr"; 
+            case CB7 -> "application/x-cb7";
             case FB2 -> "application/fictionbook2+zip";
         };
     }
