@@ -396,7 +396,10 @@ export class BookService {
   }
 
   downloadAdditionalFile(book: Book, fileId: number): void {
-    const additionalFile = book.alternativeFormats!.find((f: AdditionalFile) => f.id === fileId);
+    const additionalFile = [
+      ...(book.alternativeFormats || []),
+      ...(book.supplementaryFiles || [])
+    ].find((f: AdditionalFile) => f.id === fileId);
     const downloadUrl = `${this.url}/${book!.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
