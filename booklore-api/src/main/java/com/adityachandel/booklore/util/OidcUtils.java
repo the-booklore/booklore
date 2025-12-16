@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.util;
 
-import com.adityachandel.booklore.exception.ApiError;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -54,6 +53,19 @@ public class OidcUtils {
      * @throws SecurityException If the URI is unsafe
      */
     public static void validateDiscoveryUri(String uri, boolean isDevelopment) {
+        validateDiscoveryUri(uri, isDevelopment, false);  // default to not allowing insecure providers
+    }
+
+    /**
+     * Validates the discovery URI to prevent SSRF attacks.
+     * Blocks internal network addresses and requires HTTPS (unless in development or explicitly allowed).
+     *
+     * @param uri The discovery URI to validate
+     * @param isDevelopment Whether the application is running in development mode
+     * @param allowInsecureProviders Whether to allow insecure (HTTP) OIDC providers
+     * @throws SecurityException If the URI is unsafe
+     */
+    public static void validateDiscoveryUri(String uri, boolean isDevelopment, boolean allowInsecureProviders) {
         if (uri == null) return;
 
         try {
@@ -61,29 +73,33 @@ public class OidcUtils {
             String host = url.getHost();
 
             // Block internal network addresses
-            if (host.equalsIgnoreCase("localhost") ||
-                host.equals("127.0.0.1") ||
+            if ("localhost".equalsIgnoreCase(host) ||
+                "127.0.0.1".equals(host) ||
                 host.startsWith("192.168.") ||
                 host.startsWith("10.") ||
                 host.startsWith("172.16.") || // 172.16.x.x to 172.31.x.x
                 host.startsWith("169.254.") || // Link-local
-                host.equals("::1") ||
-                host.equals("0.0.0.0")) {
-                
-                // Allow internal IPs only in development mode
+                "::1".equals(host) ||
+                "0.0.0.0".equals(host)) {
+
                 if (isDevelopment) {
                     log.warn("Allowing internal discovery URI in development mode: {}", uri);
                     return;
                 }
-                
-                throw new SecurityException("Discovery URI cannot point to internal network addresses");
+
+                if (allowInsecureProviders) {
+                    log.warn("Allowing internal OIDC provider due to allowInsecureOidcProviders=true: {}", uri);
+                    return;
+                }
+
+                throw new SecurityException("Discovery URI cannot point to internal network addresses. " +
+                        "Set booklore.security.oidc.allow-insecure-oidc-providers=true to override (NOT recommended)");
             }
 
-            // Require HTTPS for production
-            if (!isDevelopment && !url.getProtocol().equalsIgnoreCase("https")) {
+            if (!isDevelopment && !allowInsecureProviders && !"https".equalsIgnoreCase(url.getProtocol())) {
                 throw new SecurityException("Discovery URI must use HTTPS in production");
             }
-            
+
         } catch (Exception e) {
             if (e instanceof SecurityException securityException) {
                 throw securityException;

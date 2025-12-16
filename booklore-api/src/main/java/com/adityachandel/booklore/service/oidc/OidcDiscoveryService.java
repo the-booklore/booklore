@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.oidc;
 
 import com.adityachandel.booklore.exception.OidcDiscoveryException;
 import com.adityachandel.booklore.util.OidcUtils;
+import com.adityachandel.booklore.config.security.service.OidcProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -30,10 +31,11 @@ public class OidcDiscoveryService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final Environment environment;
+    private final OidcProperties oidcProperties;
     private final AtomicReference<CachedDiscovery> discoveryCache = new AtomicReference<>();
     private volatile String cachedIssuerUri;
 
-    public OidcDiscoveryService(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper, Environment environment) {
+    public OidcDiscoveryService(RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper, Environment environment, OidcProperties oidcProperties) {
         this.restTemplate = restTemplateBuilder
                 .requestFactory(() -> {
                     SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
@@ -44,6 +46,15 @@ public class OidcDiscoveryService {
                 .build();
         this.objectMapper = objectMapper;
         this.environment = environment;
+        this.oidcProperties = oidcProperties;
+
+        warnIfInsecureProvidersAllowed();
+    }
+
+    public void warnIfInsecureProvidersAllowed() {
+        if (oidcProperties.allowInsecureOidcProviders()) {
+            log.warn("SECURITY WARNING: allowInsecureOidcProviders is enabled. HTTP OIDC providers are allowed in production. This is NOT recommended!");
+        }
     }
 
     public void invalidateCache() {
@@ -70,7 +81,6 @@ public class OidcDiscoveryService {
             throw new IllegalArgumentException("Issuer URI cannot be null or empty");
         }
 
-        // Check if issuer changed
         if (cachedIssuerUri != null && !cachedIssuerUri.equals(issuerUri)) {
             log.info("OIDC issuer changed from '{}' to '{}', invalidating discovery cache", cachedIssuerUri, issuerUri);
             invalidateCache();
@@ -87,8 +97,7 @@ public class OidcDiscoveryService {
     private String fetchDiscoveryDocument(String issuerUri) {
         String discoveryUrl = OidcUtils.resolveDiscoveryUri(issuerUri);
         
-        // Validate URI security
-        OidcUtils.validateDiscoveryUri(discoveryUrl, isDevelopmentEnvironment());
+        OidcUtils.validateDiscoveryUri(discoveryUrl, isDevelopmentEnvironment(), oidcProperties.allowInsecureOidcProviders());
         
         try {
             log.info("Fetching OIDC discovery document from: {}", discoveryUrl);

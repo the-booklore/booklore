@@ -16,12 +16,13 @@ import java.time.Duration;
  */
 @ConfigurationProperties(prefix = "booklore.security.oidc")
 public record OidcProperties(
-        Jwks jwks, 
-        Jwt jwt, 
-        boolean allowIssuerProtocolMismatch, 
-        boolean strictIssuerValidation, 
-        boolean strictAudienceValidation, 
-        boolean allowUnsafeAlgorithmFallback
+        Jwks jwks,
+        Jwt jwt,
+        boolean allowIssuerProtocolMismatch,
+        boolean strictIssuerValidation,
+        boolean strictAudienceValidation,
+        boolean allowUnsafeAlgorithmFallback,
+        boolean allowInsecureOidcProviders
 ) {
 
     public OidcProperties {
@@ -46,12 +47,7 @@ public record OidcProperties(
             jwt = new Jwt(Duration.ofSeconds(60), false, 10000, null); // Default to null for allowedAlgorithms
         }
     }
-    
-    /**
-     * Returns true only if algorithm fallback is explicitly enabled AND 
-     * strict audience validation is disabled (indicating non-production use).
-     * This prevents algorithm confusion attacks in production.
-     */
+
     public boolean isAlgorithmFallbackAllowed() {
         return allowUnsafeAlgorithmFallback && !strictAudienceValidation;
     }

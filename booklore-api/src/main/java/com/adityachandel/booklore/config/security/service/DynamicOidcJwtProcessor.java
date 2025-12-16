@@ -20,6 +20,7 @@ import com.nimbusds.jwt.proc.BadJWTException;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -843,7 +844,6 @@ public class DynamicOidcJwtProcessor {
                 }
 
                 try (InputStream inputStream = connection.getInputStream()) {
-                    // Safer reading with size limit to prevent OOM attacks
                     int sizeLimit = getSizeLimit();
                     ByteArrayOutputStream buffer = new ByteArrayOutputStream(Math.min(sizeLimit, 8192));
                     byte[] chunk = new byte[8192];
@@ -933,7 +933,6 @@ public class DynamicOidcJwtProcessor {
         }
         
         try {
-            // Handle nested claim paths (e.g., "realm_access.roles")
             if (groupsClaimName.contains(".")) {
                 String[] parts = groupsClaimName.split("\\.");
                 Object current = claimsSet.getClaims();
@@ -956,7 +955,6 @@ public class DynamicOidcJwtProcessor {
                 return extractGroupsFromValue(current, groupsClaimName);
             }
             
-            // Simple claim name
             Object groupsValue = claimsSet.getClaim(groupsClaimName);
             return extractGroupsFromValue(groupsValue, groupsClaimName);
             
@@ -966,7 +964,21 @@ public class DynamicOidcJwtProcessor {
         }
     }
     
-    private List<String> extractGroupsFromValue(Object value, String claimName) {
+    /**
+     * Extracts group/role names from a JWT claim value.
+     * Handles various formats:
+     * <ul>
+     *   <li>List of strings: ["admin", "user"]</li>
+     *   <li>JSON array string: "[\"admin\", \"user\"]"</li>
+     *   <li>Comma-separated string: "admin, user"</li>
+     *   <li>Single value: "admin"</li>
+     * </ul>
+     *
+     * @param value The claim value (may be null)
+     * @param claimName The name of the claim (for logging)
+     * @return List of group names, never null
+     */
+    public static List<String> extractGroupsFromValue(Object value, String claimName) {
         switch (value) {
             case null -> {
                 return Collections.emptyList();
@@ -984,20 +996,38 @@ public class DynamicOidcJwtProcessor {
                 return groups;
             }
             case String str -> {
-                // Some providers might send a comma-separated string
-                if (str.contains(",")) {
-                    return Arrays.stream(str.split(","))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .toList();
-                }
-                return List.of(str);
+                return parseStringValue(str, claimName);
             }
             default -> {
                 log.debug("Unexpected type for groups claim '{}': {}", claimName, value.getClass().getName());
+                return Collections.emptyList();
+            }
+        }
+    }
+
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
+    private static List<String> parseStringValue(String str, String claimName) {
+        str = str.trim();
+
+        if (!str.isEmpty() && str.charAt(0) == '[' && !str.isEmpty() && str.charAt(str.length() - 1) == ']') {
+            try {
+                List<String> parsed = JSON_MAPPER.readValue(str, new TypeReference<List<String>>() {});
+                log.debug("Parsed JSON array from claim '{}': {}", claimName, parsed);
+                return parsed;
+            } catch (com.fasterxml.jackson.core.JsonProcessingException | IllegalArgumentException e) {
+                log.warn("Failed to parse JSON array from claim '{}': {}", claimName, e.getMessage());
+                // Fall through to comma-separated parsing
             }
         }
 
-        return Collections.emptyList();
+        if (str.contains(",")) {
+            return Arrays.stream(str.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .toList();
+        }
+
+        return str.isEmpty() ? Collections.emptyList() : List.of(str);
     }
 }
