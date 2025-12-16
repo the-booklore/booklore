@@ -20,7 +20,7 @@ import {AdditionalFileUploaderComponent} from '../additional-file-uploader/addit
 export class BookDialogHelperService {
 
   private dialogLauncherService = inject(DialogLauncherService);
-  
+
   private openDialog(component: any, options: {}): DynamicDialogRef | null {
     return this.dialogLauncherService.openDialog(component, options);
   }
@@ -36,7 +36,7 @@ export class BookDialogHelperService {
   }
 
   openShelfAssignerDialog(book: Book | null, bookIds: Set<number> | null): DynamicDialogRef | null {
-    const data:any = {};
+    const data: any = {};
     if (book !== null) {
       data.isMultiBooks = false;
       data.book = book;
@@ -87,7 +87,7 @@ export class BookDialogHelperService {
       data: {
         bookIds: Array.from(bookIds),
       },
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-maximal'
     });
   }
 
@@ -97,7 +97,7 @@ export class BookDialogHelperService {
       data: {
         bookIds: Array.from(bookIds),
       },
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-full'
     });
   }
 
@@ -108,7 +108,8 @@ export class BookDialogHelperService {
       data: {
         bookIds: Array.from(bookIds),
       },
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-full',
+      maximizable: true,
     });
   }
 

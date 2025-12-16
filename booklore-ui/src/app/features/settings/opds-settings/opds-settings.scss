@@ -264,6 +264,17 @@
   font-weight: 500;
 }
 
+.sort-order-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-radius: 1rem;
+  background: var(--p-primary-50);
+  color: var(--p-primary-700);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
 .actions-cell {
   text-align: center;
 }
@@ -330,6 +341,22 @@
 
     &::placeholder {
       color: var(--p-text-muted-color);
+    }
+  }
+
+  .form-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.375rem;
+    color: var(--p-text-muted-color);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    margin-top: 0.25rem;
+
+    .pi {
+      font-size: 0.625rem;
+      margin-top: 0.125rem;
+      flex-shrink: 0;
     }
   }
 }

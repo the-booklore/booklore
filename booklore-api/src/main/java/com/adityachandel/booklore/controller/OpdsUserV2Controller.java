@@ -2,6 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.dto.request.OpdsUserV2CreateRequest;
+import com.adityachandel.booklore.model.dto.request.OpdsUserV2UpdateRequest;
 import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -46,4 +47,13 @@ public class OpdsUserV2Controller {
             @Parameter(description = "ID of the OPDS user to delete") @PathVariable Long id) {
         service.deleteOpdsUser(id);
     }
-}
+
+    @Operation(summary = "Update OPDS user", description = "Update an OPDS user's settings by ID.")
+    @ApiResponse(responseCode = "200", description = "OPDS user updated successfully")
+    @PatchMapping("/{id}")
+    @PreAuthorize("@securityUtil.isAdmin() or @securityUtil.canAccessOpds()")
+    public OpdsUserV2 updateUser(
+            @Parameter(description = "ID of the OPDS user to update") @PathVariable Long id,
+            @Parameter(description = "OPDS user update request") @RequestBody OpdsUserV2UpdateRequest updateRequest) {
+        return service.updateOpdsUser(id, updateRequest);
+    }}

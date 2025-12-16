@@ -115,6 +115,12 @@
                   </th>
                   <th>
                     <div class="header-content">
+                      <i class="pi pi-sort-alt"></i>
+                      <span>Sort Order</span>
+                    </div>
+                  </th>
+                  <th>
+                    <div class="header-content">
                       <i class="pi pi-key"></i>
                       <span>Password</span>
                     </div>
@@ -136,6 +142,47 @@
                       </div>
                       <span class="username">{{ user.username }}</span>
                     </div>
+                  </td>
+                  <td>
+                    @if (editingUserId === user.id) {
+                      <div class="flex items-center gap-2">
+                        <p-select
+                          [options]="sortOrderOptions"
+                          [(ngModel)]="editingSortOrder"
+                          optionLabel="label"
+                          optionValue="value"
+                          [style]="{width: '180px'}"
+                          size="small"
+                          [appendTo]="'body'">
+                        </p-select>
+                        <p-button
+                          icon="pi pi-check"
+                          severity="success"
+                          size="small"
+                          [text]="true"
+                          (onClick)="saveSortOrder(user)">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-times"
+                          severity="secondary"
+                          size="small"
+                          [text]="true"
+                          (onClick)="cancelEdit()">
+                        </p-button>
+                      </div>
+                    } @else {
+                      <div class="flex items-center gap-2">
+                        <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
+                        <p-button
+                          icon="pi pi-pencil"
+                          severity="info"
+                          size="small"
+                          [text]="true"
+                          (onClick)="startEdit(user)"
+                          pTooltip="Edit sort order">
+                        </p-button>
+                      </div>
+                    }
                   </td>
                   <td>
                     <div class="flex items-center gap-2">
@@ -171,7 +218,7 @@
               </ng-template>
               <ng-template pTemplate="emptymessage">
                 <tr>
-                  <td colspan="3">
+                  <td colspan="4">
                     <div class="empty-message">
                       <i class="pi pi-users"></i>
                       <p class="empty-title">No users found</p>
@@ -210,6 +257,23 @@
             pInputText
             [(ngModel)]="newUser.password"
             placeholder="Enter password"/>
+        </div>
+        <div class="form-field">
+          <label for="sortOrder">Default Sort Order</label>
+          <p-select
+            id="sortOrder"
+            [options]="sortOrderOptions"
+            [(ngModel)]="newUser.sortOrder"
+            optionLabel="label"
+            optionValue="value"
+            [style]="{width: '100%'}"
+            placeholder="Select sort order"
+            [appendTo]="'body'">
+          </p-select>
+          <small class="form-hint">
+            <i class="pi pi-info-circle"></i>
+            This will determine how books appear in the OPDS feed for this user
+          </small>
         </div>
       </div>
       <ng-template pTemplate="footer">
