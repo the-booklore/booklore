@@ -289,7 +289,6 @@ public class MobileOidcController {
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 throw new RuntimeException("Token exchange failed with status: " + response.getStatusCode());
             }
-
             return objectMapper.readValue(response.getBody(), Map.class);
 
         } catch (Exception e) {

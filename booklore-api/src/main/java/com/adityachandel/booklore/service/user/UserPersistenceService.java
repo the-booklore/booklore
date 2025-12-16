@@ -151,7 +151,6 @@ public class UserPersistenceService {
     /**
      * Syncs user permissions based on OIDC groups/roles claim.
      * Uses the roleMappings configuration from OidcProviderDetails.
-     *
      * This method strictly enforces the state from the IdP for managed permissions.
      * If the IdP says they don't have the role, BookLore will revoke it,
      * BUT ONLY if that permission is mapped to at least one role in the configuration.
