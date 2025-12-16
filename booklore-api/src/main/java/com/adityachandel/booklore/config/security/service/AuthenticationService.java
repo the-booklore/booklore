@@ -108,9 +108,10 @@ public class AuthenticationService {
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
         BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername()));
 
-        if (user.getProvisioningMethod() == ProvisioningMethod.OIDC) {
-            log.warn("Password authentication attempt blocked for OIDC-provisioned user: {}", loginRequest.getUsername());
-            throw ApiError.INVALID_CREDENTIALS.createException("OIDC users cannot authenticate with password. Please use your identity provider.");
+        // Allow OIDC users with a local password (set for OPDS or backup) to login with password
+        if (user.getProvisioningMethod() == ProvisioningMethod.OIDC && UserPersistenceService.hasLockedOidcPassword(user)) {
+            log.warn("Password authentication attempt blocked for OIDC-provisioned user without local password: {}", loginRequest.getUsername());
+            throw ApiError.INVALID_CREDENTIALS.createException("OIDC users cannot authenticate with password before setting a local password. Please use your identity provider.");
         }
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPasswordHash())) {

@@ -109,8 +109,8 @@ public class UserPersistenceService {
             UserPermissionsEntity perms = new UserPermissionsEntity();
             perms.setUser(user);
             
-            // OIDC users should not change their password in BookLore by default
-            perms.setPermissionChangePassword(false);
+            // OIDC users can set a local password for OPDS and backup authentication
+            perms.setPermissionChangePassword(true);
 
             List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
             if (defaultPermissions != null) {
