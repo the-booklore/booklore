@@ -70,7 +70,7 @@ class UserServiceTest {
         userService.changePassword(request);
 
         verify(passwordEncoder, never()).matches(eq("wrongCurrent"), any());
-        verify(userRepository).save(userEntity);
+        verify(userRepository).saveAndFlush(userEntity);
     }
 
     @Test
