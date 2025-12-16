@@ -2,7 +2,7 @@ import {Component, DestroyRef, inject, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {Message} from 'primeng/message';
-
+import {Router} from '@angular/router';
 import {Password} from 'primeng/password';
 import {MessageService} from 'primeng/api';
 import {UserService} from '../../../features/settings/user-management/user.service';
@@ -33,6 +33,7 @@ export class ChangePasswordComponent implements OnInit {
   protected userService = inject(UserService);
   protected authService = inject(AuthService);
   protected messageService = inject(MessageService);
+  private router = inject(Router);
   private destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
@@ -86,5 +87,15 @@ export class ChangePasswordComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  skipPasswordSetup() {
+    this.messageService.add({
+      severity: 'info',
+      summary: 'Password Setup Skipped',
+      detail: 'You can set a local password anytime from your account settings.',
+      life: 3000
+    });
+    this.router.navigate(['/dashboard']);
   }
 }

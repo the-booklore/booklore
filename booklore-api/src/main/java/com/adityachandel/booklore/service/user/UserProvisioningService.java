@@ -310,6 +310,10 @@ public class UserProvisioningService {
                 
                 // Sync profile if username/email/name changed in IdP
                 syncUserProfile(user, username, email, displayName);
+                
+                // Ensure OIDC users have permission to change password (for OPDS and backup access)
+                user.getPermissions().setPermissionChangePassword(true);
+                
                 user = userRepository.save(user);
                 
                 // Sync groups/roles if configured
@@ -361,6 +365,10 @@ public class UserProvisioningService {
             
             // Sync profile
             syncUserProfile(user, username, email, displayName);
+            
+            // Ensure OIDC users have permission to change password (for OPDS and backup access)
+            user.getPermissions().setPermissionChangePassword(true);
+            
             user = userRepository.save(user);
             
             // Sync groups/roles if configured
@@ -409,6 +417,10 @@ public class UserProvisioningService {
 
                 // Sync profile
                 syncUserProfile(user, username, email, displayName);
+                
+                // Ensure OIDC users have permission to change password (for OPDS and backup access)
+                user.getPermissions().setPermissionChangePassword(true);
+                
                 user = userRepository.save(user);
 
                 // Sync groups/roles if configured
