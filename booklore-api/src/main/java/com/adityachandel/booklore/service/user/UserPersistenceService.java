@@ -100,40 +100,44 @@ public class UserPersistenceService {
             user.setProvisioningMethod(ProvisioningMethod.OIDC);
 
             // Assign default libraries if specified
-            List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
-            if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
-                List<LibraryEntity> libraries = libraryRepository.findAllById(defaultLibraryIds);
-                user.setLibraries(new ArrayList<>(libraries));
+            if (oidcAutoProvisionDetails != null) {
+                List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
+                if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
+                    List<LibraryEntity> libraries = libraryRepository.findAllById(defaultLibraryIds);
+                    user.setLibraries(new ArrayList<>(libraries));
+                }
             }
 
             UserPermissionsEntity perms = new UserPermissionsEntity();
             perms.setUser(user);
-            
+
             // OIDC users can set a local password for OPDS and backup authentication
             perms.setPermissionChangePassword(true);
 
-            List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
-            if (defaultPermissions != null) {
-                perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
-                perms.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
-                perms.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
-                perms.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
-                perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
-                perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
-                perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
-                perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
-                perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
-                perms.setPermissionAdmin(defaultPermissions.contains("permissionAdmin"));
-            }
+            if (oidcAutoProvisionDetails != null) {
+                List<String> defaultPermissions = oidcAutoProvisionDetails.getDefaultPermissions();
+                if (defaultPermissions != null) {
+                    perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
+                    perms.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
+                    perms.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
+                    perms.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
+                    perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
+                    perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
+                    perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
+                    perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
+                    perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
+                    perms.setPermissionAdmin(defaultPermissions.contains("permissionAdmin"));
+                }
 
-            // Check if user should be admin based on OIDC admin group membership
-            boolean isAdmin = checkAdminGroupMembership(groups, oidcAutoProvisionDetails);
-            if (isAdmin) {
-                perms.setPermissionAdmin(true);
-                log.info("Granting admin role to user '{}' based on OIDC group membership", username);
-                // Admins get access to all libraries
-                List<LibraryEntity> allLibraries = libraryRepository.findAll();
-                user.setLibraries(new ArrayList<>(allLibraries));
+                // Check if user should be admin based on OIDC admin group membership
+                boolean isAdmin = checkAdminGroupMembership(groups, oidcAutoProvisionDetails);
+                if (isAdmin) {
+                    perms.setPermissionAdmin(true);
+                    log.info("Granting admin role to user '{}' based on OIDC group membership", username);
+                    // Admins get access to all libraries
+                    List<LibraryEntity> allLibraries = libraryRepository.findAll();
+                    user.setLibraries(new ArrayList<>(allLibraries));
+                }
             }
 
             user.setPermissions(perms);
@@ -144,7 +148,7 @@ public class UserPersistenceService {
                 userDefaultsService.addDefaultSettings(saved);
 
                 // Apply group-based permissions if groups are provided
-                if (groups != null && !groups.isEmpty()) {
+                if (groups != null && !groups.isEmpty() && oidcAutoProvisionDetails != null) {
                     syncUserPermissionsFromGroups(saved, groups, oidcAutoProvisionDetails);
                 }
 
