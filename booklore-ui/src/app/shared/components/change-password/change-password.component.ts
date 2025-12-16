@@ -29,6 +29,7 @@ export class ChangePasswordComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
   isOidcUser: boolean = false;
+  isInitialSetup: boolean = false;
 
   protected userService = inject(UserService);
   protected authService = inject(AuthService);
@@ -37,6 +38,9 @@ export class ChangePasswordComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
 
   ngOnInit(): void {
+    // Check if this is initial password setup (coming from OIDC callback)
+    this.isInitialSetup = history.state?.isInitialSetup || false;
+    
     this.userService.userState$.pipe(
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(state => {
@@ -72,7 +76,21 @@ export class ChangePasswordComponent implements OnInit {
     this.userService.changePassword(this.isOidcUser ? '' : this.currentPassword, this.newPassword).subscribe({
       next: () => {
         this.successMessage = 'Password changed successfully!';
-        this.logout();
+        // For OIDC users in initial setup, stay logged in and go to dashboard
+        // For other users, logout to force re-authentication with new password
+        if (this.isOidcUser && this.isInitialSetup) {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Password Set',
+            detail: 'Your local password has been set successfully.',
+            life: 2000
+          });
+          setTimeout(() => {
+            this.router.navigate(['/dashboard']);
+          }, 1000);
+        } else {
+          this.logout();
+        }
       },
       error: (err) => {
         this.errorMessage = err.message;

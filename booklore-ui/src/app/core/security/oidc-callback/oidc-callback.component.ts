@@ -49,7 +49,7 @@ export class OidcCallbackComponent implements OnInit {
               detail: 'Please set a local password for your account.',
               life: 5000
             });
-            this.router.navigate(['/change-password']);
+            this.router.navigate(['/change-password'], { state: { isInitialSetup: true } });
           } else {
             this.router.navigate(['/dashboard']);
           }
