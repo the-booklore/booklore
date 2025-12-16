@@ -89,7 +89,9 @@ export class AuthenticationSettingsComponent implements OnInit {
 
     const details = settings.oidcAutoProvisionDetails;
 
-    this.autoUserProvisioningEnabled = details?.enableAutoProvisioning ?? false;
+    this.autoUserProvisioningEnabled = settings.oidcProviderDetails
+      ? (details ? details.enableAutoProvisioning : false)
+      : true;
     this.selectedPermissions = details?.defaultPermissions ?? [];
     this.editingLibraryIds = details?.defaultLibraryIds ?? [];
     this.adminGroup = details?.adminGroup || '';
