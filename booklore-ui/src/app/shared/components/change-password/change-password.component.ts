@@ -52,8 +52,8 @@ export class ChangePasswordComponent implements OnInit {
     this.errorMessage = null;
     this.successMessage = null;
 
-    if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
-      this.errorMessage = 'All fields are required.';
+    if (!this.newPassword || !this.confirmNewPassword) {
+      this.errorMessage = 'New password and confirm password fields are required.';
       return;
     }
 
@@ -62,31 +62,66 @@ export class ChangePasswordComponent implements OnInit {
       return;
     }
 
-    if (this.currentPassword === this.newPassword) {
-      this.errorMessage = 'New password cannot be the same as the current password.';
-      return;
-    }
-
-    this.userService.changePassword(this.currentPassword, this.newPassword).subscribe({
-      next: () => {
-        this.successMessage = 'Password changed successfully!';
-        if (this.isInitialSetup) {
-          setTimeout(() => {
-            this.router.navigate(['/dashboard']);
-          }, 1500);
-        } else {
-          this.logout();
+    // For OIDC users during initial setup, we should set their local password
+    if (this.isInitialSetup) {
+      // For OIDC users, we need to set their password which will allow them to login locally
+      // This is essentially changing their user record to allow local authentication
+      this.userService.getMyself().subscribe({
+        next: (user) => {
+          // Use changeUserPassword endpoint to set the password for this user
+          this.userService.changeUserPassword(user.id, this.newPassword).subscribe({
+            next: () => {
+              this.successMessage = 'Local password set successfully!';
+              setTimeout(() => {
+                this.router.navigate(['/dashboard']);
+              }, 1500);
+            },
+            error: (err) => {
+              this.errorMessage = err.message || 'Failed to set local password.';
+              this.messageService.add({
+                severity: 'error',
+                summary: 'Password Setup Failed',
+                detail: this.errorMessage ?? 'An unknown error occurred.'
+              });
+            }
+          });
+        },
+        error: (err) => {
+          this.errorMessage = 'Failed to retrieve user information.';
+          this.messageService.add({
+            severity: 'error',
+            summary: 'User Info Error',
+            detail: this.errorMessage ?? 'An unknown error occurred.'
+          });
         }
-      },
-      error: (err) => {
-        this.errorMessage = err.message;
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Password Change Failed',
-          detail: this.errorMessage ?? 'An unknown error occurred.'
-        });
+      });
+    } else {
+      // For non-initial setup, use the regular change password flow
+      if (!this.currentPassword) {
+        this.errorMessage = 'Current password is required.';
+        return;
       }
-    });
+
+      if (this.currentPassword === this.newPassword) {
+        this.errorMessage = 'New password cannot be the same as the current password.';
+        return;
+      }
+
+      this.userService.changePassword(this.currentPassword, this.newPassword).subscribe({
+        next: () => {
+          this.successMessage = 'Password changed successfully!';
+          this.logout(); // Log out after password change for security
+        },
+        error: (err) => {
+          this.errorMessage = err.message;
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Password Change Failed',
+            detail: this.errorMessage ?? 'An unknown error occurred.'
+          });
+        }
+      });
+    }
   }
 
   createLocalAccount() {
@@ -94,8 +129,8 @@ export class ChangePasswordComponent implements OnInit {
     this.successMessage = null;
     this.isCreatingLocal = true;
 
-    if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
-      this.errorMessage = 'All fields are required.';
+    if (!this.newPassword || !this.confirmNewPassword) {
+      this.errorMessage = 'New password and confirm password fields are required.';
       this.isCreatingLocal = false;
       return;
     }
@@ -105,27 +140,25 @@ export class ChangePasswordComponent implements OnInit {
       return;
     }
 
-    // Use currentPassword as username, newPassword as password for local account creation
-    // (You may want to adjust this logic to match your actual registration requirements)
-    const userData = {
-      username: this.currentPassword, // or prompt for username/email if needed
-      password: this.newPassword,
-      name: '',
-      email: '',
-      assignedLibraries: [],
-      permissions: {},
-      userSettings: {},
-      provisioningMethod: 'LOCAL'
-    };
-    this.userService.createUser(userData as any).subscribe({
-      next: () => {
-        this.successMessage = 'Local account created successfully!';
-        setTimeout(() => {
-          this.router.navigate(['/dashboard']);
-        }, 1500);
+    // For OIDC users, we need to set their local password
+    this.userService.getMyself().subscribe({
+      next: (user) => {
+        // Use changeUserPassword endpoint to set the password for this user
+        this.userService.changeUserPassword(user.id, this.newPassword).subscribe({
+          next: () => {
+            this.successMessage = 'Local password set successfully!';
+            setTimeout(() => {
+              this.router.navigate(['/dashboard']);
+            }, 1500);
+          },
+          error: (err) => {
+            this.errorMessage = err.message || 'Failed to set local password.';
+            this.isCreatingLocal = false;
+          }
+        });
       },
       error: (err) => {
-        this.errorMessage = err.message || 'Failed to create local account.';
+        this.errorMessage = 'Failed to retrieve user information. Cannot set local password.';
         this.isCreatingLocal = false;
       }
     });
@@ -136,6 +169,7 @@ export class ChangePasswordComponent implements OnInit {
   }
 
   skip() {
+    // Redirect to dashboard without making changes
     this.router.navigate(['/dashboard']);
   }
 }
