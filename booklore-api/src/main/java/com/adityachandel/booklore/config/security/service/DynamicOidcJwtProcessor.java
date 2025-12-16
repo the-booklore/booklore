@@ -487,11 +487,13 @@ public class DynamicOidcJwtProcessor {
                 (int) jwks.connectTimeout().toMillis(),
                 (int) jwks.readTimeout().toMillis(),
                 jwks.sizeLimit(),
-                jwks.proxyHost(),
-                jwks.proxyPort(),
-                jwks.userAgent(),
-                jwks.proxyUsername(),
-                jwks.proxyPassword()
+                new ConfigurableResourceRetriever.RetrieverConfig(
+                        jwks.proxyHost(),
+                        jwks.proxyPort(),
+                        jwks.userAgent(),
+                        jwks.proxyUsername(),
+                        jwks.proxyPassword()
+                )
         );
     }
 
@@ -775,28 +777,41 @@ public class DynamicOidcJwtProcessor {
     }
 
     private static class ConfigurableResourceRetriever extends DefaultResourceRetriever {
-        private final String proxyHost;
-        private final Integer proxyPort;
-        private final String userAgent;
-        private final String proxyUser;
-        private final String proxyPassword;
+        private static class RetrieverConfig {
+            private final String proxyHost;
+            private final Integer proxyPort;
+            private final String userAgent;
+            private final String proxyUser;
+            private final String proxyPassword;
 
-        public ConfigurableResourceRetriever(int connectTimeout, int readTimeout, int sizeLimit, String proxyHost, Integer proxyPort,
-                                             String userAgent, String proxyUser, String proxyPassword) {
+            public RetrieverConfig(String proxyHost, Integer proxyPort, String userAgent, String proxyUser, String proxyPassword) {
+                this.proxyHost = proxyHost;
+                this.proxyPort = proxyPort;
+                this.userAgent = userAgent;
+                this.proxyUser = proxyUser;
+                this.proxyPassword = proxyPassword;
+            }
+
+            public String getProxyHost() { return proxyHost; }
+            public Integer getProxyPort() { return proxyPort; }
+            public String getUserAgent() { return userAgent; }
+            public String getProxyUser() { return proxyUser; }
+            public String getProxyPassword() { return proxyPassword; }
+        }
+
+        private final RetrieverConfig config;
+
+        public ConfigurableResourceRetriever(int connectTimeout, int readTimeout, int sizeLimit, RetrieverConfig config) {
             super(connectTimeout, readTimeout, sizeLimit);
-            this.proxyHost = proxyHost;
-            this.proxyPort = proxyPort;
-            this.userAgent = userAgent;
-            this.proxyUser = proxyUser;
-            this.proxyPassword = proxyPassword;
+            this.config = config;
         }
 
         @Override
         public Resource retrieveResource(URL url) throws IOException {
             HttpURLConnection connection;
-            if (proxyHost != null && !proxyHost.isEmpty() && proxyPort != null) {
-                log.debug("Opening connection to {} via proxy {}:{}", url, proxyHost, proxyPort);
-                Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost, proxyPort));
+            if (config.getProxyHost() != null && !config.getProxyHost().isEmpty() && config.getProxyPort() != null) {
+                log.debug("Opening connection to {} via proxy {}:{}", url, config.getProxyHost(), config.getProxyPort());
+                Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(config.getProxyHost(), config.getProxyPort()));
                 connection = (HttpURLConnection) url.openConnection(proxy);
             } else {
                 log.debug("Opening direct connection to {}", url);
@@ -807,12 +822,12 @@ public class DynamicOidcJwtProcessor {
             connection.setReadTimeout(getReadTimeout());
 
             // Set configurable User-Agent
-            String userAgentStr = userAgent != null && !userAgent.isEmpty() ? userAgent : "BookLore-OIDC-Client/1.0";
+            String userAgentStr = config.getUserAgent() != null && !config.getUserAgent().isEmpty() ? config.getUserAgent() : "BookLore-OIDC-Client/1.0";
             connection.setRequestProperty("User-Agent", userAgentStr);
 
             // Set proxy authentication if configured
-            if (proxyUser != null && !proxyUser.isEmpty() && proxyPassword != null) {
-                String auth = proxyUser + ":" + proxyPassword;
+            if (config.getProxyUser() != null && !config.getProxyUser().isEmpty() && config.getProxyPassword() != null) {
+                String auth = config.getProxyUser() + ":" + config.getProxyPassword();
                 String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
                 connection.setRequestProperty("Proxy-Authorization", "Basic " + encodedAuth);
             }
@@ -1010,7 +1025,7 @@ public class DynamicOidcJwtProcessor {
     private static List<String> parseStringValue(String str, String claimName) {
         str = str.trim();
 
-        if (!str.isEmpty() && str.charAt(0) == '[' && !str.isEmpty() && str.charAt(str.length() - 1) == ']') {
+        if (str.charAt(0) == '[' && !str.isEmpty() && str.charAt(str.length() - 1) == ']') {
             try {
                 List<String> parsed = JSON_MAPPER.readValue(str, new TypeReference<List<String>>() {});
                 log.debug("Parsed JSON array from claim '{}': {}", claimName, parsed);
@@ -1028,6 +1043,6 @@ public class DynamicOidcJwtProcessor {
                     .toList();
         }
 
-        return str.isEmpty() ? Collections.emptyList() : List.of(str);
+        return List.of(str);
     }
 }

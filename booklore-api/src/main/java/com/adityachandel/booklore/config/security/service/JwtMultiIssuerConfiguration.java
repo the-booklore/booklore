@@ -229,7 +229,7 @@ public class JwtMultiIssuerConfiguration {
                 try {
                     return entry.getValue().decode(token);
                 } catch (JwtException e) {
-                    failures.add(entry.getKey() + ": " + e.getMessage());
+                    failures.add(String.format("%s: %s", entry.getKey(), e.getMessage()));
                 }
             }
 
@@ -391,8 +391,9 @@ public class JwtMultiIssuerConfiguration {
             if (delegate == null) {
                 synchronized (lock) {
                     if (delegate == null) {
-                        delegate = createDelegate();
-                        log.debug("Created delegate: {}", (delegate != null ? delegate.getClass().getSimpleName() : "null"));
+                        JwtDecoder newDelegate = createDelegate();
+                        log.debug("Created delegate: {}", (newDelegate != null ? newDelegate.getClass().getSimpleName() : "null"));
+                        delegate = newDelegate;
                     }
                 }
             }

@@ -28,7 +28,6 @@ import java.util.function.Consumer;
 @RequiredArgsConstructor
 public class UserPersistenceService {
 
-    // Use Caffeine cache for locks with expiration to prevent stale locks
     private static final Cache<String, Object> USER_CREATION_LOCKS = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofMinutes(5))
             .build();
@@ -47,10 +46,8 @@ public class UserPersistenceService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public BookLoreUserEntity provisionOidcUserInternal(String oidcSubject, String username, String email, String name,
                                                         List<String> groups, OidcAutoProvisionDetails oidcAutoProvisionDetails) {
-        // Use a per-username lock to avoid race conditions when provisioning the same username concurrently
         Object lock = USER_CREATION_LOCKS.get(username, k -> new Object());
         synchronized (lock) {
-            // Double-check inside lock - check by subject first, then username
             if (oidcSubject != null) {
                 Optional<BookLoreUserEntity> bySubject = userRepository.findByOidcSubject(oidcSubject);
                 if (bySubject.isPresent()) {
@@ -62,7 +59,6 @@ public class UserPersistenceService {
             Optional<BookLoreUserEntity> existing = userRepository.findByUsername(username);
             if (existing.isPresent()) {
                 log.debug("Found existing user for username: {} (created by concurrent thread)", username);
-                // Link oidcSubject if missing
                 BookLoreUserEntity user = existing.get();
                 if (oidcSubject != null && user.getOidcSubject() == null) {
                     user.setOidcSubject(oidcSubject);
@@ -71,13 +67,11 @@ public class UserPersistenceService {
                 return user;
             }
 
-            // Check by email as well to avoid unique constraint violations
             if (email != null) {
                 Optional<BookLoreUserEntity> byEmail = userRepository.findByEmail(email);
                 if (byEmail.isPresent()) {
                     log.debug("Found existing user by email: {} (created by concurrent thread or manual)", email);
                     BookLoreUserEntity user = byEmail.get();
-                    // Link oidcSubject if missing
                     if (oidcSubject != null && user.getOidcSubject() == null) {
                         user.setOidcSubject(oidcSubject);
                         userRepository.save(user);
@@ -88,18 +82,15 @@ public class UserPersistenceService {
 
             log.debug("Creating new OIDC user for username: {}", username);
 
-            // Create new user
             BookLoreUserEntity user = new BookLoreUserEntity();
             user.setUsername(username);
             user.setEmail(email);
             user.setName(name);
             user.setOidcSubject(oidcSubject); // Store the immutable subject identifier
-            // Set an invalid password hash that explicitly fails bcrypt validation
             user.setPasswordHash(OIDC_LOCKED_PASSWORD_HASH);
             user.setDefaultPassword(true);
             user.setProvisioningMethod(ProvisioningMethod.OIDC);
 
-            // Assign default libraries if specified
             if (oidcAutoProvisionDetails != null) {
                 List<Long> defaultLibraryIds = oidcAutoProvisionDetails.getDefaultLibraryIds();
                 if (defaultLibraryIds != null && !defaultLibraryIds.isEmpty()) {
@@ -111,7 +102,6 @@ public class UserPersistenceService {
             UserPermissionsEntity perms = new UserPermissionsEntity();
             perms.setUser(user);
 
-            // OIDC users can set a local password for OPDS and backup authentication
             perms.setPermissionChangePassword(true);
 
             if (oidcAutoProvisionDetails != null) {
@@ -146,8 +136,6 @@ public class UserPersistenceService {
                 BookLoreUserEntity saved = userRepository.saveAndFlush(user);
                 userDefaultsService.addDefaultShelves(saved);
                 userDefaultsService.addDefaultSettings(saved);
-
-                // Apply group-based permissions if groups are provided
                 if (groups != null && !groups.isEmpty() && oidcAutoProvisionDetails != null) {
                     syncUserPermissionsFromGroups(saved, groups, oidcAutoProvisionDetails);
                 }
@@ -260,7 +248,6 @@ public class UserPersistenceService {
         return updated;
     }
 
-    // Robust helper to handle the "Grant vs Revoke" logic
     private boolean updatePermission(Set<String> targetPermissions,
                                      Set<String> managedPermissions,
                                      String permName,

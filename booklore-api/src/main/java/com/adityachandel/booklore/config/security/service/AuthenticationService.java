@@ -22,7 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 import java.time.Instant;
 import java.util.List;
@@ -55,7 +54,6 @@ public class AuthenticationService {
             }
             return user;
         } else if (principal instanceof String username) {
-            // Handle OIDC authentication where principal is username
             BookLoreUserEntity userEntity = userRepository.findByUsername(username)
                     .orElseThrow(() -> new IllegalStateException("User not found for username: " + username));
             BookLoreUser user = bookLoreUserTransformer.toDTO(userEntity);
@@ -108,7 +106,6 @@ public class AuthenticationService {
     public ResponseEntity<Map<String, String>> loginUser(UserLoginRequest loginRequest) {
         BookLoreUserEntity user = userRepository.findByUsername(loginRequest.getUsername()).orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(loginRequest.getUsername()));
 
-        // Allow OIDC users with a local password (set for OPDS or backup) to login with password
         if (user.getProvisioningMethod() == ProvisioningMethod.OIDC && UserPersistenceService.hasLockedOidcPassword(user)) {
             log.warn("Password authentication attempt blocked for OIDC-provisioned user without local password: {}", loginRequest.getUsername());
             throw ApiError.INVALID_CREDENTIALS.createException("OIDC users cannot authenticate with password before setting a local password. Please use your identity provider.");

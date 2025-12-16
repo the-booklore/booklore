@@ -125,7 +125,6 @@ public class AuthenticationController {
         log.info("OIDC token exchange requested");
         String oidcToken = request.getToken();
         
-        // Validate token parameter
         if (oidcToken == null || oidcToken.trim().isEmpty()) {
             log.warn("OIDC token exchange failed: Missing token parameter");
             throw ApiError.GENERIC_UNAUTHORIZED.createException("Missing token parameter");
@@ -133,7 +132,6 @@ public class AuthenticationController {
         
         log.debug("Received OIDC token parameter (length: {})", oidcToken.length());
         
-        // Manually validate OIDC token and provision user
         BookLoreUser user = userProvisioningService.provisionUserFromOidcToken(oidcToken);
         
         if (user == null) {
@@ -143,7 +141,6 @@ public class AuthenticationController {
         
         log.info("Generating internal JWT for OIDC user: {}", user.getUsername());
         
-        // Generate internal JWT tokens
         return authenticationService.generateTokensForUser(user);
     }
 }
