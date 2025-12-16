@@ -5,6 +5,7 @@ import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.MagicShelf;
+import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -328,6 +329,7 @@ public class OpdsFeedService {
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
         Long userId = getUserId();
+        OpdsSortOrder sortOrder = getSortOrder();
         Page<Book> booksPage;
 
         if (magicShelfId != null) {
@@ -339,6 +341,9 @@ public class OpdsFeedService {
         } else {
             booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfId, page - 1, size);
         }
+
+        // Apply user's preferred sort order
+        booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
         String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author, series);
         String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author, series);
@@ -375,10 +380,14 @@ public class OpdsFeedService {
 
     public String generateRecentFeed(HttpServletRequest request) {
         Long userId = getUserId();
+        OpdsSortOrder sortOrder = getSortOrder();
         int page = Math.max(1, parseLongParam(request, "page", 1L).intValue());
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
         Page<Book> booksPage = opdsBookService.getRecentBooksPage(userId, page - 1, size);
+        
+        // Apply user's preferred sort order
+        booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -629,5 +638,12 @@ public class OpdsFeedService {
         return details != null && details.getOpdsUserV2() != null
                 ? details.getOpdsUserV2().getUserId()
                 : null;
+    }
+
+    private OpdsSortOrder getSortOrder() {
+        OpdsUserDetails details = authenticationService.getOpdsUser();
+        return details != null && details.getOpdsUserV2() != null && details.getOpdsUserV2().getSortOrder() != null
+                ? details.getOpdsUserV2().getSortOrder()
+                : OpdsSortOrder.RECENT;
     }
 }
