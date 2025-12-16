@@ -7,11 +7,12 @@ import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
+import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.repository.BookOpdsRepository;
 import com.adityachandel.booklore.repository.ShelfRepository;
 import com.adityachandel.booklore.repository.UserRepository;
-import com.adityachandel.booklore.service.library.LibraryService;
 import com.adityachandel.booklore.util.BookUtils;
+import com.adityachandel.booklore.service.library.LibraryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -399,5 +400,171 @@ public class OpdsBookService {
                     .collect(Collectors.toSet()));
         }
         return dto;
+    }
+
+    public Page<Book> applySortOrder(Page<Book> booksPage, OpdsSortOrder sortOrder) {
+        if (sortOrder == null || sortOrder == OpdsSortOrder.RECENT) {
+            return booksPage; // Already sorted by addedOn DESC from repository
+        }
+
+        List<Book> sortedBooks = new ArrayList<>(booksPage.getContent());
+        
+        switch (sortOrder) {
+            case TITLE_ASC -> sortedBooks.sort((b1, b2) -> {
+                String title1 = b1.getMetadata() != null && b1.getMetadata().getTitle() != null 
+                    ? b1.getMetadata().getTitle() : "";
+                String title2 = b2.getMetadata() != null && b2.getMetadata().getTitle() != null 
+                    ? b2.getMetadata().getTitle() : "";
+                return title1.compareToIgnoreCase(title2);
+            });
+            case TITLE_DESC -> sortedBooks.sort((b1, b2) -> {
+                String title1 = b1.getMetadata() != null && b1.getMetadata().getTitle() != null 
+                    ? b1.getMetadata().getTitle() : "";
+                String title2 = b2.getMetadata() != null && b2.getMetadata().getTitle() != null 
+                    ? b2.getMetadata().getTitle() : "";
+                return title2.compareToIgnoreCase(title1);
+            });
+            case AUTHOR_ASC -> sortedBooks.sort((b1, b2) -> {
+                String author1 = getFirstAuthor(b1);
+                String author2 = getFirstAuthor(b2);
+                return author1.compareToIgnoreCase(author2);
+            });
+            case AUTHOR_DESC -> sortedBooks.sort((b1, b2) -> {
+                String author1 = getFirstAuthor(b1);
+                String author2 = getFirstAuthor(b2);
+                return author2.compareToIgnoreCase(author1);
+            });
+            case SERIES_ASC -> sortedBooks.sort((b1, b2) -> {
+                String series1 = getSeriesName(b1);
+                String series2 = getSeriesName(b2);
+                boolean hasSeries1 = !series1.isEmpty();
+                boolean hasSeries2 = !series2.isEmpty();
+                
+                // Books without series come after books with series
+                if (!hasSeries1 && !hasSeries2) {
+                    // Both have no series, sort by addedOn descending
+                    return compareByAddedOn(b2, b1);
+                }
+                if (!hasSeries1) return 1;
+                if (!hasSeries2) return -1;
+                
+                // Both have series, sort by series name then number
+                int seriesComp = series1.compareToIgnoreCase(series2);
+                if (seriesComp != 0) return seriesComp;
+                return Float.compare(getSeriesNumber(b1), getSeriesNumber(b2));
+            });
+            case SERIES_DESC -> sortedBooks.sort((b1, b2) -> {
+                String series1 = getSeriesName(b1);
+                String series2 = getSeriesName(b2);
+                boolean hasSeries1 = !series1.isEmpty();
+                boolean hasSeries2 = !series2.isEmpty();
+                
+                // Books without series come after books with series
+                if (!hasSeries1 && !hasSeries2) {
+                    // Both have no series, sort by addedOn descending
+                    return compareByAddedOn(b2, b1);
+                }
+                if (!hasSeries1) return 1;
+                if (!hasSeries2) return -1;
+                
+                // Both have series, sort by series name then number
+                int seriesComp = series2.compareToIgnoreCase(series1);
+                if (seriesComp != 0) return seriesComp;
+                return Float.compare(getSeriesNumber(b2), getSeriesNumber(b1));
+            });
+            case RATING_ASC -> sortedBooks.sort((b1, b2) -> {
+                Float rating1 = calculateRating(b1);
+                Float rating2 = calculateRating(b2);
+                // Books with no rating go to the end
+                if (rating1 == null && rating2 == null) {
+                    // Both have no rating, fall back to addedOn descending
+                    return compareByAddedOn(b2, b1);
+                }
+                if (rating1 == null) return 1;
+                if (rating2 == null) return -1;
+                int ratingComp = Float.compare(rating1, rating2); // Ascending order (lowest first)
+                if (ratingComp != 0) return ratingComp;
+                // Same rating, fall back to addedOn descending
+                return compareByAddedOn(b2, b1);
+            });
+            case RATING_DESC -> sortedBooks.sort((b1, b2) -> {
+                Float rating1 = calculateRating(b1);
+                Float rating2 = calculateRating(b2);
+                // Books with no rating go to the end
+                if (rating1 == null && rating2 == null) {
+                    // Both have no rating, fall back to addedOn descending
+                    return compareByAddedOn(b2, b1);
+                }
+                if (rating1 == null) return 1;
+                if (rating2 == null) return -1;
+                int ratingComp = Float.compare(rating2, rating1); // Descending order (highest first)
+                if (ratingComp != 0) return ratingComp;
+                // Same rating, fall back to addedOn descending
+                return compareByAddedOn(b2, b1);
+            });
+        }
+
+        return new PageImpl<>(sortedBooks, booksPage.getPageable(), booksPage.getTotalElements());
+    }
+
+    private String getFirstAuthor(Book book) {
+        if (book.getMetadata() != null && book.getMetadata().getAuthors() != null 
+            && !book.getMetadata().getAuthors().isEmpty()) {
+            return book.getMetadata().getAuthors().iterator().next();
+        }
+        return "";
+    }
+
+    private String getSeriesName(Book book) {
+        if (book.getMetadata() != null && book.getMetadata().getSeriesName() != null) {
+            return book.getMetadata().getSeriesName();
+        }
+        return "";
+    }
+
+    private Float getSeriesNumber(Book book) {
+        if (book.getMetadata() != null && book.getMetadata().getSeriesNumber() != null) {
+            return book.getMetadata().getSeriesNumber();
+        }
+        return Float.MAX_VALUE;
+    }
+
+    private int compareByAddedOn(Book b1, Book b2) {
+        if (b1.getAddedOn() == null && b2.getAddedOn() == null) return 0;
+        if (b1.getAddedOn() == null) return 1;
+        if (b2.getAddedOn() == null) return -1;
+        return b1.getAddedOn().compareTo(b2.getAddedOn());
+    }
+
+    private Float calculateRating(Book book) {
+        if (book.getMetadata() == null) {
+            return null;
+        }
+        
+        Double hardcoverRating = book.getMetadata().getHardcoverRating();
+        Double amazonRating = book.getMetadata().getAmazonRating();
+        Double goodreadsRating = book.getMetadata().getGoodreadsRating();
+
+        double sum = 0;
+        int count = 0;
+
+        if (hardcoverRating != null && hardcoverRating > 0) {
+            sum += hardcoverRating;
+            count++;
+        }
+        if (amazonRating != null && amazonRating > 0) {
+            sum += amazonRating;
+            count++;
+        }
+        if (goodreadsRating != null && goodreadsRating > 0) {
+            sum += goodreadsRating;
+            count++;
+        }
+
+        if (count == 0) {
+            return null;
+        }
+
+        return (float) (sum / count);
     }
 }

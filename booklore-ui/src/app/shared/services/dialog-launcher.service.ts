@@ -34,12 +34,14 @@ export class DialogLauncherService {
     modal: true,
     resizable: false,
     showHeader: true,
+    maximizable: false,
   }
 
   openDialog(component: any, options: {}): DynamicDialogRef | null {
     return this.dialogService.open(component, {
-      ...this.defaultDialogOptions, 
+      ...this.defaultDialogOptions,
       ...options,
+
     });
   }
 
@@ -64,7 +66,7 @@ export class DialogLauncherService {
 
   openDirectoryPickerDialog(): DynamicDialogRef | null {
     return this.openDialog(DirectoryPickerComponent, {
-      header: 'Select Media Directory',
+      showHeader: false,
       styleClass: 'dynamic-dialog-minimal',
     });
   }
@@ -86,7 +88,7 @@ export class DialogLauncherService {
       data: {
         libraryId: libraryId,
         metadataRefreshType: MetadataRefreshType.LIBRARY,
-      }
+      },
     });
   }
 
