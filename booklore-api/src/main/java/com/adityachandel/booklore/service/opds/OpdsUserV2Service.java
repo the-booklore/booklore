@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.OpdsUserV2Mapper;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.dto.request.OpdsUserV2CreateRequest;
+import com.adityachandel.booklore.model.dto.request.OpdsUserV2UpdateRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.OpdsUserV2Entity;
 import com.adityachandel.booklore.repository.OpdsUserV2Repository;
@@ -45,6 +46,7 @@ public class OpdsUserV2Service {
                     .user(userEntity)
                     .username(request.getUsername())
                     .passwordHash(passwordEncoder.encode(request.getPassword()))
+                    .sortOrder(request.getSortOrder() != null ? request.getSortOrder() : com.adityachandel.booklore.model.enums.OpdsSortOrder.RECENT)
                     .build();
 
             return mapper.toDto(opdsUserV2Repository.save(opdsUserV2));
@@ -63,5 +65,18 @@ public class OpdsUserV2Service {
             throw new AccessDeniedException("You are not allowed to delete this user");
         }
         opdsUserV2Repository.delete(user);
+    }
+
+    public OpdsUserV2 updateOpdsUser(Long userId, OpdsUserV2UpdateRequest request) {
+        BookLoreUser bookLoreUser = authenticationService.getAuthenticatedUser();
+        OpdsUserV2Entity user = opdsUserV2Repository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+        
+        if (!user.getUser().getId().equals(bookLoreUser.getId())) {
+            throw new AccessDeniedException("You are not allowed to update this user");
+        }
+        
+        user.setSortOrder(request.sortOrder());
+        return mapper.toDto(opdsUserV2Repository.save(user));
     }
 }
