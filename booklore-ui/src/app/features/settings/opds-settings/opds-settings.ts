@@ -9,7 +9,7 @@ import {Dialog} from 'primeng/dialog';
 import {FormsModule} from '@angular/forms';
 import {ConfirmDialog} from 'primeng/confirmdialog';
 import {ConfirmationService, MessageService} from 'primeng/api';
-import {OpdsService, OpdsUserV2, OpdsUserV2CreateRequest} from './opds.service';
+import {OpdsService, OpdsSortOrder, OpdsUserV2, OpdsUserV2CreateRequest} from './opds.service';
 import {catchError, filter, take, takeUntil, tap} from 'rxjs/operators';
 import {UserService} from '../user-management/user.service';
 import {of, Subject} from 'rxjs';
@@ -18,6 +18,7 @@ import {ToggleSwitch} from 'primeng/toggleswitch';
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
 import {AppSettingKey} from '../../../shared/model/app-settings.model';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {Select} from 'primeng/select';
 
 @Component({
   selector: 'app-opds-settings',
@@ -32,7 +33,8 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     TableModule,
     Password,
     ToggleSwitch,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    Select
   ],
   providers: [ConfirmationService],
   templateUrl: './opds-settings.html',
@@ -52,12 +54,27 @@ export class OpdsSettings implements OnInit, OnDestroy {
   users: OpdsUserV2[] = [];
   loading = false;
   showCreateUserDialog = false;
-  newUser: OpdsUserV2CreateRequest = {username: '', password: ''};
+  newUser: OpdsUserV2CreateRequest = {username: '', password: '', sortOrder: 'RECENT'};
   passwordVisibility: boolean[] = [];
   hasPermission = false;
 
+  editingUserId: number | null = null;
+  editingSortOrder: OpdsSortOrder | null = null;
+
   private readonly destroy$ = new Subject<void>();
   dummyPassword: string = "***********************";
+
+  sortOrderOptions = [
+    { label: 'Recently Added', value: 'RECENT' as OpdsSortOrder },
+    { label: 'Title (A-Z)', value: 'TITLE_ASC' as OpdsSortOrder },
+    { label: 'Title (Z-A)', value: 'TITLE_DESC' as OpdsSortOrder },
+    { label: 'Author (A-Z)', value: 'AUTHOR_ASC' as OpdsSortOrder },
+    { label: 'Author (Z-A)', value: 'AUTHOR_DESC' as OpdsSortOrder },
+    { label: 'Series (A-Z)', value: 'SERIES_ASC' as OpdsSortOrder },
+    { label: 'Series (Z-A)', value: 'SERIES_DESC' as OpdsSortOrder },
+    { label: 'Rating (Low to High)', value: 'RATING_ASC' as OpdsSortOrder },
+    { label: 'Rating (High to Low)', value: 'RATING_DESC' as OpdsSortOrder }
+  ];
 
   ngOnInit(): void {
     this.loading = true;
@@ -189,11 +206,49 @@ export class OpdsSettings implements OnInit, OnDestroy {
 
   private resetCreateUserDialog(): void {
     this.showCreateUserDialog = false;
-    this.newUser = {username: '', password: ''};
+    this.newUser = {username: '', password: '', sortOrder: 'RECENT'};
   }
 
   private showMessage(severity: string, summary: string, detail: string): void {
     this.messageService.add({severity, summary, detail});
+  }
+
+  getSortOrderLabel(sortOrder?: OpdsSortOrder): string {
+    if (!sortOrder) return 'Recently Added';
+    const option = this.sortOrderOptions.find(o => o.value === sortOrder);
+    return option ? option.label : 'Recently Added';
+  }
+
+  startEdit(user: OpdsUserV2): void {
+    this.editingUserId = user.id;
+    this.editingSortOrder = user.sortOrder || 'RECENT';
+  }
+
+  cancelEdit(): void {
+    this.editingUserId = null;
+    this.editingSortOrder = null;
+  }
+
+  saveSortOrder(user: OpdsUserV2): void {
+    if (!this.editingSortOrder || !user.id) return;
+
+    this.opdsService.updateUser(user.id, this.editingSortOrder).pipe(
+      takeUntil(this.destroy$),
+      catchError(err => {
+        console.error('Error updating sort order:', err);
+        this.showMessage('error', 'Error', 'Failed to update sort order');
+        return of(null);
+      })
+    ).subscribe(updatedUser => {
+      if (updatedUser) {
+        const index = this.users.findIndex(u => u.id === user.id);
+        if (index !== -1) {
+          this.users[index] = updatedUser;
+        }
+        this.showMessage('success', 'Success', 'Sort order updated successfully');
+      }
+      this.cancelEdit();
+    });
   }
 
   ngOnDestroy(): void {

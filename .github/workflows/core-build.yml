@@ -266,7 +266,7 @@ jobs:
 
       - name: Push Latest Tag (Master Only)
         if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
