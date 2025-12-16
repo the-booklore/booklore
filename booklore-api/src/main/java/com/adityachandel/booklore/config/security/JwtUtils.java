@@ -46,6 +46,7 @@ public class JwtUtils {
                 .subject(user.getUsername())
                 .claim("userId", user.getId())
                 .claim("isDefaultPassword", user.isDefaultPassword())
+                .claim("provisioningMethod", user.getProvisioningMethod() != null ? user.getProvisioningMethod().name() : null)
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
                 .id(UUID.randomUUID().toString()) // Add JTI to ensure uniqueness

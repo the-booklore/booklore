@@ -15,8 +15,12 @@ export const AuthGuard: CanActivateFn = (route, state) => {
     try {
       const payload = JSON.parse(atob(internalAccessToken.split('.')[1]));
       if (payload.isDefaultPassword) {
-        router.navigate(['/change-password']);
-        return false;
+        // Only redirect to change-password for non-OIDC users
+        // OIDC users can use the system without setting a local password
+        if (payload.provisioningMethod !== 'OIDC') {
+          router.navigate(['/change-password']);
+          return false;
+        }
       }
       return true;
     } catch (e) {
