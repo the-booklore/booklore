@@ -71,17 +71,19 @@ public class OidcUtils {
         try {
             URL url = new URI(uri).toURL();
             String host = url.getHost();
+            
+            if (host == null || host.isEmpty()) {
+                throw new SecurityException("Discovery URI must contain a valid host");
+            }
+            
+            int port = url.getPort();
+            if (port != -1 && port != 80 && port != 443 && port != 8080 && port != 8443 && port != 9000 && port != 9443) {
+                if (!isDevelopment && !allowInsecureProviders) {
+                    log.warn("Non-standard port {} in discovery URI: {}", port, uri);
+                }
+            }
 
-            // Block internal network addresses
-            if ("localhost".equalsIgnoreCase(host) ||
-                "127.0.0.1".equals(host) ||
-                host.startsWith("192.168.") ||
-                host.startsWith("10.") ||
-                host.startsWith("172.16.") || // 172.16.x.x to 172.31.x.x
-                host.startsWith("169.254.") || // Link-local
-                "::1".equals(host) ||
-                "0.0.0.0".equals(host)) {
-
+            if (isInternalNetworkAddress(host)) {
                 if (isDevelopment) {
                     log.warn("Allowing internal discovery URI in development mode: {}", uri);
                     return;
@@ -106,5 +108,62 @@ public class OidcUtils {
             }
             throw new SecurityException("Invalid discovery URI format: " + e.getMessage());
         }
+    }
+
+    private static boolean isInternalNetworkAddress(String host) {
+        if (host == null) return false;
+        
+        String lowerHost = host.toLowerCase();
+        
+        if ("localhost".equals(lowerHost) ||
+            "localhost.localdomain".equals(lowerHost) ||
+            lowerHost.endsWith(".localhost") ||
+            lowerHost.endsWith(".local")) {
+            return true;
+        }
+        
+        if ("127.0.0.1".equals(host) || "::1".equals(host) || "0.0.0.0".equals(host)) {
+            return true;
+        }
+        
+        if (host.startsWith("127.")) {
+            return true;
+        }
+        
+        if (host.startsWith("192.168.") ||  // 192.168.0.0/16
+            host.startsWith("10.")) {        // 10.0.0.0/8
+            return true;
+        }
+        
+        if (host.startsWith("172.")) {
+            try {
+                String[] parts = host.split("\\.");
+                if (parts.length >= 2) {
+                    int secondOctet = Integer.parseInt(parts[1]);
+                    if (secondOctet >= 16 && secondOctet <= 31) {
+                        return true;
+                    }
+                }
+            } catch (NumberFormatException e) {
+                // Not a valid IP, continue with other checks
+            }
+        }
+        
+        if (host.startsWith("169.254.")) {
+            return true;
+        }
+        
+        if (host.startsWith("169.254.169.254") ||
+            "metadata.google.internal".equals(lowerHost) ||
+            lowerHost.endsWith(".internal")) {
+            return true;
+        }
+        
+        if (host.startsWith("fc") || host.startsWith("fd") ||  // fc00::/7 - Unique local addresses
+            host.startsWith("fe80:")) {                         // fe80::/10 - Link-local addresses
+            return true;
+        }
+        
+        return false;
     }
 }

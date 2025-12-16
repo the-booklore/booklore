@@ -95,18 +95,18 @@ public class DynamicOidcJwtProcessor {
 
         String issuerUri = providerDetails.getIssuerUri();
         String normalizedIssuerUri = normalizeIssuerUri(issuerUri);
-        log.info("Issuer from database: '{}', Normalized: '{}'", issuerUri, normalizedIssuerUri);
+        log.debug("Issuer from database: '{}', Normalized: '{}'", issuerUri, normalizedIssuerUri);
         if (!Objects.equals(issuerUri, normalizedIssuerUri)) {
-            log.info("Normalized issuer URI from '{}' to '{}'", issuerUri, normalizedIssuerUri);
+            log.debug("Normalized issuer URI from '{}' to '{}'", issuerUri, normalizedIssuerUri);
         }
         String clientId = providerDetails.getClientId();
 
         ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
         
-        // Check if update is needed
         if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
             
-            log.info("OIDC configuration change detected (Old Issuer: {}, New Issuer: {}). Fetching configuration...", currentIssuerUri, normalizedIssuerUri);
+            // Log at debug to avoid leaking issuer URIs in production logs
+            log.debug("OIDC configuration change detected. Fetching new configuration...");
             
             // 1. Perform heavy network operation OUTSIDE the lock
             // This prevents blocking all auth threads if the IdP is slow
