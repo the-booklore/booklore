@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Set default and export so envsubst sees it
 : "${BOOKLORE_PORT:=6060}"
@@ -15,4 +15,4 @@ mv "$TMP_CONF" /etc/nginx/nginx.conf
 nginx -g 'daemon off;' &
 
 # Start Spring Boot in foreground
-su-exec ${USER_ID:-0}:${GROUP_ID:-0} java -jar /app/app.jar
+exec java -jar /app/app.jar
