@@ -64,7 +64,11 @@ export class AuthService {
       throw new Error('No OIDC token available for exchange');
     }
 
-    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }>(`${this.apiUrl}/oidc/token`, { token: oidcToken }).pipe(
+    return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string | boolean }>(
+      `${this.apiUrl}/oidc/token`,
+      { token: oidcToken },
+      { headers: { 'X-Requested-With': 'XMLHttpRequest' } }
+    ).pipe(
       tap((response) => {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);

@@ -21,7 +21,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Locale;
@@ -115,7 +114,14 @@ public class AuthenticationController {
         @ApiResponse(responseCode = "401", description = "Unauthorized - invalid OIDC token")
     })
     @PostMapping("/oidc/token")
-    public ResponseEntity<Map<String, String>> exchangeOidcToken(@RequestBody TokenExchangeRequest request) {
+    public ResponseEntity<Map<String, String>> exchangeOidcToken(
+            @RequestHeader(value = "X-Requested-With", required = false) String xRequestedWith,
+            @RequestBody TokenExchangeRequest request) {
+        if (!"XMLHttpRequest".equals(xRequestedWith)) {
+            log.warn("CSRF protection triggered: Invalid or missing X-Requested-With header");
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("Invalid request");
+        }
+
         log.info("OIDC token exchange requested");
         String oidcToken = request.getToken();
         
