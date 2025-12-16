@@ -130,7 +130,7 @@ public class UserService {
 
         bookLoreUserEntity.setDefaultPassword(false);
         bookLoreUserEntity.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
-        userRepository.save(bookLoreUserEntity);
+        userRepository.saveAndFlush(bookLoreUserEntity);
     }
 
     public void changeUserPassword(ChangeUserPasswordRequest request) {

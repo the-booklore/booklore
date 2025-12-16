@@ -104,7 +104,7 @@
             <p-button
               fluid
               severity="secondary"
-              [label]="isOidcLoginInProgress ? 'Redirecting to ' + oidcName + '...' : oidcName"
+              [label]="isOidcLoginInProgress ? 'Redirecting to ' + oidcName + '...' : 'Login with ' + oidcName"
               [icon]="isOidcLoginInProgress ? 'pi pi-spin pi-spinner' : 'pi pi-id-card'"
               [disabled]="isOidcLoginInProgress"
               (click)="loginWithOidc()"
