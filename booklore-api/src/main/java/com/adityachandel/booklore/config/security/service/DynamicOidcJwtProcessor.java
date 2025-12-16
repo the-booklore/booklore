@@ -607,29 +607,30 @@ public class DynamicOidcJwtProcessor {
             
             log.info("JWKS Key Types Summary: RSA={}, EC={}, OCT={}, OKP={}", hasRsa, hasEc, hasOct, hasOkp);
 
-            Set<JWSAlgorithm> filtered = new LinkedHashSet<>();
-            for (JWSAlgorithm alg : advertisedAlgorithms) {
-                if (isHmacAlgorithm(alg) && hasOct) {
-                    filtered.add(alg);
-                } else if (isRsaAlgorithm(alg) && hasRsa) {
-                    filtered.add(alg);
-                } else if (isEcAlgorithm(alg) && hasEc) {
-                    filtered.add(alg);
-                } else if (JWSAlgorithm.EdDSA.equals(alg) && hasOkp) {
-                    filtered.add(alg);
-                }
-            }
+            final boolean finalHasRsa = hasRsa;
+            final boolean finalHasEc = hasEc;
+            final boolean finalHasOct = hasOct;
+            final boolean finalHasOkp = hasOkp;
+
+            Set<JWSAlgorithm> defaultRsaAlgs = Set.of(JWSAlgorithm.RS256, JWSAlgorithm.PS256);
+            Set<JWSAlgorithm> defaultEcAlgs = Set.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384);
+            Set<JWSAlgorithm> defaultHmacAlgs = Set.of(JWSAlgorithm.HS256, JWSAlgorithm.HS512);
+            Set<JWSAlgorithm> defaultEddsaAlgs = Set.of(JWSAlgorithm.EdDSA);
+
+            Set<JWSAlgorithm> filtered = advertisedAlgorithms.stream()
+                .filter(alg -> (isRsaAlgorithm(alg) && finalHasRsa) || (isEcAlgorithm(alg) && finalHasEc) || (isHmacAlgorithm(alg) && finalHasOct) || (JWSAlgorithm.EdDSA.equals(alg) && finalHasOkp))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
 
             if (filtered.isEmpty()) {
                 // If nothing matched the actual keys, prefer asymmetric defaults based on available key types
                 if (hasRsa) {
-                    filtered.addAll(List.of(JWSAlgorithm.RS256, JWSAlgorithm.PS256));
+                    filtered.addAll(defaultRsaAlgs);
                 } else if (hasEc) {
-                    filtered.addAll(List.of(JWSAlgorithm.ES256, JWSAlgorithm.ES384));
+                    filtered.addAll(defaultEcAlgs);
                 } else if (hasOkp) {
-                    filtered.add(JWSAlgorithm.EdDSA);
+                    filtered.addAll(defaultEddsaAlgs);
                 } else if (hasOct) {
-                    filtered.addAll(List.of(JWSAlgorithm.HS256, JWSAlgorithm.HS512));
+                    filtered.addAll(defaultHmacAlgs);
                 } else {
                     log.warn("JWKS at {} did not expose any keys. Falling back to advertised algorithms: {}", jwksUri, advertisedAlgorithms);
                     return advertisedAlgorithms;
@@ -693,22 +694,22 @@ public class DynamicOidcJwtProcessor {
         if (issuer == null) return null;
 
         // Remove trailing slashes
-        issuer = normalizeIssuerUri(issuer);
+        String normalizeIssuerUri = normalizeIssuerUri(issuer);
 
         if (!oidcProperties.allowIssuerProtocolMismatch()
                 || this.currentIssuerUri == null) {
-            return issuer;
+            return normalizeIssuerUri;
         }
 
         // Check if this is a protocol upgrade scenario (http -> https)
-        if (isProtocolUpgrade(issuer, this.currentIssuerUri)) {
+        if (isProtocolUpgrade(normalizeIssuerUri, this.currentIssuerUri)) {
             log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
-                    "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true.", 
-                    issuer, this.currentIssuerUri);
-            return issuer.replace("http://", "https://");
+                    "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true.",
+                    normalizeIssuerUri, this.currentIssuerUri);
+            return normalizeIssuerUri.replace("http://", "https://");
         }
 
-        return issuer;
+        return normalizeIssuerUri;
     }
     
     private boolean isDevelopmentEnvironment() {

@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.oidc;
 
+import com.adityachandel.booklore.exception.OidcDiscoveryException;
 import com.adityachandel.booklore.util.OidcUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,11 +99,11 @@ public class OidcDiscoveryService {
                 cachedIssuerUri = issuerUri;
                 return rewrittenBody;
             } else {
-                throw new RuntimeException("Received status " + response.getStatusCode() + " from " + discoveryUrl);
+                throw new OidcDiscoveryException("Received status " + response.getStatusCode() + " from " + discoveryUrl);
             }
         } catch (Exception ex) {
             log.warn("OIDC discovery failed for {}: {}", discoveryUrl, ex.getMessage());
-            throw new RuntimeException("Failed to fetch OIDC discovery document: " + ex.getMessage(), ex);
+            throw new OidcDiscoveryException("Failed to fetch OIDC discovery document: " + ex.getMessage(), ex);
         }
     }
 

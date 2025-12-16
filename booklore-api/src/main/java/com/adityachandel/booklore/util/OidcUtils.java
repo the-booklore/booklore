@@ -85,8 +85,8 @@ public class OidcUtils {
             }
             
         } catch (Exception e) {
-            if (e instanceof SecurityException) {
-                throw (SecurityException) e;
+            if (e instanceof SecurityException securityException) {
+                throw securityException;
             }
             throw new SecurityException("Invalid discovery URI format: " + e.getMessage());
         }
