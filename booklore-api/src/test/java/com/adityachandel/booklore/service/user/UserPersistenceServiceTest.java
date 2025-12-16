@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,7 +37,7 @@ class UserPersistenceServiceTest {
     private UserPersistenceService userPersistenceService;
 
     @Test
-    void provisionOidcUserInternal_SetsPermissionChangePassword_False() {
+    void provisionOidcUserInternal_SetsPermissionChangePassword_True() {
         String username = "oidcuser";
         String email = "user@example.com";
         String subject = "sub123";
@@ -55,6 +55,6 @@ class UserPersistenceServiceTest {
         verify(userRepository).saveAndFlush(userCaptor.capture());
 
         BookLoreUserEntity savedUser = userCaptor.getValue();
-        assertFalse(savedUser.getPermissions().isPermissionChangePassword(), "OIDC users should not have permission to change password");
+        assertTrue(savedUser.getPermissions().isPermissionChangePassword(), "OIDC users should have permission to change password to set local password for OPDS and backup access");
     }
 }
