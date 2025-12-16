@@ -1,0 +1,38 @@
+# Shared Setup Workflow
+#
+# Purpose: Provides a reusable setup for common environment configuration across workflows
+# Significance: Reduces duplication of setup steps across multiple workflows
+# Key Functions:
+# - Checks out repository code
+# - Sets up specified Java version with caching
+# - Configures Gradle with appropriate cache settings based on branch
+# - Used as a reusable component by other workflows via workflow_call
+name: Shared Setup
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        description: 'Java version to install'
+        default: '21'
+        required: false
+        type: string
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: temurin
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' && github.ref != 'refs/heads/master' }}
