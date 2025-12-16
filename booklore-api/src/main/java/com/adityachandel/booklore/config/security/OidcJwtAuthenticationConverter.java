@@ -34,7 +34,6 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
 
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
-        // 1. Determine which claim holds the username
         OidcProviderDetails providerDetails = appSettingService.getAppSettings().getOidcProviderDetails();
         String usernameClaim = "preferred_username";
         String emailClaim = "email";
@@ -53,7 +52,6 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
             }
         }
 
-        // 2. Extract username with fallback
         String username = jwt.getClaimAsString(usernameClaim);
         if (username == null || username.isEmpty()) {
             username = jwt.getSubject();
@@ -74,16 +72,12 @@ public class OidcJwtAuthenticationConverter implements Converter<Jwt, AbstractAu
 
         OidcAutoProvisionDetails provisionDetails = appSettingService.getAppSettings().getOidcAutoProvisionDetails();
 
-        // 3. Ensure user exists in DB (Auto-Provisioning)
         BookLoreUserEntity userEntity = userProvisioningService.provisionOidcUser(username, email, name, provisionDetails);
 
-        // 4. Convert to DTO (Required for SecurityUtil checks)
         BookLoreUser userDto = bookLoreUserTransformer.toDTO(userEntity);
 
-        // 5. Map Roles
         Collection<GrantedAuthority> authorities = roleConverter.convert(jwt);
 
-        // 6. Return token with BookLoreUser principal
         return new UsernamePasswordAuthenticationToken(userDto, jwt, authorities);
     }
 }
