@@ -21,7 +21,7 @@ import {AppSettingsService} from '../../../../shared/service/app-settings.servic
 import {BookMetadata} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {Checkbox} from 'primeng/checkbox';
-import {NgClass, NgStyle} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {Paginator} from 'primeng/paginator';
 import {ActivatedRoute} from '@angular/router';
 import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-picker/bookdrop-file-metadata-picker.component';
@@ -53,7 +53,6 @@ export interface BookdropFileUI {
     Tooltip,
     Divider,
     Checkbox,
-    NgStyle,
     NgClass,
     Paginator,
   ],
