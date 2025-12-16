@@ -22,6 +22,7 @@ import {AuthService} from '../../service/auth.service';
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.scss'
 })
+
 export class ChangePasswordComponent implements OnInit {
   currentPassword: string = '';
   newPassword: string = '';
@@ -29,6 +30,7 @@ export class ChangePasswordComponent implements OnInit {
   errorMessage: string | null = null;
   successMessage: string | null = null;
   isInitialSetup: boolean = false;
+  isCreatingLocal: boolean = false;
 
   protected userService = inject(UserService);
   protected authService = inject(AuthService);
@@ -83,6 +85,48 @@ export class ChangePasswordComponent implements OnInit {
           summary: 'Password Change Failed',
           detail: this.errorMessage ?? 'An unknown error occurred.'
         });
+      }
+    });
+  }
+
+  createLocalAccount() {
+    this.errorMessage = null;
+    this.successMessage = null;
+    this.isCreatingLocal = true;
+
+    if (!this.currentPassword || !this.newPassword || !this.confirmNewPassword) {
+      this.errorMessage = 'All fields are required.';
+      this.isCreatingLocal = false;
+      return;
+    }
+    if (!this.passwordsMatch) {
+      this.errorMessage = 'New passwords do not match.';
+      this.isCreatingLocal = false;
+      return;
+    }
+
+    // Use currentPassword as username, newPassword as password for local account creation
+    // (You may want to adjust this logic to match your actual registration requirements)
+    const userData = {
+      username: this.currentPassword, // or prompt for username/email if needed
+      password: this.newPassword,
+      name: '',
+      email: '',
+      assignedLibraries: [],
+      permissions: {},
+      userSettings: {},
+      provisioningMethod: 'LOCAL'
+    };
+    this.userService.createUser(userData as any).subscribe({
+      next: () => {
+        this.successMessage = 'Local account created successfully!';
+        setTimeout(() => {
+          this.router.navigate(['/dashboard']);
+        }, 1500);
+      },
+      error: (err) => {
+        this.errorMessage = err.message || 'Failed to create local account.';
+        this.isCreatingLocal = false;
       }
     });
   }
