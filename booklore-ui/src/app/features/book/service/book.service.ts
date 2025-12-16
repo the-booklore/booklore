@@ -490,6 +490,19 @@ export class BookService {
       );
   }
 
+  getBackupMetadata(bookId: number): Observable<BookMetadata> {
+    return this.http.get<BookMetadata>(`${this.url}/${bookId}/metadata/backup`);
+  }
+
+  restoreMetadata(bookId: number): Observable<BookMetadata> {
+    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata/restore`, {})
+      .pipe(
+        tap(updatedMetadata =>
+          this.handleBookMetadataUpdate(bookId, updatedMetadata)
+        )
+      );
+  }
+
   getBookRecommendations(bookId: number, limit: number = 20): Observable<BookRecommendation[]> {
     return this.http.get<BookRecommendation[]>(`${this.url}/${bookId}/recommendations`, {
       params: {limit: limit.toString()}

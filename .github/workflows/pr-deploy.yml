@@ -1,0 +1,237 @@
+name: Build Docker on PR
+
+on:
+  pull_request:
+    branches:
+      - develop_deploy
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR Number (Optional - for manual runs)'
+        required: false
+
+concurrency:
+  group: pr-build-${{ github.event.pull_request.number || github.event.inputs.pr_number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKER_HUB_USERNAME }}/booklore
+
+jobs:
+  # -------------------------------------------------------------------------
+  # JOB 1: PREPARE & CHECK
+  # -------------------------------------------------------------------------
+  prepare:
+    name: Prepare & Check
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      pr_number: ${{ steps.vars.outputs.pr_number }}
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+      ref: ${{ steps.vars.outputs.ref }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
+      - name: Calculate Variables
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
+          else
+            echo "pr_number=${{ github.event.inputs.pr_number || 'manual' }}" >> $GITHUB_OUTPUT
+            echo "ref=${{ github.ref }}" >> $GITHUB_OUTPUT
+          fi
+          
+          SHORT_SHA=$(git rev-parse --short=8 HEAD)
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Check Registry for Existing Image
+        id: check
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_HUB_API }}
+          TAG: pr-${{ steps.vars.outputs.pr_number }}-${{ steps.vars.outputs.short_sha }}
+        run: |
+          echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+          if docker manifest inspect "${IMAGE_NAME}:${TAG}" > /dev/null 2>&1; then
+            echo "✅ Image already exists. Skipping build."
+            echo "should_build=false" >> $GITHUB_OUTPUT
+          else
+            echo "🚀 Image not found. Starting build..."
+            echo "should_build=true" >> $GITHUB_OUTPUT
+          fi
+
+  # -------------------------------------------------------------------------
+  # JOB 2: BUILD AMD64
+  # -------------------------------------------------------------------------
+  build-amd64:
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
+    name: Build AMD64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          provenance: false
+          tags: ${{ env.IMAGE_NAME }}:pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}-amd64
+          cache-from: type=gha,scope=amd64
+          cache-to: type=gha,scope=amd64,mode=max
+
+  # -------------------------------------------------------------------------
+  # JOB 3: BUILD ARM64
+  # -------------------------------------------------------------------------
+  build-arm64:
+    needs: prepare
+    if: needs.prepare.outputs.should_build == 'true'
+    name: Build ARM64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/arm64
+          provenance: false
+          tags: ${{ env.IMAGE_NAME }}:pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}-arm64
+          cache-from: type=gha,scope=arm64
+          cache-to: type=gha,scope=arm64,mode=max
+
+  # -------------------------------------------------------------------------
+  # JOB 4: MANIFEST & NOTIFY
+  # -------------------------------------------------------------------------
+  finalize:
+    needs: [prepare, build-amd64, build-arm64]
+    if: always() && needs.prepare.result == 'success' && (needs.build-amd64.result == 'success' || needs.build-amd64.result == 'skipped')
+    name: Manifest & Notify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_API }}
+
+      # FIX START: Ensure Buildx is available for imagetools
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create Multi-Arch Manifest
+        if: needs.prepare.outputs.should_build == 'true'
+        env:
+          TAG_SPECIFIC: pr-${{ needs.prepare.outputs.pr_number }}-${{ needs.prepare.outputs.short_sha }}
+          TAG_LATEST: pr-${{ needs.prepare.outputs.pr_number }}
+        run: |
+          # 1. Create and push the specific tag
+          docker buildx imagetools create \
+            --tag ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC} \
+            ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-amd64 \
+            ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-arm64
+
+          # 2. Create and push the latest/pr tag
+          docker buildx imagetools create \
+            --tag ${{ env.IMAGE_NAME }}:${TAG_LATEST} \
+            ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-amd64 \
+            ${{ env.IMAGE_NAME }}:${TAG_SPECIFIC}-arm64
+      # FIX END
+
+      - name: Comment on PR
+        if: needs.prepare.outputs.pr_number != 'manual'
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.prepare.outputs.pr_number }}
+          SHORT_SHA: ${{ needs.prepare.outputs.short_sha }}
+          DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
+          SHOULD_BUILD: ${{ needs.prepare.outputs.should_build }}
+        with:
+          script: |
+            const prNumber = parseInt(process.env.PR_NUMBER);
+            const sha = process.env.SHORT_SHA;
+            const dockerUser = process.env.DOCKER_USER;
+            const wasBuilt = process.env.SHOULD_BUILD === 'true';
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const botComments = comments.filter(c => 
+              c.body.includes('🐳 **Docker Image') && 
+              c.user.type === 'Bot'
+            );
+
+            for (const comment of botComments) {
+              await github.rest.issues.deleteComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: comment.id
+              });
+            }
+
+            const status = wasBuilt ? "Built successfully" : "Already existed (Cached)";
+            const icon = wasBuilt ? "✅" : "⚡";
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body: `## 🐳 **Docker Image Ready**
+            
+              ${icon} **Status:** ${status}
+              ⚠️ **Note:** Built from source branch (ignores conflicts with base).
+            
+              ### 🚀 Pull Commands
+            
+              **Latest for this PR:**
+              \`\`\`bash
+              docker pull ${dockerUser}/booklore:pr-${prNumber}
+              \`\`\`
+            
+              **Specific Commit (\`${sha}\`):**
+              \`\`\`bash
+              docker pull ${dockerUser}/booklore:pr-${prNumber}-${sha}
+              \`\`\`
+              ` 
+            });

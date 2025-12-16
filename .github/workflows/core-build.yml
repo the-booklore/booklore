@@ -18,7 +18,7 @@ jobs:
       has_migrations: ${{ steps.check_migrations.outputs.has_migrations }}
     steps:
       - name: Checkout Repository for Diff
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -33,7 +33,6 @@ jobs:
             echo "No migration file changes detected. Skipping migration preview."
             echo "has_migrations=false" >> $GITHUB_OUTPUT
           fi
-
   flyway-migration-preview:
     name: Flyway DB Migration Preview
     needs: [check-for-migrations]
@@ -52,10 +51,9 @@ jobs:
           --health-interval=5s
           --health-timeout=5s
           --health-retries=10
-
     steps:
       - name: Checkout Base Branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           ref: '${{ github.base_ref }}'
 
@@ -69,9 +67,8 @@ jobs:
             -user=root -password=root \
             -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
             migrate
-
       - name: Checkout Pull Request Branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Apply Migrations from PR Branch
         run: |
@@ -101,7 +98,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -127,7 +124,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Set Up JDK 21
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -152,7 +149,7 @@ jobs:
           report_suite_logs: 'any'
 
       - name: Upload Backend Test Reports
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-reports
@@ -249,7 +246,7 @@ jobs:
 
       - name: Build and push Docker image
         if: github.event_name == 'push'
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
