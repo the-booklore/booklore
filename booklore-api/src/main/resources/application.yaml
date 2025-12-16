@@ -42,7 +42,6 @@ booklore:
         # Default 1MB should be sufficient for most JWKS documents
         size-limit: ${OIDC_JWKS_SIZE_LIMIT:1048576}
         
-        # SECURITY: Reduced default cache times for faster key revocation propagation
         # Previous default: 6h (too long for security-sensitive environments)
         # New default: 30m (balances security and performance)
         # For high-security environments, consider: cache-ttl: 15m, cache-refresh: 5m
@@ -77,7 +76,6 @@ booklore:
         # Example: allowed-algorithms: "RS256,ES256"
         allowed-algorithms: ${OIDC_JWT_ALLOWED_ALGORITHMS:}
         
-        # SECURITY: JWT replay prevention using JTI (JWT ID) cache
         # When enabled, tokens with the same JTI cannot be used twice
         # Requires OIDC provider to include 'jti' claim in tokens
         # Disabled by default as many OIDC providers (like Authentik) don't include JTI
