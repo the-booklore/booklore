@@ -84,8 +84,6 @@ Ensure you have [Docker](https://docs.docker.com/get-docker/) and [Docker Compos
 
 ```ini
 # BookLore Application Settings
-APP_USER_ID=0
-APP_GROUP_ID=0
 TZ=Etc/UTC
 BOOKLORE_PORT=6060
 
