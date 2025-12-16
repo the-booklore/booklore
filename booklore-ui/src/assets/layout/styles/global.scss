@@ -27,6 +27,18 @@
   max-height: 95vh;
 }
 
+.dialog-full.p-dialog {
+  width: 95vw;
+  height: 95vh;
+}
+
+.dialog-medium.p-dialog {
+  width: 90vw;
+  max-width: 900px;
+  height: 90vh;
+  max-height: 90vh;
+}
+
 .gradient-divider {
   min-height: 1px;
   height: 1px;
