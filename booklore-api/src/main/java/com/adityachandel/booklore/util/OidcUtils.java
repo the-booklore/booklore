@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 @UtilityClass
 public class OidcUtils {
 
-    private static final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/+$");
+    private final Pattern TRAILING_SLASH_PATTERN = Pattern.compile("/+$");
 
     /**
      * Resolves the discovery URI from the issuer URI.
@@ -21,7 +21,7 @@ public class OidcUtils {
      * @param issuerUri The issuer URI
      * @return The resolved discovery URI
      */
-    public static String resolveDiscoveryUri(String issuerUri) {
+    public String resolveDiscoveryUri(String issuerUri) {
         if (issuerUri == null) {
             return null;
         }
@@ -37,7 +37,7 @@ public class OidcUtils {
      * @param issuerUri The issuer URI to normalize
      * @return The normalized issuer URI
      */
-    public static String normalizeIssuerUri(String issuerUri) {
+    public String normalizeIssuerUri(String issuerUri) {
         if (issuerUri == null) {
             return null;
         }
@@ -52,7 +52,7 @@ public class OidcUtils {
      * @param isDevelopment Whether the application is running in development mode
      * @throws SecurityException If the URI is unsafe
      */
-    public static void validateDiscoveryUri(String uri, boolean isDevelopment) {
+    public void validateDiscoveryUri(String uri, boolean isDevelopment) {
         validateDiscoveryUri(uri, isDevelopment, false);  // default to not allowing insecure providers
     }
 
@@ -65,7 +65,7 @@ public class OidcUtils {
      * @param allowInsecureProviders Whether to allow insecure (HTTP) OIDC providers
      * @throws SecurityException If the URI is unsafe
      */
-    public static void validateDiscoveryUri(String uri, boolean isDevelopment, boolean allowInsecureProviders) {
+    public void validateDiscoveryUri(String uri, boolean isDevelopment, boolean allowInsecureProviders) {
         if (uri == null) return;
 
         try {
@@ -110,7 +110,7 @@ public class OidcUtils {
         }
     }
 
-    private static boolean isInternalNetworkAddress(String host) {
+    private boolean isInternalNetworkAddress(String host) {
         if (host == null) return false;
         
         String lowerHost = host.toLowerCase();
