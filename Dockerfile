@@ -40,7 +40,6 @@ FROM eclipse-temurin:21.0.9_10-jre-alpine
 ARG APP_VERSION
 ARG APP_REVISION
 
-# Set OCI labels
 LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.description="BookLore: A self-hosted, multi-user digital library with smart shelves, auto metadata, Kobo & KOReader sync, BookDrop imports, OPDS support, and a built-in reader for EPUB, PDF, and comics." \
       org.opencontainers.image.source="https://github.com/booklore-app/booklore" \
@@ -51,13 +50,31 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
-RUN apk update && apk add nginx gettext su-exec
+RUN apk add --no-cache nginx gettext \
+    && mkdir -p \
+        /app \
+        /var/log/nginx \
+        /var/lib/nginx/logs \
+        /var/lib/nginx/tmp \
+        /var/cache/nginx \
+        /var/run/nginx \
+    && chown -R 65534:65534 \
+        /app \
+        /var/log/nginx \
+        /usr/share/nginx \
+        /var/lib/nginx \
+        /var/cache/nginx \
+        /var/run/nginx \
+        /etc/nginx
 
-COPY ./nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
 COPY start.sh /start.sh
+
 RUN chmod +x /start.sh
+
+USER 65534:65534
 
 EXPOSE 8080 80
 
