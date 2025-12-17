@@ -66,6 +66,28 @@
               pTooltip="Replace current metadata with fetched metadata on all files"
               tooltipPosition="top">
             </p-button>
+            <p-button
+              size="small"
+              outlined
+              severity="help"
+              label="Bulk&nbsp;Edit"
+              icon="pi pi-pencil"
+              [disabled]="!hasSelectedFiles"
+              (click)="openBulkEditDialog()"
+              pTooltip="Edit metadata fields in bulk for selected files"
+              tooltipPosition="top">
+            </p-button>
+            <p-button
+              size="small"
+              outlined
+              severity="warn"
+              label="Extract&nbsp;Pattern"
+              icon="pi pi-sliders-h"
+              [disabled]="!hasSelectedFiles"
+              (click)="openPatternExtractDialog()"
+              pTooltip="Extract metadata from filenames using a pattern"
+              tooltipPosition="top">
+            </p-button>
             <span pTooltip="Include book covers when importing fetched metadata"><p-checkbox
               inputId="includecovers"
               [binary]="true"
