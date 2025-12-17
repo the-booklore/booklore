@@ -319,7 +319,6 @@ public class JwtMultiIssuerConfiguration {
                 if (e.getErrors() != null && !e.getErrors().isEmpty()) {
                     log.debug("JWT validation errors: {}", e.getErrors());
                 }
-                // Ensure errors list is not empty for Spring Security
                 if (e.getErrors() == null || e.getErrors().isEmpty()) {
                     throw new JwtValidationException(e.getMessage(), 
                         java.util.Collections.singletonList(new OAuth2Error("jwt_validation_error", e.getMessage(), null)));
