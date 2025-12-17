@@ -1,8 +1,0 @@
-# Docker Compose Configuration Example
-app:
-  security:
-    jwt:
-      # Using environment variables (Priority 2 - acceptable for Docker)
-      issuer-uri: ${OIDC_ISSUER_URI:-http://host.docker.internal:8080/realms/dev}
-      internal-issuer-uri: http://keycloak:8080/realms/dev
-
