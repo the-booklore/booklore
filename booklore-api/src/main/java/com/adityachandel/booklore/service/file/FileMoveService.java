@@ -86,7 +86,7 @@ public class FileMoveService {
         Path currentFilePath = null;
 
         try {
-            Optional<BookEntity> optionalBook = bookRepository.findById(bookId);
+            Optional<BookEntity> optionalBook = bookRepository.findByIdWithBookFiles(bookId);
             Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(targetLibraryId);
             if (optionalBook.isEmpty()) {
                 log.warn("Book not found for move operation: bookId={}", bookId);
@@ -125,7 +125,7 @@ public class FileMoveService {
             primaryFile.setFileName(newFileName);
             bookEntity.setLibrary(targetLibrary);
             bookEntity.setLibraryPath(libraryPathEntity);
-            bookRepository.save(bookEntity);
+            bookRepository.saveAndFlush(bookEntity);
 
             fileMoveHelper.commitMove(tempPath, newFilePath);
             tempPath = null;
