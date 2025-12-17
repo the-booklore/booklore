@@ -2,6 +2,7 @@ package com.adityachandel.booklore.config.security.service;
 
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.security.JwtSecretService;
+import com.nimbusds.jwt.SignedJWT;
 import io.jsonwebtoken.security.Keys;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -74,7 +75,6 @@ public class JwtMultiIssuerConfiguration {
 
     @Bean
     public JwtDecoder jwtDecoder() {
-        // Defer configuration check until first use to avoid circular dependency
         return new LazyJwtDecoder(dynamicOidcJwtProcessor, appSettingService, jwtSecretService, this);
     }
 
@@ -245,7 +245,7 @@ public class JwtMultiIssuerConfiguration {
          */
         private static String extractIssuerFromToken(String token) {
             try {
-                com.nimbusds.jwt.SignedJWT signedJWT = com.nimbusds.jwt.SignedJWT.parse(token);
+                SignedJWT signedJWT = SignedJWT.parse(token);
                 return signedJWT.getJWTClaimsSet().getIssuer();
             } catch (Exception e) {
                 log.debug("Unable to extract issuer from token: {}", e.getMessage());
@@ -286,12 +286,10 @@ public class JwtMultiIssuerConfiguration {
     @Setter
     @Getter
     public static class IssuerMapping {
-        // Getters/Setters
         private String name;
         private String externalUrl;  // URL in JWT iss claim
         private String internalUrl;  // URL for OIDC discovery (optional)
 
-        // Constructor for backward compatibility
         public IssuerMapping(String name, String externalUrl, String internalUrl) {
             this.name = name != null ? name : "Legacy Config";
             this.externalUrl = externalUrl;
