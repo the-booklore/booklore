@@ -11,7 +11,7 @@ import {CreateUserDialogComponent} from '../../features/settings/user-management
 import {CreateEmailRecipientDialogComponent} from '../../features/settings/email-v2/create-email-recipient-dialog/create-email-recipient-dialog.component';
 import {CreateEmailProviderDialogComponent} from '../../features/settings/email-v2/create-email-provider-dialog/create-email-provider-dialog.component';
 import {DirectoryPickerComponent} from '../components/directory-picker/directory-picker.component';
-import {BookdropFinalizeResultDialogComponent} from '../../features/bookdrop/component/bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog-component';
+import {BookdropFinalizeResultDialogComponent} from '../../features/bookdrop/component/bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog.component';
 import {BookdropFinalizeResult} from '../../features/bookdrop/service/bookdrop.service';
 import {MetadataReviewDialogComponent} from '../../features/metadata/component/metadata-review-dialog/metadata-review-dialog-component';
 import {MetadataRefreshType} from '../../features/metadata/model/request/metadata-refresh-type.enum';

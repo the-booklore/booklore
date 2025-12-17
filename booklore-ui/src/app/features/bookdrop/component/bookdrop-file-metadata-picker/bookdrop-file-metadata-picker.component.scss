@@ -1,10 +1,17 @@
 .thumbnail {
-  width: 10.46875rem;
-  height: 14.65625rem;
+  width: 10rem;
+  height: 14rem;
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-left: 2.5rem;
-  margin-right: 2.5rem;
+  margin: 0 auto 1rem;
+
+  @media (max-width: 768px) {
+    max-width: 50%;
+  }
+}
+.metaeditor .thumbnail {
+  width: 100%;
+  height: auto;
 }
 
 .arrow-button {
@@ -36,14 +43,22 @@ textarea.outlined-input-green,
   font-size: 12px;
 }
 
-.metapicker {
+::ng-deep .p-autocomplete-input-chip {
+  width: 2rem;
+}
+
+.metapicker, .metaeditor {
   box-sizing: border-box;
+}
+
+.metapicker label,
+.metaeditor label {
+  color: var(--text-color-secondary);
 }
 
 .metaheader {
   border-bottom: 1px solid var(--border-color);
   padding: 1rem;
-  margin-bottom: 1rem;
   justify-content: space-between;
 }
 
@@ -52,7 +67,14 @@ textarea.outlined-input-green,
 }
 
 .metacontent {
-  padding: 0 1rem 1rem;
+  padding: 1rem;
+}
+.metaeditor .metacontent {
+  padding: 0 0 0 1rem;
+
+  @media (max-width: 768px) {
+    padding: 0;
+  }
 }
 
 .metadata-status {
@@ -66,5 +88,92 @@ textarea.outlined-input-green,
 
   &.not-applied {
     color: rgb(239, 68, 68);
+  }
+}
+
+.meta-row {
+  margin-bottom: 0.5em;
+}
+
+@media (max-width: 768px) {
+  .meta-row {
+    margin-bottom: 1em;
+  }
+
+  .metapicker .meta-row {
+    flex-wrap: wrap;
+    
+    label {
+      width: 100%;
+    }
+  }
+  
+  .metapicker .meta-fields {
+    justify-content: center;
+
+    .dest {
+      width: 50%;
+      order: 1;
+      margin-right: 0.25rem;
+    }
+
+    p-button {
+      padding: 0;
+      order: 3;
+    }
+
+    ::ng-deep button {
+      border-left-width: 0;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .src {
+      width: 50%;
+      order: 2;
+      border-radius: 6px 0 0 6px;
+      margin-left: 0.25rem;
+
+      ::ng-deep ul {
+        border-radius: 6px 0 0 6px;
+      }
+    }
+  }
+
+  .metapicker {
+    .field-title,
+    .field-subtitle,
+    .field-publisher,
+    .field-authors,
+    .field-categories,
+    .field-moods,
+    .field-tags,
+    .field-description,
+    .field-seriesName {
+      .meta-fields {
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+
+      .dest {
+        width: 100% !important;
+        margin: 0 0 2px 0;
+      }
+
+      .src {
+        flex: 1 !important;
+        width: auto !important;
+        margin: 0;
+      }
+    }
+
+    .field-authors,
+    .field-categories,
+    .field-moods,
+    .field-tags {
+      ::ng-deep button {
+        line-height: 2em;
+      }
+    }
   }
 }

@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 
-import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService} from '../../service/bookdrop.service';
+import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService, FileExtractionResult, BulkEditRequest as BackendBulkEditRequest, BulkEditResult as BackendBulkEditResult} from '../../service/bookdrop.service';
 import {LibraryService} from '../../../book/service/library.service';
 import {Library} from '../../../book/model/library.model';
 
@@ -21,10 +21,13 @@ import {AppSettingsService} from '../../../../shared/service/app-settings.servic
 import {BookMetadata} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {Checkbox} from 'primeng/checkbox';
-import {NgClass, NgStyle} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {Paginator} from 'primeng/paginator';
 import {ActivatedRoute} from '@angular/router';
 import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-picker/bookdrop-file-metadata-picker.component';
+import {BookdropFinalizeResultDialogComponent} from '../bookdrop-finalize-result-dialog/bookdrop-finalize-result-dialog.component';
+import {BookdropBulkEditDialogComponent, BulkEditResult} from '../bookdrop-bulk-edit-dialog/bookdrop-bulk-edit-dialog.component';
+import {BookdropPatternExtractDialogComponent} from '../bookdrop-pattern-extract-dialog/bookdrop-pattern-extract-dialog.component';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 
 export interface BookdropFileUI {
@@ -53,7 +56,6 @@ export interface BookdropFileUI {
     Tooltip,
     Divider,
     Checkbox,
-    NgStyle,
     NgClass,
     Paginator,
   ],
@@ -382,7 +384,7 @@ export class BookdropFileReviewComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        const payload: any = {
+        const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
         };
 
@@ -582,6 +584,182 @@ export class BookdropFileReviewComponent implements OnInit {
         });
         console.error(err);
       }
+    });
+  }
+
+  openBulkEditDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to bulk edit.',
+      });
+      return;
+    }
+
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropBulkEditDialogComponent, {
+      header: `Bulk Edit ${totalCount} Files`,
+      width: '600px',
+      modal: true,
+      closable: true,
+      data: {fileCount: totalCount},
+    });
+
+    dialogRef?.onClose.subscribe((result: BulkEditResult | null) => {
+      if (result) {
+        this.applyBulkMetadataViaBackend(result);
+      }
+    });
+  }
+
+  openPatternExtractDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to extract metadata from.',
+      });
+      return;
+    }
+
+    const sampleFiles = selectedFiles.slice(0, 5).map(f => f.file.fileName);
+    const selectedIds = selectedFiles.map(f => f.file.id);
+
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropPatternExtractDialogComponent, {
+      header: 'Extract Metadata from Filenames',
+      width: '700px',
+      modal: true,
+      closable: true,
+      data: {
+        sampleFiles,
+        fileCount: totalCount,
+        selectAll: this.selectAllAcrossPages,
+        excludedIds: Array.from(this.excludedFiles),
+        selectedIds,
+      },
+    });
+
+    dialogRef?.onClose.subscribe((result: { results: FileExtractionResult[] } | null) => {
+      if (result?.results) {
+        this.applyExtractedMetadata(result.results);
+      }
+    });
+  }
+
+  private getSelectedFiles(): BookdropFileUI[] {
+    return Object.values(this.fileUiCache).filter(file => {
+      if (this.selectAllAcrossPages) {
+        return !this.excludedFiles.has(file.file.id);
+      }
+      return file.selected;
+    });
+  }
+
+  private applyBulkMetadataViaBackend(result: BulkEditResult): void {
+    const selectedFiles = this.getSelectedFiles();
+    const selectedIds = selectedFiles.map(f => f.file.id);
+
+    this.applyBulkMetadataToUI(result, selectedFiles);
+
+    const enabledFieldsArray = Array.from(result.enabledFields);
+
+    const payload: BackendBulkEditRequest = {
+      fields: result.fields,
+      enabledFields: enabledFieldsArray,
+      mergeArrays: result.mergeArrays,
+      selectAll: this.selectAllAcrossPages,
+      excludedIds: this.selectAllAcrossPages ? Array.from(this.excludedFiles) : undefined,
+      selectedIds: !this.selectAllAcrossPages ? selectedIds : undefined,
+    };
+
+    this.bookdropService.bulkEditMetadata(payload).subscribe({
+      next: (backendResult: BackendBulkEditResult) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Bulk Edit Applied',
+          detail: `Updated metadata for ${backendResult.successfullyUpdated} of ${backendResult.totalFiles} file(s).`,
+        });
+      },
+      error: (err) => {
+        console.error('Error applying bulk edit:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bulk Edit Failed',
+          detail: 'An error occurred while applying bulk edits.',
+        });
+      },
+    });
+  }
+
+  private applyBulkMetadataToUI(result: BulkEditResult, selectedFiles: BookdropFileUI[]): void {
+    selectedFiles.forEach(fileUi => {
+      result.enabledFields.forEach(fieldName => {
+        const value = result.fields[fieldName as keyof BookMetadata];
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        if (Array.isArray(value) && value.length === 0) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(fieldName);
+        if (!control) {
+          return;
+        }
+
+        if (result.mergeArrays && Array.isArray(value)) {
+          const currentValue = control.value || [];
+          const merged = [...new Set([...currentValue, ...value])];
+          control.setValue(merged);
+        } else {
+          control.setValue(value);
+        }
+      });
+    });
+  }
+
+  private applyExtractedMetadata(results: FileExtractionResult[]): void {
+    let appliedCount = 0;
+
+    results.forEach(result => {
+      if (!result.success || !result.extractedMetadata) {
+        return;
+      }
+
+      const fileUi = this.fileUiCache[result.fileId];
+      if (!fileUi) {
+        return;
+      }
+
+      Object.entries(result.extractedMetadata).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(key);
+        if (control) {
+          control.setValue(value);
+        }
+      });
+
+      appliedCount++;
+    });
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Pattern Extraction Applied',
+      detail: `Applied extracted metadata to ${appliedCount} file(s).`,
     });
   }
 }

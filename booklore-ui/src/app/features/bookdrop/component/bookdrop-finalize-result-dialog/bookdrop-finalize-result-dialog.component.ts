@@ -4,13 +4,13 @@ import {BookdropFinalizeResult} from '../../service/bookdrop.service';
 import {DynamicDialogConfig, DynamicDialogRef} from "primeng/dynamicdialog";
 
 @Component({
-  selector: 'app-bookdrop-finalize-result-dialog-component',
+  selector: 'app-bookdrop-finalize-result-dialog',
   imports: [
     NgClass,
     DatePipe
   ],
-  templateUrl: './bookdrop-finalize-result-dialog-component.html',
-  styleUrl: './bookdrop-finalize-result-dialog-component.scss'
+  templateUrl: './bookdrop-finalize-result-dialog.component.html',
+  styleUrl: './bookdrop-finalize-result-dialog.component.scss'
 })
 export class BookdropFinalizeResultDialogComponent implements OnDestroy {
 

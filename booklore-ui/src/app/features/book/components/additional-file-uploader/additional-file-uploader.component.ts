@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { DynamicDialogRef, DynamicDialogConfig } from 'primeng/dynamicdialog';
 import { Select } from 'primeng/select';
@@ -29,14 +29,13 @@ interface UploadingFile {
   selector: 'app-additional-file-uploader',
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     Select,
     Button,
     FileUpload,
     Badge,
     Tooltip
-  ],
+],
   templateUrl: './additional-file-uploader.component.html',
   styleUrls: ['./additional-file-uploader.component.scss']
 })
