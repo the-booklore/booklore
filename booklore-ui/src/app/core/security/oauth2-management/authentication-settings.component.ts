@@ -162,6 +162,10 @@ export class AuthenticationSettingsComponent implements OnInit {
   }
 
   saveOidcAutoProvisionSettings(): void {
+    this.selectedPermissions = this.availablePermissions
+      .filter(p => p.selected)
+      .map(p => p.value);
+
     const payload = [
       {
         key: AppSettingKey.OIDC_AUTO_PROVISION_DETAILS,
