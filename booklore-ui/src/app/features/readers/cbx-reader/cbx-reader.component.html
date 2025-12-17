@@ -1,14 +1,15 @@
 <div class="comic-reader-container" tabindex="0">
   <div class="navigation">
     <div class="goto-page-controls">
-      <button 
-        *ngIf="currentBook?.metadata?.seriesName"
-        class="series-nav-button prev-book" 
-        (click)="navigateToPreviousBook()" 
-        [disabled]="!previousBookInSeries"
-        [title]="getPreviousBookTooltip()">
-        <span>← Previous Book</span>
-      </button>
+      @if (currentBook?.metadata?.seriesName) {
+        <button
+          class="series-nav-button prev-book"
+          (click)="navigateToPreviousBook()"
+          [disabled]="!previousBookInSeries"
+          [title]="getPreviousBookTooltip()">
+          <span>← Previous Book</span>
+        </button>
+      }
 
       <div class="input-group">
         <input
@@ -18,7 +19,7 @@
           [max]="pages.length"
           placeholder="Page"
           class="page-input"
-        />
+          />
         <button
           class="go-button"
           (click)="goToPageInput !== null && goToPage(goToPageInput)"
@@ -27,14 +28,15 @@
         </button>
       </div>
 
-      <button 
-        *ngIf="currentBook?.metadata?.seriesName"
-        class="series-nav-button next-book" 
-        (click)="navigateToNextBook()" 
-        [disabled]="!nextBookInSeries"
-        [title]="getNextBookTooltip()">
-        <span>Next Book →</span>
-      </button>
+      @if (currentBook?.metadata?.seriesName) {
+        <button
+          class="series-nav-button next-book"
+          (click)="navigateToNextBook()"
+          [disabled]="!nextBookInSeries"
+          [title]="getNextBookTooltip()">
+          <span>Next Book →</span>
+        </button>
+      }
     </div>
 
     <div class="page-controls">
@@ -61,8 +63,8 @@
       <div class="desktop-controls">
         <div class="fit-mode-dropdown">
           <button class="view-button fit-mode-toggle"
-                  (click)="toggleFitModeDropdown()"
-                  title="Fit Mode">
+            (click)="toggleFitModeDropdown()"
+            title="Fit Mode">
             <span>{{ displayLabel }}</span>
           </button>
           @if (showFitModeDropdown) {
@@ -99,22 +101,22 @@
 
       <div class="mobile-controls">
         <button class="view-button more-options-toggle"
-                (click)="toggleMobileOptionsDropdown()"
-                title="More Options">
+          (click)="toggleMobileOptionsDropdown()"
+          title="More Options">
           <span>⋮</span>
         </button>
         @if (showMobileOptionsDropdown) {
           <div class="mobile-options-menu">
             @if (currentBook?.metadata?.seriesName) {
-              <button 
-                class="mobile-option" 
+              <button
+                class="mobile-option"
                 (click)="navigateToPreviousBook(); toggleMobileOptionsDropdown()"
                 [disabled]="!previousBookInSeries">
                 <span class="option-icon">⬅️</span>
                 <span class="option-label">Previous Book</span>
               </button>
-              <button 
-                class="mobile-option" 
+              <button
+                class="mobile-option"
                 (click)="navigateToNextBook(); toggleMobileOptionsDropdown()"
                 [disabled]="!nextBookInSeries">
                 <span class="option-icon">➡️</span>
@@ -165,17 +167,17 @@
   </div>
 
   <div class="image-container"
-       [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
-       [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
-       [class.fit-actual-size]="fitMode === CbxFitMode.ACTUAL_SIZE"
-       [class.fit-page]="fitMode === CbxFitMode.FIT_PAGE"
-       [class.fit-width]="fitMode === CbxFitMode.FIT_WIDTH"
-       [class.fit-height]="fitMode === CbxFitMode.FIT_HEIGHT"
-       [class.fit-auto]="fitMode === CbxFitMode.AUTO"
-       [class.bg-black]="backgroundColor === CbxBackgroundColor.BLACK"
-       [class.bg-gray]="backgroundColor === CbxBackgroundColor.GRAY"
-       [class.bg-white]="backgroundColor === CbxBackgroundColor.WHITE"
-       (scroll)="onScroll($event)">
+    [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
+    [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
+    [class.fit-actual-size]="fitMode === CbxFitMode.ACTUAL_SIZE"
+    [class.fit-page]="fitMode === CbxFitMode.FIT_PAGE"
+    [class.fit-width]="fitMode === CbxFitMode.FIT_WIDTH"
+    [class.fit-height]="fitMode === CbxFitMode.FIT_HEIGHT"
+    [class.fit-auto]="fitMode === CbxFitMode.AUTO"
+    [class.bg-black]="backgroundColor === CbxBackgroundColor.BLACK"
+    [class.bg-gray]="backgroundColor === CbxBackgroundColor.GRAY"
+    [class.bg-white]="backgroundColor === CbxBackgroundColor.WHITE"
+    (scroll)="onScroll($event)">
     @if (!isLoading) {
       @if (pages.length > 0) {
         @if (scrollMode === CbxScrollMode.PAGINATED) {

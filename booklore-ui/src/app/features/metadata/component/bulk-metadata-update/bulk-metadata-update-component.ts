@@ -1,6 +1,6 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
-import {CommonModule} from '@angular/common';
+
 import {InputText} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
 import {Tooltip} from 'primeng/tooltip';
@@ -18,7 +18,6 @@ import {filter, take} from "rxjs/operators";
   selector: 'app-bulk-metadata-update-component',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     FormsModule,
     InputText,
@@ -28,7 +27,7 @@ import {filter, take} from "rxjs/operators";
     Checkbox,
     ProgressSpinner,
     AutoComplete
-  ],
+],
   providers: [MessageService],
   templateUrl: './bulk-metadata-update-component.html',
   styleUrl: './bulk-metadata-update-component.scss'

@@ -2,7 +2,7 @@ import { Component, inject, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { Button } from "primeng/button";
 import { ActivatedRoute } from "@angular/router";
-import { AsyncPipe, NgClass, NgFor, NgIf, NgStyle } from "@angular/common";
+import { AsyncPipe, NgClass, NgStyle } from "@angular/common";
 import { map, filter, switchMap } from "rxjs/operators";
 import { Observable, combineLatest } from "rxjs";
 import { Book, ReadStatus } from "../../model/book.model";
@@ -25,8 +25,6 @@ import { Router } from "@angular/router";
     AsyncPipe,
     Button,
     FormsModule,
-    NgIf,
-    NgFor,
     NgStyle,
     NgClass,
     BookCardComponent,
@@ -37,9 +35,8 @@ import { Router } from "@angular/router";
     TabPanels,
     TabPanel,
     Tag,
-
-    VirtualScrollerModule,
-  ],
+    VirtualScrollerModule
+],
 })
 export class SeriesPageComponent {
 
