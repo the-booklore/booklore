@@ -1,7 +1,3 @@
-.container {
-  overflow-x: auto;
-}
-
 .main-card {
   display: flex;
   flex-direction: column;
@@ -179,6 +175,16 @@
     p-select {
       flex-basis: 50%;
       max-width: 250px;
+    }
+  }
+}
+
+::ng-deep .p-select-overlay {
+  @media (max-width: 768px) {
+    max-width: 70vw;
+
+    .p-select-option {
+      white-space: normal;
     }
   }
 }
