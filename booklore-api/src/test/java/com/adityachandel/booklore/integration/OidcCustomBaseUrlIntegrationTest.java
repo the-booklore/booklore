@@ -54,7 +54,6 @@ class OidcCustomBaseUrlIntegrationTest {
 
     @Test
     void oidcIssuerNormalizationShouldWork_WithCustomBaseUrlIssuer() {
-        // Test the issuer URI normalization functionality that's essential for custom base URLs
         String[] issuerUris = {
             "https://auth.example.com",           // Standard
             "https://auth.example.com/",          // With trailing slash

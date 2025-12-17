@@ -66,7 +66,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should route HS256 token to internal decoder")
     void testRouteHS256ToInternalDecoder() throws Exception {
-        // Given: A valid HS256 token (internal Booklore token)
         String hs256Token = createHS256Token(
             TEST_CLIENT_ID,
             "user123",
@@ -76,10 +75,8 @@ class HybridJwtDecoderTest {
         Jwt mockJwt = mock(Jwt.class);
         when(internalDecoder.decode(hs256Token)).thenReturn(mockJwt);
 
-        // When: Decoding the token
         Jwt result = hybridDecoder.decode(hs256Token);
 
-        // Then: Internal decoder should be called
         assertThat(result).isEqualTo(mockJwt);
         verify(internalDecoder, times(1)).decode(hs256Token);
         verify(oidcDecoder, never()).decode(anyString());
@@ -88,7 +85,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should route RS256 token to OIDC decoder (Keycloak)")
     void testRouteRS256ToOidcDecoder() throws Exception {
-        // Given: A valid RS256 token (Keycloak-style)
         RSAKey rsaKey = new RSAKeyGenerator(2048)
             .keyID(UUID.randomUUID().toString())
             .generate();
@@ -104,10 +100,8 @@ class HybridJwtDecoderTest {
         Jwt mockJwt = mock(Jwt.class);
         when(oidcDecoder.decode(rs256Token)).thenReturn(mockJwt);
 
-        // When: Decoding the token
         Jwt result = hybridDecoder.decode(rs256Token);
 
-        // Then: OIDC decoder should be called
         assertThat(result).isEqualTo(mockJwt);
         verify(oidcDecoder, times(1)).decode(rs256Token);
         verify(internalDecoder, never()).decode(anyString());
@@ -116,20 +110,17 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle expired HS256 token gracefully without ERROR logs")
     void testExpiredHS256TokenHandling() throws Exception {
-        // Given: An expired HS256 token
         String expiredToken = createHS256Token(
             TEST_CLIENT_ID,
             "user123",
             Instant.now().minus(3, ChronoUnit.DAYS) // Expired 3 days ago
         );
 
-        // When/Then: Should throw BadJwtException with clear message
         assertThatThrownBy(() -> hybridDecoder.decode(expiredToken))
             .isInstanceOf(BadJwtException.class)
             .hasMessageContaining("expired")
             .hasMessageContaining("seconds ago");
 
-        // Internal decoder should never be called for expired tokens
         verify(internalDecoder, never()).decode(anyString());
         verify(oidcDecoder, never()).decode(anyString());
     }
@@ -137,7 +128,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle expired RS256 token gracefully (OIDC)")
     void testExpiredRS256TokenHandling() throws Exception {
-        // Given: An expired RS256 token (simulating Authentik/Authelia)
         RSAKey rsaKey = new RSAKeyGenerator(2048)
             .keyID(UUID.randomUUID().toString())
             .generate();
@@ -150,13 +140,11 @@ class HybridJwtDecoderTest {
             Instant.now().minus(1, ChronoUnit.HOURS) // Expired 1 hour ago
         );
 
-        // When/Then: Should throw BadJwtException with clear message
         assertThatThrownBy(() -> hybridDecoder.decode(expiredToken))
             .isInstanceOf(BadJwtException.class)
             .hasMessageContaining("OIDC JWT token expired")
             .hasMessageContaining("seconds ago");
 
-        // Decoders should never be called for expired tokens
         verify(internalDecoder, never()).decode(anyString());
         verify(oidcDecoder, never()).decode(anyString());
     }
@@ -164,13 +152,10 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle malformed JWT token")
     void testMalformedToken() {
-        // Given: A truly malformed token (not 3 parts)
         String malformedToken = "not-a-valid-jwt";
 
-        // When: Mock oidcDecoder to throw exception (since algorithm will be UNKNOWN, it routes to OIDC)
         when(oidcDecoder.decode(malformedToken)).thenThrow(new BadJwtException("Invalid JWT format"));
 
-        // Then: Should throw JwtException
         assertThatThrownBy(() -> hybridDecoder.decode(malformedToken))
             .isInstanceOf(JwtException.class);
     }
@@ -178,13 +163,10 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle token without algorithm header")
     void testTokenWithoutAlgorithm() {
-        // Given: A token with missing algorithm (should default to UNKNOWN)
         String tokenWithoutAlg = "eyJ0eXAiOiJKV1QifQ.eyJzdWIiOiJ1c2VyMTIzIn0.signature";
 
-        // When: Decoding the token (will route to OIDC decoder as it's not HS256)
         when(oidcDecoder.decode(tokenWithoutAlg)).thenThrow(new BadJwtException("Invalid token"));
 
-        // Then: Should propagate the exception from OIDC decoder
         assertThatThrownBy(() -> hybridDecoder.decode(tokenWithoutAlg))
             .isInstanceOf(JwtException.class);
     }
@@ -192,7 +174,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle internal decoder failure gracefully")
     void testInternalDecoderFailure() throws Exception {
-        // Given: A valid HS256 token but internal decoder fails
         String hs256Token = createHS256Token(
             TEST_CLIENT_ID,
             "user123",
@@ -202,7 +183,6 @@ class HybridJwtDecoderTest {
         when(internalDecoder.decode(hs256Token))
             .thenThrow(new BadJwtException("Signature validation failed"));
 
-        // When/Then: Should wrap and throw the exception
         assertThatThrownBy(() -> hybridDecoder.decode(hs256Token))
             .isInstanceOf(BadJwtException.class)
             .hasMessageContaining("Internal JWT validation failed");
@@ -213,7 +193,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle OIDC decoder failure with warning log")
     void testOidcDecoderFailure() throws Exception {
-        // Given: A valid RS256 token but OIDC decoder fails
         RSAKey rsaKey = new RSAKeyGenerator(2048)
             .keyID(UUID.randomUUID().toString())
             .generate();
@@ -229,7 +208,6 @@ class HybridJwtDecoderTest {
         when(oidcDecoder.decode(rs256Token))
             .thenThrow(new BadJwtException("JWKS signature validation failed"));
 
-        // When/Then: Should propagate the exception
         assertThatThrownBy(() -> hybridDecoder.decode(rs256Token))
             .isInstanceOf(BadJwtException.class)
             .hasMessageContaining("JWKS signature validation failed");
@@ -240,7 +218,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should correctly detect RS384 algorithm (Keycloak variant)")
     void testRS384Detection() throws Exception {
-        // Given: An RS384 token (some Keycloak configs use this)
         RSAKey rsaKey = new RSAKeyGenerator(2048)
             .keyID(UUID.randomUUID().toString())
             .generate();
@@ -264,10 +241,8 @@ class HybridJwtDecoderTest {
         Jwt mockJwt = mock(Jwt.class);
         when(oidcDecoder.decode(rs384Token)).thenReturn(mockJwt);
 
-        // When: Decoding the token
         Jwt result = hybridDecoder.decode(rs384Token);
 
-        // Then: Should route to OIDC decoder
         assertThat(result).isEqualTo(mockJwt);
         verify(oidcDecoder, times(1)).decode(rs384Token);
         verify(internalDecoder, never()).decode(anyString());
@@ -276,7 +251,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should correctly detect RS512 algorithm (Keycloak variant)")
     void testRS512Detection() throws Exception {
-        // Given: An RS512 token
         RSAKey rsaKey = new RSAKeyGenerator(2048)
             .keyID(UUID.randomUUID().toString())
             .generate();
@@ -300,10 +274,8 @@ class HybridJwtDecoderTest {
         Jwt mockJwt = mock(Jwt.class);
         when(oidcDecoder.decode(rs512Token)).thenReturn(mockJwt);
 
-        // When: Decoding the token
         Jwt result = hybridDecoder.decode(rs512Token);
 
-        // Then: Should route to OIDC decoder
         assertThat(result).isEqualTo(mockJwt);
         verify(oidcDecoder, times(1)).decode(rs512Token);
         verify(internalDecoder, never()).decode(anyString());
@@ -312,7 +284,6 @@ class HybridJwtDecoderTest {
     @Test
     @DisplayName("Should handle token near expiration (within 5 seconds)")
     void testTokenNearExpiration() throws Exception {
-        // Given: A token expiring in 5 seconds
         String tokenNearExpiry = createHS256Token(
             TEST_CLIENT_ID,
             "user123",
@@ -322,15 +293,11 @@ class HybridJwtDecoderTest {
         Jwt mockJwt = mock(Jwt.class);
         when(internalDecoder.decode(tokenNearExpiry)).thenReturn(mockJwt);
 
-        // When: Decoding the token
         Jwt result = hybridDecoder.decode(tokenNearExpiry);
 
-        // Then: Should succeed (not expired yet)
         assertThat(result).isEqualTo(mockJwt);
         verify(internalDecoder, times(1)).decode(tokenNearExpiry);
     }
-
-    // ==================== Helper Methods ====================
 
     /**
      * Creates a valid HS256 JWT token (simulating internal Booklore tokens)

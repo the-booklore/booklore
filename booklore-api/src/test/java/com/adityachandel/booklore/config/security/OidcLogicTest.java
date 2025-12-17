@@ -35,7 +35,6 @@ class OidcLogicTest {
 
     @Test
     void shouldConvertTokenToUser() {
-        // Setup
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .claim("preferred_username", "john")
@@ -58,10 +57,8 @@ class OidcLogicTest {
                 .thenReturn(new BookLoreUserEntity());
         when(bookLoreUserTransformer.toDTO(any())).thenReturn(new BookLoreUser());
 
-        // Run
         var result = converter.convert(jwt);
 
-        // Verify
         assertThat(result).isNotNull();
         assertThat(result.getPrincipal()).isInstanceOf(BookLoreUser.class);
         verify(userProvisioningService).provisionOidcUser(eq("john"), eq("john@example.com"), eq("John Doe"), any());
@@ -69,7 +66,6 @@ class OidcLogicTest {
 
     @Test
     void shouldFallbackToSubWhenUsernameClaimMissing() {
-        // Setup
         Jwt jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
                 // No preferred_username
@@ -78,7 +74,6 @@ class OidcLogicTest {
 
         AppSettings appSettings = new AppSettings();
         OidcProviderDetails providerDetails = new OidcProviderDetails();
-        // Default claim mapping uses preferred_username
         appSettings.setOidcProviderDetails(providerDetails);
         
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
@@ -86,10 +81,8 @@ class OidcLogicTest {
                 .thenReturn(new BookLoreUserEntity());
         when(bookLoreUserTransformer.toDTO(any())).thenReturn(new BookLoreUser());
 
-        // Run
         var result = converter.convert(jwt);
 
-        // Verify
         assertThat(result).isNotNull();
         verify(userProvisioningService).provisionOidcUser(eq("user-123"), any(), any(), any());
     }
