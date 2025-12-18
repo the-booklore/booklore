@@ -9,6 +9,10 @@ export class BookMetadataHostService {
     this.bookSwitchRequest$.next(bookId);
   }
 
+  switchBook(bookId: number): void {
+    this.bookSwitchRequest$.next(bookId);
+  }
+
   get bookSwitches$() {
     return this.bookSwitchRequest$.asObservable();
   }
