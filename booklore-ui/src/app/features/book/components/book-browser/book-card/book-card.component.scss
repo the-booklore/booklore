@@ -123,27 +123,24 @@
   visibility: visible;
 }
 
-.cover-progress-bar,
-.cover-progress-bar-ko-both,
-.cover-progress-bar-ko-only {
+.cover-progress-bar-container {
   position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 7.5px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.cover-progress-bar {
   left: 0;
   right: 0;
   height: 2.5px;
   z-index: 1;
   opacity: 0.9;
-}
-
-.cover-progress-bar {
-  bottom: 2.5px;
-}
-
-.cover-progress-bar-ko-both {
-  bottom: 0;
-}
-
-.cover-progress-bar-ko-only {
-  bottom: 2.5px;
 }
 
 .series-number-overlay {
@@ -231,7 +228,15 @@
   background-color: #8b5cf6;
 }
 
-::ng-deep p-progressbar {
+::ng-deep .progress-incomplete-kobo .p-progressbar-value {
+  background-color: #bf0000;
+}
+
+::ng-deep .progress-complete-kobo .p-progressbar-value {
+  background-color: #f65c9c;
+}
+
+::ng-deep .cover-progress-bar {
   --p-progressbar-border-radius: 0 !important;
 }
 
