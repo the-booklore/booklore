@@ -247,6 +247,104 @@ public class BookService {
         return settingsBuilder.build();
     }
 
+    public Map<Long, BookViewerSettings> getBookViewerSettingsForBooks(Set<Long> bookIds, Long userId) {
+        if (bookIds == null || bookIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<BookEntity> bookEntities = bookRepository.findAllById(bookIds);
+        Map<BookFileType, List<Long>> bookIdsByType = new HashMap<>();
+
+        for (BookEntity book : bookEntities) {
+            bookIdsByType.computeIfAbsent(book.getBookType(), k -> new ArrayList<>()).add(book.getId());
+        }
+
+        Map<Long, EpubViewerPreferencesEntity> epubPrefs = new HashMap<>();
+        List<Long> epubBookIds = bookIdsByType.get(BookFileType.EPUB);
+        if (epubBookIds != null && !epubBookIds.isEmpty()) {
+            epubPrefs = epubViewerPreferencesRepository.findByBookIdInAndUserId(epubBookIds, userId)
+                .stream().collect(Collectors.toMap(EpubViewerPreferencesEntity::getBookId, pref -> pref));
+        }
+
+        Map<Long, PdfViewerPreferencesEntity> pdfPrefs = new HashMap<>();
+        List<Long> pdfBookIds = bookIdsByType.get(BookFileType.PDF);
+        if (pdfBookIds != null && !pdfBookIds.isEmpty()) {
+            pdfPrefs = pdfViewerPreferencesRepository.findByBookIdInAndUserId(pdfBookIds, userId)
+                .stream().collect(Collectors.toMap(PdfViewerPreferencesEntity::getBookId, pref -> pref));
+        }
+
+        Map<Long, NewPdfViewerPreferencesEntity> newPdfPrefs = new HashMap<>();
+        if (pdfBookIds != null && !pdfBookIds.isEmpty()) {
+            newPdfPrefs = newPdfViewerPreferencesRepository.findByBookIdInAndUserId(pdfBookIds, userId)
+                .stream().collect(Collectors.toMap(NewPdfViewerPreferencesEntity::getBookId, pref -> pref));
+        }
+
+        Map<Long, CbxViewerPreferencesEntity> cbxPrefs = new HashMap<>();
+        List<Long> cbxBookIds = bookIdsByType.get(BookFileType.CBX);
+        if (cbxBookIds != null && !cbxBookIds.isEmpty()) {
+            cbxPrefs = cbxViewerPreferencesRepository.findByBookIdInAndUserId(cbxBookIds, userId)
+                .stream().collect(Collectors.toMap(CbxViewerPreferencesEntity::getBookId, pref -> pref));
+        }
+
+        Map<Long, BookViewerSettings> result = new HashMap<>();
+
+        for (BookEntity book : bookEntities) {
+            BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
+
+            if (book.getBookType() == BookFileType.EPUB) {
+                EpubViewerPreferencesEntity epubPref = epubPrefs.get(book.getId());
+                if (epubPref != null) {
+                    settingsBuilder.epubSettings(EpubViewerPreferences.builder()
+                            .bookId(book.getId())
+                            .font(epubPref.getFont())
+                            .fontSize(epubPref.getFontSize())
+                            .theme(epubPref.getTheme())
+                            .flow(epubPref.getFlow())
+                            .spread(epubPref.getSpread())
+                            .letterSpacing(epubPref.getLetterSpacing())
+                            .lineHeight(epubPref.getLineHeight())
+                            .build());
+                }
+            } else if (book.getBookType() == BookFileType.PDF) {
+                PdfViewerPreferencesEntity pdfPref = pdfPrefs.get(book.getId());
+                if (pdfPref != null) {
+                    settingsBuilder.pdfSettings(PdfViewerPreferences.builder()
+                            .bookId(book.getId())
+                            .zoom(pdfPref.getZoom())
+                            .spread(pdfPref.getSpread())
+                            .build());
+                }
+
+                NewPdfViewerPreferencesEntity newPdfPref = newPdfPrefs.get(book.getId());
+                if (newPdfPref != null) {
+                    settingsBuilder.newPdfSettings(NewPdfViewerPreferences.builder()
+                            .bookId(book.getId())
+                            .pageViewMode(newPdfPref.getPageViewMode())
+                            .pageSpread(newPdfPref.getPageSpread())
+                            .build());
+                }
+            } else if (book.getBookType() == BookFileType.CBX) {
+                CbxViewerPreferencesEntity cbxPref = cbxPrefs.get(book.getId());
+                if (cbxPref != null) {
+                    settingsBuilder.cbxSettings(CbxViewerPreferences.builder()
+                            .bookId(book.getId())
+                            .pageViewMode(cbxPref.getPageViewMode())
+                            .pageSpread(cbxPref.getPageSpread())
+                            .fitMode(cbxPref.getFitMode())
+                            .scrollMode(cbxPref.getScrollMode())
+                            .backgroundColor(cbxPref.getBackgroundColor())
+                            .build());
+                }
+            } else {
+                throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
+            }
+
+            result.put(book.getId(), settingsBuilder.build());
+        }
+
+        return result;
+    }
+
     public void updateBookViewerSetting(long bookId, BookViewerSettings bookViewerSettings) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
