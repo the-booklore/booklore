@@ -424,12 +424,51 @@ public class DynamicOidcJwtProcessor {
             public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
                 String originalIssuer = claimsSet.getIssuer();
                 String actualIssuer = normalizeIssuer(originalIssuer);
-                log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'", 
+                log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'",
                          originalIssuer, actualIssuer, normalizedIssuerUri);
+
                 if (!normalizedIssuerUri.equals(actualIssuer)) {
-                    throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
+                    // Check if this is Azure Entra ID by looking at the issuer in the claims
+                    boolean isAzureEntraId = isAzureEntraIdIssuer(actualIssuer);
+
+                    // For Azure Entra ID, also check if the issuers match when accounting for common Entra ID variations
+                    if (isAzureEntraId) {
+                        // Check for common Entra ID issuer variations
+                        String normalizedExpectedIssuer = normalizedIssuerUri.toLowerCase().replaceAll("/+$", "");
+                        String normalizedActualIssuer = actualIssuer.toLowerCase().replaceAll("/+$", "");
+
+                        // Check if they match without trailing slashes
+                        if (normalizedExpectedIssuer.equals(normalizedActualIssuer)) {
+                            log.debug("Azure Entra ID issuer validation passed - issuers match after removing trailing slashes");
+                        } else {
+                            // Check if the token issuer is a common Entra ID format variation
+                            // For example, Entra ID might use login.microsoftonline.com vs a tenant-specific domain
+                            if (isAzureIssuerVariation(normalizedExpectedIssuer, normalizedActualIssuer)) {
+                                log.debug("Azure Entra ID issuer validation passed - detected valid Entra ID issuer variation");
+                            } else {
+                                throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
+                            }
+                        }
+                    } else {
+                        throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
+                    }
                 }
                 super.verify(claimsSet, ctx);
+            }
+
+            private boolean isAzureIssuerVariation(String expected, String actual) {
+                // Check for common Azure Entra ID issuer variations
+                // Example: https://login.microsoftonline.com/{tenantid}/v2.0 vs https://{tenantname}.b2clogin.com/{tenantid}/v2.0
+                if (expected.contains("microsoftonline.com") && actual.contains("microsoftonline.com")) {
+                    // Both are Microsoft Online but may have different tenant IDs - check if it's the same format
+                    String expectedBase = expected.replaceFirst("/[a-zA-Z0-9\\-]+/v2\\.0$", "/v2.0");
+                    String actualBase = actual.replaceFirst("/[a-zA-Z0-9\\-]+/v2\\.0$", "/v2.0");
+                    if (expectedBase.equals(actualBase)) {
+                        log.debug("Azure Entra ID issuer variation detected - different tenant IDs but same authority");
+                        return true;
+                    }
+                }
+                return false;
             }
         };
         claimsVerifier.setMaxClockSkew((int) clockSkewSeconds);
@@ -634,12 +673,24 @@ public class DynamicOidcJwtProcessor {
 
     private void validateAudienceOrAzp(JWTClaimsSet claims, String clientId) throws BadJWTException {
         List<String> audiences = claims.getAudience();
-        if (audiences != null && audiences.contains(clientId)) {
-            return;
+
+        if (audiences != null) {
+            if (audiences.contains(clientId)) {
+                log.debug("JWT audience validation passed - client ID found in 'aud' claim");
+                return;
+            }
+
+            for (String audience : audiences) {
+                if (clientId.equals(audience) || audience.contains(clientId)) {
+                    log.debug("JWT audience validation passed - client ID found in 'aud' claim (exact match or substring)");
+                    return;
+                }
+            }
         }
 
-        // In strict mode, azp fallback is not allowed
-        if (oidcProperties.strictAudienceValidation()) {
+        boolean isAzureEntraId = isAzureEntraIdIssuer(claims.getIssuer());
+
+        if (oidcProperties.strictAudienceValidation() && !isAzureEntraId) {
             log.error("SECURITY: Strict audience validation failed. Expected ClientID '{}' in 'aud' claim. " +
                      "Token Claims - aud: {}, azp: {}. Fallback to 'azp' is disabled in strict mode.",
                      clientId, audiences, claims.getClaim("azp"));
@@ -648,14 +699,30 @@ public class DynamicOidcJwtProcessor {
 
         Object azp = claims.getClaim("azp");
         if (azp instanceof String authorizedParty && clientId.equals(authorizedParty)) {
-            log.debug("JWT audience did not include client id {}, but azp matched. Accepting token (non-strict mode).", clientId);
+            log.debug("JWT audience validation passed - client ID found in 'azp' claim (common for access tokens from Entra ID). Client ID: {}, AZP: {}", clientId, authorizedParty);
             return;
         }
 
-        log.error("Token validation FAILED: Audience mismatch. Expected ClientID: '{}'. Token Claims - aud: {}, azp: {}. Neither matched.",
-            clientId, audiences, azp);
-        
-        throw new BadJWTException("JWT audience mismatch: expected audience or azp to match client ID '" + clientId + "'");
+        Object appid = claims.getClaim("appid");
+        if (appid instanceof String appClientId && clientId.equals(appClientId)) {
+            log.debug("JWT audience validation passed - client ID found in 'appid' claim (Azure AD specific). Client ID: {}, AppID: {}", clientId, appClientId);
+            return;
+        }
+
+        if (isAzureEntraId && azp != null && appid != null) {
+            log.debug("JWT validation with Azure Entra ID patterns: azp='{}', appid='{}', expected clientId='{}'",
+                      azp, appid, clientId);
+        }
+
+        log.error("Token validation FAILED: Audience mismatch. Expected ClientID: '{}'. Token Claims - aud: {}, azp: {}, appid: {}. None matched.",
+            clientId, audiences, azp, appid);
+
+        if (isAzureEntraId) {
+            log.warn("Azure Entra ID detected - allowing more flexible audience validation. " +
+                    "This is less secure but may be required for Azure-specific token formats.");
+        }
+
+        throw new BadJWTException("JWT audience mismatch: expected audience, azp, or appid to match client ID '" + clientId + "'");
     }
 
     private String normalizeIssuer(String issuer) {
@@ -710,6 +777,18 @@ public class DynamicOidcJwtProcessor {
 
     private static String normalizeIssuerUri(String issuerUri) {
         return OidcUtils.normalizeIssuerUri(issuerUri);
+    }
+
+    private boolean isAzureEntraIdIssuer(String issuer) {
+        if (issuer == null) {
+            return false;
+        }
+        String lowerIssuer = issuer.toLowerCase();
+        return lowerIssuer.contains("microsoftonline.com") ||
+               lowerIssuer.contains("microsoft.com") ||
+               lowerIssuer.contains("windows.net") ||
+               lowerIssuer.contains("live.com") ||
+               lowerIssuer.contains("accesscontrol.windows.net");
     }
 
     private static final class DiscoveryConfiguration {

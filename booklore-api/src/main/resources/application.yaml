@@ -21,11 +21,11 @@ booklore:
       # When true, throws exception on issuer mismatch between config and discovery document
       # Only disable for non-standard OIDC providers (not recommended in production)
       strict-issuer-validation: ${OIDC_STRICT_ISSUER_VALIDATION:true}
-      
+
       # When true, requires JWT 'aud' claim to contain client ID (no azp fallback)
       # Enable for high-security environments to prevent token substitution attacks
       strict-audience-validation: ${OIDC_STRICT_AUDIENCE_VALIDATION:false}
-      
+
       # This silently upgrades HTTP issuers to HTTPS, which could mask MITM attacks
       # Only works when Spring profile is 'dev', 'development', or 'local'
       # For production, always use matching protocols (both HTTP or both HTTPS)
