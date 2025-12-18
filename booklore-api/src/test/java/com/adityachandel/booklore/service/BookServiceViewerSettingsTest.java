@@ -2,9 +2,10 @@ package com.adityachandel.booklore.service;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.mapper.BookMapper;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
 import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.model.enums.*;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
@@ -25,7 +26,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class BookServiceViewerSettingsOptimizationTest {
+class BookServiceViewerSettingsTest {
 
     @Mock
     private BookRepository bookRepository;
@@ -138,14 +139,14 @@ class BookServiceViewerSettingsOptimizationTest {
         PdfViewerPreferencesEntity pdfPref = new PdfViewerPreferencesEntity();
         pdfPref.setBookId(2L);
         pdfPref.setUserId(userId);
-        pdfPref.setZoom(1.5f);
+        pdfPref.setZoom("1.5");
         pdfPref.setSpread("auto");
 
         NewPdfViewerPreferencesEntity newPdfPref = new NewPdfViewerPreferencesEntity();
         newPdfPref.setBookId(2L);
         newPdfPref.setUserId(userId);
-        newPdfPref.setPageViewMode("single");
-        newPdfPref.setPageSpread("auto");
+        newPdfPref.setPageViewMode(NewPdfPageViewMode.SINGLE_PAGE);
+        newPdfPref.setPageSpread(NewPdfPageSpread.ODD);
 
         when(bookRepository.findAllById(Set.of(2L))).thenReturn(List.of(pdfBook));
         when(pdfViewerPreferencesRepository.findByBookIdInAndUserId(List.of(2L), userId))
@@ -159,9 +160,9 @@ class BookServiceViewerSettingsOptimizationTest {
         assertTrue(result.containsKey(2L));
         BookViewerSettings settings = result.get(2L);
         assertNotNull(settings.getPdfSettings());
-        assertEquals(1.5f, settings.getPdfSettings().getZoom());
+        assertEquals("1.5", settings.getPdfSettings().getZoom());
         assertNotNull(settings.getNewPdfSettings());
-        assertEquals("single", settings.getNewPdfSettings().getPageViewMode());
+        assertEquals(NewPdfPageViewMode.SINGLE_PAGE, settings.getNewPdfSettings().getPageViewMode());
 
         verify(pdfViewerPreferencesRepository, times(1)).findByBookIdInAndUserId(List.of(2L), userId);
         verify(newPdfViewerPreferencesRepository, times(1)).findByBookIdInAndUserId(List.of(2L), userId);
@@ -191,12 +192,12 @@ class BookServiceViewerSettingsOptimizationTest {
         PdfViewerPreferencesEntity pdfPref = new PdfViewerPreferencesEntity();
         pdfPref.setBookId(2L);
         pdfPref.setUserId(userId);
-        pdfPref.setZoom(2.0f);
+        pdfPref.setZoom("2.0");
 
         CbxViewerPreferencesEntity cbxPref = new CbxViewerPreferencesEntity();
         cbxPref.setBookId(3L);
         cbxPref.setUserId(userId);
-        cbxPref.setPageViewMode("fit_width");
+        cbxPref.setFitMode(CbxPageFitMode.FIT_WIDTH);
 
         Set<Long> bookIds = Set.of(1L, 2L, 3L);
         when(bookRepository.findAllById(bookIds)).thenReturn(List.of(epubBook, pdfBook, cbxBook));
@@ -220,11 +221,11 @@ class BookServiceViewerSettingsOptimizationTest {
         
         BookViewerSettings pdfSettings = result.get(2L);
         assertNotNull(pdfSettings.getPdfSettings());
-        assertEquals(2.0f, pdfSettings.getPdfSettings().getZoom());
+        assertEquals("2.0", pdfSettings.getPdfSettings().getZoom());
         
         BookViewerSettings cbxSettings = result.get(3L);
         assertNotNull(cbxSettings.getCbxSettings());
-        assertEquals("fit_width", cbxSettings.getCbxSettings().getPageViewMode());
+        assertEquals(CbxPageFitMode.FIT_WIDTH, cbxSettings.getCbxSettings().getFitMode());
 
         verify(epubViewerPreferencesRepository, times(1)).findByBookIdInAndUserId(any(), eq(userId));
         verify(pdfViewerPreferencesRepository, times(1)).findByBookIdInAndUserId(any(), eq(userId));
