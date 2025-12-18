@@ -699,7 +699,7 @@ public class DynamicOidcJwtProcessor {
 
         Object azp = claims.getClaim("azp");
         if (azp instanceof String authorizedParty && clientId.equals(authorizedParty)) {
-            log.debug("JWT audience validation passed - client ID found in 'azp' claim (common for access tokens from Entra ID). Client ID: {}, AZP: {}", clientId, authorizedParty);
+            log.debug("JWT audience validation passed - client ID found in 'azp' claim. Client ID: {}, AZP: {}", clientId, authorizedParty);
             return;
         }
 
@@ -712,6 +712,10 @@ public class DynamicOidcJwtProcessor {
         if (isAzureEntraId && azp != null && appid != null) {
             log.debug("JWT validation with Azure Entra ID patterns: azp='{}', appid='{}', expected clientId='{}'",
                       azp, appid, clientId);
+            if (clientId.equals(azp) || clientId.equals(appid)) {
+                log.debug("JWT audience validation passed - client ID matched either 'azp' or 'appid' claim (Azure Entra ID pattern)");
+                return;
+            }
         }
 
         log.error("Token validation FAILED: Audience mismatch. Expected ClientID: '{}'. Token Claims - aud: {}, azp: {}, appid: {}. None matched.",
