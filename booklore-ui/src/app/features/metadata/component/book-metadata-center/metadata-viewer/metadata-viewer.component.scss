@@ -63,28 +63,28 @@
   z-index: 2;
 }
 
-.cover-progress-bar,
-.cover-progress-bar-ko-both,
-.cover-progress-bar-ko-only {
+.cover-progress-bar-container {
   position: absolute;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 2;
-  pointer-events: none;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--progress-count, 0) * 6px);
 }
 
 .cover-progress-bar {
-  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  height: 6px;
+  flex-shrink: 0;
 }
 
-.cover-progress-bar-ko-both {
-  bottom: 0;
-  height: 12px;
-  z-index: 3;
-}
-
-.cover-progress-bar-ko-only {
-  bottom: 0;
+::ng-deep .cover-progress-bar {
+  --p-progressbar-border-radius: 0 !important;
 }
 
 ::ng-deep .progress-incomplete .p-progressbar-value {
@@ -96,11 +96,19 @@
 }
 
 ::ng-deep .progress-incomplete-ko .p-progressbar-value {
-  background-color: var(--primary-text-color);
+  background-color: #fbbf24;
 }
 
 ::ng-deep .progress-complete-ko .p-progressbar-value {
-  background-color: var(--primary-hover-color);
+  background-color: #8b5cf6;
+}
+
+::ng-deep .progress-incomplete-kobo .p-progressbar-value {
+  background-color: #bf0000;
+}
+
+::ng-deep .progress-complete-kobo .p-progressbar-value {
+  background-color: #f65c9c;
 }
 
 .info-section {
