@@ -50,6 +50,7 @@ import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {BookNavigationService} from '../../service/book-navigation.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -118,10 +119,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected confirmationService = inject(ConfirmationService);
   protected magicShelfService = inject(MagicShelfService);
   protected bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  protected taskHelperService = inject(TaskHelperService);
   private pageTitle = inject(PageTitleService);
   private loadingService = inject(LoadingService);
-
-  protected taskHelperService = inject(TaskHelperService);
+  private bookNavigationService = inject(BookNavigationService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -584,6 +585,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       )
       .subscribe(books => {
         this.currentBooks = books;
+        this.bookNavigationService.setAvailableBookIds(books.map(book => book.id));
       });
   }
 

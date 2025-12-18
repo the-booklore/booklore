@@ -20,11 +20,16 @@
     </p-tablist>
     <p-tabpanels class="tabpanels-responsive overflow-auto">
       <p-tabpanel value="view">
-        <app-metadata-viewer [book$]="book$" [recommendedBooks]="recommendedBooks"></app-metadata-viewer>
+        <app-metadata-viewer
+          [book$]="book$"
+          [recommendedBooks]="recommendedBooks">
+        </app-metadata-viewer>
       </p-tabpanel>
       @if (admin || canEditMetadata) {
         <p-tabpanel value="edit">
-          <app-metadata-editor [book$]="book$"></app-metadata-editor>
+          <app-metadata-editor
+            [book$]="book$">
+          </app-metadata-editor>
         </p-tabpanel>
       }
       @if (admin || canEditMetadata) {
