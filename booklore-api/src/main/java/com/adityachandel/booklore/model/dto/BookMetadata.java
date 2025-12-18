@@ -67,6 +67,7 @@ public class BookMetadata {
     private Boolean goodreadsIdLocked;
     private Boolean comicvineIdLocked;
     private Boolean hardcoverIdLocked;
+    private Boolean hardcoverBookIdLocked;
     private Boolean doubanIdLocked;
     private Boolean googleIdLocked;
     private Boolean pageCountLocked;
