@@ -247,7 +247,7 @@ public class AmazonBookParser implements BookParser {
             return url;
         }
 
-        StringBuilder searchTerm = new StringBuilder();
+        StringBuilder searchTerm = new StringBuilder(256);
 
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {

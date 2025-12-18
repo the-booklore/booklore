@@ -30,6 +30,9 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
     private static final String FB2_NAMESPACE = "http://www.gribuser.ru/xml/fictionbook/2.0";
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
     private static final Pattern ISBN_PATTERN = Pattern.compile("\\d{9}[\\dXx]");
+    private static final Pattern KEYWORD_SEPARATOR_PATTERN = Pattern.compile("[,;]");
+    private static final Pattern ISBN_CLEANER_PATTERN = Pattern.compile("[^0-9Xx]");
+    private static final Pattern ISO_DATE_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
 
     @Override
     public byte[] extractCover(File file) {
@@ -169,7 +172,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
         if (keywords != null) {
             String keywordsText = keywords.getTextContent().trim();
             if (StringUtils.isNotBlank(keywordsText)) {
-                for (String keyword : keywordsText.split("[,;]")) {
+                for (String keyword : KEYWORD_SEPARATOR_PATTERN.split(keywordsText)) {
                     String trimmed = keyword.trim();
                     if (StringUtils.isNotBlank(trimmed)) {
                         categories.add(trimmed);
@@ -240,7 +243,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
         // Extract ISBN
         Element isbn = getFirstElementByTagNameNS(publishInfo, FB2_NAMESPACE, "isbn");
         if (isbn != null) {
-            String isbnText = isbn.getTextContent().trim().replaceAll("[^0-9Xx]", "");
+            String isbnText = ISBN_CLEANER_PATTERN.matcher(isbn.getTextContent().trim()).replaceAll("");
             if (isbnText.length() == 13) {
                 builder.isbn13(isbnText);
             } else if (isbnText.length() == 10) {
@@ -270,22 +273,22 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
         Element lastName = getFirstElementByTagNameNS(personElement, FB2_NAMESPACE, "last-name");
         Element nickname = getFirstElementByTagNameNS(personElement, FB2_NAMESPACE, "nickname");
 
-        StringBuilder name = new StringBuilder();
+        StringBuilder name = new StringBuilder(64);
 
         if (firstName != null) {
             name.append(firstName.getTextContent().trim());
         }
         if (middleName != null) {
-            if (name.length() > 0) name.append(" ");
+            if (!name.isEmpty()) name.append(" ");
             name.append(middleName.getTextContent().trim());
         }
         if (lastName != null) {
-            if (name.length() > 0) name.append(" ");
+            if (!name.isEmpty()) name.append(" ");
             name.append(lastName.getTextContent().trim());
         }
 
         // If no name parts found, try nickname
-        if (name.length() == 0 && nickname != null) {
+        if (name.isEmpty() && nickname != null) {
             name.append(nickname.getTextContent().trim());
         }
 
@@ -320,7 +323,7 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
 
         try {
             // Try parsing ISO date format (YYYY-MM-DD)
-            if (dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            if (ISO_DATE_PATTERN.matcher(dateString).matches()) {
                 return LocalDate.parse(dateString);
             }
 
@@ -339,10 +342,10 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
 
     private Element getFirstElementByTagNameNS(Node parent, String namespace, String localName) {
         NodeList nodes;
-        if (parent instanceof Document) {
-            nodes = ((Document) parent).getElementsByTagNameNS(namespace, localName);
-        } else if (parent instanceof Element) {
-            nodes = ((Element) parent).getElementsByTagNameNS(namespace, localName);
+        if (parent instanceof Document document) {
+            nodes = document.getElementsByTagNameNS(namespace, localName);
+        } else if (parent instanceof Element element) {
+            nodes = element.getElementsByTagNameNS(namespace, localName);
         } else {
             return null;
         }
@@ -351,12 +354,14 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
 
     private InputStream getInputStream(File file) throws Exception {
         FileInputStream fis = new FileInputStream(file);
-
-        // Check if file is gzipped (FB2 files can be .fb2 or .fb2.zip/.fb2.gz)
-        if (file.getName().toLowerCase().endsWith(".gz")) {
-            return new GZIPInputStream(fis);
+        try {
+            if (file.getName().toLowerCase().endsWith(".gz")) {
+                return new GZIPInputStream(fis);
+            }
+            return fis;
+        } catch (Exception e) {
+            fis.close();
+            throw e;
         }
-
-        return fis;
     }
 }
