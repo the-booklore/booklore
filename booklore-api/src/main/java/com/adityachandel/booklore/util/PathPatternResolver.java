@@ -177,14 +177,16 @@ public class PathPatternResolver {
 
         result = finalResult.toString();
 
+        boolean usedFallbackFilename = false;
         if (result.isBlank()) {
             result = values.getOrDefault("currentFilename", "untitled");
+            usedFallbackFilename = true;
         }
 
         boolean patternIncludesExtension = pattern.contains("{extension}");
         boolean patternIncludesFullFilename = pattern.contains("{currentFilename}");
         
-        if (!patternIncludesExtension && !patternIncludesFullFilename && !extension.isBlank()) {
+        if (!usedFallbackFilename && !patternIncludesExtension && !patternIncludesFullFilename && !extension.isBlank()) {
             result += "." + extension;
         }
 
