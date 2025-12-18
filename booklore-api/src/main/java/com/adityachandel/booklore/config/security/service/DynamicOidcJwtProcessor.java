@@ -22,6 +22,7 @@ import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -736,6 +737,7 @@ public class DynamicOidcJwtProcessor {
     }
 
     private static class ConfigurableResourceRetriever extends DefaultResourceRetriever {
+        @Getter
         private static class RetrieverConfig {
             private final String proxyHost;
             private final Integer proxyPort;
@@ -751,11 +753,6 @@ public class DynamicOidcJwtProcessor {
                 this.proxyPassword = proxyPassword;
             }
 
-            public String getProxyHost() { return proxyHost; }
-            public Integer getProxyPort() { return proxyPort; }
-            public String getUserAgent() { return userAgent; }
-            public String getProxyUser() { return proxyUser; }
-            public String getProxyPassword() { return proxyPassword; }
         }
 
         private final RetrieverConfig config;
