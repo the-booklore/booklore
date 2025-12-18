@@ -7,6 +7,29 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+    modeTicks: mode === 'dark' ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
+    modePoint: mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+    modeAngleLines: mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.3)',
+  };
+}
+
 interface ReadingHabitsProfile {
   consistency: number; // Regular reading patterns vs sporadic
   multitasking: number; // Multiple books at once
@@ -34,6 +57,7 @@ export class ReadingHabitsChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly readingHabitsChartType = 'radar' as const;
 
@@ -47,7 +71,7 @@ export class ReadingHabitsChartService implements OnDestroy {
         max: 100,
         ticks: {
           stepSize: 20,
-          color: 'rgba(255, 255, 255, 0.6)',
+          color: themeTokens().modeTicks,
           font: {
             family: "'Inter', sans-serif",
             size: 12
@@ -56,14 +80,14 @@ export class ReadingHabitsChartService implements OnDestroy {
           showLabelBackdrop: false
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.2)',
+          color: themeTokens().modeGrid,
           circular: true
         },
         angleLines: {
-          color: 'rgba(255, 255, 255, 0.3)'
+          color: themeTokens().modeAngleLines
         },
         pointLabels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 12
@@ -91,9 +115,9 @@ export class ReadingHabitsChartService implements OnDestroy {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.95)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
         borderColor: '#9c27b0',
         borderWidth: 2,
         cornerRadius: 8,
@@ -132,7 +156,7 @@ export class ReadingHabitsChartService implements OnDestroy {
         radius: 5,
         hoverRadius: 8,
         borderWidth: 3,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)'
+        backgroundColor: themeTokens().modePoint
       }
     }
   };
@@ -149,6 +173,7 @@ export class ReadingHabitsChartService implements OnDestroy {
   private lastCalculatedInsights: HabitInsight[] = [];
 
   constructor() {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -172,6 +197,77 @@ export class ReadingHabitsChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.readingHabitsChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+        }
+      }
+
+      if (options.scales && options.scales['r']) {
+        const rScale = options.scales['r'];
+        if (rScale.ticks) {
+          rScale.ticks.color = tokens.modeTicks;
+        }
+        if (rScale.grid) {
+          rScale.grid.color = tokens.modeGrid;
+        }
+        if (rScale.angleLines) {
+          rScale.angleLines.color = tokens.modeAngleLines;
+        }
+        if (rScale.pointLabels) {
+          rScale.pointLabels.color = tokens.modeColor;
+        }
+      }
+
+      if (options.elements && options.elements.point) {
+        options.elements.point.backgroundColor = tokens.modePoint;
+      }
+    }
+
+    const currentData = this.readingHabitsChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        pointBorderColor: tokens.modeColor
+      }));
+
+      this.readingHabitsChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private updateChartData(profile: ReadingHabitsProfile | null): void {
@@ -213,7 +309,7 @@ export class ReadingHabitsChartService implements OnDestroy {
           borderColor: '#9c27b0',
           borderWidth: 3,
           pointBackgroundColor: habitColors,
-          pointBorderColor: '#ffffff',
+          pointBorderColor: themeTokens().modeColor,
           pointBorderWidth: 3,
           pointRadius: 5,
           pointHoverRadius: 8,

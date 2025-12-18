@@ -1,0 +1,46 @@
+.appearance-toggle {
+  padding-top: 0.5rem;
+
+  > div {
+    display: flex;
+    gap: 0.5rem;
+  }
+}
+
+.appearance-swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  padding: 0;
+  background: var(--p-surface-800);
+  color: var(--p-surface-50);
+  transition: outline-color 0.15s ease, background-color 0.2s ease;
+
+  &:hover {
+    outline-color: var(--primary-color);
+  }
+
+  &.active-color {
+    outline-color: var(--primary-color);
+  }
+
+  .appearance-icon-graphic {
+    font-size: 0.8rem;
+    line-height: 1;
+  }
+}
+
+.appearance-dark {
+  background: var(--p-surface-800);
+}
+
+:host-context(:root:not(.p-dark)) .appearance-dark {
+  background: var(--p-surface-700);
+}
+
+.appearance-light {
+  background: var(--p-surface-0);
+  color: var(--p-surface-900);
+  box-shadow: inset 0 0 0 1px var(--p-content-border-color);
+}

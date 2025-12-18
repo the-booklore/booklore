@@ -45,3 +45,11 @@ p {
 p.p-secondary {
   color: var(--text-secondary-color);
 }
+
+:root:not(.p-dark) {
+  .text-zinc-400,
+  .text-zinc-300,
+  .text-zinc-200  {
+    color: var(--text-secondary-color) !important;
+  }
+}

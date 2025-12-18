@@ -43,12 +43,13 @@
 
   @if (versionInfo) {
     <div style="margin-top: auto;" class="p-4 text-center w-full text-sm">
-      <div class="text-gray-200">
+      <div style="color: var(--p-text-muted-color);">
         <a
           [href]="getVersionUrl(versionInfo.current)"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:underline hover:text-gray-100 text-sm"
+          class="hover:underline text-sm"
+          style="color: var(--p-text-color);"
           >
           {{ versionInfo.current }}
         </a>

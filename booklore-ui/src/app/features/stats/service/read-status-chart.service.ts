@@ -7,6 +7,25 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+  };
+}
+
 interface ReadingStatusStats {
   status: string;
   count: number;
@@ -18,12 +37,12 @@ const CHART_COLORS = [
   '#fd7e14', '#6c757d', '#dc3545', '#343a40', '#e9ecef'
 ] as const;
 
-const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
+const CHART_DEFAULTS = () => ({
+  borderColor: themeTokens().modeColor,
   borderWidth: 2,
   hoverBorderWidth: 3,
-  hoverBorderColor: '#ffffff'
-} as const;
+  hoverBorderColor: themeTokens().modeColor,
+});
 
 type StatusChartData = ChartData<'doughnut', number[], string>;
 
@@ -34,6 +53,7 @@ export class ReadStatusChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly statusChartType: ChartType = 'doughnut';
 
@@ -52,10 +72,10 @@ export class ReadStatusChartService implements OnDestroy {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -80,13 +100,14 @@ export class ReadStatusChartService implements OnDestroy {
     datasets: [{
       data: [],
       backgroundColor: [...CHART_COLORS],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }]
   });
 
   public readonly statusChartData$: Observable<StatusChartData> = this.statusChartDataSubject.asObservable();
 
   constructor() {
+    this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -110,6 +131,50 @@ export class ReadStatusChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    if (this.statusChartOptions?.plugins?.tooltip) {
+      const tooltip = this.statusChartOptions.plugins.tooltip;
+      tooltip.backgroundColor = tokens.modeColorBG;
+      tooltip.titleColor = tokens.modeColor;
+      tooltip.bodyColor = tokens.modeColor;
+      tooltip.borderColor = tokens.modeColor;
+    }
+    const currentData = this.statusChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const dataset = currentData.datasets[0];
+      dataset.borderColor = tokens.modeColor;
+      dataset.hoverBorderColor = tokens.modeColor;
+      this.statusChartDataSubject.next({
+        ...currentData,
+        datasets: [{ ...dataset }]
+      });
+    }
   }
 
   private updateChartData(stats: ReadingStatusStats[]): void {
@@ -123,7 +188,7 @@ export class ReadStatusChartService implements OnDestroy {
         datasets: [{
           data: dataValues,
           backgroundColor: colors,
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {
@@ -229,11 +294,11 @@ export class ReadStatusChartService implements OnDestroy {
       return {
         text: `${label} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
-        strokeStyle: '#ffffff',
+        strokeStyle: themeTokens().modeColor,
         lineWidth: 1,
         hidden: !isVisible,
         index,
-        fontColor: '#ffffff'
+        fontColor: themeTokens().modeColor
       };
     });
   }

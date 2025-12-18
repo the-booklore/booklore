@@ -7,6 +7,26 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+  };
+}
+
 interface ReadingVelocityStats {
   category: string;
   count: number;
@@ -21,12 +41,12 @@ const CHART_COLORS = [
   '#ee5a6f', '#60a3bc', '#130f40', '#30336b', '#535c68'
 ] as const;
 
-const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
+const CHART_DEFAULTS = () => ({
+  borderColor: themeTokens().modeColor,
   borderWidth: 2,
   hoverBorderWidth: 3,
-  hoverBorderColor: '#ffffff'
-} as const;
+  hoverBorderColor: themeTokens().modeColor
+});
 
 type VelocityChartData = ChartData<'polarArea', number[], string>;
 
@@ -37,6 +57,7 @@ export class ReadingVelocityChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly velocityChartType = 'polarArea' as const;
 
@@ -47,19 +68,19 @@ export class ReadingVelocityChartService implements OnDestroy {
       r: {
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {size: 10},
           stepSize: 1,
           backdropColor: 'transparent'
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.15)'
+          color: themeTokens().modeGrid
         },
         angleLines: {
-          color: 'rgba(255, 255, 255, 0.15)'
+          color: themeTokens().modeGrid
         },
         pointLabels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {size: 10}
         }
       }
@@ -69,7 +90,7 @@ export class ReadingVelocityChartService implements OnDestroy {
         display: true,
         position: 'bottom',
         labels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {size: 10},
           padding: 10,
           usePointStyle: true,
@@ -78,10 +99,10 @@ export class ReadingVelocityChartService implements OnDestroy {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -106,19 +127,92 @@ export class ReadingVelocityChartService implements OnDestroy {
     datasets: [{
       data: [],
       backgroundColor: [...CHART_COLORS],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }]
   });
 
   public readonly velocityChartData$: Observable<VelocityChartData> = this.velocityChartDataSubject.asObservable();
 
   constructor() {
+    this.initThemeObserver();
     this.initializeChartDataSubscription();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.velocityChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.legend?.labels) {
+          options.plugins.legend.labels.color = tokens.modeColor;
+        }
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeColor;
+        }
+      }
+
+      if (options.scales && options.scales['r']) {
+        const rScale = options.scales['r'];
+        if (rScale.ticks) {
+          rScale.ticks.color = tokens.modeColor;
+        }
+        if (rScale.grid) {
+          rScale.grid.color = tokens.modeGrid;
+        }
+        if (rScale.angleLines) {
+          rScale.angleLines.color = tokens.modeGrid;
+        }
+        if (rScale.pointLabels) {
+          rScale.pointLabels.color = tokens.modeColor;
+        }
+      }
+    }
+
+    const currentData = this.velocityChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        borderColor: tokens.modeColor,
+        hoverBorderColor: tokens.modeColor
+      }));
+
+      this.velocityChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private initializeChartDataSubscription(): void {
@@ -145,7 +239,7 @@ export class ReadingVelocityChartService implements OnDestroy {
         datasets: [{
           data: dataValues,
           backgroundColor: colors,
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {
@@ -350,11 +444,11 @@ export class ReadingVelocityChartService implements OnDestroy {
       return {
         text: `${label} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
-        strokeStyle: '#ffffff',
+        strokeStyle: themeTokens().modeColor,
         lineWidth: 1,
         hidden: !isVisible,
         index,
-        fontColor: '#ffffff'
+        fontColor: themeTokens().modeColor
       };
     });
   }

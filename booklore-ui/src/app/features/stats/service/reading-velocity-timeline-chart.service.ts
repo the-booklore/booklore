@@ -7,6 +7,26 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+  };
+}
+
 interface VelocityTimelineData {
   month: string;
   booksCompleted: number;
@@ -33,6 +53,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly velocityTimelineChartType = 'line' as const;
 
@@ -43,7 +64,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
       x: {
         type: 'category',
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -51,12 +72,12 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
           maxRotation: 45
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGrid
         },
         title: {
           display: true,
           text: 'Month',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -69,19 +90,19 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
         position: 'left',
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
           }
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGrid
         },
         title: {
           display: true,
           text: 'Books Completed',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -94,7 +115,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
         position: 'right',
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -106,7 +127,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
         title: {
           display: true,
           text: 'Pages per Day',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -119,7 +140,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
         display: true,
         position: 'top',
         labels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -129,10 +150,10 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -169,6 +190,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
   public readonly velocityTimelineChartData$: Observable<VelocityTimelineChartData> = this.velocityTimelineChartDataSubject.asObservable();
 
   constructor() {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -192,6 +214,70 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.velocityTimelineChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeColor;
+        }
+        if (options.plugins.legend?.labels) {
+          options.plugins.legend.labels.color = tokens.modeColor;
+        }
+      }
+
+      if (options.scales) {
+        if (options.scales['x']) {
+          if (options.scales['x'].ticks) options.scales['x'].ticks.color = tokens.modeColor;
+          if (options.scales['x'].grid) options.scales['x'].grid.color = tokens.modeGrid;
+          if (options.scales['x'].title) options.scales['x'].title.color = tokens.modeColor;
+        }
+        if (options.scales['y']) {
+          if (options.scales['y'].ticks) options.scales['y'].ticks.color = tokens.modeColor;
+          if (options.scales['y'].grid) options.scales['y'].grid.color = tokens.modeGrid;
+          if (options.scales['y'].title) options.scales['y'].title.color = tokens.modeColor;
+        }
+        if (options.scales['y1']) {
+          if (options.scales['y1'].ticks) options.scales['y1'].ticks.color = tokens.modeColor;
+          if (options.scales['y1'].grid) options.scales['y1'].grid.color = tokens.modeGrid;
+          if (options.scales['y1'].title) options.scales['y1'].title.color = tokens.modeColor;
+        }
+      }
+    }
+    const currentData = this.velocityTimelineChartDataSubject.getValue();
+    this.velocityTimelineChartDataSubject.next({
+      ...currentData
+    });
   }
 
   private updateChartData(stats: VelocityTimelineData[]): void {

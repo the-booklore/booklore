@@ -21,6 +21,7 @@ interface Palette {
   selector: 'app-theme-configurator',
   standalone: true,
   templateUrl: './theme-configurator.component.html',
+  styleUrls: ['./theme-configurator.component.scss'],
   host: {
     class: 'config-panel hidden'
   },
@@ -38,6 +39,8 @@ export class ThemeConfiguratorComponent {
 
   readonly surfaces = this.configService.surfaces;
 
+  readonly selectedAppearance = computed(() => this.configService.appState().appearance ?? 'dark');
+  readonly isLightMode = computed(() => this.selectedAppearance() === 'light');
   readonly selectedPrimaryColor = computed(() => this.configService.appState().primary);
   readonly selectedSurfaceColor = computed(() => this.configService.appState().surface);
 
@@ -70,6 +73,14 @@ export class ThemeConfiguratorComponent {
       }))
     );
   });
+
+  updateAppearance(mode: 'light' | 'dark') {
+    if (this.selectedAppearance() === mode) return;
+	this.configService.appState.update((state) => ({
+      ...state,
+      appearance: mode
+    }));
+  }
 
   updateColors(event: Event, type: 'primary' | 'surface', color: { name: string; palette?: ColorPalette }) {
     this.configService.appState.update((state) => ({

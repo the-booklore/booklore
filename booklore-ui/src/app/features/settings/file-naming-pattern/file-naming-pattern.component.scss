@@ -157,10 +157,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  border: 1px solid var(--p-surface-800);
+  border: 1px solid var(--border-color);
   border-left: 3px solid var(--p-primary-color);
   border-radius: 6px;
-  background: var(--p-surface-900);
+  background: var(--card-background);
   padding: 1rem;
 
   @media (max-width: 767px) {
@@ -332,9 +332,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  background: var(--p-surface-800);
+  background: var(--card-background);
   padding: 1rem;
   border-radius: 6px;
+  border: 1px solid var(--border-color);
   margin-bottom: 1rem;
 
   @media (max-width: 767px) {
@@ -365,10 +366,11 @@
 }
 
 .example-item {
-  background: var(--p-surface-800);
+  background: var(--card-background);
   padding: 1rem;
   border-radius: 6px;
   border-left: 3px solid var(--p-primary-color);
+  border: 1px solid var(--border-color);
 
   @media (max-width: 767px) {
     padding: 0.75rem;

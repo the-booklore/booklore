@@ -7,6 +7,28 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeBorderColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  };
+}
+
 interface SeriesStats {
   seriesName: string;
   bookCount: number;
@@ -20,11 +42,11 @@ const CHART_COLORS = [
   '#b07aa1', '#ff9d9a', '#9e6762', '#c9b2d6'
 ] as const;
 
-const CHART_DEFAULTS = {
+const CHART_DEFAULTS = () => ({
   borderWidth: 1,
   hoverBorderWidth: 2,
-  hoverBorderColor: '#ffffff'
-} as const;
+  hoverBorderColor: themeTokens().modeColor,
+});
 
 type SeriesChartData = ChartData<'bar', number[], string>;
 
@@ -35,6 +57,7 @@ export class TopSeriesChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly seriesChartType = 'bar' as const;
 
@@ -46,7 +69,7 @@ export class TopSeriesChartService implements OnDestroy {
       x: {
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -54,12 +77,12 @@ export class TopSeriesChartService implements OnDestroy {
           precision: 0
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGridX
         },
         title: {
           display: true,
           text: 'Number of Books',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 12
@@ -68,7 +91,7 @@ export class TopSeriesChartService implements OnDestroy {
       },
       y: {
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -76,7 +99,7 @@ export class TopSeriesChartService implements OnDestroy {
           maxTicksLimit: 20
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.05)'
+          color: themeTokens().modeGridY
         }
       }
     },
@@ -85,10 +108,10 @@ export class TopSeriesChartService implements OnDestroy {
         display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeBorderColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -106,7 +129,7 @@ export class TopSeriesChartService implements OnDestroy {
       },
       datalabels: {
         display: true,
-        color: '#ffffff',
+        color: themeTokens().modeColor,
         font: {
           size: 10,
           family: "'Inter', sans-serif",
@@ -131,6 +154,7 @@ export class TopSeriesChartService implements OnDestroy {
   public readonly seriesChartData$: Observable<SeriesChartData> = this.seriesChartDataSubject.asObservable();
 
   constructor() {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -154,6 +178,75 @@ export class TopSeriesChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.seriesChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeBorderColor;
+        }
+      }
+
+      if (options.scales) {
+        const xScale = options.scales['x'] as any;
+        if (xScale) {
+          if (xScale.ticks) xScale.ticks.color = tokens.modeColor;
+          if (xScale.grid) xScale.grid.color = tokens.modeGridX;
+          if (xScale.title) xScale.title.color = tokens.modeColor;
+        }
+
+        const yScale = options.scales['y'] as any;
+        if (yScale) {
+          if (yScale.ticks) yScale.ticks.color = tokens.modeColor;
+          if (yScale.grid) yScale.grid.color = tokens.modeGridY;
+          if (yScale.title) yScale.title.color = tokens.modeColor;
+        }
+      }
+    }
+
+    const currentData = this.seriesChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        borderColor: tokens.modeColor,
+        hoverBorderColor: tokens.modeColor
+      }));
+
+      this.seriesChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private updateChartData(stats: SeriesStats[]): void {
@@ -170,7 +263,7 @@ export class TopSeriesChartService implements OnDestroy {
           data: dataValues,
           backgroundColor: colors,
           borderColor: colors,
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {

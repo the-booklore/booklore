@@ -7,6 +7,28 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+    modeBorderColor: mode === 'dark' ? '#666666' : '#444444',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  };
+}
+
 interface ReadingProgressStats {
   progressRange: string;
   count: number;
@@ -17,12 +39,12 @@ const CHART_COLORS = [
   '#6c757d', '#ffc107', '#fd7e14', '#17a2b8', '#6f42c1', '#28a745'
 ] as const;
 
-const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
+const CHART_DEFAULTS = () => ({
+  borderColor: themeTokens().modeColor,
   borderWidth: 1,
   hoverBorderWidth: 2,
-  hoverBorderColor: '#ffffff'
-} as const;
+  hoverBorderColor: themeTokens().modeColor
+});
 
 const PROGRESS_RANGES = [
   {range: '0%', min: 0, max: 0, desc: 'Not Started'},
@@ -42,6 +64,7 @@ export class ReadingProgressChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly progressChartType: ChartType = 'bar';
 
@@ -51,10 +74,10 @@ export class ReadingProgressChartService implements OnDestroy {
     plugins: {
       legend: {display: false},
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#666666',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeBorderColor,
         borderWidth: 1,
         callbacks: {
           title: (context) => context[0].label,
@@ -65,17 +88,19 @@ export class ReadingProgressChartService implements OnDestroy {
     scales: {
       x: {
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
           }
         },
-        grid: {color: 'rgba(255, 255, 255, 0.1)'},
+        grid: {
+          color: themeTokens().modeGridX
+        },
         title: {
           display: true,
           text: 'Progress Range',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -85,16 +110,20 @@ export class ReadingProgressChartService implements OnDestroy {
       y: {
         beginAtZero: true,
         ticks: {
-          color: '#ffffff', font: {
+          color: themeTokens().modeColor,
+          font: {
             family: "'Inter', sans-serif",
             size: 11
-          }, stepSize: 1
+          }, 
+          stepSize: 1
         },
-        grid: {color: 'rgba(255, 255, 255, 0.05)'},
+        grid: {
+          color: themeTokens().modeGridY
+        },
         title: {
           display: true,
           text: 'Number of Books',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -110,7 +139,7 @@ export class ReadingProgressChartService implements OnDestroy {
       label: 'Books by Progress',
       data: [],
       backgroundColor: [...CHART_COLORS],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }]
   });
 
@@ -118,6 +147,7 @@ export class ReadingProgressChartService implements OnDestroy {
     this.progressChartDataSubject.asObservable();
 
   constructor() {
+    this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -141,6 +171,75 @@ export class ReadingProgressChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.progressChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeBorderColor;
+        }
+      }
+
+      if (options.scales) {
+        const xScale = options.scales['x'] as any;
+        if (xScale) {
+          if (xScale.ticks) xScale.ticks.color = tokens.modeColor;
+          if (xScale.grid) xScale.grid.color = tokens.modeGridX;
+          if (xScale.title) xScale.title.color = tokens.modeColor;
+        }
+
+        const yScale = options.scales['y'] as any;
+        if (yScale) {
+          if (yScale.ticks) yScale.ticks.color = tokens.modeColor;
+          if (yScale.grid) yScale.grid.color = tokens.modeGridY;
+          if (yScale.title) yScale.title.color = tokens.modeColor;
+        }
+      }
+    }
+
+    const currentData = this.progressChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        borderColor: tokens.modeColor,
+        hoverBorderColor: tokens.modeColor
+      }));
+
+      this.progressChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private updateChartData(stats: ReadingProgressStats[]): void {
@@ -154,7 +253,7 @@ export class ReadingProgressChartService implements OnDestroy {
           label: 'Books by Progress',
           data: dataValues,
           backgroundColor: [...CHART_COLORS],
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {

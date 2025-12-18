@@ -6,6 +6,27 @@ import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  };
+}
+
 interface AuthorStats {
   author: string;
   bookCount: number;
@@ -26,11 +47,11 @@ const READ_STATUS_COLORS: Record<ReadStatus, string> = {
   [ReadStatus.UNSET]: '#3498db'
 };
 
-const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
+const CHART_DEFAULTS = () => ({
+  borderColor: themeTokens().modeColor,
   hoverBorderWidth: 1,
-  hoverBorderColor: '#ffffff'
-} as const;
+  hoverBorderColor: themeTokens().modeColor,
+});
 
 type AuthorChartData = ChartData<'bar', number[], string>;
 
@@ -41,6 +62,7 @@ export class AuthorPopularityChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly authorChartType = 'bar' as const;
 
@@ -51,18 +73,18 @@ export class AuthorPopularityChartService implements OnDestroy {
       x: {
         stacked: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {size: 10},
           maxRotation: 45,
           minRotation: 0
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGridX
         },
         title: {
           display: true,
           text: 'Authors',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -73,7 +95,7 @@ export class AuthorPopularityChartService implements OnDestroy {
         stacked: true,
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -82,12 +104,12 @@ export class AuthorPopularityChartService implements OnDestroy {
           maxTicksLimit: 25
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.05)'
+          color: themeTokens().modeGridY
         },
         title: {
           display: true,
           text: 'Number of Books',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -100,7 +122,7 @@ export class AuthorPopularityChartService implements OnDestroy {
         display: true,
         position: 'top',
         labels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 10
@@ -110,10 +132,10 @@ export class AuthorPopularityChartService implements OnDestroy {
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -142,7 +164,7 @@ export class AuthorPopularityChartService implements OnDestroy {
       label: this.formatReadStatusLabel(status),
       data: [],
       backgroundColor: READ_STATUS_COLORS[status],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }))
   });
 
@@ -152,6 +174,7 @@ export class AuthorPopularityChartService implements OnDestroy {
   private lastCalculatedStats: AuthorStats[] = [];
 
   constructor() {
+    this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -175,6 +198,72 @@ export class AuthorPopularityChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.authorChartOptions;
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeColor;
+        }
+        if (options.plugins.legend?.labels) {
+          options.plugins.legend.labels.color = tokens.modeColor;
+        }
+      }
+      if (options.scales) {
+        if (options.scales['x']) {
+          if (options.scales['x'].ticks) options.scales['x'].ticks.color = tokens.modeColor;
+          if (options.scales['x'].grid) options.scales['x'].grid.color = tokens.modeGridX;
+          if (options.scales['x'].title) options.scales['x'].title.color = tokens.modeColor;
+        }
+        if (options.scales['y']) {
+          if (options.scales['y'].ticks) options.scales['y'].ticks.color = tokens.modeColor;
+          if (options.scales['y'].grid) options.scales['y'].grid.color = tokens.modeGridY;
+          if (options.scales['y'].title) options.scales['y'].title.color = tokens.modeColor;
+        }
+      }
+    }
+    const currentData = this.authorChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        borderColor: tokens.modeColor,
+        hoverBorderColor: tokens.modeColor
+      }));
+
+      this.authorChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private updateChartData(stats: AuthorStats[]): void {
@@ -194,7 +283,7 @@ export class AuthorPopularityChartService implements OnDestroy {
         label: this.formatReadStatusLabel(status),
         data: topAuthors.map(s => s.readStatusCounts[status] || 0),
         backgroundColor: READ_STATUS_COLORS[status],
-        ...CHART_DEFAULTS
+        ...CHART_DEFAULTS()
       }));
 
       this.authorChartDataSubject.next({

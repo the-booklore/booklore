@@ -54,8 +54,27 @@
   }
 }
 
+:host-context(:root:not(.p-dark)) .menu-item-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--p-surface-300);
+    border-radius: 8px;
+  }
+}
+
 :host(.active-menuitem) .menu-item-container {
   background-color: color-mix(in srgb, var(--p-primary-300), transparent 93%);
+  border-radius: 8px;
+}
+
+:host-context(:root:not(.p-dark)) :host(.active-menuitem) .menu-item-container {
+  background-color: color-mix(in srgb, var(--p-primary-600), transparent 93%);
   border-radius: 8px;
 }
 

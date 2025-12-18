@@ -114,7 +114,8 @@
   width: 25rem;
   border-radius: 6px;
   padding: 0.75rem;
-  background: var(--p-surface-800);
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
 
   @media (max-width: 768px) {
     width: 100%;

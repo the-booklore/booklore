@@ -332,6 +332,226 @@
   }
 }
 
+:host-context(:root:not(.p-dark)) {
+  .header-card {
+    background: var(--p-surface-0, #ffffff);
+    border: 1px solid var(--p-content-border-color, #e2e8f0);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .filter-section {
+    label {
+      color: var(--text-color, #0f172a);
+    }
+
+    .library-totals {
+      color: var(--text-secondary-color, #475569);
+
+      .total-item {
+        background: color-mix(in srgb, var(--p-surface-100, #f1f5f9) 85%, transparent);
+        border-color: var(--p-content-border-color, #e2e8f0);
+      }
+
+      .pi {
+        color: var(--p-primary-500);
+      }
+
+      .total-label {
+        color: var(--text-secondary-color, #475569);
+      }
+
+      .total-value {
+        color: var(--text-color, #0f172a);
+      }
+    }
+  }
+
+  .config-modal-overlay {
+    background: rgba(15, 23, 42, 0.35);
+  }
+
+  .config-modal {
+    background: var(--p-surface-0, #ffffff);
+    border: 1px solid var(--p-content-border-color, #e2e8f0);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.15);
+
+    .config-modal-header {
+      background: var(--p-surface-50, #f8fafc);
+      border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+
+      h3 {
+        color: var(--text-color, #0f172a);
+      }
+
+      .pi {
+        color: var(--p-primary-500);
+      }
+
+      .close-btn {
+        border-color: var(--p-content-border-color, #e2e8f0);
+        color: var(--text-color, #0f172a);
+
+        &:hover {
+          background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 50%, transparent);
+          border-color: var(--p-primary-300, #93c5fd);
+        }
+      }
+    }
+
+    .config-modal-actions {
+      background: var(--p-surface-50, #f8fafc);
+      border-bottom: 1px solid var(--p-content-border-color, #e2e8f0);
+
+      .config-action-btn {
+        background: var(--p-surface-0, #ffffff);
+        border: 1px solid var(--p-content-border-color, #e2e8f0);
+        color: var(--text-color, #0f172a);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+
+        &:hover {
+          background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 40%, var(--p-surface-0, #ffffff));
+          transform: translateY(-1px);
+        }
+
+        &.enable-all {
+          background: color-mix(in srgb, #22c55e 18%, var(--p-surface-0, #ffffff));
+          border-color: color-mix(in srgb, #22c55e 45%, var(--p-surface-200, #e5e7eb));
+          color: #166534;
+
+          &:hover {
+            background: color-mix(in srgb, #22c55e 26%, var(--p-surface-0, #ffffff));
+          }
+        }
+
+        &.disable-all {
+          background: color-mix(in srgb, #ef4444 18%, var(--p-surface-0, #ffffff));
+          border-color: color-mix(in srgb, #ef4444 45%, var(--p-surface-200, #e5e7eb));
+          color: #991b1b;
+
+          &:hover {
+            background: color-mix(in srgb, #ef4444 26%, var(--p-surface-0, #ffffff));
+          }
+        }
+
+        &.reset-order {
+          background: color-mix(in srgb, #f59e0b 18%, var(--p-surface-0, #ffffff));
+          border-color: color-mix(in srgb, #f59e0b 45%, var(--p-surface-200, #e5e7eb));
+          color: #92400e;
+
+          &:hover {
+            background: color-mix(in srgb, #f59e0b 26%, var(--p-surface-0, #ffffff));
+          }
+        }
+
+        &.reset-positions {
+          background: color-mix(in srgb, #a855f7 18%, var(--p-surface-0, #ffffff));
+          border-color: color-mix(in srgb, #a855f7 45%, var(--p-surface-200, #e5e7eb));
+          color: #6b21a8;
+
+          &:hover {
+            background: color-mix(in srgb, #a855f7 26%, var(--p-surface-0, #ffffff));
+          }
+        }
+      }
+    }
+
+    .config-modal-content {
+      .config-categories {
+        .config-category {
+          h4 {
+            color: var(--text-color, #0f172a);
+            border-bottom-color: var(--p-primary-500);
+          }
+
+          .chart-toggles {
+            .chart-toggle {
+              &:hover {
+                background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 60%, transparent);
+              }
+
+              label {
+                color: var(--text-secondary-color, #475569);
+
+                &:hover {
+                  color: var(--text-color, #0f172a);
+                }
+              }
+
+              input[type="checkbox"]:checked + label {
+                color: var(--text-color, #0f172a);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .chart-section {
+    background: var(--card-background, #ffffff);
+    border: 1px solid var(--p-content-border-color, #e2e8f0);
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--p-primary-400, #60a5fa) 50%, var(--p-content-border-color, #e2e8f0));
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    h3 {
+      color: var(--text-color, #0f172a);
+    }
+
+    .chart-description {
+      color: var(--text-secondary-color, #475569);
+    }
+  }
+
+  .drag-handle {
+    background: color-mix(in srgb, var(--p-surface-0, #ffffff) 80%, transparent);
+    border: 1px solid var(--p-content-border-color, #e2e8f0);
+
+    &:hover {
+      background: color-mix(in srgb, var(--p-primary-50, #eef2ff) 70%, transparent);
+      border-color: var(--p-primary-300, #93c5fd);
+    }
+
+    .pi {
+      color: var(--text-color, #0f172a);
+    }
+  }
+
+  .dna-insights {
+    border-top: 1px solid color-mix(in srgb, var(--p-primary-500, #3b82f6) 35%, transparent);
+
+    .insight-card {
+      background: color-mix(in srgb, var(--p-surface-0, #ffffff) 90%, transparent);
+      border: 1px solid var(--p-content-border-color, #e2e8f0);
+
+      .trait-name,
+      .trait-score {
+        color: var(--text-color, #0f172a);
+      }
+
+      .insight-description {
+        color: var(--text-secondary-color, #475569);
+      }
+    }
+  }
+
+  .intelligence-insights {
+    border-top: 1px solid color-mix(in srgb, #0ea5e9 35%, transparent);
+
+    .insight-card {
+      background: color-mix(in srgb, var(--p-surface-0, #ffffff) 90%, transparent);
+      border: 1px solid color-mix(in srgb, #0ea5e9 35%, var(--p-content-border-color, #e2e8f0));
+
+      .trait-name {
+        color: var(--text-color, #0f172a);
+      }
+    }
+  }
+}
+
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

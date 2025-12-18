@@ -7,6 +7,27 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeHeatmapBG: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+    modeHeatmapBorder: mode === 'dark' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)',
+  };
+}
+
 interface MatrixDataPoint {
   x: number; // month (0-11)
   y: number; // year index
@@ -30,6 +51,7 @@ export class ReadingHeatmapChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly heatmapChartType = 'matrix' as const;
 
@@ -48,10 +70,10 @@ export class ReadingHeatmapChartService implements OnDestroy {
       legend: {display: false},
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: false,
@@ -73,7 +95,7 @@ export class ReadingHeatmapChartService implements OnDestroy {
       },
       datalabels: {
         display: true,
-        color: '#ffffff',
+        color: themeTokens().modeColor,
         font: {
           family: "'Inter', sans-serif",
           size: 10,
@@ -89,7 +111,7 @@ export class ReadingHeatmapChartService implements OnDestroy {
         ticks: {
           stepSize: 1,
           callback: (value) => MONTH_NAMES[value as number] || '',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -102,7 +124,7 @@ export class ReadingHeatmapChartService implements OnDestroy {
         ticks: {
           stepSize: 1,
           callback: (value) => this.yearLabels[value as number] || '',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -125,6 +147,7 @@ export class ReadingHeatmapChartService implements OnDestroy {
     this.heatmapChartDataSubject.asObservable();
 
   constructor() {
+    this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -148,6 +171,63 @@ export class ReadingHeatmapChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    if (this.heatmapChartOptions) {
+      if (this.heatmapChartOptions.plugins?.tooltip) {
+        const tooltip = this.heatmapChartOptions.plugins.tooltip;
+        tooltip.backgroundColor = tokens.modeColorBG;
+        tooltip.titleColor = tokens.modeColor;
+        tooltip.bodyColor = tokens.modeColor;
+        tooltip.borderColor = tokens.modeColor;
+      }
+      const plugins = this.heatmapChartOptions.plugins as any;
+      if (plugins?.datalabels) {
+        plugins.datalabels.color = tokens.modeColor;
+      }
+      if (this.heatmapChartOptions.scales) {
+        if (this.heatmapChartOptions.scales['x']?.ticks) {
+          this.heatmapChartOptions.scales['x'].ticks.color = tokens.modeColor;
+        }
+        if (this.heatmapChartOptions.scales['y']?.ticks) {
+          this.heatmapChartOptions.scales['y'].ticks.color = tokens.modeColor;
+        }
+      }
+    }
+    const currentData = this.heatmapChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const dataset = currentData.datasets[0];
+      dataset.borderColor = tokens.modeHeatmapBorder;
+      this.heatmapChartDataSubject.next({
+        ...currentData,
+        datasets: [{ ...dataset }]
+      });
+    }
   }
 
   private updateChartData(yearMonthData: YearMonthData[]): void {
@@ -184,13 +264,13 @@ export class ReadingHeatmapChartService implements OnDestroy {
         data: heatmapData,
         backgroundColor: (context) => {
           const point = context.raw as MatrixDataPoint;
-          if (!point?.v) return 'rgba(255, 255, 255, 0.05)';
+          if (!point?.v) return themeTokens().modeHeatmapBG;
 
           const intensity = point.v / this.maxBookCount;
           const alpha = Math.max(0.2, Math.min(1.0, intensity * 0.8 + 0.2));
           return `rgba(239, 71, 111, ${alpha})`;
         },
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: themeTokens().modeHeatmapBorder,
         borderWidth: 1,
         width: ({chart}) => (chart.chartArea?.width || 0) / 12 - 1,
         height: ({chart}) => (chart.chartArea?.height || 0) / years.length - 1
