@@ -46,6 +46,35 @@
             </p-progressBar>
           }
         </div>
+
+        @if (navigationState$ | async) {
+          <div class="navigation-buttons-mobile">
+            <p-button
+              icon="pi pi-chevron-left"
+              [disabled]="!canNavigatePrevious()"
+              (onClick)="navigatePrevious()"
+              rounded
+              outlined
+              severity="info"
+              pTooltip="Go to previous book"
+              tooltipPosition="bottom">
+            </p-button>
+            <span class="text-sm text-surface-600 dark:text-surface-400">
+              {{ getNavigationPosition() }}
+            </span>
+            <p-button
+              icon="pi pi-chevron-right"
+              iconPos="right"
+              [disabled]="!canNavigateNext()"
+              (onClick)="navigateNext()"
+              severity="info"
+              rounded
+              outlined
+              pTooltip="Go to next book"
+              tooltipPosition="bottom">
+            </p-button>
+          </div>
+        }
       </div>
 
       <div class="info-section">
@@ -454,6 +483,35 @@
 
         @if (userService.userState$ | async; as userState) {
           <div class="action-buttons">
+            @if (navigationState$ | async) {
+              <div class="navigation-buttons-desktop">
+                <p-button
+                  icon="pi pi-chevron-left"
+                  [disabled]="!canNavigatePrevious()"
+                  (onClick)="navigatePrevious()"
+                  rounded
+                  outlined
+                  severity="info"
+                  pTooltip="Go to previous book"
+                  tooltipPosition="bottom">
+                </p-button>
+                <span class="text-sm text-surface-600 dark:text-surface-400">
+                  {{ getNavigationPosition() }}
+                </span>
+                <p-button
+                  icon="pi pi-chevron-right"
+                  iconPos="right"
+                  [disabled]="!canNavigateNext()"
+                  (onClick)="navigateNext()"
+                  severity="info"
+                  rounded
+                  outlined
+                  pTooltip="Go to next book"
+                  tooltipPosition="bottom">
+                </p-button>
+              </div>
+              <p-divider layout="vertical" class="action-divider"></p-divider>
+            }
             @if (book!.bookType === 'PDF') {
               @if (readMenuItems$ | async; as readItems) {
                 <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
@@ -462,19 +520,14 @@
             @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
               <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
-            <p-button label="Shelf" icon="pi pi-folder" severity="secondary" outlined (onClick)="assignShelf(book.id)"></p-button>
+            <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
-                  <p-splitbutton label="Download" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined/>
+                  <p-splitbutton label="Download" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
                 }
               } @else {
-                <p-button label="Download" icon="pi pi-download" severity="success" outlined (onClick)="download(book)"></p-button>
-              }
-            }
-            @if (userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
-              @if (emailMenuItems$ | async; as emailItems) {
-                <p-splitbutton label="Quick Send" icon="pi pi-send" [model]="emailItems" (onClick)="quickSend(book!.id)" outlined severity="info"></p-splitbutton>
+                <p-button label="Download" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
               }
             }
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
@@ -488,7 +541,8 @@
                   (onClick)="quickRefresh(book!.id)"
                   [disabled]="isAutoFetching"
                   pTooltip="Automatically fetch metadata using default sources"
-                  tooltipPosition="top">
+                  tooltipPosition="top"
+                  styleClass="mobile-icon-only">
                 </p-splitbutton>
               }
             }
