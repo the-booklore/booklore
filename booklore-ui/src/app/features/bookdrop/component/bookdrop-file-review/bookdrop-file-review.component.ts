@@ -210,6 +210,45 @@ export class BookdropFileReviewComponent implements OnInit {
       });
   }
 
+  private async loadAllPagesIntoCache(): Promise<void> {
+    const totalPages = Math.ceil(this.totalRecords / this.pageSize);
+    const pagePromises: Promise<void>[] = [];
+
+    for (let page = 0; page < totalPages; page++) {
+      const promise = new Promise<void>((resolve, reject) => {
+        this.bookdropService.getPendingFiles(page, this.pageSize)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: response => {
+              response.content.forEach(file => {
+                if (!this.fileUiCache[file.id]) {
+                  const fresh = this.createFileUI(file);
+
+                  if (this.defaultLibraryId) {
+                    const selectedLib = this.libraries.find(l => String(l.id) === this.defaultLibraryId);
+                    const selectedPaths = selectedLib?.paths ?? [];
+                    fresh.selectedLibraryId = this.defaultLibraryId;
+                    fresh.availablePaths = selectedPaths.map(p => ({id: String(p.id ?? ''), name: p.path}));
+                    fresh.selectedPathId = this.defaultPathId ?? null;
+                  }
+
+                  this.fileUiCache[file.id] = fresh;
+                }
+              });
+              resolve();
+            },
+            error: err => {
+              console.error('Error loading page:', err);
+              reject(err);
+            }
+          });
+      });
+      pagePromises.push(promise);
+    }
+
+    await Promise.all(pagePromises);
+  }
+
   onLibraryChange(file: BookdropFileUI): void {
     const lib = this.libraries.find(l => String(l.id) === file.selectedLibraryId);
     file.availablePaths = lib?.paths.map(p => ({id: String(p.id ?? ''), name: p.path})) ?? [];
@@ -665,7 +704,21 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  private applyBulkMetadataViaBackend(result: BulkEditResult): void {
+  private async applyBulkMetadataViaBackend(result: BulkEditResult): Promise<void> {
+    if (this.selectAllAcrossPages) {
+      try {
+        await this.loadAllPagesIntoCache();
+      } catch (err) {
+        console.error('Error loading pages into cache:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bulk Edit Failed',
+          detail: 'An error occurred while loading files into cache.',
+        });
+        return;
+      }
+    }
+
     const selectedFiles = this.getSelectedFiles();
     const selectedIds = selectedFiles.map(f => f.file.id);
 
@@ -729,7 +782,21 @@ export class BookdropFileReviewComponent implements OnInit {
     });
   }
 
-  private applyExtractedMetadata(results: FileExtractionResult[]): void {
+  private async applyExtractedMetadata(results: FileExtractionResult[]): Promise<void> {
+    if (this.selectAllAcrossPages) {
+      try {
+        await this.loadAllPagesIntoCache();
+      } catch (err) {
+        console.error('Error loading pages into cache:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Pattern Extraction Failed',
+          detail: 'An error occurred while loading files into cache.',
+        });
+        return;
+      }
+    }
+
     let appliedCount = 0;
 
     results.forEach(result => {
