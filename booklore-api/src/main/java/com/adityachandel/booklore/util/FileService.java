@@ -168,7 +168,7 @@ public class FileService {
     public BufferedImage downloadImageFromUrl(String imageUrl) throws IOException {
         try {
             HttpHeaders headers = new HttpHeaders();
-            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Metadata Fetcher)");
+            headers.set(HttpHeaders.USER_AGENT, "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)");
             headers.set(HttpHeaders.ACCEPT, "image/*");
 
             HttpEntity<String> entity = new HttpEntity<>(headers);

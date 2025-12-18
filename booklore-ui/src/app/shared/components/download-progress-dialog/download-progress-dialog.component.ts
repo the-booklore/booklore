@@ -1,5 +1,5 @@
 import {Component, inject, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {DialogModule} from 'primeng/dialog';
 import {ButtonModule} from 'primeng/button';
 import {Subscription} from 'rxjs';
@@ -8,7 +8,7 @@ import {DownloadProgress, DownloadProgressService} from '../../service/download-
 @Component({
   selector: 'app-download-progress-dialog',
   standalone: true,
-  imports: [CommonModule, DialogModule, ButtonModule],
+  imports: [DialogModule, ButtonModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './download-progress-dialog.component.html',
   styleUrl: './download-progress-dialog.component.scss'

@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {FormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
 import {ToggleSwitch} from 'primeng/toggleswitch';
@@ -16,14 +16,13 @@ import {ExternalDocLinkComponent} from '../../../../../shared/components/externa
   standalone: true,
   selector: 'app-koreader-settings-component',
   imports: [
-    CommonModule,
     FormsModule,
     InputText,
     ToggleSwitch,
     Button,
     ToastModule,
     ExternalDocLinkComponent
-  ],
+],
   providers: [MessageService],
   templateUrl: './koreader-settings-component.html',
   styleUrls: ['./koreader-settings-component.scss']

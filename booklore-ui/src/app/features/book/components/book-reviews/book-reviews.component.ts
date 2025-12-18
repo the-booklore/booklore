@@ -1,5 +1,5 @@
 import {Component, DestroyRef, inject, Input, OnChanges, OnInit, SimpleChanges} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {BookReview, BookReviewService} from './book-review-service';
 import {ProgressSpinner} from 'primeng/progressspinner';
@@ -16,7 +16,7 @@ import {AppSettingsService} from '../../../../shared/service/app-settings.servic
 @Component({
   selector: 'app-book-reviews',
   standalone: true,
-  imports: [CommonModule, ProgressSpinner, Rating, Tag, Button, FormsModule, Tooltip],
+  imports: [ProgressSpinner, Rating, Tag, Button, FormsModule, Tooltip],
   templateUrl: './book-reviews.component.html',
   styleUrl: './book-reviews.component.scss'
 })
