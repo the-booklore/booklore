@@ -17,6 +17,7 @@ import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jose.proc.BadJOSEException;
 
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -151,6 +152,9 @@ public class UserProvisioningService {
             
             return userDto;
             
+        } catch (BadJOSEException e) {
+            log.warn("OIDC Token Validation Failed: {}", e.getMessage());
+            return null;
         } catch (Exception e) {
             log.error("Failed to validate OIDC token and provision user: {}", e.getMessage(), e);
             return null;

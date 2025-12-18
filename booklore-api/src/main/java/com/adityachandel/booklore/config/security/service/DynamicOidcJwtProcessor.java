@@ -105,7 +105,6 @@ public class DynamicOidcJwtProcessor {
         
         if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
             
-            // Log at debug to avoid leaking issuer URIs in production logs
             log.debug("OIDC configuration change detected. Fetching new configuration...");
             
             // 1. Perform heavy network operation OUTSIDE the lock
@@ -136,12 +135,10 @@ public class DynamicOidcJwtProcessor {
 
     private void logTokenMetadata(String token) throws BadJWTException {
         try {
-            // Parse without verifying signature just for inspection
             var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
             var claims = jwt.getJWTClaimsSet();
             var header = jwt.getHeader();
 
-            // Calculate time deltas for easier debugging
             var now = Instant.now();
             long secondsLeft = claims.getExpirationTime() != null
                 ? Duration.between(now, Instant.ofEpochMilli(claims.getExpirationTime().getTime())).getSeconds()
@@ -151,7 +148,6 @@ public class DynamicOidcJwtProcessor {
             String maskedAud = claims.getAudience() != null && !claims.getAudience().isEmpty() ? mask(String.join(",", claims.getAudience())) : "null";
             String maskedAzp = claims.getClaim("azp") instanceof String azpString ? mask(azpString) : "null";
 
-            // Only log at debug level to reduce log spam in production
             if (log.isDebugEnabled()) {
                 log.debug("Processing JWT - Header: [alg={}, kid={}]; Payload: [iss={}, sub={}, aud={}, azp={}, exp_in={}s]",
                         header.getAlgorithm(),
@@ -164,21 +160,18 @@ public class DynamicOidcJwtProcessor {
                 );
             }
 
-            // Warn if token is near expiry (< 5 minutes) - this is INFO level as it's actionable
             if (secondsLeft > 0 && secondsLeft < 300) {
                 log.info("Token nearing expiry ({}s remaining). Frontend should refresh soon.", secondsLeft);
             }
 
-            // Check for potential clock skew issues - always log as warning
             if (secondsLeft < 0) {
                 log.warn("Token received is already expired by {} seconds. Check server clock sync.", Math.abs(secondsLeft));
             }
             
-            // Enhanced algorithm diagnostics - critical errors always logged
             var algorithm = header.getAlgorithm();
             if (isHmacAlgorithm(algorithm)) {
-                log.error("CRITICAL: Token uses HMAC algorithm '{}'. This is incompatible with JWKS public key validation.", algorithm);
-                log.error("REQUIRED ACTION: Configure your IdP to use RS256 algorithm. See docs/OIDC-PROVIDER-CONFIG.md for instructions.");
+                log.warn("Token uses HMAC algorithm '{}'. This is incompatible with JWKS public key validation.", algorithm);
+                log.warn("Configure your IdP to use RS256 algorithm.");
                 
                 if (!oidcProperties.allowUnsafeAlgorithmFallback()) {
                     throw new BadJWTException("HMAC algorithm '" + algorithm + "' is not allowed. Configure IdP to use RS256.");
@@ -200,21 +193,15 @@ public class DynamicOidcJwtProcessor {
     }
 
     public JWTClaimsSet process(String token) throws Exception {
-        // 1. Log safe metadata
         logTokenMetadata(token);
 
-        // Get processor first to avoid deadlock (getProcessor might need write lock)
         ConfigurableJWTProcessor<SecurityContext> processor = getProcessor();
-
-        // Acquire read lock for concurrent token processing
         readLock.lock();
         try {
-            // 2. Execute verification
             JWTClaimsSet claimsSet;
             try {
                 claimsSet = processor.process(token, null);
             } catch (BadJOSEException e) {
-                // Check if this is an algorithm mismatch (e.g., HS256 token with RSA keys)
                 if (e.getMessage() != null && e.getMessage().contains("Another algorithm expected")) {
                     log.warn("ALGORITHM MISMATCH DETECTED: Token algorithm doesn't match JWKS key types. Attempting dynamic fallback...");
                     claimsSet = handleAlgorithmMismatch(token, e);
@@ -223,7 +210,6 @@ public class DynamicOidcJwtProcessor {
                 }
             }
 
-            // 3. Check for token replay (JTI-based prevention)
             if (oidcProperties.jwt().enableReplayPrevention()) {
                 String jti = claimsSet.getJWTID();
                 if (jti != null && !jti.isEmpty()) {
@@ -243,13 +229,10 @@ public class DynamicOidcJwtProcessor {
                         }
                     }
 
-                    // Check if token was already used (atomic check-and-set)
                     Boolean previous = localCache.asMap().putIfAbsent(jti, Boolean.TRUE);
                     if (previous == null) {
-                        // First time seeing this token - cache it
                         log.debug("Token JTI '{}' cached to prevent replay", jti);
                     } else {
-                        // Token already cached - this is a replay attempt
                         log.warn("SECURITY: Token replay detected for JTI '{}'", jti);
                         throw new BadJWTException("Token replay detected (JTI already used)");
                     }
@@ -261,10 +244,8 @@ public class DynamicOidcJwtProcessor {
 
             return claimsSet;
         } catch (BadJWTException e) {
-            // 4. Contextualize the error without leaking the token
             log.error("JWT Verification Failed: {}", e.getMessage());
 
-            // Add hints for common configuration errors
             String msg = e.getMessage();
             if (msg.contains("Issuer")) {
                 log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", currentIssuerUri);
@@ -293,7 +274,6 @@ public class DynamicOidcJwtProcessor {
             throw originalException;
         }
         try {
-            // Parse token to inspect actual algorithm
             var jwt = com.nimbusds.jwt.SignedJWT.parse(token);
             var header = jwt.getHeader();
             var algorithm = header.getAlgorithm();
@@ -301,9 +281,8 @@ public class DynamicOidcJwtProcessor {
             log.warn("Token uses algorithm '{}' which is not supported by current JWKS keys. " +
                     "This typically indicates an IdP misconfiguration.", algorithm);
             
-            // Check if it's an HMAC algorithm (HS256, HS384, HS512)
             if (isHmacAlgorithm(algorithm)) {
-                log.error("Token signed with HMAC algorithm '{}' but JWKS contains asymmetric keys. " +
+                log.warn("Token signed with HMAC algorithm '{}' but JWKS contains asymmetric keys. " +
                         "HMAC algorithms require a shared secret and cannot be validated via JWKS. " +
                         "Configure your OIDC provider to use RS256 or another asymmetric algorithm.", algorithm);
             } else if (isEcAlgorithm(algorithm)) {
@@ -314,7 +293,6 @@ public class DynamicOidcJwtProcessor {
                         algorithm);
             }
             
-            // Log recommendation
             log.info("Update IdP configuration at issuer='{}' to sign tokens with RS256 algorithm " +
                     "matching the public keys in JWKS endpoint.", currentIssuerUri);
             log.info("See docs/OIDC-PROVIDER-CONFIG.md for step-by-step configuration guides (Authentik, Authelia, Keycloak).");
@@ -323,7 +301,6 @@ public class DynamicOidcJwtProcessor {
             log.error("Failed to parse token header for algorithm inspection: {}", parseEx.getMessage());
         }
         
-        // Re-throw original exception with additional context
         throw new BadJOSEException("JWT algorithm mismatch: Token algorithm does not match available JWKS keys. " +
                 "This is typically caused by IdP misconfiguration (e.g., signing with HS256 but advertising RSA keys). " +
                 "Please reconfigure your OIDC provider to use RS256 signing. See docs/OIDC-PROVIDER-CONFIG.md for instructions.", originalException);
@@ -345,7 +322,6 @@ public class DynamicOidcJwtProcessor {
 
         String discoveryUri = resolveDiscoveryUri(providerDetails, normalizedIssuerUri);
         
-        // Validate discovery URI security
         OidcUtils.validateDiscoveryUri(discoveryUri, isDevelopmentEnvironment());
         
         log.info("Fetching OIDC discovery document from {}", discoveryUri);
@@ -417,7 +393,6 @@ public class DynamicOidcJwtProcessor {
         var jwkSourceBuilder = JWKSourceBuilder
                 .create(jwksUri.toURL(), resourceRetriever);
 
-        // Configure rate limiting based on security settings
         if (oidcProperties.jwks().rateLimitEnabled()) {
             jwkSourceBuilder.rateLimited(true);
             log.debug("JWKS rate limiting enabled for security (recommended for production)");
@@ -440,14 +415,12 @@ public class DynamicOidcJwtProcessor {
 
         log.info("Setting up JWT verifier with expected issuer: '{}'", normalizedIssuerUri);
         
-        // Don't set issuer in expectedClaims - we'll verify it manually with normalization
         var expectedClaims = new JWTClaimsSet.Builder()
                 .build();
 
         var claimsVerifier = new DefaultJWTClaimsVerifier<>(expectedClaims, Set.of("sub", "exp", "iss")) {
             @Override
             public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
-                // Verify issuer with normalization (handles trailing slash differences)
                 String originalIssuer = claimsSet.getIssuer();
                 String actualIssuer = normalizeIssuer(originalIssuer);
                 log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'", 
@@ -455,7 +428,6 @@ public class DynamicOidcJwtProcessor {
                 if (!normalizedIssuerUri.equals(actualIssuer)) {
                     throw new BadJWTException("JWT iss claim has value " + actualIssuer + " (original: " + originalIssuer + "), must be " + normalizedIssuerUri);
                 }
-                // Call parent to verify other standard claims (exp, sub, etc.)
                 super.verify(claimsSet, ctx);
             }
         };
@@ -476,7 +448,6 @@ public class DynamicOidcJwtProcessor {
             return providerDetails.getDiscoveryUri();
         }
         
-        // Use OidcUtils for standard resolution
         return OidcUtils.resolveDiscoveryUri(normalizedIssuerUri);
     }
 
@@ -501,7 +472,6 @@ public class DynamicOidcJwtProcessor {
         try {
             var resource = retriever.retrieveResource(URI.create(discoveryUri).toURL());
 
-            // Validate content type is JSON
             String contentType = resource.getContentType();
             if (contentType != null && !contentType.contains("application/json") && !contentType.contains("application/jrd+json")) {
                 throw new IllegalStateException("Invalid content type '" + contentType + "' from OIDC discovery document at " + discoveryUri +
@@ -527,14 +497,12 @@ public class DynamicOidcJwtProcessor {
                 String discoveryIssuer = root.path("issuer").asText(null);
                 Set<JWSAlgorithm> algorithms = extractSupportedAlgorithms(root);
 
-                // --- ADD THIS LOGGING ---
                 log.info("OIDC Discovery Loaded from {}: Issuer='{}', JWKS='{}', Algs={}",
                          discoveryUri, discoveryIssuer, jwksUriStr, algorithms);
 
                 if (algorithms.isEmpty()) {
                      log.warn("Provider did not advertise supported algorithms. Defaulting to RS256. If using Authentik, check 'Signing Key' settings.");
                 }
-                // ------------------------
 
                 return new DiscoveryConfiguration(jwksUri, algorithms, discoveryIssuer);
             } catch (IllegalArgumentException e) {
@@ -625,7 +593,6 @@ public class DynamicOidcJwtProcessor {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
             if (filtered.isEmpty()) {
-                // If nothing matched the actual keys, prefer asymmetric defaults based on available key types
                 if (hasRsa) {
                     filtered.addAll(defaultRsaAlgs);
                 } else if (hasEc) {
@@ -678,7 +645,6 @@ public class DynamicOidcJwtProcessor {
             throw new BadJWTException("JWT 'aud' claim must contain client ID '" + clientId + "' (strict validation mode)");
         }
 
-        // Fallback to azp in non-strict mode (spec-compliant but less secure)
         Object azp = claims.getClaim("azp");
         if (azp instanceof String authorizedParty && clientId.equals(authorizedParty)) {
             log.debug("JWT audience did not include client id {}, but azp matched. Accepting token (non-strict mode).", clientId);
@@ -688,23 +654,18 @@ public class DynamicOidcJwtProcessor {
         log.error("Token validation FAILED: Audience mismatch. Expected ClientID: '{}'. Token Claims - aud: {}, azp: {}. Neither matched.",
             clientId, audiences, azp);
         
-        // Fix: Even in non-strict mode, if neither 'aud' nor 'azp' matches, we must reject the token.
-        // The previous logic allowed ANY audience if strict mode was disabled, which is insecure.
         throw new BadJWTException("JWT audience mismatch: expected audience or azp to match client ID '" + clientId + "'");
     }
 
     private String normalizeIssuer(String issuer) {
         if (issuer == null) return null;
 
-        // Remove trailing slashes
         String normalizeIssuerUri = normalizeIssuerUri(issuer);
 
         if (!oidcProperties.allowIssuerProtocolMismatch()
                 || this.currentIssuerUri == null) {
             return normalizeIssuerUri;
         }
-
-        // Check if this is a protocol upgrade scenario (http -> https)
         if (isProtocolUpgrade(normalizeIssuerUri, this.currentIssuerUri)) {
             log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
                     "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true.",
@@ -727,8 +688,6 @@ public class DynamicOidcJwtProcessor {
         try {
             URI tokenUri = new URI(tokenIssuer);
             URI configUri = new URI(configIssuer);
-            
-            // Only allow HTTP -> HTTPS upgrade, never downgrade
             if (!"http".equals(tokenUri.getScheme()) || !"https".equals(configUri.getScheme())) {
                 return false;
             }
@@ -821,11 +780,9 @@ public class DynamicOidcJwtProcessor {
             connection.setConnectTimeout(getConnectTimeout());
             connection.setReadTimeout(getReadTimeout());
 
-            // Set configurable User-Agent
             String userAgentStr = config.getUserAgent() != null && !config.getUserAgent().isEmpty() ? config.getUserAgent() : "BookLore-OIDC-Client/1.0";
             connection.setRequestProperty("User-Agent", userAgentStr);
 
-            // Set proxy authentication if configured
             if (config.getProxyUser() != null && !config.getProxyUser().isEmpty() && config.getProxyPassword() != null) {
                 String auth = config.getProxyUser() + ":" + config.getProxyPassword();
                 String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(StandardCharsets.UTF_8));
@@ -1027,7 +984,8 @@ public class DynamicOidcJwtProcessor {
 
         if (str.charAt(0) == '[' && !str.isEmpty() && str.charAt(str.length() - 1) == ']') {
             try {
-                List<String> parsed = JSON_MAPPER.readValue(str, new TypeReference<List<String>>() {});
+                List<String> parsed = JSON_MAPPER.readValue(str, new TypeReference<>() {
+                });
                 log.debug("Parsed JSON array from claim '{}': {}", claimName, parsed);
                 return parsed;
             } catch (com.fasterxml.jackson.core.JsonProcessingException | IllegalArgumentException e) {
