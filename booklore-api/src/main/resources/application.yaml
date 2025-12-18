@@ -123,6 +123,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    out-of-order: true
 
 springdoc:
   swagger-ui:
