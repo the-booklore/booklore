@@ -97,6 +97,9 @@ public class BookMetadataEntity {
     @Column(name = "hardcover_id", length = 100)
     private String hardcoverId;
 
+    @Column(name = "hardcover_book_id")
+    private Integer hardcoverBookId;
+
     @Column(name = "google_id", length = 100)
     private String googleId;
 

@@ -482,6 +482,7 @@ public class MetadataRefreshService {
         if (enabledFields.isHardcoverId()) {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setHardcoverId(metadataMap.get(Hardcover).getHardcoverId());
+                metadata.setHardcoverBookId(metadataMap.get(Hardcover).getHardcoverBookId());
             }
         }
         if (enabledFields.isGoogleId()) {
