@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.hardcover;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLRequest;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +12,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -34,10 +36,12 @@ public class HardcoverSyncService {
 
     private final RestClient restClient;
     private final AppSettingService appSettingService;
+    private final BookRepository bookRepository;
 
     @Autowired
-    public HardcoverSyncService(AppSettingService appSettingService) {
+    public HardcoverSyncService(AppSettingService appSettingService, BookRepository bookRepository) {
         this.appSettingService = appSettingService;
+        this.bookRepository = bookRepository;
         this.restClient = RestClient.builder()
                 .baseUrl(HARDCOVER_API_URL)
                 .build();
@@ -47,11 +51,12 @@ public class HardcoverSyncService {
      * Asynchronously sync Kobo reading progress to Hardcover.
      * This method is non-blocking and will not fail the calling process if sync fails.
      *
-     * @param book The book entity with metadata containing hardcoverId/ISBN
+     * @param bookId The book ID to sync progress for
      * @param progressPercent The reading progress as a percentage (0-100)
      */
     @Async
-    public void syncProgressToHardcover(BookEntity book, Float progressPercent) {
+    @Transactional(readOnly = true)
+    public void syncProgressToHardcover(Long bookId, Float progressPercent) {
         try {
             if (!isHardcoverSyncEnabled()) {
                 log.trace("Hardcover sync skipped: not enabled or no API token configured");
@@ -63,9 +68,16 @@ public class HardcoverSyncService {
                 return;
             }
 
+            // Fetch book fresh within the async context to avoid lazy loading issues
+            BookEntity book = bookRepository.findById(bookId).orElse(null);
+            if (book == null) {
+                log.debug("Hardcover sync skipped: book {} not found", bookId);
+                return;
+            }
+
             BookMetadataEntity metadata = book.getMetadata();
             if (metadata == null) {
-                log.debug("Hardcover sync skipped: book {} has no metadata", book.getId());
+                log.debug("Hardcover sync skipped: book {} has no metadata", bookId);
                 return;
             }
 
@@ -81,7 +93,7 @@ public class HardcoverSyncService {
                 // Search by ISBN
                 hardcoverBook = findHardcoverBook(metadata);
                 if (hardcoverBook == null) {
-                    log.debug("Hardcover sync skipped: book {} not found on Hardcover", book.getId());
+                    log.debug("Hardcover sync skipped: book {} not found on Hardcover", bookId);
                     return;
                 }
             }
@@ -99,7 +111,7 @@ public class HardcoverSyncService {
             // Step 1: Add/update the book in user's library
             Integer userBookId = insertOrGetUserBook(hardcoverBook.bookId, hardcoverBook.editionId, statusId);
             if (userBookId == null) {
-                log.warn("Hardcover sync failed: could not get user_book_id for book {}", book.getId());
+                log.warn("Hardcover sync failed: could not get user_book_id for book {}", bookId);
                 return;
             }
 
@@ -108,12 +120,12 @@ public class HardcoverSyncService {
             
             if (success) {
                 log.info("Synced progress to Hardcover: book={}, hardcoverBookId={}, progress={}% ({}pages)", 
-                        book.getId(), hardcoverBook.bookId, Math.round(progressPercent), progressPages);
+                        bookId, hardcoverBook.bookId, Math.round(progressPercent), progressPages);
             }
 
         } catch (Exception e) {
             log.error("Failed to sync progress to Hardcover for book {}: {}", 
-                    book.getId(), e.getMessage());
+                    bookId, e.getMessage());
         }
     }
 
@@ -245,6 +257,7 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
+            log.info("insert_user_book response: {}", response);
             if (response == null) return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
@@ -401,6 +414,7 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
+            log.info("insert_user_book_read response: {}", response);
             if (response == null) return false;
 
             if (response.containsKey("errors")) {
@@ -444,6 +458,7 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
+            log.info("update_user_book_read response: {}", response);
             if (response == null) return false;
 
             if (response.containsKey("errors")) {

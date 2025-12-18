@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -30,6 +32,9 @@ class HardcoverSyncServiceTest {
 
     @Mock
     private AppSettingService appSettingService;
+
+    @Mock
+    private BookRepository bookRepository;
 
     @Mock
     private RestClient restClient;
@@ -50,10 +55,12 @@ class HardcoverSyncServiceTest {
     private AppSettings appSettings;
     private MetadataProviderSettings.Hardcover hardcoverSettings;
 
+    private static final Long TEST_BOOK_ID = 100L;
+
     @BeforeEach
     void setUp() throws Exception {
-        // Create service
-        service = new HardcoverSyncService(appSettingService);
+        // Create service with mocked dependencies
+        service = new HardcoverSyncService(appSettingService, bookRepository);
         
         // Inject our mocked restClient using reflection
         Field restClientField = HardcoverSyncService.class.getDeclaredField("restClient");
@@ -61,7 +68,7 @@ class HardcoverSyncServiceTest {
         restClientField.set(service, restClient);
 
         testBook = new BookEntity();
-        testBook.setId(100L);
+        testBook.setId(TEST_BOOK_ID);
 
         testMetadata = new BookMetadataEntity();
         testMetadata.setIsbn13("9781234567890");
@@ -77,6 +84,7 @@ class HardcoverSyncServiceTest {
         appSettings.setMetadataProviderSettings(metadataSettings);
 
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
+        when(bookRepository.findById(TEST_BOOK_ID)).thenReturn(Optional.of(testBook));
         
         // Setup RestClient mock chain - handles multiple calls
         when(restClient.post()).thenReturn(requestBodyUriSpec);
@@ -93,7 +101,7 @@ class HardcoverSyncServiceTest {
     void syncProgressToHardcover_whenHardcoverDisabled_shouldSkip() {
         hardcoverSettings.setEnabled(false);
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -103,7 +111,7 @@ class HardcoverSyncServiceTest {
     void syncProgressToHardcover_whenApiKeyMissing_shouldSkip() {
         hardcoverSettings.setApiKey(null);
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -113,7 +121,7 @@ class HardcoverSyncServiceTest {
     void syncProgressToHardcover_whenApiKeyBlank_shouldSkip() {
         hardcoverSettings.setApiKey("   ");
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -121,7 +129,17 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when progress is null")
     void syncProgressToHardcover_whenProgressNull_shouldSkip() {
-        service.syncProgressToHardcover(testBook, null);
+        service.syncProgressToHardcover(TEST_BOOK_ID, null);
+
+        verify(restClient, never()).post();
+    }
+
+    @Test
+    @DisplayName("Should skip sync when book not found")
+    void syncProgressToHardcover_whenBookNotFound_shouldSkip() {
+        when(bookRepository.findById(TEST_BOOK_ID)).thenReturn(Optional.empty());
+
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -131,7 +149,7 @@ class HardcoverSyncServiceTest {
     void syncProgressToHardcover_whenNoMetadata_shouldSkip() {
         testBook.setMetadata(null);
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -142,7 +160,7 @@ class HardcoverSyncServiceTest {
         testMetadata.setIsbn13(null);
         testMetadata.setIsbn10(null);
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, never()).post();
     }
@@ -155,13 +173,13 @@ class HardcoverSyncServiceTest {
         testMetadata.setHardcoverBookId(12345);
         testMetadata.setPageCount(300);
 
-        // Mock successful responses for the chain: insert_user_book -> find_user_book_read -> insert_user_book_read
+        // Mock successful responses for the chain
         when(responseSpec.body(Map.class))
                 .thenReturn(createInsertUserBookResponse(5001, null))
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         // Verify API was called at least once (using stored ID, no search needed)
         verify(restClient, atLeastOnce()).post();
@@ -170,14 +188,14 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should search by ISBN when hardcoverBookId is not stored")
     void syncProgressToHardcover_withoutStoredBookId_shouldSearchByIsbn() {
-        // Mock successful responses for the chain: search -> insert_user_book -> find_user_book_read -> insert_user_book_read
+        // Mock successful responses for the chain
         when(responseSpec.body(Map.class))
                 .thenReturn(createSearchResponse(12345, 300))
                 .thenReturn(createInsertUserBookResponse(5001, null))
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         // Verify API was called at least once
         verify(restClient, atLeastOnce()).post();
@@ -185,11 +203,11 @@ class HardcoverSyncServiceTest {
 
     @Test
     @DisplayName("Should skip further processing when book not found on Hardcover")
-    void syncProgressToHardcover_whenBookNotFound_shouldSkipAfterSearch() {
+    void syncProgressToHardcover_whenBookNotFoundOnHardcover_shouldSkipAfterSearch() {
         // Mock: search returns empty results
         when(responseSpec.body(Map.class)).thenReturn(createEmptySearchResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         // Should call search only
         verify(restClient, times(1)).post();
@@ -206,7 +224,7 @@ class HardcoverSyncServiceTest {
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 99.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 99.0f);
 
         verify(restClient, atLeastOnce()).post();
     }
@@ -222,7 +240,7 @@ class HardcoverSyncServiceTest {
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, atLeastOnce()).post();
     }
@@ -239,7 +257,7 @@ class HardcoverSyncServiceTest {
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, atLeastOnce()).post();
     }
@@ -255,7 +273,7 @@ class HardcoverSyncServiceTest {
                 .thenReturn(createFindUserBookReadResponse(6001))
                 .thenReturn(createUpdateUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, atLeastOnce()).post();
     }
@@ -272,7 +290,7 @@ class HardcoverSyncServiceTest {
                 .thenReturn(createEmptyUserBookReadsResponse())
                 .thenReturn(createInsertUserBookReadResponse());
 
-        service.syncProgressToHardcover(testBook, 50.0f);
+        service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f);
 
         verify(restClient, atLeastOnce()).post();
     }
@@ -286,7 +304,7 @@ class HardcoverSyncServiceTest {
 
         when(responseSpec.body(Map.class)).thenReturn(Map.of("errors", List.of(Map.of("message", "Unauthorized"))));
 
-        assertDoesNotThrow(() -> service.syncProgressToHardcover(testBook, 50.0f));
+        assertDoesNotThrow(() -> service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f));
     }
 
     @Test
@@ -296,7 +314,7 @@ class HardcoverSyncServiceTest {
 
         when(responseSpec.body(Map.class)).thenReturn(null);
 
-        assertDoesNotThrow(() -> service.syncProgressToHardcover(testBook, 50.0f));
+        assertDoesNotThrow(() -> service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f));
     }
 
     // === Helper methods to create mock responses ===

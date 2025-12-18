@@ -172,7 +172,7 @@ public class KoboReadingStateService {
             log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
             
             // Sync progress to Hardcover asynchronously (if enabled)
-            hardcoverSyncService.syncProgressToHardcover(book, progress.getKoboProgressPercent());
+            hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent());
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
