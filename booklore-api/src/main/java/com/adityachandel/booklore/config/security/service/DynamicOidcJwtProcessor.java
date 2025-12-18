@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 @Slf4j
 @Component
@@ -75,20 +74,22 @@ public class DynamicOidcJwtProcessor {
     
     private volatile boolean healthCheckCompleted = false;
 
-    private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
-    private volatile String currentIssuerUri;
-    private volatile String currentClientId;
+    private record OidcConfig(
+        ConfigurableJWTProcessor<SecurityContext> processor,
+        String issuerUri,
+        String clientId,
+        Cache<String, Boolean> replayCache
+    ) {}
 
-    // Cache for JWT IDs to prevent token replay attacks
-    private volatile Cache<String, Boolean> usedTokenCache;
-    private final Object cacheInitLock = new Object();
-
-    // Read-write lock for thread-safe configuration changes and concurrent token processing
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final ReentrantReadWriteLock.ReadLock readLock = lock.readLock();
-    private final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    private volatile OidcConfig currentConfig;
+    
+    private final Object configUpdateLock = new Object();
 
     public ConfigurableJWTProcessor<SecurityContext> getProcessor() throws Exception {
+        return getUpToDateConfig().processor();
+    }
+
+    private OidcConfig getUpToDateConfig() throws Exception {
         var appSettings = appSettingService.getAppSettings();
         OidcProviderDetails providerDetails = appSettings.getOidcProviderDetails();
 
@@ -104,36 +105,61 @@ public class DynamicOidcJwtProcessor {
         }
         String clientId = providerDetails.getClientId();
 
-        ConfigurableJWTProcessor<SecurityContext> localRef = jwtProcessor;
-        
-        if (localRef == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-            
-            log.debug("OIDC configuration change detected. Fetching new configuration...");
-            
-            // 1. Perform heavy network operation OUTSIDE the lock
-            // This prevents blocking all auth threads if the IdP is slow
-            ConfigurableJWTProcessor<SecurityContext> newProcessor = buildProcessor(providerDetails, normalizedIssuerUri);
-
-            // 2. Acquire write lock only to swap the reference
-            writeLock.lock();
-            try {
-                // 3. Double-check: Did another thread update it while we were building?
-                if (this.jwtProcessor == null || !Objects.equals(normalizedIssuerUri, currentIssuerUri) || !Objects.equals(clientId, currentClientId)) {
-                    this.jwtProcessor = newProcessor;
-                    this.currentIssuerUri = normalizedIssuerUri;
-                    this.currentClientId = clientId;
-                    localRef = this.jwtProcessor;
-                    log.info("OIDC Processor updated successfully.");
-                } else {
-                    // Another thread beat us to it. Use the already updated one.
-                    localRef = this.jwtProcessor;
-                    log.debug("OIDC configuration already updated by another thread. Discarding redundant build.");
-                }
-            } finally {
-                writeLock.unlock();
-            }
+        OidcConfig config = currentConfig;
+        if (isConfigValid(config, normalizedIssuerUri, clientId)) {
+            return config;
         }
-        return localRef;
+
+        return rebuildConfiguration(providerDetails, normalizedIssuerUri, clientId);
+    }
+
+    private boolean isConfigValid(OidcConfig config, String issuerUri, String clientId) {
+        return config != null &&
+               Objects.equals(issuerUri, config.issuerUri()) &&
+               Objects.equals(clientId, config.clientId());
+    }
+
+    private OidcConfig rebuildConfiguration(
+            OidcProviderDetails providerDetails,
+            String normalizedIssuerUri,
+            String clientId) throws Exception {
+
+        log.debug("OIDC configuration change detected. Fetching new configuration...");
+
+        // 1. Heavy network I/O outside lock
+        ConfigurableJWTProcessor<SecurityContext> newProcessor = 
+            buildProcessor(providerDetails, normalizedIssuerUri);
+
+        // 2. Quick atomic swap
+        synchronized (configUpdateLock) {
+            OidcConfig config = currentConfig;
+            
+            // Double-check: another thread may have updated
+            if (!isConfigValid(config, normalizedIssuerUri, clientId)) {
+                Cache<String, Boolean> replayCache = (config != null) 
+                    ? config.replayCache() 
+                    : buildReplayCache();
+                    
+                currentConfig = new OidcConfig(
+                    newProcessor, 
+                    normalizedIssuerUri, 
+                    clientId,
+                    replayCache
+                );
+                log.info("OIDC configuration updated for issuer: {}", normalizedIssuerUri);
+            } else {
+                 log.debug("OIDC configuration already updated by another thread. Discarding redundant build.");
+            }
+            
+            return currentConfig;
+        }
+    }
+
+    private Cache<String, Boolean> buildReplayCache() {
+        return Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofHours(2))
+            .maximumSize(oidcProperties.jwt().replayCacheSize())
+            .build();
     }
 
     private void logTokenMetadata(String token) throws BadJWTException {
@@ -198,16 +224,15 @@ public class DynamicOidcJwtProcessor {
     public JWTClaimsSet process(String token) throws Exception {
         logTokenMetadata(token);
 
-        ConfigurableJWTProcessor<SecurityContext> processor = getProcessor();
-        readLock.lock();
+        OidcConfig config = getUpToDateConfig();
+        JWTClaimsSet claimsSet;
         try {
-            JWTClaimsSet claimsSet;
             try {
-                claimsSet = processor.process(token, null);
+                claimsSet = config.processor().process(token, null);
             } catch (BadJOSEException e) {
                 if (e.getMessage() != null && e.getMessage().contains("Another algorithm expected")) {
                     log.warn("ALGORITHM MISMATCH DETECTED: Token algorithm doesn't match JWKS key types. Attempting dynamic fallback...");
-                    claimsSet = handleAlgorithmMismatch(token, e);
+                    claimsSet = handleAlgorithmMismatch(token, e, config.issuerUri());
                 } else {
                     throw e;
                 }
@@ -216,22 +241,8 @@ public class DynamicOidcJwtProcessor {
             if (oidcProperties.jwt().enableReplayPrevention()) {
                 String jti = claimsSet.getJWTID();
                 if (jti != null && !jti.isEmpty()) {
-                    Cache<String, Boolean> localCache = usedTokenCache;
-                    if (localCache == null) {
-                        synchronized (cacheInitLock) {
-                            localCache = usedTokenCache;
-                            if (localCache == null) {
-                                usedTokenCache = Caffeine.newBuilder()
-                                    .expireAfterWrite(Duration.ofHours(2)) // Tokens typically expire within 1h
-                                    .maximumSize(oidcProperties.jwt().replayCacheSize())
-                                    .build();
-                                localCache = usedTokenCache;
-                                log.info("Initialized JWT replay prevention cache (size: {}, TTL: 2h)",
-                                    oidcProperties.jwt().replayCacheSize());
-                            }
-                        }
-                    }
-
+                    Cache<String, Boolean> localCache = config.replayCache();
+                    
                     Boolean previous = localCache.asMap().putIfAbsent(jti, Boolean.TRUE);
                     if (previous == null) {
                         log.debug("Token JTI '{}' cached to prevent replay", jti);
@@ -251,9 +262,9 @@ public class DynamicOidcJwtProcessor {
 
             String msg = e.getMessage();
             if (msg.contains("Issuer")) {
-                log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", currentIssuerUri);
+                log.error("Issuer Mismatch Hint: Configured='{}' vs Token Claim. Check trailing slashes or http/https.", config.issuerUri());
             } else if (msg.contains("Audience")) {
-                log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", currentClientId);
+                log.error("Audience Mismatch Hint: Configured ClientID='{}'. Ensure your OIDC provider maps this Client ID to the 'aud' claim.", config.clientId());
             } else if (msg.contains("Expired JWT")) {
                 log.error("Token Expired Hint: The token is no longer valid. If this happens immediately after login, check if the server time is synchronized with the OIDC provider.");
             } else if (msg.contains("nbf") || msg.contains("Not Before")) {
@@ -263,8 +274,6 @@ public class DynamicOidcJwtProcessor {
         } catch (Exception e) {
             log.error("Unexpected error processing JWT: {}", e.getMessage(), e);
             throw e;
-        } finally {
-            readLock.unlock();
         }
     }
 
@@ -272,7 +281,7 @@ public class DynamicOidcJwtProcessor {
      * Handles JWT algorithm mismatch by attempting to process tokens with algorithms not in JWKS.
      * This is a fallback for providers (like Authentik, Authelia) that may sign with HS256 but advertise RSA keys.
      */
-    private JWTClaimsSet handleAlgorithmMismatch(String token, BadJOSEException originalException) throws Exception {
+    private JWTClaimsSet handleAlgorithmMismatch(String token, BadJOSEException originalException, String issuerUri) throws Exception {
         if (!oidcProperties.allowUnsafeAlgorithmFallback()) {
             throw originalException;
         }
@@ -297,7 +306,7 @@ public class DynamicOidcJwtProcessor {
             }
             
             log.info("Update IdP configuration at issuer='{}' to sign tokens with RS256 algorithm " +
-                    "matching the public keys in JWKS endpoint.", currentIssuerUri);
+                    "matching the public keys in JWKS endpoint.", issuerUri);
             log.info("See docs/OIDC-PROVIDER-CONFIG.md for step-by-step configuration guides (Authentik, Authelia, Keycloak).");
             
         } catch (Exception parseEx) {
@@ -425,7 +434,7 @@ public class DynamicOidcJwtProcessor {
             @Override
             public void verify(JWTClaimsSet claimsSet, SecurityContext ctx) throws BadJWTException {
                 String originalIssuer = claimsSet.getIssuer();
-                String actualIssuer = normalizeIssuer(originalIssuer);
+                String actualIssuer = normalizeIssuer(originalIssuer, normalizedIssuerUri);
                 log.debug("Issuer comparison - Token original: '{}', Token normalized: '{}', Expected: '{}'",
                          originalIssuer, actualIssuer, normalizedIssuerUri);
 
@@ -725,19 +734,19 @@ public class DynamicOidcJwtProcessor {
         throw new BadJWTException("JWT audience mismatch: expected audience, azp, or appid to match client ID '" + clientId + "'");
     }
 
-    private String normalizeIssuer(String issuer) {
+    private String normalizeIssuer(String issuer, String targetConfigIssuerUri) {
         if (issuer == null) return null;
 
         String normalizeIssuerUri = normalizeIssuerUri(issuer);
 
         if (!oidcProperties.allowIssuerProtocolMismatch()
-                || this.currentIssuerUri == null) {
+                || targetConfigIssuerUri == null) {
             return normalizeIssuerUri;
         }
-        if (isProtocolUpgrade(normalizeIssuerUri, this.currentIssuerUri)) {
+        if (isProtocolUpgrade(normalizeIssuerUri, targetConfigIssuerUri)) {
             log.warn("JWT issuer protocol upgrade detected. Issuer: {}, Config: {}. " +
                     "Upgrading to HTTPS due to allowIssuerProtocolMismatch=true.",
-                    normalizeIssuerUri, this.currentIssuerUri);
+                    normalizeIssuerUri, targetConfigIssuerUri);
             return normalizeIssuerUri.replace("http://", "https://");
         }
 
