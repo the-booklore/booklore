@@ -161,8 +161,8 @@ public class MetadataController {
     @PostMapping("/bulk-regenerate-covers")
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> regenerateCoversForBooks(
-            @Parameter(description = "List of book IDs") @RequestBody Map<String, java.util.Set<Long>> body) {
-        bookMetadataService.regenerateCoversForBooks(body.get("bookIds"));
+            @Parameter(description = "List of book IDs") @Validated @RequestBody BulkBookIdsRequest request) {
+        bookMetadataService.regenerateCoversForBooks(request.getBookIds());
         return ResponseEntity.noContent().build();
     }
 
@@ -172,7 +172,7 @@ public class MetadataController {
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> bulkUploadCover(
             @Parameter(description = "Cover image file") @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") java.util.Set<Long> bookIds) {
+            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @jakarta.validation.constraints.NotEmpty java.util.Set<Long> bookIds) {
         bookMetadataService.updateCoverImageFromFileForBooks(bookIds, file);
         return ResponseEntity.noContent().build();
     }

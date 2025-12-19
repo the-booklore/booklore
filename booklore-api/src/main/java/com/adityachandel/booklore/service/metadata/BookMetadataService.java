@@ -58,6 +58,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class BookMetadataService {
 
+    private static final int BATCH_SIZE = 100;
+
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
     private final BookMetadataMapper bookMetadataMapper;
@@ -159,11 +161,26 @@ public class BookMetadataService {
     }
 
     public void updateCoverImageFromFileForBooks(Set<Long> bookIds, MultipartFile file) {
+        validateCoverFile(file);
         byte[] coverImageBytes = extractBytesFromMultipartFile(file);
         List<BookCoverInfo> unlockedBooks = getUnlockedBookCoverInfos(bookIds);
 
         SecurityContextVirtualThread.runWithSecurityContext(() -> 
             processBulkCoverUpdate(unlockedBooks, coverImageBytes));
+    }
+
+    private void validateCoverFile(MultipartFile file) {
+        if (file.isEmpty()) {
+            throw ApiError.INVALID_INPUT.createException("Uploaded file is empty");
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || (!contentType.toLowerCase().startsWith("image/jpeg") && !contentType.toLowerCase().startsWith("image/png"))) {
+            throw ApiError.INVALID_INPUT.createException("Only JPEG and PNG files are allowed");
+        }
+        long maxFileSize = 5L * 1024 * 1024;
+        if (file.getSize() > maxFileSize) {
+            throw ApiError.FILE_TOO_LARGE.createException(5);
+        }
     }
 
     private byte[] extractBytesFromMultipartFile(MultipartFile file) {
@@ -193,17 +210,18 @@ public class BookMetadataService {
             int total = books.size();
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Started updating covers for " + total + " selected book(s)"));
 
-            int[] current = {1};
+            int current = 1;
             for (BookCoverInfo bookInfo : books) {
                 try {
-                    String progress = "(" + current[0] + "/" + total + ") ";
+                    String progress = "(" + current + "/" + total + ") ";
                     notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Updating cover for: " + bookInfo.title()));
                     fileService.createThumbnailFromBytes(bookInfo.id(), coverImageBytes);
                     log.info("{}Successfully updated cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
                 } catch (Exception e) {
                     log.error("Failed to update cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
                 }
-                current[0]++;
+                pauseAfterBatchIfNeeded(current, total);
+                current++;
             }
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished updating covers for selected books"));
         } catch (Exception e) {
@@ -265,22 +283,35 @@ public class BookMetadataService {
             int total = books.size();
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " selected book(s)"));
 
-            int[] current = {1};
+            int current = 1;
             for (BookRegenerationInfo bookInfo : books) {
                 try {
-                    String progress = "(" + current[0] + "/" + total + ") ";
+                    String progress = "(" + current + "/" + total + ") ";
                     notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + bookInfo.title()));
                     regenerateCoverForBookId(bookInfo);
                     log.info("{}Successfully regenerated cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
                 } catch (Exception e) {
-                    log.error("Failed to regenerate cover for book ID {}: {}", bookInfo.id(), e.getMessage());
+                    log.error("Failed to regenerate cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
                 }
-                current[0]++;
+                pauseAfterBatchIfNeeded(current, total);
+                current++;
             }
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers for selected books"));
         } catch (Exception e) {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
             notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
+        }
+    }
+
+    private void pauseAfterBatchIfNeeded(int current, int total) {
+        if (current % BATCH_SIZE == 0 && current < total) {
+            try {
+                log.info("Processed {} items, pausing briefly before next batch...", current);
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.warn("Batch pause interrupted");
+            }
         }
     }
 
@@ -300,15 +331,15 @@ public class BookMetadataService {
                 int total = books.size();
                 notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " books"));
 
-                int[] current = {1};
+                int current = 1;
                 for (BookEntity book : books) {
                     try {
-                        String progress = "(" + current[0] + "/" + total + ") ";
+                        String progress = "(" + current + "/" + total + ") ";
                         regenerateCoverForBook(book, progress);
                     } catch (Exception e) {
-                        log.error("Failed to regenerate cover for book ID {}: {}", book.getId(), e.getMessage());
+                        log.error("Failed to regenerate cover for book ID {}: {}", book.getId(), e.getMessage(), e);
                     }
-                    current[0]++;
+                    current++;
                 }
                 notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers"));
             } catch (Exception e) {
