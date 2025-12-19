@@ -2,7 +2,9 @@ package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.settings.CoverCroppingSettings;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
@@ -38,6 +40,10 @@ public class FileService {
 
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
+    private final AppSettingService appSettingService;
+
+    // Target aspect ratio for cropped covers (standard book cover ~2:3)
+    private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -241,6 +247,7 @@ public class FileService {
 
     public boolean saveCoverImages(BufferedImage coverImage, long bookId) throws IOException {
         BufferedImage rgbImage = null;
+        BufferedImage cropped = null;
         BufferedImage resized = null;
         BufferedImage thumb = null;
         try {
@@ -259,6 +266,12 @@ public class FileService {
             g.drawImage(coverImage, 0, 0, Color.WHITE, null);
             g.dispose();
             // Note: coverImage is not flushed here - caller is responsible for its lifecycle
+
+            cropped = applyCoverCropping(rgbImage);
+            if (cropped != rgbImage) {
+                rgbImage.flush();
+                rgbImage = cropped;
+            }
 
             // Resize original image if too large to prevent OOM
             double scale = Math.min(
@@ -281,9 +294,12 @@ public class FileService {
             return originalSaved && thumbnailSaved;
         } finally {
             // Cleanup resources created within this method
-            // Note: resized may equal rgbImage after reassignment, avoid double-flush
+            // Note: cropped/resized may equal rgbImage after reassignment, avoid double-flush
             if (rgbImage != null) {
                 rgbImage.flush();
+            }
+            if (cropped != null && cropped != rgbImage) {
+                cropped.flush();
             }
             if (resized != null && resized != rgbImage) {
                 resized.flush();
@@ -292,6 +308,45 @@ public class FileService {
                 thumb.flush();
             }
         }
+    }
+
+    private BufferedImage applyCoverCropping(BufferedImage image) {
+        CoverCroppingSettings settings = appSettingService.getAppSettings().getCoverCroppingSettings();
+        if (settings == null) {
+            return image;
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+        double heightToWidthRatio = (double) height / width;
+        double widthToHeightRatio = (double) width / height;
+        double threshold = settings.getAspectRatioThreshold();
+
+        boolean isExtremelyTall = settings.isVerticalCroppingEnabled() && heightToWidthRatio > threshold;
+        if (isExtremelyTall) {
+            int croppedHeight = (int) (width * TARGET_COVER_ASPECT_RATIO);
+            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}", 
+                    width, height, String.format("%.2f", heightToWidthRatio), width, croppedHeight);
+            return cropFromTop(image, width, croppedHeight);
+        }
+
+        boolean isExtremelyWide = settings.isHorizontalCroppingEnabled() && widthToHeightRatio > threshold;
+        if (isExtremelyWide) {
+            int croppedWidth = (int) (height / TARGET_COVER_ASPECT_RATIO);
+            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}", 
+                    width, height, String.format("%.2f", widthToHeightRatio), croppedWidth, height);
+            return cropFromLeft(image, croppedWidth, height);
+        }
+
+        return image;
+    }
+
+    private BufferedImage cropFromTop(BufferedImage image, int targetWidth, int targetHeight) {
+        return image.getSubimage(0, 0, targetWidth, targetHeight);
+    }
+
+    private BufferedImage cropFromLeft(BufferedImage image, int targetWidth, int targetHeight) {
+        return image.getSubimage(0, 0, targetWidth, targetHeight);
     }
 
     public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {

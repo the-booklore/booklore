@@ -259,4 +259,12 @@ public class SettingPersistenceHelper {
                 .forceEnableHyphenation(false)
                 .build();
     }
+
+    public CoverCroppingSettings getDefaultCoverCroppingSettings() {
+        return CoverCroppingSettings.builder()
+                .verticalCroppingEnabled(false)
+                .horizontalCroppingEnabled(false)
+                .aspectRatioThreshold(2.5)
+                .build();
+    }
 }
