@@ -128,7 +128,7 @@ public class PathPatternResolver {
         // Handle optional blocks enclosed in <...>
         Pattern optionalBlockPattern = Pattern.compile("<([^<>]*)>");
         Matcher matcher = optionalBlockPattern.matcher(pattern);
-        StringBuilder resolved = new StringBuilder();
+        StringBuilder resolved = new StringBuilder(1024);
 
         while (matcher.find()) {
             String block = matcher.group(1);
@@ -161,7 +161,7 @@ public class PathPatternResolver {
 
         // Replace known placeholders with values, preserve unknown ones
         Matcher placeholderMatcher = PLACEHOLDER_PATTERN.matcher(result);
-        StringBuilder finalResult = new StringBuilder();
+        StringBuilder finalResult = new StringBuilder(1024);
 
         while (placeholderMatcher.find()) {
             String key = placeholderMatcher.group(1);
@@ -210,7 +210,7 @@ public class PathPatternResolver {
         }
 
         String[] authorArray = COMMA_SPACE_PATTERN.split(authors);
-        StringBuilder result = new StringBuilder();
+        StringBuilder result = new StringBuilder(256);
         int currentBytes = 0;
         int truncationLimit = MAX_AUTHOR_BYTES - SUFFIX_BYTES;
 
@@ -265,7 +265,7 @@ public class PathPatternResolver {
 
     private String validateFinalPath(String path) {
         String[] components = SLASH_PATTERN.split(path);
-        StringBuilder result = new StringBuilder();
+        StringBuilder result = new StringBuilder(512);
 
         for (int i = 0; i < components.length; i++) {
             String component = components[i];
@@ -277,7 +277,7 @@ public class PathPatternResolver {
                 if (component.getBytes(StandardCharsets.UTF_8).length > MAX_FILESYSTEM_COMPONENT_BYTES) {
                     component = truncatePathComponent(component, MAX_FILESYSTEM_COMPONENT_BYTES);
                 }
-                while (component.endsWith(".")) {
+                while (component != null && !component.isEmpty() && component.endsWith(".")) {
                     component = component.substring(0, component.length() - 1);
                 }
             }
