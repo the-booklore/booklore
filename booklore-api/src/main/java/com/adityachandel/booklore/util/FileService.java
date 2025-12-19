@@ -42,8 +42,9 @@ public class FileService {
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
 
-    // Target aspect ratio for cropped covers (standard book cover ~2:3)
     private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
+    private static final int SMART_CROP_COLOR_TOLERANCE = 30;
+    private static final double SMART_CROP_MARGIN_PERCENT = 0.02;
 
     // @formatter:off
     private static final String IMAGES_DIR          = "images";
@@ -321,32 +322,97 @@ public class FileService {
         double heightToWidthRatio = (double) height / width;
         double widthToHeightRatio = (double) width / height;
         double threshold = settings.getAspectRatioThreshold();
+        boolean smartCrop = settings.isSmartCroppingEnabled();
 
         boolean isExtremelyTall = settings.isVerticalCroppingEnabled() && heightToWidthRatio > threshold;
         if (isExtremelyTall) {
             int croppedHeight = (int) (width * TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}", 
-                    width, height, String.format("%.2f", heightToWidthRatio), width, croppedHeight);
-            return cropFromTop(image, width, croppedHeight);
+            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+                    width, height, String.format("%.2f", heightToWidthRatio), width, croppedHeight, smartCrop);
+            return cropFromTop(image, width, croppedHeight, smartCrop);
         }
 
         boolean isExtremelyWide = settings.isHorizontalCroppingEnabled() && widthToHeightRatio > threshold;
         if (isExtremelyWide) {
             int croppedWidth = (int) (height / TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}", 
-                    width, height, String.format("%.2f", widthToHeightRatio), croppedWidth, height);
-            return cropFromLeft(image, croppedWidth, height);
+            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+                    width, height, String.format("%.2f", widthToHeightRatio), croppedWidth, height, smartCrop);
+            return cropFromLeft(image, croppedWidth, height, smartCrop);
         }
 
         return image;
     }
 
-    private BufferedImage cropFromTop(BufferedImage image, int targetWidth, int targetHeight) {
-        return image.getSubimage(0, 0, targetWidth, targetHeight);
+    private BufferedImage cropFromTop(BufferedImage image, int targetWidth, int targetHeight, boolean smartCrop) {
+        int startY = 0;
+        if (smartCrop) {
+            int contentStartY = findContentStartY(image);
+            int margin = (int) (targetHeight * SMART_CROP_MARGIN_PERCENT);
+            startY = Math.max(0, contentStartY - margin);
+            
+            int maxStartY = image.getHeight() - targetHeight;
+            startY = Math.min(startY, maxStartY);
+        }
+        return image.getSubimage(0, startY, targetWidth, targetHeight);
     }
 
-    private BufferedImage cropFromLeft(BufferedImage image, int targetWidth, int targetHeight) {
-        return image.getSubimage(0, 0, targetWidth, targetHeight);
+    private BufferedImage cropFromLeft(BufferedImage image, int targetWidth, int targetHeight, boolean smartCrop) {
+        int startX = 0;
+        if (smartCrop) {
+            int contentStartX = findContentStartX(image);
+            int margin = (int) (targetWidth * SMART_CROP_MARGIN_PERCENT);
+            startX = Math.max(0, contentStartX - margin);
+            
+            int maxStartX = image.getWidth() - targetWidth;
+            startX = Math.min(startX, maxStartX);
+        }
+        return image.getSubimage(startX, 0, targetWidth, targetHeight);
+    }
+
+    private int findContentStartY(BufferedImage image) {
+        for (int y = 0; y < image.getHeight(); y++) {
+            if (!isRowUniformColor(image, y)) {
+                return y;
+            }
+        }
+        return 0;
+    }
+
+    private int findContentStartX(BufferedImage image) {
+        for (int x = 0; x < image.getWidth(); x++) {
+            if (!isColumnUniformColor(image, x)) {
+                return x;
+            }
+        }
+        return 0;
+    }
+
+    private boolean isRowUniformColor(BufferedImage image, int y) {
+        int firstPixel = image.getRGB(0, y);
+        for (int x = 1; x < image.getWidth(); x++) {
+            if (!colorsAreSimilar(firstPixel, image.getRGB(x, y))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isColumnUniformColor(BufferedImage image, int x) {
+        int firstPixel = image.getRGB(x, 0);
+        for (int y = 1; y < image.getHeight(); y++) {
+            if (!colorsAreSimilar(firstPixel, image.getRGB(x, y))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean colorsAreSimilar(int rgb1, int rgb2) {
+        int r1 = (rgb1 >> 16) & 0xFF, g1 = (rgb1 >> 8) & 0xFF, b1 = rgb1 & 0xFF;
+        int r2 = (rgb2 >> 16) & 0xFF, g2 = (rgb2 >> 8) & 0xFF, b2 = rgb2 & 0xFF;
+        return Math.abs(r1 - r2) <= SMART_CROP_COLOR_TOLERANCE
+            && Math.abs(g1 - g2) <= SMART_CROP_COLOR_TOLERANCE
+            && Math.abs(b1 - b2) <= SMART_CROP_COLOR_TOLERANCE;
     }
 
     public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {

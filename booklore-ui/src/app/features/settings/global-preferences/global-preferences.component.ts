@@ -35,7 +35,8 @@ export class GlobalPreferencesComponent implements OnInit {
   coverCroppingSettings: CoverCroppingSettings = {
     verticalCroppingEnabled: false,
     horizontalCroppingEnabled: false,
-    aspectRatioThreshold: 2.5
+    aspectRatioThreshold: 2.5,
+    smartCroppingEnabled: false
   };
 
   private appSettingsService = inject(AppSettingsService);

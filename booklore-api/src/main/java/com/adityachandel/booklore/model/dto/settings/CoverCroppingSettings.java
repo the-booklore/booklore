@@ -9,4 +9,5 @@ public class CoverCroppingSettings {
     private boolean verticalCroppingEnabled;
     private boolean horizontalCroppingEnabled;
     private double aspectRatioThreshold;
+    private boolean smartCroppingEnabled;
 }

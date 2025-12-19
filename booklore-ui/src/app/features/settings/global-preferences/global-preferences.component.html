@@ -91,6 +91,22 @@
             </p>
           </div>
         </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">Smart Cropping</label>
+              <p-toggleswitch
+                [(ngModel)]="coverCroppingSettings.smartCroppingEnabled"
+                (onChange)="onCoverCroppingChange()">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              Skip uniform colour regions when determining where to crop. Focuses the cover image on the most relevant content.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 

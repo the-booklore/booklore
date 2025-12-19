@@ -112,6 +112,7 @@ export interface CoverCroppingSettings {
   verticalCroppingEnabled: boolean;
   horizontalCroppingEnabled: boolean;
   aspectRatioThreshold: number;
+  smartCroppingEnabled: boolean;
 }
 
 export interface AppSettings {

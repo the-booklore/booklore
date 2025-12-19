@@ -265,6 +265,7 @@ public class SettingPersistenceHelper {
                 .verticalCroppingEnabled(false)
                 .horizontalCroppingEnabled(false)
                 .aspectRatioThreshold(2.5)
+                .smartCroppingEnabled(false)
                 .build();
     }
 }
