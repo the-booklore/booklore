@@ -608,6 +608,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
           detail: 'Bookmark updated successfully',
         });
         this.showEditBookmarkDialog = false;
+        this.editingBookmark = null; // Reset the editing bookmark after successful save
         this.isEditingBookmark = false;
       },
       error: () => {
@@ -616,6 +617,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
           summary: 'Error',
           detail: 'Failed to update bookmark',
         });
+        this.showEditBookmarkDialog = false;
+        this.editingBookmark = null; // Reset the editing bookmark even on error
         this.isEditingBookmark = false;
       }
     });
@@ -623,6 +626,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   onBookmarkCancel(): void {
     this.showEditBookmarkDialog = false;
+    this.editingBookmark = null; // Reset the editing bookmark when dialog is cancelled
   }
 
   updateBookmarkPosition(bookmarkId: number): void {

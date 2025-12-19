@@ -38,8 +38,9 @@ export interface BookmarkFormData {
       [draggable]="false"
       [resizable]="false"
       [closeOnEscape]="true"
+      [appendTo]="'body'"
       header="Edit Bookmark"
-      (onHide)="onCancel()">
+      (onHide)="onDialogHide()">
 
       <div class="p-4" *ngIf="formData">
         <div class="field mb-4">
@@ -135,7 +136,7 @@ export class BookmarkEditDialogComponent implements OnChanges {
   
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() save = new EventEmitter<UpdateBookMarkRequest>();
-  @Output() cancel = new EventEmitter<void>();
+  @Output() cancelEdit = new EventEmitter<void>();
 
   formData: BookmarkFormData | null = null;
   titleError = false;
@@ -161,7 +162,7 @@ export class BookmarkEditDialogComponent implements OnChanges {
     }
 
     const request: UpdateBookMarkRequest = {
-      title: this.formData.title || undefined,
+      title: this.formData.title.trim(),
       color: this.formData.color || undefined,
       notes: this.formData.notes || undefined,
       priority: this.formData.priority ?? undefined
@@ -170,10 +171,15 @@ export class BookmarkEditDialogComponent implements OnChanges {
     this.save.emit(request);
   }
 
+  onDialogHide(): void {
+    // When dialog is closed via X button, treat it as cancel
+    this.onCancel();
+  }
+
   onCancel(): void {
     this.formData = null;  // Clear form data
     this.visible = false;
     this.visibleChange.emit(false);
-    this.cancel.emit();
+    this.cancelEdit.emit();
   }
 }
