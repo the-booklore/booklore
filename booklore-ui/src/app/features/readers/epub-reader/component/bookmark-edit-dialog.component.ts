@@ -86,7 +86,7 @@ export interface BookmarkFormData {
             placeholder="Add notes about this bookmark"
             [maxlength]="2000">
           </textarea>
-          <small class="text-muted">{{ formData.notes?.length || 0 }}/2000</small>
+          <small class="text-muted">{{ formData.notes.length || 0 }}/2000</small>
         </div>
 
         <div class="field mb-4">
