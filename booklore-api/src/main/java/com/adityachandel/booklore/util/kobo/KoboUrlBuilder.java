@@ -70,4 +70,11 @@ public class KoboUrlBuilder {
                 .build()
                 .toUriString();
     }
+
+    public String librarySyncUrl(String token) {
+        return baseBuilder()
+                .pathSegment("api", "kobo", token, "v1", "library", "sync")
+                .build()
+                .toUriString();
+    }
 }
