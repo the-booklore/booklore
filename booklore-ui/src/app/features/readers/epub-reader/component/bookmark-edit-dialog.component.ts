@@ -42,71 +42,75 @@ export interface BookmarkFormData {
       header="Edit Bookmark"
       (onHide)="onDialogHide()">
 
-      <div class="p-4" *ngIf="formData">
-        <div class="field mb-4">
-          <label for="title" class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
-          <input
-            pInputText
-            id="title"
-            type="text"
-            [(ngModel)]="formData.title"
-            class="w-full"
-            [class.ng-invalid]="titleError"
-            [class.ng-dirty]="titleError"
-            placeholder="Enter bookmark title"
-            [maxlength]="255"
-            (ngModelChange)="titleError = false">
-          <small class="text-red-500" *ngIf="titleError">Title is required</small>
-        </div>
+      @if (formData) {
+        <div class="p-4">
+          <div class="field mb-4">
+            <label for="title" class="block text-sm font-medium mb-2">Title <span class="text-red-500">*</span></label>
+            <input
+              pInputText
+              id="title"
+              type="text"
+              [(ngModel)]="formData.title"
+              class="w-full"
+              [class.ng-invalid]="titleError"
+              [class.ng-dirty]="titleError"
+              placeholder="Enter bookmark title"
+              [maxlength]="255"
+              (ngModelChange)="titleError = false">
+            @if (titleError) {
+              <small class="text-red-500">Title is required</small>
+            }
+          </div>
 
-        <div class="field mb-4">
-          <label for="color" class="block text-sm font-medium mb-2">Color</label>
-          <div class="flex align-items-center gap-2">
-            <p-colorPicker 
-              [(ngModel)]="formData.color" 
-              [appendTo]="'body'"
-              format="hex">
-            </p-colorPicker>
-            <input 
-              pInputText 
-              [(ngModel)]="formData.color" 
-              class="w-8rem"
-              placeholder="#000000"
-              pattern="^#[0-9A-Fa-f]{6}$">
+          <div class="field mb-4">
+            <label for="color" class="block text-sm font-medium mb-2">Color</label>
+            <div class="flex align-items-center gap-2">
+              <p-colorPicker
+                [(ngModel)]="formData.color"
+                [appendTo]="'body'"
+                format="hex">
+              </p-colorPicker>
+              <input
+                pInputText
+                [(ngModel)]="formData.color"
+                class="w-8rem"
+                placeholder="#000000"
+                pattern="^#[0-9A-Fa-f]{6}$">
+            </div>
+          </div>
+
+          <div class="field mb-4">
+            <label for="notes" class="block text-sm font-medium mb-2">Notes</label>
+            <textarea
+              pInputTextarea
+              id="notes"
+              [(ngModel)]="formData.notes"
+              class="w-full"
+              rows="3"
+              placeholder="Add notes about this bookmark"
+              [maxlength]="2000">
+            </textarea>
+            <small class="text-muted">{{ formData.notes.length || 0 }}/2000</small>
+          </div>
+
+          <div class="field mb-4">
+            <label for="priority" class="block text-sm font-medium mb-2">Priority (1-5)</label>
+            <p-inputNumber
+              id="priority"
+              [(ngModel)]="formData.priority"
+              [min]="1"
+              [max]="5"
+              [showButtons]="true"
+              buttonLayout="horizontal"
+              spinnerMode="horizontal"
+              decrementButtonClass="p-button-secondary"
+              incrementButtonClass="p-button-secondary"
+              decrementButtonIcon="pi pi-minus"
+              incrementButtonIcon="pi pi-plus">
+            </p-inputNumber>
           </div>
         </div>
-
-        <div class="field mb-4">
-          <label for="notes" class="block text-sm font-medium mb-2">Notes</label>
-          <textarea
-            pInputTextarea
-            id="notes"
-            [(ngModel)]="formData.notes"
-            class="w-full"
-            rows="3"
-            placeholder="Add notes about this bookmark"
-            [maxlength]="2000">
-          </textarea>
-          <small class="text-muted">{{ formData.notes.length || 0 }}/2000</small>
-        </div>
-
-        <div class="field mb-4">
-          <label for="priority" class="block text-sm font-medium mb-2">Priority (1-5)</label>
-          <p-inputNumber
-            id="priority"
-            [(ngModel)]="formData.priority"
-            [min]="1"
-            [max]="5"
-            [showButtons]="true"
-            buttonLayout="horizontal"
-            spinnerMode="horizontal"
-            decrementButtonClass="p-button-secondary"
-            incrementButtonClass="p-button-secondary"
-            decrementButtonIcon="pi pi-minus"
-            incrementButtonIcon="pi pi-plus">
-          </p-inputNumber>
-        </div>
-      </div>
+      }
 
       <ng-template pTemplate="footer">
         <div class="flex justify-content-between">
@@ -122,7 +126,7 @@ export interface BookmarkFormData {
             icon="pi pi-check"
             (click)="onSave()"
             [loading]="isSaving"
-            [disabled]="isSaving">
+            [disabled]="!formData || isSaving">
           </p-button>
         </div>
       </ng-template>
