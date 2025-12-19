@@ -4,6 +4,7 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.CoverCroppingSettings;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,6 +42,7 @@ public class FileService {
     private final AppProperties appProperties;
     private final RestTemplate restTemplate;
     private final AppSettingService appSettingService;
+    private final BookMetadataRepository bookMetadataRepository;
 
     private static final double TARGET_COVER_ASPECT_RATIO = 1.5;
     private static final int SMART_CROP_COLOR_TOLERANCE = 30;
@@ -231,6 +233,27 @@ public class FileService {
         }
     }
 
+    public void createThumbnailFromBytes(long bookId, byte[] imageBytes) {
+        try {
+            BufferedImage originalImage;
+            try (InputStream inputStream = new java.io.ByteArrayInputStream(imageBytes)) {
+                originalImage = ImageIO.read(inputStream);
+            }
+            if (originalImage == null) {
+                throw ApiError.IMAGE_NOT_FOUND.createException();
+            }
+            boolean success = saveCoverImages(originalImage, bookId);
+            if (!success) {
+                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            }
+            originalImage.flush();
+            log.info("Cover images created and saved from bytes for book ID: {}", bookId);
+        } catch (Exception e) {
+            log.error("An error occurred while creating thumbnail from bytes: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
+        }
+    }
+
     public void createThumbnailFromUrl(long bookId, String imageUrl) {
         try {
             BufferedImage originalImage = downloadImageFromUrl(imageUrl);
@@ -292,6 +315,9 @@ public class FileService {
             File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
             boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
 
+            if (originalSaved && thumbnailSaved) {
+                bookMetadataRepository.updateCoverTimestamp(bookId, Instant.now());
+            }
             return originalSaved && thumbnailSaved;
         } finally {
             // Cleanup resources created within this method

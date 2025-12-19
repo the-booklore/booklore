@@ -4,6 +4,7 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.CoverCroppingSettings;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
+import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,7 +65,7 @@ class FileServiceTest {
                 .build();
         lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
         
-        fileService = new FileService(appProperties, mock(RestTemplate.class), appSettingService);
+        fileService = new FileService(appProperties, mock(RestTemplate.class), appSettingService, mock(BookMetadataRepository.class));
     }
 
     @Nested
@@ -968,7 +969,7 @@ class FileServiceTest {
                     .build();
             lenient().when(appSettingServiceForNetwork.getAppSettings()).thenReturn(appSettings);
             
-            fileService = new FileService(appProperties, restTemplate, appSettingServiceForNetwork);
+            fileService = new FileService(appProperties, restTemplate, appSettingServiceForNetwork, mock(BookMetadataRepository.class));
         }
 
         @Nested
@@ -985,7 +986,7 @@ class FileServiceTest {
 
                 RestTemplate mockRestTemplate = mock(RestTemplate.class);
                 AppSettingService mockAppSettingService = mock(AppSettingService.class);
-                FileService testFileService = new FileService(appProperties, mockRestTemplate, mockAppSettingService);
+                FileService testFileService = new FileService(appProperties, mockRestTemplate, mockAppSettingService, mock(BookMetadataRepository.class));
 
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(imageBytes);
                 when(mockRestTemplate.exchange(
