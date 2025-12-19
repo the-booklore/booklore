@@ -26,17 +26,21 @@
 
 .cover-section {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+  gap: 1rem;
 
   @media (min-width: 768px) {
     justify-content: flex-start;
+    align-items: flex-start;
   }
 }
 
 .cover-wrapper {
   position: relative;
-  width: 175px;
+  width: 250px;
   overflow: hidden;
 
   @media (min-width: 768px) {
@@ -461,6 +465,60 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
+}
+
+::ng-deep .action-divider {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  ::ng-deep .mobile-icon-only .p-button-label {
+    display: none !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only .p-button {
+    min-width: auto !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only.p-splitbutton .p-button-label {
+    display: none !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only.p-splitbutton .p-button {
+    min-width: auto !important;
+    padding: 10px !important;
+  }
+}
+
+.navigation-buttons-desktop {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navigation-buttons-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .navigation-buttons-desktop {
+    display: flex;
+  }
+
+  .navigation-buttons-mobile {
+    display: none;
+  }
 }
 
 .description-section {

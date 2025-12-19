@@ -22,6 +22,7 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {BookNavigationService} from '../../../service/book-navigation.service';
 
 @Component({
   selector: 'app-book-card',
@@ -61,6 +62,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected urlHelper = inject(UrlHelperService);
   private confirmationService = inject(ConfirmationService);
   private bookDialogHelperService = inject(BookDialogHelperService);
+  private bookNavigationService = inject(BookNavigationService);
 
   private userPermissions: any;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
@@ -110,7 +112,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
   get displayTitle(): string | undefined {
     return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
-    // return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata.seriesName : this.book.metadata?.title;
   }
 
   onImageLoad(): void {
@@ -132,7 +133,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   onMenuToggle(event: Event, menu: TieredMenu): void {
     menu.toggle(event);
 
-    // Load additional files if not already loaded and needed
     if (!this.additionalFilesLoaded && !this.isSubMenuLoading && this.needsAdditionalFilesData()) {
       this.isSubMenuLoading = true;
       this.bookService.getBookByIdFromAPI(this.book.id, true).subscribe({
@@ -446,6 +446,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   openBookInfo(book: Book): void {
+    const allBookIds = this.bookNavigationService.getAvailableBookIds();
+    if (allBookIds.length > 0) {
+      this.bookNavigationService.setNavigationContext(allBookIds, book.id);
+    }
+
     if (this.metadataCenterViewMode === 'route') {
       this.router.navigate(['/book', book.id], {
         queryParams: {tab: 'view'}
