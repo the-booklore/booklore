@@ -5,16 +5,29 @@ import {API_CONFIG} from '../../core/config/api-config';
 
 export interface BookMark {
   id: number;
+  userId?: number;
   bookId: number;
   cfi: string;
   title: string;
+  color?: string;
+  notes?: string;
+  priority?: number;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface CreateBookMarkRequest {
   bookId: number;
   cfi: string;
   title?: string;
+}
+
+export interface UpdateBookMarkRequest {
+  title?: string;
+  cfi?: string;
+  color?: string;
+  notes?: string;
+  priority?: number;
 }
 
 @Injectable({
@@ -35,5 +48,8 @@ export class BookMarkService {
 
   deleteBookmark(bookmarkId: number): Observable<void> {
     return this.http.delete<void>(`${this.url}/${bookmarkId}`);
+  }
+  updateBookmark(bookmarkId: number, request: UpdateBookMarkRequest): Observable<BookMark> {
+    return this.http.put<BookMark>(`${this.url}/${bookmarkId}`, request);
   }
 }

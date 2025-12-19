@@ -13,7 +13,7 @@ import {Select} from 'primeng/select';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {MessageService} from 'primeng/api';
-import {BookMarkService, BookMark} from '../../../../shared/service/book-mark.service';
+import {BookMarkService, BookMark, UpdateBookMarkRequest} from '../../../../shared/service/book-mark.service';
 import {Tooltip} from 'primeng/tooltip';
 import {Slider} from 'primeng/slider';
 import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
@@ -21,12 +21,13 @@ import {EpubThemeUtil} from '../epub-theme-util';
 import {RadioButton} from 'primeng/radiobutton';
 import { PageTitleService } from "../../../../shared/service/page-title.service";
 import {Divider} from 'primeng/divider';
+import {BookmarkEditDialogComponent} from './bookmark-edit-dialog.component';
 
 @Component({
   selector: 'app-epub-reader',
   templateUrl: './epub-reader.component.html',
   styleUrls: ['./epub-reader.component.scss'],
-  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, RadioButton, Divider],
+  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, RadioButton, Divider, BookmarkEditDialogComponent],
   standalone: true
 })
 export class EpubReaderComponent implements OnInit, OnDestroy {
@@ -43,6 +44,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   isBookmarked = false;
   isAddingBookmark = false;
   isDeletingBookmark = false;
+  isEditingBookmark = false;
+  isUpdatingPosition = false;
   private routeSubscription?: Subscription;
 
   public locationsReady = false;
@@ -52,6 +55,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   showControls = !this.isMobileDevice();
   private hideControlsTimeout?: number;
+
+  // Properties for bookmark editing
+  editingBookmark: BookMark | null = null;
+  showEditBookmarkDialog = false;
 
   private book: any;
   private rendition: any;
@@ -415,7 +422,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.routeSubscription?.unsubscribe();
-    
+
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
     }
@@ -575,5 +582,80 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.isBookmarked = this.currentCfi
       ? this.bookmarks.some(b => b.cfi === this.currentCfi)
       : false;
+  }
+
+  openEditBookmarkDialog(bookmark: BookMark): void {
+    this.editingBookmark = { ...bookmark };
+    this.showEditBookmarkDialog = true;
+  }
+
+  onBookmarkSave(updateRequest: UpdateBookMarkRequest): void {
+    if (!this.editingBookmark || this.isEditingBookmark) {
+      return;
+    }
+
+    this.isEditingBookmark = true;
+
+    this.bookMarkService.updateBookmark(this.editingBookmark.id, updateRequest).subscribe({
+      next: (updatedBookmark) => {
+        const index = this.bookmarks.findIndex(b => b.id === this.editingBookmark!.id);
+        if (index !== -1) {
+          this.bookmarks[index] = updatedBookmark;
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Bookmark updated successfully',
+        });
+        this.showEditBookmarkDialog = false;
+        this.isEditingBookmark = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update bookmark',
+        });
+        this.isEditingBookmark = false;
+      }
+    });
+  }
+
+  onBookmarkCancel(): void {
+    this.showEditBookmarkDialog = false;
+  }
+
+  updateBookmarkPosition(bookmarkId: number): void {
+    if (!this.currentCfi || this.isUpdatingPosition) {
+      return;
+    }
+
+    this.isUpdatingPosition = true;
+    const updateRequest = {
+      cfi: this.currentCfi
+    };
+
+    this.bookMarkService.updateBookmark(bookmarkId, updateRequest).subscribe({
+      next: (updatedBookmark) => {
+        const index = this.bookmarks.findIndex(b => b.id === bookmarkId);
+        if (index !== -1) {
+          this.bookmarks[index] = updatedBookmark;
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Bookmark position updated successfully',
+        });
+        this.isUpdatingPosition = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update bookmark position',
+        });
+        this.isUpdatingPosition = false;
+      }
+    });
   }
 }

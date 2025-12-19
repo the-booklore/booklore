@@ -38,18 +38,40 @@
                   @for (bookmark of bookmarks; track bookmark.id) {
                     <li class="bookmark-item">
                       <div class="bookmark-content" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                        <i class="pi pi-bookmark-fill mr-2"></i>
+                        <i class="pi pi-bookmark-fill mr-2" [style.color]="bookmark.color || 'inherit'"></i>
                         <span>{{ bookmark.title }}</span>
                       </div>
-                      <p-button
-                        icon="pi pi-trash"
-                        (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
-                        [rounded]="true"
-                        [text]="true"
-                        severity="danger"
-                        size="small"
-                        pTooltip="Delete bookmark">
-                      </p-button>
+                      <div class="bookmark-actions">
+                        <p-button
+                          icon="pi pi-pencil"
+                          (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
+                          [rounded]="true"
+                          [text]="true"
+                          severity="secondary"
+                          size="small"
+                          pTooltip="Edit bookmark">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-refresh"
+                          (click)="updateBookmarkPosition(bookmark.id); $event.stopPropagation()"
+                          [rounded]="true"
+                          [text]="true"
+                          severity="info"
+                          size="small"
+                          [loading]="isUpdatingPosition"
+                          [disabled]="isUpdatingPosition"
+                          pTooltip="Update position to current location">
+                        </p-button>
+                        <p-button
+                          icon="pi pi-trash"
+                          (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
+                          [rounded]="true"
+                          [text]="true"
+                          severity="danger"
+                          size="small"
+                          pTooltip="Delete bookmark">
+                        </p-button>
+                      </div>
                     </li>
                   }
                 </ul>
@@ -226,3 +248,12 @@
     </div>
   }
 </div>
+
+  <!-- Bookmark Edit Dialog Component -->
+  <app-bookmark-edit-dialog
+    [(visible)]="showEditBookmarkDialog"
+    [bookmark]="editingBookmark"
+    [isSaving]="isEditingBookmark"
+    (save)="onBookmarkSave($event)"
+    (cancel)="onBookmarkCancel()">
+  </app-bookmark-edit-dialog>

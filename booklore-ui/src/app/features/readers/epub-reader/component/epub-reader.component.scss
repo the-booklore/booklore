@@ -203,6 +203,29 @@
   }
 }
 
+.bookmark-actions {
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.bookmark-item:hover .bookmark-actions {
+  opacity: 1;
+}
+
+.bookmark-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  border-radius: 4px;
+
+  &:hover {
+    background-color: var(--surface-hover);
+  }
+}
+
 .location-indicator {
   display: flex;
   align-items: center;
