@@ -59,6 +59,10 @@ public class LibraryRescanHelper {
         sendTaskProgressNotification(taskId, 0, String.format("Starting rescan for library: %s", library.getName()), TaskStatus.IN_PROGRESS);
 
         for (BookEntity bookEntity : bookEntities) {
+            if (bookEntity == null || (bookEntity.getDeleted() != null && bookEntity.getDeleted())) {
+                continue;
+            }
+
             if (taskId != null && cancellationManager.isTaskCancelled(taskId)) {
                 log.info("Library rescan for library {} was cancelled", library.getId());
                 sendTaskProgressNotification(taskId, (processedBooks * 100) / totalBooks,
