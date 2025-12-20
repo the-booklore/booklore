@@ -3,17 +3,16 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Page Spread</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (spread of cbxSpreads; track spread) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="spread.key"
-                name="spread"
-                [value]="spread.key"
-                [(ngModel)]="selectedCbxSpread">
-              </p-radiobutton>
-              <label [for]="spread.key">{{ spread.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedCbxSpread === spread.key"
+              (click)="selectedCbxSpread = spread.key">
+              <i [class]="spread.icon"></i>
+              <span class="option-text">{{ spread.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -27,17 +26,16 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Page Layout</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (mode of cbxViewModes; track mode) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="mode.key"
-                name="zoom"
-                [value]="mode.key"
-                [(ngModel)]="selectedCbxViewMode">
-              </p-radiobutton>
-              <label [for]="mode.key">{{ mode.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedCbxViewMode === mode.key"
+              (click)="selectedCbxViewMode = mode.key">
+              <i [class]="mode.icon"></i>
+              <span class="option-text">{{ mode.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -51,17 +49,18 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Fit Mode</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (mode of cbxFitModes; track mode) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="mode.key"
-                name="fitMode"
-                [value]="mode.key"
-                [(ngModel)]="selectedCbxFitMode">
-              </p-radiobutton>
-              <label [for]="mode.key">{{ mode.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedCbxFitMode === mode.key"
+              (click)="selectedCbxFitMode = mode.key"
+              [pTooltip]="mode.name"
+              tooltipPosition="bottom">
+              <i [class]="mode.icon"></i>
+              <span class="option-text">{{ mode.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -75,17 +74,16 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Scroll Mode</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (mode of cbxScrollModes; track mode) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="mode.key"
-                name="scrollMode"
-                [value]="mode.key"
-                [(ngModel)]="selectedCbxScrollMode">
-              </p-radiobutton>
-              <label [for]="mode.key">{{ mode.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedCbxScrollMode === mode.key"
+              (click)="selectedCbxScrollMode = mode.key">
+              <i [class]="mode.icon"></i>
+              <span class="option-text">{{ mode.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -99,17 +97,21 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Background Color</label>
-        <div class="radio-group">
+        <div class="theme-selector">
           @for (color of cbxBackgroundColors; track color) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="color.key"
-                name="backgroundColor"
-                [value]="color.key"
-                [(ngModel)]="selectedCbxBackgroundColor">
-              </p-radiobutton>
-              <label [for]="color.key">{{ color.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="theme-option"
+              [class.selected]="selectedCbxBackgroundColor === color.key"
+              [style.background-color]="color.color"
+              (click)="selectedCbxBackgroundColor = color.key"
+              [attr.aria-label]="color.name"
+              [pTooltip]="color.name"
+              tooltipPosition="bottom">
+              @if (selectedCbxBackgroundColor === color.key) {
+                <i class="pi pi-check"></i>
+              }
+            </button>
           }
         </div>
       </div>
