@@ -3,17 +3,18 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Page Spread</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (spread of spreads; track spread) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="spread.key"
-                name="spread"
-                [value]="spread.key"
-                [(ngModel)]="selectedSpread">
-              </p-radiobutton>
-              <label [for]="spread.key">{{ spread.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedSpread === spread.key"
+              (click)="selectedSpread = spread.key"
+              [pTooltip]="spread.name"
+              tooltipPosition="bottom">
+              <i [class]="spread.icon"></i>
+              <span class="option-text">{{ spread.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -27,17 +28,18 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Page Zoom</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (zoom of zooms; track zoom) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="zoom.key"
-                name="zoom"
-                [value]="zoom.key"
-                [(ngModel)]="selectedZoom">
-              </p-radiobutton>
-              <label [for]="zoom.key">{{ zoom.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedZoom === zoom.key"
+              (click)="selectedZoom = zoom.key"
+              [pTooltip]="zoom.name"
+              tooltipPosition="bottom">
+              <i [class]="zoom.icon"></i>
+              <span class="option-text">{{ zoom.name }}</span>
+            </button>
           }
         </div>
       </div>
