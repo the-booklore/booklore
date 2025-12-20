@@ -20,6 +20,8 @@ import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
 import {EpubThemeUtil, EpubTheme} from '../epub-theme-util';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
+import {IconField} from 'primeng/iconfield';
+import {InputIcon} from 'primeng/inputicon';
 import {BookmarkEditDialogComponent} from './bookmark-edit-dialog.component';
 import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
 
@@ -42,6 +44,8 @@ import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
     Tab,
     TabPanels,
     TabPanel,
+    IconField,
+    InputIcon,
     BookmarkEditDialogComponent,
     BookmarkViewDialogComponent,
     InputText

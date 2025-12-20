@@ -53,15 +53,15 @@
       <p-tabpanel value="1">
         <div class="tab-content">
           <div class="p-2 mb-2">
-            <span class="p-input-icon-left w-full">
-              <i class="pi pi-search"></i>
+            <p-iconfield class="w-full">
+              <p-inputicon class="pi pi-search"/>
               <input
                 pInputText
                 type="text"
                 [(ngModel)]="filterText"
                 placeholder="Search bookmarks..."
                 class="w-full p-inputtext-sm">
-            </span>
+            </p-iconfield>
           </div>
           @if (filteredBookmarks.length === 0) {
             <div class="empty-state">
@@ -73,7 +73,7 @@
             <ul class="bookmark-list">
               @for (bookmark of filteredBookmarks; track bookmark.id) {
                 <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                  <i class="pi pi-bookmark-fill bookmark-icon"></i>
+                  <i class="pi pi-bookmark-fill bookmark-icon" [style.color]="bookmark.color || 'var(--primary-color)'"></i>
                   <span class="bookmark-label">{{ bookmark.title }}</span>
                   <div class="bookmark-actions">
                     <button
