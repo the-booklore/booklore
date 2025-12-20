@@ -255,7 +255,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
 
     // Sort: Priority ASC (1 is high), then CreatedAt DESC
-    return filtered.sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const priorityA = a.priority ?? 3; // Default to 3 (Normal) if undefined
       const priorityB = b.priority ?? 3;
 

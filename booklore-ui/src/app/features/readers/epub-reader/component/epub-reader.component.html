@@ -52,15 +52,26 @@
       </p-tabpanel>
       <p-tabpanel value="1">
         <div class="tab-content">
-          @if (bookmarks.length === 0) {
+          <div class="p-2 mb-2">
+            <span class="p-input-icon-left w-full">
+              <i class="pi pi-search"></i>
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="filterText"
+                placeholder="Search bookmarks..."
+                class="w-full p-inputtext-sm">
+            </span>
+          </div>
+          @if (filteredBookmarks.length === 0) {
             <div class="empty-state">
               <i class="pi pi-bookmark"></i>
-              <p>No bookmarks yet</p>
-              <span>Tap the bookmark icon to save your place</span>
+              <p>No bookmarks found</p>
+              <span>{{ filterText ? 'Try a different search term' : 'Tap the bookmark icon to save your place' }}</span>
             </div>
           } @else {
             <ul class="bookmark-list">
-              @for (bookmark of bookmarks; track bookmark.id) {
+              @for (bookmark of filteredBookmarks; track bookmark.id) {
                 <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
                   <i class="pi pi-bookmark-fill bookmark-icon"></i>
                   <span class="bookmark-label">{{ bookmark.title }}</span>
