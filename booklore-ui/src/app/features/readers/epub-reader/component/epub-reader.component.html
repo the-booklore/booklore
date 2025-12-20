@@ -64,11 +64,29 @@
                 <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
                   <i class="pi pi-bookmark-fill bookmark-icon"></i>
                   <span class="bookmark-label">{{ bookmark.title }}</span>
-                  <button
-                    class="bookmark-delete"
-                    (click)="deleteBookmark(bookmark.id); $event.stopPropagation()">
-                    <i class="pi pi-trash"></i>
-                  </button>
+                  <div class="bookmark-actions">
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openViewDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="View Details"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-info-circle"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="Edit"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn delete"
+                      (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
+                      pTooltip="Delete"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
                 </li>
               }
             </ul>
@@ -78,7 +96,6 @@
     </p-tabpanels>
   </p-tabs>
 </p-drawer>
-          </p-drawer>
         </div>
 
         <div class="header-center">

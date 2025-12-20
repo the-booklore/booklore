@@ -27,8 +27,25 @@ import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
   selector: 'app-epub-reader',
   templateUrl: './epub-reader.component.html',
   styleUrls: ['./epub-reader.component.scss'],
-  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, RadioButton, Divider, BookmarkEditDialogComponent, BookmarkViewDialogComponent, InputText, CommonModule],
-  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, PrimeTemplate, Tabs, TabList, Tab, TabPanels, TabPanel],
+  imports: [
+    CommonModule,
+    FormsModule,
+    Drawer,
+    Button,
+    Select,
+    ProgressSpinner,
+    Tooltip,
+    Slider,
+    PrimeTemplate,
+    Tabs,
+    TabList,
+    Tab,
+    TabPanels,
+    TabPanel,
+    BookmarkEditDialogComponent,
+    BookmarkViewDialogComponent,
+    InputText
+  ],
   standalone: true
 })
 export class EpubReaderComponent implements OnInit, OnDestroy {
