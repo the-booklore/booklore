@@ -26,18 +26,18 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">PDF Reader Settings</label>
-              <div class="radio-group">
+              <div class="button-group">
                 @for (item of scopeOptions; track item) {
-                  <div class="radio-option">
-                    <p-radiobutton
-                      [inputId]="'pdf-' + item"
-                      name="pdfScope"
-                      [value]="item"
-                      [(ngModel)]="selectedPdfScope"
-                      (ngModelChange)="onPdfScopeChange()">
-                    </p-radiobutton>
-                    <label [for]="'pdf-' + item">{{ item }}</label>
-                  </div>
+                  <button
+                    type="button"
+                    class="option-button"
+                    [class.selected]="selectedPdfScope === item.key"
+                    (click)="selectedPdfScope = item.key; onPdfScopeChange()"
+                    [pTooltip]="item.name"
+                    tooltipPosition="bottom">
+                    <i [class]="item.icon"></i>
+                    <span class="option-text">{{ item.name }}</span>
+                  </button>
                 }
               </div>
             </div>
@@ -51,18 +51,18 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">EPUB Reader Settings</label>
-              <div class="radio-group">
+              <div class="button-group">
                 @for (item of scopeOptions; track item) {
-                  <div class="radio-option">
-                    <p-radiobutton
-                      [inputId]="'epub-' + item"
-                      name="epubScope"
-                      [value]="item"
-                      [(ngModel)]="selectedEpubScope"
-                      (ngModelChange)="onEpubScopeChange()">
-                    </p-radiobutton>
-                    <label [for]="'epub-' + item">{{ item }}</label>
-                  </div>
+                  <button
+                    type="button"
+                    class="option-button"
+                    [class.selected]="selectedEpubScope === item.key"
+                    (click)="selectedEpubScope = item.key; onEpubScopeChange()"
+                    [pTooltip]="item.name"
+                    tooltipPosition="bottom">
+                    <i [class]="item.icon"></i>
+                    <span class="option-text">{{ item.name }}</span>
+                  </button>
                 }
               </div>
             </div>
@@ -76,18 +76,18 @@
           <div class="setting-info">
             <div class="setting-label-row">
               <label class="setting-label">CBX Reader Settings</label>
-              <div class="radio-group">
+              <div class="button-group">
                 @for (item of scopeOptions; track item) {
-                  <div class="radio-option">
-                    <p-radiobutton
-                      [inputId]="'cbx-' + item"
-                      name="cbxScope"
-                      [value]="item"
-                      [(ngModel)]="selectedCbxScope"
-                      (ngModelChange)="onCbxScopeChange()">
-                    </p-radiobutton>
-                    <label [for]="'cbx-' + item">{{ item }}</label>
-                  </div>
+                  <button
+                    type="button"
+                    class="option-button"
+                    [class.selected]="selectedCbxScope === item.key"
+                    (click)="selectedCbxScope = item.key; onCbxScopeChange()"
+                    [pTooltip]="item.name"
+                    tooltipPosition="bottom">
+                    <i [class]="item.icon"></i>
+                    <span class="option-text">{{ item.name }}</span>
+                  </button>
                 }
               </div>
             </div>
