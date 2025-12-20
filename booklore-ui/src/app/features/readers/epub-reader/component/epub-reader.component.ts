@@ -1,28 +1,25 @@
-import {Component, ElementRef, inject, OnDestroy, OnInit, ViewChild, NgZone} from '@angular/core';
+import {Component, ElementRef, inject, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
-import {Subscription} from 'rxjs';
+import {forkJoin, Subscription} from 'rxjs';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {CommonModule} from '@angular/common';
-
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {Book, BookSetting} from '../../../book/model/book.model';
 import {BookService} from '../../../book/service/book.service';
-import {forkJoin} from 'rxjs';
 import {Select} from 'primeng/select';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
-import {MessageService} from 'primeng/api';
-import {BookMarkService, BookMark, UpdateBookMarkRequest} from '../../../../shared/service/book-mark.service';
+import {MessageService, PrimeTemplate} from 'primeng/api';
+import {BookMark, BookMarkService, UpdateBookMarkRequest} from '../../../../shared/service/book-mark.service';
 import {Tooltip} from 'primeng/tooltip';
 import {Slider} from 'primeng/slider';
 import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
-import {EpubThemeUtil} from '../epub-theme-util';
-import {RadioButton} from 'primeng/radiobutton';
-import { PageTitleService } from "../../../../shared/service/page-title.service";
-import {Divider} from 'primeng/divider';
+import {EpubThemeUtil, EpubTheme} from '../epub-theme-util';
+import {PageTitleService} from "../../../../shared/service/page-title.service";
+import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
 import {BookmarkEditDialogComponent} from './bookmark-edit-dialog.component';
 import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
 
@@ -31,6 +28,7 @@ import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
   templateUrl: './epub-reader.component.html',
   styleUrls: ['./epub-reader.component.scss'],
   imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, RadioButton, Divider, BookmarkEditDialogComponent, BookmarkViewDialogComponent, InputText, CommonModule],
+  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, PrimeTemplate, Tabs, TabList, Tab, TabPanels, TabPanel],
   standalone: true
 })
 export class EpubReaderComponent implements OnInit, OnDestroy {
@@ -62,7 +60,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   public progressPercentage = 0;
 
   showControls = !this.isMobileDevice();
+  showHeader = true;
   private hideControlsTimeout?: number;
+  private hideHeaderTimeout?: number;
+  private isMouseInTopRegion = false;
+  private headerShownByMobileTouch = false;
 
   // Properties for bookmark editing
   editingBookmark: BookMark | null = null;
@@ -82,7 +84,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   letterSpacing?: number;
 
   fontTypes: any[] = [
-    {label: "Book's Internal", value: null},
+    {label: "Publisher's Default", value: null},
     {label: 'Serif', value: 'serif'},
     {label: 'Sans Serif', value: 'sans-serif'},
     {label: 'Roboto', value: 'roboto'},
@@ -91,10 +93,21 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   ];
 
   themes: any[] = [
-    {label: 'White', value: 'white'},
-    {label: 'Black', value: 'black'},
-    {label: 'Grey', value: 'grey'},
-    {label: 'Sepia', value: 'sepia'},
+    {label: 'White', value: EpubTheme.WHITE},
+    {label: 'Black', value: EpubTheme.BLACK},
+    {label: 'Grey', value: EpubTheme.GREY},
+    {label: 'Sepia', value: EpubTheme.SEPIA},
+    {label: 'Green', value: EpubTheme.GREEN},
+    {label: 'Lavender', value: EpubTheme.LAVENDER},
+    {label: 'Cream', value: EpubTheme.CREAM},
+    {label: 'Light Blue', value: EpubTheme.LIGHT_BLUE},
+    {label: 'Peach', value: EpubTheme.PEACH},
+    {label: 'Mint', value: EpubTheme.MINT},
+    {label: 'Dark Slate', value: EpubTheme.DARK_SLATE},
+    {label: 'Dark Olive', value: EpubTheme.DARK_OLIVE},
+    {label: 'Dark Purple', value: EpubTheme.DARK_PURPLE},
+    {label: 'Dark Teal', value: EpubTheme.DARK_TEAL},
+    {label: 'Dark Brown', value: EpubTheme.DARK_BROWN},
   ];
 
   private route = inject(ActivatedRoute);
@@ -193,7 +206,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
               this.trackProgress();
               this.setupTouchListener();
               this.isLoading = false;
+              this.startHeaderAutoHide();
             });
+
           };
 
           fileReader.readAsArrayBuffer(epubData);
@@ -212,28 +227,28 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   get filteredBookmarks(): BookMark[] {
     let filtered = this.bookmarks;
-    
+
     // Filter
     if (this.filterText && this.filterText.trim()) {
       const lowerFilter = this.filterText.toLowerCase().trim();
-      filtered = filtered.filter(b => 
-        (b.title && b.title.toLowerCase().includes(lowerFilter)) || 
+      filtered = filtered.filter(b =>
+        (b.title && b.title.toLowerCase().includes(lowerFilter)) ||
         (b.notes && b.notes.toLowerCase().includes(lowerFilter))
       );
     }
-    
+
     // Sort: Priority ASC (1 is high), then CreatedAt DESC
     return filtered.sort((a, b) => {
       const priorityA = a.priority ?? 3; // Default to 3 (Normal) if undefined
       const priorityB = b.priority ?? 3;
-      
+
       if (priorityA !== priorityB) {
         return priorityA - priorityB;
       }
-      
+
       const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      
+
       return dateB - dateA;
     });
   }
@@ -412,10 +427,28 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   toggleDrawer(): void {
     this.isDrawerVisible = !this.isDrawerVisible;
+    if (this.isDrawerVisible) {
+      this.showHeader = true;
+      this.headerShownByMobileTouch = false;
+      this.clearHeaderTimeout();
+    } else {
+      if (!this.isMobileDevice()) {
+        this.startHeaderAutoHide();
+      }
+    }
   }
 
   toggleSettingsDrawer(): void {
     this.isSettingsDrawerVisible = !this.isSettingsDrawerVisible;
+    if (this.isSettingsDrawerVisible) {
+      this.showHeader = true;
+      this.headerShownByMobileTouch = false;
+      this.clearHeaderTimeout();
+    } else {
+      if (!this.isMobileDevice()) {
+        this.startHeaderAutoHide();
+      }
+    }
   }
 
   private trackProgress(): void {
@@ -472,26 +505,72 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (this.hideControlsTimeout) {
       window.clearTimeout(this.hideControlsTimeout);
     }
-  }
 
-  getThemeColor(themeKey: string | undefined): string {
-    switch (themeKey) {
-      case 'white':
-        return '#ffffff';
-      case 'black':
-        return '#000000';
-      case 'grey':
-        return '#808080';
-      case 'sepia':
-        return '#704214';
-      default:
-        return '#ffffff';
-    }
+    this.clearHeaderTimeout();
   }
 
   selectTheme(themeKey: string): void {
     this.selectedTheme = themeKey;
     this.changeThemes();
+  }
+
+  getThemeColor(themeKey: string | undefined): string {
+    return EpubThemeUtil.getThemeColor(themeKey);
+  }
+
+  onBookClick(event: MouseEvent): void {
+    if (this.isDrawerVisible || this.isSettingsDrawerVisible) {
+      this.isDrawerVisible = false;
+      this.isSettingsDrawerVisible = false;
+      this.startHeaderAutoHide();
+      return;
+    }
+
+    const clickY = event.clientY;
+    const screenHeight = window.innerHeight;
+
+    if (this.isMobileDevice()) {
+      const isTopClick = clickY < screenHeight * 0.2;
+      const isBottomClick = clickY > screenHeight * 0.2;
+
+      if (isTopClick && !this.showHeader) {
+        // Touch top 20% - show header and mark as shown by mobile touch
+        this.showHeader = true;
+        this.headerShownByMobileTouch = true;
+        this.clearHeaderTimeout();
+      } else if (isBottomClick && this.showHeader && this.headerShownByMobileTouch) {
+        // Touch lower 80% - hide header
+        this.showHeader = false;
+        this.headerShownByMobileTouch = false;
+        this.clearHeaderTimeout();
+      }
+    } else {
+      // Desktop behavior
+      const isTopClick = clickY < screenHeight * 0.1;
+      if (isTopClick) {
+        this.showHeader = true;
+        this.startHeaderAutoHide();
+      }
+    }
+  }
+
+  onBookMouseMove(event: MouseEvent): void {
+    if (this.isDrawerVisible || this.isSettingsDrawerVisible || this.isMobileDevice()) {
+      return;
+    }
+
+    const mouseY = event.clientY;
+    const screenHeight = window.innerHeight;
+    const isInTopRegion = mouseY < screenHeight * 0.1;
+
+    if (isInTopRegion && !this.isMouseInTopRegion) {
+      this.isMouseInTopRegion = true;
+      this.showHeader = true;
+      this.clearHeaderTimeout();
+    } else if (!isInTopRegion && this.isMouseInTopRegion) {
+      this.isMouseInTopRegion = false;
+      this.startHeaderAutoHide();
+    }
   }
 
   onBookTouch(): void {
@@ -504,7 +583,35 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.ngZone.run(() => {
           this.showControls = false;
         });
-      }, 3000);
+      }, 2000);
+    }
+  }
+
+  private startHeaderAutoHide(): void {
+    this.clearHeaderTimeout();
+
+    if (this.isDrawerVisible || this.isSettingsDrawerVisible || this.isMouseInTopRegion) {
+      return;
+    }
+
+    // Don't auto-hide on mobile if header was shown by touch
+    if (this.isMobileDevice() && this.headerShownByMobileTouch) {
+      return;
+    }
+
+    this.hideHeaderTimeout = window.setTimeout(() => {
+      this.ngZone.run(() => {
+        if (!this.isDrawerVisible && !this.isSettingsDrawerVisible && !this.isMouseInTopRegion) {
+          this.showHeader = false;
+        }
+      });
+    }, 1000);
+  }
+
+  private clearHeaderTimeout(): void {
+    if (this.hideHeaderTimeout) {
+      window.clearTimeout(this.hideHeaderTimeout);
+      this.hideHeaderTimeout = undefined;
     }
   }
 
@@ -563,7 +670,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       next: (bookmark) => {
         this.bookmarks.push(bookmark);
         // Force array update for change detection if needed, but simple push works with getter usually if ref is stable
-        this.bookmarks = [...this.bookmarks]; 
+        this.bookmarks = [...this.bookmarks];
         this.updateBookmarkStatus();
         this.messageService.add({
           severity: 'success',

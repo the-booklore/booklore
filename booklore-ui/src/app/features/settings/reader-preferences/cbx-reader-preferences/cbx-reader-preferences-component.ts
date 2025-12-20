@@ -1,14 +1,14 @@
 import {Component, inject, Input} from '@angular/core';
-import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule} from '@angular/forms';
 import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, UserSettings} from '../../user-management/user.service';
 import {ReaderPreferencesService} from '../reader-preferences-service';
+import {TooltipModule} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-cbx-reader-preferences-component',
   imports: [
-    RadioButton,
-    FormsModule
+    FormsModule,
+    TooltipModule
   ],
   templateUrl: './cbx-reader-preferences-component.html',
   styleUrl: './cbx-reader-preferences-component.scss'
@@ -27,32 +27,32 @@ export class CbxReaderPreferencesComponent {
   private static readonly PROP_BACKGROUND_COLOR = 'backgroundColor';
 
   readonly cbxSpreads = [
-    {name: 'Even', key: CbxPageSpread.EVEN},
-    {name: 'Odd', key: CbxPageSpread.ODD}
+    {name: 'Even', key: CbxPageSpread.EVEN, icon: 'pi pi-align-left'},
+    {name: 'Odd', key: CbxPageSpread.ODD, icon: 'pi pi-align-right'}
   ];
 
   readonly cbxViewModes = [
-    {name: 'Single Page', key: CbxPageViewMode.SINGLE_PAGE},
-    {name: 'Two Page', key: CbxPageViewMode.TWO_PAGE},
+    {name: 'Single Page', key: CbxPageViewMode.SINGLE_PAGE, icon: 'pi pi-book'},
+    {name: 'Two Page', key: CbxPageViewMode.TWO_PAGE, icon: 'pi pi-copy'},
   ];
 
   readonly cbxFitModes = [
-    {name: 'Fit Page', key: CbxFitMode.FIT_PAGE},
-    {name: 'Fit Width', key: CbxFitMode.FIT_WIDTH},
-    {name: 'Fit Height', key: CbxFitMode.FIT_HEIGHT},
-    {name: 'Actual Size', key: CbxFitMode.ACTUAL_SIZE},
-    {name: 'Automatic', key: CbxFitMode.AUTO}
+    {name: 'Fit Page', key: CbxFitMode.FIT_PAGE, icon: 'pi pi-window-maximize'},
+    {name: 'Fit Width', key: CbxFitMode.FIT_WIDTH, icon: 'pi pi-arrows-h'},
+    {name: 'Fit Height', key: CbxFitMode.FIT_HEIGHT, icon: 'pi pi-arrows-v'},
+    {name: 'Actual Size', key: CbxFitMode.ACTUAL_SIZE, icon: 'pi pi-expand'},
+    {name: 'Automatic', key: CbxFitMode.AUTO, icon: 'pi pi-sparkles'}
   ];
 
   readonly cbxScrollModes = [
-    {name: 'Paginated', key: CbxScrollMode.PAGINATED},
-    {name: 'Infinite', key: CbxScrollMode.INFINITE}
+    {name: 'Paginated', key: CbxScrollMode.PAGINATED, icon: 'pi pi-book'},
+    {name: 'Infinite', key: CbxScrollMode.INFINITE, icon: 'pi pi-sort-alt'}
   ];
 
   readonly cbxBackgroundColors = [
-    {name: 'Gray', key: CbxBackgroundColor.GRAY},
-    {name: 'Black', key: CbxBackgroundColor.BLACK},
-    {name: 'White', key: CbxBackgroundColor.WHITE}
+    {name: 'Gray', key: CbxBackgroundColor.GRAY, color: '#808080'},
+    {name: 'Black', key: CbxBackgroundColor.BLACK, color: '#000000'},
+    {name: 'White', key: CbxBackgroundColor.WHITE, color: '#FFFFFF'}
   ];
 
   get selectedCbxSpread(): CbxPageSpread {

@@ -53,7 +53,7 @@ class MetadataControllerTest {
         bookEntity.setId(bookId);
         bookEntity.setMetadata(new BookMetadataEntity());
 
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
+        when(bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId))).thenReturn(java.util.List.of(bookEntity));
         when(bookMetadataMapper.toBookMetadata(any(), anyBoolean())).thenReturn(new BookMetadata());
 
         metadataController.updateMetadata(wrapper, bookId, true);

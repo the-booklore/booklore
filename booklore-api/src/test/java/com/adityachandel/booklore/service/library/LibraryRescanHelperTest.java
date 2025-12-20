@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.model.enums.TaskType;
 import com.adityachandel.booklore.model.websocket.TaskProgressPayload;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.metadata.BookMetadataUpdater;
@@ -44,6 +45,7 @@ class LibraryRescanHelperTest {
     @Mock private BookMetadataUpdater bookMetadataUpdater;
     @Mock private NotificationService notificationService;
     @Mock private TaskCancellationManager cancellationManager;
+    @Mock private BookRepository bookRepository;
     @InjectMocks private LibraryRescanHelper libraryRescanHelper;
 
     @Captor private ArgumentCaptor<TaskProgressPayload> payloadCaptor;
@@ -88,8 +90,6 @@ class LibraryRescanHelperTest {
     void handleRescanOptions_shouldProcessAllBooks_whenLibraryHasBooks() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(book2);
 
         BookMetadata metadata1 = new BookMetadata();
         metadata1.setTitle("Book 1");
@@ -97,6 +97,7 @@ class LibraryRescanHelperTest {
         metadata2.setTitle("Book 2");
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1, book2));
         when(metadataExtractorFactory.extractMetadata(eq(BookFileType.EPUB), any(File.class))).thenReturn(metadata1);
         when(metadataExtractorFactory.extractMetadata(eq(BookFileType.PDF), any(File.class))).thenReturn(metadata2);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
@@ -115,13 +116,11 @@ class LibraryRescanHelperTest {
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
         book2.setDeleted(true);
 
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(book2);
-
         BookMetadata metadata = new BookMetadata();
         metadata.setTitle("Book 1");
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1, book2));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
 
@@ -134,11 +133,13 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldSkipNullBooks() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(null);
+        java.util.List<BookEntity> books = new ArrayList<>();
+        books.add(book1);
+        books.add(null);
 
         BookMetadata metadata = new BookMetadata();
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(books);
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
 
@@ -152,12 +153,11 @@ class LibraryRescanHelperTest {
     void handleRescanOptions_shouldContinue_whenMetadataExtractionReturnsNull() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(book2);
 
         BookMetadata metadata2 = new BookMetadata();
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1, book2));
         when(metadataExtractorFactory.extractMetadata(eq(BookFileType.EPUB), any(File.class))).thenReturn(null);
         when(metadataExtractorFactory.extractMetadata(eq(BookFileType.PDF), any(File.class))).thenReturn(metadata2);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
@@ -172,13 +172,12 @@ class LibraryRescanHelperTest {
     void handleRescanOptions_shouldContinue_whenMetadataUpdateThrowsException() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(book2);
 
         BookMetadata metadata1 = new BookMetadata();
         BookMetadata metadata2 = new BookMetadata();
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1, book2));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class)))
                 .thenReturn(metadata1, metadata2);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
@@ -195,10 +194,9 @@ class LibraryRescanHelperTest {
     void handleRescanOptions_shouldCancel_whenTaskCancellationRequested() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
         BookEntity book2 = createBookEntity(2L, "book2.pdf", BookFileType.PDF);
-        library.getBookEntities().add(book1);
-        library.getBookEntities().add(book2);
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1, book2));
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false, true);
 
         libraryRescanHelper.handleRescanOptions(rescanContext, taskId);
@@ -213,10 +211,10 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldSendProgressNotifications() {
         BookEntity book1 = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
-        library.getBookEntities().add(book1);
 
         BookMetadata metadata = new BookMetadata();
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book1));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
 
@@ -237,6 +235,7 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldHandleEmptyLibrary() {
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(new ArrayList<>());
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
 
         libraryRescanHelper.handleRescanOptions(rescanContext, taskId);
@@ -252,12 +251,12 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldSetCorrectMetadataUpdateContext() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
-        library.getBookEntities().add(book);
 
         BookMetadata metadata = new BookMetadata();
         metadata.setTitle("Test Book");
 
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
 
@@ -276,10 +275,10 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldHandleNullTaskId() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
-        library.getBookEntities().add(book);
 
         BookMetadata metadata = new BookMetadata();
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
 
         libraryRescanHelper.handleRescanOptions(rescanContext, null);
@@ -294,10 +293,10 @@ class LibraryRescanHelperTest {
     @Test
     void handleRescanOptions_shouldContinue_whenNotificationFails() {
         BookEntity book = createBookEntity(1L, "book1.epub", BookFileType.EPUB);
-        library.getBookEntities().add(book);
 
         BookMetadata metadata = new BookMetadata();
         when(libraryRepository.findById(1L)).thenReturn(Optional.of(library));
+        when(bookRepository.findAllWithMetadataByLibraryId(1L)).thenReturn(List.of(book));
         when(metadataExtractorFactory.extractMetadata(any(BookFileType.class), any(File.class))).thenReturn(metadata);
         when(cancellationManager.isTaskCancelled(taskId)).thenReturn(false);
         doThrow(new RuntimeException("Notification failed"))

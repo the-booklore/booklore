@@ -64,7 +64,9 @@ public class MetadataController {
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
             @Parameter(description = "Merge categories") @RequestParam(defaultValue = "true") boolean mergeCategories) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId)).stream()
+                .findFirst()
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         MetadataUpdateContext context = MetadataUpdateContext.builder()
                 .bookEntity(bookEntity)
