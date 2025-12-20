@@ -21,6 +21,7 @@ import {EpubThemeUtil} from '../epub-theme-util';
 import {RadioButton} from 'primeng/radiobutton';
 import { PageTitleService } from "../../../../shared/service/page-title.service";
 import {Divider} from 'primeng/divider';
+import { ReadingSessionService } from '../../../../shared/service/reading-session.service';
 
 @Component({
   selector: 'app-epub-reader',
@@ -89,6 +90,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private ngZone = inject(NgZone);
   private pageTitle = inject(PageTitleService);
   private bookMarkService = inject(BookMarkService);
+  private readingSessionService = inject(ReadingSessionService);
 
   epub!: Book;
 
@@ -346,19 +348,37 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   prevPage(): void {
     if (this.rendition) {
-      this.rendition.prev();
+      this.rendition.prev().then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
   nextPage(): void {
     if (this.rendition) {
-      this.rendition.next();
+      this.rendition.next().then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
   navigateToChapter(chapter: { label: string; href: string; level: number }): void {
     if (this.book && chapter.href) {
-      this.book.rendition.display(chapter.href);
+      this.book.rendition.display(chapter.href).then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
@@ -396,6 +416,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       }
 
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
+
+      // Update reading session progress (no logging, just track position)
+      this.readingSessionService.updateProgress(
+        location.start.cfi,
+        this.progressPercentage
+      );
     });
 
     this.book.ready.then(() => {
@@ -407,15 +433,42 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         const cfi = location.end.cfi;
         const percentage = this.book.locations.percentageFromCfi(cfi);
         this.progressPercentage = Math.round(percentage * 1000) / 10;
+
+        // Start reading session only when we have accurate progress data
+        this.readingSessionService.startSession(
+          this.epub.id,
+          this.epub.metadata?.title || 'Unknown Book',
+          location.start.cfi,
+          this.progressPercentage
+        );
       }
     }).catch(() => {
       this.locationsReady = false;
+
+      // Fallback: start session with approximate progress if locations generation fails
+      const location = this.rendition.currentLocation();
+      if (location) {
+        this.readingSessionService.startSession(
+          this.epub.id,
+          this.epub.metadata?.title || 'Unknown Book',
+          location.start.cfi,
+          this.progressPercentage
+        );
+      }
     });
   }
 
   ngOnDestroy(): void {
+    // End reading session before cleanup
+    if (this.readingSessionService.isSessionActive()) {
+      this.readingSessionService.endSession(
+        this.currentCfi || undefined,
+        this.progressPercentage
+      );
+    }
+
     this.routeSubscription?.unsubscribe();
-    
+
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
     }
@@ -562,7 +615,13 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   navigateToBookmark(bookmark: BookMark): void {
     if (this.rendition && bookmark.cfi) {
-      this.rendition.display(bookmark.cfi);
+      this.rendition.display(bookmark.cfi).then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
