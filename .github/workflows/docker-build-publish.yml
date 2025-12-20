@@ -113,7 +113,6 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Authenticate to GitHub Container Registry
-        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -248,12 +247,11 @@ jobs:
           echo "Image tag: $image_tag"
 
       - name: Build and push Docker image
-        if: github.event_name == 'push'
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: true
+          push: ${{ github.event_name == 'push' }}
           tags: |
             booklore/booklore:${{ env.image_tag }}
             ghcr.io/booklore-app/booklore:${{ env.image_tag }}
