@@ -283,8 +283,9 @@ export class ReadingVelocityChartService implements OnDestroy {
     const pdfProgress = book.pdfProgress?.percentage || 0;
     const cbxProgress = book.cbxProgress?.percentage || 0;
     const koreaderProgress = book.koreaderProgress?.percentage || 0;
+    const koboProgress = book.koboProgress?.percentage || 0;
 
-    return Math.max(epubProgress, pdfProgress, cbxProgress, koreaderProgress) / 100;
+    return Math.max(epubProgress, pdfProgress, cbxProgress, koreaderProgress, koboProgress) / 100;
   }
 
   private calculateAverageRating(books: Book[]): number {

@@ -110,6 +110,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     return null;
   }
 
+  get koboProgressPercentage(): number | null {
+    if (this.book.koboProgress?.percentage != null) {
+      return this.book.koboProgress.percentage;
+    }
+    return null;
+  }
+
   get displayTitle(): string | undefined {
     return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
   }

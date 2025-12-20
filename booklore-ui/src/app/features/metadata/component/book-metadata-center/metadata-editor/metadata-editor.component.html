@@ -472,6 +472,18 @@
           </div>
         </div>
         <div class="flex flex-col gap-1 md:w-1/6">
+          <label class="text-sm" for="hardcoverBookId">Hardcover Book ID</label>
+          <div class="flex withbutton">
+            <input pSize="small" pInputText id="hardcoverBookId" formControlName="hardcoverBookId" class="w-full"/>
+            @if (!book.metadata!['hardcoverBookIdLocked']) {
+              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="success"></p-button>
+            }
+            @if (book.metadata!['hardcoverBookIdLocked']) {
+              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="warn"></p-button>
+            }
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 md:w-1/6">
           <label class="text-sm" for="hardcoverRating">Hardcover ★</label>
           <div class="flex withbutton">
             <input pSize="small" pInputText id="hardcoverRating" formControlName="hardcoverRating" class="w-full"/>
@@ -602,7 +614,7 @@
               <p-button size="small" icon="pi pi-arrow-right" [disabled]="disableNext" iconPos="right" [outlined]="true" severity="info" (onClick)="onNext()" pTooltip="Next Book" tooltipPosition="top"></p-button>
             </div>
           }
-          
+
           <div class="flex justify-between items-center w-full gap-4">
             @if (navigationState$ | async) {
               <div class="flex gap-2 items-center">

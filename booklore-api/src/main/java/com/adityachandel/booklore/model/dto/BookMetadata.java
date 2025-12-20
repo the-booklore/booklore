@@ -37,6 +37,7 @@ public class BookMetadata {
     private Double goodreadsRating;
     private Integer goodreadsReviewCount;
     private String hardcoverId;
+    private Integer hardcoverBookId;
     private Double hardcoverRating;
     private Integer hardcoverReviewCount;
     private String doubanId;
@@ -66,6 +67,7 @@ public class BookMetadata {
     private Boolean goodreadsIdLocked;
     private Boolean comicvineIdLocked;
     private Boolean hardcoverIdLocked;
+    private Boolean hardcoverBookIdLocked;
     private Boolean doubanIdLocked;
     private Boolean googleIdLocked;
     private Boolean pageCountLocked;

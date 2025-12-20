@@ -16,6 +16,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.KoboReadingStateRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,7 @@ public class KoboReadingStateService {
     private final AuthenticationService authenticationService;
     private final KoboSettingsService koboSettingsService;
     private final KoboReadingStateBuilder readingStateBuilder;
+    private final HardcoverSyncService hardcoverSyncService;
 
     @Transactional
     public KoboReadingStateResponse saveReadingState(List<KoboReadingState> readingStates) {
@@ -152,6 +154,9 @@ public class KoboReadingStateService {
                 
                 KoboReadingState.CurrentBookmark.Location location = bookmark.getLocation();
                 if (location != null) {
+                    log.debug("Kobo location data: value={}, type={}, source={} (length={})", 
+                            location.getValue(), location.getType(), location.getSource(),
+                            location.getSource() != null ? location.getSource().length() : 0);
                     progress.setKoboLocation(location.getValue());
                     progress.setKoboLocationType(location.getType());
                     progress.setKoboLocationSource(location.getSource());
@@ -168,6 +173,9 @@ public class KoboReadingStateService {
             
             progressRepository.save(progress);
             log.debug("Synced Kobo progress: bookId={}, progress={}%", bookId, progress.getKoboProgressPercent());
+            
+            // Sync progress to Hardcover asynchronously (if enabled for this user)
+            hardcoverSyncService.syncProgressToHardcover(book.getId(), progress.getKoboProgressPercent(), userId);
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
