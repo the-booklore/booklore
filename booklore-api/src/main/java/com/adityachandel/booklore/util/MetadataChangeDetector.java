@@ -35,10 +35,10 @@ public class MetadataChangeDetector {
         compare(changes, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()), newMeta.getGoodreadsIdLocked(), existingMeta.getGoodreadsIdLocked());
         compare(changes, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()), newMeta.getComicvineIdLocked(), existingMeta.getComicvineIdLocked());
         compare(changes, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()), newMeta.getHardcoverIdLocked(), existingMeta.getHardcoverIdLocked());
+        compare(changes, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()), newMeta.getHardcoverBookIdLocked(), existingMeta.getHardcoverBookIdLocked());
         compare(changes, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()), newMeta.getGoogleIdLocked(), existingMeta.getGoogleIdLocked());
         compare(changes, "pageCount", clear.isPageCount(), newMeta.getPageCount(), existingMeta.getPageCount(), () -> !isTrue(existingMeta.getPageCountLocked()), newMeta.getPageCountLocked(), existingMeta.getPageCountLocked());
         compare(changes, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()), newMeta.getLanguageLocked(), existingMeta.getLanguageLocked());
-        compare(changes, "personalRating", clear.isPersonalRating(), newMeta.getPersonalRating(), existingMeta.getPersonalRating(), () -> !isTrue(existingMeta.getPersonalRatingLocked()), newMeta.getPersonalRatingLocked(), existingMeta.getPersonalRatingLocked());
         compare(changes, "amazonRating", clear.isAmazonRating(), newMeta.getAmazonRating(), existingMeta.getAmazonRating(), () -> !isTrue(existingMeta.getAmazonRatingLocked()), newMeta.getAmazonRatingLocked(), existingMeta.getAmazonRatingLocked());
         compare(changes, "amazonReviewCount", clear.isAmazonReviewCount(), newMeta.getAmazonReviewCount(), existingMeta.getAmazonReviewCount(), () -> !isTrue(existingMeta.getAmazonReviewCountLocked()), newMeta.getAmazonReviewCountLocked(), existingMeta.getAmazonReviewCountLocked());
         compare(changes, "goodreadsRating", clear.isGoodreadsRating(), newMeta.getGoodreadsRating(), existingMeta.getGoodreadsRating(), () -> !isTrue(existingMeta.getGoodreadsRatingLocked()), newMeta.getGoodreadsRatingLocked(), existingMeta.getGoodreadsRatingLocked());
@@ -76,10 +76,10 @@ public class MetadataChangeDetector {
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
+        compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
         compareValue(diffs, "pageCount", clear.isPageCount(), newMeta.getPageCount(), existingMeta.getPageCount(), () -> !isTrue(existingMeta.getPageCountLocked()));
         compareValue(diffs, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()));
-        compareValue(diffs, "personalRating", clear.isPersonalRating(), newMeta.getPersonalRating(), existingMeta.getPersonalRating(), () -> !isTrue(existingMeta.getPersonalRatingLocked()));
         compareValue(diffs, "amazonRating", clear.isAmazonRating(), newMeta.getAmazonRating(), existingMeta.getAmazonRating(), () -> !isTrue(existingMeta.getAmazonRatingLocked()));
         compareValue(diffs, "amazonReviewCount", clear.isAmazonReviewCount(), newMeta.getAmazonReviewCount(), existingMeta.getAmazonReviewCount(), () -> !isTrue(existingMeta.getAmazonReviewCountLocked()));
         compareValue(diffs, "goodreadsRating", clear.isGoodreadsRating(), newMeta.getGoodreadsRating(), existingMeta.getGoodreadsRating(), () -> !isTrue(existingMeta.getGoodreadsRatingLocked()));
@@ -109,9 +109,9 @@ public class MetadataChangeDetector {
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
+        compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
         compareValue(diffs, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()));
-        compareValue(diffs, "personalRating", clear.isPersonalRating(), newMeta.getPersonalRating(), existingMeta.getPersonalRating(), () -> !isTrue(existingMeta.getPersonalRatingLocked()));
         compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));
         compareValue(diffs, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()));
         return !diffs.isEmpty();

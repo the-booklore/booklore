@@ -21,12 +21,12 @@ import {BookState} from '../../book/model/state/book-state.model';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {FormsModule} from "@angular/forms";
 import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
-import {NgIf} from '@angular/common';
+
 
 @Component({
   selector: 'app-cbx-reader',
   standalone: true,
-  imports: [ProgressSpinner, FormsModule, NgIf],
+  imports: [ProgressSpinner, FormsModule],
   templateUrl: './cbx-reader.component.html',
   styleUrl: './cbx-reader.component.scss'
 })
@@ -616,7 +616,7 @@ export class CbxReaderComponent implements OnInit {
       next: (seriesBooks) => {
         const sortedBySeriesNumber = this.sortBooksBySeriesNumber(seriesBooks);
         const currentBookIndex = sortedBySeriesNumber.findIndex(b => b.id === book.id);
-        
+
         if (currentBookIndex === -1) {
           console.warn('[SeriesNav] Current book not found in series');
           return;
@@ -627,14 +627,6 @@ export class CbxReaderComponent implements OnInit {
 
         this.previousBookInSeries = hasPreviousBook ? sortedBySeriesNumber[currentBookIndex - 1] : null;
         this.nextBookInSeries = hasNextBook ? sortedBySeriesNumber[currentBookIndex + 1] : null;
-
-        console.log('[SeriesNav] Navigation loaded:', {
-          series: book.metadata?.seriesName,
-          totalBooks: seriesBooks.length,
-          currentPosition: currentBookIndex + 1,
-          hasPrevious: hasPreviousBook,
-          hasNext: hasNextBook
-        });
       },
       error: (err) => {
         console.error('[SeriesNav] Failed to load series information:', err);
@@ -652,22 +644,22 @@ export class CbxReaderComponent implements OnInit {
 
   getBookDisplayTitle(book: Book | null): string {
     if (!book) return '';
-    
+
     const parts: string[] = [];
-    
+
     if (book.metadata?.seriesNumber) {
       parts.push(`#${book.metadata.seriesNumber}`);
     }
-    
+
     const title = book.metadata?.title || book.fileName;
     if (title) {
       parts.push(title);
     }
-    
+
     if (book.metadata?.subtitle) {
       parts.push(book.metadata.subtitle);
     }
-    
+
     return parts.join(' - ');
   }
 

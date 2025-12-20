@@ -3,10 +3,93 @@ name: Build, Tag, Push, and Release to GitHub Container Registry
 on:
   push:
     branches:
+      - 'master'
+      - 'develop'
+  pull_request:
+    branches:
       - '**'
 
 jobs:
+  check-for-migrations:
+    name: Check for DB Migrations
+    if: github.event_name == 'pull_request' && ((github.base_ref == 'master' && github.head_ref == 'develop') || github.base_ref == 'develop')
+    runs-on: ubuntu-latest
+    outputs:
+      has_migrations: ${{ steps.check_migrations.outputs.has_migrations }}
+    steps:
+      - name: Checkout Repository for Diff
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect Flyway Migration Changes
+        id: check_migrations
+        run: |
+          # Compare PR head with the target base branch
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "booklore-api/src/main/resources/db/migration/V.*.sql"; then
+            echo "Migration file changes detected. Proceeding with migration preview."
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+          else
+            echo "No migration file changes detected. Skipping migration preview."
+            echo "has_migrations=false" >> $GITHUB_OUTPUT
+          fi
+
+  flyway-migration-preview:
+    name: Flyway DB Migration Preview
+    needs: [check-for-migrations]
+    if: needs.check-for-migrations.outputs.has_migrations == 'true'
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: booklore_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout Base Branch
+        uses: actions/checkout@v6
+        with:
+          ref: '${{ github.base_ref }}'
+
+      - name: Apply Migrations from Base Branch
+        run: |
+          echo "Applying migrations from '${{ github.base_ref }}' branch..."
+          docker run --network host \
+            -v ${{ github.workspace }}:/flyway/sql \
+            flyway/flyway:11.19.0-alpine \
+            -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
+            -user=root -password=root \
+            -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
+            migrate
+
+      - name: Checkout Pull Request Branch
+        uses: actions/checkout@v6
+
+      - name: Apply Migrations from PR Branch
+        run: |
+          echo "Applying new migrations from PR branch..."
+          docker run --network host \
+            -v ${{ github.workspace }}:/flyway/sql \
+            flyway/flyway:11.19.0-alpine \
+            -url=jdbc:mariadb://127.0.0.1:3306/booklore_test \
+            -user=root -password=root \
+            -locations=filesystem:/flyway/sql/booklore-api/src/main/resources/db/migration \
+            migrate
+      
+      - name: Confirm Flyway Dry Run Success
+        run: echo "✅ Flyway migration preview successful. Migrations can be applied cleanly."
+
   build-and-push:
+    needs: [check-for-migrations, flyway-migration-preview]
+    if: always() && (needs.flyway-migration-preview.result == 'success' || needs.flyway-migration-preview.result == 'skipped')
     runs-on: ubuntu-latest
 
     permissions:
@@ -18,44 +101,47 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
+      - name: Authenticate to Docker Hub
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Authenticate to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Set up QEMU for multi-arch builds
+      - name: Set Up QEMU for Multi-Architecture Builds
         uses: docker/setup-qemu-action@v3
 
-      - name: Set up Docker Buildx
+      - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Set Up JDK 21
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
+          cache: 'gradle'
 
-      - name: Run Backend Tests
+      - name: Execute Backend Tests
         id: backend_tests
         working-directory: ./booklore-api
         run: |
           echo "Running backend tests with testcontainers..."
-          ./gradlew test
+          ./gradlew test --no-daemon --parallel --build-cache
         continue-on-error: true
 
-      - name: Publish Test Results
+      - name: Publish Backend Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
@@ -65,8 +151,8 @@ jobs:
           report_individual_runs: true
           report_suite_logs: 'any'
 
-      - name: Upload Test Reports
-        uses: actions/upload-artifact@v4
+      - name: Upload Backend Test Reports
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-reports
@@ -75,13 +161,13 @@ jobs:
             booklore-api/build/test-results/
           retention-days: 30
 
-      - name: Check Test Results
+      - name: Validate Backend Test Results
         if: steps.backend_tests.outcome == 'failure'
         run: |
           echo "❌ Backend tests failed! Check the test results above."
           exit 1
 
-      - name: Get Latest Master Version
+      - name: Retrieve Latest Master Version Tag
         id: get_version
         run: |
           latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
@@ -89,7 +175,7 @@ jobs:
           echo "latest_tag=$latest_tag" >> $GITHUB_ENV
           echo "Latest master tag: $latest_tag"
 
-      - name: Determine Version Bump (Only for Master)
+      - name: Determine Version Bump (Master Only)
         if: github.ref == 'refs/heads/master'
         id: determine_bump
         env:
@@ -107,11 +193,11 @@ jobs:
           labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' || echo "")
           echo "PR labels: $labels"
 
-          if echo "$labels" | grep -q 'major'; then
+          if echo "$labels" | grep -q 'bump:major'; then
             bump="major"
-          elif echo "$labels" | grep -q 'minor'; then
+          elif echo "$labels" | grep -q 'bump:minor'; then
             bump="minor"
-          elif echo "$labels" | grep -q 'patch'; then
+          elif echo "$labels" | grep -q 'bump:patch'; then
             bump="patch"
           else
             last_commit_msg=$(git log -1 --pretty=%B)
@@ -161,28 +247,44 @@ jobs:
           echo "image_tag=$image_tag" >> $GITHUB_ENV
           echo "Image tag: $image_tag"
 
-      - name: Build and Push Docker Image
-        run: |
-          docker buildx create --use
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg APP_VERSION=${{ env.image_tag }} \
-            --build-arg APP_REVISION=${{ github.sha }} \
-            --tag booklore/booklore:${{ env.image_tag }} \
-            --tag ghcr.io/booklore-app/booklore:${{ env.image_tag }} \
-            --push .
+      - name: Build and push Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            booklore/booklore:${{ env.image_tag }}
+            ghcr.io/booklore-app/booklore:${{ env.image_tag }}
+          build-args: |
+            APP_VERSION=${{ env.image_tag }}
+            APP_REVISION=${{ github.sha }}
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
-      - name: Push Latest Tag (Only for Master)
-        if: github.ref == 'refs/heads/master'
-        run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --build-arg APP_VERSION=${{ env.new_tag }} \
-            --tag booklore/booklore:latest \
-            --tag ghcr.io/booklore-app/booklore:latest \
-            --push .
+      - name: Push Latest Tag (Master Only)
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            booklore/booklore:latest
+            booklore/booklore:${{ env.new_tag }}
+            ghcr.io/booklore-app/booklore:latest
+            ghcr.io/booklore-app/booklore:${{ env.new_tag }}
+          build-args: |
+            APP_VERSION=${{ env.new_tag }}
+            APP_REVISION=${{ github.sha }}
+          cache-from: type=gha
 
-      - name: Update Release Draft (Only for Master)
+      - name: Update GitHub Release Draft (Master Only)
         if: github.ref == 'refs/heads/master'
         uses: release-drafter/release-drafter@v6
         with:
@@ -191,47 +293,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Publish Draft Release (Only for Master)
+      - name: Publish GitHub Draft Release (Master Only)
         if: github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release edit ${{ env.new_tag }} --draft=false
-
-      - name: Notify Discord of New Release
-        if: false
-        continue-on-error: true
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          NEW_TAG: ${{ env.new_tag }}
-        run: |
-          set -euo pipefail
-          if [ -z "${DISCORD_WEBHOOK_URL:-}" ]; then
-            echo "DISCORD_WEBHOOK_URL not set, skipping Discord notification."
-            exit 0
-          fi
-          release_json=$(gh release view "$NEW_TAG" --json name,body,url)
-          release_name=$(jq -r '.name' <<< "$release_json")
-          release_body=$(jq -r '.body' <<< "$release_json")
-          release_url=$(jq -r '.url' <<< "$release_json")
-          clean_body=$(echo "$release_body" | tr -d '\r')
-          max_length=1800
-          if [ ${#clean_body} -gt $max_length ]; then
-            clean_body="${clean_body:0:$((max_length-12))}… [truncated]"
-          fi
-          payload=$(jq -n \
-            --arg title "New Release: $release_name" \
-            --arg url   "$release_url" \
-            --arg desc  "$clean_body" \
-            '{
-              content: null,
-              embeds: [{
-                title: $title,
-                url: $url,
-                description: $desc,
-                color: 3066993
-              }]
-            }')
-          curl -H "Content-Type: application/json" -d "$payload" "$DISCORD_WEBHOOK_URL"
+          gh release edit ${{ env.new_tag }} --draft=true

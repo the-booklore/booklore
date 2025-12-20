@@ -432,6 +432,17 @@ export class BookService {
     return this.http.post<void>(`${this.url}/${bookId}/regenerate-cover`, {});
   }
 
+  regenerateCoversForBooks(bookIds: number[]): Observable<void> {
+    return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, { bookIds });
+  }
+
+  bulkUploadCover(bookIds: number[], file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bookIds', bookIds.join(','));
+    return this.http.post<void>(`${this.url}/bulk-upload-cover`, formData);
+  }
+
 
   /*------------------ All the metadata related calls go here ------------------*/
 
@@ -525,6 +536,22 @@ export class BookService {
   updateBookReadStatus(bookIds: number | number[], status: ReadStatus): Observable<Book[]> {
     const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
     return this.http.put<Book[]>(`${this.url}/read-status`, {ids, status}).pipe(
+      tap(updatedBooks => {
+        updatedBooks.forEach(updatedBook => this.handleBookUpdate(updatedBook));
+      })
+    );
+  }
+
+  resetPersonalRating(bookIds: number | number[]): Observable<Book[]> {
+    const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
+    return this.http.post<Book[]>(`${this.url}/reset-personal-rating`, ids).pipe(
+      tap(updatedBooks => updatedBooks.forEach(book => this.handleBookUpdate(book)))
+    );
+  }
+
+  updatePersonalRating(bookIds: number | number[], rating: number): Observable<Book[]> {
+    const ids = Array.isArray(bookIds) ? bookIds : [bookIds];
+    return this.http.put<Book[]>(`${this.url}/personal-rating`, {ids, rating}).pipe(
       tap(updatedBooks => {
         updatedBooks.forEach(updatedBook => this.handleBookUpdate(updatedBook));
       })

@@ -300,7 +300,7 @@ public class DoubanBookParser implements BookParser {
     }
 
     private String buildQueryUrl(FetchMetadataRequest fetchMetadataRequest, Book book) {
-        StringBuilder searchTerm = new StringBuilder();
+        StringBuilder searchTerm = new StringBuilder(256);
 
         String title = fetchMetadataRequest.getTitle();
         if (title != null && !title.isEmpty()) {

@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -19,6 +21,10 @@ public class MonitoringRegistrationService {
 
     public boolean isPathMonitored(Path path) {
         return monitoringService.isPathMonitored(path);
+    }
+
+    public boolean isLibraryMonitored(Long libraryId) {
+        return monitoringService.isLibraryMonitored(libraryId);
     }
 
     public void unregisterSpecificPath(Path path) {
@@ -42,6 +48,7 @@ public class MonitoringRegistrationService {
             return;
         }
         try {
+            log.debug("Registering library paths for libraryId {} at {}", libraryId, libraryRoot);
             monitoringService.registerPath(libraryRoot, libraryId);
             try (var stream = Files.walk(libraryRoot)) {
                 stream.filter(Files::isDirectory)
@@ -65,5 +72,23 @@ public class MonitoringRegistrationService {
             return;
         }
         libraryIds.forEach(this::unregisterLibrary);
+    }
+
+    public Set<Path> getPathsForLibraries(Collection<Long> libraryIds) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
+            return Set.of();
+        }
+        return monitoringService.getPathsForLibraries(new HashSet<>(libraryIds));
+    }
+
+    public boolean waitForEventsDrainedByPaths(Set<Path> paths, long timeoutMs) {
+        return monitoringService.waitForEventsDrainedByPaths(paths, timeoutMs);
+    }
+
+    public boolean waitForEventsDrained(Collection<Long> libraryIds, long timeoutMs) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
+            return true;
+        }
+        return monitoringService.waitForEventsDrained(new HashSet<>(libraryIds), timeoutMs);
     }
 }

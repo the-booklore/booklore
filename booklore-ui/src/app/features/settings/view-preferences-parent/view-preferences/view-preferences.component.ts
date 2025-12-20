@@ -44,7 +44,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Goodreads #', field: 'goodreadsReviewCount'},
     {label: 'Hardcover Rating', field: 'hardcoverRating'},
     {label: 'Hardcover #', field: 'hardcoverReviewCount'},
-    {label: 'Pages', field: 'pageCount'}
+    {label: 'Pages', field: 'pageCount'},
+    {label: 'Random', field: 'random'},
   ];
 
   entityTypeOptions = [

@@ -32,7 +32,6 @@ public class MonitoringService {
     private final Map<Path, WatchKey> registeredWatchKeys = new ConcurrentHashMap<>();
     private final Map<Path, Long> pathToLibraryIdMap = new ConcurrentHashMap<>();
     private final Map<Long, Boolean> libraryWatchStatusMap = new ConcurrentHashMap<>();
-    private final Map<Long, List<Path>> libraryIdToPaths = new ConcurrentHashMap<>();
 
     public MonitoringService(LibraryFileEventProcessor libraryFileEventProcessor, WatchService watchService, MonitoringTask monitoringTask) {
         this.libraryFileEventProcessor = libraryFileEventProcessor;
@@ -67,7 +66,6 @@ public class MonitoringService {
         libraryWatchStatusMap.put(library.getId(), library.isWatch());
         if (!library.isWatch()) return;
 
-        List<Path> registeredPaths = new ArrayList<>();
         int[] registeredCount = {0};
 
         library.getPaths().forEach(libraryPath -> {
@@ -77,7 +75,6 @@ public class MonitoringService {
                     pathStream.filter(Files::isDirectory).forEach(path -> {
                         if (registerPath(path, library.getId())) {
                             registeredCount[0]++;
-                            registeredPaths.add(path);
                         }
                     });
                 } catch (IOException e) {
@@ -86,7 +83,6 @@ public class MonitoringService {
             }
         });
 
-        libraryIdToPaths.put(library.getId(), registeredPaths);
         log.info("Registered {} folders for library '{}'", registeredCount[0], library.getName());
     }
 
@@ -101,7 +97,6 @@ public class MonitoringService {
         }
 
         libraryWatchStatusMap.put(libraryId, false);
-        libraryIdToPaths.remove(libraryId);
         log.debug("Unregistered library {} from monitoring", libraryId);
     }
 
@@ -240,5 +235,56 @@ public class MonitoringService {
 
     public boolean isPathMonitored(Path path) {
         return monitoredPaths.contains(path.toAbsolutePath().normalize());
+    }
+
+    public boolean isLibraryMonitored(Long libraryId) {
+        return libraryWatchStatusMap.getOrDefault(libraryId, false);
+    }
+
+    public Set<Path> getPathsForLibraries(Set<Long> libraryIds) {
+        return pathToLibraryIdMap.entrySet().stream()
+                .filter(entry -> libraryIds.contains(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toSet());
+    }
+
+    public boolean waitForEventsDrained(Set<Long> libraryIds, long timeoutMs) {
+        if (libraryIds == null || libraryIds.isEmpty()) {
+            return true;
+        }
+
+        Set<Path> libraryPaths = getPathsForLibraries(libraryIds);
+        return waitForEventsDrainedByPaths(libraryPaths, timeoutMs);
+    }
+
+    public boolean waitForEventsDrainedByPaths(Set<Path> libraryPaths, long timeoutMs) {
+        if (libraryPaths == null || libraryPaths.isEmpty()) {
+            return true;
+        }
+
+        final long pollIntervalMs = 50;
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            boolean hasPendingEvents = eventQueue.stream()
+                    .anyMatch(event -> {
+                        Path watchedFolder = event.getWatchedFolder();
+                        return libraryPaths.stream().anyMatch(watchedFolder::startsWith);
+                    });
+
+            if (!hasPendingEvents) {
+                log.debug("Event queue drained for paths: {}", libraryPaths.size());
+                return true;
+            }
+
+            try {
+                Thread.sleep(pollIntervalMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+
+        log.warn("Timeout waiting for event queue to drain for {} paths", libraryPaths.size());
+        return false;
     }
 }

@@ -29,7 +29,7 @@ public class AuthorEntity {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof AuthorEntity that)) return false;
-        return getId() != null && Objects.equals(getId(), that.getId());
+        return id != null && Objects.equals(id, that.id);
     }
 
     @Override

@@ -1,0 +1,123 @@
+<div class="pattern-extract-container">
+  <div class="info-banner">
+    <i class="pi pi-info-circle"></i>
+    <span>
+      Enter a pattern to extract metadata from filenames of <strong>{{ fileCount }}</strong> selected file(s).
+      Use placeholders like <code>{{ '{' }}SeriesName{{ '}' }}</code> to capture values.
+    </span>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="pattern-section">
+    <h4>Pattern</h4>
+    <div class="pattern-input-row">
+      <input
+        #patternInput
+        pInputText
+        [formControl]="$any(patternForm.get('pattern'))"
+        [placeholder]="patternPlaceholderText"
+        id="pattern-input"
+        aria-label="Filename pattern for metadata extraction"
+        class="pattern-input"
+        (input)="previewPattern()"/>
+      <p-button
+        icon="pi pi-eye"
+        label="Preview"
+        severity="secondary"
+        [disabled]="!hasValidPattern"
+        [ariaLabel]="'Preview pattern extraction on sample files'"
+        (click)="previewPattern()">
+      </p-button>
+    </div>
+  </div>
+
+  <div class="placeholders-section">
+    <h4>Available Placeholders</h4>
+    <div class="placeholder-chips">
+      @for (placeholder of availablePlaceholders; track placeholder.name) {
+        <p-chip
+          [label]="getPlaceholderLabel(placeholder.name)"
+          [pTooltip]="getPlaceholderTooltip(placeholder)"
+          tooltipPosition="top"
+          styleClass="placeholder-chip"
+          (click)="insertPlaceholder(placeholder.name)">
+        </p-chip>
+      }
+    </div>
+  </div>
+
+  <div class="common-patterns-section">
+    <h4>Common Patterns</h4>
+    <div class="common-pattern-buttons">
+      @for (commonPattern of commonPatterns; track commonPattern.pattern) {
+        <p-button
+          [label]="commonPattern.label"
+          severity="secondary"
+          size="small"
+          outlined
+          (click)="applyCommonPattern(commonPattern.pattern)">
+        </p-button>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  @if (previewResults.length > 0) {
+    <div class="preview-section">
+      <h4>Preview (Sample Files)</h4>
+      <div class="preview-list">
+        @for (preview of previewResults; track preview.fileName) {
+          <div class="preview-item" [ngClass]="getPreviewClass(preview)">
+            <div class="preview-filename">
+              <i class="pi" 
+                 [ngClass]="getPreviewIconClass(preview)"
+                 [pTooltip]="getErrorTooltip(preview)"
+                 tooltipPosition="top"
+                 [tooltipOptions]="{showDelay: 300}"></i>
+              <span>{{ preview.fileName }}</span>
+            </div>
+            @if (preview.success) {
+              <div class="preview-extracted">
+                @for (entry of getPreviewEntries(preview); track entry.key) {
+                  <div class="extracted-field">
+                    <span class="field-name">{{ entry.key }}:</span>
+                    <span class="field-value">{{ entry.value }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="preview-error">{{ getErrorMessage(preview) }}</div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <p-divider></p-divider>
+  }
+
+  <div class="dialog-footer">
+    @if (isExtracting) {
+      <div class="extracting-indicator">
+        <p-progressSpinner strokeWidth="4" [style]="spinnerStyle"></p-progressSpinner>
+        <span>Extracting metadata...</span>
+      </div>
+    }
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      severity="secondary"
+      [disabled]="isExtracting"
+      (click)="cancel()">
+    </p-button>
+    <p-button
+      label="Extract and Apply"
+      icon="pi pi-check"
+      severity="success"
+      [disabled]="!hasValidPattern || isExtracting"
+      (click)="extract()">
+    </p-button>
+  </div>
+</div>

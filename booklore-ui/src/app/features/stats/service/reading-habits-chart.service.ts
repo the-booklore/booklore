@@ -309,7 +309,8 @@ export class ReadingHabitsChartService implements OnDestroy {
         book.epubProgress?.percentage || 0,
         book.pdfProgress?.percentage || 0,
         book.cbxProgress?.percentage || 0,
-        book.koreaderProgress?.percentage || 0
+        book.koreaderProgress?.percentage || 0,
+        book.koboProgress?.percentage || 0
       );
       return progress > 0 && progress < 100;
     });
@@ -394,7 +395,7 @@ export class ReadingHabitsChartService implements OnDestroy {
     const metadataScore = (wellOrganizedBooks.length / books.length) * 35; // Max 35
 
     // Personal ratings suggest systematic tracking
-    const ratedBooks = books.filter(book => book.metadata?.personalRating);
+    const ratedBooks = books.filter(book => book.personalRating);
     const ratingScore = (ratedBooks.length / books.length) * 25; // Max 25
 
     return Math.min(100, seriesScore + metadataScore + ratingScore);

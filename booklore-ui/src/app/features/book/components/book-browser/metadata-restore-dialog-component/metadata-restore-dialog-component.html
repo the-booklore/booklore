@@ -80,6 +80,9 @@
             @if (backupMetadata.hardcoverId) {
               <div><strong>Hardcover ID:</strong> {{ backupMetadata.hardcoverId }}</div>
             }
+            @if (backupMetadata.hardcoverBookId !== null) {
+              <div><strong>Hardcover Book ID:</strong> {{ backupMetadata.hardcoverBookId }}</div>
+            }
             @if (backupMetadata.hardcoverRating !== null) {
               <div><strong>Hardcover Rating:</strong> {{ backupMetadata.hardcoverRating }}</div>
             }

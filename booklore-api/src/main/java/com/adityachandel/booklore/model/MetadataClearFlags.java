@@ -19,6 +19,7 @@ public class MetadataClearFlags {
     private boolean goodreadsId;
     private boolean comicvineId;
     private boolean hardcoverId;
+    private boolean hardcoverBookId;
     private boolean googleId;
     private boolean pageCount;
     private boolean language;
@@ -28,7 +29,6 @@ public class MetadataClearFlags {
     private boolean goodreadsReviewCount;
     private boolean hardcoverRating;
     private boolean hardcoverReviewCount;
-    private boolean personalRating;
     private boolean authors;
     private boolean categories;
     private boolean moods;

@@ -19,6 +19,7 @@ import {Subject} from 'rxjs';
 })
 export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
   viewMode: 'route' | 'dialog' = 'route';
+  seriesViewMode: boolean = false;
 
   private userService = inject(UserService);
   private messageService = inject(MessageService);
@@ -34,6 +35,10 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
       if (preference === 'dialog' || preference === 'route') {
         this.viewMode = preference;
       }
+      const seriesPref = userState.user?.userSettings?.enableSeriesView;
+      if (typeof seriesPref === 'boolean') {
+        this.seriesViewMode = seriesPref;
+      }
     });
   }
 
@@ -47,6 +52,11 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
     this.savePreference(value);
   }
 
+  onSeriesViewModeChange(value: boolean): void {
+    this.seriesViewMode = value;
+    this.saveSeriesViewPreference(value);
+  }
+
   private savePreference(value: 'route' | 'dialog'): void {
     const user = this.userService.getCurrentUser();
     if (!user) return;
@@ -58,6 +68,21 @@ export class MetaCenterViewModeComponent implements OnInit, OnDestroy {
       severity: 'success',
       summary: 'Preferences Updated',
       detail: 'Your metadata center view preference has been saved.',
+      life: 1500,
+    });
+  }
+
+  private saveSeriesViewPreference(value: boolean): void {
+    const user = this.userService.getCurrentUser();
+    if (!user) return;
+
+    user.userSettings.enableSeriesView = value;
+    this.userService.updateUserSetting(user.id, 'enableSeriesView', value);
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Preferences Updated',
+      detail: 'Your series view mode preference has been saved.',
       life: 1500,
     });
   }

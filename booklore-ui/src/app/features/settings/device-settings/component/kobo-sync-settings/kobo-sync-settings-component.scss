@@ -77,22 +77,16 @@
   border: 1px solid var(--p-content-border-color);
   border-radius: 8px;
   background: var(--p-content-background);
-  padding: 1.5rem;
+  padding: 1.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
 
 .setting-item {
   display: flex;
   align-items: flex-start;
   gap: 2rem;
-  padding: 0.25rem 0;
-
-  &:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-  }
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -122,6 +116,7 @@
     .setting-label {
       margin-bottom: 0;
       flex-shrink: 0;
+      min-width: 150px;
     }
 
     .slider-container {
@@ -132,6 +127,17 @@
       @media (max-width: 768px) {
         min-width: 180px;
         max-width: 250px;
+      }
+    }
+
+    .token-input-group {
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+
+      @media (max-width: 768px) {
+        min-width: 250px;
+        max-width: 100%;
       }
     }
   }
@@ -162,11 +168,6 @@
   align-items: center;
   gap: 0.5rem;
   width: 100%;
-  max-width: 500px;
-
-  @media (max-width: 768px) {
-    max-width: 100%;
-  }
 
   .token-input {
     flex: 1;

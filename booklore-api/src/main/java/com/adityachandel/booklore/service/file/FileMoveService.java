@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class FileMoveService {
 
+    private static final long EVENT_DRAIN_TIMEOUT_MS = 300;
+
     private final BookRepository bookRepository;
     private final LibraryRepository libraryRepository;
     private final FileMoveHelper fileMoveHelper;
@@ -41,79 +43,100 @@ public class FileMoveService {
     @Transactional
     public void bulkMoveFiles(FileMoveRequest request) {
         List<FileMoveRequest.Move> moves = request.getMoves();
-        Set<Long> targetLibraryIds = moves.stream().map(FileMoveRequest.Move::getTargetLibraryId).collect(Collectors.toSet());
-        Set<Long> sourceLibraryIds = new HashSet<>();
-        monitoringRegistrationService.unregisterLibraries(targetLibraryIds);
+        
+        Set<Long> allAffectedLibraryIds = collectAllAffectedLibraryIds(moves);
+        Set<Path> libraryPaths = monitoringRegistrationService.getPathsForLibraries(allAffectedLibraryIds);
+        
+        log.info("Unregistering {} libraries before bulk file move", allAffectedLibraryIds.size());
+        monitoringRegistrationService.unregisterLibraries(allAffectedLibraryIds);
+        monitoringRegistrationService.waitForEventsDrainedByPaths(libraryPaths, EVENT_DRAIN_TIMEOUT_MS);
 
-        for (FileMoveRequest.Move move : moves) {
-            Long bookId = move.getBookId();
-            Long targetLibraryId = move.getTargetLibraryId();
-            Long targetLibraryPathId = move.getTargetLibraryPathId();
-
-            Path tempPath = null;
-            Path currentFilePath = null;
-
-            try {
-                Optional<BookEntity> optionalBook = bookRepository.findById(bookId);
-                Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(targetLibraryId);
-                if (optionalBook.isEmpty() || optionalLibrary.isEmpty()) {
-                    continue;
-                }
-                BookEntity bookEntity = optionalBook.get();
-                LibraryEntity targetLibrary = optionalLibrary.get();
-
-                Optional<LibraryPathEntity> optionalLibraryPathEntity = targetLibrary.getLibraryPaths().stream().filter(l -> Objects.equals(l.getId(), targetLibraryPathId)).findFirst();
-                if (optionalLibraryPathEntity.isEmpty()) {
-                    continue;
-                }
-                LibraryPathEntity libraryPathEntity = optionalLibraryPathEntity.get();
-
-                LibraryEntity sourceLibrary = bookEntity.getLibrary();
-                if (!sourceLibrary.getId().equals(targetLibrary.getId()) && !sourceLibraryIds.contains(sourceLibrary.getId())) {
-                    monitoringRegistrationService.unregisterLibraries(Collections.singleton(sourceLibrary.getId()));
-                    sourceLibraryIds.add(sourceLibrary.getId());
-                }
-                currentFilePath = bookEntity.getFullFilePath();
-                String pattern = fileMoveHelper.getFileNamingPattern(targetLibrary);
-                Path newFilePath = fileMoveHelper.generateNewFilePath(bookEntity, libraryPathEntity, pattern);
-                if (currentFilePath.equals(newFilePath)) {
-                    continue;
-                }
-
-                tempPath = fileMoveHelper.moveFileWithBackup(currentFilePath, newFilePath);
-
-                String newFileName = newFilePath.getFileName().toString();
-                String newFileSubPath = fileMoveHelper.extractSubPath(newFilePath, libraryPathEntity);
-                bookRepository.updateFileAndLibrary(bookEntity.getId(), newFileSubPath, newFileName, targetLibrary.getId(), libraryPathEntity);
-
-                fileMoveHelper.commitMove(tempPath, newFilePath);
-                tempPath = null;
-
-                Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
-                fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(currentFilePath.getParent(), Set.of(libraryRoot));
-
-                entityManager.clear();
-
-                BookEntity fresh = bookRepository.findById(bookId).orElseThrow();
-
-                notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(fresh, false));
-
-            } catch (Exception e) {
-                log.error("Error moving file for book ID {}: {}", bookId, e.getMessage(), e);
-            } finally {
-                if (tempPath != null && currentFilePath != null) {
-                    fileMoveHelper.rollbackMove(tempPath, currentFilePath);
-                }
+        try {
+            for (FileMoveRequest.Move move : moves) {
+                processSingleMove(move);
+            }
+        } finally {
+            for (Long libraryId : allAffectedLibraryIds) {
+                libraryRepository.findById(libraryId)
+                        .ifPresent(library -> monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library)));
             }
         }
+    }
 
-        for (Long libraryId : targetLibraryIds) {
-            Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(libraryId);
-            optionalLibrary.ifPresent(library -> monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library)));
+    private Set<Long> collectAllAffectedLibraryIds(List<FileMoveRequest.Move> moves) {
+        Set<Long> libraryIds = new HashSet<>();
+        
+        for (FileMoveRequest.Move move : moves) {
+            libraryIds.add(move.getTargetLibraryId());
+            bookRepository.findById(move.getBookId())
+                    .ifPresent(book -> libraryIds.add(book.getLibrary().getId()));
         }
-        for (Long libraryId : sourceLibraryIds) {
-            Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(libraryId);
-            optionalLibrary.ifPresent(library -> monitoringRegistrationService.registerLibrary(libraryMapper.toLibrary(library)));
+        
+        return libraryIds;
+    }
+
+    private void processSingleMove(FileMoveRequest.Move move) {
+        Long bookId = move.getBookId();
+        Long targetLibraryId = move.getTargetLibraryId();
+        Long targetLibraryPathId = move.getTargetLibraryPathId();
+
+        Path tempPath = null;
+        Path currentFilePath = null;
+
+        try {
+            Optional<BookEntity> optionalBook = bookRepository.findById(bookId);
+            Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(targetLibraryId);
+            if (optionalBook.isEmpty()) {
+                log.warn("Book not found for move operation: bookId={}", bookId);
+                return;
+            }
+            if (optionalLibrary.isEmpty()) {
+                log.warn("Target library not found for move operation: libraryId={}", targetLibraryId);
+                return;
+            }
+            BookEntity bookEntity = optionalBook.get();
+            LibraryEntity targetLibrary = optionalLibrary.get();
+
+            Optional<LibraryPathEntity> optionalLibraryPathEntity = targetLibrary.getLibraryPaths().stream()
+                    .filter(libraryPath -> Objects.equals(libraryPath.getId(), targetLibraryPathId))
+                    .findFirst();
+            if (optionalLibraryPathEntity.isEmpty()) {
+                log.warn("Target library path not found for move operation: libraryId={}, pathId={}", targetLibraryId, targetLibraryPathId);
+                return;
+            }
+            LibraryPathEntity libraryPathEntity = optionalLibraryPathEntity.get();
+
+            currentFilePath = bookEntity.getFullFilePath();
+            String pattern = fileMoveHelper.getFileNamingPattern(targetLibrary);
+            Path newFilePath = fileMoveHelper.generateNewFilePath(bookEntity, libraryPathEntity, pattern);
+            if (currentFilePath.equals(newFilePath)) {
+                return;
+            }
+
+            tempPath = fileMoveHelper.moveFileWithBackup(currentFilePath);
+
+            String newFileName = newFilePath.getFileName().toString();
+            String newFileSubPath = fileMoveHelper.extractSubPath(newFilePath, libraryPathEntity);
+            bookRepository.updateFileAndLibrary(bookEntity.getId(), newFileSubPath, newFileName, targetLibrary.getId(), libraryPathEntity);
+
+            fileMoveHelper.commitMove(tempPath, newFilePath);
+            tempPath = null;
+
+            Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
+            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(currentFilePath.getParent(), Set.of(libraryRoot));
+
+            entityManager.clear();
+
+            BookEntity fresh = bookRepository.findById(bookId).orElseThrow();
+
+            notificationService.sendMessage(Topic.BOOK_UPDATE, bookMapper.toBookWithDescription(fresh, false));
+
+        } catch (Exception e) {
+            log.error("Error moving file for book ID {}: {}", bookId, e.getMessage(), e);
+        } finally {
+            if (tempPath != null && currentFilePath != null) {
+                fileMoveHelper.rollbackMove(tempPath, currentFilePath);
+            }
         }
     }
 
@@ -122,8 +145,10 @@ public class FileMoveService {
 
         Long libraryId = bookEntity.getLibraryPath().getLibrary().getId();
         Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
+        boolean isLibraryMonitoredWhenCalled = false;
 
         try {
+            isLibraryMonitoredWhenCalled = monitoringRegistrationService.isLibraryMonitored(libraryId);
             String pattern = fileMoveHelper.getFileNamingPattern(bookEntity.getLibraryPath().getLibrary());
             Path currentFilePath = bookEntity.getFullFilePath();
             Path expectedFilePath = fileMoveHelper.generateNewFilePath(bookEntity, bookEntity.getLibraryPath(), pattern);
@@ -134,7 +159,12 @@ public class FileMoveService {
 
             log.info("File for book ID {} needs to be moved from {} to {} to match library pattern", bookEntity.getId(), currentFilePath, expectedFilePath);
 
-            fileMoveHelper.unregisterLibrary(libraryId);
+            if (isLibraryMonitoredWhenCalled) {
+                log.debug("Unregistering library {} before moving a single file", libraryId);
+                Set<Path> libraryPaths = monitoringRegistrationService.getPathsForLibraries(Set.of(libraryId));
+                fileMoveHelper.unregisterLibrary(libraryId);
+                monitoringRegistrationService.waitForEventsDrainedByPaths(libraryPaths, EVENT_DRAIN_TIMEOUT_MS);
+            }
 
             fileMoveHelper.moveFile(currentFilePath, expectedFilePath);
 
@@ -151,7 +181,10 @@ public class FileMoveService {
         } catch (Exception e) {
             log.error("Failed to move file for book ID {}: {}", bookEntity.getId(), e.getMessage(), e);
         } finally {
-            fileMoveHelper.registerLibraryPaths(libraryId, libraryRoot);
+            if (isLibraryMonitoredWhenCalled) {
+                log.debug("Registering library paths for library {} with root {}", libraryId, libraryRoot);
+                fileMoveHelper.registerLibraryPaths(libraryId, libraryRoot);
+            }
         }
 
         return FileMoveResult.builder().moved(false).build();

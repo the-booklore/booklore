@@ -19,33 +19,76 @@
             </div>
           }
 
-          @let progress = getProgressPercent(book);
-          @if (progress !== null) {
-            <p-progressBar
-              [value]="progress"
-              [showValue]="false"
-              class="cover-progress-bar"
-              [ngClass]="{
-                'progress-complete': progress === 100,
-                'progress-incomplete': progress < 100
-              }"
-              [style]="{ height: '6px' }"
-            ></p-progressBar>
-          }
+          <div 
+            class="cover-progress-bar-container"
+            [style.--progress-count]="getProgressCount(book)">
+            @let progress = getProgressPercent(book);
+            @if (progress !== null) {
+              <p-progressBar
+                [value]="progress"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="{
+                  'progress-complete': progress === 100,
+                  'progress-incomplete': progress < 100
+                }"
+              ></p-progressBar>
+            }
 
-          @if (getKoProgressPercent(book) !== null) {
-            <p-progressBar
-              [value]="getKoProgressPercent(book)"
-              [showValue]="false"
-              [ngClass]="[
-                getProgressPercent(book) == null ? 'cover-progress-bar-ko-only' : 'cover-progress-bar-ko-both',
-                getKoProgressPercent(book) === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
-              ]"
-              [style]="{ height: '6px' }"
-            >
-            </p-progressBar>
-          }
+            @if (getKoProgressPercent(book) !== null) {
+              <p-progressBar
+                [value]="getKoProgressPercent(book)"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="[
+                  getKoProgressPercent(book) === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
+                ]"
+              >
+              </p-progressBar>
+            }
+
+            @if (getKoboProgressPercent(book) !== null) {
+              <p-progressBar
+                [value]="getKoboProgressPercent(book)"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="[
+                  getKoboProgressPercent(book) === 100 ? 'progress-complete-kobo' : 'progress-incomplete-kobo'
+                ]"
+              >
+              </p-progressBar>
+            }
+          </div>
         </div>
+
+        @if (navigationState$ | async) {
+          <div class="navigation-buttons-mobile">
+            <p-button
+              icon="pi pi-chevron-left"
+              [disabled]="!canNavigatePrevious()"
+              (onClick)="navigatePrevious()"
+              rounded
+              outlined
+              severity="info"
+              pTooltip="Go to previous book"
+              tooltipPosition="bottom">
+            </p-button>
+            <span class="text-sm text-surface-600 dark:text-surface-400">
+              {{ getNavigationPosition() }}
+            </span>
+            <p-button
+              icon="pi pi-chevron-right"
+              iconPos="right"
+              [disabled]="!canNavigateNext()"
+              (onClick)="navigateNext()"
+              severity="info"
+              rounded
+              outlined
+              pTooltip="Go to next book"
+              tooltipPosition="bottom">
+            </p-button>
+          </div>
+        }
       </div>
 
       <div class="info-section">
@@ -93,10 +136,10 @@
               <div class="rating-group">
                 <i class="pi pi-thumbs-up-fill rating-icon" pTooltip="Personal Rating" tooltipPosition="top"></i>
                 <p-rating
-                  [ngModel]="book?.metadata!.personalRating"
+                  [ngModel]="book?.personalRating"
                   (onRate)="onPersonalRatingChange(book, $event)"
                   stars="10"
-                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.metadata!.personalRating, 10)">
+                  [style.--p-rating-icon-active-color]="getStarColorScaled(book?.personalRating, 10)">
                 </p-rating>
               </div>
               <p-button
@@ -112,7 +155,7 @@
             </div>
 
             @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.googleId) {
-              <div class="divider"></div>
+              <div class="gradient-divider"></div>
             }
 
             <div class="external-ratings">
@@ -125,7 +168,7 @@
                   [pTooltip]="getRatingTooltip(book, 'amazon')"
                   tooltipPosition="top"
                 >
-                  <img src="https://www.amazon.com/favicon.ico" alt="Amazon" class="rating-favicon" />
+                  <img src="https://www.amazon.com/favicon.ico" alt="Amazon" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.amazonRating) }}%</span>
                 </a>
               }
@@ -139,7 +182,7 @@
                   [pTooltip]="getRatingTooltip(book, 'goodreads')"
                   tooltipPosition="top"
                 >
-                  <img src="https://www.goodreads.com/favicon.ico" alt="Goodreads" class="rating-favicon" />
+                  <img src="https://www.goodreads.com/favicon.ico" alt="Goodreads" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.goodreadsRating) }}%</span>
                 </a>
               }
@@ -153,7 +196,7 @@
                   [pTooltip]="getRatingTooltip(book, 'hardcover')"
                   tooltipPosition="top"
                 >
-                  <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon" />
+                  <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
                 </a>
               }
@@ -165,7 +208,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img src="https://books.google.com/favicon.ico" alt="Google Books" class="rating-favicon" />
+                  <img src="https://books.google.com/favicon.ico" alt="Google Books" class="rating-favicon"/>
                 </a>
               }
 
@@ -176,7 +219,7 @@
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <img src="https://www.comicvine.com/favicon.ico" alt="Comic Vine" class="rating-favicon" />
+                  <img src="https://www.comicvine.com/favicon.ico" alt="Comic Vine" class="rating-favicon"/>
                 </a>
               }
             </div>
@@ -328,7 +371,9 @@
               @if (book?.metadata?.isbn13 || book?.metadata?.isbn10) {
                 <span class="metadata-value">
                   {{ book.metadata!.isbn13 }}
-                  @if (book?.metadata?.isbn13 && book?.metadata?.isbn10) { / }
+                  @if (book?.metadata?.isbn13 && book?.metadata?.isbn10) {
+                    /
+                  }
                   {{ book.metadata!.isbn10 }}
                 </span>
               } @else {
@@ -452,27 +497,51 @@
 
         @if (userService.userState$ | async; as userState) {
           <div class="action-buttons">
+            @if (navigationState$ | async) {
+              <div class="navigation-buttons-desktop">
+                <p-button
+                  icon="pi pi-chevron-left"
+                  [disabled]="!canNavigatePrevious()"
+                  (onClick)="navigatePrevious()"
+                  rounded
+                  outlined
+                  severity="info"
+                  pTooltip="Go to previous book"
+                  tooltipPosition="bottom">
+                </p-button>
+                <span class="text-sm text-surface-600 dark:text-surface-400">
+                  {{ getNavigationPosition() }}
+                </span>
+                <p-button
+                  icon="pi pi-chevron-right"
+                  iconPos="right"
+                  [disabled]="!canNavigateNext()"
+                  (onClick)="navigateNext()"
+                  severity="info"
+                  rounded
+                  outlined
+                  pTooltip="Go to next book"
+                  tooltipPosition="bottom">
+                </p-button>
+              </div>
+              <p-divider layout="vertical" class="action-divider"></p-divider>
+            }
             @if (book!.bookType === 'PDF') {
               @if (readMenuItems$ | async; as readItems) {
                 <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF') {
+            @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
               <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
-            <p-button label="Shelf" icon="pi pi-folder" severity="secondary" outlined (onClick)="assignShelf(book.id)"></p-button>
+            <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
                 @if (downloadMenuItems$ | async; as downloadItems) {
-                  <p-splitbutton label="Download" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined/>
+                  <p-splitbutton label="Download" icon="pi pi-download" [model]="downloadItems" (onClick)="download(book)" severity="success" outlined class="mobile-icon-only"/>
                 }
               } @else {
-                <p-button label="Download" icon="pi pi-download" severity="success" outlined (onClick)="download(book)"></p-button>
-              }
-            }
-            @if (userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
-              @if (emailMenuItems$ | async; as emailItems) {
-                <p-splitbutton label="Quick Send" icon="pi pi-send" [model]="emailItems" (onClick)="quickSend(book!.id)" outlined severity="info"></p-splitbutton>
+                <p-button label="Download" icon="pi pi-download" severity="success" outlined (onClick)="download(book)" class="mobile-icon-only"></p-button>
               }
             }
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
@@ -486,7 +555,8 @@
                   (onClick)="quickRefresh(book!.id)"
                   [disabled]="isAutoFetching"
                   pTooltip="Automatically fetch metadata using default sources"
-                  tooltipPosition="top">
+                  tooltipPosition="top"
+                  styleClass="mobile-icon-only">
                 </p-splitbutton>
               }
             }
@@ -523,7 +593,7 @@
 
     <p-tabs lazy="true" class="custom-p-tabs" [value]="defaultTabValue" scrollable>
       <p-tablist>
-        @if (bookInSeries.length > 0) {
+        @if (bookInSeries.length > 1) {
           <p-tab [value]="1">
             <i class="pi pi-ethereum"></i> More in Series
           </p-tab>
@@ -541,12 +611,14 @@
       <p-tabpanels>
         <p-tabpanel [value]="1">
           <div class="tab-content">
-            @if (bookInSeries.length > 0) {
+            @if (bookInSeries.length > 1) {
               <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
                 @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                  <div class="dashboard-scroller-card">
-                    <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                  </div>
+                  @if (bookInSeriesItem.id !== book.id) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                    </div>
+                  }
                 }
               </div>
             }

@@ -82,7 +82,7 @@ class KoboEntitlementServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.getDownloadUrls().size());
-        assertEquals(KoboBookFormat.EPUB3.toString(), result.getDownloadUrls().get(0).getFormat());
+        assertEquals(KoboBookFormat.EPUB3.toString(), result.getDownloadUrls().getFirst().getFormat());
     }
 
     private BookEntity createCbxBookEntity(Long id) {

@@ -3,7 +3,7 @@ Description=BookLore Database Container Using MariaDB
 
 [Container]
 ContainerName=booklore-db
-Image=lscr.io/linuxserver/mariadb:11.4.5
+Image=lscr.io/linuxserver/mariadb:11.4.8
 Pod=booklore.pod
 Pull=always
 

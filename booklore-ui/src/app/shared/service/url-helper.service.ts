@@ -100,4 +100,9 @@ export class UrlHelperService {
       }
     });
   }
+
+  getIconUrl(iconName: string): string {
+    const url = `${this.mediaBaseUrl}/icon/${iconName}`;
+    return this.appendToken(url);
+  }
 }

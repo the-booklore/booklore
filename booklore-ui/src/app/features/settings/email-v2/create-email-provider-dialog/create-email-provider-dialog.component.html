@@ -1,63 +1,203 @@
-<form [formGroup]="emailProviderForm" (ngSubmit)="createEmailProvider()" class="space-y-6 p-6">
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Provider Name:</label>
-    <input type="text" pInputText formControlName="name" placeholder="Enter provider name..." class="w-full md:w-80"/>
-  </div>
-  @if (emailProviderForm.get('name')?.invalid && (emailProviderForm.get('name')?.dirty || emailProviderForm.get('name')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Provider name is required.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Host:</label>
-    <input type="text" pInputText formControlName="host" placeholder="Enter host..." class="w-full md:w-80"/>
-  </div>
-  @if (emailProviderForm.get('host')?.invalid && (emailProviderForm.get('host')?.dirty || emailProviderForm.get('host')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Host is required.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Port:</label>
-    <input type="number" pInputText formControlName="port" placeholder="Enter port..." class="w-full md:w-80"/>
-  </div>
-  @if (emailProviderForm.get('port')?.invalid && (emailProviderForm.get('port')?.dirty || emailProviderForm.get('port')?.touched)) {
-    <small class="text-red-500 pl-44">
-      Port is required and must be a number.
-    </small>
-  }
-
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Username:</label>
-    <input type="text" pInputText formControlName="username" placeholder="Enter username..." class="w-full md:w-80"/>
+<div class="email-provider-creator">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-envelope header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Create Email Provider</h2>
+      <p class="panel-description">Configure a new email provider for sending notifications</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      (click)="closeDialog()"
+      severity="secondary"
+      [text]="true"
+      [rounded]="true"
+      class="close-button"
+      pTooltip="Close"
+      tooltipPosition="left"/>
   </div>
 
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Password:</label>
-    <input type="password" pInputText formControlName="password" placeholder="Enter password..." class="w-full md:w-80"/>
-  </div>
+  <form [formGroup]="emailProviderForm" (ngSubmit)="createEmailProvider()">
+    <div class="form-container">
+      <div class="form-group highlight-group">
+        <label for="providerName" class="form-label">
+          <i class="pi pi-tag label-icon"></i>
+          Provider Name
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="providerName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="input-full"
+            placeholder="e.g., Gmail SMTP, SendGrid"
+            [class.filled]="emailProviderForm.get('name')?.value"
+            autofocus
+          />
+          @if (emailProviderForm.get('name')?.value && emailProviderForm.get('name')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('name')?.invalid && (emailProviderForm.get('name')?.dirty || emailProviderForm.get('name')?.touched)) {
+          <small class="field-error">Provider name is required.</small>
+        }
+      </div>
 
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">From Address:</label>
-    <input type="text" pInputText formControlName="fromAddress" placeholder="Enter from address... " class="w-full md:w-80"/>
-  </div>
+      <div class="gradient-divider"></div>
 
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">Auth:</label>
-    <p-checkbox formControlName="auth" [binary]="true"></p-checkbox>
-  </div>
+      <div class="form-group highlight-group">
+        <label for="host" class="form-label">
+          <i class="pi pi-server label-icon"></i>
+          Host
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="host"
+            type="text"
+            pInputText
+            formControlName="host"
+            class="input-full"
+            placeholder="e.g., smtp.gmail.com"
+            [class.filled]="emailProviderForm.get('host')?.value"
+          />
+          @if (emailProviderForm.get('host')?.value && emailProviderForm.get('host')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('host')?.invalid && (emailProviderForm.get('host')?.dirty || emailProviderForm.get('host')?.touched)) {
+          <small class="field-error">Host is required.</small>
+        }
+      </div>
 
-  <div class="flex items-center gap-4">
-    <label class="w-40 text-right font-medium">StartTLS:</label>
-    <p-checkbox formControlName="startTls" [binary]="true"></p-checkbox>
-  </div>
+      <div class="form-group highlight-group">
+        <label for="port" class="form-label">
+          <i class="pi pi-hashtag label-icon"></i>
+          Port
+          <span class="required-indicator">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input
+            id="port"
+            type="number"
+            pInputText
+            formControlName="port"
+            class="input-full"
+            placeholder="e.g., 587, 465"
+            [class.filled]="emailProviderForm.get('port')?.value"
+          />
+          @if (emailProviderForm.get('port')?.value && emailProviderForm.get('port')?.valid) {
+            <i class="pi pi-check-circle input-icon success"></i>
+          }
+        </div>
+        @if (emailProviderForm.get('port')?.invalid && (emailProviderForm.get('port')?.dirty || emailProviderForm.get('port')?.touched)) {
+          <small class="field-error">Port is required and must be a number.</small>
+        }
+      </div>
 
-  <div class="flex justify-end">
-    <p-button label="Create Email Provider" [disabled]="emailProviderForm.invalid" type="submit">
-    </p-button>
-  </div>
+      <div class="gradient-divider"></div>
 
-</form>
+      <div class="form-group highlight-group">
+        <label for="username" class="form-label">
+          <i class="pi pi-user label-icon"></i>
+          Username
+        </label>
+        <input
+          id="username"
+          type="text"
+          pInputText
+          formControlName="username"
+          class="input-full"
+          placeholder="Enter username"
+        />
+      </div>
+
+      <div class="form-group highlight-group">
+        <label for="password" class="form-label">
+          <i class="pi pi-lock label-icon"></i>
+          Password
+        </label>
+        <input
+          id="password"
+          type="password"
+          pInputText
+          formControlName="password"
+          class="input-full"
+          placeholder="Enter password"
+        />
+      </div>
+
+      <div class="form-group highlight-group">
+        <label for="fromAddress" class="form-label">
+          <i class="pi pi-at label-icon"></i>
+          From Address
+        </label>
+        <input
+          id="fromAddress"
+          type="text"
+          pInputText
+          formControlName="fromAddress"
+          class="input-full"
+          placeholder="e.g., noreply@example.com"
+        />
+      </div>
+
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="auth" [binary]="true" inputId="auth"></p-checkbox>
+          <label for="auth" class="checkbox-label">
+            <span class="checkbox-title">Enable Authentication</span>
+            <span class="checkbox-description">Require username and password for SMTP</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group highlight-group checkbox-group">
+        <div class="checkbox-row">
+          <p-checkbox formControlName="startTls" [binary]="true" inputId="startTls"></p-checkbox>
+          <label for="startTls" class="checkbox-label">
+            <span class="checkbox-title">Enable StartTLS</span>
+            <span class="checkbox-description">Use TLS encryption for secure connection</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <div class="validation-status">
+        @if (emailProviderForm.invalid) {
+          <div class="validation-message error">
+            <i class="pi pi-exclamation-circle"></i>
+            <span>Please fill in all required fields</span>
+          </div>
+        } @else {
+          <div class="validation-message success">
+            <i class="pi pi-check-circle"></i>
+            <span>Ready to create provider</span>
+          </div>
+        }
+      </div>
+      <div class="footer-actions">
+        <p-button
+          label="Cancel"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="closeDialog()"
+          type="button"
+        />
+        <p-button
+          label="Create Provider"
+          icon="pi pi-plus"
+          severity="success"
+          type="submit"
+          [disabled]="emailProviderForm.invalid"
+        />
+      </div>
+    </div>
+  </form>
+</div>

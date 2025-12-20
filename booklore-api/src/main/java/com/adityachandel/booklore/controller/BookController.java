@@ -5,6 +5,7 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookRecommendation;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
+import com.adityachandel.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ShelvesAssignmentRequest;
@@ -184,6 +185,30 @@ public class BookController {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
         List<Book> updatedBooks = bookService.resetProgress(bookIds, type);
+        return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Update personal rating", description = "Update the personal rating for one or more books.")
+    @ApiResponse(responseCode = "200", description = "Personal rating updated successfully")
+    @PutMapping("/personal-rating")
+    public ResponseEntity<List<Book>> updatePersonalRating(
+            @Parameter(description = "Personal rating update request") @RequestBody @Valid PersonalRatingUpdateRequest request) {
+        List<Book> updatedBooks = bookService.updatePersonalRating(request.ids(), request.rating());
+        return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Reset personal rating", description = "Reset the personal rating for one or more books.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Personal rating reset successfully"),
+        @ApiResponse(responseCode = "400", description = "No book IDs provided")
+    })
+    @PostMapping("/reset-personal-rating")
+    public ResponseEntity<List<Book>> resetPersonalRating(
+            @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody List<Long> bookIds) {
+        if (bookIds == null || bookIds.isEmpty()) {
+            throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
+        }
+        List<Book> updatedBooks = bookService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
     }
 }

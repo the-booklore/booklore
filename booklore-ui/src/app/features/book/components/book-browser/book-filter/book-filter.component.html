@@ -9,13 +9,14 @@
       optionValue="value"
       class="filter-mode-select"
       allowEmpty="false"
-      styleClass="h-8"
-      pTooltip="Filter selection mode: AND / OR / Single">></p-selectButton>
+      styleClass="h-8"></p-selectButton>
   </div>
 
   <div class="filter-content">
-    <p-accordion [value]="expandedPanels">
+    <p-accordion [value]="expandedPanels" [multiple]="true">
       @for (filterType of filterTypes; track trackByFilterType(i, filterType); let i = $index) {
+        @if (filterStreams[filterType] | async; as filters) {
+          @if (filters.length > 0) {
         <p-accordion-panel [value]="i">
           <p-accordion-header>
             <span class="filter-type-label">
@@ -29,28 +30,28 @@
           </p-accordion-header>
 
           <p-accordion-content>
-            @if (filterStreams[filterType] | async; as filters) {
-              <div class="filter-list">
-                @for (filter of filters; track trackByFilter(j, filter); let j = $index) {
-                  <div
-                    class="filter-row"
-                    [ngClass]="{
-                      'active': activeFilters[filterType]?.includes(filter.value?.id || filter.value)
-                    }"
-                    (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
-                    {{ filter.value.name || filter.value }}
-                    <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
-                  </div>
-                }
-                @if (truncatedFilters[filterType]) {
-                  <div class="truncation-notice">
-                    Showing first 250 items
-                  </div>
-                }
-              </div>
-            }
+            <div class="filter-list">
+              @for (filter of filters; track trackByFilter(j, filter); let j = $index) {
+                <div
+                  class="filter-row"
+                  [ngClass]="{
+                    'active': activeFilters[filterType]?.includes(filter.value?.id || filter.value)
+                  }"
+                  (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
+                  {{ filter.value.name || filter.value }}
+                  <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
+                </div>
+              }
+              @if (truncatedFilters[filterType]) {
+                <div class="truncation-notice">
+                  Showing first 500 items
+                </div>
+              }
+            </div>
           </p-accordion-content>
         </p-accordion-panel>
+          }
+        }
       }
     </p-accordion>
 

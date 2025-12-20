@@ -102,9 +102,17 @@ export interface PublicReviewSettings {
 export interface KoboSettings {
   convertToKepub: boolean;
   conversionLimitInMb: number;
+  conversionImageCompressionPercentage: number;
   convertCbxToEpub: boolean;
   conversionLimitInMbForCbx: number;
   forceEnableHyphenation: boolean;
+}
+
+export interface CoverCroppingSettings {
+  verticalCroppingEnabled: boolean;
+  horizontalCroppingEnabled: boolean;
+  aspectRatioThreshold: number;
+  smartCroppingEnabled: boolean;
 }
 
 export interface AppSettings {
@@ -125,6 +133,7 @@ export interface AppSettings {
   metadataPersistenceSettings: MetadataPersistenceSettings;
   metadataPublicReviewsSettings: PublicReviewSettings;
   koboSettings: KoboSettings;
+  coverCroppingSettings: CoverCroppingSettings;
   metadataDownloadOnBookdrop: boolean;
 }
 
@@ -145,5 +154,6 @@ export enum AppSettingKey {
   METADATA_PERSISTENCE_SETTINGS = 'METADATA_PERSISTENCE_SETTINGS',
   METADATA_DOWNLOAD_ON_BOOKDROP = 'METADATA_DOWNLOAD_ON_BOOKDROP',
   METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS',
-  KOBO_SETTINGS = 'KOBO_SETTINGS'
+  KOBO_SETTINGS = 'KOBO_SETTINGS',
+  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS'
 }

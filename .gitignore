@@ -41,4 +41,6 @@ out/
 .vscode/
 local/
 
+### Dev config, books, and data ###
 booklore-api/src/main/resources/application-local.yaml
+/shared/

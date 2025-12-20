@@ -186,7 +186,12 @@ public class BookDropService {
                                  AtomicInteger failedCount,
                                  AtomicInteger totalFilesProcessed) {
         List<Long> excludedIds = Optional.ofNullable(request.getExcludedIds()).orElse(List.of());
-        List<Long> allIds = bookdropFileRepository.findAllExcludingIdsFlat(excludedIds);
+        List<Long> allIds;
+        if (excludedIds.isEmpty()) {
+            allIds = bookdropFileRepository.findAllIds();
+        } else {
+            allIds = bookdropFileRepository.findAllExcludingIdsFlat(excludedIds);
+        }
         log.info("SelectAll: Total files to finalize (after exclusions): {}, Excluded IDs: {}", allIds.size(), excludedIds);
 
         processFileChunks(allIds, metadataById, defaultLibraryId, defaultPathId, results, failedCount, totalFilesProcessed);
@@ -507,7 +512,7 @@ public class BookDropService {
     private void cleanupTempFile(Path tempPath) {
         if (tempPath != null) {
             try {
-                Files.delete(tempPath);
+                Files.deleteIfExists(tempPath);
             } catch (Exception e) {
                 log.warn("Failed to cleanup temp file: {}", tempPath, e);
             }

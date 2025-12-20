@@ -69,7 +69,7 @@ public class UserBookProgressEntity {
     @Column(name = "kobo_location_type", length = 50)
     private String koboLocationType;
 
-    @Column(name = "kobo_location_source", length = 50)
+    @Column(name = "kobo_location_source", length = 512)
     private String koboLocationSource;
 
     @Enumerated(EnumType.STRING)
@@ -93,4 +93,7 @@ public class UserBookProgressEntity {
 
     @Column(name = "read_status_modified_time")
     private Instant readStatusModifiedTime;
+
+    @Column(name = "personal_rating")
+    private Integer personalRating;
 }

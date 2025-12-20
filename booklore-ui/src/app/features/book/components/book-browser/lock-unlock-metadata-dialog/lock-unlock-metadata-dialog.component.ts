@@ -6,6 +6,8 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {BookService} from '../../../service/book.service';
 import {Divider} from 'primeng/divider';
+import {LoadingService} from '../../../../../core/services/loading.service';
+import {finalize} from 'rxjs';
 
 @Component({
   selector: 'app-lock-unlock-metadata-dialog',
@@ -23,6 +25,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
   private dynamicDialogConfig = inject(DynamicDialogConfig);
   private dialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
+  private loadingService = inject(LoadingService);
   fieldLocks: Record<string, boolean | undefined> = {};
 
   bookIds: Set<number> = this.dynamicDialogConfig.data.bookIds;
@@ -32,7 +35,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     'isbn13Locked', 'isbn10Locked', 'asinLocked', 'pageCountLocked', 'thumbnailLocked', 'languageLocked', 'coverLocked',
     'seriesNameLocked', 'seriesNumberLocked', 'seriesTotalLocked', 'authorsLocked', 'categoriesLocked', 'moodsLocked', 'tagsLocked',
     'amazonRatingLocked', 'amazonReviewCountLocked', 'goodreadsRatingLocked', 'goodreadsReviewCountLocked',
-    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'googleIdLocked', 'comicvineIdLocked'
+    'hardcoverRatingLocked', 'hardcoverReviewCountLocked', 'goodreadsIdLocked', 'hardcoverIdLocked', 'hardcoverBookIdLocked', 'googleIdLocked', 'comicvineIdLocked'
   ];
 
   fieldLabels: Record<string, string> = {
@@ -63,6 +66,7 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     hardcoverReviewCountLocked: 'Hardcover Reviews',
     goodreadsIdLocked: 'Goodreads ID',
     hardcoverIdLocked: 'Hardcover ID',
+    hardcoverBookIdLocked: 'Hardcover Book ID',
     googleIdLocked: 'Google ID',
     comicvineIdLocked: 'Comicvine ID',
   };
@@ -117,24 +121,29 @@ export class LockUnlockMetadataDialogComponent implements OnInit {
     }
 
     this.isSaving = true;
-    this.bookService.toggleFieldLocks(this.bookIds, fieldActions).subscribe({
-      next: () => {
+    const loader = this.loadingService.show('Updating field locks...');
+
+    this.bookService.toggleFieldLocks(this.bookIds, fieldActions)
+      .pipe(finalize(() => {
         this.isSaving = false;
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Field Locks Updated',
-          detail: 'Selected metadata fields have been updated successfully.'
-        });
-        this.dialogRef.close('fields-updated');
-      },
-      error: () => {
-        this.isSaving = false;
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Failed to Update Field Locks',
-          detail: 'An error occurred while updating field lock statuses.'
-        });
-      }
-    });
+        this.loadingService.hide(loader);
+      }))
+      .subscribe({
+        next: () => {
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Field Locks Updated',
+            detail: 'Selected metadata fields have been updated successfully.'
+          });
+          this.dialogRef.close('fields-updated');
+        },
+        error: () => {
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Failed to Update Field Locks',
+            detail: 'An error occurred while updating field lock statuses.'
+          });
+        }
+      });
   }
 }

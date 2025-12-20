@@ -23,10 +23,4 @@ export class BackgroundUploadService {
       map(resp => resp?.url)
     );
   }
-
-  resetToDefault(): Observable<void> {
-    return this.http.delete<void>(this.baseUrl).pipe(
-      tap(() => console.log('Background reset to default'))
-    );
-  }
 }

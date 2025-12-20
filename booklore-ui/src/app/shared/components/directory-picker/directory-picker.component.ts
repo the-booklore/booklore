@@ -3,10 +3,9 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UtilityService} from './utility.service';
 import {TableModule} from 'primeng/table';
 import {InputText} from 'primeng/inputtext';
-import {CommonModule} from '@angular/common';
+
 import {FormsModule} from '@angular/forms';
 import {ProgressSpinner} from 'primeng/progressspinner';
-import {Breadcrumb} from 'primeng/breadcrumb';
 import {MenuItem} from 'primeng/api';
 import {CheckboxModule} from 'primeng/checkbox';
 import {InputIcon} from 'primeng/inputicon';
@@ -21,17 +20,15 @@ import {Tooltip} from 'primeng/tooltip';
   imports: [
     TableModule,
     InputText,
-    CommonModule,
     FormsModule,
     ProgressSpinner,
-    Breadcrumb,
     CheckboxModule,
     InputIcon,
     Button,
     InputIcon,
     IconField,
     Tooltip
-  ],
+],
   styleUrls: ['./directory-picker.component.scss']
 })
 export class DirectoryPickerComponent implements OnInit {

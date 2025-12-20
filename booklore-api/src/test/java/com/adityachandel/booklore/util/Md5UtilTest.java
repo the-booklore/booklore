@@ -1,9 +1,14 @@
 package com.adityachandel.booklore.util;
 
 import org.junit.jupiter.api.Test;
+
+import java.util.regex.Pattern;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class Md5UtilTest {
+
+    private static final Pattern PATTERN = Pattern.compile("[a-f0-9]{32}");
 
     @Test
     void testMd5Hex_emptyString() {
@@ -75,6 +80,6 @@ class Md5UtilTest {
     void testMd5Hex_length() {
         String result = Md5Util.md5Hex("any input");
         assertEquals(32, result.length()); // MD5 always produces 32 character hex string
-        assertTrue(result.matches("[a-f0-9]{32}")); // Only lowercase hex characters
+        assertTrue(PATTERN.matcher(result).matches()); // Only lowercase hex characters
     }
 }

@@ -255,7 +255,17 @@ public class SettingPersistenceHelper {
                 .conversionLimitInMb(100)
                 .convertCbxToEpub(false)
                 .conversionLimitInMbForCbx(100)
+                .conversionImageCompressionPercentage(85)
                 .forceEnableHyphenation(false)
+                .build();
+    }
+
+    public CoverCroppingSettings getDefaultCoverCroppingSettings() {
+        return CoverCroppingSettings.builder()
+                .verticalCroppingEnabled(false)
+                .horizontalCroppingEnabled(false)
+                .aspectRatioThreshold(2.5)
+                .smartCroppingEnabled(false)
                 .build();
     }
 }

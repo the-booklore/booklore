@@ -4,11 +4,11 @@
      (mouseout)="isHovered = false"
      (click)="onCardClick($event)">
 
-  <div class="cover-container" [ngClass]="{ 'shimmer': !isImageLoaded, 'center-info-btn': readButtonHidden }">
+  <div class="cover-container" [ngClass]="{ 'shimmer': !isImageLoaded, 'center-info-btn': isSeriesViewActive() }">
     <div
       class="cover-container"
       [ngClass]="{
-        'center-info-btn': readButtonHidden,
+        'center-info-btn': isSeriesViewActive(),
         'loaded': isImageLoaded
       }">
       <img
@@ -27,18 +27,18 @@
     }
 
     @if (book.seriesCount && book.seriesCount! >= 1) {
-      <div class="series-items-count-overlay">
-        {{ book.seriesCount }}
+      <div class="series-items-count-overlay" [pTooltip]="'Series collapsed: ' + book.seriesCount + ' books'" tooltipPosition="right">
+        <i class="pi pi-book" style="font-size: 0.65rem; margin-right: 2px;"></i>{{ book.seriesCount }}
       </div>
     }
 
-    @if (book.seriesCount && book.seriesCount! >= 1) {
+    @if (isSeriesViewActive()) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
     } @else {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
     }
 
-    <p-button [hidden]="readButtonHidden" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
+    <p-button [hidden]="isSeriesViewActive() || !canReadBook()" [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
 
     @if (isCheckboxEnabled) {
       <p-checkbox
@@ -49,25 +49,36 @@
         (onChange)="toggleSelection($event)">
       </p-checkbox>
     }
-
-    @if (progressPercentage !== null) {
-      <p-progressBar
-        [value]="progressPercentage"
-        [showValue]="false"
-        class="cover-progress-bar"
-        [ngClass]="{ 'progress-complete': progressPercentage === 100, 'progress-incomplete': progressPercentage < 100 }">
-      </p-progressBar>
-    }
-    @if (koProgressPercentage !== null) {
-      <p-progressBar
-        [value]="koProgressPercentage"
-        [showValue]="false"
-        [ngClass]="[
-          progressPercentage == null ? 'cover-progress-bar-ko-only' : 'cover-progress-bar-ko-both',
-          koProgressPercentage === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
-        ]">
-      </p-progressBar>
-    }
+    <div class="cover-progress-bar-container">
+      @if (progressPercentage !== null) {
+        <p-progressBar
+          [value]="progressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="{ 'progress-complete': progressPercentage === 100, 'progress-incomplete': progressPercentage < 100 }">
+        </p-progressBar>
+      }
+      @if (koProgressPercentage !== null) {
+        <p-progressBar
+          [value]="koProgressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="[
+            koProgressPercentage === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
+          ]">
+        </p-progressBar>
+      }
+      @if (koboProgressPercentage !== null) {
+        <p-progressBar
+          [value]="koboProgressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="[
+            koboProgressPercentage === 100 ? 'progress-complete-kobo' : 'progress-incomplete-kobo'
+          ]">
+        </p-progressBar>
+      }
+    </div>
   </div>
 
   <div [hidden]="bottomBarHidden">
@@ -85,7 +96,7 @@
           [pTooltip]="'Title: ' + displayTitle">
         {{ displayTitle }}
       </h4>
-      <p-tieredmenu #menu [model]="items" [popup]="true" appendTo="body"></p-tieredmenu>
+      <p-tieredmenu #menu [model]="items" [popup]="true" appendTo="body" (onShow)="onMenuShow()" (onHide)="onMenuHide()"></p-tieredmenu>
       <p-button
         class="custom-button-padding"
         size="small"

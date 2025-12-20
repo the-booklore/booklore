@@ -13,7 +13,8 @@ public enum BookFileExtension {
     EPUB("epub", BookFileType.EPUB),
     CBZ("cbz", BookFileType.CBX),
     CBR("cbr", BookFileType.CBX),
-    CB7("cb7", BookFileType.CBX);
+    CB7("cb7", BookFileType.CBX),
+    FB2("fb2", BookFileType.FB2);
 
     private final String extension;
     private final BookFileType type;

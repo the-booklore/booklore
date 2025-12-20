@@ -1,0 +1,118 @@
+<div class="bulk-edit-container">
+  <div class="info-banner">
+    <i class="pi pi-info-circle"></i>
+    <span>Select which fields to apply to <strong>{{ fileCount }}</strong> selected file(s). Only checked fields will be updated.</span>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <h4>Text Fields</h4>
+    <div class="field-grid">
+      @for (field of textFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <input
+            pInputText
+            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
+            class="field-input"/>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <h4>Number Fields</h4>
+    <div class="field-grid">
+      @for (field of numberFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <input
+            pInputText
+            type="number"
+            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [attr.id]="field.controlName"
+            [attr.aria-label]="field.label"
+            class="field-input field-input-small"/>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="fields-section">
+    <div class="section-header">
+      <h4>Array Fields</h4>
+      <div class="merge-toggle">
+        <span class="merge-label" id="merge-mode-label">Mode:</span>
+        <p-selectButton
+          [options]="mergeOptions"
+          [(ngModel)]="mergeArrays"
+          optionLabel="label"
+          optionValue="value"
+          ariaLabelledBy="merge-mode-label">
+        </p-selectButton>
+      </div>
+    </div>
+    <p class="helper-text"><i class="pi pi-info-circle"></i> Type and press Enter to add each item.</p>
+    <div class="field-grid">
+      @for (field of chipFields; track field.name) {
+        <div class="field-row">
+          <p-checkbox
+            [binary]="true"
+            [ngModel]="isFieldEnabled(field.name)"
+            (ngModelChange)="toggleField(field.name)"
+            [ariaLabel]="'Enable ' + field.label">
+          </p-checkbox>
+          <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
+          <p-autoComplete
+            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [multiple]="true"
+            [suggestions]="[]"
+            [forceSelection]="false"
+            [typeahead]="false"
+            [dropdown]="false"
+            [ariaLabel]="field.label"
+            (onBlur)="onAutoCompleteBlur(field.name, $event)"
+            class="field-input">
+          </p-autoComplete>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p-divider></p-divider>
+
+  <div class="dialog-footer">
+    <p-button
+      label="Cancel"
+      icon="pi pi-times"
+      severity="secondary"
+      (click)="cancel()">
+    </p-button>
+    <p-button
+      label="Apply to Selected"
+      icon="pi pi-check"
+      severity="success"
+      [disabled]="!hasEnabledFields"
+      (click)="apply()">
+    </p-button>
+  </div>
+</div>

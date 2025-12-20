@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.util.BookUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
@@ -87,9 +88,6 @@ public class BookMetadataEntity {
     @Column(name = "hardcover_review_count")
     private Integer hardcoverReviewCount;
 
-    @Column(name = "personal_rating")
-    private Double personalRating;
-
     @Column(name = "asin", length = 10)
     private String asin;
 
@@ -98,6 +96,9 @@ public class BookMetadataEntity {
 
     @Column(name = "hardcover_id", length = 100)
     private String hardcoverId;
+
+    @Column(name = "hardcover_book_id")
+    private Integer hardcoverBookId;
 
     @Column(name = "google_id", length = 100)
     private String googleId;
@@ -170,10 +171,6 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean hardcoverReviewCountLocked = Boolean.FALSE;
 
-    @Column(name = "personal_rating_locked")
-    @Builder.Default
-    private Boolean personalRatingLocked = Boolean.FALSE;
-
     @Column(name = "cover_locked")
     @Builder.Default
     private Boolean coverLocked = Boolean.FALSE;
@@ -214,6 +211,10 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean hardcoverIdLocked = Boolean.FALSE;
 
+    @Column(name = "hardcover_book_id_locked")
+    @Builder.Default
+    private Boolean hardcoverBookIdLocked = Boolean.FALSE;
+
     @Column(name = "google_id_locked")
     @Builder.Default
     private Boolean googleIdLocked = Boolean.FALSE;
@@ -231,6 +232,15 @@ public class BookMetadataEntity {
 
     @Column(name = "embedding_updated_at")
     private Instant embeddingUpdatedAt;
+
+    @Column(name = "search_text", columnDefinition = "TEXT")
+    private String searchText;
+
+    @PrePersist
+    @PreUpdate
+    public void updateSearchText() {
+        this.searchText = BookUtils.buildSearchText(this);
+    }
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
@@ -304,9 +314,9 @@ public class BookMetadataEntity {
         this.hardcoverRatingLocked = lock;
         this.hardcoverReviewCountLocked = lock;
         this.comicvineIdLocked = lock;
-        this.personalRatingLocked = lock;
         this.goodreadsIdLocked = lock;
         this.hardcoverIdLocked = lock;
+        this.hardcoverBookIdLocked = lock;
         this.googleIdLocked = lock;
         this.reviewsLocked = lock;
     }
@@ -336,10 +346,10 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.goodreadsReviewCountLocked)
                 && Boolean.TRUE.equals(this.hardcoverRatingLocked)
                 && Boolean.TRUE.equals(this.hardcoverReviewCountLocked)
-                && Boolean.TRUE.equals(this.personalRatingLocked)
                 && Boolean.TRUE.equals(this.goodreadsIdLocked)
                 && Boolean.TRUE.equals(this.comicvineIdLocked)
                 && Boolean.TRUE.equals(this.hardcoverIdLocked)
+                && Boolean.TRUE.equals(this.hardcoverBookIdLocked)
                 && Boolean.TRUE.equals(this.googleIdLocked)
                 && Boolean.TRUE.equals(this.reviewsLocked)
                 ;

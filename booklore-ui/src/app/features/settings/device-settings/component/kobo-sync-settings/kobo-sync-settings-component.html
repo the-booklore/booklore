@@ -1,3 +1,4 @@
+<p-toast position="top-right"></p-toast>
 <p-confirmDialog></p-confirmDialog>
 
 <div class="main-container enclosing-container">
@@ -26,33 +27,48 @@
         </div>
 
         <div class="settings-card">
-          <form #koboForm="ngForm">
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Enable Kobo Sync</label>
+                <p-toggle-switch
+                  id="syncEnabled"
+                  name="syncEnabled"
+                  [(ngModel)]="koboSyncSettings.syncEnabled"
+                  (ngModelChange)="onSyncToggle()">
+                </p-toggle-switch>
+              </div>
+              <p class="setting-description">
+                Turn on synchronization to automatically sync your library books to your Kobo device.
+              </p>
+            </div>
+          </div>
+
+          @if (koboSyncSettings.syncEnabled) {
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
-                  <label class="setting-label">Enable Kobo Sync</label>
+                  <label class="setting-label">Auto-Add New Books to Kobo Shelf</label>
                   <p-toggle-switch
-                    id="syncEnabled"
-                    name="syncEnabled"
-                    [(ngModel)]="koboSyncSettings.syncEnabled"
-                    (ngModelChange)="onSyncToggle()">
+                    id="autoAddToShelf"
+                    name="autoAddToShelf"
+                    [(ngModel)]="koboSyncSettings.autoAddToShelf"
+                    (ngModelChange)="onAutoAddToggle()">
                   </p-toggle-switch>
                 </div>
                 <p class="setting-description">
-                  Turn on synchronization to automatically sync your library books to your Kobo device.
+                  When enabled, newly added books will be automatically added to your Kobo shelf for syncing.
+                  This eliminates the need to manually add each book to the shelf.
                 </p>
               </div>
             </div>
+          }
 
-            @if (koboSyncSettings.syncEnabled) {
-              <div class="setting-item">
-                <div class="setting-info">
+          @if (koboSyncSettings.syncEnabled) {
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
                   <label class="setting-label">Kobo Sync Token</label>
-                  <p class="setting-description">
-                    Your unique sync token for authenticating with your Kobo device. Keep this secure.
-                  </p>
-                </div>
-                <div class="setting-control">
                   <div class="token-input-group">
                     <input
                       pInputText
@@ -68,27 +84,29 @@
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="copyText(koboSyncSettings.token)">
+                      (onClick)="copyText(koboSyncSettings.token, 'Token')"
+                      [disabled]="!koboSyncSettings.token">
                     </p-button>
                     <p-button
                       [icon]="showToken ? 'pi pi-eye-slash' : 'pi pi-eye'"
                       outlined="true"
                       severity="info"
                       size="small"
-                      (onClick)="toggleShowToken()">
+                      (onClick)="toggleShowToken()"
+                      [disabled]="!koboSyncSettings.token">
                     </p-button>
                   </div>
                 </div>
+                <p class="setting-description">
+                  Your unique sync token for authenticating with your Kobo device. Keep this secure.
+                </p>
               </div>
+            </div>
 
-              <div class="setting-item">
-                <div class="setting-info">
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
                   <label class="setting-label">Token Management</label>
-                  <p class="setting-description">
-                    Regenerate your sync token if needed. This will invalidate the current token.
-                  </p>
-                </div>
-                <div class="setting-control">
                   <p-button
                     icon="pi pi-refresh"
                     outlined="true"
@@ -99,59 +117,138 @@
                     [disabled]="!credentialsSaved">
                   </p-button>
                 </div>
+                <p class="setting-description">
+                  Regenerate your sync token if needed. This will invalidate the current token.
+                </p>
               </div>
+            </div>
 
-              <div class="setting-item">
-                <div class="setting-info">
-                  <div class="setting-label-row">
-                    <label class="setting-label">Mark as Reading at: {{ koboSyncSettings.progressMarkAsReadingThreshold?.toFixed(0) }}%</label>
-                    <div class="slider-container">
-                      <p-slider
-                        id="markAsReadingThreshold"
-                        name="markAsReadingThreshold"
-                        [(ngModel)]="koboSyncSettings.progressMarkAsReadingThreshold"
-                        [min]="1"
-                        [max]="10"
-                        [step]="1"
-                        (ngModelChange)="onProgressThresholdsChange()">
-                      </p-slider>
-                    </div>
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">Mark as Reading at: {{ koboSyncSettings.progressMarkAsReadingThreshold?.toFixed(0) }}%</label>
+                  <div class="slider-container">
+                    <p-slider
+                      id="markAsReadingThreshold"
+                      name="markAsReadingThreshold"
+                      [(ngModel)]="koboSyncSettings.progressMarkAsReadingThreshold"
+                      [min]="1"
+                      [max]="10"
+                      [step]="1"
+                      (ngModelChange)="onProgressThresholdsChange()">
+                    </p-slider>
                   </div>
-                  <p class="setting-description">
-                    Books are marked as "Reading" when progress exceeds this percentage. This helps automatically track which books you've started.
-                    <br>
-                    <strong>Recommended:</strong> 1% (default) - marks as reading after the first page or two.
-                  </p>
                 </div>
+                <p class="setting-description">
+                  Books are marked as "Reading" when progress exceeds this percentage. This helps automatically track which books you've started.
+                  <br>
+                  <strong>Recommended:</strong> 1% (default) - marks as reading after the first page or two.
+                </p>
               </div>
+            </div>
 
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">Mark as Finished at: {{ koboSyncSettings.progressMarkAsFinishedThreshold?.toFixed(0) }}%</label>
+                  <div class="slider-container">
+                    <p-slider
+                      id="markAsFinishedThreshold"
+                      name="markAsFinishedThreshold"
+                      [(ngModel)]="koboSyncSettings.progressMarkAsFinishedThreshold"
+                      [min]="90"
+                      [max]="100"
+                      [step]="1"
+                      (ngModelChange)="onProgressThresholdsChange()">
+                    </p-slider>
+                  </div>
+                </div>
+                <p class="setting-description">
+                  Books are marked as "Finished" when progress reaches this percentage. Accounts for books where the last few pages are acknowledgments or index.
+                  <br>
+                  <strong>Recommended:</strong> 99% (default) - marks as finished when nearly complete.
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      @if (koboSyncSettings.syncEnabled) {
+        <div class="preferences-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="pi pi-book"></i>
+              Hardcover Integration
+            </h3>
+            <p class="section-description">
+              Sync your Kobo reading progress to your personal Hardcover account.
+            </p>
+          </div>
+
+          <div class="settings-card">
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">Sync Reading Progress to Hardcover</label>
+                  <p-toggle-switch
+                    id="hardcoverSyncEnabled"
+                    name="hardcoverSyncEnabled"
+                    [(ngModel)]="koboSyncSettings.hardcoverSyncEnabled"
+                    (ngModelChange)="onHardcoverSyncToggle()">
+                  </p-toggle-switch>
+                </div>
+                <p class="setting-description">
+                  When enabled, your reading progress from Kobo will be automatically synced to your Hardcover account.
+                  Each user can configure their own Hardcover account.
+                </p>
+              </div>
+            </div>
+
+            @if (koboSyncSettings.hardcoverSyncEnabled) {
               <div class="setting-item">
                 <div class="setting-info">
                   <div class="setting-label-row">
-                    <label class="setting-label">Mark as Finished at: {{ koboSyncSettings.progressMarkAsFinishedThreshold?.toFixed(0) }}%</label>
-                    <div class="slider-container">
-                      <p-slider
-                        id="markAsFinishedThreshold"
-                        name="markAsFinishedThreshold"
-                        [(ngModel)]="koboSyncSettings.progressMarkAsFinishedThreshold"
-                        [min]="90"
-                        [max]="100"
-                        [step]="1"
-                        (ngModelChange)="onProgressThresholdsChange()">
-                      </p-slider>
+                    <label class="setting-label">Hardcover API Key</label>
+                    <div class="token-input-group">
+                      <input
+                        pInputText
+                        id="hardcoverApiKey"
+                        [(ngModel)]="koboSyncSettings.hardcoverApiKey"
+                        [type]="showHardcoverApiKey ? 'text' : 'password'"
+                        name="hardcoverApiKey"
+                        class="token-input"
+                        placeholder="Enter your Hardcover API key"
+                        (blur)="onHardcoverApiKeyChange()"
+                      />
+                      <p-button
+                        icon="pi pi-copy"
+                        outlined="true"
+                        severity="info"
+                        size="small"
+                        (onClick)="copyText(koboSyncSettings.hardcoverApiKey ?? '', 'API Key')"
+                        [disabled]="!koboSyncSettings.hardcoverApiKey">
+                      </p-button>
+                      <p-button
+                        [icon]="showHardcoverApiKey ? 'pi pi-eye-slash' : 'pi pi-eye'"
+                        outlined="true"
+                        severity="info"
+                        size="small"
+                        (onClick)="toggleShowHardcoverApiKey()">
+                      </p-button>
                     </div>
                   </div>
                   <p class="setting-description">
-                    Books are marked as "Finished" when progress reaches this percentage. Accounts for books where the last few pages are acknowledgments or index.
-                    <br>
-                    <strong>Recommended:</strong> 99% (default) - marks as finished when nearly complete.
+                    Your personal Hardcover API key. Get it from
+                    <a href="https://hardcover.app/account/api" target="_blank" rel="noopener">hardcover.app/account/api</a>.
+                    This key is used only for syncing your reading progress and is not shared with other users.
                   </p>
                 </div>
               </div>
             }
-          </form>
+          </div>
         </div>
-      </div>
+      }
 
       @if (isAdmin) {
         <div class="preferences-section">
@@ -220,13 +317,13 @@
                 </div>
                 <p class="setting-description">
                   Force enable hyphenation. Otherwise, hyphenation is only enabled when text alignment on the Kobo
-                    device is explicitly set to <i>justified</i>.
+                  device is explicitly set to <i>justified</i>.
                 </p>
               </div>
             </div>
 
             <p-divider></p-divider>
-            
+
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">
@@ -242,7 +339,26 @@
                 </p>
               </div>
             </div>
-
+            <div class="setting-item">
+              <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">Conversion image compression: {{ koboSettings.conversionImageCompressionPercentage }}%</label>
+              <div class="slider-container">
+                <p-slider
+                  id="conversionLimit"
+                  [(ngModel)]="koboSettings.conversionImageCompressionPercentage"
+                  [min]="1"
+                  [max]="100"
+                  [step]="1"
+                  (ngModelChange)="onSliderChange()">
+                </p-slider>
+              </div>
+            </div>
+                <p class="setting-description">
+                  Comic book conversions can sometimes result in very large files. This setting allows you to compress the images during conversion to prevent size from shooting up.
+                </p>
+              </div>
+            </div>
             <div class="setting-item">
               <div class="setting-info">
                 <div class="setting-label-row">

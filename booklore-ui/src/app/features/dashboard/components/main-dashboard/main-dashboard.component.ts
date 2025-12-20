@@ -14,7 +14,6 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {TooltipModule} from 'primeng/tooltip';
 import {DashboardConfigService} from '../../services/dashboard-config.service';
 import {ScrollerConfig, ScrollerType} from '../../models/dashboard-config.model';
-import {DashboardSettingsComponent} from '../dashboard-settings/dashboard-settings.component';
 import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-evaluator.service';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
@@ -39,7 +38,6 @@ const DEFAULT_MAX_ITEMS = 20;
   standalone: true
 })
 export class MainDashboardComponent implements OnInit {
-  ref: DynamicDialogRef | undefined | null;
 
   private bookService = inject(BookService);
   private dialogLauncher = inject(DialogLauncherService);
@@ -203,14 +201,10 @@ export class MainDashboardComponent implements OnInit {
   }
 
   openDashboardSettings(): void {
-    this.ref = this.dialogLauncher.open({
-      component: DashboardSettingsComponent,
-      header: 'Configure Dashboard',
-      showHeader: false
-    });
+    this.dialogLauncher.openDashboardSettingsDialog();
   }
 
   createNewLibrary() {
-    this.dialogLauncher.openLibraryCreatorDialog();
+    this.dialogLauncher.openLibraryCreateDialog();
   }
 }

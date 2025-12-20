@@ -12,6 +12,7 @@ import com.adityachandel.booklore.repository.KoboUserSettingsRepository;
 import com.adityachandel.booklore.repository.KoreaderUserRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,8 +35,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import jakarta.servlet.http.HttpServletResponse;
 
 @AllArgsConstructor
 @EnableMethodSecurity

@@ -184,7 +184,7 @@ class PathPatternResolverTest {
     void testResolvePattern_nullMetadata() {
         String result = PathPatternResolver.resolvePattern((BookMetadata) null, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
@@ -195,7 +195,7 @@ class PathPatternResolverTest {
 
         String result = PathPatternResolver.resolvePattern(metadata, "{title}", "original.pdf");
 
-        assertEquals("Untitled.pdf", result);
+        assertEquals("original.pdf", result);
     }
 
     @Test
@@ -466,5 +466,148 @@ class PathPatternResolverTest {
 
         int byteLen = result.getBytes(StandardCharsets.UTF_8).length;
         assertTrue(byteLen <= 245, "Total filename bytes " + byteLen + " should be <= 245");
+    }
+
+    @Test
+    @DisplayName("Should remove trailing dots from path components for Windows compatibility")
+    void testResolvePattern_removesTrailingDots() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .authors(Set.of("Author Name Jr."))
+                .build();
+
+        // Pattern: {authors}/{title}
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{title}", "original.pdf");
+
+        // Expected: Author Name Jr/Book Title.pdf
+        // Windows does not allow folder names ending in '.'
+        // So "Author Name Jr." should become "Author Name Jr"
+
+        String[] components = result.split("/");
+        assertTrue(components.length >= 1);
+
+        String authorDir = components[0];
+        assertFalse(authorDir.endsWith("."), "Directory name should not end with a dot: " + authorDir);
+        assertTrue(authorDir.equals("Author Name Jr"), "Expected 'Author Name Jr' but got '" + authorDir + "'");
+    }
+
+    @Test
+    @DisplayName("Should remove trailing dots from multiple path components")
+    void testResolvePattern_removesTrailingDotsFromMultipleComponents() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title.")
+                .seriesName("Series.")
+                .authors(Set.of("Author."))
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{series}/{title}", "original.pdf");
+
+        String[] components = result.split("/");
+        for (int i = 0; i < components.length - 1; i++) { // Check directories
+            assertFalse(components[i].endsWith("."), "Component " + i + " should not end with dot: " + components[i]);
+        }
+
+        assertTrue(components[0].equals("Author"));
+        assertTrue(components[1].equals("Series"));
+    }
+
+    @Test
+    @DisplayName("Should preserve extension for files with numeric patterns in name (e.g., Chapter 8.1.cbz)")
+    void testResolvePattern_filenameWithNumericPattern() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Comic Title")
+                .seriesName("Series Name")
+                .seriesNumber(8.1f)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{series} - Chapter {seriesIndex}", "original.cbz");
+
+        assertEquals("Series Name - Chapter 8.1.cbz", result, "Extension should be preserved for files with numeric patterns");
+    }
+
+    @Test
+    @DisplayName("Should preserve extension for files with multiple dots in name")
+    void testResolvePattern_filenameWithMultipleDots() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("My.Awesome.Book")
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title}", "My.Awesome.Book.epub");
+
+        assertEquals("My.Awesome.Book.epub", result, "Extension should be preserved for files with dots in title");
+    }
+
+    @Test
+    @DisplayName("Should add extension when pattern doesn't include it")
+    void testResolvePattern_extensionNotInPattern() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .authors(Set.of("Author Name"))
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors} - {title}", "original.pdf");
+
+        assertEquals("Author Name - Book Title.pdf", result, "Extension should be added automatically");
+    }
+
+    @Test
+    @DisplayName("Should not add extension when using {currentFilename} in subdirectory")
+    void testResolvePattern_currentFilenameWithPath() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "books/{currentFilename}", "My.File.With.Dots.epub");
+
+        assertEquals("books/My.File.With.Dots.epub", result, "Extension should not be added when {currentFilename} is used, even with dots in name");
+    }
+
+    @Test
+    @DisplayName("Should handle title with dots and numeric suffix without duplicating extension")
+    void testResolvePattern_titleWithDotsAndNumericSuffix() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Chapter.8.1")
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title}", "Chapter.8.1.cbz");
+
+        assertEquals("Chapter.8.1.cbz", result, "Should not treat .1 as extension");
+    }
+
+    @Test
+    @DisplayName("Should preserve CBZ extension for comic files with chapter numbers")
+    void testResolvePattern_comicWithChapterNumber() {
+        BookMetadata metadata = BookMetadata.builder()
+                .seriesName("One Punch Man")
+                .seriesNumber(8.1f)
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{series} - Chapter {seriesIndex}", "One Punch Man - Chapter 8.1.cbz");
+
+        assertEquals("One Punch Man - Chapter 8.1.cbz", result, "CBZ extension should be preserved for comics");
+    }
+
+    @Test
+    @DisplayName("Should handle files with only numeric extension-like pattern correctly")
+    void testResolvePattern_numericExtensionLikePattern() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Version 2")
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title}.1", "original.epub");
+
+        assertEquals("Book Version 2.1.epub", result, "Should add real extension even when pattern ends with .1");
+    }
+
+    @Test
+    @DisplayName("Should handle empty extension gracefully")
+    void testResolvePattern_noExtension() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "{title}", "fileWithoutExtension");
+
+        assertEquals("Book Title", result, "Should not add extension when original file has none");
     }
 }

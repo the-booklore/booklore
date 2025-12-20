@@ -12,7 +12,11 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -27,37 +31,85 @@ public class FileMoveHelper {
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final AppSettingService appSettingService;
 
+    private static final int MAX_ATTEMPTS = 3;
+    private static final long RETRY_DELAY_MS = 100;
+    private static final Set<Class<? extends Exception>> RETRYABLE_EXCEPTIONS = Set.of(
+            NoSuchFileException.class,
+            AccessDeniedException.class,
+            FileSystemException.class,
+            DirectoryNotEmptyException.class
+    );
+    private static final Set<String> IGNORED_FILENAMES = Set.of(".DS_Store", "Thumbs.db");
+
+    public boolean waitForFileAccessible(Path path) {
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            if (Files.exists(path) && Files.isReadable(path)) {
+                return true;
+            }
+            if (attempt < MAX_ATTEMPTS) {
+                log.debug("File not accessible on attempt {}/{}, waiting {}ms: {}",
+                        attempt, MAX_ATTEMPTS, RETRY_DELAY_MS, path);
+                waitBeforeRetry();
+            }
+        }
+        return false;
+    }
+
     public void moveFile(Path source, Path target) throws IOException {
+        if (!waitForFileAccessible(source)) {
+            throw new NoSuchFileException(source.toString(), null, "Source file not accessible after retries");
+        }
+
         if (target.getParent() != null) {
             Files.createDirectories(target.getParent());
         }
 
         log.info("Moving file from {} to {}", source, target);
-        Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        executeWithRetry(() -> Files.move(source, target, StandardCopyOption.REPLACE_EXISTING));
     }
 
-    public Path moveFileWithBackup(Path source, Path target) throws IOException {
+    public Path moveFileWithBackup(Path source) throws IOException {
+        if (!waitForFileAccessible(source)) {
+            throw new NoSuchFileException(source.toString(), null, "Source file not accessible after retries");
+        }
+
         Path tempPath = source.resolveSibling(source.getFileName().toString() + ".tmp_move");
         log.info("Moving file from {} to temporary location {}", source, tempPath);
-        Files.move(source, tempPath, StandardCopyOption.REPLACE_EXISTING);
+        executeWithRetry(() -> Files.move(source, tempPath, StandardCopyOption.REPLACE_EXISTING));
         return tempPath;
     }
 
     public void commitMove(Path tempPath, Path target) throws IOException {
+        if (!waitForFileAccessible(tempPath)) {
+            throw new NoSuchFileException(tempPath.toString(), null, "Temporary file not accessible before commit");
+        }
+
         if (target.getParent() != null) {
             Files.createDirectories(target.getParent());
         }
         log.info("Committing move from temporary location {} to {}", tempPath, target);
-        Files.move(tempPath, target, StandardCopyOption.REPLACE_EXISTING);
+        executeWithRetry(() -> Files.move(tempPath, target, StandardCopyOption.REPLACE_EXISTING));
     }
 
     public void rollbackMove(Path tempPath, Path originalSource) {
-        if (Files.exists(tempPath)) {
+        if (!Files.exists(tempPath)) {
+            return;
+        }
+        
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             try {
                 log.info("Rolling back move from {} to {}", tempPath, originalSource);
                 Files.move(tempPath, originalSource, StandardCopyOption.REPLACE_EXISTING);
+                return;
             } catch (IOException e) {
-                log.error("Failed to rollback file move from {} to {}", tempPath, originalSource, e);
+                if (attempt == MAX_ATTEMPTS) {
+                    log.error("Failed to rollback file move from {} to {} after {} attempts. " +
+                            "Orphaned temp file may need manual cleanup: {}", 
+                            tempPath, originalSource, MAX_ATTEMPTS, tempPath, e);
+                    return;
+                }
+                log.warn("Rollback attempt {}/{} failed, retrying: {}", attempt, MAX_ATTEMPTS, e.getMessage());
+                waitBeforeRetry();
             }
         }
     }
@@ -74,6 +126,7 @@ public class FileMoveHelper {
     }
 
     public void registerLibraryPaths(Long libraryId, Path libraryRoot) {
+        log.debug("Registering library paths for library {} with root {}", libraryId, libraryRoot);
         monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
     }
 
@@ -107,9 +160,7 @@ public class FileMoveHelper {
     }
 
     public void deleteEmptyParentDirsUpToLibraryFolders(Path currentDir, Set<Path> libraryRoots) {
-        Path dir = currentDir;
-        Set<String> ignoredFilenames = Set.of(".DS_Store", "Thumbs.db");
-        dir = dir.toAbsolutePath().normalize();
+        Path dir = currentDir.toAbsolutePath().normalize();
         Set<Path> normalizedRoots = new HashSet<>();
         for (Path root : libraryRoots) {
             normalizedRoots.add(root.toAbsolutePath().normalize());
@@ -118,18 +169,59 @@ public class FileMoveHelper {
             if (isLibraryRoot(dir, normalizedRoots)) {
                 break;
             }
-            File[] files = dir.toFile().listFiles();
-            if (files == null) {
-                log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
-                break;
-            }
-            if (hasOnlyIgnoredFiles(files, ignoredFilenames)) {
-                deleteIgnoredFilesAndDirectory(files, dir);
+            if (deleteIfEffectivelyEmpty(dir, normalizedRoots)) {
                 dir = dir.getParent();
             } else {
                 break;
             }
         }
+    }
+
+    private boolean deleteIfEffectivelyEmpty(Path dir, Set<Path> libraryRoots) {
+        if (isLibraryRoot(dir, libraryRoots)) {
+            return false;
+        }
+
+        File[] contents = dir.toFile().listFiles();
+        if (contents == null) {
+            log.warn("Cannot read directory: {}. Stopping cleanup.", dir);
+            return false;
+        }
+
+        boolean deletedAnySubdirectory = recursivelyDeleteEmptySubdirectories(contents, libraryRoots);
+        
+        if (deletedAnySubdirectory) {
+            waitBeforeRetry();
+        }
+
+        File[] remainingContents = dir.toFile().listFiles();
+        if (remainingContents == null) {
+            log.warn("Cannot read directory after subdirectory cleanup: {}", dir);
+            return false;
+        }
+
+        if (isSafeToDelete(remainingContents)) {
+            deleteIgnoredFilesAndDirectory(remainingContents, dir);
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean recursivelyDeleteEmptySubdirectories(File[] contents, Set<Path> libraryRoots) {
+        boolean deletedAny = false;
+        for (File file : contents) {
+            if (isNonSymlinkDirectory(file)) {
+                if (deleteIfEffectivelyEmpty(file.toPath(), libraryRoots)) {
+                    deletedAny = true;
+                }
+            }
+        }
+        return deletedAny;
+    }
+
+    private boolean isNonSymlinkDirectory(File file) {
+        return file.isDirectory() && !Files.isSymbolicLink(file.toPath());
     }
 
     private boolean isLibraryRoot(Path currentDir, Set<Path> normalizedRoots) {
@@ -145,9 +237,11 @@ public class FileMoveHelper {
         return false;
     }
 
-    private boolean hasOnlyIgnoredFiles(File[] files, Set<String> ignoredFilenames) {
+    private boolean isSafeToDelete(File[] files) {
         for (File file : files) {
-            if (!ignoredFilenames.contains(file.getName())) {
+            if (Files.isSymbolicLink(file.toPath()) 
+                    || file.isDirectory() 
+                    || !IGNORED_FILENAMES.contains(file.getName())) {
                 return false;
             }
         }
@@ -164,10 +258,45 @@ public class FileMoveHelper {
             }
         }
         try {
-            Files.delete(currentDir);
+            executeWithRetry(() -> Files.delete(currentDir));
             log.info("Deleted empty directory: {}", currentDir);
         } catch (IOException e) {
             log.warn("Failed to delete directory: {}", currentDir, e);
+        }
+    }
+
+    @FunctionalInterface
+    private interface FileOperation {
+        void execute() throws IOException;
+    }
+
+    private void executeWithRetry(FileOperation operation) throws IOException {
+        for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+            try {
+                operation.execute();
+                return;
+            } catch (IOException e) {
+                if (!isRetryableException(e) || attempt == MAX_ATTEMPTS) {
+                    throw e;
+                }
+
+                log.warn("File operation failed (attempt {}/{}), retrying in {}ms: {}",
+                        attempt, MAX_ATTEMPTS, RETRY_DELAY_MS, e.getMessage());
+
+                waitBeforeRetry();
+            }
+        }
+    }
+
+    private boolean isRetryableException(IOException e) {
+        return RETRYABLE_EXCEPTIONS.stream().anyMatch(type -> type.isInstance(e));
+    }
+
+    private void waitBeforeRetry() {
+        try {
+            Thread.sleep(RETRY_DELAY_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

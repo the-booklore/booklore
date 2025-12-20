@@ -27,16 +27,27 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class EpubMetadataExtractor implements FileMetadataExtractor {
+
+    private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("^\\d{4}$");
 
     @Override
     public byte[] extractCover(File epubFile) {
         try (FileInputStream fis = new FileInputStream(epubFile)) {
             Book epub = new EpubReader().readEpub(fis);
             io.documentnode.epub4j.domain.Resource coverImage = epub.getCoverImage();
+
+            if (coverImage == null) {
+                String coverHref = findCoverImageHrefInOpf(epubFile);
+                if (coverHref != null) {
+                    byte[] data = extractFileFromZip(epubFile, coverHref);
+                    if (data != null) return data;
+                }
+            }
 
             if (coverImage == null) {
                 for (io.documentnode.epub4j.domain.Resource res : epub.getResources().getAll()) {
@@ -154,10 +165,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 }
 
-                                if ("calibre:rating".equals(name) || "booklore:personal_rating".equals(prop)) {
-                                    safeParseDouble(content, builderMeta::personalRating);
-                                }
-
                                 switch (prop) {
                                     case "booklore:asin" -> builderMeta.asin(content);
                                     case "booklore:goodreads_id" -> builderMeta.goodreadsId(content);
@@ -169,6 +176,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                             }
                             case "creator" -> authors.add(text);
                             case "subject" -> categories.add(text);
+                            case "description" -> builderMeta.description(text);
                             case "publisher" -> builderMeta.publisher(text);
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
@@ -262,6 +270,16 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     private LocalDate parseDate(String value) {
         if (StringUtils.isBlank(value)) return null;
 
+        value = value.trim();
+
+        // Check for year-only format first (e.g., "2024") - common in EPUB metadata
+        if (YEAR_ONLY_PATTERN.matcher(value).matches()) {
+            int year = Integer.parseInt(value);
+            if (year >= 1 && year <= 9999) {
+                return LocalDate.of(year, 1, 1);
+            }
+        }
+
         try {
             return LocalDate.parse(value);
         } catch (Exception ignored) {
@@ -272,12 +290,93 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         } catch (Exception ignored) {
         }
 
-        try {
-            return LocalDate.parse(value.substring(0, 10));
-        } catch (Exception ignored) {
+        // Try parsing first 10 characters for ISO date format with extra content
+        if (value.length() >= 10) {
+            try {
+                return LocalDate.parse(value.substring(0, 10));
+            } catch (Exception ignored) {
+            }
         }
 
         log.warn("Failed to parse date from string: {}", value);
         return null;
+    }
+
+    private String findCoverImageHrefInOpf(File epubFile) {
+        try (ZipFile zip = new ZipFile(epubFile)) {
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            dbf.setNamespaceAware(true);
+            dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            DocumentBuilder builder = dbf.newDocumentBuilder();
+
+            FileHeader containerHdr = zip.getFileHeader("META-INF/container.xml");
+            if (containerHdr == null) return null;
+
+            try (InputStream cis = zip.getInputStream(containerHdr)) {
+                Document containerDoc = builder.parse(cis);
+                NodeList roots = containerDoc.getElementsByTagName("rootfile");
+                if (roots.getLength() == 0) return null;
+
+                String opfPath = ((Element) roots.item(0)).getAttribute("full-path");
+                if (StringUtils.isBlank(opfPath)) return null;
+
+                FileHeader opfHdr = zip.getFileHeader(opfPath);
+                if (opfHdr == null) return null;
+
+                try (InputStream in = zip.getInputStream(opfHdr)) {
+                    Document doc = builder.parse(in);
+                    NodeList manifestItems = doc.getElementsByTagName("item");
+
+                    for (int i = 0; i < manifestItems.getLength(); i++) {
+                        Element item = (Element) manifestItems.item(i);
+                        String properties = item.getAttribute("properties");
+                        if (properties != null && properties.contains("cover-image")) {
+                            String href = item.getAttribute("href");
+                            return resolvePath(opfPath, href);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to find cover image in OPF: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    private String resolvePath(String opfPath, String href) {
+        if (href == null || href.isEmpty()) return null;
+
+        // If href is absolute within the zip (starts with /), return it without leading /
+        if (href.startsWith("/")) return href.substring(1);
+
+        int lastSlash = opfPath.lastIndexOf('/');
+        String basePath = (lastSlash == -1) ? "" : opfPath.substring(0, lastSlash + 1);
+
+        String combined = basePath + href;
+
+        // Normalize path components to handle ".." and "."
+        java.util.LinkedList<String> parts = new java.util.LinkedList<>();
+        for (String part : combined.split("/")) {
+            if ("..".equals(part)) {
+                if (!parts.isEmpty()) parts.removeLast();
+            } else if (!".".equals(part) && !part.isEmpty()) {
+                parts.add(part);
+            }
+        }
+
+        return String.join("/", parts);
+    }
+
+    private byte[] extractFileFromZip(File epubFile, String path) {
+        try (ZipFile zip = new ZipFile(epubFile)) {
+            FileHeader header = zip.getFileHeader(path);
+            if (header == null) return null;
+            try (InputStream is = zip.getInputStream(header)) {
+                return is.readAllBytes();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to extract file {} from zip", path);
+            return null;
+        }
     }
 }

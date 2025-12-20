@@ -14,7 +14,7 @@ import {routes} from './app/app.routes';
 import {AuthInterceptorService} from './app/core/security/auth-interceptor.service';
 import {AuthService, websocketInitializer} from './app/shared/service/auth.service';
 import {OAuthStorage, provideOAuthClient} from 'angular-oauth2-oidc';
-import {APP_INITIALIZER, provideAppInitializer} from '@angular/core';
+import {APP_INITIALIZER, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
 import {initializeAuthFactory} from './app/core/security/auth-initializer';
 
 export function storageFactory(): OAuthStorage {
@@ -27,7 +27,7 @@ import ChartDataLabels from 'chartjs-plugin-datalabels';
 
 bootstrapApplication(AppComponent, {
   providers: [
-    provideCharts(withDefaultRegisterables(), ChartDataLabels),
+    provideZoneChangeDetection(),provideCharts(withDefaultRegisterables(), ChartDataLabels),
     {
       provide: APP_INITIALIZER,
       useFactory: websocketInitializer,
