@@ -29,80 +29,73 @@
 
             <p-divider></p-divider>
 
-            <div class="mt-3">
-              <div class="flex align-items-center justify-content-between mb-2">
-                <h3 class="text-base font-semibold m-0">Bookmarks</h3>
+            <div class="bookmarks-section">
+              <div class="bookmarks-header">
+                <h3 class="bookmarks-title">Bookmarks</h3>
                 @if (bookmarks.length > 0) {
-                  <span class="p-input-icon-left w-full ml-3" style="max-width: 200px;">
+                  <div class="bookmarks-search">
                     <i class="pi pi-search"></i>
                     <input
                       pInputText
                       type="text"
                       [(ngModel)]="filterText"
                       placeholder="Search..."
-                      class="w-full p-inputtext-sm">
-                  </span>
+                      class="search-input">
+                  </div>
                 }
               </div>
               
               @if (bookmarks.length === 0) {
-                <p class="text-sm text-gray-400 italic">No bookmarks yet</p>
+                <div class="bookmarks-empty">
+                  <i class="pi pi-bookmark"></i>
+                  <p>No bookmarks yet</p>
+                  <span>Click the bookmark icon while reading to save your place</span>
+                </div>
               } @else if (filteredBookmarks.length === 0) {
-                <p class="text-sm text-gray-400 italic">No bookmarks match your search</p>
+                <div class="bookmarks-empty">
+                  <i class="pi pi-search"></i>
+                  <p>No bookmarks match your search</p>
+                </div>
               } @else {
                 <ul class="bookmark-list">
                   @for (bookmark of filteredBookmarks; track bookmark.id) {
-                    <li class="bookmark-item">
-                      <div class="bookmark-content" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                        <div class="flex align-items-center">
-                          <i class="pi pi-bookmark-fill mr-2" [style.color]="bookmark.color || 'inherit'"></i>
-                          <div class="flex flex-column">
-                            <span class="font-medium">{{ bookmark.title }}</span>
-                            <span class="text-xs text-500">
-                              {{ bookmark.createdAt | date:'shortDate' }} • P{{ bookmark.priority || 3 }}
-                            </span>
+                    <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
+                      <div class="bookmark-color-bar" [style.background-color]="bookmark.color || 'var(--primary-color)'"></div>
+                      <div class="bookmark-main">
+                        <div class="bookmark-info">
+                          <span class="bookmark-title">{{ bookmark.title }}</span>
+                          <div class="bookmark-meta">
+                            <span class="bookmark-date">{{ bookmark.createdAt | date:'MMM d, y' }}</span>
+                            <span class="bookmark-priority" [attr.data-priority]="bookmark.priority || 3">P{{ bookmark.priority || 3 }}</span>
                           </div>
                         </div>
-                      </div>
-                      <div class="bookmark-actions">
-                         <p-button
-                          icon="pi pi-eye"
-                          (click)="openViewDialog(bookmark); $event.stopPropagation()"
-                          [rounded]="true"
-                          [text]="true"
-                          severity="secondary"
-                          size="small"
-                          pTooltip="View details">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-pencil"
-                          (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
-                          [rounded]="true"
-                          [text]="true"
-                          severity="secondary"
-                          size="small"
-                          pTooltip="Edit bookmark">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-refresh"
-                          (click)="updateBookmarkPosition(bookmark.id); $event.stopPropagation()"
-                          [rounded]="true"
-                          [text]="true"
-                          severity="info"
-                          size="small"
-                          [loading]="isUpdatingPosition"
-                          [disabled]="isUpdatingPosition"
-                          pTooltip="Update position to current location">
-                        </p-button>
-                        <p-button
-                          icon="pi pi-trash"
-                          (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
-                          [rounded]="true"
-                          [text]="true"
-                          severity="danger"
-                          size="small"
-                          pTooltip="Delete bookmark">
-                        </p-button>
+                        <div class="bookmark-actions">
+                          <button
+                            class="bookmark-action-btn"
+                            (click)="openViewDialog(bookmark); $event.stopPropagation()"
+                            pTooltip="View details">
+                            <i class="pi pi-eye"></i>
+                          </button>
+                          <button
+                            class="bookmark-action-btn"
+                            (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
+                            pTooltip="Edit bookmark">
+                            <i class="pi pi-pencil"></i>
+                          </button>
+                          <button
+                            class="bookmark-action-btn bookmark-action-btn--info"
+                            (click)="updateBookmarkPosition(bookmark.id); $event.stopPropagation()"
+                            [disabled]="isUpdatingPosition"
+                            pTooltip="Update position">
+                            <i class="pi pi-refresh" [class.pi-spin]="isUpdatingPosition"></i>
+                          </button>
+                          <button
+                            class="bookmark-action-btn bookmark-action-btn--danger"
+                            (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
+                            pTooltip="Delete">
+                            <i class="pi pi-trash"></i>
+                          </button>
+                        </div>
                       </div>
                     </li>
                   }
