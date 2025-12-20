@@ -19,32 +19,46 @@
             </div>
           }
 
-          @let progress = getProgressPercent(book);
-          @if (progress !== null) {
-            <p-progressBar
-              [value]="progress"
-              [showValue]="false"
-              class="cover-progress-bar"
-              [ngClass]="{
-                'progress-complete': progress === 100,
-                'progress-incomplete': progress < 100
-              }"
-              [style]="{ height: '6px' }"
-            ></p-progressBar>
-          }
+          <div 
+            class="cover-progress-bar-container"
+            [style.--progress-count]="getProgressCount(book)">
+            @let progress = getProgressPercent(book);
+            @if (progress !== null) {
+              <p-progressBar
+                [value]="progress"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="{
+                  'progress-complete': progress === 100,
+                  'progress-incomplete': progress < 100
+                }"
+              ></p-progressBar>
+            }
 
-          @if (getKoProgressPercent(book) !== null) {
-            <p-progressBar
-              [value]="getKoProgressPercent(book)"
-              [showValue]="false"
-              [ngClass]="[
-                getProgressPercent(book) == null ? 'cover-progress-bar-ko-only' : 'cover-progress-bar-ko-both',
-                getKoProgressPercent(book) === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
-              ]"
-              [style]="{ height: '6px' }"
-            >
-            </p-progressBar>
-          }
+            @if (getKoProgressPercent(book) !== null) {
+              <p-progressBar
+                [value]="getKoProgressPercent(book)"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="[
+                  getKoProgressPercent(book) === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
+                ]"
+              >
+              </p-progressBar>
+            }
+
+            @if (getKoboProgressPercent(book) !== null) {
+              <p-progressBar
+                [value]="getKoboProgressPercent(book)"
+                [showValue]="false"
+                class="cover-progress-bar"
+                [ngClass]="[
+                  getKoboProgressPercent(book) === 100 ? 'progress-complete-kobo' : 'progress-incomplete-kobo'
+                ]"
+              >
+              </p-progressBar>
+            }
+          </div>
         </div>
 
         @if (navigationState$ | async) {
