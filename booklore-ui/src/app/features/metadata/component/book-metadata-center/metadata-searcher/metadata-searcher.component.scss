@@ -34,3 +34,203 @@
 .book-item:hover .book-item-content {
   box-shadow: 0 0 0 rgba(255, 255, 255, 0.9);
 }
+
+.preview-panel-container {
+  transition: width 0.3s ease;
+  min-width: 48px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--p-content-background); /* Match the existing background */
+  border-right: 1px solid var(--p-content-border-color); /* Consistent border with the app */
+  border-bottom: 1px solid var(--p-content-border-color); /* For mobile view */
+
+  &.collapsed {
+    width: 48px;
+  }
+
+  &.expanded {
+    width: 300px;
+  }
+}
+
+.preview-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--p-content-border-color);
+  background-color: var(--p-content-background);
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--p-text-color);
+  }
+}
+
+.preview-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem;
+
+  .book-cover-container {
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .current-book-cover {
+    width: 100%;
+    max-width: 100px;
+    height: auto;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+    border: 1px solid var(--p-content-border-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .book-details {
+    .detail-group {
+      margin-bottom: 0.875rem;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      label {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--p-text-muted-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+        display: block;
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.875rem;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        line-height: 1.4;
+
+        &.has-value {
+          color: var(--p-text-color);
+        }
+
+        &.no-value {
+          color: var(--p-text-muted-color);
+        }
+
+        &.description {
+          font-size: 0.8125rem;
+          line-height: 1.5;
+        }
+      }
+
+      .series-number {
+        color: var(--p-primary-color);
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+.toggle-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 6px;
+  background-color: var(--p-content-background);
+  color: var(--p-text-muted-color);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  margin-left: -8px;
+  margin-bottom: 1px;
+}
+
+.toggle-btn:hover {
+  background-color: var(--p-surface-100);
+  color: var(--p-text-color);
+  border-color: var(--p-primary-color);
+}
+
+.toggle-btn i {
+  font-size: 0.875rem;
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.search-results-container {
+  flex: 1;
+  min-width: 0; /* Allow flex item to shrink below content size */
+  height: 100%;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .preview-panel-container {
+    width: 100% !important; /* Full width on mobile when expanded */
+    min-height: 200px; /* Minimum height to show some content */
+    border-bottom: 1px solid var(--p-content-border-color); /* Keep border for mobile */
+    border-right: none !important;
+
+    &.collapsed {
+      min-height: 56px;
+      border-bottom: 1px solid var(--p-content-border-color);
+    }
+  }
+
+  .preview-panel-header {
+    padding: 0.625rem;
+
+    h3 {
+      font-size: 0.9375rem;
+    }
+  }
+
+  .preview-panel-content {
+    padding: 0.75rem;
+  }
+
+  .current-book-cover {
+    max-width: 80px !important;
+  }
+
+  .flex-col.md\\:flex-row {
+    flex-direction: column !important;
+  }
+
+  .book-details .detail-group {
+    margin-bottom: 0.75rem;
+
+    label {
+      font-size: 0.6875rem;
+    }
+
+    p {
+      font-size: 0.8125rem;
+
+      &.description {
+        font-size: 0.75rem;
+      }
+    }
+  }
+}

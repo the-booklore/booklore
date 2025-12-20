@@ -7,118 +7,211 @@
     </app-metadata-picker>
   </div>
 } @else {
-  <form class="flex flex-col w-full h-full pt-2 min-w-full pr-0 md:pr-2 pl-0 md:pl-2" [formGroup]="form" (ngSubmit)="onSubmit()">
+  <div class="flex flex-col md:flex-row w-full h-full">
+    <!-- Preview Panel -->
+    <div
+      class="preview-panel-container border-r border-gray-700"
+      [ngClass]="{
+        'collapsed': isPreviewPanelCollapsed,
+        'expanded': !isPreviewPanelCollapsed
+      }"
+      [style.width.px]="!isPreviewPanelCollapsed ? 300 : 48"
+    >
+      <div class="preview-panel-header flex items-center p-2 border-b border-gray-700"
+           [ngClass]="isPreviewPanelCollapsed ? 'justify-center' : 'justify-between'">
+        <h3 class="text-lg font-semibold" [class.hidden]="isPreviewPanelCollapsed">Current Book</h3>
+        <button
+          class="toggle-btn"
+          (click)="togglePreviewPanel()"
+          [title]="isPreviewPanelCollapsed ? 'Expand' : 'Collapse'">
+          <i [class]="isPreviewPanelCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
+        </button>
+      </div>
 
-    <div class="flex flex-col space-y-3">
-      <div class="grid grid-cols-1 md:flex md:flex-row w-full gap-2 md:gap-4 md:items-end">
-        <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
-          <label for="provider">Providers</label>
-          <p-multiselect
-            id="provider"
-            class="w-full"
-            [filter]="false"
-            showToggleAll="false"
-            [options]="providers"
-            formControlName="provider"
-            placeholder="Select Providers">
-          </p-multiselect>
-        </div>
+      @if (!isPreviewPanelCollapsed) {
+        <div class="preview-panel-content overflow-y-auto">
+          <div class="book-cover-container">
+            <img
+              [src]="(currentBook$ | async)?.id ? urlHelper.getThumbnailUrl((currentBook$ | async)?.id!, (currentBook$ | async)?.metadata?.coverUpdatedOn) : 'assets/images/missing-cover.jpg'"
+              alt="Current book cover"
+              class="current-book-cover"
+              onerror="this.src='assets/images/missing-cover.jpg'"
+            />
+          </div>
 
-        <div class="flex flex-col gap-1 w-full max-w-full md:w-56">
-          <label for="isbn">ISBN</label>
-          <input pInputText formControlName="isbn" id="isbn" class="w-full" placeholder="ISBN-10 or ISBN-13"/>
-        </div>
+          <div class="book-details">
+            <div class="detail-group">
+              <label>Title</label>
+              <p [class]="hasExistingValue('title') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('title') || 'Not provided' }}
+              </p>
+            </div>
 
-        <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
-          <label for="title">Title</label>
-          <input pInputText formControlName="title" id="title" class="w-full"/>
-        </div>
+            <div class="detail-group">
+              <label>Author</label>
+              <p [class]="hasExistingValue('authors') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('authors') || 'Not provided' }}
+              </p>
+            </div>
 
-        <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
-          <label for="author">Author</label>
-          <input pInputText formControlName="author" id="author" class="w-full"/>
-        </div>
+            <div class="detail-group">
+              <label>ISBN</label>
+              <p [class]="hasExistingValue('isbn13') || hasExistingValue('isbn10') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('isbn13', 'isbn10') || 'Not provided' }}
+              </p>
+            </div>
 
-        <div class="flex flex-col gap-1 w-full sm:w-fit md:w-auto">
-          <label class="invisible md:visible h-0 md:h-auto">Search</label>
-          <div class="flex justify-center md:justify-start">
-            <p-button
-              label="Search"
-              type="submit"
-              outlined="true"
-              [disabled]="!isSearchEnabled || loading"
-              class="w-full sm:w-fit md:w-auto">
-            </p-button>
+            <div class="detail-group">
+              <label>Publisher</label>
+              <p [class]="hasExistingValue('publisher') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('publisher') || 'Not provided' }}
+              </p>
+            </div>
+
+            <div class="detail-group">
+              <label>Published Date</label>
+              <p [class]="hasExistingValue('publishedDate') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('publishedDate') || 'Not provided' }}
+              </p>
+            </div>
+
+            <div class="detail-group">
+              <label>Series</label>
+              <p [class]="hasExistingValue('seriesName') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('seriesName') || 'Not provided' }}
+                @if (hasExistingValue('seriesNumber')) {
+                  <span class="series-number"> #{{ getExistingFieldValue('seriesNumber') }}</span>
+                }
+              </p>
+            </div>
+
+            <div class="detail-group">
+              <label>Description</label>
+              <p class="description" [class]="hasExistingValue('description') ? 'has-value' : 'no-value'">
+                {{ getExistingFieldValue('description') || 'Not provided' }}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="text-sm text-gray-400 flex items-start gap-2">
-        <i class="pi pi-info-circle text-sky-600 mt-0.5"></i>
-        <span>
-          When an ISBN is provided, the search will use only the ISBN. If no ISBN is given, the search will fall back to Title and Author.
-        </span>
-      </div>
+      }
     </div>
 
-    @if (loading) {
-      <div class="flex justify-center items-center flex-col gap-4 h-[40dvh] md:h-[70dvh] text-center">
-        <p-progress-spinner ariaLabel="Loading metadata..."/>
-        <p class="text-gray-300">
-          Fetching metadata from your selected sources.<br/>
-          This may take a few moments...
-        </p>
-      </div>
-    }
+    <!-- Search Form and Results -->
+    <div class="search-results-container flex-1">
+      <form class="flex flex-col w-full h-full pt-2 min-w-full pr-0 md:pr-2 pl-0 md:pl-2" [formGroup]="form" (ngSubmit)="onSubmit()">
 
-    @if (!loading) {
-      @if (searchTriggered && allFetchedMetadata.length === 0) {
-        <div class="flex flex-col items-center justify-center h-[50dvh] md:h-[70dvh] text-center">
-          <p class="text-gray-300">No metadata results found.<br/>Try adjusting your search criteria.</p>
-        </div>
-      }
-      @if (!searchTriggered && allFetchedMetadata.length === 0) {
-        <div class="flex flex-col items-center justify-center h-[50dvh] md:h-[70dvh] text-center">
-          <p class="text-gray-300">Start by searching for metadata using the search bar above.</p>
-        </div>
-      }
-      @if (allFetchedMetadata.length > 0) {
-        <div class="mt-4 md:mt-8 flex-1">
-          @for (metadata of allFetchedMetadata; track metadata) {
-            <div class="book-item flex flex-col w-full">
-              <div class="flex flex-row w-full book-item-content cursor-pointer" (click)="onBookClick(metadata)">
-                <img [src]="metadata.thumbnailUrl || 'assets/images/missing-cover.jpg'" alt="Image" class="img-fixed-dimensions pr-0 md:pr-2 md:py-3 self-center md:self-start"/>
-                <div class="flex flex-col w-full m-2">
-                  <div class="flex flex-col md:flex-row gap-2 md:gap-4 justify-between">
-                    <p class="font-bold">{{ truncateText(metadata['title']!, 90) }}</p>
-                    <div class="flex flex-wrap gap-2 text-sm">
-                      @if (metadata['isbn10']) {
-                        <p>ISBN10: {{ metadata['isbn10']}}</p>
-                        <span class="hidden md:inline">|</span>
-                      }
-                      @if (metadata['isbn13']) {
-                        <p>ISBN13: {{ metadata['isbn13']}}</p>
-                        <span class="hidden md:inline">|</span>
-                      }
-                      <p>Published: {{ metadata['publishedDate'] }}</p>
-                    </div>
-                  </div>
-                  <div class="flex flex-wrap gap-2 text-sm">
-                    @if (metadata['authors'] && metadata['authors'].length > 0) {
-                      <p>by {{ truncateText(metadata['authors'].join(', '), 70) }}</p>
-                      <span class="hidden md:inline">|</span>
-                    }
-                    <p>Source: <span [innerHTML]="buildProviderLink(metadata)"></span></p>
-                  </div>
-                  <p class="mt-4 truncate-text p-secondary">
-                    {{ sanitizeHtml(metadata['description']) }}
-                  </p>
-                </div>
+        <div class="flex flex-col space-y-3">
+          <div class="grid grid-cols-1 md:flex md:flex-row w-full gap-2 md:gap-4 md:items-end">
+            <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
+              <label for="provider">Providers</label>
+              <p-multiselect
+                id="provider"
+                class="w-full"
+                [filter]="false"
+                showToggleAll="false"
+                [options]="providers"
+                formControlName="provider"
+                placeholder="Select Providers">
+              </p-multiselect>
+            </div>
+
+            <div class="flex flex-col gap-1 w-full max-w-full md:w-56">
+              <label for="isbn">ISBN</label>
+              <input pInputText formControlName="isbn" id="isbn" class="w-full" placeholder="ISBN-10 or ISBN-13"/>
+            </div>
+
+            <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
+              <label for="title">Title</label>
+              <input pInputText formControlName="title" id="title" class="w-full"/>
+            </div>
+
+            <div class="flex flex-col gap-1 w-full max-w-full md:w-1/3">
+              <label for="author">Author</label>
+              <input pInputText formControlName="author" id="author" class="w-full"/>
+            </div>
+
+            <div class="flex flex-col gap-1 w-full sm:w-fit md:w-auto">
+              <label class="invisible md:visible h-0 md:h-auto">Search</label>
+              <div class="flex justify-center md:justify-start">
+                <p-button
+                  label="Search"
+                  type="submit"
+                  outlined="true"
+                  [disabled]="!isSearchEnabled || loading"
+                  class="w-full sm:w-fit md:w-auto">
+                </p-button>
               </div>
-              <p-divider></p-divider>
+            </div>
+          </div>
+          <div class="text-sm text-gray-400 flex items-start gap-2">
+            <i class="pi pi-info-circle text-sky-600 mt-0.5"></i>
+            <span>
+              When an ISBN is provided, the search will use only the ISBN. If no ISBN is given, the search will fall back to Title and Author.
+            </span>
+          </div>
+        </div>
+
+        @if (loading) {
+          <div class="flex justify-center items-center flex-col gap-4 h-[40dvh] md:h-[70dvh] text-center">
+            <p-progress-spinner ariaLabel="Loading metadata..."/>
+            <p class="text-gray-300">
+              Fetching metadata from your selected sources.<br/>
+              This may take a few moments...
+            </p>
+          </div>
+        }
+
+        @if (!loading) {
+          @if (searchTriggered && allFetchedMetadata.length === 0) {
+            <div class="flex flex-col items-center justify-center h-[50dvh] md:h-[70dvh] text-center">
+              <p class="text-gray-300">No metadata results found.<br/>Try adjusting your search criteria.</p>
             </div>
           }
-        </div>
-      }
-    }
-  </form>
+          @if (!searchTriggered && allFetchedMetadata.length === 0) {
+            <div class="flex flex-col items-center justify-center h-[50dvh] md:h-[70dvh] text-center">
+              <p class="text-gray-300">Start by searching for metadata using the search bar above.</p>
+            </div>
+          }
+          @if (allFetchedMetadata.length > 0) {
+            <div class="mt-4 md:mt-8 flex-1">
+              @for (metadata of allFetchedMetadata; track metadata) {
+                <div class="book-item flex flex-col w-full">
+                  <div class="flex flex-row w-full book-item-content cursor-pointer" (click)="onBookClick(metadata)">
+                    <img [src]="metadata.thumbnailUrl || 'assets/images/missing-cover.jpg'" alt="Image" class="img-fixed-dimensions pr-0 md:pr-2 md:py-3 self-center md:self-start"/>
+                    <div class="flex flex-col w-full m-2">
+                      <div class="flex flex-col md:flex-row gap-2 md:gap-4 justify-between">
+                        <p class="font-bold">{{ truncateText(metadata['title']!, 90) }}</p>
+                        <div class="flex flex-wrap gap-2 text-sm">
+                          @if (metadata['isbn10']) {
+                            <p>ISBN10: {{ metadata['isbn10']}}</p>
+                            <span class="hidden md:inline">|</span>
+                          }
+                          @if (metadata['isbn13']) {
+                            <p>ISBN13: {{ metadata['isbn13']}}</p>
+                            <span class="hidden md:inline">|</span>
+                          }
+                          <p>Published: {{ metadata['publishedDate'] }}</p>
+                        </div>
+                      </div>
+                      <div class="flex flex-wrap gap-2 text-sm">
+                        @if (metadata['authors'] && metadata['authors'].length > 0) {
+                          <p>by {{ truncateText(metadata['authors'].join(', '), 70) }}</p>
+                          <span class="hidden md:inline">|</span>
+                        }
+                        <p>Source: <span [innerHTML]="buildProviderLink(metadata)"></span></p>
+                      </div>
+                      <p class="mt-4 truncate-text p-secondary">
+                        {{ sanitizeHtml(metadata['description']) }}
+                      </p>
+                    </div>
+                  </div>
+                  <p-divider></p-divider>
+                </div>
+              }
+            </div>
+          }
+        }
+      </form>
+    </div>
+  </div>
 }

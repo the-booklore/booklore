@@ -11,11 +11,12 @@ import {Book, BookMetadata} from '../../../../book/model/book.model';
 import {BookService} from '../../../../book/service/book.service';
 import {AppSettings} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
+import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
 import {distinctUntilChanged, filter, switchMap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
-import {AsyncPipe} from '@angular/common';
+import {AsyncPipe, NgClass} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
 
 @Component({
@@ -30,7 +31,8 @@ import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.compon
     ProgressSpinner,
     MetadataPickerComponent,
     MultiSelect,
-    AsyncPipe
+    AsyncPipe,
+    NgClass
   ],
   standalone: true
 })
@@ -45,11 +47,14 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   @Input() book$!: Observable<Book | null>;
 
   selectedFetchedMetadata$ = new BehaviorSubject<BookMetadata | null>(null);
+  currentBook$ = new BehaviorSubject<Book | null>(null);
+  isPreviewPanelCollapsed = false;
 
   private formBuilder = inject(FormBuilder);
   private bookService = inject(BookService);
   private appSettingsService = inject(AppSettingsService);
   private route = inject(ActivatedRoute);
+  protected urlHelper = inject(UrlHelperService);
 
   private subscription: Subscription = new Subscription();
   private cancelRequest$ = new Subject<void>();
@@ -66,6 +71,10 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Load panel collapse state from localStorage
+    const savedCollapseState = localStorage.getItem('metadataSearchPreviewCollapsed');
+    this.isPreviewPanelCollapsed = savedCollapseState === 'true';
+
     this.subscription.add(
       this.route.paramMap
         .pipe(
@@ -89,6 +98,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
             .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
             .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
 
+          this.currentBook$.next(book!);
           this.resetFormFromBook(book!);
 
           if (settings!.autoBookSearch) {
@@ -198,5 +208,29 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
     }
     throw new Error("No provider ID found in metadata.");
+  }
+
+  togglePreviewPanel(): void {
+    this.isPreviewPanelCollapsed = !this.isPreviewPanelCollapsed;
+    localStorage.setItem('metadataSearchPreviewCollapsed', this.isPreviewPanelCollapsed.toString());
+  }
+
+  getExistingFieldValue(field: keyof BookMetadata | keyof Book, fallbackField?: keyof BookMetadata): string {
+    const book = this.currentBook$.value;
+    if (!book) return '';
+
+    // Check the main field first
+    const value = book.metadata?.[field as keyof BookMetadata] || book[field as keyof Book];
+
+    // If the main field is empty and fallback is provided, check the fallback
+    if ((!value || (typeof value === 'string' && value.trim() === '')) && fallbackField) {
+      return book.metadata?.[fallbackField as keyof BookMetadata] || book[fallbackField as keyof Book] || '';
+    }
+
+    return value || '';
+  }
+
+  hasExistingValue(field: keyof BookMetadata | keyof Book, fallbackField?: keyof BookMetadata): boolean {
+    return this.getExistingFieldValue(field, fallbackField) !== '';
   }
 }
