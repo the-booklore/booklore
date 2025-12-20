@@ -335,11 +335,16 @@ public class UserProvisioningService {
                     );
                 }
             } else if (user.getOidcSubject() != null && !user.getOidcSubject().equals(oidcSubject)) {
-                log.error("Security Alert: Username '{}' is already linked to a different OIDC account", username);
-                throw new OidcProvisioningException(
-                    "This username is already associated with a different OIDC account. " +
-                    "Please use a different username or contact an administrator."
-                );
+                if (email != null && email.equalsIgnoreCase(user.getEmail())) {
+                    log.info("OIDC subject mismatch for user '{}'. Updating from '{}' to '{}' based on email match.", username, user.getOidcSubject(), oidcSubject);
+                    user.setOidcSubject(oidcSubject);
+                } else {
+                    log.error("Security Alert: Username '{}' is already linked to a different OIDC account", username);
+                    throw new OidcProvisioningException(
+                            "This username is already associated with a different OIDC account. " +
+                                    "Please use a different username or contact an administrator."
+                    );
+                }
             } else if (user.getOidcSubject() == null) {
                  log.info("Linking OIDC subject to existing OIDC user '{}'", username);
                  user.setOidcSubject(oidcSubject);
@@ -377,11 +382,8 @@ public class UserProvisioningService {
                         );
                     }
                 } else if (user.getOidcSubject() != null && !user.getOidcSubject().equals(oidcSubject)) {
-                    log.error("Security Alert: Email '{}' is already linked to a different OIDC account", email);
-                    throw new OidcProvisioningException(
-                        "This email is already associated with a different OIDC account. " +
-                        "Please contact an administrator."
-                    );
+                    log.info("OIDC subject mismatch for user '{}'. Updating from '{}' to '{}' based on email match.", user.getUsername(), user.getOidcSubject(), oidcSubject);
+                    user.setOidcSubject(oidcSubject);
                 } else if (user.getOidcSubject() == null) {
                     log.info("Linking OIDC subject to existing OIDC user '{}' (found by email)", user.getUsername());
                     user.setOidcSubject(oidcSubject);
