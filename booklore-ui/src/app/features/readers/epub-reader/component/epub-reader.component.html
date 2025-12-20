@@ -30,18 +30,50 @@
             <p-divider></p-divider>
 
             <div class="mt-3">
-              <h3 class="text-base font-semibold mb-2">Bookmarks</h3>
+              <div class="flex align-items-center justify-content-between mb-2">
+                <h3 class="text-base font-semibold m-0">Bookmarks</h3>
+                @if (bookmarks.length > 0) {
+                  <span class="p-input-icon-left w-full ml-3" style="max-width: 200px;">
+                    <i class="pi pi-search"></i>
+                    <input
+                      pInputText
+                      type="text"
+                      [(ngModel)]="filterText"
+                      placeholder="Search..."
+                      class="w-full p-inputtext-sm">
+                  </span>
+                }
+              </div>
+              
               @if (bookmarks.length === 0) {
                 <p class="text-sm text-gray-400 italic">No bookmarks yet</p>
+              } @else if (filteredBookmarks.length === 0) {
+                <p class="text-sm text-gray-400 italic">No bookmarks match your search</p>
               } @else {
                 <ul class="bookmark-list">
-                  @for (bookmark of bookmarks; track bookmark.id) {
+                  @for (bookmark of filteredBookmarks; track bookmark.id) {
                     <li class="bookmark-item">
                       <div class="bookmark-content" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                        <i class="pi pi-bookmark-fill mr-2" [style.color]="bookmark.color || 'inherit'"></i>
-                        <span>{{ bookmark.title }}</span>
+                        <div class="flex align-items-center">
+                          <i class="pi pi-bookmark-fill mr-2" [style.color]="bookmark.color || 'inherit'"></i>
+                          <div class="flex flex-column">
+                            <span class="font-medium">{{ bookmark.title }}</span>
+                            <span class="text-xs text-500">
+                              {{ bookmark.createdAt | date:'shortDate' }} • P{{ bookmark.priority || 3 }}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                       <div class="bookmark-actions">
+                         <p-button
+                          icon="pi pi-eye"
+                          (click)="openViewDialog(bookmark); $event.stopPropagation()"
+                          [rounded]="true"
+                          [text]="true"
+                          severity="secondary"
+                          size="small"
+                          pTooltip="View details">
+                        </p-button>
                         <p-button
                           icon="pi pi-pencil"
                           (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
@@ -257,3 +289,9 @@
     (save)="onBookmarkSave($event)"
     (cancelEdit)="onBookmarkCancel()">
   </app-bookmark-edit-dialog>
+
+  <!-- Bookmark View Dialog Component -->
+  <app-bookmark-view-dialog
+    [(visible)]="viewDialogVisible"
+    [bookmark]="selectedBookmark">
+  </app-bookmark-view-dialog>

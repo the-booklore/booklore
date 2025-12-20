@@ -8,6 +8,7 @@ import { Textarea } from 'primeng/textarea';
 import { InputNumber } from 'primeng/inputnumber';
 import { Button } from 'primeng/button';
 import { BookMark, UpdateBookMarkRequest } from '../../../../shared/service/book-mark.service';
+import { PrimeTemplate } from 'primeng/api';
 
 export interface BookmarkFormData {
   title: string;
@@ -27,7 +28,8 @@ export interface BookmarkFormData {
     ColorPicker,
     Textarea,
     InputNumber,
-    Button
+    Button,
+    PrimeTemplate
   ],
   template: `
     <p-dialog
@@ -94,7 +96,7 @@ export interface BookmarkFormData {
           </div>
 
           <div class="field mb-4">
-            <label for="priority" class="block text-sm font-medium mb-2">Priority (1-5)</label>
+            <label for="priority" class="block text-sm font-medium mb-2">Priority (1 = High, 5 = Low)</label>
             <p-inputNumber
               id="priority"
               [(ngModel)]="formData.priority"
