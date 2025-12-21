@@ -1,6 +1,42 @@
 <div class="config-panel-content">
 
   <div class="config-panel-colors">
+    <span class="config-panel-label">Theme Mode</span>
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="theme-mode-button"
+        [ngClass]="{ 'active-theme-mode': selectedThemeMode() === 'light' }"
+        (click)="updateThemeMode($event, 'light')"
+        title="Light Mode"
+      >
+        <i class="pi pi-sun"></i>
+        <span>Light</span>
+      </button>
+      <button
+        type="button"
+        class="theme-mode-button"
+        [ngClass]="{ 'active-theme-mode': selectedThemeMode() === 'dark' }"
+        (click)="updateThemeMode($event, 'dark')"
+        title="Dark Mode"
+      >
+        <i class="pi pi-moon"></i>
+        <span>Dark</span>
+      </button>
+      <button
+        type="button"
+        class="theme-mode-button"
+        [ngClass]="{ 'active-theme-mode': selectedThemeMode() === 'system' }"
+        (click)="updateThemeMode($event, 'system')"
+        title="System Theme"
+      >
+        <i class="pi pi-desktop"></i>
+        <span>System</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="config-panel-colors">
     <span class="config-panel-label">Primary</span>
     <div>
       @for (primaryColor of primaryColors(); track primaryColor.name) {

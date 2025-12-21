@@ -1,6 +1,6 @@
 import {DOCUMENT, isPlatformBrowser} from '@angular/common';
 import {effect, inject, Injectable, PLATFORM_ID, signal} from '@angular/core';
-import {$t, updatePreset, updateSurfacePalette} from '@primeng/themes';
+import {$t} from '@primeng/themes';
 import Aura from '@primeng/themes/aura';
 import {AppState} from '../model/app-state.model';
 
@@ -333,10 +333,14 @@ export class AppConfigService {
   constructor() {
     const initialState = this.loadAppState();
     this.appState.set({...initialState});
-    this.document.documentElement.classList.add('p-dark');
+    
+    // Apply initial theme
+    this.applyThemeMode(initialState.themeMode ?? 'dark');
 
     if (isPlatformBrowser(this.platformId)) {
       this.onPresetChange();
+      // Listen for system theme changes
+      this.setupSystemThemeListener();
     }
 
     effect(() => {
@@ -346,6 +350,7 @@ export class AppConfigService {
         return;
       }
       this.saveAppState(state);
+      this.applyThemeMode(state.themeMode ?? 'dark');
       this.onPresetChange();
     }, {allowSignalWrites: true});
   }
@@ -361,6 +366,7 @@ export class AppConfigService {
       preset: 'Aura',
       primary: 'green',
       surface: 'ash',
+      themeMode: 'dark',
     };
   }
 
@@ -385,6 +391,20 @@ export class AppConfigService {
         semantic: {
           primary: {...surfacePalette},
           colorScheme: {
+            light: {
+              primary: {
+                color: '{primary.500}',
+                contrastColor: '#ffffff',
+                hoverColor: '{primary.600}',
+                activeColor: '{primary.700}'
+              },
+              highlight: {
+                background: '{primary.50}',
+                focusBackground: '{primary.100}',
+                color: '{primary.700}',
+                focusColor: '{primary.800}'
+              }
+            },
             dark: {
               primary: {
                 color: '{primary.50}',
@@ -408,6 +428,20 @@ export class AppConfigService {
       semantic: {
         primary: color,
         colorScheme: {
+          light: {
+            primary: {
+              color: '{primary.500}',
+              contrastColor: '#ffffff',
+              hoverColor: '{primary.600}',
+              activeColor: '{primary.700}'
+            },
+            highlight: {
+              background: 'color-mix(in srgb, {primary.500}, transparent 88%)',
+              focusBackground: 'color-mix(in srgb, {primary.500}, transparent 84%)',
+              color: '{primary.700}',
+              focusColor: '{primary.800}'
+            }
+          },
           dark: {
             primary: {
               color: '{primary.400}',
@@ -431,5 +465,34 @@ export class AppConfigService {
     const surfacePalette = this.getSurfacePalette(this.appState().surface ?? 'neutral');
     const preset = this.getPresetExt();
     $t().preset(Aura).preset(preset).surfacePalette(surfacePalette).use({useDefaultOptions: true});
+  }
+
+  private applyThemeMode(mode: 'light' | 'dark' | 'system'): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    let isDark = mode === 'dark';
+    
+    if (mode === 'system') {
+      isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+
+    const root = this.document.documentElement;
+    if (isDark) {
+      root.classList.add('p-dark');
+    } else {
+      root.classList.remove('p-dark');
+    }
+  }
+
+  private setupSystemThemeListener(): void {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    mediaQuery.addEventListener('change', (e) => {
+      const currentMode = this.appState().themeMode;
+      if (currentMode === 'system') {
+        this.applyThemeMode('system');
+      }
+    });
   }
 }
