@@ -389,10 +389,18 @@ export class AppConfigService {
     // In light mode, we need to invert the surface palette to be "light oriented"
     if (useLightMode) {
       const invertedPalette: ColorPalette = {};
-      // Invert the palette by swapping values
+      // Invert the palette by swapping values (only for numeric keys)
       Object.keys(palette).forEach(key => {
-        const invertedKey = 1000 - parseInt(key);
-        invertedPalette[key] = palette[invertedKey.toString()] || palette[key];
+        const numericKey = parseInt(key, 10);
+        if (!isNaN(numericKey) && numericKey >= 0 && numericKey <= 1000) {
+          const invertedKey = 1000 - numericKey;
+          const invertedValue = palette[invertedKey.toString()];
+          // Only use inverted value if it exists
+          invertedPalette[key] = invertedValue !== undefined ? invertedValue : palette[key];
+        } else {
+          // Keep non-numeric keys as-is
+          invertedPalette[key] = palette[key];
+        }
       });
       return invertedPalette;
     }
