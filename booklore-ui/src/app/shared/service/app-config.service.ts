@@ -377,7 +377,27 @@ export class AppConfigService {
   }
 
   private getSurfacePalette(surface: string): ColorPalette {
-    return this.surfaces.find(s => s.name === surface)?.palette ?? {};
+    const palette = this.surfaces.find(s => s.name === surface)?.palette ?? {};
+    const themeMode = this.appState().themeMode ?? 'dark';
+    
+    // Determine if we should use light mode based on theme mode
+    let useLightMode = themeMode === 'light';
+    if (themeMode === 'system' && isPlatformBrowser(this.platformId)) {
+      useLightMode = !window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    
+    // In light mode, we need to invert the surface palette to be "light oriented"
+    if (useLightMode) {
+      const invertedPalette: ColorPalette = {};
+      // Invert the palette by swapping values
+      Object.keys(palette).forEach(key => {
+        const invertedKey = 1000 - parseInt(key);
+        invertedPalette[key] = palette[invertedKey.toString()] || palette[key];
+      });
+      return invertedPalette;
+    }
+    
+    return palette;
   }
 
   getPresetExt(): object {

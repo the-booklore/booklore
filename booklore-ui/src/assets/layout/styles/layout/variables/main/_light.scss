@@ -1,0 +1,30 @@
+:root:not([class~="p-dark"]) {
+  /* Primary */
+  --primary-color: var(--p-primary-color);
+  --primary-contrast-color: var(--p-primary-contrast-color);
+  --primary-hover-color: var(--p-primary-hover-color);
+  --primary-text-color: var(--p-primary-600);
+  --primary-text-color-dark: var(--p-primary-100);
+
+  /* Content & Text */
+  --text-color: var(--p-surface-900);
+  --text-color-secondary: var(--p-surface-700);
+  --text-secondary-color: var(--p-surface-600);
+  --high-contrast-text-color: var(--p-surface-950);
+  --p-text-muted-color: var(--p-surface-600);
+  --p-content-background: var(--p-surface-0);
+  --p-content-border-color: var(--p-surface-200);
+
+  /* Surfaces & Borders */
+  --ground-background: var(--p-surface-50);
+  --overlay-background: var(--p-surface-0);
+  --card-background: var(--p-surface-0);
+  --card-border: 1px solid var(--p-surface-200);
+  --border-color: var(--p-surface-200);
+
+  /* Code, Mark & Selection */
+  --code-background: var(--p-surface-100);
+  
+  /* Gradient background end color */
+  --glow-gradient-end: #ffffff;
+}
