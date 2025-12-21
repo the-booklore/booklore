@@ -40,6 +40,7 @@ export class ThemeConfiguratorComponent {
 
   readonly selectedPrimaryColor = computed(() => this.configService.appState().primary);
   readonly selectedSurfaceColor = computed(() => this.configService.appState().surface);
+  readonly selectedThemeMode = computed(() => this.configService.appState().themeMode ?? 'dark');
 
   readonly faviconColor = computed(() => {
     const name = this.selectedPrimaryColor() ?? 'green';
@@ -75,6 +76,14 @@ export class ThemeConfiguratorComponent {
     this.configService.appState.update((state) => ({
       ...state,
       [type]: color.name
+    }));
+    event.stopPropagation();
+  }
+
+  updateThemeMode(event: Event, mode: 'light' | 'dark' | 'system') {
+    this.configService.appState.update((state) => ({
+      ...state,
+      themeMode: mode
     }));
     event.stopPropagation();
   }

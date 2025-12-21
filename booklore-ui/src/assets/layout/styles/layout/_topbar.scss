@@ -139,6 +139,39 @@
             outline-color: var(--primary-color);
           }
         }
+        
+        .theme-mode-button {
+          width: auto;
+          height: auto;
+          border-radius: 6px;
+          padding: 0.5rem 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background-color: var(--surface-100);
+          color: var(--text-color);
+          border: 1px solid var(--border-color);
+          transition: all 0.2s;
+          
+          &:hover {
+            background-color: var(--surface-200);
+          }
+          
+          &.active-theme-mode {
+            background-color: var(--primary-color);
+            color: var(--primary-contrast-color);
+            border-color: var(--primary-color);
+          }
+          
+          i {
+            font-size: 1rem;
+          }
+          
+          span {
+            font-size: 0.875rem;
+            font-weight: 500;
+          }
+        }
       }
     }
 
