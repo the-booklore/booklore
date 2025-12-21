@@ -90,6 +90,8 @@ export interface BookMetadata {
   hardcoverId?: string;
   hardcoverBookId?: number | null;
   googleId?: string;
+  customProviderId?: string;
+  customProviderName?: string;
   pageCount?: number | null;
   language?: string;
   rating?: number | null;

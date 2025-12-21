@@ -11,6 +11,7 @@ import java.util.List;
 public class FetchMetadataRequest {
     private Long bookId;
     private List<MetadataProvider> providers;
+    private List<String> customProviderIds;
     private String isbn;
     private String title;
     private String author;

@@ -9,7 +9,7 @@ import {ProgressSpinner} from 'primeng/progressspinner';
 import {FetchMetadataRequest} from '../../../model/request/fetch-metadata-request.model';
 import {Book, BookMetadata} from '../../../../book/model/book.model';
 import {BookService} from '../../../../book/service/book.service';
-import {AppSettings} from '../../../../../shared/model/app-settings.model';
+import {AppSettings, CustomProvider} from '../../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 import {BehaviorSubject, combineLatest, Observable, Subject, Subscription, takeUntil} from 'rxjs';
@@ -17,6 +17,13 @@ import {distinctUntilChanged, filter, switchMap} from 'rxjs/operators';
 import {ActivatedRoute} from '@angular/router';
 import {AsyncPipe} from '@angular/common';
 import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.component';
+
+interface ProviderOption {
+  label: string;
+  value: string;
+  isCustom: boolean;
+  customId?: string;
+}
 
 @Component({
   selector: 'app-metadata-searcher',
@@ -36,7 +43,7 @@ import {MetadataPickerComponent} from '../metadata-picker/metadata-picker.compon
 })
 export class MetadataSearcherComponent implements OnInit, OnDestroy {
   form: FormGroup;
-  providers: string[] = [];
+  providerOptions: ProviderOption[] = [];
   allFetchedMetadata: BookMetadata[] = [];
   bookId!: number;
   loading: boolean = false;
@@ -85,9 +92,25 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
         )
         .subscribe(([book, settings]) => {
           const providerSettings = settings?.metadataProviderSettings ?? {};
-          this.providers = Object.entries(providerSettings)
-            .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
-            .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
+
+          const builtInProviders: ProviderOption[] = Object.entries(providerSettings)
+            .filter(([key, value]) => key !== 'customProviders' && !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
+            .map(([key]) => ({
+              label: key.charAt(0).toUpperCase() + key.slice(1),
+              value: key.charAt(0).toUpperCase() + key.slice(1),
+              isCustom: false
+            }));
+
+          const customProviders: ProviderOption[] = (providerSettings.customProviders ?? [])
+            .filter((cp: CustomProvider) => cp.enabled)
+            .map((cp: CustomProvider) => ({
+              label: cp.providerName || 'Unnamed Provider',
+              value: cp.providerName || cp.id,
+              isCustom: true,
+              customId: cp.id
+            }));
+
+          this.providerOptions = [...builtInProviders, ...customProviders];
 
           this.resetFormFromBook(book!);
 
@@ -104,7 +127,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     this.bookId = book.id;
 
     this.form.patchValue({
-      provider: this.providers,
+      provider: this.providerOptions,
       title: book.metadata?.title ?? '',
       author: book.metadata?.authors?.[0] ?? '',
       isbn: book.metadata?.isbn13 ?? book.metadata?.isbn10 ?? ''
@@ -127,12 +150,26 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
   onSubmit(): void {
     this.searchTriggered = true;
     if (this.form.valid) {
-      const providerKeys = this.form.get('provider')?.value;
-      if (!providerKeys) return;
+      const selectedProviders: ProviderOption[] = this.form.get('provider')?.value;
+      if (!selectedProviders || selectedProviders.length === 0) return;
+
+      const builtInProviders = selectedProviders
+        .filter(p => !p.isCustom)
+        .map(p => p.value);
+
+      const customProviderIds = selectedProviders
+        .filter(p => p.isCustom)
+        .map(p => p.customId!);
+
+      const providers = [...builtInProviders];
+      if (customProviderIds.length > 0) {
+        providers.push('CustomProvider');
+      }
 
       const fetchRequest: FetchMetadataRequest = {
         bookId: this.bookId,
-        providers: providerKeys,
+        providers: providers,
+        customProviderIds: customProviderIds.length > 0 ? customProviderIds : undefined,
         title: this.form.get('title')?.value,
         author: this.form.get('author')?.value,
         isbn: this.form.get('isbn')?.value
@@ -196,7 +233,10 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       }
       const name = metadata.seriesName;
       return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+    } else if (metadata.customProviderId) {
+      const providerName = metadata.customProviderName || 'Custom Provider';
+      return `<span>${providerName}</span>`;
     }
-    throw new Error("No provider ID found in metadata.");
+    return '';
   }
 }

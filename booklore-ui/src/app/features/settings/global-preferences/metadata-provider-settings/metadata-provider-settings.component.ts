@@ -7,9 +7,10 @@ import {Button} from 'primeng/button';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
-import {AppSettingKey} from '../../../../shared/model/app-settings.model';
+import {AppSettingKey, CustomProvider} from '../../../../shared/model/app-settings.model';
 import {Select} from 'primeng/select';
 import {ExternalDocLinkComponent} from '../../../../shared/components/external-doc-link/external-doc-link.component';
+import {NgForOf, NgIf} from '@angular/common';
 
 @Component({
   selector: 'app-metadata-provider-settings',
@@ -21,7 +22,9 @@ import {ExternalDocLinkComponent} from '../../../../shared/components/external-d
     Button,
     FormsModule,
     Select,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    NgForOf,
+    NgIf
   ],
   templateUrl: './metadata-provider-settings.component.html',
   styleUrl: './metadata-provider-settings.component.scss'
@@ -76,10 +79,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
   comicvineEnabled: boolean = false;
   comicvineToken: string = '';
   doubanEnabled: boolean = false;
-  customEnabled: boolean = false;
-  customBaseUrl: string = '';
-  customBearerToken: string = '';
-  customProviderName: string = '';
+
+  customProviders: CustomProvider[] = [];
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -105,10 +106,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.comicvineEnabled = metadataProviderSettings?.comicvine?.enabled ?? false;
         this.comicvineToken = metadataProviderSettings?.comicvine?.apiKey ?? '';
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
-        this.customEnabled = metadataProviderSettings?.custom?.enabled ?? false;
-        this.customBaseUrl = metadataProviderSettings?.custom?.baseUrl ?? '';
-        this.customBearerToken = metadataProviderSettings?.custom?.bearerToken ?? '';
-        this.customProviderName = metadataProviderSettings?.custom?.providerName ?? '';
+        this.customProviders = metadataProviderSettings?.customProviders ?? [];
       });
   }
 
@@ -126,17 +124,23 @@ export class MetadataProviderSettingsComponent implements OnInit {
     }
   }
 
-  onCustomBaseUrlChange(newUrl: string): void {
-    this.customBaseUrl = newUrl;
-    if (!newUrl.trim()) {
-      this.customEnabled = false;
-    }
+  addCustomProvider(): void {
+    this.customProviders.push({
+      id: crypto.randomUUID(),
+      providerName: '',
+      enabled: false,
+      baseUrl: '',
+      bearerToken: ''
+    });
   }
 
-  onCustomTokenChange(newToken: string): void {
-    this.customBearerToken = newToken;
-    if (!newToken.trim()) {
-      this.customEnabled = false;
+  removeCustomProvider(index: number): void {
+    this.customProviders.splice(index, 1);
+  }
+
+  onCustomProviderBaseUrlChange(provider: CustomProvider): void {
+    if (!provider.baseUrl.trim()) {
+      provider.enabled = false;
     }
   }
 
@@ -150,12 +154,10 @@ export class MetadataProviderSettingsComponent implements OnInit {
             cookie: this.amazonCookie,
             domain: this.selectedAmazonDomain
           },
-
           comicvine: {
             enabled: this.comicvineEnabled,
             apiKey: this.comicvineToken.trim()
           },
-
           goodReads: {enabled: this.goodreadsEnabled},
           google: {
             enabled: this.googleEnabled,
@@ -166,12 +168,13 @@ export class MetadataProviderSettingsComponent implements OnInit {
             apiKey: this.hardcoverToken.trim()
           },
           douban: {enabled: this.doubanEnabled},
-          custom: {
-            enabled: this.customEnabled,
-            baseUrl: this.customBaseUrl.trim(),
-            bearerToken: this.customBearerToken.trim(),
-            providerName: this.customProviderName
-          }
+          customProviders: this.customProviders.map(p => ({
+            id: p.id,
+            providerName: p.providerName.trim(),
+            enabled: p.enabled,
+            baseUrl: p.baseUrl.trim(),
+            bearerToken: p.bearerToken.trim()
+          }))
         }
       }
     ];

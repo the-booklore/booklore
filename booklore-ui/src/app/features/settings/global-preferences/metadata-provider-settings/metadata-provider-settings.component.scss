@@ -139,3 +139,34 @@
   justify-content: flex-start;
   padding-top: 1rem;
 }
+
+.custom-providers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.custom-providers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  .provider-label {
+    font-weight: 600;
+    color: var(--p-text-color);
+    font-size: 1rem;
+  }
+}
+
+.no-custom-providers {
+  padding: 1rem;
+  background: var(--p-surface-ground);
+  border-radius: 0.5rem;
+}
+
+.custom-provider-item {
+  background: var(--p-surface-ground);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}

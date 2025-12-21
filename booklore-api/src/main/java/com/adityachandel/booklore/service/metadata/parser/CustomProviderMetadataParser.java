@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,20 +23,66 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class CustomProviderMetadataParser implements BookParser {
 
+    private static final int MAX_RESULTS_PER_PROVIDER = 10;
+
     private final CustomProviderClient client;
     private final AppSettingService appSettingService;
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest request) {
-        if (!isEnabled()) {
-            log.debug("Custom metadata provider is disabled");
+        List<MetadataProviderSettings.CustomProvider> providersToQuery = getProvidersToQuery(request);
+
+        if (providersToQuery.isEmpty()) {
+            log.debug("Custom metadata provider: No enabled providers to query");
             return Collections.emptyList();
         }
 
-        log.debug("Custom provider: Searching metadata for title={}, author={}, isbn={}",
-                request.getTitle(), request.getAuthor(), request.getIsbn());
+        log.debug("Custom provider: Searching metadata for title={}, author={}, isbn={} across {} providers",
+                request.getTitle(), request.getAuthor(), request.getIsbn(), providersToQuery.size());
+
+        List<BookMetadata> allResults = new ArrayList<>();
+
+        for (MetadataProviderSettings.CustomProvider providerConfig : providersToQuery) {
+            List<BookMetadata> providerResults = fetchFromProvider(providerConfig, request);
+            allResults.addAll(providerResults);
+        }
+
+        log.info("Custom provider: Found {} total results from {} providers",
+                allResults.size(), providersToQuery.size());
+        return allResults;
+    }
+
+    private List<MetadataProviderSettings.CustomProvider> getProvidersToQuery(FetchMetadataRequest request) {
+        MetadataProviderSettings providerSettings = appSettingService.getAppSettings().getMetadataProviderSettings();
+        if (providerSettings == null) {
+            log.warn("Metadata provider settings not configured");
+            return Collections.emptyList();
+        }
+
+        List<MetadataProviderSettings.CustomProvider> allProviders = providerSettings.getCustomProviders();
+        if (allProviders == null || allProviders.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> requestedIds = request.getCustomProviderIds();
+
+        if (requestedIds != null && !requestedIds.isEmpty()) {
+            return allProviders.stream()
+                    .filter(p -> p.isEnabled() && requestedIds.contains(p.getId()))
+                    .collect(Collectors.toList());
+        }
+
+        return allProviders.stream()
+                .filter(MetadataProviderSettings.CustomProvider::isEnabled)
+                .collect(Collectors.toList());
+    }
+
+    private List<BookMetadata> fetchFromProvider(MetadataProviderSettings.CustomProvider providerConfig,
+                                                  FetchMetadataRequest request) {
+        log.debug("Custom provider '{}': Searching metadata", providerConfig.getProviderName());
 
         List<CustomProviderBookMetadata> results = client.searchMetadata(
+                providerConfig,
                 null,
                 request.getTitle(),
                 request.getAuthor(),
@@ -43,17 +90,19 @@ public class CustomProviderMetadataParser implements BookParser {
                 null,
                 request.getAsin(),
                 null,
-                10
+                MAX_RESULTS_PER_PROVIDER
         );
 
         if (results == null || results.isEmpty()) {
-            log.debug("Custom provider: No results found");
+            log.debug("Custom provider '{}': No results found", providerConfig.getProviderName());
             return Collections.emptyList();
         }
 
-        log.info("Custom provider: Found {} results", results.size());
+        log.debug("Custom provider '{}': Found {} results",
+                providerConfig.getProviderName(), results.size());
+
         return results.stream()
-                .map(this::mapToBookMetadata)
+                .map(result -> mapToBookMetadata(result, providerConfig))
                 .collect(Collectors.toList());
     }
 
@@ -63,7 +112,8 @@ public class CustomProviderMetadataParser implements BookParser {
         return results.isEmpty() ? null : results.get(0);
     }
 
-    private BookMetadata mapToBookMetadata(CustomProviderBookMetadata custom) {
+    private BookMetadata mapToBookMetadata(CustomProviderBookMetadata custom,
+                                           MetadataProviderSettings.CustomProvider providerConfig) {
         String seriesName = null;
         Float seriesNumber = null;
         Integer seriesTotal = null;
@@ -77,6 +127,8 @@ public class CustomProviderMetadataParser implements BookParser {
 
         return BookMetadata.builder()
                 .provider(MetadataProvider.CustomProvider)
+                .customProviderId(custom.getProviderId())
+                .customProviderName(providerConfig.getProviderName())
                 .title(custom.getTitle())
                 .subtitle(custom.getSubtitle())
                 .authors(custom.getAuthors() != null ? new HashSet<>(custom.getAuthors()) : null)
@@ -94,18 +146,7 @@ public class CustomProviderMetadataParser implements BookParser {
                 .seriesName(seriesName)
                 .seriesNumber(seriesNumber)
                 .seriesTotal(seriesTotal)
-                .rating(custom.getRating())
                 .thumbnailUrl(custom.getCoverUrl() != null ? custom.getCoverUrl() : custom.getThumbnailUrl())
                 .build();
-    }
-
-    private boolean isEnabled() {
-        MetadataProviderSettings.CustomProvider settings = appSettingService.getAppSettings()
-                .getMetadataProviderSettings()
-                .getCustomProvider();
-        return settings != null
-                && settings.isEnabled()
-                && settings.getBaseUrl() != null
-                && !settings.getBaseUrl().isBlank();
     }
 }

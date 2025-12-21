@@ -2,6 +2,9 @@ package com.adityachandel.booklore.model.dto.settings;
 
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 public class MetadataProviderSettings {
     private Amazon amazon;
@@ -10,7 +13,7 @@ public class MetadataProviderSettings {
     private Hardcover hardcover;
     private Comicvine comicvine;
     private Douban douban;
-    private CustomProvider customProvider;
+    private List<CustomProvider> customProviders = new ArrayList<>();
 
     @Data
     public static class Amazon {
@@ -49,9 +52,10 @@ public class MetadataProviderSettings {
 
     @Data
     public static class CustomProvider {
+        private String id;
+        private String providerName;
         private boolean enabled;
         private String baseUrl;
         private String bearerToken;
-        private String providerName;
     }
 }

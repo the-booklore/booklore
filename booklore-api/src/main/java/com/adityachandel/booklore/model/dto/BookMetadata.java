@@ -44,6 +44,8 @@ public class BookMetadata {
     private Double doubanRating;
     private Integer doubanReviewCount;
     private String googleId;
+    private String customProviderId;
+    private String customProviderName;
     private Instant coverUpdatedOn;
     private Set<String> authors;
     private Set<String> categories;

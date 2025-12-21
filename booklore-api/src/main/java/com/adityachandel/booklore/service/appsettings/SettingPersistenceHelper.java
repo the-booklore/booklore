@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -99,19 +100,13 @@ public class SettingPersistenceHelper {
         MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
         defaultDouban.setEnabled(false);
 
-        MetadataProviderSettings.CustomProvider defaultCustomPorvider = new MetadataProviderSettings.CustomProvider();
-        defaultCustomPorvider.setEnabled(false);
-        defaultCustomPorvider.setBaseUrl(null);
-        defaultCustomPorvider.setBearerToken(null);
-        defaultCustomPorvider.setProviderName(null);
-
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
         defaultMetadataProviderSettings.setDouban(defaultDouban);
-        defaultMetadataProviderSettings.setCustomProvider(defaultCustomPorvider);
+        defaultMetadataProviderSettings.setCustomProviders(new ArrayList<>());
 
         return defaultMetadataProviderSettings;
     }

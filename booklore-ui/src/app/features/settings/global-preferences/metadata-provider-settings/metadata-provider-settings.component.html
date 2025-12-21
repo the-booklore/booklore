@@ -146,49 +146,87 @@
       </div>
     </div>
 
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox
-            [binary]="true"
-            [(ngModel)]="customEnabled"
-            [disabled]="!customBaseUrl || !customBearerToken">
-          </p-checkbox>
-          <label class="provider-label">Custom Provider</label>
-        </div>
+    <div class="custom-providers-section">
+      <div class="custom-providers-header">
+        <label class="provider-label">Custom Providers</label>
+        <p-button
+          label="Add Provider"
+          icon="pi pi-plus"
+          [outlined]="true"
+          size="small"
+          (click)="addCustomProvider()">
+        </p-button>
       </div>
 
-      <div class="provider-config">
-        <div class="config-field">
-          <label class="config-label">Base URL</label>
-          <p class="config-description">
-            <i class="pi pi-info-circle"></i>
-            The base URL of your custom metadata provider API (e.g., https://api.example.com/v1)
-          </p>
-          <input
-            type="text"
-            pInputText
-            placeholder="https://api.example.com/v1"
-            fluid
-            class="max-w-[60rem]"
-            [(ngModel)]="customBaseUrl"
-            (ngModelChange)="onCustomBaseUrlChange($event)"/>
+      <div *ngIf="customProviders.length === 0" class="no-custom-providers">
+        <p class="config-description">
+          <i class="pi pi-info-circle"></i>
+          No custom providers configured. Click "Add Provider" to add one.
+        </p>
+      </div>
+
+      <div *ngFor="let provider of customProviders; let i = index" class="provider-item custom-provider-item">
+        <div class="provider-control">
+          <div class="provider-info">
+            <p-checkbox
+              [binary]="true"
+              [(ngModel)]="provider.enabled"
+              [disabled]="!provider.baseUrl">
+            </p-checkbox>
+            <label class="provider-label">{{ provider.providerName || 'Unnamed Provider' }}</label>
+          </div>
+          <p-button
+            icon="pi pi-trash"
+            [rounded]="true"
+            [text]="true"
+            severity="danger"
+            size="small"
+            (click)="removeCustomProvider(i)">
+          </p-button>
         </div>
 
-        <div class="config-field">
-          <label class="config-label">Bearer Token</label>
-          <p class="config-description">
-            <i class="pi pi-info-circle"></i>
-            Authentication token for the custom provider API
-          </p>
-          <input
-            type="password"
-            pInputText
-            placeholder="Enter bearer token"
-            fluid
-            class="max-w-[60rem]"
-            [(ngModel)]="customBearerToken"
-            (ngModelChange)="onCustomTokenChange($event)"/>
+        <div class="provider-config">
+          <div class="config-field">
+            <label class="config-label">Provider Name</label>
+            <input
+              type="text"
+              pInputText
+              placeholder="My Custom Provider"
+              fluid
+              class="max-w-[60rem]"
+              [(ngModel)]="provider.providerName"/>
+          </div>
+
+          <div class="config-field">
+            <label class="config-label">Base URL</label>
+            <p class="config-description">
+              <i class="pi pi-info-circle"></i>
+              The base URL of your custom metadata provider API (e.g., https://api.example.com/v1)
+            </p>
+            <input
+              type="text"
+              pInputText
+              placeholder="https://api.example.com/v1"
+              fluid
+              class="max-w-[60rem]"
+              [(ngModel)]="provider.baseUrl"
+              (ngModelChange)="onCustomProviderBaseUrlChange(provider)"/>
+          </div>
+
+          <div class="config-field">
+            <label class="config-label">Bearer Token (Optional)</label>
+            <p class="config-description">
+              <i class="pi pi-info-circle"></i>
+              Authentication token for the custom provider API
+            </p>
+            <input
+              type="password"
+              pInputText
+              placeholder="Enter bearer token"
+              fluid
+              class="max-w-[60rem]"
+              [(ngModel)]="provider.bearerToken"/>
+          </div>
         </div>
       </div>
     </div>
