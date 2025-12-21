@@ -488,7 +488,7 @@ export class AppConfigService {
 
   private setupSystemThemeListener(): void {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', (e) => {
+    mediaQuery.addEventListener('change', () => {
       const currentMode = this.appState().themeMode;
       if (currentMode === 'system') {
         this.applyThemeMode('system');
