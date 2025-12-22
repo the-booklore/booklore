@@ -131,7 +131,7 @@ public class KomgaService {
         return komgaMapper.toKomgaSeriesDto(seriesName, libraryId, seriesBooks);
     }
 
-    public KomgaPageableDto<KomgaBookDto> getBooksBySeries(String seriesId, int page, int size) {
+    public KomgaPageableDto<KomgaBookDto> getBooksBySeries(String seriesId, int page, int size, boolean unpaged) {
         KomgaSeriesDto series = getSeriesById(seriesId);
         
         // Get all books for the series
@@ -157,24 +157,42 @@ public class KomgaService {
                 }))
                 .collect(Collectors.toList());
         
-        // Paginate
+        // Handle unpaged mode
         int totalElements = seriesBooks.size();
-        int totalPages = (int) Math.ceil((double) totalElements / size);
-        int fromIndex = page * size;
-        int toIndex = Math.min(fromIndex + size, totalElements);
+        List<KomgaBookDto> content;
+        int actualPage;
+        int actualSize;
+        int totalPages;
         
-        List<KomgaBookDto> content = seriesBooks.subList(fromIndex, toIndex).stream()
-                .map(komgaMapper::toKomgaBookDto)
-                .collect(Collectors.toList());
+        if (unpaged) {
+            // Return all books without pagination
+            content = seriesBooks.stream()
+                    .map(komgaMapper::toKomgaBookDto)
+                    .collect(Collectors.toList());
+            actualPage = 0;
+            actualSize = totalElements;
+            totalPages = totalElements > 0 ? 1 : 0;
+        } else {
+            // Paginate
+            totalPages = (int) Math.ceil((double) totalElements / size);
+            int fromIndex = page * size;
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            
+            content = seriesBooks.subList(fromIndex, toIndex).stream()
+                    .map(komgaMapper::toKomgaBookDto)
+                    .collect(Collectors.toList());
+            actualPage = page;
+            actualSize = size;
+        }
         
         return KomgaPageableDto.<KomgaBookDto>builder()
                 .content(content)
-                .number(page)
-                .size(size)
+                .number(actualPage)
+                .size(actualSize)
                 .totalElements(totalElements)
                 .totalPages(totalPages)
-                .first(page == 0)
-                .last(page >= totalPages - 1)
+                .first(actualPage == 0)
+                .last(actualPage >= totalPages - 1)
                 .empty(content.isEmpty())
                 .build();
     }
@@ -221,7 +239,7 @@ public class KomgaService {
                 .orElseThrow(() -> new RuntimeException("Book not found"));
         
         BookMetadataEntity metadata = book.getMetadata();
-        Integer pageCount = metadata != null ? metadata.getPageCount() : 0;
+        Integer pageCount = metadata != null && metadata.getPageCount() != null ? metadata.getPageCount() : 0;
         
         List<KomgaPageDto> pages = new ArrayList<>();
         if (pageCount > 0) {

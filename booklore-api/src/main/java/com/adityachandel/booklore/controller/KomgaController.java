@@ -69,8 +69,9 @@ public class KomgaController {
     public ResponseEntity<KomgaPageableDto<KomgaBookDto>> getSeriesBooks(
             @Parameter(description = "Series ID") @PathVariable String seriesId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(komgaService.getBooksBySeries(seriesId, page, size));
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
+        return ResponseEntity.ok(komgaService.getBooksBySeries(seriesId, page, size, unpaged));
     }
 
     @Operation(summary = "Get series thumbnail")
@@ -78,7 +79,7 @@ public class KomgaController {
     public ResponseEntity<Resource> getSeriesThumbnail(
             @Parameter(description = "Series ID") @PathVariable String seriesId) {
         // Get the first book in the series and return its thumbnail
-        KomgaPageableDto<KomgaBookDto> books = komgaService.getBooksBySeries(seriesId, 0, 1);
+        KomgaPageableDto<KomgaBookDto> books = komgaService.getBooksBySeries(seriesId, 0, 1, false);
         if (books.getContent().isEmpty()) {
             return ResponseEntity.notFound().build();
         }
