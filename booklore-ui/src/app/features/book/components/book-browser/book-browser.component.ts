@@ -50,6 +50,7 @@ import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {BookNavigationService} from '../../service/book-navigation.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -118,10 +119,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected confirmationService = inject(ConfirmationService);
   protected magicShelfService = inject(MagicShelfService);
   protected bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
+  protected taskHelperService = inject(TaskHelperService);
   private pageTitle = inject(PageTitleService);
   private loadingService = inject(LoadingService);
-
-  protected taskHelperService = inject(TaskHelperService);
+  private bookNavigationService = inject(BookNavigationService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -256,6 +257,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       () => this.fetchMetadata(),
       () => this.bulkEditMetadata(),
       () => this.multiBookEditMetadata(),
+      () => this.regenerateCoversForSelected(),
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
 
@@ -584,6 +586,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       )
       .subscribe(books => {
         this.currentBooks = books;
+        this.bookNavigationService.setAvailableBookIds(books.map(book => book.id));
       });
   }
 
@@ -664,6 +667,38 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   multiBookEditMetadata(): void {
     this.dialogHelperService.openMultibookMetadataEditorDialog(this.selectedBooks);
+  }
+
+  regenerateCoversForSelected(): void {
+    if (!this.selectedBooks || this.selectedBooks.size === 0) return;
+    const count = this.selectedBooks.size;
+    this.confirmationService.confirm({
+      message: `Are you sure you want to regenerate covers for ${count} book(s)?`,
+      header: 'Confirm Cover Regeneration',
+      icon: 'pi pi-image',
+      acceptLabel: 'Yes',
+      rejectLabel: 'No',
+      accept: () => {
+        this.bookService.regenerateCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Cover Regeneration Started',
+              detail: `Regenerating covers for ${count} book(s). Refresh the page when complete.`,
+              life: 3000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Failed',
+              detail: 'Could not start cover regeneration.',
+              life: 3000
+            });
+          }
+        });
+      }
+    });
   }
 
   moveFiles() {

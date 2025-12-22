@@ -73,6 +73,5 @@ export class ChangePasswordComponent {
 
   logout() {
     this.authService.logout();
-    window.location.href = '/login';
   }
 }

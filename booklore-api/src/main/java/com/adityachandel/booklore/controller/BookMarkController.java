@@ -2,6 +2,7 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.BookMark;
 import com.adityachandel.booklore.model.dto.CreateBookMarkRequest;
+import com.adityachandel.booklore.model.dto.UpdateBookMarkRequest;
 import com.adityachandel.booklore.service.book.BookMarkService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,12 +31,29 @@ public class BookMarkController {
         return bookMarkService.getBookmarksForBook(bookId);
     }
 
+    @Operation(summary = "Get a specific bookmark", description = "Retrieve a specific bookmark by its ID.")
+    @ApiResponse(responseCode = "200", description = "Bookmark returned successfully")
+    @GetMapping("/{bookmarkId}")
+    public BookMark getBookmarkById(
+            @Parameter(description = "ID of the bookmark") @PathVariable Long bookmarkId) {
+        return bookMarkService.getBookmarkById(bookmarkId);
+    }
+
     @Operation(summary = "Create a bookmark", description = "Create a new bookmark for a book.")
     @ApiResponse(responseCode = "200", description = "Bookmark created successfully")
     @PostMapping
     public BookMark createBookmark(
             @Parameter(description = "Bookmark creation request") @Valid @RequestBody CreateBookMarkRequest request) {
         return bookMarkService.createBookmark(request);
+    }
+
+    @Operation(summary = "Update a bookmark", description = "Update an existing bookmark's properties (title, location, color, etc.).")
+    @ApiResponse(responseCode = "200", description = "Bookmark updated successfully")
+    @PutMapping("/{bookmarkId}")
+    public BookMark updateBookmark(
+            @Parameter(description = "ID of the bookmark to update") @PathVariable Long bookmarkId,
+            @Parameter(description = "Bookmark update request") @Valid @RequestBody UpdateBookMarkRequest request) {
+        return bookMarkService.updateBookmark(bookmarkId, request);
     }
 
     @Operation(summary = "Delete a bookmark", description = "Delete a specific bookmark by its ID.")

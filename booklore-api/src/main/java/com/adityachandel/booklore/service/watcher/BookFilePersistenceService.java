@@ -76,6 +76,9 @@ public class BookFilePersistenceService {
 
     @Transactional
     public int markAllBooksUnderPathAsDeleted(long libraryPathId, String relativeFolderPath) {
+        if (relativeFolderPath == null) {
+            throw new IllegalArgumentException("relativeFolderPath cannot be null");
+        }
         String normalizedPrefix = relativeFolderPath.endsWith("/") ? relativeFolderPath : (relativeFolderPath + "/");
 
         List<BookEntity> books = bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(libraryPathId, normalizedPrefix);

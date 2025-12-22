@@ -2,7 +2,7 @@ import {Component, inject} from '@angular/core';
 import {NotificationEventService} from '../../websocket/notification-event.service';
 import {LogNotification} from '../../websocket/model/log-notification.model';
 import {Tag} from 'primeng/tag';
-import {NgIf} from '@angular/common';
+
 import {TagComponent} from '../tag/tag.component';
 
 @Component({

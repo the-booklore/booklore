@@ -1,7 +1,3 @@
-.container {
-  overflow-x: auto;
-}
-
 .main-card {
   display: flex;
   flex-direction: column;
@@ -9,22 +5,24 @@
   border-radius: 0.75rem;
   overflow: hidden;
   background: var(--card-background);
-  min-width: 60rem;
   border: 1px solid var(--p-content-border-color);
+
+  @media (max-width: 768px) {
+    height: calc(100dvh - 4.9rem);
+  }
 }
 
 .header {
-  padding: 1.5rem 1rem 1rem;
+  padding: 1.5rem;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   border-bottom: 1px solid var(--p-content-border-color);
-  margin-bottom: 1.5rem;
-
-  @media (min-width: 768px) {
-    padding: 1.5rem 1.5rem 1rem;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+  gap: 1rem;
+  
+  @media (max-width: 768px) {
+    padding: 1rem;
   }
 }
 
@@ -41,18 +39,24 @@
   p {
     font-size: 0.875rem;
     color: rgb(156, 163, 175);
-
+    
     strong {
       color: var(--primary-color);
+    }
+  }
+
+  @media (max-width: 768px) {
+    flex-shrink: 1;
+
+    p {
+      display: none;
     }
   }
 }
 
 .header-actions {
-  margin-top: 1rem;
-
-  @media (min-width: 768px) {
-    margin-top: 0;
+  @media (max-width: 768px) {
+    display: flex;
   }
 }
 
@@ -60,6 +64,13 @@
   color: rgb(2, 132, 199);
   cursor: pointer;
   font-size: 0.9rem;
+}
+
+.card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  overflow: auto;
 }
 
 .loading-overlay {
@@ -82,7 +93,7 @@
   }
 
   span {
-    color: rgb(209, 213, 219);
+    color: var(--text-color-secondary);
   }
 
   p-progressSpinner {
@@ -92,7 +103,7 @@
 }
 
 .controls-section {
-  padding: 0 1.5rem 1.5rem;
+  padding: 1rem;
   margin: 0;
   border-bottom: 1px solid var(--p-content-border-color);
 }
@@ -135,17 +146,68 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 0 0.25rem;
+  flex-wrap: wrap;
+
+  label {
+    font-size: 0.875rem;
+    color: var(--text-color-secondary);
+    font-weight: 500;
+  }
 }
 
 .default-controls {
   display: flex;
   gap: 1rem;
   align-items: center;
+  justify-content: space-between;
 
   p-select {
-    min-width: 8rem;
-    max-width: 16rem;
+    width: 8rem;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+
+    label {
+      display: none;
+    }
+
+    p-select {
+      flex-basis: 50%;
+      max-width: 250px;
+    }
+  }
+}
+
+::ng-deep .p-select-overlay {
+  @media (max-width: 768px) {
+    max-width: 70vw;
+
+    .p-select-option {
+      white-space: normal;
+    }
+  }
+}
+
+.default-controls i.pi {
+  color: var(--p-button-outlined-info-color);
+}
+
+p-inputgroup-addon {
+  background-color: transparent;
+  border-color: var(--p-button-outlined-info-border-color) !important;
+  color: var(--p-button-outlined-info-color);
+  padding: 0 0.5em;
+
+  label {
+    display: flex;
+    color: var(--p-button-outlined-info-color) !important;
+  }
+}
+
+p-inputgroup.disabled {
+  p-inputgroup-addon {
+    opacity: var(--p-disabled-opacity) !important;
   }
 }
 
@@ -153,22 +215,36 @@
   display: flex;
   gap: 1rem;
   align-items: center;
+  
+  @media (max-width: 640px) {
+    flex-wrap: wrap;
+    width: 100%;
 
-  span {
-    font-size: 0.875rem;
-    color: rgb(209, 213, 219);
-    font-weight: 500;
+    p-inputgroup.importmetadata {
+      width: 100%;
+
+      p-button {
+        flex-grow: 1;
+
+        ::ng-deep button {
+          width: 100%;
+        }
+      }
+    }
+
+    p-button.bulkedit, p-button.extractpattern {
+      width: calc(50% - 0.5rem);
+
+      ::ng-deep button {
+        width: 100%;
+      }
+    }
   }
 }
 
 .content-area {
   flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-
-  > * + * {
-    margin-top: 0.5rem;
-  }
+  padding: 0 0 1px;
 }
 
 .empty-state {
@@ -191,9 +267,9 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.75rem 0.75rem 0 0;
-  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+  flex-wrap: wrap;
 }
 
 .status-indicator {
@@ -212,6 +288,17 @@
     transform: scale(1.05);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
+
+  @media (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+div.cover-image {
+  display: block;
+  background-color: rgba(255, 255, 255, 0.1);
+  text-align: center;
+  line-height: 2rem;
 }
 
 .file-name {
@@ -220,7 +307,11 @@
   font-size: 0.875rem;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: wrap;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+  }
 }
 
 .metadata-status {
@@ -237,26 +328,54 @@
   }
 }
 
+.file-library {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+
 .library-select,
 .path-select {
-  min-width: 8rem;
-  max-width: 16rem;
+  width: 8rem;
+
+  @media (max-width: 768px) {
+    flex-basis: 50%;
+    max-width: 250px;
+  }
 }
 
 .details-section {
-  border-left: 1px solid var(--border-color);
-  border-right: 1px solid var(--border-color);
   border-bottom: 1px solid var(--border-color);
-  border-top: none;
-  border-radius: 0 0 0.625rem 0.625rem;
 }
 
-.footer {
-  padding: 0.5rem 1rem;
+.footer, .footer-mobile {
+  padding: 1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.footer {
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+
+    ::ng-deep .p-button-label {
+      display: none;
+    }
+
+    ::ng-deep .p-button {
+      width: var(--p-button-icon-only-width);
+      padding-inline-start: 0;
+      padding-inline-end: 0;
+      gap: 0;
+    }
+  }
 }
 
 .footer-left,
@@ -264,7 +383,6 @@
   display: flex;
   gap: 1rem;
   align-items: center;
-  min-width: 10rem;
 }
 
 .footer-left {
@@ -272,7 +390,6 @@
 }
 
 .footer-right {
-  min-width: 12.5rem;
   justify-content: flex-end;
 }
 
@@ -280,6 +397,14 @@
   flex-grow: 1;
   display: flex;
   justify-content: center;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
+}
+
+.p-paginator {
+  flex-wrap: nowrap;
 }
 
 .spacer {

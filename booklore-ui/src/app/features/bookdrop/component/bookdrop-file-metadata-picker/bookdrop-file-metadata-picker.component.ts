@@ -47,7 +47,7 @@ export class BookdropFileMetadataPickerComponent {
     {label: 'Title', controlName: 'title', fetchedKey: 'title'},
     {label: 'Subtitle', controlName: 'subtitle', fetchedKey: 'subtitle'},
     {label: 'Publisher', controlName: 'publisher', fetchedKey: 'publisher'},
-    {label: 'Published', controlName: 'publishedDate', fetchedKey: 'publishedDate'}
+    {label: 'Publish Date', controlName: 'publishedDate', fetchedKey: 'publishedDate'}
   ];
 
   metadataChips = [
@@ -62,21 +62,22 @@ export class BookdropFileMetadataPickerComponent {
   ];
 
   metadataFieldsBottom = [
-    {label: 'Series', controlName: 'seriesName', lockedKey: 'seriesNameLocked', fetchedKey: 'seriesName'},
-    {label: 'Book #', controlName: 'seriesNumber', lockedKey: 'seriesNumberLocked', fetchedKey: 'seriesNumber'},
-    {label: 'Total Books', controlName: 'seriesTotal', lockedKey: 'seriesTotalLocked', fetchedKey: 'seriesTotal'},
+    {label: 'Series Name', controlName: 'seriesName', lockedKey: 'seriesNameLocked', fetchedKey: 'seriesName'},
+    {label: 'Series #', controlName: 'seriesNumber', lockedKey: 'seriesNumberLocked', fetchedKey: 'seriesNumber'},
+    {label: 'Series Total', controlName: 'seriesTotal', lockedKey: 'seriesTotalLocked', fetchedKey: 'seriesTotal'},
     {label: 'Language', controlName: 'language', lockedKey: 'languageLocked', fetchedKey: 'language'},
     {label: 'ISBN-10', controlName: 'isbn10', lockedKey: 'isbn10Locked', fetchedKey: 'isbn10'},
     {label: 'ISBN-13', controlName: 'isbn13', lockedKey: 'isbn13Locked', fetchedKey: 'isbn13'},
-    {label: 'ASIN', controlName: 'asin', lockedKey: 'asinLocked', fetchedKey: 'asin'},
-    {label: 'Amz Reviews', controlName: 'amazonReviewCount', lockedKey: 'amazonReviewCountLocked', fetchedKey: 'amazonReviewCount'},
-    {label: 'Amz Rating', controlName: 'amazonRating', lockedKey: 'amazonRatingLocked', fetchedKey: 'amazonRating'},
-    {label: 'GR ID', controlName: 'goodreadsId', lockedKey: 'goodreadsIdLocked', fetchedKey: 'goodreadsId'},
-    {label: 'GR Reviews', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount'},
-    {label: 'GR Rating', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating'},
-    {label: 'HC ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId'},
-    {label: 'HC Reviews', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount'},
-    {label: 'HC Rating', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
+    {label: 'Amazon ASIN', controlName: 'asin', lockedKey: 'asinLocked', fetchedKey: 'asin'},
+    {label: 'Amazon #', controlName: 'amazonReviewCount', lockedKey: 'amazonReviewCountLocked', fetchedKey: 'amazonReviewCount'},
+    {label: 'Amazon ★', controlName: 'amazonRating', lockedKey: 'amazonRatingLocked', fetchedKey: 'amazonRating'},
+    {label: 'Goodreads ID', controlName: 'goodreadsId', lockedKey: 'goodreadsIdLocked', fetchedKey: 'goodreadsId'},
+    {label: 'Goodreads #', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount'},
+    {label: 'Goodreads ★', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating'},
+    {label: 'Hardcover ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId'},
+    {label: 'Hardcover Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId'},
+    {label: 'Hardcover #', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount'},
+    {label: 'Hardcover ★', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
     {label: 'Google ID', controlName: 'googleId', lockedKey: 'googleIdLocked', fetchedKey: 'googleId'},
     {label: 'Comicvine ID', controlName: 'comicvineId', lockedKey: 'comicvineIdLocked', fetchedKey: 'comicvineId'},
     {label: 'Pages', controlName: 'pageCount', lockedKey: 'pageCountLocked', fetchedKey: 'pageCount'}
@@ -153,8 +154,9 @@ export class BookdropFileMetadataPickerComponent {
     }
   }
 
-  onAutoCompleteBlur(fieldName: string, event: any) {
-    const inputValue = event.target.value?.trim();
+  onAutoCompleteBlur(fieldName: string, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const inputValue = target?.value?.trim();
     if (inputValue) {
       const currentValue = this.metadataForm.get(fieldName)?.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
@@ -163,7 +165,9 @@ export class BookdropFileMetadataPickerComponent {
         values.push(inputValue);
         this.metadataForm.get(fieldName)?.setValue(values);
       }
-      event.target.value = '';
+      if (target) {
+        target.value = '';
+      }
     }
   }
 
@@ -200,6 +204,7 @@ export class BookdropFileMetadataPickerComponent {
         goodreadsRating: this.originalMetadata.goodreadsRating || null,
         goodreadsReviewCount: this.originalMetadata.goodreadsReviewCount || null,
         hardcoverId: this.originalMetadata.hardcoverId || null,
+        hardcoverBookId: this.originalMetadata.hardcoverBookId || null,
         hardcoverRating: this.originalMetadata.hardcoverRating || null,
         hardcoverReviewCount: this.originalMetadata.hardcoverReviewCount || null,
         googleId: this.originalMetadata.googleId || null,

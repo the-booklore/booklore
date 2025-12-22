@@ -2,16 +2,23 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.BookdropFile;
 import com.adityachandel.booklore.model.dto.BookdropFileNotification;
+import com.adityachandel.booklore.model.dto.request.BookdropBulkEditRequest;
 import com.adityachandel.booklore.model.dto.request.BookdropFinalizeRequest;
+import com.adityachandel.booklore.model.dto.request.BookdropPatternExtractRequest;
 import com.adityachandel.booklore.model.dto.request.BookdropSelectionRequest;
+import com.adityachandel.booklore.model.dto.response.BookdropBulkEditResult;
 import com.adityachandel.booklore.model.dto.response.BookdropFinalizeResult;
+import com.adityachandel.booklore.model.dto.response.BookdropPatternExtractResult;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
+import com.adityachandel.booklore.service.bookdrop.BookdropBulkEditService;
 import com.adityachandel.booklore.service.bookdrop.BookdropMonitoringService;
 import com.adityachandel.booklore.service.monitoring.MonitoringService;
+import com.adityachandel.booklore.service.bookdrop.FilenamePatternExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +33,8 @@ public class BookdropFileController {
 
     private final BookDropService bookDropService;
     private final BookdropMonitoringService monitoringService;
+    private final FilenamePatternExtractor filenamePatternExtractor;
+    private final BookdropBulkEditService bookdropBulkEditService;
 
     @Operation(summary = "Get bookdrop notification summary", description = "Retrieve a summary of bookdrop file notifications.")
     @ApiResponse(responseCode = "200", description = "Notification summary returned successfully")
@@ -67,5 +76,23 @@ public class BookdropFileController {
     public ResponseEntity<Void> rescanBookdrop() {
         monitoringService.rescanBookdropFolder();
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Extract metadata from filenames using pattern", description = "Parse filenames of selected files using a pattern to extract metadata fields.")
+    @ApiResponse(responseCode = "200", description = "Pattern extraction completed")
+    @PostMapping("/files/extract-pattern")
+    public ResponseEntity<BookdropPatternExtractResult> extractFromPattern(
+            @Parameter(description = "Pattern extraction request") @Valid @RequestBody BookdropPatternExtractRequest request) {
+        BookdropPatternExtractResult result = filenamePatternExtractor.bulkExtract(request);
+        return ResponseEntity.ok(result);
+    }
+
+    @Operation(summary = "Bulk edit metadata for selected files", description = "Apply metadata changes to multiple selected files at once.")
+    @ApiResponse(responseCode = "200", description = "Bulk edit completed")
+    @PostMapping("/files/bulk-edit")
+    public ResponseEntity<BookdropBulkEditResult> bulkEditMetadata(
+            @Parameter(description = "Bulk edit request") @Valid @RequestBody BookdropBulkEditRequest request) {
+        BookdropBulkEditResult result = bookdropBulkEditService.bulkEdit(request);
+        return ResponseEntity.ok(result);
     }
 }

@@ -73,6 +73,7 @@ export class MetadataPickerComponent implements OnInit {
     {label: 'GR Reviews', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount'},
     {label: 'GR Rating', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating'},
     {label: 'Hardcover ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId'},
+    {label: 'Hardcover Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId'},
     {label: 'HC Reviews', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount'},
     {label: 'HC Rating', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
     {label: 'Google ID', controlName: 'googleId', lockedKey: 'googleIdLocked', fetchedKey: 'googleId'},
@@ -149,6 +150,7 @@ export class MetadataPickerComponent implements OnInit {
       goodreadsRating: new FormControl(''),
       goodreadsReviewCount: new FormControl(''),
       hardcoverId: new FormControl(''),
+      hardcoverBookId: new FormControl(''),
       hardcoverRating: new FormControl(''),
       hardcoverReviewCount: new FormControl(''),
       googleId: new FormControl(''),
@@ -178,6 +180,7 @@ export class MetadataPickerComponent implements OnInit {
       goodreadsRatingLocked: new FormControl(false),
       goodreadsReviewCountLocked: new FormControl(false),
       hardcoverIdLocked: new FormControl(false),
+      hardcoverBookIdLocked: new FormControl(false),
       hardcoverRatingLocked: new FormControl(false),
       hardcoverReviewCountLocked: new FormControl(false),
       googleIdLocked: new FormControl(false),
@@ -254,6 +257,7 @@ export class MetadataPickerComponent implements OnInit {
           goodreadsRating: metadata.goodreadsRating || null,
           goodreadsReviewCount: metadata.goodreadsReviewCount || null,
           hardcoverId: metadata.hardcoverId || null,
+          hardcoverBookId: metadata.hardcoverBookId || null,
           hardcoverRating: metadata.hardcoverRating || null,
           hardcoverReviewCount: metadata.hardcoverReviewCount || null,
           googleId: metadata.googleId || null,
@@ -283,6 +287,7 @@ export class MetadataPickerComponent implements OnInit {
           goodreadsRatingLocked: metadata.goodreadsRatingLocked || false,
           goodreadsReviewCountLocked: metadata.goodreadsReviewCountLocked || false,
           hardcoverIdLocked: metadata.hardcoverIdLocked || false,
+          hardcoverBookIdLocked: metadata.hardcoverBookIdLocked || false,
           hardcoverRatingLocked: metadata.hardcoverRatingLocked || false,
           hardcoverReviewCountLocked: metadata.hardcoverReviewCountLocked || false,
           googleIdLocked: metadata.googleIdLocked || false,
@@ -319,6 +324,7 @@ export class MetadataPickerComponent implements OnInit {
         if (metadata.goodreadsReviewCountLocked) this.metadataForm.get('goodreadsReviewCount')?.disable({emitEvent: false});
         if (metadata.goodreadsRatingLocked) this.metadataForm.get('goodreadsRating')?.disable({emitEvent: false});
         if (metadata.hardcoverIdLocked) this.metadataForm.get('hardcoverId')?.disable({emitEvent: false});
+        if (metadata.hardcoverBookIdLocked) this.metadataForm.get('hardcoverBookId')?.disable({emitEvent: false});
         if (metadata.hardcoverReviewCountLocked) this.metadataForm.get('hardcoverReviewCount')?.disable({emitEvent: false});
         if (metadata.hardcoverRatingLocked) this.metadataForm.get('hardcoverRating')?.disable({emitEvent: false});
         if (metadata.googleIdLocked) this.metadataForm.get('googleId')?.disable({emitEvent: false});
@@ -397,6 +403,7 @@ export class MetadataPickerComponent implements OnInit {
       goodreadsRating: this.metadataForm.get('goodreadsRating')?.value || this.copiedFields['goodreadsRating'] ? this.getNumberOrCopied('goodreadsRating') : null,
       goodreadsReviewCount: this.metadataForm.get('goodreadsReviewCount')?.value || this.copiedFields['goodreadsReviewCount'] ? this.getNumberOrCopied('goodreadsReviewCount') : null,
       hardcoverId: this.metadataForm.get('hardcoverId')?.value || this.copiedFields['hardcoverId'] ? this.getValueOrCopied('hardcoverId') : '',
+      hardcoverBookId: this.metadataForm.get('hardcoverBookId')?.value || this.copiedFields['hardcoverBookId'] ? (this.getNumberOrCopied('hardcoverBookId') ?? null) : null,
       hardcoverRating: this.metadataForm.get('hardcoverRating')?.value || this.copiedFields['hardcoverRating'] ? this.getNumberOrCopied('hardcoverRating') : null,
       hardcoverReviewCount: this.metadataForm.get('hardcoverReviewCount')?.value || this.copiedFields['hardcoverReviewCount'] ? this.getNumberOrCopied('hardcoverReviewCount') : null,
       googleId: this.metadataForm.get('googleId')?.value || this.copiedFields['googleId'] ? this.getValueOrCopied('googleId') : '',
@@ -426,6 +433,7 @@ export class MetadataPickerComponent implements OnInit {
       goodreadsRatingLocked: this.metadataForm.get('goodreadsRatingLocked')?.value,
       goodreadsReviewCountLocked: this.metadataForm.get('goodreadsReviewCountLocked')?.value,
       hardcoverIdLocked: this.metadataForm.get('hardcoverIdLocked')?.value,
+      hardcoverBookIdLocked: this.metadataForm.get('hardcoverBookIdLocked')?.value,
       hardcoverRatingLocked: this.metadataForm.get('hardcoverRatingLocked')?.value,
       hardcoverReviewCountLocked: this.metadataForm.get('hardcoverReviewCountLocked')?.value,
       googleIdLocked: this.metadataForm.get('googleIdLocked')?.value,
@@ -468,6 +476,7 @@ export class MetadataPickerComponent implements OnInit {
       goodreadsRating: current.goodreadsRating === null && original.goodreadsRating !== null,
       goodreadsReviewCount: current.goodreadsReviewCount === null && original.goodreadsReviewCount !== null,
       hardcoverId: !current.hardcoverId && !!original.hardcoverId,
+      hardcoverBookId: current.hardcoverBookId === null && original.hardcoverBookId !== null,
       hardcoverRating: current.hardcoverRating === null && original.hardcoverRating !== null,
       hardcoverReviewCount: current.hardcoverReviewCount === null && original.hardcoverReviewCount !== null,
       googleId: !current.googleId && !!original.googleId,

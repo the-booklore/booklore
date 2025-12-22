@@ -3,7 +3,7 @@ import {FormsModule} from '@angular/forms';
 import {filter, takeUntil} from 'rxjs/operators';
 
 import {Observable, Subject} from 'rxjs';
-import {RadioButton} from 'primeng/radiobutton';
+import {TooltipModule} from 'primeng/tooltip';
 import {UserService, UserSettings, UserState} from '../user-management/user.service';
 import {ReaderPreferencesService} from './reader-preferences-service';
 import {EpubReaderPreferencesComponent} from './epub-reader-preferences/epub-reader-preferences-component';
@@ -15,10 +15,13 @@ import {CbxReaderPreferencesComponent} from './cbx-reader-preferences/cbx-reader
   templateUrl: './reader-preferences.component.html',
   standalone: true,
   styleUrls: ['./reader-preferences.component.scss'],
-  imports: [FormsModule, RadioButton, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent]
+  imports: [FormsModule, TooltipModule, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent]
 })
 export class ReaderPreferences implements OnInit, OnDestroy {
-  readonly scopeOptions = ['Global', 'Individual'];
+  readonly scopeOptions = [
+    {name: 'Global', key: 'Global', icon: 'pi pi-globe'},
+    {name: 'Individual', key: 'Individual', icon: 'pi pi-user'}
+  ];
 
   selectedPdfScope!: string;
   selectedEpubScope!: string;

@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.TaskProgressPayload;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.LibraryRepository;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.metadata.BookMetadataUpdater;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
@@ -32,13 +33,15 @@ public class LibraryRescanHelper {
     private final BookMetadataUpdater bookMetadataUpdater;
     private final NotificationService notificationService;
     private final TaskCancellationManager cancellationManager;
+    private final BookRepository bookRepository;
 
-    public LibraryRescanHelper(LibraryRepository libraryRepository, MetadataExtractorFactory metadataExtractorFactory, @Lazy BookMetadataUpdater bookMetadataUpdater, NotificationService notificationService, TaskCancellationManager cancellationManager) {
+    public LibraryRescanHelper(LibraryRepository libraryRepository, MetadataExtractorFactory metadataExtractorFactory, @Lazy BookMetadataUpdater bookMetadataUpdater, NotificationService notificationService, TaskCancellationManager cancellationManager, BookRepository bookRepository) {
         this.libraryRepository = libraryRepository;
         this.metadataExtractorFactory = metadataExtractorFactory;
         this.bookMetadataUpdater = bookMetadataUpdater;
         this.notificationService = notificationService;
         this.cancellationManager = cancellationManager;
+        this.bookRepository = bookRepository;
     }
 
     @Transactional
@@ -46,9 +49,7 @@ public class LibraryRescanHelper {
 
         LibraryEntity library = libraryRepository.findById(context.getLibraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
 
-        List<BookEntity> bookEntities = library.getBookEntities().stream()
-                .filter(b -> b != null && (b.getDeleted() == null || !b.getDeleted()))
-                .toList();
+        List<BookEntity> bookEntities = bookRepository.findAllWithMetadataByLibraryId(library.getId());
 
         log.info("Found {} book(s) to process in library id={}", bookEntities.size(), library.getId());
 
@@ -58,6 +59,10 @@ public class LibraryRescanHelper {
         sendTaskProgressNotification(taskId, 0, String.format("Starting rescan for library: %s", library.getName()), TaskStatus.IN_PROGRESS);
 
         for (BookEntity bookEntity : bookEntities) {
+            if (bookEntity == null || (bookEntity.getDeleted() != null && bookEntity.getDeleted())) {
+                continue;
+            }
+
             if (taskId != null && cancellationManager.isTaskCancelled(taskId)) {
                 log.info("Library rescan for library {} was cancelled", library.getId());
                 sendTaskProgressNotification(taskId, (processedBooks * 100) / totalBooks,

@@ -77,7 +77,7 @@ public class ComicvineBookParser implements BookParser {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(uri)
-                    .header("User-Agent", "Booklore/1.0")
+                    .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)")
                     .GET()
                     .build();
 
