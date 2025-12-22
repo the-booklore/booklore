@@ -36,7 +36,7 @@ public class VersionService {
         try {
             latest = fetchLatestGitHubReleaseVersion();
         } catch (Exception e) {
-            log.error("Error fetching latest release version", e);
+            log.warn("Error fetching latest release version");
         }
         return new VersionInfo(appVersion, latest);
     }
@@ -57,7 +57,7 @@ public class VersionService {
             return root.path("tag_name").asText("unknown");
 
         } catch (Exception e) {
-            log.error("Failed to fetch latest release version", e);
+            log.warn("Failed to fetch latest release version");
             return "unknown";
         }
     }
