@@ -39,7 +39,7 @@ export class BookdropFileService implements OnDestroy {
       )
       .subscribe(state => {
         const user = state.user!;
-        if (user.permissions.admin || user.permissions.canManipulateLibrary) {
+        if (user.permissions.admin || user.permissions.canAccessBookdrop) {
           this.authService.token$
             .pipe(filter(t => !!t), take(1))
             .subscribe(() => this.refresh());

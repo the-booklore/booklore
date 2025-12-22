@@ -29,12 +29,20 @@ class UserPermissionUtilsTest {
                 .permissionUpload(false)
                 .permissionDownload(false)
                 .permissionEditMetadata(false)
-                .permissionManipulateLibrary(false)
+                .permissionManageLibrary(false)
                 .permissionEmailBook(false)
                 .permissionDeleteBook(false)
                 .permissionAccessOpds(false)
                 .permissionSyncKoreader(false)
                 .permissionSyncKobo(false)
+                .permissionManageMetadataConfig(false)
+                .permissionAccessBookdrop(false)
+                .permissionAccessLibraryStats(false)
+                .permissionAccessUserStats(false)
+                .permissionAccessTaskManager(false)
+                .permissionManageGlobalPreferences(false)
+                .permissionManageIcons(false)
+                .permissionDemoUser(false)
                 .permissionAdmin(false)
                 .build();
 
@@ -49,12 +57,20 @@ class UserPermissionUtilsTest {
                 .permissionUpload(true)
                 .permissionDownload(true)
                 .permissionEditMetadata(true)
-                .permissionManipulateLibrary(true)
+                .permissionManageLibrary(true)
                 .permissionEmailBook(true)
                 .permissionDeleteBook(true)
                 .permissionAccessOpds(true)
                 .permissionSyncKoreader(true)
                 .permissionSyncKobo(true)
+                .permissionManageMetadataConfig(true)
+                .permissionAccessBookdrop(true)
+                .permissionAccessLibraryStats(true)
+                .permissionAccessUserStats(true)
+                .permissionAccessTaskManager(true)
+                .permissionManageGlobalPreferences(true)
+                .permissionManageIcons(true)
+                .permissionDemoUser(true)
                 .permissionAdmin(true)
                 .build();
 
@@ -68,24 +84,40 @@ class UserPermissionUtilsTest {
                 .permissionUpload(false)
                 .permissionDownload(false)
                 .permissionEditMetadata(false)
-                .permissionManipulateLibrary(false)
+                .permissionManageLibrary(false)
                 .permissionEmailBook(false)
                 .permissionDeleteBook(false)
                 .permissionAccessOpds(false)
                 .permissionSyncKoreader(false)
                 .permissionSyncKobo(false)
+                .permissionManageMetadataConfig(false)
+                .permissionAccessBookdrop(false)
+                .permissionAccessLibraryStats(false)
+                .permissionAccessUserStats(false)
+                .permissionAccessTaskManager(false)
+                .permissionManageGlobalPreferences(false)
+                .permissionManageIcons(false)
+                .permissionDemoUser(false)
                 .permissionAdmin(false);
 
         switch (permissionType) {
             case UPLOAD -> builder.permissionUpload(value);
             case DOWNLOAD -> builder.permissionDownload(value);
             case EDIT_METADATA -> builder.permissionEditMetadata(value);
-            case MANIPULATE_LIBRARY -> builder.permissionManipulateLibrary(value);
+            case MANAGE_LIBRARY -> builder.permissionManageLibrary(value);
             case EMAIL_BOOK -> builder.permissionEmailBook(value);
             case DELETE_BOOK -> builder.permissionDeleteBook(value);
             case ACCESS_OPDS -> builder.permissionAccessOpds(value);
             case SYNC_KOREADER -> builder.permissionSyncKoreader(value);
             case SYNC_KOBO -> builder.permissionSyncKobo(value);
+            case MANAGE_METADATA_CONFIG -> builder.permissionManageMetadataConfig(value);
+            case ACCESS_BOOKDROP -> builder.permissionAccessBookdrop(value);
+            case ACCESS_LIBRARY_STATS -> builder.permissionAccessLibraryStats(value);
+            case ACCESS_USER_STATS -> builder.permissionAccessUserStats(value);
+            case ACCESS_TASK_MANAGER -> builder.permissionAccessTaskManager(value);
+            case MANAGE_GLOBAL_PREFERENCES -> builder.permissionManageGlobalPreferences(value);
+            case MANAGE_ICONS -> builder.permissionManageIcons(value);
+            case DEMO_USER -> builder.permissionDemoUser(value);
             case ADMIN -> builder.permissionAdmin(value);
         }
 

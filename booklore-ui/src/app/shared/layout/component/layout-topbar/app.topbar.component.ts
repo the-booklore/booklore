@@ -57,6 +57,8 @@ export class AppTopBarComponent implements OnDestroy {
   @ViewChild('menubutton') menuButton!: ElementRef;
   @ViewChild('topbarmenubutton') topbarMenuButton!: ElementRef;
   @ViewChild('topbarmenu') menu!: ElementRef;
+  @ViewChild('statsMenu') statsMenu: any;
+  @ViewChild('statsMenuMobile') statsMenuMobile: any;
 
   isMenuVisible = true;
   progressHighlight = false;
@@ -83,7 +85,6 @@ export class AppTopBarComponent implements OnDestroy {
     private bookdropFileService: BookdropFileService,
     private dialogLauncher: DialogLauncherService
   ) {
-    this.initializeStatsMenu();
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
 
@@ -103,6 +104,12 @@ export class AppTopBarComponent implements OnDestroy {
         this.hasPendingBookdropFiles = hasPending;
         this.updateCompletedTaskCount();
         this.updateTaskVisibilityWithBookdrop();
+      });
+
+    this.userService.userState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.initializeStatsMenu();
       });
   }
 
@@ -158,6 +165,16 @@ export class AppTopBarComponent implements OnDestroy {
     this.authService.logout();
   }
 
+  handleStatsButtonClick(event: Event) {
+    if (this.statsMenuItems.length === 0) {
+      return;
+    }
+
+    if (this.statsMenuItems.length === 1) {
+      this.statsMenuItems[0].command?.({originalEvent: event, item: this.statsMenuItems[0]});
+    }
+  }
+
   private subscribeToMetadataProgress() {
     this.metadataProgressService.progressUpdates$
       .pipe(takeUntil(this.destroy$))
@@ -200,18 +217,44 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   private initializeStatsMenu() {
-    this.statsMenuItems = [
-      {
+    const userState = this.userService.userStateSubject.value;
+    const user = userState.user;
+
+    this.statsMenuItems = [];
+
+    if (user?.permissions?.canAccessLibraryStats || user?.permissions?.admin) {
+      this.statsMenuItems.push({
         label: 'Library Stats',
         icon: 'pi pi-chart-line',
         command: () => this.navigateToStats()
-      },
-      {
+      });
+    }
+
+    if (user?.permissions?.canAccessUserStats || user?.permissions?.admin) {
+      this.statsMenuItems.push({
         label: 'Reading Stats',
         icon: 'pi pi-users',
         command: () => this.navigateToUserStats()
-      }
-    ];
+      });
+    }
+  }
+
+  get hasStatsAccess(): boolean {
+    return this.statsMenuItems.length > 0;
+  }
+
+  get shouldShowStatsMenu(): boolean {
+    return this.statsMenuItems.length > 1;
+  }
+
+  get statsTooltip(): string {
+    if (this.statsMenuItems.length === 0) {
+      return 'Stats';
+    }
+    if (this.statsMenuItems.length === 1) {
+      return this.statsMenuItems[0].label || 'Stats';
+    }
+    return 'Stats';
   }
 
   get iconClass(): string {

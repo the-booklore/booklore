@@ -106,7 +106,7 @@ public class BookdropEventHandlerService {
                 notificationService.sendMessageToPermissions(
                         Topic.LOG,
                         LogNotification.info("Processing bookdrop file: " + fileName + " (" + queueSize + " files remaining)"),
-                        Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
+                        Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY)
                 );
 
                 BookdropFileEntity bookdropFileEntity = BookdropFileEntity.builder()
@@ -134,13 +134,13 @@ public class BookdropEventHandlerService {
                     notificationService.sendMessageToPermissions(
                             Topic.LOG,
                             LogNotification.info("All bookdrop files have finished processing"),
-                            Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
+                            Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY)
                     );
                 } else {
                     notificationService.sendMessageToPermissions(
                             Topic.LOG,
                             LogNotification.info("Finished processing bookdrop file: " + fileName + " (" + fileQueue.size() + " files remaining)"),
-                            Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY)
+                            Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY)
                     );
                 }
 

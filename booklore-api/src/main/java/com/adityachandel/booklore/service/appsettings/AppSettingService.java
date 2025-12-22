@@ -1,13 +1,18 @@
 package com.adityachandel.booklore.service.appsettings;
 
 import com.adityachandel.booklore.config.AppProperties;
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
+import com.adityachandel.booklore.model.enums.PermissionType;
+import com.adityachandel.booklore.util.UserPermissionUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,14 +21,20 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AppSettingService {
 
     private final AppProperties appProperties;
     private final SettingPersistenceHelper settingPersistenceHelper;
+    private final AuthenticationService authenticationService;
 
     private volatile AppSettings appSettings;
     private final ReentrantLock lock = new ReentrantLock();
+
+    public AppSettingService(AppProperties appProperties, SettingPersistenceHelper settingPersistenceHelper, @Lazy AuthenticationService authenticationService) {
+        this.appProperties = appProperties;
+        this.settingPersistenceHelper = settingPersistenceHelper;
+        this.authenticationService = authenticationService;
+    }
 
     public AppSettings getAppSettings() {
         if (appSettings == null) {
@@ -41,6 +52,10 @@ public class AppSettingService {
 
     @Transactional
     public void updateSetting(AppSettingKey key, Object val) throws JsonProcessingException {
+        BookLoreUser user = authenticationService.getAuthenticatedUser();
+
+        validatePermission(key, user);
+
         var setting = settingPersistenceHelper.appSettingsRepository.findByName(key.toString());
         if (setting == null) {
             setting = new AppSettingEntity();
@@ -49,6 +64,21 @@ public class AppSettingService {
         setting.setVal(settingPersistenceHelper.serializeSettingValue(key, val));
         settingPersistenceHelper.appSettingsRepository.save(setting);
         refreshCache();
+    }
+
+    private void validatePermission(AppSettingKey key, BookLoreUser user) {
+        List<PermissionType> requiredPermissions = key.getRequiredPermissions();
+        if (requiredPermissions.isEmpty()) {
+            return;
+        }
+
+        boolean hasPermission = requiredPermissions.stream().anyMatch(permission ->
+            UserPermissionUtils.hasPermission(user.getPermissions(), permission)
+        );
+
+        if (!hasPermission) {
+            throw new AccessDeniedException("User does not have permission to update " + key.getDbKey());
+        }
     }
 
     public PublicAppSetting getPublicSettings() {
@@ -104,7 +134,6 @@ public class AppSettingService {
         builder.cbxCacheSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.CBX_CACHE_SIZE_IN_MB, "5120")));
         builder.pdfCacheSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.PDF_CACHE_SIZE_IN_MB, "5120")));
         builder.maxFileUploadSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.MAX_FILE_UPLOAD_SIZE_IN_MB, "100")));
-        builder.bookDeletionEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.BOOK_DELETION_ENABLED, "false")));
         builder.metadataDownloadOnBookdrop(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.METADATA_DOWNLOAD_ON_BOOKDROP, "true")));
 
         boolean settingEnabled = Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OIDC_ENABLED, "false"));

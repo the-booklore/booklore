@@ -26,8 +26,7 @@ public class BackgroundUploadController {
     @Operation(summary = "Upload background image file", description = "Upload a new background image file for the authenticated user.")
     @ApiResponse(responseCode = "200", description = "Background image uploaded successfully")
     @PostMapping("/upload")
-    public ResponseEntity<UploadResponse> uploadFile(
-            @Parameter(description = "Background image file") @RequestParam("file") MultipartFile file) {
+    public ResponseEntity<UploadResponse> uploadFile(@Parameter(description = "Background image file") @RequestParam("file") MultipartFile file) {
         try {
             BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
             UploadResponse response = backgroundUploadService.uploadBackgroundFile(file, authenticatedUser.getId());

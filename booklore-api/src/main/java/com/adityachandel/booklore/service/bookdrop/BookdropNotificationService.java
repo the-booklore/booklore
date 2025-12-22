@@ -30,6 +30,6 @@ public class BookdropNotificationService {
                 Instant.now().toString()
         );
 
-        notificationService.sendMessageToPermissions(Topic.BOOKDROP_FILE, summaryNotification, Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.BOOKDROP_FILE, summaryNotification, Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY));
     }
 }

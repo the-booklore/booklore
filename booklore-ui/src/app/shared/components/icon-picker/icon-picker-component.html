@@ -2,7 +2,9 @@
   <p-tablist>
     <p-tab value="0">Prime Icons</p-tab>
     <p-tab value="1">SVG Icons</p-tab>
-    <p-tab value="2">Add SVG Icon(s)</p-tab>
+    @if (canManageIcons) {
+      <p-tab value="2">Add SVG Icon(s)</p-tab>
+    }
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="0">
@@ -58,8 +60,8 @@
                 outlined>
               </p-button>
               <span class="pagination-info">
-                Page {{ currentSvgPage + 1 }} of {{ totalSvgPages }}
-              </span>
+                  Page {{ currentSvgPage + 1 }} of {{ totalSvgPages }}
+                </span>
               <p-button
                 (onClick)="loadSvgIcons(currentSvgPage + 1)"
                 [disabled]="currentSvgPage >= totalSvgPages - 1"
@@ -71,113 +73,116 @@
             </div>
           }
 
-          <div style="display: flex; align-items: center; position: fixed; right: 32px; bottom: 32px; z-index: 101;">
-            <div
-              class="svg-trash-area"
-              [class.trash-hover]="isTrashHover"
-              (dragover)="onTrashDragOver($event)"
-              (dragleave)="onTrashDragLeave($event)"
-              (drop)="onTrashDrop($event)"
-            >
-              <i class="pi pi-trash"></i>
-              <span>Drag here to delete icon</span>
+          @if (canManageIcons) {
+            <div style="display: flex; align-items: center; position: fixed; right: 32px; bottom: 32px; z-index: 101;">
+              <div
+                class="svg-trash-area"
+                [class.trash-hover]="isTrashHover"
+                (dragover)="onTrashDragOver($event)"
+                (dragleave)="onTrashDragLeave($event)"
+                (drop)="onTrashDrop($event)">
+                <i class="pi pi-trash"></i>
+                <span>Drag here to delete icon</span>
+              </div>
             </div>
-          </div>
+          }
         }
       </div>
     </p-tabpanel>
-    <p-tabpanel value="2">
-      <div class="svg-paste-container">
-        <div class="svg-input-section">
-          <input
-            type="text"
-            [(ngModel)]="svgName"
-            placeholder="Enter icon name for saving"
-            class="svg-name-input"
-          />
+    @if (canManageIcons) {
+      <p-tabpanel value="2">
+        <div class="svg-paste-container">
+          <div class="svg-input-section">
+            <input
+              type="text"
+              [(ngModel)]="svgName"
+              placeholder="Enter icon name for saving"
+              class="svg-name-input"
+            />
 
-          <textarea
-            [(ngModel)]="svgContent"
-            (ngModelChange)="onSvgContentChange()"
-            placeholder="Paste your SVG code here..."
-            class="svg-textarea"
-            rows="8"></textarea>
+            <textarea
+              [(ngModel)]="svgContent"
+              (ngModelChange)="onSvgContentChange()"
+              placeholder="Paste your SVG code here..."
+              class="svg-textarea"
+              rows="8"></textarea>
 
-          @if (svgContent && svgPreview) {
-            <div class="svg-preview-section">
-              <h4 class="preview-title">Preview</h4>
-              <div class="svg-preview" [innerHTML]="svgPreview"></div>
-            </div>
-          }
-
-          @if (errorMessage) {
-            <div class="error-message">{{ errorMessage }}</div>
-          }
-
-          <div class="button-container">
-            <p-button
-              (onClick)="addSvgEntry()"
-              [disabled]="!svgContent || !svgName"
-              label="Add to Queue"
-              severity="primary"
-              outlined
-              icon="pi pi-plus">
-            </p-button>
-          </div>
-        </div>
-
-        @if (svgEntries.length > 0) {
-          <div class="svg-entries-section">
-            <div class="entries-header">
-              <h4 class="entries-title">
-                Queued Icons ({{ svgEntries.length }})
-              </h4>
-              <p-button
-                (onClick)="clearAllEntries()"
-                label="Clear All"
-                severity="danger"
-                [text]="true"
-                icon="pi pi-times">
-              </p-button>
-            </div>
-
-            <div class="entries-grid">
-              @for (entry of svgEntries; track entry.name; let i = $index) {
-                <div class="entry-card" [class.has-error]="entry.error">
-                  <div class="entry-header">
-                    <span class="entry-name">{{ entry.name }}</span>
-                    <button
-                      class="entry-remove"
-                      (click)="removeSvgEntry(i)"
-                      title="Remove">
-                      <i class="pi pi-times"></i>
-                    </button>
-                  </div>
-                  <div class="entry-preview" [innerHTML]="entry.preview"></div>
-                  @if (entry.error) {
-                    <div class="entry-error">{{ entry.error }}</div>
-                  }
-                </div>
-              }
-            </div>
-
-            @if (batchErrorMessage) {
-              <div class="error-message">{{ batchErrorMessage }}</div>
+            @if (svgContent && svgPreview) {
+              <div class="svg-preview-section">
+                <h4 class="preview-title">Preview</h4>
+                <div class="svg-preview" [innerHTML]="svgPreview"></div>
+              </div>
             }
 
-            <div class="batch-actions">
+            @if (errorMessage) {
+              <div class="error-message">{{ errorMessage }}</div>
+            }
+
+            <div class="button-container">
               <p-button
-                (onClick)="saveAllSvgs()"
-                [loading]="isSavingBatch"
-                [disabled]="svgEntries.length === 0"
-                label="Save All Icons"
-                severity="success"
-                icon="pi pi-save">
+                (onClick)="addSvgEntry()"
+                [disabled]="!svgContent || !svgName"
+                label="Add to Queue"
+                severity="primary"
+                outlined
+                icon="pi pi-plus">
               </p-button>
             </div>
           </div>
-        }
-      </div>
-    </p-tabpanel>
+
+          @if (svgEntries.length > 0) {
+            <div class="svg-entries-section">
+              <div class="entries-header">
+                <h4 class="entries-title">
+                  Queued Icons ({{ svgEntries.length }})
+                </h4>
+                <p-button
+                  (onClick)="clearAllEntries()"
+                  label="Clear All"
+                  severity="danger"
+                  [text]="true"
+                  icon="pi pi-times">
+                </p-button>
+              </div>
+
+              <div class="entries-grid">
+                @for (entry of svgEntries; track entry.name; let i = $index) {
+                  <div class="entry-card" [class.has-error]="entry.error">
+                    <div class="entry-header">
+                      <span class="entry-name">{{ entry.name }}</span>
+                      <button
+                        class="entry-remove"
+                        (click)="removeSvgEntry(i)"
+                        title="Remove">
+                        <i class="pi pi-times"></i>
+                      </button>
+                    </div>
+                    <div class="entry-preview" [innerHTML]="entry.preview"></div>
+                    @if (entry.error) {
+                      <div class="entry-error">{{ entry.error }}</div>
+                    }
+                  </div>
+                }
+              </div>
+
+              @if (batchErrorMessage) {
+                <div class="error-message">{{ batchErrorMessage }}</div>
+              }
+
+              <div class="batch-actions">
+                <p-button
+                  (onClick)="saveAllSvgs()"
+                  [loading]="isSavingBatch"
+                  [disabled]="svgEntries.length === 0"
+                  label="Save All Icons"
+                  severity="success"
+                  icon="pi pi-save">
+                </p-button>
+              </div>
+            </div>
+          }
+        </div>
+      </p-tabpanel>
+    }
   </p-tabpanels>
 </p-tabs>

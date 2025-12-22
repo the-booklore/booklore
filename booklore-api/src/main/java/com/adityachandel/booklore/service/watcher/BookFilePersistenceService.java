@@ -22,7 +22,7 @@ import java.time.Instant;
 import java.util.*;
 
 import static com.adityachandel.booklore.model.enums.PermissionType.ADMIN;
-import static com.adityachandel.booklore.model.enums.PermissionType.MANIPULATE_LIBRARY;
+import static com.adityachandel.booklore.model.enums.PermissionType.MANAGE_LIBRARY;
 
 @Slf4j
 @Service
@@ -52,7 +52,7 @@ public class BookFilePersistenceService {
         } else {
             log.info("[FILE_CREATE] Book with hash '{}' already exists at same path. Skipping update.", currentHash);
         }
-        notificationService.sendMessageToPermissions(Topic.BOOK_ADD, bookMapper.toBookWithDescription(book, false), Set.of(ADMIN, MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.BOOK_ADD, bookMapper.toBookWithDescription(book, false), Set.of(ADMIN, MANAGE_LIBRARY));
     }
 
     String findMatchingLibraryPath(LibraryEntity libraryEntity, Path filePath) {

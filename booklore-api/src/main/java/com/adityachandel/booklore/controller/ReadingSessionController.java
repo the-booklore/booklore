@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -40,6 +41,7 @@ public class ReadingSessionController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/heatmap/year/{year}")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionHeatmapResponse>> getHeatmapForYear(@PathVariable int year) {
         List<ReadingSessionHeatmapResponse> heatmapData = readingSessionService.getSessionHeatmapForYear(year);
         return ResponseEntity.ok(heatmapData);
@@ -52,6 +54,7 @@ public class ReadingSessionController {
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/timeline/week/{year}/{week}")
+    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionTimelineResponse>> getTimelineForWeek(
             @PathVariable int year,
             @PathVariable int week) {
