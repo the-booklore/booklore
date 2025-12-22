@@ -7,6 +7,27 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+  };
+}
+
 interface PublicationYearStats {
   year: string;
   count: number;
@@ -16,21 +37,20 @@ interface PublicationYearStats {
 const CHART_COLORS = {
   primary: '#4ECDC4',
   primaryBackground: 'rgba(78, 205, 196, 0.1)',
-  border: '#ffffff'
 } as const;
 
-const CHART_DEFAULTS = {
+const CHART_DEFAULTS = () => ({
   borderColor: CHART_COLORS.primary,
   backgroundColor: CHART_COLORS.primaryBackground,
   borderWidth: 2,
   pointBackgroundColor: CHART_COLORS.primary,
-  pointBorderColor: CHART_COLORS.border,
+  pointBorderColor: themeTokens().modeColor,
   pointBorderWidth: 2,
   pointRadius: 4,
   pointHoverRadius: 6,
   fill: true,
   tension: 0.4
-} as const;
+});
 
 type YearChartData = ChartData<'line', number[], string>;
 
@@ -41,6 +61,7 @@ export class PublicationYearChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly yearChartType = 'line' as const;
 
@@ -51,10 +72,10 @@ export class PublicationYearChartService implements OnDestroy {
       legend: {display: false},
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -69,7 +90,7 @@ export class PublicationYearChartService implements OnDestroy {
       },
       datalabels: {
         display: true,
-        color: '#ffffff',
+        color: themeTokens().modeColor,
         font: {
           size: 10,
           weight: 'bold'
@@ -87,7 +108,7 @@ export class PublicationYearChartService implements OnDestroy {
       x: {
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -98,11 +119,13 @@ export class PublicationYearChartService implements OnDestroy {
             return index % 5 === 0 ? this.getLabelForValue(value as number) : '';
           }
         },
-        grid: {color: 'rgba(255, 255, 255, 0.1)'},
+        grid: {
+          color: themeTokens().modeGridX
+        },
         title: {
           display: true,
           text: 'Publication Year',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -112,18 +135,20 @@ export class PublicationYearChartService implements OnDestroy {
       y: {
         beginAtZero: true,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
           },
           stepSize: 1
         },
-        grid: {color: 'rgba(255, 255, 255, 0.05)'},
+        grid: {
+          color: themeTokens().modeGridY
+        },
         title: {
           display: true,
           text: 'Number of Books',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11.5
@@ -138,7 +163,7 @@ export class PublicationYearChartService implements OnDestroy {
     datasets: [{
       label: 'Books Published',
       data: [],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }]
   });
 
@@ -146,6 +171,7 @@ export class PublicationYearChartService implements OnDestroy {
     this.yearChartDataSubject.asObservable();
 
   constructor() {
+    this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -169,6 +195,79 @@ export class PublicationYearChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.yearChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeColor;
+        }
+        
+        const plugins = options.plugins as any;
+        if (plugins.datalabels) {
+          plugins.datalabels.color = tokens.modeColor;
+        }
+      }
+
+      if (options.scales) {
+        const xScale = options.scales['x'] as any;
+        if (xScale) {
+          if (xScale.ticks) xScale.ticks.color = tokens.modeColor;
+          if (xScale.grid) xScale.grid.color = tokens.modeGridX;
+          if (xScale.title) xScale.title.color = tokens.modeColor;
+        }
+
+        const yScale = options.scales['y'] as any;
+        if (yScale) {
+          if (yScale.ticks) yScale.ticks.color = tokens.modeColor;
+          if (yScale.grid) yScale.grid.color = tokens.modeGridY;
+          if (yScale.title) yScale.title.color = tokens.modeColor;
+        }
+      }
+    }
+
+    const currentData = this.yearChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        pointBorderColor: tokens.modeColor
+      }));
+
+      this.yearChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private updateChartData(stats: PublicationYearStats[]): void {
@@ -181,7 +280,7 @@ export class PublicationYearChartService implements OnDestroy {
         datasets: [{
           label: 'Books Published',
           data: dataValues,
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {

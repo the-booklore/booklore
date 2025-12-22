@@ -29,5 +29,31 @@
       }
     </div>
   </div>
+  
+  <div class="config-panel-colors appearance-toggle">
+    <span class="config-panel-label">Appearance</span>
+    <div>
+      <button
+        type="button"
+        class="appearance-swatch appearance-dark"
+        [ngClass]="{ 'active-color': !isLightMode() }"
+        (click)="updateAppearance('dark')"
+        [attr.aria-pressed]="!isLightMode()"
+        aria-label="Enable dark mode"
+      >
+        <i class="pi pi-moon appearance-icon-graphic"></i>
+      </button>
+      <button
+        type="button"
+        class="appearance-swatch appearance-light"
+        [ngClass]="{ 'active-color': isLightMode() }"
+        (click)="updateAppearance('light')"
+        [attr.aria-pressed]="isLightMode()"
+        aria-label="Enable light mode"
+      >
+        <i class="pi pi-sun appearance-icon-graphic"></i>
+      </button>
+    </div>
+  </div>
 
 </div>

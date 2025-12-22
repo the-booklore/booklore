@@ -188,3 +188,83 @@
     }
   }
 }
+
+:host-context(:root:not(.p-dark)) {
+  .app-tag {
+    &-primary {
+      background-color: color-mix(in srgb, var(--p-primary-500), transparent 88%);
+      color: var(--p-primary-800);
+    }
+
+    $colors: (
+      'secondary': 'slate',
+      'success': 'green',
+      'info': 'sky',
+      'warning': 'orange',
+      'danger': 'red',
+      'blue': 'blue',
+      'indigo': 'indigo',
+      'purple': 'purple',
+      'pink': 'pink',
+      'red': 'red',
+      'orange': 'orange',
+      'yellow': 'yellow',
+      'green': 'green',
+      'teal': 'teal',
+      'cyan': 'cyan',
+      'gray': 'gray',
+      'slate': 'slate',
+      'zinc': 'zinc',
+      'neutral': 'neutral',
+      'stone': 'stone',
+      'amber': 'amber',
+      'lime': 'lime',
+      'emerald': 'emerald',
+      'sky': 'sky',
+      'violet': 'violet',
+      'fuchsia': 'fuchsia',
+      'rose': 'rose'
+    );
+
+    @each $name, $color in $colors {
+      &-#{$name} {
+        background-color: color-mix(in srgb, var(--p-#{$color}-500), transparent 88%);
+        color: var(--p-#{$color}-800);
+      }
+    }
+
+    &-dark {
+      background-color: color-mix(in srgb, var(--p-gray-300), transparent 70%);
+      color: var(--p-gray-900);
+    }
+
+    &-light {
+      background-color: color-mix(in srgb, var(--p-gray-200), transparent 70%);
+      color: var(--p-gray-800);
+    }
+
+    &-variant-pill {
+      &.app-tag-primary {
+        background-color: var(--p-primary-600);
+        color: var(--p-primary-50);
+      }
+
+      @each $name, $color in $colors {
+        &.app-tag-#{$name} {
+          background-color: var(--p-#{$color}-600);
+          color: var(--p-#{$color}-50);
+        }
+      }
+
+      &.app-tag-dark {
+        background-color: var(--p-gray-800);
+        color: var(--p-gray-50);
+      }
+
+      &.app-tag-light {
+        background-color: var(--p-gray-200);
+        color: var(--p-gray-900);
+      }
+    }
+  }
+}

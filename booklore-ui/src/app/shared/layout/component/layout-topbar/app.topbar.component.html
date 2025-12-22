@@ -1,31 +1,30 @@
 <div class="layout-topbar">
-
   <a class="layout-topbar-logo pl-5 pr-24 flex gap-2" routerLink="">
     <svg
-	  class="logo-icon"
-	  viewBox="0 0 126 126"
-	  xmlns="http://www.w3.org/2000/svg"
-	  aria-hidden="true"
-	  focusable="false"
-	>
-	  <path
-	    d="M102.13,3.17c0-1.75-1.42-3.17-3.17-3.17H26.92C16.49,0,7.96,8.13,7.96,18.06v89.87c0,9.94,8.53,18.06,18.96,18.06h72.17c10.43,0,18.96-8.13,18.96-18.06V24.57c0-1.75-1.42-3.17-3.17-3.17h-41.41c-4.25,0-7.7,3.45-7.7,7.7v26.67c0,1.39-1.67,2.11-2.68,1.15l-10.79-10.28c-.61-.58-1.57-.58-2.19,0l-10.79,10.28c-1.01.96-2.68.25-2.68-1.15V21.4h-8.29c-5.96,0-10.83-3.39-10.83-7.53s4.87-7.53,10.83-7.53h70.6c1.75,0,3.17-1.42,3.17-3.17h.01Z"
-		fill="var(--primary-color)"
-	  />
-	  <path
-	    d="M60.18,15.13v29.96l-5.01-3-.23-.13c-2.36-1.29-5.46-1.25-7.77.13l-5.01,3V15.14"
-		fill="white"
-	  />
-	  <rect
-	    x="23.99"
-		y="10.13"
-		width="74.63"
-		height="6.69"
-		rx="3.34"
-		ry="3.34"
-		fill="white"
-	  />
-	</svg>
+      class="logo-icon"
+      viewBox="0 0 126 126"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d="M102.13,3.17c0-1.75-1.42-3.17-3.17-3.17H26.92C16.49,0,7.96,8.13,7.96,18.06v89.87c0,9.94,8.53,18.06,18.96,18.06h72.17c10.43,0,18.96-8.13,18.96-18.06V24.57c0-1.75-1.42-3.17-3.17-3.17h-41.41c-4.25,0-7.7,3.45-7.7,7.7v26.67c0,1.39-1.67,2.11-2.68,1.15l-10.79-10.28c-.61-.58-1.57-.58-2.19,0l-10.79,10.28c-1.01.96-2.68.25-2.68-1.15V21.4h-8.29c-5.96,0-10.83-3.39-10.83-7.53s4.87-7.53,10.83-7.53h70.6c1.75,0,3.17-1.42,3.17-3.17h.01Z"
+        fill="var(--primary-color)"
+      />
+      <path
+        d="M60.18,15.13v29.96l-5.01-3-.23-.13c-2.36-1.29-5.46-1.25-7.77.13l-5.01,3V15.14"
+        fill="white"
+      />
+      <rect
+        x="23.99"
+        y="10.13"
+        width="74.63"
+        height="6.69"
+        rx="3.34"
+        ry="3.34"
+        fill="white"
+      />
+    </svg>
     <span class="flex items-center pt-2">
       <p>Book</p>
       <p class="half-title text-3xl">lore</p>
@@ -48,56 +47,90 @@
     <ul class="topbar-items hidden md:flex items-center gap-3 ml-auto pl-4">
       <div class="flex gap-4">
         @if (userService.userState$ | async; as userState) {
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
-              <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
-                <i class="pi pi-inbox text-surface-100"></i>
-              </a>
-            }
-          </li>
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
-              <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
-                <i class="pi pi-plus-circle text-surface-100"></i>
-              </a>
-            }
-          </li>
-          <li>
-            @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
-              <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
-                <i class="pi pi-upload text-surface-100"></i>
-              </a>
-            }
-          </li>
+        <li>
+          @if (userState.user?.permissions?.canManipulateLibrary ||
+          userState.user?.permissions?.admin) {
+          <a
+            class="topbar-item"
+            (click)="navigateToBookdrop()"
+            pTooltip="Bookdrop"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-inbox text-surface-100"></i>
+          </a>
+          }
+        </li>
+        <li>
+          @if (userState.user?.permissions?.canManipulateLibrary ||
+          userState.user?.permissions?.admin) {
+          <a
+            class="topbar-item"
+            (click)="openLibraryCreatorDialog()"
+            pTooltip="Create New Library"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-plus-circle text-surface-100"></i>
+          </a>
+          }
+        </li>
+        <li>
+          @if (userState.user?.permissions?.canUpload ||
+          userState.user?.permissions?.admin) {
+          <a
+            class="topbar-item"
+            (click)="openFileUploadDialog()"
+            pTooltip="Upload Book"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-upload text-surface-100"></i>
+          </a>
+          }
+        </li>
         }
         <li>
           <button
             class="topbar-item"
             (click)="statsMenu.toggle($event)"
             pTooltip="Stats"
-            tooltipPosition="bottom">
+            tooltipPosition="bottom"
+          >
             <i class="pi pi-chart-bar text-surface-100"></i>
           </button>
-          <p-menu #statsMenu [model]="statsMenuItems" [popup]="true" appendTo="body" />
+          <p-menu
+            #statsMenu
+            [model]="statsMenuItems"
+            [popup]="true"
+            appendTo="body"
+          />
         </li>
         @if (userService.userState$ | async; as userState) {
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
-              <a class="topbar-item" (click)="navigateToMetadataManager()" pTooltip="Metadata Manager" tooltipPosition="bottom">
-                <i class="pi pi-sparkles text-surface-100"></i>
-              </a>
-            }
-          </li>
+        <li>
+          @if (userState.user?.permissions?.canManipulateLibrary ||
+          userState.user?.permissions?.admin) {
+          <a
+            class="topbar-item"
+            (click)="navigateToMetadataManager()"
+            pTooltip="Metadata Manager"
+            tooltipPosition="bottom"
+          >
+            <i class="pi pi-sparkles text-surface-100"></i>
+          </a>
+          }
+        </li>
         }
         <li>
-          <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
+          <a
+            class="topbar-item"
+            (click)="navigateToSettings()"
+            pTooltip="Settings"
+            tooltipPosition="bottom"
+          >
             <i class="pi pi-cog text-surface-100"></i>
           </a>
         </li>
       </div>
 
-      <p-divider layout="vertical"/>
-
+      <p-divider layout="vertical" />
 
       <div class="flex gap-4">
         <li class="relative">
@@ -117,7 +150,7 @@
           </button>
 
           @if (shouldShowNotificationBadge) {
-            <span class="notification-badge">{{ completedTaskCount }}</span>
+          <span class="notification-badge">{{ completedTaskCount }}</span>
           }
 
           <p-popover #notificationPopover>
@@ -125,28 +158,77 @@
           </p-popover>
         </li>
 
+        <li
+          class="relative group overflow-hidden !border-transparent topbar-item"
+          (click)="openGithubSupportDialog()"
+        >
+          <span
+            style="
+              animation-duration: 2s;
+              background: conic-gradient(
+                from 90deg,
+                #f97316,
+                #f59e0b,
+                #eab308,
+                #84cc16,
+                #22c55e,
+                #10b981,
+                #14a8a6,
+                #06b6d4,
+                #0ea5e9,
+                #3b82f6,
+                #6366f1,
+                #8b5cf6,
+                #a855f7,
+                #d946ef,
+                #ec4899,
+                #f43f5e
+              );
+            "
+            class="absolute -top-5 -left-5 w-20 h-20 animate-spin"
+          >
+          </span>
+          <span
+            style="inset: 1px; border-radius: 4px"
+            class="absolute z-2 github-support-fill transition-all"
+          ></span>
+          <i class="pi pi-heart z-10"></i>
+        </li>
         <li class="relative">
-          <button type="button"
-                  class="topbar-item config-item"
-                  enterActiveClass="animate-scalein"
-                  enterFromClass="hidden"
-                  leaveActiveClass="animate-fadeout"
-                  leaveToClass="hidden"
-                  pStyleClass="@next" [hideOnOutsideClick]="true">
+          <button
+            type="button"
+            class="topbar-item config-item"
+            enterActiveClass="animate-scalein"
+            enterFromClass="hidden"
+            leaveActiveClass="animate-fadeout"
+            leaveToClass="hidden"
+            pStyleClass="@next"
+            [hideOnOutsideClick]="true"
+          >
             <i class="pi pi-palette"></i>
           </button>
           <app-theme-configurator></app-theme-configurator>
         </li>
       </div>
-      <p-divider layout="vertical"/>
+      <p-divider layout="vertical" />
       <div class="flex gap-4">
         <li>
-          <button class="topbar-item" (click)="openUserProfileDialog()" pTooltip="Profile" tooltipPosition="bottom">
+          <button
+            class="topbar-item"
+            (click)="openUserProfileDialog()"
+            pTooltip="Profile"
+            tooltipPosition="bottom"
+          >
             <i class="pi pi-user text-surface-100"></i>
           </button>
         </li>
         <li>
-          <button class="topbar-item" (click)="logout()" pTooltip="Logout" tooltipPosition="left">
+          <button
+            class="topbar-item"
+            (click)="logout()"
+            pTooltip="Logout"
+            tooltipPosition="left"
+          >
             <i class="pi pi-sign-out text-surface-100"></i>
           </button>
         </li>
@@ -161,39 +243,39 @@
       />
       <p-popover #mobileMenu>
         <ul class="flex flex-col gap-1 w-48">
-          @if (userService.userState$ | async; as userState) {
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
-              <li>
-                <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-                  (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
-                >
-                  <i class="pi pi-plus-circle text-surface-100"></i>
-                  Create Library
-                </button>
-              </li>
-              <li>
-                <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-                  (click)="navigateToBookdrop(); mobileMenu.hide()"
-                >
-                  <i class="pi pi-inbox text-surface-100"></i>
-                  Bookdrop
-                </button>
-              </li>
-            }
-            @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
-              <li>
-                <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-                  (click)="openFileUploadDialog(); mobileMenu.hide()"
-                >
-                  <i class="pi pi-upload text-surface-100"></i>
-                  Upload Book
-                </button>
-              </li>
-            }
-          }
+          @if (userService.userState$ | async; as userState) { @if
+          (userState.user?.permissions?.canManipulateLibrary ||
+          userState.user?.permissions?.admin) {
+          <li>
+            <button
+              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
+            >
+              <i class="pi pi-plus-circle text-surface-100"></i>
+              Create Library
+            </button>
+          </li>
+          <li>
+            <button
+              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              (click)="navigateToBookdrop(); mobileMenu.hide()"
+            >
+              <i class="pi pi-inbox text-surface-100"></i>
+              Bookdrop
+            </button>
+          </li>
+          } @if (userState.user?.permissions?.canUpload ||
+          userState.user?.permissions?.admin) {
+          <li>
+            <button
+              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+              (click)="openFileUploadDialog(); mobileMenu.hide()"
+            >
+              <i class="pi pi-upload text-surface-100"></i>
+              Upload Book
+            </button>
+          </li>
+          } }
           <li>
             <button
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
@@ -218,7 +300,8 @@
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
               href="https://booklore-app.github.io/booklore-docs/docs/getting-started/"
               target="_blank"
-              rel="noopener noreferrer">
+              rel="noopener noreferrer"
+            >
               <i class="pi pi-info-circle text-surface-100"></i>
               Documentation
             </a>

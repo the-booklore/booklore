@@ -1,6 +1,6 @@
 import {DOCUMENT, isPlatformBrowser} from '@angular/common';
 import {effect, inject, Injectable, PLATFORM_ID, signal} from '@angular/core';
-import {$t, updatePreset, updateSurfacePalette} from '@primeng/themes';
+import {$t} from '@primeng/themes';
 import Aura from '@primeng/themes/aura';
 import {AppState} from '../model/app-state.model';
 
@@ -16,6 +16,7 @@ interface Palette {
 })
 export class AppConfigService {
   private readonly STORAGE_KEY = 'appConfigState';
+  private readonly DEFAULT_APPEARANCE: 'light' | 'dark' = 'dark';
   appState = signal<AppState>({});
   document = inject(DOCUMENT);
   platformId = inject(PLATFORM_ID);
@@ -333,7 +334,7 @@ export class AppConfigService {
   constructor() {
     const initialState = this.loadAppState();
     this.appState.set({...initialState});
-    this.document.documentElement.classList.add('p-dark');
+    this.applyColorSchemeClass();
 
     if (isPlatformBrowser(this.platformId)) {
       this.onPresetChange();
@@ -351,16 +352,26 @@ export class AppConfigService {
   }
 
   private loadAppState(): AppState {
+    let storedState: AppState | null = null;
+
     if (isPlatformBrowser(this.platformId)) {
-      const storedState = localStorage.getItem(this.STORAGE_KEY);
-      if (storedState) {
-        return JSON.parse(storedState);
+      const storedStateRaw = localStorage.getItem(this.STORAGE_KEY);
+      if (storedStateRaw) {
+        storedState = JSON.parse(storedStateRaw);
       }
     }
-    return {
+
+    const defaults: AppState = {
       preset: 'Aura',
       primary: 'green',
       surface: 'ash',
+      appearance: this.DEFAULT_APPEARANCE
+    };
+
+    return {
+      ...defaults,
+      ...(storedState ?? {}),
+      appearance: storedState?.appearance ?? defaults.appearance
     };
   }
 
@@ -385,6 +396,20 @@ export class AppConfigService {
         semantic: {
           primary: {...surfacePalette},
           colorScheme: {
+            light: {
+              primary: {
+                color: '{primary.600}',
+                contrastColor: '{primary.0}',
+                hoverColor: '{primary.700}',
+                activeColor: '{primary.800}'
+              },
+              highlight: {
+                background: '{primary.100}',
+                focusBackground: '{primary.200}',
+                color: '{primary.900}',
+                focusColor: '{primary.950}'
+              }
+            },
             dark: {
               primary: {
                 color: '{primary.50}',
@@ -408,6 +433,20 @@ export class AppConfigService {
       semantic: {
         primary: color,
         colorScheme: {
+          light: {
+            primary: {
+              color: '{primary.600}',
+              contrastColor: '{surface.0}',
+              hoverColor: '{primary.700}',
+              activeColor: '{primary.800}'
+            },
+            highlight: {
+              background: 'color-mix(in srgb, {primary.600}, transparent 88%)',
+              focusBackground: 'color-mix(in srgb, {primary.600}, transparent 80%)',
+              color: 'rgba(0,0,0,.87)',
+              focusColor: 'rgba(0,0,0,.87)'
+            }
+          },
           dark: {
             primary: {
               color: '{primary.400}',
@@ -428,8 +467,29 @@ export class AppConfigService {
   }
 
   onPresetChange(): void {
+    this.applyColorSchemeClass();
+
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
     const surfacePalette = this.getSurfacePalette(this.appState().surface ?? 'neutral');
     const preset = this.getPresetExt();
     $t().preset(Aura).preset(preset).surfacePalette(surfacePalette).use({useDefaultOptions: true});
+  }
+
+  private applyColorSchemeClass(): void {
+    const appearance = this.appState().appearance ?? this.DEFAULT_APPEARANCE;
+    const root = this.document?.documentElement;
+
+    if (!root) {
+      return;
+    }
+
+    if (appearance === 'dark') {
+      root.classList.add('p-dark');
+    } else {
+      root.classList.remove('p-dark');
+    }
   }
 }

@@ -7,6 +7,26 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+  };
+}
+
 interface SeriesCompletionStats {
   seriesName: string;
   totalBooks: number;
@@ -25,10 +45,10 @@ const CHART_COLORS = [
 ] as const;
 
 const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
+  borderColor: themeTokens().modeColor,
   borderWidth: 1,
   hoverBorderWidth: 2,
-  hoverBorderColor: '#ffffff'
+  hoverBorderColor: themeTokens().modeColor
 } as const;
 
 type SeriesCompletionChartData = ChartData<'bar', number[], string>;
@@ -40,6 +60,7 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly seriesCompletionChartType = 'bar' as const;
 
@@ -49,17 +70,17 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
     scales: {
       x: {
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: { size: 10 },
           maxRotation: 45
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGrid
         },
         title: {
           display: true,
           text: 'Series',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: { size: 12 }
         }
       },
@@ -67,19 +88,19 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
         beginAtZero: true,
         max: 100,
         ticks: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: { size: 10 },
           callback: function(value) {
             return value + '%';
           }
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: themeTokens().modeGrid
         },
         title: {
           display: true,
           text: 'Completion %',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: { size: 12 }
         }
       }
@@ -89,17 +110,17 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
         display: true,
         position: 'top',
         labels: {
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: { size: 11 },
           padding: 15,
           usePointStyle: true
         }
       },
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -124,14 +145,86 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
   });
 
   public readonly seriesCompletionChartData$: Observable<SeriesCompletionChartData> = this.seriesCompletionChartDataSubject.asObservable();
+  
+  private lastCalculatedStats: SeriesCompletionStats[] = [];
 
   constructor() {
+    this.initThemeObserver();
     this.initializeChartDataSubscription();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.seriesCompletionChartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.legend?.labels) {
+          options.plugins.legend.labels.color = tokens.modeColor;
+        }
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+          options.plugins.tooltip.borderColor = tokens.modeColor;
+        }
+      }
+
+      if (options.scales) {
+        if (options.scales['x']) {
+          if (options.scales['x'].ticks) options.scales['x'].ticks.color = tokens.modeColor;
+          if (options.scales['x'].grid) options.scales['x'].grid.color = tokens.modeGrid;
+          if (options.scales['x'].title) options.scales['x'].title.color = tokens.modeColor;
+        }
+        if (options.scales['y']) {
+          if (options.scales['y'].ticks) options.scales['y'].ticks.color = tokens.modeColor;
+          if (options.scales['y'].grid) options.scales['y'].grid.color = tokens.modeGrid;
+          if (options.scales['y'].title) options.scales['y'].title.color = tokens.modeColor;
+        }
+      }
+    }
+
+    const currentData = this.seriesCompletionChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map(dataset => ({
+        ...dataset,
+        borderColor: tokens.modeColor,
+        hoverBorderColor: tokens.modeColor
+      }));
+
+      this.seriesCompletionChartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   private initializeChartDataSubscription(): void {
@@ -318,8 +411,6 @@ export class SeriesCompletionProgressChartService implements OnDestroy {
 
     return `${datasetLabel}: ${value}%`;
   }
-
-  private lastCalculatedStats: SeriesCompletionStats[] = [];
 
   private getLastCalculatedStats(): SeriesCompletionStats[] {
     return this.lastCalculatedStats;

@@ -34,6 +34,32 @@
   }
 }
 
+:host-context(:root:not(.p-dark)) .dashboard-scroller-title {
+  text-align: left;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  padding: 0;
+  background: linear-gradient(135deg, #4e535d, #878d98, #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 2;
+  letter-spacing: -0.02em;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 0;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-color));
+    border-radius: 2px;
+  }
+}
+
 .dashboard-scroller-no-books {
   padding: 3rem 2rem;
   display: flex;
@@ -68,6 +94,43 @@
     max-width: 400px;
     line-height: 1.7;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+}
+
+:host-context(:root:not(.p-dark)) .dashboard-scroller-no-books {
+  padding: 3rem 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+
+  .empty-state-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    position: relative;
+
+    i {
+      font-size: 2rem;
+      color: #4e535d;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+    }
+  }
+
+  p {
+    color: #4e535d;
+    font-size: 1rem;
+    font-weight: 500;
+    max-width: 400px;
+    line-height: 1.7;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -143,6 +206,44 @@
     opacity: 0;
     transition: all 0.4s ease;
     filter: blur(6px);
+  }
+}
+
+:host-context(:root:not(.p-dark)) .dashboard-scroller-card {
+  &:hover,
+  &.menu-open {
+    transform: translateY(-4px) scale(1.04);
+    filter: drop-shadow(0 18px 32px rgba(0, 0, 0, 0.18));
+
+    &::after {
+      opacity: 1;
+      transform: scale(1.15);
+    }
+
+    &::before {
+      opacity: 0.5;
+    }
+  }
+
+  &::before {
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--p-primary-600), transparent 78%),
+      color-mix(in srgb, var(--p-primary-800), transparent 82%)
+    );
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  &::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--p-primary-600), transparent 65%),
+      transparent
+    );
+    opacity: 0;
+    filter: blur(8px);
   }
 }
 

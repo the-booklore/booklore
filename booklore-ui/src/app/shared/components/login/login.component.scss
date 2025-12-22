@@ -88,10 +88,12 @@
 
 .form-label {
   @include auth.form-label;
+  color: var(--text-color);
 }
 
 .form-input {
   @include auth.form-input;
+  color: var(--text-color);
 }
 
 .login-button {
@@ -119,7 +121,7 @@
   span {
     padding: 0 1rem;
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary-color);
     font-weight: 500;
   }
 }
@@ -143,6 +145,7 @@
 .help-text {
   text-align: center;
   margin-top: 0.5rem;
+  color: var(--text-color);
 }
 
 .text-link {
@@ -164,6 +167,90 @@
 
     &:hover {
       color: #60a5fa;
+    }
+  }
+}
+
+:host-context(:root:not(.p-dark)) {
+  .login-container {
+    background: linear-gradient(135deg, var(--p-surface-0) 0%, var(--p-surface-100) 40%, color-mix(in srgb, var(--primary-color), transparent 60%) 100%);
+  }
+
+  .login-card-border {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color), transparent 20%) 0%, color-mix(in srgb, var(--primary-color), transparent 60%) 60%, transparent 100%);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  }
+
+  .login-card {
+    background: var(--card-background);
+    color: var(--text-color);
+    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.08);
+  }
+  
+  .logo-icon {
+    filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+  }
+
+  .login-title {
+    -webkit-text-fill-color: initial;
+    background: none;
+    color: var(--text-color);
+  }
+
+  .login-subtitle {
+    color: var(--text-secondary-color);
+  }
+
+  .divider {
+    &::before,
+    &::after {
+      border-bottom: 1px solid var(--p-content-border-color);
+    }
+
+    span {
+      color: var(--text-secondary-color);
+    }
+  }
+
+  .oidc-warning {
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+  }
+
+  .warning-header {
+    color: #d97706;
+  }
+
+  .warning-message {
+    color: #92400e;
+  }
+
+  .oidc-button {
+    ::ng-deep button {
+      background: var(--p-surface-100);
+      border: 1px solid var(--p-content-border-color);
+      color: var(--text-color);
+
+      &:hover:not(:disabled) {
+        background: var(--p-surface-200);
+        border-color: var(--primary-color);
+      }
+    }
+  }
+
+  .text-link {
+    color: var(--text-secondary-color);
+
+    &:hover {
+      color: var(--text-color);
+    }
+
+    &.primary {
+      color: var(--primary-color);
+
+      &:hover {
+        color: color-mix(in srgb, var(--primary-color), black 10%);
+      }
     }
   }
 }

@@ -7,6 +7,25 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+  };
+}
+
 interface LanguageStats {
   language: string;
   count: number;
@@ -19,13 +38,6 @@ const CHART_COLORS = [
   '#17becf', '#bcbd22', '#1f77b4', '#ff7f0e', '#2ca02c'
 ] as const;
 
-const CHART_DEFAULTS = {
-  borderColor: '#ffffff',
-  borderWidth: 2,
-  hoverBorderWidth: 3,
-  hoverBorderColor: '#ffffff'
-} as const;
-
 type LanguageChartData = ChartData<'doughnut', number[], string>;
 
 @Injectable({
@@ -35,6 +47,7 @@ export class LanguageDistributionChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly languageChartType = 'doughnut' as const;
 
@@ -53,10 +66,10 @@ export class LanguageDistributionChartService implements OnDestroy {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -82,13 +95,17 @@ export class LanguageDistributionChartService implements OnDestroy {
     datasets: [{
       data: [],
       backgroundColor: [...CHART_COLORS],
-      ...CHART_DEFAULTS
+      borderColor: themeTokens().modeColor,
+      borderWidth: 2,
+      hoverBorderWidth: 3,
+      hoverBorderColor: themeTokens().modeColor
     }]
   });
 
   public readonly languageChartData$: Observable<LanguageChartData> = this.languageChartDataSubject.asObservable();
 
   constructor() {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -112,6 +129,50 @@ export class LanguageDistributionChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    if (this.languageChartOptions?.plugins?.tooltip) {
+      const tooltip = this.languageChartOptions.plugins.tooltip;
+      tooltip.backgroundColor = tokens.modeColorBG;
+      tooltip.titleColor = tokens.modeColor;
+      tooltip.bodyColor = tokens.modeColor;
+      tooltip.borderColor = tokens.modeColor;
+    }
+    const currentData = this.languageChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const dataset = currentData.datasets[0];
+      dataset.borderColor = tokens.modeColor;
+      dataset.hoverBorderColor = tokens.modeColor;
+      this.languageChartDataSubject.next({
+        ...currentData,
+        datasets: [{ ...dataset }]
+      });
+    }
   }
 
   private updateChartData(stats: LanguageStats[]): void {
@@ -120,13 +181,17 @@ export class LanguageDistributionChartService implements OnDestroy {
       const labels = topLanguages.map(s => s.language);
       const dataValues = topLanguages.map(s => s.count);
       const colors = this.getColorsForData(topLanguages.length);
+      const tokens = themeTokens();
 
       this.languageChartDataSubject.next({
         labels,
         datasets: [{
           data: dataValues,
           backgroundColor: colors,
-          ...CHART_DEFAULTS
+          borderColor: tokens.modeColor,
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+          hoverBorderColor: tokens.modeColor
         }]
       });
     } catch (error) {
@@ -254,6 +319,7 @@ export class LanguageDistributionChartService implements OnDestroy {
 
     const dataset = data.datasets[0];
     const dataValues = dataset.data as number[];
+    const tokens = themeTokens();
 
     return data.labels.map((label: string, index: number) => {
       const isVisible = typeof chart.getDataVisibility === 'function'
@@ -263,11 +329,11 @@ export class LanguageDistributionChartService implements OnDestroy {
       return {
         text: `${label} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
-        strokeStyle: '#ffffff',
+        strokeStyle: tokens.modeColor,
         lineWidth: 1,
         hidden: !isVisible,
         index,
-        fontColor: '#ffffff'
+        fontColor: tokens.modeColor
       };
     });
   }

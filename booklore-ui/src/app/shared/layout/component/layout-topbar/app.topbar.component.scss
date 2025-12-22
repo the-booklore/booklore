@@ -21,6 +21,11 @@
   animation: pulsate 1.5s infinite ease-in-out;
 }
 
+.github-support-fill {
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+}
+
 .notification-badge {
   position: absolute;
   top: -0.4rem;

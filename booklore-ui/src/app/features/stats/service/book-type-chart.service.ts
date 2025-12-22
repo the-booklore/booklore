@@ -7,6 +7,25 @@ import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+  };
+}
+
 interface BookTypeStats {
   bookType: string;
   count: number;
@@ -14,12 +33,12 @@ interface BookTypeStats {
 }
 
 const CHART_COLORS = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFA726', '#AB47BC'] as const;
-const CHART_DEFAULTS = {
+const CHART_DEFAULTS = () => ({
   borderWidth: 2,
   hoverBorderWidth: 3,
-  borderColor: '#ffffff',
-  hoverBorderColor: '#ffffff'
-} as const;
+  borderColor: themeTokens().modeColor,
+  hoverBorderColor: themeTokens().modeColor,
+});
 
 type BookTypeChartData = ChartData<'pie', number[], string>;
 
@@ -30,6 +49,7 @@ export class BookTypeChartService implements OnDestroy {
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly bookTypeChartType: ChartType = 'pie';
 
@@ -49,10 +69,10 @@ export class BookTypeChartService implements OnDestroy {
       },
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.9)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ffffff',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         cornerRadius: 6,
         displayColors: true,
@@ -77,7 +97,7 @@ export class BookTypeChartService implements OnDestroy {
     datasets: [{
       data: [],
       backgroundColor: [...CHART_COLORS],
-      ...CHART_DEFAULTS
+      ...CHART_DEFAULTS()
     }]
   });
 
@@ -85,6 +105,7 @@ export class BookTypeChartService implements OnDestroy {
     this.bookTypeChartDataSubject.asObservable();
 
   constructor() {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -108,6 +129,50 @@ export class BookTypeChartService implements OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    if (this.bookTypeChartOptions?.plugins?.tooltip) {
+      const tooltip = this.bookTypeChartOptions.plugins.tooltip;
+      tooltip.backgroundColor = tokens.modeColorBG;
+      tooltip.titleColor = tokens.modeColor;
+      tooltip.bodyColor = tokens.modeColor;
+      tooltip.borderColor = tokens.modeColor;
+    }
+    const currentData = this.bookTypeChartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const dataset = currentData.datasets[0];
+      dataset.borderColor = tokens.modeColor;
+      dataset.hoverBorderColor = tokens.modeColor;
+      this.bookTypeChartDataSubject.next({
+        ...currentData,
+        datasets: [{ ...dataset }]
+      });
+    }
   }
 
   private updateChartData(stats: BookTypeStats[]): void {
@@ -121,7 +186,7 @@ export class BookTypeChartService implements OnDestroy {
         datasets: [{
           data: dataValues,
           backgroundColor: colors,
-          ...CHART_DEFAULTS
+          ...CHART_DEFAULTS()
         }]
       });
     } catch (error) {
@@ -217,10 +282,10 @@ export class BookTypeChartService implements OnDestroy {
     return data.labels.map((label: string, index: number) => ({
       text: `${label} (${dataValues[index]})`,
       fillStyle: (dataset.backgroundColor as string[])[index],
-      strokeStyle: '#ffffff',
+      strokeStyle: themeTokens().modeColor,
       lineWidth: 1,
       hidden: false,
-      fontColor: '#ffffff',
+      fontColor: themeTokens().modeColor,
       index
     }));
   }
