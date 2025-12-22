@@ -86,12 +86,12 @@ public class KomgaMapper {
 
     private KomgaMediaDto toKomgaMediaDto(BookEntity book, BookMetadataEntity metadata) {
         String mediaType = getMediaType(book.getBookType());
-        
+        Integer pageCount = metadata != null && metadata.getPageCount() != null ? metadata.getPageCount() : 0;
         return KomgaMediaDto.builder()
                 .status("READY")
                 .mediaType(mediaType)
                 .mediaProfile(getMediaProfile(book.getBookType()))
-                .pagesCount(metadata != null ? metadata.getPageCount() : 0)
+                .pagesCount(pageCount)
                 .build();
     }
 
