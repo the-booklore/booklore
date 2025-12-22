@@ -11,6 +11,7 @@ import {MessageService} from 'primeng/api';
 import {ResetProgressType, ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
 import {AuthService} from '../../../shared/service/auth.service';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
+import {Router} from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -23,6 +24,7 @@ export class BookService {
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
   private fileDownloadService = inject(FileDownloadService);
+  private router = inject(Router);
 
   private bookStateSubject = new BehaviorSubject<BookState>({
     books: null,
@@ -188,32 +190,36 @@ export class BookService {
     this.bookStateSubject.next({...currentState, books: updatedBooks});
   }
 
-  readBook(bookId: number, reader?: "ngx" | "streaming"): void {
+  readBook(bookId: number, reader?: 'ngx' | 'streaming'): void {
     const book = this.bookStateSubject.value.books?.find(b => b.id === bookId);
     if (!book) {
       console.error('Book not found');
       return;
     }
 
-    let url: string | null = null;
+    let url: string;
+
     switch (book.bookType) {
-      case "PDF":
-        url = !reader || reader === "ngx"
+      case 'PDF':
+        url = !reader || reader === 'ngx'
           ? `/pdf-reader/book/${book.id}`
           : `/cbx-reader/book/${book.id}`;
         break;
-      case "EPUB":
+
+      case 'EPUB':
         url = `/epub-reader/book/${book.id}`;
         break;
-      case "CBX":
+
+      case 'CBX':
         url = `/cbx-reader/book/${book.id}`;
         break;
+
       default:
         console.error('Unsupported book type:', book.bookType);
         return;
     }
 
-    window.open(url, '_blank');
+    this.router.navigate([url]);
     this.updateLastReadTime(book.id);
   }
 

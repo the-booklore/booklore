@@ -97,6 +97,9 @@
         <button class="view-button background-toggle" (click)="toggleBackground()" title="Toggle Background Color">
           <span>{{ backgroundColorIcon }}</span>
         </button>
+        <button class="view-button close-button" (click)="closeReader()" title="Close Reader">
+          <span>✕</span>
+        </button>
       </div>
 
       <div class="mobile-controls">
@@ -159,6 +162,10 @@
             <button class="mobile-option" (click)="toggleBackgroundFromMobile()">
               <span class="option-icon">{{ backgroundColorIcon }}</span>
               <span class="option-label">Background</span>
+            </button>
+            <button class="mobile-option" (click)="closeReader()">
+              <span class="option-icon">✕</span>
+              <span class="option-label">Close Reader</span>
             </button>
           </div>
         }

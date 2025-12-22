@@ -1,14 +1,18 @@
-import {Injectable} from '@angular/core';
-import {fromEvent, merge, Subscription} from 'rxjs';
-import {debounceTime} from 'rxjs/operators';
+import { inject, Injectable } from '@angular/core';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { fromEvent, merge, Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
+import { API_CONFIG } from '../../core/config/api-config';
+import {BookType} from '../../features/book/model/book.model';
 
 export interface ReadingSession {
   bookId: number;
+  bookType: BookType;
   startTime: Date;
   endTime?: Date;
   durationSeconds?: number;
-  startCfi?: string;
-  endCfi?: string;
+  startLocation?: string;
+  endLocation?: string;
   startProgress?: number;
   endProgress?: number;
   progressDelta?: number;
@@ -18,71 +22,73 @@ export interface ReadingSession {
   providedIn: 'root'
 })
 export class ReadingSessionService {
+  private readonly http = inject(HttpClient);
+  private readonly url = `${API_CONFIG.BASE_URL}/api/v1/reading-sessions`;
+
   private currentSession: ReadingSession | null = null;
-  private readonly IDLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
-  private readonly MIN_SESSION_DURATION_SECONDS = 15; // 15 seconds
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   private activitySubscription: Subscription | null = null;
+
+  private readonly IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+  private readonly MIN_SESSION_DURATION_SECONDS = 30;
+  private readonly ACTIVITY_DEBOUNCE_MS = 1000;
 
   constructor() {
     this.setupBrowserLifecycleListeners();
   }
 
   private setupBrowserLifecycleListeners(): void {
-    // Handle tab/window close, page refresh, navigation away
     window.addEventListener('beforeunload', () => {
       if (this.currentSession) {
         this.endSessionSync();
       }
     });
 
-    // Handle tab visibility changes (tab switching, minimizing)
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && this.currentSession) {
-        console.log('👁️ Tab hidden, pausing session');
+        this.log('Tab hidden, pausing session');
         this.pauseIdleDetection();
       } else if (!document.hidden && this.currentSession) {
-        console.log('👁️ Tab visible, resuming session');
+        this.log('Tab visible, resuming session');
         this.resumeIdleDetection();
       }
     });
   }
 
-  startSession(bookId: number, _bookTitle: string, startCfi?: string, startProgress?: number): void {
-    // End any existing session first
+  startSession(bookId: number, bookType: BookType, startLocation?: string, startProgress?: number): void {
     if (this.currentSession) {
       this.endSession();
     }
 
     this.currentSession = {
       bookId,
+      bookType,
       startTime: new Date(),
-      startCfi,
+      startLocation,
       startProgress
     };
 
-    console.log('📖 Reading session started:', {
-      bookId: this.currentSession.bookId,
+    this.log('Reading session started', {
+      bookId,
       startTime: this.currentSession.startTime.toISOString(),
-      startProgress: this.currentSession.startProgress != null
-        ? `${this.currentSession.startProgress.toFixed(1)}%`
-        : 'unknown'
+      startLocation,
+      startProgress: startProgress != null ? `${startProgress.toFixed(1)}%` : 'N/A'
     });
 
     this.startIdleDetection();
   }
 
-  updateProgress(currentCfi?: string, currentProgress?: number): void {
+  updateProgress(currentLocation?: string, currentProgress?: number): void {
     if (!this.currentSession) {
       return;
     }
 
-    this.currentSession.endCfi = currentCfi;
+    this.currentSession.endLocation = currentLocation;
     this.currentSession.endProgress = currentProgress;
     this.resetIdleTimer();
   }
 
-  endSession(endCfi?: string, endProgress?: number): void {
+  endSession(endLocation?: string, endProgress?: number): void {
     if (!this.currentSession) {
       return;
     }
@@ -90,23 +96,20 @@ export class ReadingSessionService {
     this.stopIdleDetection();
 
     this.currentSession.endTime = new Date();
-    this.currentSession.endCfi = endCfi ?? this.currentSession.endCfi;
+    this.currentSession.endLocation = endLocation ?? this.currentSession.endLocation;
     this.currentSession.endProgress = endProgress ?? this.currentSession.endProgress;
 
-    // Calculate duration
     const durationMs = this.currentSession.endTime.getTime() - this.currentSession.startTime.getTime();
     this.currentSession.durationSeconds = Math.floor(durationMs / 1000);
 
-    // Calculate progress delta
     if (this.currentSession.startProgress != null && this.currentSession.endProgress != null) {
       this.currentSession.progressDelta = this.currentSession.endProgress - this.currentSession.startProgress;
     }
 
-    // Only log/send if session was meaningful
     if (this.currentSession.durationSeconds >= this.MIN_SESSION_DURATION_SECONDS) {
       this.sendSessionToBackend(this.currentSession);
     } else {
-      console.log('📚 Session too short, discarding:', {
+      this.log('Session too short, discarding', {
         durationSeconds: this.currentSession.durationSeconds
       });
     }
@@ -123,62 +126,67 @@ export class ReadingSessionService {
     const durationMs = endTime.getTime() - this.currentSession.startTime.getTime();
     const durationSeconds = Math.floor(durationMs / 1000);
 
-    // Only send if session was meaningful
-    if (durationSeconds >= this.MIN_SESSION_DURATION_SECONDS) {
-      const sessionData = {
-        bookId: this.currentSession.bookId,
-        startTime: this.currentSession.startTime.toISOString(),
-        endTime: endTime.toISOString(),
-        durationSeconds,
-        durationFormatted: this.formatDuration(durationSeconds),
-        startProgress: this.currentSession.startProgress,
-        endProgress: this.currentSession.endProgress,
-        progressDelta: (this.currentSession.startProgress != null && this.currentSession.endProgress != null)
-          ? this.currentSession.endProgress - this.currentSession.startProgress
-          : undefined,
-        startCfi: this.currentSession.startCfi,
-        endCfi: this.currentSession.endCfi
-      };
-
-      console.log('📚 Reading session ended (sync):', sessionData);
-
-      // Use sendBeacon for reliable sending during page unload
-      try {
-        const blob = new Blob([JSON.stringify(sessionData)], {type: 'application/json'});
-        const success = navigator.sendBeacon('/api/reading-sessions', blob);
-        if (!success) {
-          console.warn('⚠️ sendBeacon failed, request may not have been queued');
-        }
-      } catch (error) {
-        console.error('❌ Failed to send session data:', error);
-      }
+    if (durationSeconds < this.MIN_SESSION_DURATION_SECONDS) {
+      this.cleanup();
+      return;
     }
 
-    this.stopIdleDetection();
-    this.currentSession = null;
+    const sessionData = this.buildSessionData(
+      this.currentSession,
+      endTime,
+      durationSeconds
+    );
+
+    this.log('Reading session ended (sync)', sessionData);
+
+    try {
+      const blob = new Blob([JSON.stringify(sessionData)], { type: 'application/json' });
+      const success = navigator.sendBeacon(this.url, blob);
+
+      if (!success) {
+        this.logError('sendBeacon failed, request may not have been queued');
+      }
+    } catch (error) {
+      this.logError('Failed to send session data', error);
+    }
+
+    this.cleanup();
   }
 
   private sendSessionToBackend(session: ReadingSession): void {
-    const sessionData = {
+    if (!session.endTime || session.durationSeconds == null) {
+      this.logError('Invalid session data, missing endTime or duration');
+      return;
+    }
+
+    const sessionData = this.buildSessionData(
+      session,
+      session.endTime,
+      session.durationSeconds
+    );
+
+    this.log('Reading session completed', sessionData);
+
+    this.http.post<void>(this.url, sessionData).subscribe({
+      next: () => this.log('Session saved to backend'),
+      error: (err: HttpErrorResponse) => this.logError('Failed to save session', err)
+    });
+  }
+
+  private buildSessionData(session: ReadingSession, endTime: Date, durationSeconds: number) {
+    return {
       bookId: session.bookId,
+      bookType: session.bookType,
       startTime: session.startTime.toISOString(),
-      endTime: session.endTime!.toISOString(),
-      durationSeconds: session.durationSeconds,
-      durationFormatted: this.formatDuration(session.durationSeconds!),
+      endTime: endTime.toISOString(),
+      durationSeconds,
+      durationFormatted: this.formatDuration(durationSeconds),
       startProgress: session.startProgress,
       endProgress: session.endProgress,
       progressDelta: session.progressDelta,
-      startCfi: session.startCfi,
-      endCfi: session.endCfi
+      startLocation: session.startLocation,
+      endLocation: session.endLocation
     };
-
-    console.log('📚 Reading session completed:', sessionData);
-
-    // TODO: Send to backend API
-    // this.http.post('/api/reading-sessions', sessionData).subscribe({
-    //   next: () => console.log('✅ Session saved to backend'),
-    //   error: (err) => console.error('❌ Failed to save session:', err)
-    // });
   }
 
   private formatDuration(seconds: number): string {
@@ -204,7 +212,7 @@ export class ReadingSessionService {
       fromEvent(document, 'scroll'),
       fromEvent(document, 'touchstart')
     ).pipe(
-      debounceTime(1000)
+      debounceTime(this.ACTIVITY_DEBOUNCE_MS)
     );
 
     this.activitySubscription = activity$.subscribe(() => {
@@ -237,7 +245,7 @@ export class ReadingSessionService {
     }
 
     this.idleTimer = setTimeout(() => {
-      console.log('⏱️ User idle detected, ending session');
+      this.log('User idle detected, ending session');
       this.endSession();
     }, this.IDLE_TIMEOUT_MS);
   }
@@ -253,7 +261,28 @@ export class ReadingSessionService {
     }
   }
 
+  private cleanup(): void {
+    this.stopIdleDetection();
+    this.currentSession = null;
+  }
+
   isSessionActive(): boolean {
     return this.currentSession !== null;
+  }
+
+  private log(message: string, data?: any): void {
+    if (data) {
+      console.log(`[ReadingSession] ${message}`, data);
+    } else {
+      console.log(`[ReadingSession] ${message}`);
+    }
+  }
+
+  private logError(message: string, error?: any): void {
+    if (error) {
+      console.error(`[ReadingSession] ${message}`, error);
+    } else {
+      console.error(`[ReadingSession] ${message}`);
+    }
   }
 }

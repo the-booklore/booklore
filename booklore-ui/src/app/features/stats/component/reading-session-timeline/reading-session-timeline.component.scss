@@ -1,0 +1,483 @@
+.timeline-container {
+  width: 100%;
+}
+
+.timeline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+
+  .header-title {
+    flex: 1;
+
+    h3 {
+      color: var(--text-color, #ffffff);
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .timeline-subtitle {
+      color: var(--text-secondary-color);
+      font-size: 0.9rem;
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+
+  .week-selector {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+
+    .week-nav-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      color: #ffffff;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        transform: translateY(-1px);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      i {
+        font-size: 0.875rem;
+      }
+    }
+
+    .week-info {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 100px;
+
+      .week-label {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #ffffff;
+        white-space: nowrap;
+      }
+
+      .week-dates {
+        font-size: 0.8rem;
+        color: var(--text-secondary-color);
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+.timeline-content {
+  position: relative;
+  width: 100%;
+  padding: 1rem;
+}
+
+.hour-markers {
+  display: flex;
+  margin-bottom: 0.5rem;
+
+  .day-label-spacer {
+    width: 100px;
+    flex-shrink: 0;
+  }
+
+  .hour-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(24, 1fr);
+    position: relative;
+  }
+
+  .hour-marker {
+    position: relative;
+    height: 20px;
+
+    &.major {
+      .hour-label {
+        display: block;
+      }
+    }
+  }
+
+  .hour-label {
+    display: none;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.6);
+    position: absolute;
+    left: 0;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+}
+
+.timeline-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-row {
+  display: flex;
+  align-items: stretch;
+
+  .day-label {
+    width: 50px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+    padding-right: 1rem;
+  }
+
+  .timeline-track {
+    flex: 1;
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 40px;
+  }
+}
+
+.grid-lines {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  pointer-events: none;
+
+  .grid-line {
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+.sessions {
+  position: absolute;
+  inset: 4px;
+  pointer-events: none;
+
+  .session-block {
+    position: absolute;
+    border-radius: 4px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    overflow: visible;
+    box-sizing: border-box;
+
+    &.book-type-epub, &.book-type-default {
+      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(74, 144, 226, 0.5);
+      }
+    }
+
+    &.book-type-pdf {
+      background: linear-gradient(135deg, #e24a4a 0%, #bd3535 100%);
+      box-shadow: 0 2px 8px rgba(226, 74, 74, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(226, 74, 74, 0.5);
+      }
+    }
+
+    &.book-type-cbx {
+      background: linear-gradient(135deg, #e2b74a 0%, #bd9635 100%);
+      box-shadow: 0 2px 8px rgba(226, 183, 74, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(226, 183, 74, 0.5);
+      }
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      z-index: 10;
+
+      .session-tooltip {
+        opacity: 1;
+        transform: translate(-50%, 0);
+        pointer-events: auto;
+      }
+    }
+
+    .session-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 4px 8px;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-align: center;
+      gap: 2px;
+      overflow: hidden;
+
+      .session-time {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        line-height: 1;
+      }
+
+      .session-duration {
+        font-size: 0.65rem;
+        opacity: 0.9;
+        white-space: nowrap;
+        line-height: 1;
+      }
+    }
+  }
+}
+
+.session-tooltip {
+  position: absolute;
+  bottom: calc(100% + 15px);
+  left: 50%;
+  transform: translate(-50%, 10px);
+  background: rgba(30, 30, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  pointer-events: none;
+  min-width: 320px;
+  max-width: 350px;
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+
+  .tooltip-content {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .tooltip-cover {
+    flex-shrink: 0;
+    width: 80px;
+    height: 120px;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 4px;
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .tooltip-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0;
+    background: none;
+
+    i {
+      font-size: 1.1rem;
+      color: #4a90e2;
+    }
+
+    .tooltip-title {
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  .tooltip-divider {
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%);
+    margin: 0.75rem 0;
+  }
+
+  .tooltip-body {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+
+  .tooltip-row {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.875rem;
+
+    i {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      width: 16px;
+      text-align: center;
+    }
+
+    .tooltip-label {
+      color: rgba(255, 255, 255, 0.7);
+      font-weight: 500;
+    }
+
+    .tooltip-value {
+      color: #ffffff;
+      text-align: right;
+      font-weight: 500;
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(30, 30, 30, 0.98);
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  }
+}
+
+@media (max-width: 768px) {
+  .timeline-header {
+    flex-direction: column;
+    align-items: stretch;
+
+    .week-selector {
+      justify-content: center;
+      margin-top: 0.5rem;
+
+      .week-info {
+        min-width: 120px;
+      }
+    }
+  }
+
+  .timeline-content {
+    min-height: 300px;
+    padding: 0.75rem;
+  }
+
+  .timeline-row {
+    .day-label {
+      width: 70px;
+      font-size: 0.75rem;
+      padding-right: 0.5rem;
+    }
+  }
+
+  .hour-markers {
+    .day-label-spacer {
+      width: 70px;
+    }
+  }
+
+  .hour-marker {
+    .hour-label {
+      font-size: 0.6rem;
+    }
+  }
+
+  .session-block {
+    .session-content {
+      font-size: 0.65rem;
+
+      .session-duration {
+        display: none;
+      }
+    }
+  }
+
+  .session-tooltip {
+    min-width: 240px;
+    max-width: 280px;
+    font-size: 0.85rem;
+
+    .tooltip-header {
+      padding: 0.75rem;
+
+      .tooltip-title {
+        font-size: 0.875rem;
+      }
+    }
+
+    .tooltip-body {
+      padding: 0.75rem;
+    }
+
+    .tooltip-row {
+      font-size: 0.8rem;
+      gap: 0.5rem;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .timeline-header {
+    .header-title {
+      h3 {
+        font-size: 1.1rem;
+      }
+
+      .timeline-subtitle {
+        font-size: 0.85rem;
+      }
+    }
+  }
+
+  .week-selector {
+    .week-info {
+      .week-label {
+        font-size: 1rem;
+      }
+    }
+
+    .week-nav-btn {
+      padding: 0.4rem 0.6rem;
+    }
+  }
+}

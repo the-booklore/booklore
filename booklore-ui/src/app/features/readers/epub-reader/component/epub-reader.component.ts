@@ -4,7 +4,7 @@ import {Drawer} from 'primeng/drawer';
 import {forkJoin, Subscription} from 'rxjs';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
-import {CommonModule} from '@angular/common';
+import {CommonModule, Location} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {Book, BookSetting} from '../../../book/model/book.model';
@@ -30,27 +30,7 @@ import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
   selector: 'app-epub-reader',
   templateUrl: './epub-reader.component.html',
   styleUrls: ['./epub-reader.component.scss'],
-  imports: [
-    CommonModule,
-    FormsModule,
-    Drawer,
-    Button,
-    Select,
-    ProgressSpinner,
-    Tooltip,
-    Slider,
-    PrimeTemplate,
-    Tabs,
-    TabList,
-    Tab,
-    TabPanels,
-    TabPanel,
-    IconField,
-    InputIcon,
-    BookmarkEditDialogComponent,
-    BookmarkViewDialogComponent,
-    InputText
-  ],
+  imports: [CommonModule, FormsModule, Drawer, Button, Select, ProgressSpinner, Tooltip, Slider, PrimeTemplate, Tabs, TabList, Tab, TabPanels, TabPanel, IconField, InputIcon, BookmarkEditDialogComponent, BookmarkViewDialogComponent, InputText],
   standalone: true
 })
 export class EpubReaderComponent implements OnInit, OnDestroy {
@@ -130,6 +110,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   ];
 
   private route = inject(ActivatedRoute);
+  private location = inject(Location);
   private userService = inject(UserService);
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
@@ -530,24 +511,13 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         const percentage = this.book.locations.percentageFromCfi(cfi);
         this.progressPercentage = Math.round(percentage * 1000) / 10;
 
-        this.readingSessionService.startSession(
-          this.epub.id,
-          this.epub.metadata?.title || 'Unknown Book',
-          location.start.cfi,
-          this.progressPercentage
-        );
+        this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
       }
     }).catch(() => {
       this.locationsReady = false;
-
       const location = this.rendition.currentLocation();
       if (location) {
-        this.readingSessionService.startSession(
-          this.epub.id,
-          this.epub.metadata?.title || 'Unknown Book',
-          location.start.cfi,
-          this.progressPercentage
-        );
+        this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
       }
     });
   }
@@ -848,5 +818,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   onBookmarkCancel(): void {
     this.showEditBookmarkDialog = false;
     this.editingBookmark = null;
+  }
+
+  closeReader(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      this.readingSessionService.endSession(
+        this.currentCfi || undefined,
+        this.progressPercentage
+      );
+    }
+    this.location.back();
   }
 }

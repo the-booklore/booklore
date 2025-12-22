@@ -31,7 +31,6 @@ import {TopSeriesChartService} from '../service/top-series-chart.service';
 import {ReadingDNAChartService} from '../service/reading-dna-chart.service';
 import {ReadingHabitsChartService} from '../service/reading-habits-chart.service';
 import {ChartConfig, ChartConfigService} from '../service/chart-config.service';
-import {ReadingHeatmapChartService} from '../service/reading-heatmap-chart.service';
 
 @Component({
   selector: 'app-stats-component',
@@ -71,7 +70,6 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly readingDNAChartService = inject(ReadingDNAChartService);
   protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
-  protected readonly readingHeatmapChartService = inject(ReadingHeatmapChartService);
   private readonly pageTitle = inject(PageTitleService);
 
   private readonly destroy$ = new Subject<void>();
@@ -100,7 +98,6 @@ export class StatsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     Chart.register(...registerables, Tooltip, ChartDataLabels, MatrixController, MatrixElement);
-    // Register matrix chart - it's automatically registered when imported
     Chart.defaults.plugins.legend.labels.font = {
       family: "'Inter', sans-serif",
       size: 11.5,
