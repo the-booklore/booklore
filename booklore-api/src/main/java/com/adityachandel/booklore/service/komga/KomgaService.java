@@ -175,7 +175,7 @@ public class KomgaService {
         } else {
             // Paginate
             totalPages = (int) Math.ceil((double) totalElements / size);
-            int fromIndex = page * size;
+            int fromIndex = Math.min(page * size, totalElements);
             int toIndex = Math.min(fromIndex + size, totalElements);
             
             content = seriesBooks.subList(fromIndex, toIndex).stream()
@@ -192,7 +192,7 @@ public class KomgaService {
                 .totalElements(totalElements)
                 .totalPages(totalPages)
                 .first(actualPage == 0)
-                .last(actualPage >= totalPages - 1)
+                .last(totalPages == 0 || actualPage >= totalPages - 1)
                 .empty(content.isEmpty())
                 .build();
     }
