@@ -14,7 +14,7 @@
   font-weight: 800;
   margin-bottom: 1rem;
   padding: 0;
-  background: linear-gradient(135deg, #ffffff, #e2e8f0, #3b82f6);
+  background: linear-gradient(135deg, var(--text-color), var(--text-secondary-color), var(--p-primary-500));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -56,18 +56,18 @@
 
     i {
       font-size: 2rem;
-      color: white;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      color: var(--text-color);
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
     }
   }
 
   p {
-    color: #e2e8f0;
+    color: var(--text-color-secondary);
     font-size: 1rem;
     font-weight: 500;
     max-width: 400px;
     line-height: 1.7;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -83,7 +83,7 @@
   position: relative;
   z-index: 2;
 
-  scrollbar-color: var(--primary-color) rgba(20, 20, 30, 0.5);
+  scrollbar-color: var(--primary-color) var(--p-surface-800);
 }
 
 .dashboard-scroller-card {
