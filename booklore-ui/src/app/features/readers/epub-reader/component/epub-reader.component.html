@@ -12,72 +12,101 @@
           <div class="progress-info">
             <span class="progress-percentage"><span class="progress-label">Progress:  </span>{{ progressPercentage }}%</span>
           </div>
-          <p-drawer [(visible)]="isDrawerVisible" [modal]="false" [position]="'left'" [style]="{ width: '320px' }">
-            <ng-template pTemplate="header">
-              <div class="drawer-header">
-                <span class="drawer-title">Table of Contents</span>
-              </div>
-            </ng-template>
+<p-drawer [(visible)]="isDrawerVisible" [modal]="false" [position]="'left'" [style]="{ width: '320px' }">
+  <ng-template pTemplate="header">
+    <div class="drawer-header">
+      <span class="drawer-title">Table of Contents</span>
+    </div>
+  </ng-template>
 
-            <p-tabs value="0">
-              <p-tablist>
-                <p-tab value="0">
-                  <div class="tab-header">
-                    <i class="pi pi-book"></i>
-                    <span>Chapters</span>
+  <p-tabs value="0">
+    <p-tablist>
+      <p-tab value="0">
+        <div class="tab-header">
+          <i class="pi pi-book"></i>
+          <span>Chapters</span>
+        </div>
+      </p-tab>
+      <p-tab value="1">
+        <div class="tab-header">
+          <i class="pi pi-bookmark"></i>
+          <span>Bookmarks</span>
+        </div>
+      </p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="0">
+        <div class="tab-content">
+          <ul class="chapter-list">
+            @for (chapter of chapters; track chapter) {
+              <li (click)="navigateToChapter(chapter); $event.stopPropagation()"
+                  class="chapter-item"
+                  [class.current-chapter]="chapter.href === currentChapterHref"
+                  [style.padding-left.rem]="chapter.level * 1.5 + 0.75">
+                <i class="pi pi-chevron-right chapter-icon"></i>
+                <span class="chapter-label">{{ chapter.label }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      </p-tabpanel>
+      <p-tabpanel value="1">
+        <div class="tab-content">
+          <div class="p-2 mb-2">
+            <p-iconfield class="w-full">
+              <p-inputicon class="pi pi-search"/>
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="filterText"
+                placeholder="Search bookmarks..."
+                class="w-full p-inputtext-sm">
+            </p-iconfield>
+          </div>
+          @if (filteredBookmarks.length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-bookmark"></i>
+              <p>No bookmarks found</p>
+              <span>{{ filterText ? 'Try a different search term' : 'Tap the bookmark icon to save your place' }}</span>
+            </div>
+          } @else {
+            <ul class="bookmark-list">
+              @for (bookmark of filteredBookmarks; track bookmark.id) {
+                <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
+                  <i class="pi pi-bookmark-fill bookmark-icon" [style.color]="bookmark.color || 'var(--primary-color)'"></i>
+                  <span class="bookmark-label">{{ bookmark.title }}</span>
+                  <div class="bookmark-actions">
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openViewDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="View Details"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-info-circle"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="Edit"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn delete"
+                      (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
+                      pTooltip="Delete"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-trash"></i>
+                    </button>
                   </div>
-                </p-tab>
-                <p-tab value="1">
-                  <div class="tab-header">
-                    <i class="pi pi-bookmark"></i>
-                    <span>Bookmarks</span>
-                  </div>
-                </p-tab>
-              </p-tablist>
-              <p-tabpanels>
-                <p-tabpanel value="0">
-                  <div class="tab-content">
-                    <ul class="chapter-list">
-                      @for (chapter of chapters; track chapter) {
-                        <li (click)="navigateToChapter(chapter); $event.stopPropagation()"
-                            class="chapter-item"
-                            [class.current-chapter]="chapter.href === currentChapterHref"
-                            [style.padding-left.rem]="chapter.level * 1.5 + 0.75">
-                          <i class="pi pi-chevron-right chapter-icon"></i>
-                          <span class="chapter-label">{{ chapter.label }}</span>
-                        </li>
-                      }
-                    </ul>
-                  </div>
-                </p-tabpanel>
-                <p-tabpanel value="1">
-                  <div class="tab-content">
-                    @if (bookmarks.length === 0) {
-                      <div class="empty-state">
-                        <i class="pi pi-bookmark"></i>
-                        <p>No bookmarks yet</p>
-                        <span>Tap the bookmark icon to save your place</span>
-                      </div>
-                    } @else {
-                      <ul class="bookmark-list">
-                        @for (bookmark of bookmarks; track bookmark.id) {
-                          <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                            <i class="pi pi-bookmark-fill bookmark-icon"></i>
-                            <span class="bookmark-label">{{ bookmark.title }}</span>
-                            <button
-                              class="bookmark-delete"
-                              (click)="deleteBookmark(bookmark.id); $event.stopPropagation()">
-                              <i class="pi pi-trash"></i>
-                            </button>
-                          </li>
-                        }
-                      </ul>
-                    }
-                  </div>
-                </p-tabpanel>
-              </p-tabpanels>
-            </p-tabs>
-          </p-drawer>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</p-drawer>
         </div>
 
         <div class="header-center">
@@ -255,6 +284,14 @@
                 </div>
               </p-drawer>
             </div>
+            <p-button
+              size="small"
+              icon="pi pi-times"
+              (click)="closeReader()"
+              severity="secondary"
+              pTooltip="Close Reader"
+              tooltipPosition="bottom">
+            </p-button>
           </div>
         </div>
       </div>
@@ -268,3 +305,18 @@
     </div>
   }
 </div>
+
+  <!-- Bookmark Edit Dialog Component -->
+  <app-bookmark-edit-dialog
+    [(visible)]="showEditBookmarkDialog"
+    [bookmark]="editingBookmark"
+    [isSaving]="isEditingBookmark"
+    (save)="onBookmarkSave($event)"
+    (cancelEdit)="onBookmarkCancel()">
+  </app-bookmark-edit-dialog>
+
+  <!-- Bookmark View Dialog Component -->
+  <app-bookmark-view-dialog
+    [(visible)]="viewDialogVisible"
+    [bookmark]="selectedBookmark">
+  </app-bookmark-view-dialog>

@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service;
 
+import com.adityachandel.booklore.config.BookmarkProperties;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.mapper.BookMarkMapper;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
@@ -40,6 +41,8 @@ class BookMarkServiceTest {
     private BookMarkMapper mapper;
     @Mock
     private AuthenticationService authenticationService;
+    @Mock
+    private BookmarkProperties bookmarkProperties;
 
     @InjectMocks
     private BookMarkService bookMarkService;
@@ -58,14 +61,14 @@ class BookMarkServiceTest {
         userDto = BookLoreUser.builder().id(userId).build();
         userEntity = BookLoreUserEntity.builder().id(userId).build();
         bookEntity = BookEntity.builder().id(bookId).build();
-        bookmarkEntity = BookMarkEntity.builder().id(bookmarkId).user(userEntity).book(bookEntity).cfi("cfi").title("title").build();
+        bookmarkEntity = BookMarkEntity.builder().id(bookmarkId).user(userEntity).book(bookEntity).cfi("cfi").title("title").version(1L).build();
         bookmarkDto = BookMark.builder().id(bookmarkId).bookId(bookId).cfi("cfi").title("title").build();
     }
 
     @Test
     void getBookmarksForBook_Success() {
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
-        when(bookMarkRepository.findByBookIdAndUserIdOrderByCreatedAtDesc(bookId, userId)).thenReturn(List.of(bookmarkEntity));
+        when(bookMarkRepository.findByBookIdAndUserIdOrderByPriorityAscCreatedAtDesc(bookId, userId)).thenReturn(List.of(bookmarkEntity));
         when(mapper.toDto(bookmarkEntity)).thenReturn(bookmarkDto);
 
         List<BookMark> result = bookMarkService.getBookmarksForBook(bookId);
@@ -73,7 +76,7 @@ class BookMarkServiceTest {
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(bookmarkId, result.get(0).getId());
-        verify(bookMarkRepository).findByBookIdAndUserIdOrderByCreatedAtDesc(bookId, userId);
+        verify(bookMarkRepository).findByBookIdAndUserIdOrderByPriorityAscCreatedAtDesc(bookId, userId);
     }
 
     @Test
@@ -81,6 +84,7 @@ class BookMarkServiceTest {
         CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
         
         when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookmarkProperties.getDefaultPriority()).thenReturn(3);
         when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false);
         when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(bookEntity));
@@ -95,15 +99,25 @@ class BookMarkServiceTest {
     }
 
     @Test
+    void createBookmark_Duplicate() {
+        CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(true); // Duplicate exists
+
+        assertThrows(com.adityachandel.booklore.exception.APIException.class, () -> bookMarkService.createBookmark(request));
+        verify(bookMarkRepository, never()).save(any());
+    }
+
+    @Test
     void createBookmark_BookNotFound() {
         CreateBookMarkRequest request = new CreateBookMarkRequest(bookId, "new-cfi", "New Bookmark");
-        
-        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
-        when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(userEntity));
-        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> bookMarkService.createBookmark(request));
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.existsByCfiAndBookIdAndUserId("new-cfi", bookId, userId)).thenReturn(false); // No duplicate
+        when(bookRepository.findById(bookId)).thenReturn(Optional.empty()); // Book doesn't exist
+
+        assertThrows(jakarta.persistence.EntityNotFoundException.class, () -> bookMarkService.createBookmark(request));
         verify(bookMarkRepository, never()).save(any());
     }
 
@@ -124,5 +138,61 @@ class BookMarkServiceTest {
 
         assertThrows(EntityNotFoundException.class, () -> bookMarkService.deleteBookmark(bookmarkId));
         verify(bookMarkRepository, never()).delete(any());
+    }
+
+    @Test
+    void updateBookmark_Success() {
+        var updateRequest = com.adityachandel.booklore.model.dto.UpdateBookMarkRequest.builder()
+                .title("Updated Title")
+                .color("#FF0000")
+                .notes("Updated notes")
+                .priority(3)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.findByIdAndUserId(bookmarkId, userId)).thenReturn(Optional.of(bookmarkEntity));
+        when(bookMarkRepository.save(any(BookMarkEntity.class))).thenReturn(bookmarkEntity);
+        when(mapper.toDto(bookmarkEntity)).thenReturn(bookmarkDto);
+
+        BookMark result = bookMarkService.updateBookmark(bookmarkId, updateRequest);
+
+        assertNotNull(result);
+        assertEquals(bookmarkId, result.getId());
+        verify(bookMarkRepository).save(any(BookMarkEntity.class));
+    }
+
+    @Test
+    void updateBookmark_NotFound() {
+        var updateRequest = com.adityachandel.booklore.model.dto.UpdateBookMarkRequest.builder()
+                .title("Updated Title")
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.findByIdAndUserId(bookmarkId, userId)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> bookMarkService.updateBookmark(bookmarkId, updateRequest));
+        verify(bookMarkRepository, never()).save(any());
+    }
+
+    @Test
+    void getBookmarkById_Success() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.findByIdAndUserId(bookmarkId, userId)).thenReturn(Optional.of(bookmarkEntity));
+        when(mapper.toDto(bookmarkEntity)).thenReturn(bookmarkDto);
+
+        BookMark result = bookMarkService.getBookmarkById(bookmarkId);
+
+        assertNotNull(result);
+        assertEquals(bookmarkId, result.getId());
+        verify(bookMarkRepository).findByIdAndUserId(bookmarkId, userId);
+    }
+
+    @Test
+    void getBookmarkById_NotFound() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(userDto);
+        when(bookMarkRepository.findByIdAndUserId(bookmarkId, userId)).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> bookMarkService.getBookmarkById(bookmarkId));
+        verify(bookMarkRepository).findByIdAndUserId(bookmarkId, userId);
     }
 }

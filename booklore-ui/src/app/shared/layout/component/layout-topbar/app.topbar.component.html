@@ -53,9 +53,14 @@
           </li>
         }
         <li>
-          <a class="topbar-item" (click)="navigateToStats()" pTooltip="Stats" tooltipPosition="bottom">
+          <button
+            class="topbar-item"
+            (click)="statsMenu.toggle($event)"
+            pTooltip="Stats"
+            tooltipPosition="bottom">
             <i class="pi pi-chart-bar text-surface-100"></i>
-          </a>
+          </button>
+          <p-menu #statsMenu [model]="statsMenuItems" [popup]="true" appendTo="body" />
         </li>
         @if (userService.userState$ | async; as userState) {
           <li>
@@ -192,11 +197,12 @@
           <li>
             <button
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-              (click)="navigateToStats(); mobileMenu.hide()"
+              (click)="statsMenu.toggle($event)"
             >
               <i class="pi pi-chart-bar text-surface-100"></i>
               Charts
             </button>
+            <p-menu #statsMenuMobile [model]="statsMenuItems" [popup]="true" />
           </li>
           <li>
             <button

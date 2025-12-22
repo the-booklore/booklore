@@ -3,6 +3,8 @@ import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
 import {forkJoin, Subscription} from 'rxjs';
 import {Button} from 'primeng/button';
+import {InputText} from 'primeng/inputtext';
+import {CommonModule, Location} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
 import {Book, BookSetting} from '../../../book/model/book.model';
@@ -11,19 +13,24 @@ import {Select} from 'primeng/select';
 import {UserService} from '../../../settings/user-management/user.service';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {MessageService, PrimeTemplate} from 'primeng/api';
-import {BookMark, BookMarkService} from '../../../../shared/service/book-mark.service';
+import {BookMark, BookMarkService, UpdateBookMarkRequest} from '../../../../shared/service/book-mark.service';
 import {Tooltip} from 'primeng/tooltip';
 import {Slider} from 'primeng/slider';
 import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
-import {EpubThemeUtil, EpubTheme} from '../epub-theme-util';
+import {ReadingSessionService} from '../../../../shared/service/reading-session.service';
+import {EpubTheme, EpubThemeUtil} from '../epub-theme-util';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {Tab, TabList, TabPanel, TabPanels, Tabs} from 'primeng/tabs';
+import {IconField} from 'primeng/iconfield';
+import {InputIcon} from 'primeng/inputicon';
+import {BookmarkEditDialogComponent} from './bookmark-edit-dialog.component';
+import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
 
 @Component({
   selector: 'app-epub-reader',
   templateUrl: './epub-reader.component.html',
   styleUrls: ['./epub-reader.component.scss'],
-  imports: [Drawer, Button, FormsModule, Select, ProgressSpinner, Tooltip, Slider, PrimeTemplate, Tabs, TabList, Tab, TabPanels, TabPanel],
+  imports: [CommonModule, FormsModule, Drawer, Button, Select, ProgressSpinner, Tooltip, Slider, PrimeTemplate, Tabs, TabList, Tab, TabPanels, TabPanel, IconField, InputIcon, BookmarkEditDialogComponent, BookmarkViewDialogComponent, InputText],
   standalone: true
 })
 export class EpubReaderComponent implements OnInit, OnDestroy {
@@ -40,7 +47,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   isBookmarked = false;
   isAddingBookmark = false;
   isDeletingBookmark = false;
+  isEditingBookmark = false;
   private routeSubscription?: Subscription;
+
+  filterText = '';
+  viewDialogVisible = false;
+  selectedBookmark: BookMark | null = null;
 
   public locationsReady = false;
   public approxProgress = 0;
@@ -53,6 +65,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private hideHeaderTimeout?: number;
   private isMouseInTopRegion = false;
   private headerShownByMobileTouch = false;
+
+  editingBookmark: BookMark | null = null;
+  showEditBookmarkDialog = false;
 
   private book: any;
   private rendition: any;
@@ -95,12 +110,14 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   ];
 
   private route = inject(ActivatedRoute);
+  private location = inject(Location);
   private userService = inject(UserService);
   private bookService = inject(BookService);
   private messageService = inject(MessageService);
   private ngZone = inject(NgZone);
   private pageTitle = inject(PageTitleService);
   private bookMarkService = inject(BookMarkService);
+  private readingSessionService = inject(ReadingSessionService);
 
   epub!: Book;
 
@@ -207,6 +224,37 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         },
       });
     });
+  }
+
+  get filteredBookmarks(): BookMark[] {
+    let filtered = this.bookmarks;
+
+    if (this.filterText && this.filterText.trim()) {
+      const lowerFilter = this.filterText.toLowerCase().trim();
+      filtered = filtered.filter(b =>
+        (b.title && b.title.toLowerCase().includes(lowerFilter)) ||
+        (b.notes && b.notes.toLowerCase().includes(lowerFilter))
+      );
+    }
+
+    return [...filtered].sort((a, b) => {
+      const priorityA = a.priority ?? 3;
+      const priorityB = b.priority ?? 3;
+
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      return dateB - dateA;
+    });
+  }
+
+  openViewDialog(bookmark: BookMark): void {
+    this.selectedBookmark = bookmark;
+    this.viewDialogVisible = true;
   }
 
   updateThemeStyle(): void {
@@ -360,19 +408,37 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   prevPage(): void {
     if (this.rendition) {
-      this.rendition.prev();
+      this.rendition.prev().then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
   nextPage(): void {
     if (this.rendition) {
-      this.rendition.next();
+      this.rendition.next().then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
   navigateToChapter(chapter: { label: string; href: string; level: number }): void {
     if (this.book && chapter.href) {
-      this.book.rendition.display(chapter.href);
+      this.book.rendition.display(chapter.href).then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
@@ -428,6 +494,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       }
 
       this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
+
+      this.readingSessionService.updateProgress(
+        location.start.cfi,
+        this.progressPercentage
+      );
     });
 
     this.book.ready.then(() => {
@@ -439,13 +510,26 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         const cfi = location.end.cfi;
         const percentage = this.book.locations.percentageFromCfi(cfi);
         this.progressPercentage = Math.round(percentage * 1000) / 10;
+
+        this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
       }
     }).catch(() => {
       this.locationsReady = false;
+      const location = this.rendition.currentLocation();
+      if (location) {
+        this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
+      }
     });
   }
 
   ngOnDestroy(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      this.readingSessionService.endSession(
+        this.currentCfi || undefined,
+        this.progressPercentage
+      );
+    }
+
     this.routeSubscription?.unsubscribe();
 
     if (this.rendition) {
@@ -485,18 +569,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       const isBottomClick = clickY > screenHeight * 0.2;
 
       if (isTopClick && !this.showHeader) {
-        // Touch top 20% - show header and mark as shown by mobile touch
         this.showHeader = true;
         this.headerShownByMobileTouch = true;
         this.clearHeaderTimeout();
       } else if (isBottomClick && this.showHeader && this.headerShownByMobileTouch) {
-        // Touch lower 80% - hide header
         this.showHeader = false;
         this.headerShownByMobileTouch = false;
         this.clearHeaderTimeout();
       }
     } else {
-      // Desktop behavior
       const isTopClick = clickY < screenHeight * 0.1;
       if (isTopClick) {
         this.showHeader = true;
@@ -545,7 +626,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Don't auto-hide on mobile if header was shown by touch
     if (this.isMobileDevice() && this.headerShownByMobileTouch) {
       return;
     }
@@ -620,6 +700,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.bookMarkService.createBookmark(request).subscribe({
       next: (bookmark) => {
         this.bookmarks.push(bookmark);
+        this.bookmarks = [...this.bookmarks];
         this.updateBookmarkStatus();
         this.messageService.add({
           severity: 'success',
@@ -643,6 +724,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (this.isDeletingBookmark) {
       return;
     }
+    if (!confirm('Are you sure you want to delete this bookmark?')) {
+      return;
+    }
+
     this.isDeletingBookmark = true;
     this.bookMarkService.deleteBookmark(bookmarkId).subscribe({
       next: () => {
@@ -668,7 +753,13 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   navigateToBookmark(bookmark: BookMark): void {
     if (this.rendition && bookmark.cfi) {
-      this.rendition.display(bookmark.cfi);
+      this.rendition.display(bookmark.cfi).then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
     }
   }
 
@@ -681,5 +772,61 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.isBookmarked = this.currentCfi
       ? this.bookmarks.some(b => b.cfi === this.currentCfi)
       : false;
+  }
+
+  openEditBookmarkDialog(bookmark: BookMark): void {
+    this.editingBookmark = {...bookmark};
+    this.showEditBookmarkDialog = true;
+  }
+
+  onBookmarkSave(updateRequest: UpdateBookMarkRequest): void {
+    if (!this.editingBookmark || this.isEditingBookmark) {
+      return;
+    }
+
+    this.isEditingBookmark = true;
+
+    this.bookMarkService.updateBookmark(this.editingBookmark.id, updateRequest).subscribe({
+      next: (updatedBookmark) => {
+        const index = this.bookmarks.findIndex(b => b.id === this.editingBookmark!.id);
+        if (index !== -1) {
+          this.bookmarks[index] = updatedBookmark;
+          this.bookmarks = [...this.bookmarks];
+        }
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Success',
+          detail: 'Bookmark updated successfully',
+        });
+        this.showEditBookmarkDialog = false;
+        this.editingBookmark = null;
+        this.isEditingBookmark = false;
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to update bookmark',
+        });
+        this.showEditBookmarkDialog = false;
+        this.editingBookmark = null;
+        this.isEditingBookmark = false;
+      }
+    });
+  }
+
+  onBookmarkCancel(): void {
+    this.showEditBookmarkDialog = false;
+    this.editingBookmark = null;
+  }
+
+  closeReader(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      this.readingSessionService.endSession(
+        this.currentCfi || undefined,
+        this.progressPercentage
+      );
+    }
+    this.location.back();
   }
 }

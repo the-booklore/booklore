@@ -24,6 +24,7 @@ import {BookdropFileService} from '../../../../features/bookdrop/service/bookdro
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
 import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
+import {Menu} from 'primeng/menu';
 
 @Component({
   selector: 'app-topbar',
@@ -45,11 +46,13 @@ import {Severity, LogNotification} from '../../../websocket/model/log-notificati
     Popover,
     UnifiedNotificationBoxComponent,
     NgStyle,
+    Menu,
   ],
 })
 export class AppTopBarComponent implements OnDestroy {
   items!: MenuItem[];
   ref?: DynamicDialogRef;
+  statsMenuItems: MenuItem[] = [];
 
   @ViewChild('menubutton') menuButton!: ElementRef;
   @ViewChild('topbarmenubutton') topbarMenuButton!: ElementRef;
@@ -80,6 +83,7 @@ export class AppTopBarComponent implements OnDestroy {
     private bookdropFileService: BookdropFileService,
     private dialogLauncher: DialogLauncherService
   ) {
+    this.initializeStatsMenu();
     this.subscribeToMetadataProgress();
     this.subscribeToNotifications();
 
@@ -143,7 +147,11 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   navigateToStats() {
-    this.router.navigate(['/stats']);
+    this.router.navigate(['/library-stats']);
+  }
+
+  navigateToUserStats() {
+    this.router.navigate(['/reading-stats']);
   }
 
   logout() {
@@ -189,6 +197,21 @@ export class AppTopBarComponent implements OnDestroy {
 
   private updateTaskVisibilityWithBookdrop() {
     this.hasActiveOrCompletedTasks = this.hasActiveOrCompletedTasks || this.hasPendingBookdropFiles;
+  }
+
+  private initializeStatsMenu() {
+    this.statsMenuItems = [
+      {
+        label: 'Library Stats',
+        icon: 'pi pi-chart-line',
+        command: () => this.navigateToStats()
+      },
+      {
+        label: 'Reading Stats',
+        icon: 'pi pi-users',
+        command: () => this.navigateToUserStats()
+      }
+    ];
   }
 
   get iconClass(): string {

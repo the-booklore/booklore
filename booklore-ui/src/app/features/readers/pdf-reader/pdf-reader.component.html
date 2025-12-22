@@ -9,19 +9,54 @@
     [src]="bookData"
     [textLayer]="true"
     [showHandToolButton]="true"
-    [handTool]="false"
     [height]="'auto'"
     [page]="page"
     [rotation]="rotation"
-    [sidebarVisible]="false"
     [zoom]="zoom"
     [spread]="spread"
-    [showBookModeButton]="false"
-    [showDownloadButton]="showDownloadButton"
-    [showPrintButton]="showPrintButton"
+    [customToolbar]="additionalButtons"
     (pagesLoaded)="onPdfPagesLoaded($event)"
     (pageChange)="onPageChange($event)"
     (zoomChange)="onZoomChange($event)"
     (spreadChange)="onSpreadChange($event)">
   </ngx-extended-pdf-viewer>
+
+  <ng-template #additionalButtons>
+    <div id="toolbarViewer">
+      <div id="toolbarViewerLeft">
+        <pdf-toggle-sidebar></pdf-toggle-sidebar>
+        <pdf-find-button></pdf-find-button>
+        <pdf-paging-area></pdf-paging-area>
+      </div>
+      <pdf-zoom-toolbar></pdf-zoom-toolbar>
+      <div id="toolbarViewerRight">
+        <pdf-shy-button
+          [cssClass]="'lg' | responsiveCSSClass"
+          class="newTab"
+          title="Close PDF Reader"
+          primaryToolbarId="closePdfReaderButton"
+          [action]="closeReader"
+          [order]="5"
+          image="<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='orange' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='lucide lucide-circle-x-icon lucide-circle-x'><circle cx='12' cy='12' r='10'/><path d='m15 9-6 6'/><path d='m9 9 6 6'/></svg>"
+        >
+        </pdf-shy-button>
+        <pdf-hand-tool></pdf-hand-tool>
+        <pdf-select-tool></pdf-select-tool>
+        <pdf-rotate-page></pdf-rotate-page>
+        <pdf-print></pdf-print>
+        <pdf-no-spread></pdf-no-spread>
+        <pdf-even-spread></pdf-even-spread>
+        <pdf-odd-spread></pdf-odd-spread>
+        <pdf-infinite-scroll></pdf-infinite-scroll>
+        <pdf-horizontal-scroll></pdf-horizontal-scroll>
+        <pdf-vertical-scroll-mode></pdf-vertical-scroll-mode>
+        <pdf-wrapped-scroll-mode></pdf-wrapped-scroll-mode>
+        <pdf-single-page-mode></pdf-single-page-mode>
+        <pdf-book-mode></pdf-book-mode>
+        <div class="verticalToolbarSeparator hiddenSmallView"></div>
+        <pdf-toggle-secondary-toolbar></pdf-toggle-secondary-toolbar>
+      </div>
+    </div>
+  </ng-template>
 }
+

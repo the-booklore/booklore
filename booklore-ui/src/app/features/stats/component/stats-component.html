@@ -392,16 +392,6 @@
                 }
               </div>
             }
-            @case ('readingHeatmap') {
-              <h3>Books Finished per Month</h3>
-              <div class="chart-wrapper reading-heatmap-chart">
-                <canvas baseChart
-                        [data]="(readingHeatmapChartService.heatmapChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingHeatmapChartService.heatmapChartOptions"
-                        [type]="readingHeatmapChartService.heatmapChartType">
-                </canvas>
-              </div>
-            }
           }
         </div>
       }

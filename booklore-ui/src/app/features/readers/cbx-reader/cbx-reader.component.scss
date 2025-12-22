@@ -311,6 +311,18 @@
           background: #4a4a4a;
           border-color: #666;
         }
+
+        &.close-button {
+          span {
+            font-size: 16px;
+            font-weight: bold;
+          }
+
+          &:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.4);
+          }
+        }
       }
 
       .fit-mode-dropdown {
@@ -387,11 +399,11 @@
     background: #0f0f0f;
     min-height: 0;
     position: relative;
-    
+
     &:not(.two-page-view):not(.infinite-scroll) {
       flex-direction: column;
       align-items: stretch;
-      
+
       .pages-wrapper {
         flex: 1;
         display: flex;
@@ -399,7 +411,7 @@
         align-items: center;
         min-height: 0;
       }
-      
+
       .end-of-comic-action {
         flex: 0 0 auto;
         margin-top: 1rem;
@@ -777,7 +789,7 @@
 
         .action-icon { font-size: 2rem; }
         .action-text { font-size: 1rem; }
-        .book-title { 
+        .book-title {
           font-size: 0.85rem;
           max-width: 250px;
         }

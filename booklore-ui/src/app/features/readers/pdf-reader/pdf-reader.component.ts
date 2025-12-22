@@ -9,6 +9,8 @@ import {UserService} from '../../settings/user-management/user.service';
 
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {MessageService} from 'primeng/api';
+import {ReadingSessionService} from '../../../shared/service/reading-session.service';
+import {Location} from '@angular/common';
 
 @Component({
   selector: 'app-pdf-reader',
@@ -26,9 +28,6 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
   spread!: 'off' | 'even' | 'odd';
   zoom!: ZoomType;
 
-  showDownloadButton = false;
-  showPrintButton = false;
-
   bookData!: string | Blob;
   bookId!: number;
   private appSettingsSubscription!: Subscription;
@@ -38,6 +37,8 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private route = inject(ActivatedRoute);
   private pageTitle = inject(PageTitleService);
+  private readingSessionService = inject(ReadingSessionService);
+  private location = inject(Location);
 
   ngOnInit(): void {
     this.route.paramMap.subscribe((params) => {
@@ -57,9 +58,6 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
           const myself = results[3];
 
           this.pageTitle.setBookPageTitle(pdfMeta);
-
-          this.showDownloadButton = myself.permissions.canDownload || myself.permissions.admin;
-          this.showPrintButton = myself.permissions.canDownload || myself.permissions.admin;
 
           const globalOrIndividual = myself.userSettings.perBookSetting.pdf;
           if (globalOrIndividual === 'Global') {
@@ -85,6 +83,8 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     if (page !== this.page) {
       this.page = page;
       this.updateProgress();
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.updateProgress(this.page.toString(), percentage);
     }
   }
 
@@ -113,21 +113,34 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
   }
 
   updateProgress(): void {
-    const percentage = this.totalPages > 0
-      ? Math.round((this.page / this.totalPages) * 1000) / 10
-      : 0;
-
+    const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
     this.bookService.savePdfProgress(this.bookId, this.page, percentage).subscribe();
   }
 
   onPdfPagesLoaded(event: any): void {
     this.totalPages = event.pagesCount;
+    const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+    this.readingSessionService.startSession(this.bookId, "PDF", this.page.toString(), percentage);
+    this.readingSessionService.updateProgress(this.page.toString(), percentage);
   }
 
   ngOnDestroy(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.endSession(this.page.toString(), percentage);
+    }
+
     if (this.appSettingsSubscription) {
       this.appSettingsSubscription.unsubscribe();
     }
     this.updateProgress();
+  }
+
+  closeReader = (): void => {
+    if (this.readingSessionService.isSessionActive()) {
+      const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
+      this.readingSessionService.endSession(this.page.toString(), percentage);
+    }
+    this.location.back();
   }
 }

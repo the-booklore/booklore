@@ -19,7 +19,7 @@ export class ChartConfigService {
     {id: 'readingStatus', name: 'Reading Status', enabled: true, category: 'small', order: 0},
     {id: 'bookFormats', name: 'Book Formats', enabled: true, category: 'small', order: 1},
     {id: 'bookMetadataScore', name: 'Book Metadata Score', enabled: true, category: 'small', order: 2},
-    {id: 'readingHeatmap', name: 'Books Finished per Month', category: 'small', enabled: true, order: 3},
+    {id: 'languageDistribution', name: 'Language Distribution', enabled: true, category: 'small', order: 3},
     {id: 'topAuthors', name: 'Top 25 Authors', enabled: true, category: 'large', order: 4},
     {id: 'topCategories', name: 'Top 25 Categories', enabled: true, category: 'large', order: 5},
     {id: 'monthlyReadingPatterns', name: 'Monthly Reading Patterns', enabled: true, category: 'large', order: 6},
@@ -32,8 +32,7 @@ export class ChartConfigService {
     {id: 'topSeries', name: 'Top 20 Series', enabled: true, category: 'large', order: 13},
     {id: 'readingDNA', name: 'Reading DNA Profile', enabled: true, category: 'large', order: 14},
     {id: 'readingHabits', name: 'Reading Habits Analysis', enabled: true, category: 'large', order: 15},
-    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 16},
-    {id: 'languageDistribution', name: 'Language Distribution', enabled: true, category: 'small', order: 17}
+    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 16}
   ];
 
   private chartsConfigSubject = new BehaviorSubject<ChartConfig[]>(this.loadConfig());
@@ -114,10 +113,6 @@ export class ChartConfigService {
     this.saveConfig(updatedConfig);
   }
 
-  public getChartsByCategory(category: string): ChartConfig[] {
-    return this.chartsConfigSubject.value.filter(chart => chart.category === category);
-  }
-
   public getEnabledChartsSorted(): ChartConfig[] {
     return this.chartsConfigSubject.value
       .filter(chart => chart.enabled)
@@ -132,11 +127,9 @@ export class ChartConfigService {
       return;
     }
 
-    // Move the chart from fromIndex to toIndex
     const [movedChart] = enabledCharts.splice(fromIndex, 1);
     enabledCharts.splice(toIndex, 0, movedChart);
 
-    // Update order values for all enabled charts
     enabledCharts.forEach((chart, index) => {
       const configIndex = currentConfig.findIndex(c => c.id === chart.id);
       if (configIndex !== -1) {

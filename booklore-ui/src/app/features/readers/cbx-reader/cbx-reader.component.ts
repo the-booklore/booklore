@@ -1,5 +1,6 @@
-import {Component, HostListener, inject, OnInit} from '@angular/core';
+import {Component, HostListener, inject, OnInit, OnDestroy} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
+import {CommonModule, Location} from '@angular/common';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
@@ -21,6 +22,7 @@ import {BookState} from '../../book/model/state/book-state.model';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {FormsModule} from "@angular/forms";
 import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
+import {ReadingSessionService} from '../../../shared/service/reading-session.service';
 
 
 @Component({
@@ -30,7 +32,7 @@ import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
   templateUrl: './cbx-reader.component.html',
   styleUrl: './cbx-reader.component.scss'
 })
-export class CbxReaderComponent implements OnInit {
+export class CbxReaderComponent implements OnInit, OnDestroy {
   bookType!: BookType;
 
   goToPageInput: number | null = null;
@@ -53,12 +55,14 @@ export class CbxReaderComponent implements OnInit {
 
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private location = inject(Location);
   private cbxReaderService = inject(CbxReaderService);
   private pdfReaderService = inject(NewPdfReaderService);
   private bookService = inject(BookService);
   private userService = inject(UserService);
   private messageService = inject(MessageService);
   private pageTitle = inject(PageTitleService);
+  private readingSessionService = inject(ReadingSessionService);
 
 
   showFitModeDropdown: boolean = false;
@@ -164,6 +168,9 @@ export class CbxReaderComponent implements OnInit {
               }
               this.alignCurrentPageToParity();
               this.isLoading = false;
+
+              const percentage = this.pages.length > 0 ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10 : 0;
+              this.readingSessionService.startSession(this.bookId, "CBX", (this.currentPage + 1).toString(), percentage);
             },
             error: (err) => {
               const errorMessage = err?.error?.message || 'Failed to load pages';
@@ -253,6 +260,7 @@ export class CbxReaderComponent implements OnInit {
         this.currentPage++;
         this.scrollToPage(this.currentPage);
         this.updateProgress();
+        this.updateSessionProgress();
       }
       return;
     }
@@ -269,6 +277,7 @@ export class CbxReaderComponent implements OnInit {
 
     if (this.currentPage !== previousPage) {
       this.updateProgress();
+      this.updateSessionProgress();
     }
   }
 
@@ -278,6 +287,7 @@ export class CbxReaderComponent implements OnInit {
         this.currentPage--;
         this.scrollToPage(this.currentPage);
         this.updateProgress();
+        this.updateSessionProgress();
       }
       return;
     }
@@ -288,6 +298,7 @@ export class CbxReaderComponent implements OnInit {
       this.currentPage = Math.max(0, this.currentPage - 1);
     }
     this.updateProgress();
+    this.updateSessionProgress();
   }
 
   private alignCurrentPageToParity() {
@@ -420,6 +431,7 @@ export class CbxReaderComponent implements OnInit {
         if (newPage !== this.currentPage) {
           this.currentPage = newPage;
           this.updateProgress();
+          this.updateSessionProgress();
         }
         break;
       }
@@ -483,6 +495,16 @@ export class CbxReaderComponent implements OnInit {
     }
   }
 
+  private updateSessionProgress(): void {
+    const percentage = this.pages.length > 0
+      ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10
+      : 0;
+    this.readingSessionService.updateProgress(
+      (this.currentPage + 1).toString(),
+      percentage
+    );
+  }
+
   goToPage(page: number): void {
     if (page < 1 || page > this.pages.length) return;
 
@@ -495,9 +517,11 @@ export class CbxReaderComponent implements OnInit {
       this.ensurePageLoaded(targetIndex);
       this.scrollToPage(targetIndex);
       this.updateProgress();
+      this.updateSessionProgress();
     } else {
       this.alignCurrentPageToParity();
       this.updateProgress();
+      this.updateSessionProgress();
     }
   }
 
@@ -586,12 +610,14 @@ export class CbxReaderComponent implements OnInit {
 
   navigateToPreviousBook(): void {
     if (this.previousBookInSeries) {
+      this.endReadingSession();
       this.router.navigate(['/cbx-reader/book', this.previousBookInSeries.id]);
     }
   }
 
   navigateToNextBook(): void {
     if (this.nextBookInSeries) {
+      this.endReadingSession();
       this.router.navigate(['/cbx-reader/book', this.nextBookInSeries.id]);
     }
   }
@@ -671,5 +697,21 @@ export class CbxReaderComponent implements OnInit {
   getNextBookTooltip(): string {
     if (!this.nextBookInSeries) return 'No Next Book';
     return `Next Book: ${this.getBookDisplayTitle(this.nextBookInSeries)}`;
+  }
+
+  ngOnDestroy(): void {
+    this.endReadingSession();
+  }
+
+  private endReadingSession(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      const percentage = this.pages.length > 0 ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10 : 0;
+      this.readingSessionService.endSession((this.currentPage + 1).toString(), percentage);
+    }
+  }
+
+  closeReader(): void {
+    this.endReadingSession();
+    this.location.back();
   }
 }

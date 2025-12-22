@@ -3,8 +3,8 @@ import {API_CONFIG} from '../../core/config/api-config';
 import {AuthService} from './auth.service';
 import {BookService} from '../../features/book/service/book.service';
 import {CoverGeneratorComponent} from '../components/cover-generator/cover-generator.component';
-import { Router } from '@angular/router';
-import { Book } from '../../features/book/model/book.model';
+import {Router} from '@angular/router';
+import {Book} from '../../features/book/model/book.model';
 
 @Injectable({
   providedIn: 'root'
@@ -33,11 +33,20 @@ export class UrlHelperService {
         coverGenerator.title = book.metadata.title || '';
         coverGenerator.author = (book.metadata.authors || []).join(', ');
         return coverGenerator.generateCover();
-      } else {
-        return 'assets/images/missing-cover.jpg';
       }
     }
-    const url = `${this.mediaBaseUrl}/book/${bookId}/thumbnail?${coverUpdatedOn}`;
+    let url = `${this.mediaBaseUrl}/book/${bookId}/thumbnail`;
+    if (coverUpdatedOn) {
+      url += `?${coverUpdatedOn}`;
+    }
+    return this.appendToken(url);
+  }
+
+  getThumbnailUrl1(bookId: number, coverUpdatedOn?: string): string {
+    let url = `${this.mediaBaseUrl}/book/${bookId}/thumbnail`;
+    if (coverUpdatedOn) {
+      url += `?${coverUpdatedOn}`;
+    }
     return this.appendToken(url);
   }
 
@@ -49,11 +58,12 @@ export class UrlHelperService {
         coverGenerator.title = book.metadata.title || '';
         coverGenerator.author = (book.metadata.authors || []).join(', ');
         return coverGenerator.generateCover();
-      } else {
-        return 'assets/images/missing-cover.jpg';
       }
     }
-    const url = `${this.mediaBaseUrl}/book/${bookId}/cover?${coverUpdatedOn}`;
+    let url = `${this.mediaBaseUrl}/book/${bookId}/cover`;
+    if (coverUpdatedOn) {
+      url += `?${coverUpdatedOn}`;
+    }
     return this.appendToken(url);
   }
 
@@ -67,25 +77,13 @@ export class UrlHelperService {
     return this.appendToken(url);
   }
 
-  getBackgroundImageUrl(lastUpdated?: number): string {
-    let url = `${this.mediaBaseUrl}/background`;
-    if (lastUpdated) {
-      url += `?t=${lastUpdated}`;
-    }
-    const token = this.getToken();
-    if (token) {
-      url += `${url.includes('?') ? '&' : '?'}token=${token}`;
-    }
-    return url;
-  }
-
   getBookUrl(book: Book) {
     return this.router.createUrlTree(['/book', book.id], {
       queryParams: {tab: 'view'}
     });
   }
 
-  filterBooksBy(filterKey: string, filterValue: string){
+  filterBooksBy(filterKey: string, filterValue: string) {
     if (filterKey === 'series') {
       return this.router.createUrlTree(['/series', encodeURIComponent(filterValue)])
     }
@@ -99,10 +97,5 @@ export class UrlHelperService {
         filter: `${filterKey}:${encodeURIComponent(filterValue)}`
       }
     });
-  }
-
-  getIconUrl(iconName: string): string {
-    const url = `${this.mediaBaseUrl}/icon/${iconName}`;
-    return this.appendToken(url);
   }
 }
