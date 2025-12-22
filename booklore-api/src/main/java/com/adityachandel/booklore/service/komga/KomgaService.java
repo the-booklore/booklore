@@ -192,7 +192,7 @@ public class KomgaService {
                 .totalElements(totalElements)
                 .totalPages(totalPages)
                 .first(actualPage == 0)
-                .last(totalPages == 0 || actualPage >= totalPages - 1)
+                .last(totalElements == 0 || actualPage >= totalPages - 1)
                 .empty(content.isEmpty())
                 .build();
     }
