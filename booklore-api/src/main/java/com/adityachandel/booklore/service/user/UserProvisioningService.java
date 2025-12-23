@@ -131,7 +131,7 @@ public class UserProvisioningService {
             permissions.setCanUpload(permsEntity.isPermissionUpload());
             permissions.setCanDownload(permsEntity.isPermissionDownload());
             permissions.setCanEditMetadata(permsEntity.isPermissionEditMetadata());
-            permissions.setCanManipulateLibrary(permsEntity.isPermissionManipulateLibrary());
+            permissions.setCanManageLibrary(permsEntity.isPermissionManageLibrary());
             permissions.setCanEmailBook(permsEntity.isPermissionEmailBook());
             permissions.setCanDeleteBook(permsEntity.isPermissionDeleteBook());
             permissions.setCanAccessOpds(permsEntity.isPermissionAccessOpds());
@@ -485,8 +485,6 @@ private void syncUserProfile(BookLoreUserEntity user, String username, String em
         user.setName(name);
     }
 }
-        }
-    }
 
 
 

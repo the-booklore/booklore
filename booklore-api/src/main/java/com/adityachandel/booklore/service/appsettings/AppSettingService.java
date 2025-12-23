@@ -33,10 +33,11 @@ public class AppSettingService {
     private volatile PublicAppSetting publicAppSetting;
     private final ReentrantLock lock = new ReentrantLock();
 
-    public AppSettingService(AppProperties appProperties, SettingPersistenceHelper settingPersistenceHelper, @Lazy AuthenticationService authenticationService) {
+    public AppSettingService(AppProperties appProperties, SettingPersistenceHelper settingPersistenceHelper, @Lazy AuthenticationService authenticationService, OidcDiscoveryService oidcDiscoveryService) {
         this.appProperties = appProperties;
         this.settingPersistenceHelper = settingPersistenceHelper;
         this.authenticationService = authenticationService;
+        this.oidcDiscoveryService = oidcDiscoveryService;
     }
 
     public AppSettings getAppSettings() {

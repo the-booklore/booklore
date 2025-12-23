@@ -110,7 +110,7 @@ public class UserPersistenceService {
                     perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
                     perms.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
                     perms.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
-                    perms.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
+                    perms.setPermissionManageLibrary(defaultPermissions.contains("permissionManageLibrary"));
                     perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
                     perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
                     perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
@@ -225,7 +225,7 @@ public class UserPersistenceService {
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionUpload", perms::setPermissionUpload, perms::isPermissionUpload);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionDownload", perms::setPermissionDownload, perms::isPermissionDownload);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionEditMetadata", perms::setPermissionEditMetadata, perms::isPermissionEditMetadata);
-        updated |= updatePermission(targetPermissions, managedPermissions, "permissionManipulateLibrary", perms::setPermissionManipulateLibrary, perms::isPermissionManipulateLibrary);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionManageLibrary", perms::setPermissionManageLibrary, perms::isPermissionManageLibrary);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionEmailBook", perms::setPermissionEmailBook, perms::isPermissionEmailBook);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionDeleteBook", perms::setPermissionDeleteBook, perms::isPermissionDeleteBook);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessOpds", perms::setPermissionAccessOpds, perms::isPermissionAccessOpds);

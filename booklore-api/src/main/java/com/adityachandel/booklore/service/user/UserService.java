@@ -131,7 +131,6 @@ public class UserService {
                 throw ApiError.PASSWORD_INCORRECT.createException();
             }
         }
-        }
 
         if (!isOidcUserSettingInitialPassword && passwordEncoder.matches(changePasswordRequest.getNewPassword(), bookLoreUserEntity.getPasswordHash())) {
             throw ApiError.PASSWORD_SAME_AS_CURRENT.createException();
