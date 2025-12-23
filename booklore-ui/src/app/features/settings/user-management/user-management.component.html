@@ -78,7 +78,6 @@
                   <span>Edit</span>
                 </div>
               </th>
-              </th>
               <th style="width: 120px; text-align: center" pTooltip="System Access permissions" tooltipPosition="top">
                 <i class="pi pi-eye"></i>
               </th>
@@ -216,8 +215,9 @@
                       tooltipPosition="top"
                       pTooltip="Cancel">
                     </p-button>
-                  }
-                  @if (!user.isEditing) {
+                  </div>
+                }
+                @if (!user.isEditing) {
                     <p-button
                       icon="pi pi-key"
                       severity="warn"
@@ -237,8 +237,7 @@
                       tooltipPosition="top"
                       pTooltip="Delete user">
                     </p-button>
-                  }
-                </div>
+                }
               </td>
             </tr>
             @if (isRowExpanded(user)) {
