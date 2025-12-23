@@ -116,6 +116,13 @@ public class UserPersistenceService {
                     perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
                     perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
                     perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
+                    perms.setPermissionManageMetadataConfig(defaultPermissions.contains("permissionManageMetadataConfig"));
+                    perms.setPermissionAccessBookdrop(defaultPermissions.contains("permissionAccessBookdrop"));
+                    perms.setPermissionAccessLibraryStats(defaultPermissions.contains("permissionAccessLibraryStats"));
+                    perms.setPermissionAccessUserStats(defaultPermissions.contains("permissionAccessUserStats"));
+                    perms.setPermissionAccessTaskManager(defaultPermissions.contains("permissionAccessTaskManager"));
+                    perms.setPermissionManageGlobalPreferences(defaultPermissions.contains("permissionManageGlobalPreferences"));
+                    perms.setPermissionManageIcons(defaultPermissions.contains("permissionManageIcons"));
                     perms.setPermissionAdmin(defaultPermissions.contains("permissionAdmin"));
                 }
 
@@ -231,6 +238,13 @@ public class UserPersistenceService {
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessOpds", perms::setPermissionAccessOpds, perms::isPermissionAccessOpds);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionSyncKoreader", perms::setPermissionSyncKoreader, perms::isPermissionSyncKoreader);
         updated |= updatePermission(targetPermissions, managedPermissions, "permissionSyncKobo", perms::setPermissionSyncKobo, perms::isPermissionSyncKobo);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionManageMetadataConfig", perms::setPermissionManageMetadataConfig, perms::isPermissionManageMetadataConfig);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessBookdrop", perms::setPermissionAccessBookdrop, perms::isPermissionAccessBookdrop);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessLibraryStats", perms::setPermissionAccessLibraryStats, perms::isPermissionAccessLibraryStats);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessUserStats", perms::setPermissionAccessUserStats, perms::isPermissionAccessUserStats);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionAccessTaskManager", perms::setPermissionAccessTaskManager, perms::isPermissionAccessTaskManager);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionManageGlobalPreferences", perms::setPermissionManageGlobalPreferences, perms::isPermissionManageGlobalPreferences);
+        updated |= updatePermission(targetPermissions, managedPermissions, "permissionManageIcons", perms::setPermissionManageIcons, perms::isPermissionManageIcons);
 
         // 3. Handle Library Access (Admins always get all libraries)
         if (targetPermissions.contains("permissionAdmin") && !perms.isPermissionAdmin()) {

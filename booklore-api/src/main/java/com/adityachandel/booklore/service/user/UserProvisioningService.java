@@ -137,6 +137,13 @@ public class UserProvisioningService {
             permissions.setCanAccessOpds(permsEntity.isPermissionAccessOpds());
             permissions.setCanSyncKoReader(permsEntity.isPermissionSyncKoreader());
             permissions.setCanSyncKobo(permsEntity.isPermissionSyncKobo());
+            permissions.setCanManageMetadataConfig(permsEntity.isPermissionManageMetadataConfig());
+            permissions.setCanAccessBookdrop(permsEntity.isPermissionAccessBookdrop());
+            permissions.setCanAccessLibraryStats(permsEntity.isPermissionAccessLibraryStats());
+            permissions.setCanAccessUserStats(permsEntity.isPermissionAccessUserStats());
+            permissions.setCanAccessTaskManager(permsEntity.isPermissionAccessTaskManager());
+            permissions.setCanManageGlobalPreferences(permsEntity.isPermissionManageGlobalPreferences());
+            permissions.setCanManageIcons(permsEntity.isPermissionManageIcons());
 
             BookLoreUser userDto = BookLoreUser.builder()
                 .id(userEntity.getId())
