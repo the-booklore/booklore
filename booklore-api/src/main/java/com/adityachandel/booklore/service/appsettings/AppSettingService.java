@@ -70,7 +70,7 @@ public class AppSettingService {
         refreshCache();
     }
 
-    private void validatePermission(AppSettingKey key, BookLoreUser user) {
+    private static void validatePermission(AppSettingKey key, BookLoreUser user) {
         List<PermissionType> requiredPermissions = key.getRequiredPermissions();
         if (requiredPermissions.isEmpty()) {
             return;
