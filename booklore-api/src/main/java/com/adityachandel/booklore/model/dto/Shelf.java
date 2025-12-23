@@ -15,4 +15,6 @@ public class Shelf {
     private IconType iconType;
     private Sort sort;
     private Long userId;
+    private boolean publicShelf;
+    private int bookCount;
 }

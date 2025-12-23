@@ -9,6 +9,8 @@ import {Shelf} from '../../model/shelf.model';
 import {MessageService} from 'primeng/api';
 import {IconPickerService, IconSelection} from '../../../../shared/service/icon-picker.service';
 import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
+import {CheckboxModule} from 'primeng/checkbox';
+import {UserService} from '../../../settings/user-management/user.service';
 
 @Component({
   selector: 'app-shelf-edit-dialog',
@@ -17,7 +19,8 @@ import {IconDisplayComponent} from '../../../../shared/components/icon-display/i
     InputText,
     ReactiveFormsModule,
     FormsModule,
-    IconDisplayComponent
+    IconDisplayComponent,
+    CheckboxModule
   ],
   templateUrl: './shelf-edit-dialog.component.html',
   standalone: true,
@@ -30,16 +33,20 @@ export class ShelfEditDialogComponent implements OnInit {
   private dynamicDialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
   private iconPickerService = inject(IconPickerService);
+  private userService = inject(UserService);
 
   shelfName: string = '';
   selectedIcon: IconSelection | null = null;
   shelf!: Shelf | undefined;
+  isPublic: boolean = false;
+  isAdmin: boolean = this.userService.getCurrentUser()?.permissions.admin ?? false;
 
   ngOnInit(): void {
     const shelfId = this.dynamicDialogConfig?.data.shelfId;
     this.shelf = this.shelfService.getShelfById(shelfId);
     if (this.shelf) {
       this.shelfName = this.shelf.name;
+      this.isPublic = this.shelf.publicShelf ?? false;
       if (this.shelf.iconType === 'PRIME_NG') {
         this.selectedIcon = {type: 'PRIME_NG', value: `pi pi-${this.shelf.icon}`};
       } else {
@@ -67,7 +74,8 @@ export class ShelfEditDialogComponent implements OnInit {
     const shelf: Shelf = {
       name: this.shelfName,
       icon: iconValue,
-      iconType: iconType
+      iconType: iconType,
+      publicShelf: this.isPublic
     };
 
     this.shelfService.updateShelf(shelf, this.shelf?.id).subscribe({

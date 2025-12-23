@@ -755,8 +755,16 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       case EntityType.LIBRARY:
         return this.fetchBooks(book => book.libraryId === entityId);
       case EntityType.SHELF:
-        return this.fetchBooks(book =>
-          book.shelves?.some(shelf => shelf.id === entityId) ?? false
+        return this.shelfService.getBooksOnShelf(entityId).pipe(
+          map(books => {
+            const sortedBooks = this.sortService.applySort(books, this.bookSorter.selectedSort!);
+            return {
+              books: sortedBooks,
+              loaded: true,
+              error: null
+            };
+          }),
+          switchMap(bookState => this.applyBookFilters(bookState))
         );
       case EntityType.MAGIC_SHELF:
         return this.fetchBooksMagicShelfBooks(entityId);

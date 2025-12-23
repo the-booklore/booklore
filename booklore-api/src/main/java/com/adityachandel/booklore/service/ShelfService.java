@@ -37,10 +37,14 @@ public class ShelfService {
         if (shelfRepository.existsByUserIdAndName(userId, request.getName())) {
             throw ApiError.SHELF_ALREADY_EXISTS.createException(request.getName());
         }
+        if (request.isPublicShelf() && !authenticationService.getAuthenticatedUser().getPermissions().isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Only admins can create public shelves");
+        }
         ShelfEntity shelfEntity = ShelfEntity.builder()
                 .icon(request.getIcon())
                 .name(request.getName())
                 .iconType(request.getIconType())
+                .isPublic(request.isPublicShelf())
                 .user(fetchUserEntityById(userId))
                 .build();
         return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
@@ -48,15 +52,19 @@ public class ShelfService {
 
     public Shelf updateShelf(Long id, ShelfCreateRequest request) {
         ShelfEntity shelfEntity = findShelfByIdOrThrow(id);
+        if (request.isPublicShelf() && !authenticationService.getAuthenticatedUser().getPermissions().isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Only admins can create public shelves");
+        }
         shelfEntity.setName(request.getName());
         shelfEntity.setIcon(request.getIcon());
         shelfEntity.setIconType(request.getIconType());
+        shelfEntity.setPublic(request.isPublicShelf());
         return shelfMapper.toShelf(shelfRepository.save(shelfEntity));
     }
 
     public List<Shelf> getShelves() {
         Long userId = getAuthenticatedUserId();
-        return shelfRepository.findByUserId(userId).stream()
+        return shelfRepository.findByUserIdOrPublicShelfTrue(userId).stream()
                 .map(shelfMapper::toShelf)
                 .toList();
     }
