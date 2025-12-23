@@ -9,6 +9,7 @@ import {MessageService} from 'primeng/api';
 import {IconCategoriesHelper} from '../../helpers/icon-categories.helper';
 import {Button} from 'primeng/button';
 import {TabsModule} from 'primeng/tabs';
+import {UserService} from '../../../features/settings/user-management/user.service';
 
 interface SvgEntry {
   name: string;
@@ -65,6 +66,7 @@ export class IconPickerComponent implements OnInit {
   sanitizer = inject(DomSanitizer);
   urlHelper = inject(UrlHelperService);
   messageService = inject(MessageService);
+  userService = inject(UserService);
 
   searchText: string = '';
   selectedIcon: string | null = null;
@@ -398,5 +400,10 @@ export class IconPickerComponent implements OnInit {
         });
       }
     });
+  }
+
+  get canManageIcons(): boolean {
+    const user = this.userService.getCurrentUser();
+    return user?.permissions.canManageIcons || user?.permissions.admin || false;
   }
 }

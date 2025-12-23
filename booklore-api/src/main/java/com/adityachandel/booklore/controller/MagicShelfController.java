@@ -33,24 +33,21 @@ public class MagicShelfController {
     @Operation(summary = "Get a magic shelf by ID", description = "Retrieve a specific magic shelf by its ID.")
     @ApiResponse(responseCode = "200", description = "Magic shelf returned successfully")
     @GetMapping("/{id}")
-    public ResponseEntity<MagicShelf> getShelf(
-            @Parameter(description = "ID of the magic shelf") @PathVariable Long id) {
+    public ResponseEntity<MagicShelf> getShelf(@Parameter(description = "ID of the magic shelf") @PathVariable Long id) {
         return ResponseEntity.ok(magicShelfService.getShelf(id));
     }
 
     @Operation(summary = "Create or update a magic shelf", description = "Create or update a magic shelf for the user.")
     @ApiResponse(responseCode = "200", description = "Magic shelf created/updated successfully")
     @PostMapping
-    public ResponseEntity<MagicShelf> createUpdateShelf(
-            @Parameter(description = "Magic shelf object") @Valid @RequestBody MagicShelf shelf) {
+    public ResponseEntity<MagicShelf> createUpdateShelf(@Parameter(description = "Magic shelf object") @Valid @RequestBody MagicShelf shelf) {
         return ResponseEntity.ok(magicShelfService.createOrUpdateShelf(shelf));
     }
 
     @Operation(summary = "Delete a magic shelf", description = "Delete a specific magic shelf by its ID.")
     @ApiResponse(responseCode = "204", description = "Magic shelf deleted successfully")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteShelf(
-            @Parameter(description = "ID of the magic shelf") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteShelf(@Parameter(description = "ID of the magic shelf") @PathVariable Long id) {
         magicShelfService.deleteShelf(id);
         return ResponseEntity.noContent().build();
     }

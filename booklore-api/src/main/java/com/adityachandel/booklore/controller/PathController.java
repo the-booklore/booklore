@@ -26,9 +26,8 @@ public class PathController {
     @Operation(summary = "Get folders at a path", description = "Retrieve a list of folders at a given path. Requires admin or library manipulation permission.")
     @ApiResponse(responseCode = "200", description = "Folders returned successfully")
     @GetMapping
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
-    public List<String> getFolders(
-            @Parameter(description = "Path to list folders at") @RequestParam String path) {
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public List<String> getFolders(@Parameter(description = "Path to list folders at") @RequestParam String path) {
         return pathService.getFoldersAtPath(path);
     }
 }

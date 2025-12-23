@@ -30,13 +30,21 @@ public class BookLoreUser {
         private boolean canUpload;
         private boolean canDownload;
         private boolean canEditMetadata;
-        private boolean canManipulateLibrary;
+        private boolean canManageLibrary;
         private boolean canSyncKoReader;
         private boolean canSyncKobo;
         private boolean canEmailBook;
         private boolean canDeleteBook;
         private boolean canAccessOpds;
         private boolean canChangePassword;
+        private boolean canManageMetadataConfig;
+        private boolean canAccessBookdrop;
+        private boolean canAccessLibraryStats;
+        private boolean canAccessUserStats;
+        private boolean canAccessTaskManager;
+        private boolean canManageGlobalPreferences;
+        private boolean canManageIcons;
+        private boolean isDemoUser;
     }
 
     @Data

@@ -1,14 +1,22 @@
 package com.adityachandel.booklore.model.enums;
 
 public enum PermissionType {
+    ADMIN,
     UPLOAD,
     DOWNLOAD,
     EDIT_METADATA,
-    MANIPULATE_LIBRARY,
+    MANAGE_LIBRARY,
     EMAIL_BOOK,
     DELETE_BOOK,
     SYNC_KOREADER,
     SYNC_KOBO,
     ACCESS_OPDS,
-    ADMIN
+    MANAGE_METADATA_CONFIG,
+    ACCESS_BOOKDROP,
+    ACCESS_LIBRARY_STATS,
+    ACCESS_USER_STATS,
+    ACCESS_TASK_MANAGER,
+    MANAGE_GLOBAL_PREFERENCES,
+    MANAGE_ICONS,
+    DEMO_USER
 }

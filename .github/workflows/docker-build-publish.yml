@@ -12,7 +12,7 @@ on:
 jobs:
   check-for-migrations:
     name: Check for DB Migrations
-    if: github.event_name == 'pull_request' && ((github.base_ref == 'master' && github.head_ref == 'develop') || github.base_ref == 'develop')
+    if: github.event_name == 'pull_request' && (github.base_ref == 'master' || github.base_ref == 'develop')
     runs-on: ubuntu-latest
     outputs:
       has_migrations: ${{ steps.check_migrations.outputs.has_migrations }}

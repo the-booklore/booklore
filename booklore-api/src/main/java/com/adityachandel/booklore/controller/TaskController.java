@@ -30,14 +30,14 @@ public class TaskController {
     private final TaskCronService taskCronService;
 
     @GetMapping
-    @PreAuthorize("@securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canAccessTaskManager() or @securityUtil.isAdmin()")
     public ResponseEntity<List<TaskInfo>> getAvailableTasks() {
         List<TaskInfo> taskInfos = service.getAvailableTasks();
         return ResponseEntity.ok(taskInfos);
     }
 
     @PostMapping("/start")
-    @PreAuthorize("@securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canAccessTaskManager() or @securityUtil.isAdmin()")
     public ResponseEntity<TaskCreateResponse> startTask(@RequestBody TaskCreateRequest request) {
         TaskCreateResponse response = service.runAsUser(request);
         if (response.getStatus() == TaskStatus.ACCEPTED) {
@@ -47,21 +47,21 @@ public class TaskController {
     }
 
     @DeleteMapping("/{taskId}/cancel")
-    @PreAuthorize("@securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canAccessTaskManager() or @securityUtil.isAdmin()")
     public ResponseEntity<TaskCancelResponse> cancelTask(@PathVariable String taskId) {
         TaskCancelResponse response = service.cancelTask(taskId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/last")
-    @PreAuthorize("@securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canAccessTaskManager() or @securityUtil.isAdmin()")
     public ResponseEntity<TasksHistoryResponse> getLatestTasksForEachType() {
         TasksHistoryResponse response = taskHistoryService.getLatestTasksForEachType();
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{taskType}/cron")
-    @PreAuthorize("@securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canAccessTaskManager() or @securityUtil.isAdmin()")
     public ResponseEntity<CronConfig> patchCronConfig(@PathVariable TaskType taskType, @RequestBody TaskCronConfigRequest request) {
         CronConfig response = taskCronService.patchCronConfig(taskType, request);
         service.rescheduleTask(taskType);

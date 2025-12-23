@@ -1,6 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {Button} from 'primeng/button';
+import {Button, ButtonDirective} from 'primeng/button';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
@@ -29,7 +29,8 @@ import {DialogLauncherService} from '../../../shared/services/dialog-launcher.se
     Password,
     LowerCasePipe,
     TitleCasePipe,
-    Tooltip
+    Tooltip,
+    ButtonDirective
   ],
   templateUrl: './user-management.component.html',
   styleUrls: ['./user-management.component.scss'],
@@ -46,6 +47,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   editingLibraryIds: number[] = [];
   allLibraries: Library[] = [];
+  expandedRows: { [key: string]: boolean } = {};
 
   isPasswordDialogVisible = false;
   selectedUser: User | null = null;
@@ -214,5 +216,83 @@ export class UserManagementComponent implements OnInit, OnDestroy {
           }
         });
     }
+  }
+
+  getBookManagementPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canUpload) count++;
+    if (permissions.canDownload) count++;
+    if (permissions.canDeleteBook) count++;
+    if (permissions.canEditMetadata) count++;
+    if (permissions.canManageLibrary) count++;
+    if (permissions.canEmailBook) count++;
+    return count;
+  }
+
+  getDeviceSyncPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canSyncKoReader) count++;
+    if (permissions.canSyncKobo) count++;
+    if (permissions.canAccessOpds) count++;
+    return count;
+  }
+
+  getSystemAccessPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canAccessBookdrop) count++;
+    if (permissions.canAccessLibraryStats) count++;
+    if (permissions.canAccessUserStats) count++;
+    return count;
+  }
+
+  getSystemConfigPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canAccessTaskManager) count++;
+    if (permissions.canManageGlobalPreferences) count++;
+    if (permissions.canManageMetadataConfig) count++;
+    if (permissions.canManageIcons) count++;
+    return count;
+  }
+
+  toggleRowExpansion(user: User) {
+    if (this.expandedRows[user.id]) {
+      delete this.expandedRows[user.id];
+    } else {
+      this.expandedRows[user.id] = true;
+    }
+  }
+
+  isRowExpanded(user: User): boolean {
+    return this.expandedRows[user.id];
+  }
+
+  onAdminCheckboxChange(user: any) {
+    if (user.permissions.admin) {
+      user.permissions.canUpload = true;
+      user.permissions.canDownload = true;
+      user.permissions.canDeleteBook = true;
+      user.permissions.canEditMetadata = true;
+      user.permissions.canManageLibrary = true;
+      user.permissions.canEmailBook = true;
+      user.permissions.canSyncKoReader = true;
+      user.permissions.canSyncKobo = true;
+      user.permissions.canAccessOpds = true;
+      user.permissions.canAccessBookdrop = true;
+      user.permissions.canAccessLibraryStats = true;
+      user.permissions.canAccessUserStats = true;
+      user.permissions.canManageMetadataConfig = true;
+      user.permissions.canManageGlobalPreferences = true;
+      user.permissions.canAccessTaskManager = true;
+      user.permissions.canManageEmailConfig = true;
+      user.permissions.canManageIcons = true;
+    }
+  }
+
+  isPermissionDisabled(user: any): boolean {
+    return !user.isEditing || user.permissions.admin;
   }
 }

@@ -49,7 +49,7 @@ public class LibraryController {
     @Operation(summary = "Create a library", description = "Create a new library. Requires admin or manipulation permission.")
     @ApiResponse(responseCode = "200", description = "Library created successfully")
     @PostMapping
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<Library> createLibrary(
             @Parameter(description = "Library creation request") @Validated @RequestBody CreateLibraryRequest request) {
         return ResponseEntity.ok(libraryService.createLibrary(request));
@@ -59,7 +59,7 @@ public class LibraryController {
     @ApiResponse(responseCode = "200", description = "Library updated successfully")
     @PutMapping("/{libraryId}")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<Library> updateLibrary(
             @Parameter(description = "Library update request") @Validated @RequestBody CreateLibraryRequest request,
             @Parameter(description = "ID of the library") @PathVariable Long libraryId) {
@@ -70,7 +70,7 @@ public class LibraryController {
     @ApiResponse(responseCode = "204", description = "Library deleted successfully")
     @DeleteMapping("/{libraryId}")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<?> deleteLibrary(
             @Parameter(description = "ID of the library") @PathVariable long libraryId) {
         libraryService.deleteLibrary(libraryId);
@@ -101,9 +101,8 @@ public class LibraryController {
     @ApiResponse(responseCode = "204", description = "Library rescanned successfully")
     @PutMapping("/{libraryId}/refresh")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
-    public ResponseEntity<?> rescanLibrary(
-            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<?> rescanLibrary(@Parameter(description = "ID of the library") @PathVariable long libraryId) {
         libraryService.rescanLibrary(libraryId);
         return ResponseEntity.noContent().build();
     }
@@ -112,7 +111,7 @@ public class LibraryController {
     @ApiResponse(responseCode = "200", description = "File naming pattern updated successfully")
     @PatchMapping("/{libraryId}/file-naming-pattern")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    @PreAuthorize("@securityUtil.canManipulateLibrary() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
     public ResponseEntity<Library> setFileNamingPattern(
             @Parameter(description = "ID of the library") @PathVariable long libraryId,
             @Parameter(description = "File naming pattern body") @RequestBody Map<String, String> body) {

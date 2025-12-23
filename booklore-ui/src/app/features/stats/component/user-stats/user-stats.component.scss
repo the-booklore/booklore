@@ -51,14 +51,6 @@
       white-space: nowrap;
     }
   }
-
-  .subtitle {
-    color: var(--text-secondary-color);
-    font-size: 0.95rem;
-    margin: 0;
-    padding-left: 0;
-    white-space: nowrap;
-  }
 }
 
 .charts-container {
@@ -100,12 +92,6 @@
         white-space: normal;
       }
     }
-
-    .subtitle {
-      font-size: 0.875rem;
-      padding-left: 0;
-      white-space: normal;
-    }
   }
 
   .chart-card {
@@ -132,12 +118,6 @@
         font-size: 1rem;
         white-space: normal;
       }
-    }
-
-    .subtitle {
-      font-size: 0.8rem;
-      padding-left: 0;
-      white-space: normal;
     }
   }
 
