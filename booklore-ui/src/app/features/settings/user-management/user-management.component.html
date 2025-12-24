@@ -61,22 +61,8 @@
               <th style="width: 120px; text-align: center" pTooltip="Book Management permissions" tooltipPosition="top">
                 <i class="pi pi-book"></i>
               </th>
-              <th class="permission-header">Admin</th>
-              <th class="permission-header">Upload</th>
-              <th class="permission-header">Download</th>
-              <th class="permission-header">Manage Metadata</th>
-              <th class="permission-header">Manage Library</th>
-              <th class="permission-header">Email Books</th>
-              <th class="permission-header">Delete Books</th>
-              <th class="permission-header">Access OPDS</th>
-              <th class="permission-header">KOReader Sync</th>
-              <th class="permission-header">Kobo Sync</th>
-              <th class="permission-header">Change Password</th>
-              <th class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-cog"></i>
-                  <span>Edit</span>
-                </div>
+              <th style="width: 120px; text-align: center" pTooltip="Device Sync permissions" tooltipPosition="top">
+                <i class="pi pi-mobile"></i>
               </th>
               <th style="width: 120px; text-align: center" pTooltip="System Access permissions" tooltipPosition="top">
                 <i class="pi pi-eye"></i>
@@ -159,9 +145,9 @@
                 </div>
               </td>
               <td class="text-center">
-                <div class="permission-summary" [attr.data-count]="getSystemAccessPermissionsCount(user)" [attr.data-total]="3">
+                <div class="permission-summary" [attr.data-count]="getSystemAccessPermissionsCount(user)" [attr.data-total]="4">
                   <span class="permission-count">
-                    {{ getSystemAccessPermissionsCount(user) }}/3
+                    {{ getSystemAccessPermissionsCount(user) }}/4
                   </span>
                 </div>
               </td>
@@ -172,32 +158,20 @@
                   </span>
                 </div>
               </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessOpds" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKoReader" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canChangePassword" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="actions-cell">
-                @if (!user.isEditing) {
-                  <p-button
-                    icon="pi pi-pencil"
-                    severity="info"
-                    size="small"
-                    [outlined]="true"
-                    [rounded]="true"
-                    (onClick)="toggleEdit(user)"
-                    pTooltip="Edit user">
-                  </p-button>
-                }
-                @if (user.isEditing) {
-                  <div class="flex gap-1">
+              <td>
+                <div class="actions-group">
+                  @if (!user.isEditing) {
+                    <p-button
+                      icon="pi pi-pencil"
+                      severity="info"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="toggleEdit(user)"
+                      tooltipPosition="top"
+                      pTooltip="Edit user">
+                    </p-button>
+                  }
+                  @if (user.isEditing) {
                     <p-button
                       icon="pi pi-check"
                       severity="success"
@@ -215,9 +189,8 @@
                       tooltipPosition="top"
                       pTooltip="Cancel">
                     </p-button>
-                  </div>
-                }
-                @if (!user.isEditing) {
+                  }
+                  @if (!user.isEditing) {
                     <p-button
                       icon="pi pi-key"
                       severity="warn"
@@ -237,7 +210,8 @@
                       tooltipPosition="top"
                       pTooltip="Delete user">
                     </p-button>
-                }
+                  }
+                </div>
               </td>
             </tr>
             @if (isRowExpanded(user)) {
@@ -337,6 +311,10 @@
                             <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessUserStats" [disabled]="isPermissionDisabled(user)" inputId="userstats-{{user.id}}"></p-checkbox>
                               <label [for]="'userstats-'+user.id">View User Reading Statistics</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canChangePassword" [disabled]="isPermissionDisabled(user)" inputId="changepassword-{{user.id}}"></p-checkbox>
+                              <label [for]="'changepassword-'+user.id">Change Password</label>
                             </div>
                           </div>
                         </div>

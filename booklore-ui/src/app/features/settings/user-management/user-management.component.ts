@@ -245,6 +245,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canAccessBookdrop) count++;
     if (permissions.canAccessLibraryStats) count++;
     if (permissions.canAccessUserStats) count++;
+    if (permissions.canChangePassword) count++;
     return count;
   }
 
@@ -284,6 +285,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       user.permissions.canAccessBookdrop = true;
       user.permissions.canAccessLibraryStats = true;
       user.permissions.canAccessUserStats = true;
+      user.permissions.canChangePassword = true;
       user.permissions.canManageMetadataConfig = true;
       user.permissions.canManageGlobalPreferences = true;
       user.permissions.canAccessTaskManager = true;
