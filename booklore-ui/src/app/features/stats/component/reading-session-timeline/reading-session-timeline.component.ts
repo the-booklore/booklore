@@ -1,6 +1,6 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {UserStatsService, ReadingSessionTimelineResponse} from '../../../settings/user-management/user-stats.service';
+import {ReadingSessionTimelineResponse, UserStatsService} from '../../../settings/user-management/user-stats.service';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {BookType} from '../../../book/model/book.model';
 
@@ -88,8 +88,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
     response.forEach((item) => {
       const startTime = new Date(item.startDate);
-      const endTime = new Date(item.endDate);
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      const duration = item.totalDurationSeconds / 60;
+      const endTime = new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
 
       sessions.push({
         startTime,
@@ -291,12 +291,32 @@ export class ReadingSessionTimelineComponent implements OnInit {
   }
 
   public formatDuration(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
-    return `${mins}m`;
+    const totalSeconds = Math.round(minutes * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const parts: string[] = [];
+    if (hours) parts.push(`${hours}H`);
+    if (mins || hours) parts.push(`${mins}M`);
+    parts.push(`${secs}S`);
+
+    return parts.join(' ');
+  }
+
+  public formatDurationCompact(minutes: number): string {
+    const totalSeconds = Math.round(minutes * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) return `${hours}h${mins > 0 ? mins + 'm' : ''}`;
+    if (mins > 0) return `${mins}m${secs > 0 ? secs + 's' : ''}`;
+    return `${secs}s`;
+  }
+
+  public isDurationGreaterThanOneHour(minutes: number): boolean {
+    return minutes >= 60;
   }
 
   public getCoverUrl(bookId: number): string {

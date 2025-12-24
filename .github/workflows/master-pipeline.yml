@@ -1,0 +1,154 @@
+name: Master - Build, Tag, Push, and Release
+
+on:
+  push:
+    branches:
+      - 'master'
+
+jobs:
+  migration-check:
+    name: Flyway Migration Check on Master
+    uses: ./.github/workflows/migrations-check.yml
+    with:
+      base_ref: 'HEAD~1'
+      head_ref: 'HEAD'
+
+  build-and-release:
+    needs: [ migration-check ]
+    if: needs.migration-check.result == 'success' || needs.migration-check.result == 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Authenticate to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Set Up QEMU for Multi-Architecture Builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set Up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Retrieve Latest Master Version Tag
+        id: get_version
+        run: |
+          latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
+          latest_tag=${latest_tag:-"v0.0.0"}
+          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
+          echo "Latest master tag: $latest_tag"
+
+      - name: Determine Version Bump
+        id: determine_bump
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Determining version bump from PR labels..."
+
+          # Extract PR number from merge commit
+          pr_number=$(git log -1 --pretty=%B | grep -oE 'Merge pull request #[0-9]+' | grep -oE '[0-9]+') || true
+          if [ -z "$pr_number" ]; then
+            pr_number=$(gh pr list --state merged --base master --limit 1 --json number --jq '.[0].number')
+          fi
+          echo "PR number: $pr_number"
+
+          labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' || echo "")
+          echo "PR labels: $labels"
+
+          if echo "$labels" | grep -q 'bump:major'; then
+            bump="major"
+          elif echo "$labels" | grep -q 'bump:minor'; then
+            bump="minor"
+          elif echo "$labels" | grep -q 'bump:patch'; then
+            bump="patch"
+          else
+            last_commit_msg=$(git log -1 --pretty=%B)
+            if echo "$last_commit_msg" | grep -iq '#major'; then
+              bump="major"
+            elif echo "$last_commit_msg" | grep -iq '#minor'; then
+              bump="minor"
+            elif echo "$last_commit_msg" | grep -iq '#patch'; then
+              bump="patch"
+            else
+              bump="patch"
+            fi
+          fi
+
+          # Calculate next version
+          semver=$(echo ${{ env.latest_tag }} | sed 's/^v//')
+          major=$(echo $semver | cut -d. -f1)
+          minor=$(echo $semver | cut -d. -f2)
+          patch=$(echo $semver | cut -d. -f3)
+
+          case "$bump" in
+            major) major=$((major+1)); minor=0; patch=0 ;;
+            minor) minor=$((minor+1)); patch=0 ;;
+            patch) patch=$((patch+1)) ;;
+          esac
+
+          next_version="v${major}.${minor}.${patch}"
+          echo "Version bump type: $bump"
+          echo "Next version: $next_version"
+
+          echo "bump=$bump" >> $GITHUB_ENV
+          echo "new_tag=$next_version" >> $GITHUB_ENV
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            booklore/booklore:${{ env.new_tag }}
+            booklore/booklore:latest
+            ghcr.io/booklore-app/booklore:${{ env.new_tag }}
+            ghcr.io/booklore-app/booklore:latest
+          build-args: |
+            APP_VERSION=${{ env.new_tag }}
+            APP_REVISION=${{ github.sha }}
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
+
+      - name: Update GitHub Release Draft
+        uses: release-drafter/release-drafter@v6
+        with:
+          tag: ${{ env.new_tag }}
+          name: "Release ${{ env.new_tag }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Publish GitHub Draft Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release edit ${{ env.new_tag }} --draft=true
+
