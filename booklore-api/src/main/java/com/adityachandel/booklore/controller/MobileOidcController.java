@@ -59,7 +59,6 @@ public class MobileOidcController {
     private final UserRepository userRepository;
     private final UserProvisioningService userProvisioningService;
     private final AuthenticationService authenticationService;
-    private final BookLoreUserTransformer bookLoreUserTransformer;
     private final ObjectMapper objectMapper;
 
     private static final ConcurrentMap<String, Object> userLocks = new ConcurrentHashMap<>();

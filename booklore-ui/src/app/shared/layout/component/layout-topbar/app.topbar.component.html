@@ -30,41 +30,50 @@
     <ul class="topbar-items hidden md:flex items-center gap-3 ml-auto pl-4">
       <div class="flex gap-4">
         @if (userService.userState$ | async; as userState) {
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+          @if (userState.user?.permissions?.canAccessBookdrop || userState.user?.permissions?.admin) {
+            <li>
               <a class="topbar-item" (click)="navigateToBookdrop()" pTooltip="Bookdrop" tooltipPosition="bottom">
                 <i class="pi pi-inbox text-surface-100"></i>
               </a>
-            }
-          </li>
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+            </li>
+          }
+          @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
+            <li>
               <a class="topbar-item" (click)="openLibraryCreatorDialog()" pTooltip="Create New Library" tooltipPosition="bottom">
                 <i class="pi pi-plus-circle text-surface-100"></i>
               </a>
-            }
-          </li>
-          <li>
-            @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
+            </li>
+          }
+          @if (userState.user?.permissions?.canUpload || userState.user?.permissions?.admin) {
+            <li>
               <a class="topbar-item" (click)="openFileUploadDialog()" pTooltip="Upload Book" tooltipPosition="bottom">
                 <i class="pi pi-upload text-surface-100"></i>
               </a>
+            </li>
+          }
+        }
+        @if (hasStatsAccess) {
+          <li>
+            <button
+              class="topbar-item"
+              (click)="shouldShowStatsMenu ? statsMenu.toggle($event) : handleStatsButtonClick($event)"
+              [pTooltip]="statsTooltip"
+              tooltipPosition="bottom">
+              <i class="pi pi-chart-bar text-surface-100"></i>
+            </button>
+            @if (shouldShowStatsMenu) {
+              <p-menu #statsMenu [model]="statsMenuItems" [popup]="true" appendTo="body" />
             }
           </li>
         }
-        <li>
-          <a class="topbar-item" (click)="navigateToStats()" pTooltip="Stats" tooltipPosition="bottom">
-            <i class="pi pi-chart-bar text-surface-100"></i>
-          </a>
-        </li>
         @if (userService.userState$ | async; as userState) {
-          <li>
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
+          @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
+            <li>
               <a class="topbar-item" (click)="navigateToMetadataManager()" pTooltip="Metadata Manager" tooltipPosition="bottom">
                 <i class="pi pi-sparkles text-surface-100"></i>
               </a>
-            }
-          </li>
+            </li>
+          }
         }
         <li>
           <a class="topbar-item" (click)="navigateToSettings()" pTooltip="Settings" tooltipPosition="bottom">
@@ -135,11 +144,18 @@
             <i class="pi pi-info-circle text-surface-100"></i>
           </a>
         </li>
-        <li>
-          <button class="topbar-item" (click)="openUserProfileDialog()" pTooltip="Profile" tooltipPosition="bottom">
-            <i class="pi pi-user text-surface-100"></i>
-          </button>
-        </li>
+
+        <!-- Show Profile only to demo users -->
+        @if (userService.userState$ | async; as userState) {
+          @if (!userState.user?.permissions?.demoUser) {
+            <li>
+              <button class="topbar-item" (click)="openUserProfileDialog()" pTooltip="Profile" tooltipPosition="bottom">
+                <i class="pi pi-user text-surface-100"></i>
+              </button>
+            </li>
+          }
+        }
+
         <li>
           <button class="topbar-item" (click)="logout()" pTooltip="Logout" tooltipPosition="left">
             <i class="pi pi-sign-out text-surface-100"></i>
@@ -157,16 +173,7 @@
       <p-popover #mobileMenu>
         <ul class="flex flex-col gap-1 w-48">
           @if (userService.userState$ | async; as userState) {
-            @if (userState.user?.permissions?.canManipulateLibrary || userState.user?.permissions?.admin) {
-              <li>
-                <button
-                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-                  (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
-                >
-                  <i class="pi pi-plus-circle text-surface-100"></i>
-                  Create Library
-                </button>
-              </li>
+            @if (userState.user?.permissions?.canAccessBookdrop || userState.user?.permissions?.admin) {
               <li>
                 <button
                   class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
@@ -174,6 +181,17 @@
                 >
                   <i class="pi pi-inbox text-surface-100"></i>
                   Bookdrop
+                </button>
+              </li>
+            }
+            @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="openLibraryCreatorDialog(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-plus-circle text-surface-100"></i>
+                  Create Library
                 </button>
               </li>
             }
@@ -189,15 +207,33 @@
               </li>
             }
           }
-          <li>
-            <button
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-              (click)="navigateToStats(); mobileMenu.hide()"
-            >
-              <i class="pi pi-chart-bar text-surface-100"></i>
-              Charts
-            </button>
-          </li>
+          @if (hasStatsAccess) {
+            <li>
+              <button
+                class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                (click)="shouldShowStatsMenu ? statsMenuMobile.toggle($event) : handleStatsButtonClick($event)"
+              >
+                <i class="pi pi-chart-bar text-surface-100"></i>
+                Charts
+              </button>
+              @if (shouldShowStatsMenu) {
+                <p-menu #statsMenuMobile [model]="statsMenuItems" [popup]="true" />
+              }
+            </li>
+          }
+          @if (userService.userState$ | async; as userState) {
+            @if (userState.user?.permissions?.canManageLibrary || userState.user?.permissions?.admin) {
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="navigateToMetadataManager(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-sparkles text-surface-100"></i>
+                  Metadata Manager
+                </button>
+              </li>
+            }
+          }
           <li>
             <button
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
@@ -226,15 +262,21 @@
               Support BookLore
             </button>
           </li>
-          <li>
-            <button
-              class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
-              (click)="openUserProfileDialog(); mobileMenu.hide()"
-            >
-              <i class="pi pi-user text-surface-100"></i>
-              Profile
-            </button>
-          </li>
+
+          @if (userService.userState$ | async; as userState) {
+            @if (!userState.user?.permissions?.demoUser) {
+              <li>
+                <button
+                  class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"
+                  (click)="openUserProfileDialog(); mobileMenu.hide()"
+                >
+                  <i class="pi pi-user text-surface-100"></i>
+                  Profile
+                </button>
+              </li>
+            }
+          }
+
           <li>
             <button
               class="flex items-center gap-2 w-full text-left p-2 hover:bg-surface-200 dark:hover:bg-surface-700 rounded"

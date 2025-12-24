@@ -136,7 +136,7 @@ public class LibraryFileEventProcessor {
                         book.setDeleted(true);
                         bookFilePersistenceService.save(book);
                         notificationService.sendMessageToPermissions(Topic.BOOKS_REMOVE, Set.of(book.getId()),
-                                Set.of(PermissionType.ADMIN, PermissionType.MANIPULATE_LIBRARY));
+                                Set.of(PermissionType.ADMIN, PermissionType.MANAGE_LIBRARY));
                         log.info("[MARKED_DELETED] Book '{}' marked as deleted", fileName);
                     }, () -> log.warn("[NOT_FOUND] Book for deleted path '{}' not found", path));
 

@@ -89,7 +89,7 @@ public class KoboAuthFilter extends OncePerRequestFilter {
             addAuthorityIfPermissionGranted(authorities, "ROLE_UPLOAD", permissions.isPermissionUpload());
             addAuthorityIfPermissionGranted(authorities, "ROLE_DOWNLOAD", permissions.isPermissionDownload());
             addAuthorityIfPermissionGranted(authorities, "ROLE_EDIT_METADATA", permissions.isPermissionEditMetadata());
-            addAuthorityIfPermissionGranted(authorities, "ROLE_MANIPULATE_LIBRARY", permissions.isPermissionManipulateLibrary());
+            addAuthorityIfPermissionGranted(authorities, "ROLE_MANAGE_LIBRARY", permissions.isPermissionManageLibrary());
             addAuthorityIfPermissionGranted(authorities, "ROLE_ADMIN", permissions.isPermissionAdmin());
             addAuthorityIfPermissionGranted(authorities, "ROLE_SYNC_KOBO", permissions.isPermissionSyncKobo());
         }

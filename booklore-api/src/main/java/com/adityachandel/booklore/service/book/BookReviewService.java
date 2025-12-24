@@ -52,7 +52,7 @@ public class BookReviewService {
 
         // Check user permissions for auto-download
         BookLoreUser currentUser = authenticationService.getAuthenticatedUser();
-        boolean hasPermission = currentUser.getPermissions().isAdmin() || currentUser.getPermissions().isCanManipulateLibrary();
+        boolean hasPermission = currentUser.getPermissions().isAdmin() || currentUser.getPermissions().isCanManageLibrary();
 
         if (!hasPermission || !reviewSettings.isAutoDownloadEnabled()) {
             return existingReviews;

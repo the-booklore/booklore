@@ -78,6 +78,14 @@ public class HardcoverParser implements BookParser {
                 .map(doc -> {
                     BookMetadata metadata = new BookMetadata();
                     metadata.setHardcoverId(doc.getSlug());
+                    // Set numeric book ID for API operations
+                    if (doc.getId() != null) {
+                        try {
+                            metadata.setHardcoverBookId(Integer.parseInt(doc.getId()));
+                        } catch (NumberFormatException e) {
+                            log.debug("Could not parse Hardcover book ID: {}", doc.getId());
+                        }
+                    }
                     metadata.setTitle(doc.getTitle());
                     metadata.setSubtitle(doc.getSubtitle());
                     metadata.setDescription(doc.getDescription());

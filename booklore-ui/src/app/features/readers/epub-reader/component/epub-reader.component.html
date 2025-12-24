@@ -6,217 +6,296 @@
   }
   @if (!isLoading) {
     <div>
-      <div class="epub-header">
+      @if (isDrawerVisible) {
+        <div class="drawer-backdrop" (click)="isDrawerVisible = false; startHeaderAutoHide()"></div>
+      }
+      @if (isSettingsDrawerVisible) {
+        <div class="drawer-backdrop" (click)="isSettingsDrawerVisible = false; startHeaderAutoHide()"></div>
+      }
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 80px; z-index: 1000; pointer-events: auto;" (mouseenter)="onHeaderZoneEnter()" (mouseleave)="onHeaderZoneLeave()" (click)="onHeaderZoneClick($event)"></div>
+      <div class="epub-header" [class.hidden]="!showHeader" (click)="$event.stopPropagation()">
         <div class="header-left">
-          <p-button size="small" class="menu-toggle-button" (click)="toggleDrawer()" icon="pi pi-bars" severity="secondary"></p-button>
+          <p-button size="small" class="menu-toggle-button" (click)="toggleDrawer(); $event.stopPropagation()" icon="pi pi-bars" severity="secondary"></p-button>
           <div class="progress-info">
             <span class="progress-percentage"><span class="progress-label">Progress:  </span>{{ progressPercentage }}%</span>
           </div>
-          <p-drawer [(visible)]="isDrawerVisible" [modal]="true" [position]="'left'" header="Table of Contents">
-            <div class="mb-3">
-              <h3 class="text-base font-semibold mb-2">Chapters</h3>
-              <ul class="chapter-list">
-                @for (chapter of chapters; track chapter) {
-                  <li (click)="navigateToChapter(chapter); $event.stopPropagation()"
-                      class="chapter-item"
-                      [class.current-chapter]="chapter.href === currentChapterHref"
-                      [style.padding-left.rem]="chapter.level * 1.5 + 0.75">
-                    {{ chapter.label }}
-                  </li>
-                }
-              </ul>
+<p-drawer [(visible)]="isDrawerVisible" [modal]="false" [position]="'left'" [style]="{ width: '320px' }" (click)="$event.stopPropagation()">
+  <ng-template pTemplate="header">
+    <div class="drawer-header">
+      <span class="drawer-title">Table of Contents</span>
+    </div>
+  </ng-template>
+  <p-tabs value="0">
+    <p-tablist>
+      <p-tab value="0">
+        <div class="tab-header">
+          <i class="pi pi-book"></i>
+          <span>Chapters</span>
+        </div>
+      </p-tab>
+      <p-tab value="1">
+        <div class="tab-header">
+          <i class="pi pi-bookmark"></i>
+          <span>Bookmarks</span>
+        </div>
+      </p-tab>
+    </p-tablist>
+    <p-tabpanels>
+      <p-tabpanel value="0">
+        <div class="tab-content">
+          <ul class="chapter-list">
+            @for (chapter of chapters; track chapter) {
+              <li (click)="navigateToChapter(chapter); $event.stopPropagation()"
+                  class="chapter-item"
+                  [class.current-chapter]="chapter.href === currentChapterHref"
+                  [style.padding-left.rem]="chapter.level * 1.5 + 0.75">
+                <i class="pi pi-chevron-right chapter-icon"></i>
+                <span class="chapter-label">{{ chapter.label }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      </p-tabpanel>
+      <p-tabpanel value="1">
+        <div class="tab-content">
+          <div class="p-2 mb-2">
+            <p-iconfield class="w-full">
+              <p-inputicon class="pi pi-search"/>
+              <input
+                pInputText
+                type="text"
+                [(ngModel)]="filterText"
+                placeholder="Search bookmarks..."
+                class="w-full p-inputtext-sm"
+                (click)="$event.stopPropagation()">
+            </p-iconfield>
+          </div>
+          @if (filteredBookmarks.length === 0) {
+            <div class="empty-state">
+              <i class="pi pi-bookmark"></i>
+              <p>No bookmarks found</p>
+              <span>{{ filterText ? 'Try a different search term' : 'Tap the bookmark icon to save your place' }}</span>
             </div>
-
-            <p-divider></p-divider>
-
-            <div class="mt-3">
-              <h3 class="text-base font-semibold mb-2">Bookmarks</h3>
-              @if (bookmarks.length === 0) {
-                <p class="text-sm text-gray-400 italic">No bookmarks yet</p>
-              } @else {
-                <ul class="bookmark-list">
-                  @for (bookmark of bookmarks; track bookmark.id) {
-                    <li class="bookmark-item">
-                      <div class="bookmark-content" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
-                        <i class="pi pi-bookmark-fill mr-2"></i>
-                        <span>{{ bookmark.title }}</span>
-                      </div>
-                      <p-button
-                        icon="pi pi-trash"
-                        (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
-                        [rounded]="true"
-                        [text]="true"
-                        severity="danger"
-                        size="small"
-                        pTooltip="Delete bookmark">
-                      </p-button>
-                    </li>
-                  }
-                </ul>
+          } @else {
+            <ul class="bookmark-list">
+              @for (bookmark of filteredBookmarks; track bookmark.id) {
+                <li class="bookmark-item" (click)="navigateToBookmark(bookmark); $event.stopPropagation()">
+                  <i class="pi pi-bookmark-fill bookmark-icon" [style.color]="bookmark.color || 'var(--primary-color)'"></i>
+                  <span class="bookmark-label">{{ bookmark.title }}</span>
+                  <div class="bookmark-actions">
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openViewDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="View Details"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-info-circle"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn"
+                      (click)="openEditBookmarkDialog(bookmark); $event.stopPropagation()"
+                      pTooltip="Edit"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-pencil"></i>
+                    </button>
+                    <button
+                      class="bookmark-action-btn delete"
+                      (click)="deleteBookmark(bookmark.id); $event.stopPropagation()"
+                      pTooltip="Delete"
+                      tooltipPosition="bottom">
+                      <i class="pi pi-trash"></i>
+                    </button>
+                  </div>
+                </li>
               }
-            </div>
-          </p-drawer>
+            </ul>
+          }
         </div>
-
+      </p-tabpanel>
+    </p-tabpanels>
+  </p-tabs>
+</p-drawer>
+        </div>
         <div class="header-center">
-          <p class="text-sm font-medium">{{ currentChapter }}</p>
+          <p class="text font-medium">{{ currentChapter }}</p>
         </div>
-
         <div class="header-right">
           <div class="flex gap-4">
-            <p-button
-              size="small"
-              [icon]="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-              (click)="addBookmark()"
-              severity="secondary"
-              [disabled]="!currentCfi || isAddingBookmark"
-              pTooltip="Add bookmark">
-            </p-button>
             @if (!locationsReady) {
               <div class="location-indicator" pTooltip="Saving progress not ready yet">
                 <span class="dot"></span>
               </div>
             }
+            <p-button
+              size="small"
+              [icon]="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
+              (click)="addBookmark(); $event.stopPropagation()"
+              severity="secondary"
+              [disabled]="!currentCfi || isAddingBookmark">
+            </p-button>
             <div>
-              <p-button size="small" class="settings-toggle-button" (click)="toggleSettingsDrawer()" icon="pi pi-cog" severity="secondary"></p-button>
-              <p-drawer [(visible)]="isSettingsDrawerVisible" [modal]="true" [position]="'right'" header="Settings">
-                <div class="flex flex-col gap-4 max-w-md mx-auto">
-
-                  <div class="flex items-center gap-4">
-                    <span class="font-semibold text-gray-200">Font Size:</span>
-                    <div class="flex items-center gap-2">
-                      <p-button size="small" icon="pi pi-minus" (click)="decreaseFontSize()" severity="info"></p-button>
-                      <span class="text-gray-100">{{ fontSize }}%</span>
-                      <p-button size="small" icon="pi pi-plus" (click)="increaseFontSize()" severity="info"></p-button>
+              <p-button size="small" class="settings-toggle-button" (click)="toggleSettingsDrawer(); $event.stopPropagation()" icon="pi pi-cog" severity="secondary"></p-button>
+              <p-drawer [(visible)]="isSettingsDrawerVisible" [modal]="false" [position]="'right'" [style]="{ width: '340px' }" (click)="$event.stopPropagation()">
+                <ng-template pTemplate="header">
+                  <div class="drawer-header">
+                    <span class="drawer-title">Reader Settings</span>
+                  </div>
+                </ng-template>
+                <div class="settings-container">
+                  <div class="settings-card">
+                    <div class="card-header">
+                      <i class="pi pi-text-height"></i>
+                      <span>Typography</span>
+                    </div>
+                    <div class="card-content">
+                      <div class="setting-row">
+                        <label>Font Size</label>
+                        <div class="font-size-controls">
+                          <button class="control-btn" (click)="decreaseFontSize()">
+                            <i class="pi pi-minus"></i>
+                          </button>
+                          <span class="font-size-value">{{ fontSize }}%</span>
+                          <button class="control-btn" (click)="increaseFontSize()">
+                            <i class="pi pi-plus"></i>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="setting-row">
+                        <label for="font-type">Font Family</label>
+                        <p-select
+                          appendTo="body"
+                          id="font-type"
+                          [options]="fontTypes"
+                          [(ngModel)]="selectedFontType"
+                          (onChange)="changeFontType()"
+                          [style]="{ width: '100%' }"
+                          placeholder="Select font">
+                        </p-select>
+                      </div>
+                      <div class="setting-row">
+                        <label>Line Height</label>
+                        <div class="slider-container">
+                          <span class="slider-value">{{ lineHeight }}</span>
+                          <p-slider
+                            [(ngModel)]="lineHeight"
+                            [min]="1"
+                            [max]="2.5"
+                            [step]="0.1"
+                            (onSlideEnd)="updateThemeStyle()"
+                            [style]="{ width: '100%' }">
+                          </p-slider>
+                        </div>
+                      </div>
+                      <div class="setting-row">
+                        <label>Letter Spacing</label>
+                        <div class="slider-container">
+                          <span class="slider-value">{{ letterSpacing ?? 0 }} em</span>
+                          <p-slider
+                            [(ngModel)]="letterSpacing"
+                            [min]="0"
+                            [max]="0.2"
+                            [step]="0.01"
+                            (onSlideEnd)="updateThemeStyle()"
+                            [style]="{ width: '100%' }">
+                          </p-slider>
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  <p-divider></p-divider>
-
-                  <div class="flex items-center gap-2">
-                    <label for="font-type" class="block font-semibold text-gray-200">Font:</label>
-                    <p-select
-                      id="font-type"
-                      [options]="fontTypes"
-                      [(ngModel)]="selectedFontType"
-                      (onChange)="changeFontType()"
-                      class="w-full"
-                      placeholder="Select font type">
-                    </p-select>
+                  <div class="settings-card">
+                    <div class="card-header">
+                      <i class="pi pi-palette"></i>
+                      <span>Appearance</span>
+                    </div>
+                    <div class="card-content">
+                      <div class="setting-row">
+                        <label>Theme</label>
+                        <div class="theme-selector">
+                          @for (theme of themes; track theme) {
+                            <button
+                              type="button"
+                              class="theme-option"
+                              [class.selected]="selectedTheme === theme.value"
+                              [style.background-color]="getThemeColor(theme.value)"
+                              (click)="selectTheme(theme.value)"
+                              [attr.aria-label]="theme.label"
+                              [pTooltip]="theme.label"
+                              tooltipPosition="bottom">
+                              @if (selectedTheme === theme.value) {
+                                <i class="pi pi-check"></i>
+                              }
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    </div>
                   </div>
-
-                  <p-divider></p-divider>
-
-                  <div class="flex gap-2 items-center">
-                    <label class="block font-semibold text-gray-200">Theme:</label>
-                    <div class="flex gap-3 mt-1" role="radiogroup" aria-label="Theme selection">
-                      @for (theme of themes; track theme) {
-                        <button
-                          type="button"
-                          class="w-8 h-8 rounded-full border-2 transition-all"
-                          [class.border-blue-600]="selectedTheme === theme.value"
-                          [style.background-color]="getThemeColor(theme.value)"
-                          (click)="selectTheme(theme.value)"
-                          [attr.aria-pressed]="selectedTheme === theme.value"
-                          [attr.aria-label]="theme.label">
-                        </button>
+                  <div class="settings-card">
+                    <div class="card-header">
+                      <i class="pi pi-file"></i>
+                      <span>Layout</span>
+                    </div>
+                    <div class="card-content">
+                      <div class="setting-row">
+                        <label>Reading Mode</label>
+                        <div class="toggle-group">
+                          <button
+                            class="toggle-option"
+                            [class.active]="selectedFlow === 'paginated'"
+                            (click)="selectedFlow = 'paginated'; changeScrollMode()">
+                            <i class="pi pi-book"></i>
+                            <span>Paginated</span>
+                          </button>
+                          <button
+                            class="toggle-option"
+                            [class.active]="selectedFlow === 'scrolled'"
+                            (click)="selectedFlow = 'scrolled'; changeScrollMode()">
+                            <i class="pi pi-align-justify"></i>
+                            <span>Scrolled</span>
+                          </button>
+                        </div>
+                      </div>
+                      @if (selectedFlow === 'paginated' && !isMobileDevice()) {
+                        <div class="setting-row">
+                          <label>Page Spread</label>
+                          <div class="toggle-group">
+                            <button
+                              class="toggle-option"
+                              [class.active]="selectedSpread === 'single'"
+                              (click)="selectedSpread = 'single'; changeSpreadMode()">
+                              <i class="pi pi-file"></i>
+                              <span>Single</span>
+                            </button>
+                            <button
+                              class="toggle-option"
+                              [class.active]="selectedSpread === 'double'"
+                              (click)="selectedSpread = 'double'; changeSpreadMode()">
+                              <i class="pi pi-copy"></i>
+                              <span>Double</span>
+                            </button>
+                          </div>
+                        </div>
                       }
                     </div>
                   </div>
-
-                  <p-divider></p-divider>
-
-                  <div class="flex items-center gap-2">
-                    <label id="flow-label" class="block font-semibold text-gray-200">Flow:</label>
-                    <div class="flex gap-4" role="radiogroup" aria-labelledby="flow-label">
-                      <div class="flex items-center gap-1.5">
-                        <p-radioButton
-                          name="flow"
-                          [value]="'paginated'"
-                          [(ngModel)]="selectedFlow"
-                          (onClick)="changeScrollMode()"
-                          inputId="flow-paginated">
-                        </p-radioButton>
-                        <label for="flow-paginated" class="cursor-pointer select-none text-gray-200">Paginated</label>
-                      </div>
-                      <div class="flex items-center gap-1.5">
-                        <p-radioButton
-                          name="flow"
-                          [value]="'scrolled'"
-                          [(ngModel)]="selectedFlow"
-                          (onClick)="changeScrollMode()"
-                          inputId="flow-scrolled">
-                        </p-radioButton>
-                        <label for="flow-scrolled" class="cursor-pointer select-none text-gray-200">Scrolled</label>
-                      </div>
-                    </div>
-                  </div>
-
-                  @if (selectedFlow === 'paginated' && !isMobileDevice()) {
-                    <p-divider></p-divider>
-
-                    <div class="flex items-center gap-2">
-                      <label id="spread-label" class="block font-semibold text-gray-200">Page Spread:</label>
-                      <div class="flex gap-4" role="radiogroup" aria-labelledby="spread-label">
-                        <div class="flex items-center gap-1.5">
-                          <p-radioButton
-                            name="spread"
-                            [value]="'single'"
-                            [(ngModel)]="selectedSpread"
-                            (onClick)="changeSpreadMode()"
-                            inputId="spread-single">
-                          </p-radioButton>
-                          <label for="spread-single" class="cursor-pointer select-none text-gray-200">Single</label>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                          <p-radioButton
-                            name="spread"
-                            [value]="'double'"
-                            [(ngModel)]="selectedSpread"
-                            (onClick)="changeSpreadMode()"
-                            inputId="spread-auto">
-                          </p-radioButton>
-                          <label for="spread-auto" class="cursor-pointer select-none text-gray-200">Double</label>
-                        </div>
-                      </div>
-                    </div>
-                  }
-
-                  <p-divider></p-divider>
-
-                  <div>
-                    <label class="block mb-1 font-semibold text-gray-200 pb-2">Line Height: {{ lineHeight }}</label>
-                    <p-slider
-                      [(ngModel)]="lineHeight"
-                      [min]="1"
-                      [max]="2.5"
-                      [step]="0.1"
-                      (onSlideEnd)="updateThemeStyle()"
-                      class="w-full"
-                      aria-label="Line Height">
-                    </p-slider>
-                  </div>
-
-                  <div>
-                    <label class="block mb-1 font-semibold text-gray-200 pb-2 pt-2">Letter Spacing: {{ letterSpacing }}em</label>
-                    <p-slider
-                      [(ngModel)]="letterSpacing"
-                      [min]="0"
-                      [max]="0.2"
-                      [step]="0.01"
-                      (onSlideEnd)="updateThemeStyle()"
-                      class="w-full"
-                      aria-label="Letter Spacing">
-                    </p-slider>
-                  </div>
-
                 </div>
               </p-drawer>
             </div>
+            <p-button
+              size="small"
+              icon="pi pi-times"
+              (click)="closeReader(); $event.stopPropagation()"
+              severity="secondary"
+              pTooltip="Close Reader"
+              tooltipPosition="bottom">
+            </p-button>
           </div>
         </div>
       </div>
-      <div id="epubContainer" #epubContainer></div>
+      <div id="epubContainer"
+           #epubContainer
+           [class.paginated-mode]="selectedFlow === 'paginated'"
+           (click)="onBookClick($event)"
+           (mousemove)="onBookMouseMove($event)"></div>
       @if (selectedFlow !== 'scrolled') {
         <button class="epub-controls-left" [class.visible]="showControls" [class.dark-theme]="selectedTheme === 'black' || selectedTheme === 'grey'" (click)="prevPage(); onBookTouch()">←</button>
       }
@@ -226,3 +305,14 @@
     </div>
   }
 </div>
+  <app-bookmark-edit-dialog
+    [(visible)]="showEditBookmarkDialog"
+    [bookmark]="editingBookmark"
+    [isSaving]="isEditingBookmark"
+    (save)="onBookmarkSave($event)"
+    (cancelEdit)="onBookmarkCancel()">
+  </app-bookmark-edit-dialog>
+  <app-bookmark-view-dialog
+    [(visible)]="viewDialogVisible"
+    [bookmark]="selectedBookmark">
+  </app-bookmark-view-dialog>

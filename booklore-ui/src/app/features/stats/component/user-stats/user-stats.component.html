@@ -1,0 +1,20 @@
+<div class="user-stats-container">
+  <div class="header-section">
+    <div class="header-content">
+      <div class="greeting">
+        <i class="pi pi-chart-line"></i>
+        <h2>{{ userName ? userName + "'s Reading Statistics" : "Your Reading Statistics" }}</h2>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-container">
+    <div class="chart-card">
+      <app-reading-session-heatmap [initialYear]="currentYear"></app-reading-session-heatmap>
+    </div>
+
+    <div class="chart-card">
+      <app-reading-session-timeline [initialYear]="currentYear"></app-reading-session-timeline>
+    </div>
+  </div>
+</div>

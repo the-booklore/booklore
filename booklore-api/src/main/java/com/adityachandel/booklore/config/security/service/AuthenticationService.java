@@ -64,7 +64,7 @@ public class AuthenticationService {
         permissions.setCanUpload(true);
         permissions.setCanDownload(true);
         permissions.setCanEditMetadata(true);
-        permissions.setCanManipulateLibrary(true);
+        permissions.setCanManageLibrary(true);
         permissions.setCanSyncKoReader(true);
         permissions.setCanSyncKobo(true);
         permissions.setCanEmailBook(true);

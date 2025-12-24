@@ -21,6 +21,11 @@ import {PdfReaderComponent} from './features/readers/pdf-reader/pdf-reader.compo
 import {BookdropFileReviewComponent} from './features/bookdrop/component/bookdrop-file-review/bookdrop-file-review.component';
 import {ManageLibraryGuard} from './core/security/guards/manage-library.guard';
 import {LoginGuard} from './shared/components/setup/login.guard';
+import {UserStatsComponent} from './features/stats/component/user-stats/user-stats.component';
+import {BookdropGuard} from './core/security/guards/bookdrop.guard';
+import {LibraryStatsGuard} from './core/security/guards/library-stats.guard';
+import {UserStatsGuard} from './core/security/guards/user-stats.guard';
+import {EditMetadataGuard} from './core/security/guards/edit-metdata.guard';
 
 export const routes: Routes = [
   {
@@ -48,9 +53,10 @@ export const routes: Routes = [
       {path: 'series/:seriesName', component: SeriesPageComponent, canActivate: [AuthGuard]},
       {path: 'magic-shelf/:magicShelfId/books', component: BookBrowserComponent, canActivate: [AuthGuard]},
       {path: 'book/:bookId', component: BookMetadataCenterComponent, canActivate: [AuthGuard]},
-      {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [ManageLibraryGuard]},
-      {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [ManageLibraryGuard]},
-      {path: 'stats', component: StatsComponent, canActivate: [AuthGuard]},
+      {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [BookdropGuard]},
+      {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [EditMetadataGuard]},
+      {path: 'library-stats', component: StatsComponent, canActivate: [LibraryStatsGuard]},
+      {path: 'reading-stats', component: UserStatsComponent, canActivate: [UserStatsGuard]},
     ]
   },
   {

@@ -66,7 +66,7 @@ export class AppMenuitemComponent implements OnInit, OnDestroy {
   ) {
     this.userService.userState$.subscribe(userState => {
       if (userState?.user) {
-        this.canManipulateLibrary = userState.user.permissions.canManipulateLibrary;
+        this.canManipulateLibrary = userState.user.permissions.canManageLibrary;
         this.admin = userState.user.permissions.admin;
       }
     });

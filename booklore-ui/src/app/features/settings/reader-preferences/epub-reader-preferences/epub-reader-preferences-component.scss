@@ -45,16 +45,6 @@
       flex-shrink: 0;
       min-width: 100px;
     }
-
-    .radio-group {
-      display: flex;
-      gap: 1.5rem;
-
-      @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-    }
   }
 
   .setting-description {
@@ -97,5 +87,113 @@
     text-align: center;
     font-weight: 500;
     color: var(--p-text-color);
+  }
+}
+
+.theme-selector {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  .theme-option {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.375rem;
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      color: white;
+      font-size: 0.875rem;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    &:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &.selected {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 25%, transparent);
+    }
+  }
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+
+  .option-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    border: 1.5px solid color-mix(in srgb, var(--text-color) 20%, transparent);
+    background: color-mix(in srgb, var(--text-color) 5%, transparent);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    min-width: 4.5rem;
+
+    i {
+      font-size: 0.875rem;
+    }
+
+    .option-text {
+      white-space: nowrap;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+    }
+
+    &.selected {
+      border-color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+      color: var(--primary-color);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 15%, transparent);
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
+
+    &.font-button {
+      font-size: 1rem;
+
+      &[data-font="serif"] .option-text {
+        font-family: Georgia, 'Times New Roman', serif;
+      }
+
+      &[data-font="sans-serif"] .option-text {
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      &[data-font="roboto"] .option-text {
+        font-family: 'Roboto', sans-serif;
+      }
+
+      &[data-font="cursive"] .option-text {
+        font-family: cursive;
+      }
+
+      &[data-font="monospace"] .option-text {
+        font-family: 'Courier New', monospace;
+      }
+    }
   }
 }

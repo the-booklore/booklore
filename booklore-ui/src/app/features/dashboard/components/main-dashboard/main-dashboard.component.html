@@ -17,7 +17,7 @@
           <div class="dashboard-no-library">
             @if ((userService.userState$ | async)?.user?.permissions; as permissions) {
               <div>
-                @if (permissions.admin || permissions.canManipulateLibrary) {
+                @if (permissions.admin || permissions.canManageLibrary) {
                   <div>
                     <h1 class="no-library-header">
                       Welcome to BookLore!<br>

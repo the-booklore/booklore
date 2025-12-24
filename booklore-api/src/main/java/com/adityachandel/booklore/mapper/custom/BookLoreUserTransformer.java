@@ -31,10 +31,18 @@ public class BookLoreUserTransformer {
         permissions.setCanEditMetadata(userEntity.getPermissions().isPermissionEditMetadata());
         permissions.setCanEmailBook(userEntity.getPermissions().isPermissionEmailBook());
         permissions.setCanDeleteBook(userEntity.getPermissions().isPermissionDeleteBook());
-        permissions.setCanManipulateLibrary(userEntity.getPermissions().isPermissionManipulateLibrary());
+        permissions.setCanManageLibrary(userEntity.getPermissions().isPermissionManageLibrary());
         permissions.setCanAccessOpds(userEntity.getPermissions().isPermissionAccessOpds());
         permissions.setCanSyncKoReader(userEntity.getPermissions().isPermissionSyncKoreader());
         permissions.setCanSyncKobo(userEntity.getPermissions().isPermissionSyncKobo());
+        permissions.setCanManageMetadataConfig(userEntity.getPermissions().isPermissionManageMetadataConfig());
+        permissions.setCanAccessBookdrop(userEntity.getPermissions().isPermissionAccessBookdrop());
+        permissions.setCanAccessLibraryStats(userEntity.getPermissions().isPermissionAccessLibraryStats());
+        permissions.setCanAccessUserStats(userEntity.getPermissions().isPermissionAccessUserStats());
+        permissions.setCanAccessTaskManager(userEntity.getPermissions().isPermissionAccessTaskManager());
+        permissions.setCanManageGlobalPreferences(userEntity.getPermissions().isPermissionManageGlobalPreferences());
+        permissions.setCanManageIcons(userEntity.getPermissions().isPermissionManageIcons());
+        permissions.setDemoUser(userEntity.getPermissions().isPermissionDemoUser());
 
         BookLoreUser bookLoreUser = new BookLoreUser();
         bookLoreUser.setId(userEntity.getId());
@@ -63,7 +71,8 @@ public class BookLoreUserTransformer {
                         case SIDEBAR_SHELF_SORTING -> userSettings.setSidebarShelfSorting(objectMapper.readValue(value, SidebarSortOption.class));
                         case SIDEBAR_MAGIC_SHELF_SORTING -> userSettings.setSidebarMagicShelfSorting(objectMapper.readValue(value, SidebarSortOption.class));
                         case ENTITY_VIEW_PREFERENCES -> userSettings.setEntityViewPreferences(objectMapper.readValue(value, BookLoreUser.UserSettings.EntityViewPreferences.class));
-                        case TABLE_COLUMN_PREFERENCE -> userSettings.setTableColumnPreference(objectMapper.readValue(value, new TypeReference<>() {}));
+                        case TABLE_COLUMN_PREFERENCE -> userSettings.setTableColumnPreference(objectMapper.readValue(value, new TypeReference<>() {
+                        }));
                         case DASHBOARD_CONFIG -> userSettings.setDashboardConfig(objectMapper.readValue(value, BookLoreUser.UserSettings.DashboardConfig.class));
                     }
                 } else {

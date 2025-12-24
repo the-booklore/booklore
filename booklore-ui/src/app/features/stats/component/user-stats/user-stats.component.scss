@@ -1,0 +1,127 @@
+.user-stats-container {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 0.5rem;
+  height: calc(100dvh - 6.25rem);
+  overflow-y: auto;
+}
+
+.header-section {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--p-content-border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  transition: all 0.3s ease;
+  width: fit-content;
+  max-width: 100%;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .greeting {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+
+    i {
+      font-size: 1.5rem;
+      color: var(--primary-color);
+    }
+
+    h2 {
+      color: var(--text-color, #ffffff);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+      white-space: nowrap;
+    }
+  }
+}
+
+.charts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.chart-card {
+  background: var(--card-background);
+  border-radius: 12px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--p-content-border-color);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@media (max-width: 768px) {
+  .user-stats-container {
+    padding: 1rem;
+  }
+
+  .header-section {
+    padding: 1rem;
+
+    .greeting {
+      i {
+        font-size: 1.25rem;
+      }
+
+      h2 {
+        font-size: 1.25rem;
+        white-space: normal;
+      }
+    }
+  }
+
+  .chart-card {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-stats-container {
+    padding: 0.75rem;
+  }
+
+  .header-section {
+    padding: 0.75rem;
+
+    .greeting {
+      gap: 0.5rem;
+
+      i {
+        font-size: 1rem;
+      }
+
+      h2 {
+        font-size: 1rem;
+        white-space: normal;
+      }
+    }
+  }
+
+  .chart-card {
+    padding: 0.75rem;
+  }
+}

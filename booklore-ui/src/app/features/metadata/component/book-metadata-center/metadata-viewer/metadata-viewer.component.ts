@@ -659,6 +659,21 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return null;
   }
 
+  getKoboProgressPercent(book: Book): number | null {
+    if (book.koboProgress?.percentage != null) {
+      return book.koboProgress.percentage;
+    }
+    return null;
+  }
+
+  getProgressCount(book: Book): number {
+    let count = 0;
+    if (this.getProgressPercent(book) !== null) count++;
+    if (this.getKoProgressPercent(book) !== null) count++;
+    if (this.getKoboProgressPercent(book) !== null) count++;
+    return count;
+  }
+
   getFileExtension(filePath?: string): string | null {
     if (!filePath) return null;
     const parts = filePath.split('.');

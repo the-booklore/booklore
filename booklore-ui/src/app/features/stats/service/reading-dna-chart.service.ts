@@ -390,7 +390,8 @@ export class ReadingDNAChartService implements OnDestroy {
         book.epubProgress?.percentage || 0,
         book.pdfProgress?.percentage || 0,
         book.cbxProgress?.percentage || 0,
-        book.koreaderProgress?.percentage || 0
+        book.koreaderProgress?.percentage || 0,
+        book.koboProgress?.percentage || 0
       );
       return progress > 50;
     });

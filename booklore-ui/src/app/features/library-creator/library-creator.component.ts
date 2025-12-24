@@ -68,7 +68,8 @@ export class LibraryCreatorComponent implements OnInit {
         if (iconType === 'CUSTOM_SVG') {
           this.selectedIcon = {type: 'CUSTOM_SVG', value: icon};
         } else {
-          this.selectedIcon = {type: 'PRIME_NG', value: `pi pi-${icon}`};
+          const value = icon.slice(0, 6) === 'pi pi-' ? icon : `pi pi-${icon}`;
+          this.selectedIcon = {type: 'PRIME_NG', value: value};
         }
 
         this.watch = watch;

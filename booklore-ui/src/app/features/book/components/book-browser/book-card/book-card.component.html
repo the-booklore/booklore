@@ -49,25 +49,36 @@
         (onChange)="toggleSelection($event)">
       </p-checkbox>
     }
-
-    @if (progressPercentage !== null) {
-      <p-progressBar
-        [value]="progressPercentage"
-        [showValue]="false"
-        class="cover-progress-bar"
-        [ngClass]="{ 'progress-complete': progressPercentage === 100, 'progress-incomplete': progressPercentage < 100 }">
-      </p-progressBar>
-    }
-    @if (koProgressPercentage !== null) {
-      <p-progressBar
-        [value]="koProgressPercentage"
-        [showValue]="false"
-        [ngClass]="[
-          progressPercentage == null ? 'cover-progress-bar-ko-only' : 'cover-progress-bar-ko-both',
-          koProgressPercentage === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
-        ]">
-      </p-progressBar>
-    }
+    <div class="cover-progress-bar-container">
+      @if (progressPercentage !== null) {
+        <p-progressBar
+          [value]="progressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="{ 'progress-complete': progressPercentage === 100, 'progress-incomplete': progressPercentage < 100 }">
+        </p-progressBar>
+      }
+      @if (koProgressPercentage !== null) {
+        <p-progressBar
+          [value]="koProgressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="[
+            koProgressPercentage === 100 ? 'progress-complete-ko' : 'progress-incomplete-ko'
+          ]">
+        </p-progressBar>
+      }
+      @if (koboProgressPercentage !== null) {
+        <p-progressBar
+          [value]="koboProgressPercentage"
+          [showValue]="false"
+          class="cover-progress-bar"
+          [ngClass]="[
+            koboProgressPercentage === 100 ? 'progress-complete-kobo' : 'progress-incomplete-kobo'
+          ]">
+        </p-progressBar>
+      }
+    </div>
   </div>
 
   <div [hidden]="bottomBarHidden">

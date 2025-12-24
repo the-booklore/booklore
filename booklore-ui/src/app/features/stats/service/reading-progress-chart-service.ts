@@ -228,6 +228,7 @@ export class ReadingProgressChartService implements OnDestroy {
     if (book.epubProgress?.percentage) return book.epubProgress.percentage;
     if (book.cbxProgress?.percentage) return book.cbxProgress.percentage;
     if (book.koreaderProgress?.percentage) return book.koreaderProgress.percentage;
+    if (book.koboProgress?.percentage) return book.koboProgress.percentage;
     return 0;
   }
 

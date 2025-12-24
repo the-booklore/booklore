@@ -711,6 +711,40 @@
   }
 }
 
+.year-selector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+
+  .year-nav-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    i {
+      font-size: 0.875rem;
+    }
+  }
+
+  .current-year {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #ffffff;
+    min-width: 4rem;
+    text-align: center;
+  }
+}
+
 @media (max-width: 1600px) {
   .charts-grid {
     grid-template-columns: repeat(3, 1fr);

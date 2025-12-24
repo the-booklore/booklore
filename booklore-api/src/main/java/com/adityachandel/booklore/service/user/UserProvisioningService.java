@@ -51,12 +51,19 @@ public class UserProvisioningService {
         perms.setPermissionUpload(true);
         perms.setPermissionDownload(true);
         perms.setPermissionEditMetadata(true);
-        perms.setPermissionManipulateLibrary(true);
+        perms.setPermissionManageLibrary(true);
         perms.setPermissionEmailBook(true);
         perms.setPermissionDeleteBook(true);
         perms.setPermissionAccessOpds(true);
         perms.setPermissionSyncKoreader(true);
         perms.setPermissionSyncKobo(true);
+        perms.setPermissionManageMetadataConfig(true);
+        perms.setPermissionAccessBookdrop(true);
+        perms.setPermissionAccessLibraryStats(true);
+        perms.setPermissionAccessUserStats(true);
+        perms.setPermissionAccessTaskManager(true);
+        perms.setPermissionManageGlobalPreferences(true);
+        perms.setPermissionManageIcons(true);
 
         user.setPermissions(perms);
         createUser(user);
@@ -82,13 +89,20 @@ public class UserProvisioningService {
         permissions.setPermissionUpload(request.isPermissionUpload());
         permissions.setPermissionDownload(request.isPermissionDownload());
         permissions.setPermissionEditMetadata(request.isPermissionEditMetadata());
-        permissions.setPermissionManipulateLibrary(request.isPermissionManipulateLibrary());
+        permissions.setPermissionManageLibrary(request.isPermissionManageLibrary());
         permissions.setPermissionEmailBook(request.isPermissionEmailBook());
         permissions.setPermissionDeleteBook(request.isPermissionDeleteBook());
         permissions.setPermissionAccessOpds(request.isPermissionAccessOpds());
         permissions.setPermissionSyncKoreader(request.isPermissionSyncKoreader());
         permissions.setPermissionSyncKobo(request.isPermissionSyncKobo());
         permissions.setPermissionAdmin(request.isPermissionAdmin());
+        permissions.setPermissionManageMetadataConfig(request.isPermissionManageMetadataConfig());
+        permissions.setPermissionAccessBookdrop(request.isPermissionAccessBookdrop());
+        permissions.setPermissionAccessLibraryStats(request.isPermissionAccessLibraryStats());
+        permissions.setPermissionAccessUserStats(request.isPermissionAccessUserStats());
+        permissions.setPermissionAccessTaskManager(request.isPermissionAccessTaskManager());
+        permissions.setPermissionManageGlobalPreferences(request.isPermissionManageGlobalPreferences());
+        permissions.setPermissionManageIcons(request.isPermissionManageIcons());
         user.setPermissions(permissions);
 
         if (request.getSelectedLibraries() != null && !request.getSelectedLibraries().isEmpty()) {
@@ -115,12 +129,19 @@ public class UserProvisioningService {
             perms.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
             perms.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
             perms.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
-            perms.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
+            perms.setPermissionManageLibrary(defaultPermissions.contains("permissionManageLibrary"));
             perms.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
             perms.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
             perms.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
             perms.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
             perms.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
+            perms.setPermissionManageMetadataConfig(defaultPermissions.contains("permissionManageMetadataConfig"));
+            perms.setPermissionAccessBookdrop(defaultPermissions.contains("permissionAccessBookdrop"));
+            perms.setPermissionAccessLibraryStats(defaultPermissions.contains("permissionAccessLibraryStats"));
+            perms.setPermissionAccessUserStats(defaultPermissions.contains("permissionAccessUserStats"));
+            perms.setPermissionAccessTaskManager(defaultPermissions.contains("permissionAccessTaskManager"));
+            perms.setPermissionManageGlobalPreferences(defaultPermissions.contains("permissionManageGlobalPreferences"));
+            perms.setPermissionManageIcons(defaultPermissions.contains("permissionManageIcons"));
         }
         user.setPermissions(perms);
 
@@ -170,22 +191,36 @@ public class UserProvisioningService {
             permissions.setPermissionUpload(defaultPermissions.contains("permissionUpload"));
             permissions.setPermissionDownload(defaultPermissions.contains("permissionDownload"));
             permissions.setPermissionEditMetadata(defaultPermissions.contains("permissionEditMetadata"));
-            permissions.setPermissionManipulateLibrary(defaultPermissions.contains("permissionManipulateLibrary"));
+            permissions.setPermissionManageLibrary(defaultPermissions.contains("permissionManageLibrary"));
             permissions.setPermissionEmailBook(defaultPermissions.contains("permissionEmailBook"));
             permissions.setPermissionDeleteBook(defaultPermissions.contains("permissionDeleteBook"));
             permissions.setPermissionAccessOpds(defaultPermissions.contains("permissionAccessOpds"));
             permissions.setPermissionSyncKoreader(defaultPermissions.contains("permissionSyncKoreader"));
             permissions.setPermissionSyncKobo(defaultPermissions.contains("permissionSyncKobo"));
+            permissions.setPermissionManageMetadataConfig(defaultPermissions.contains("permissionManageMetadataConfig"));
+            permissions.setPermissionAccessBookdrop(defaultPermissions.contains("permissionAccessBookdrop"));
+            permissions.setPermissionAccessLibraryStats(defaultPermissions.contains("permissionAccessLibraryStats"));
+            permissions.setPermissionAccessUserStats(defaultPermissions.contains("permissionAccessUserStats"));
+            permissions.setPermissionAccessTaskManager(defaultPermissions.contains("permissionAccessTaskManager"));
+            permissions.setPermissionManageGlobalPreferences(defaultPermissions.contains("permissionManageGlobalPreferences"));
+            permissions.setPermissionManageIcons(defaultPermissions.contains("permissionManageIcons"));
         } else {
             permissions.setPermissionUpload(false);
             permissions.setPermissionDownload(false);
             permissions.setPermissionEditMetadata(false);
-            permissions.setPermissionManipulateLibrary(false);
+            permissions.setPermissionManageLibrary(false);
             permissions.setPermissionEmailBook(false);
             permissions.setPermissionAccessOpds(false);
             permissions.setPermissionDeleteBook(false);
             permissions.setPermissionSyncKoreader(false);
             permissions.setPermissionSyncKobo(false);
+            permissions.setPermissionManageMetadataConfig(false);
+            permissions.setPermissionAccessBookdrop(false);
+            permissions.setPermissionAccessLibraryStats(false);
+            permissions.setPermissionAccessUserStats(false);
+            permissions.setPermissionAccessTaskManager(false);
+            permissions.setPermissionManageGlobalPreferences(false);
+            permissions.setPermissionManageIcons(false);
         }
 
         permissions.setPermissionAdmin(isAdmin);

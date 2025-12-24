@@ -352,13 +352,13 @@ public class FilenamePatternExtractor {
             } else if (dateFormat.startsWith("MM", i)) {
                 result.append("\\d{2}");
                 i += 2;
-            } else if (dateFormat.startsWith("M", i)) {
+            } else if (i < dateFormat.length() && dateFormat.charAt(i) == 'M') {
                 result.append("\\d{1,2}");
                 i += 1;
             } else if (dateFormat.startsWith("dd", i)) {
                 result.append("\\d{2}");
                 i += 2;
-            } else if (dateFormat.startsWith("d", i)) {
+            } else if (i < dateFormat.length() && dateFormat.charAt(i) == 'd') {
                 result.append("\\d{1,2}");
                 i += 1;
             } else {

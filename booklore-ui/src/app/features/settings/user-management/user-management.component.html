@@ -29,65 +29,51 @@
       </div>
 
       <div class="table-card">
-        <p-table [value]="users" [scrollable]="true" scrollHeight="flex">
+        <p-table
+          [value]="users"
+          [scrollable]="true"
+          scrollHeight="flex"
+          dataKey="id">
           <ng-template pTemplate="header">
             <tr>
-              <th>
-                <div class="header-content">
-                  <i class="pi pi-user"></i>
-                  <span>Username</span>
-                </div>
-              </th>
-              <th>
-                <div class="header-content">
+              <th style="width: 40px"></th>
+              <th style="width: 100px; text-align: center">
+                <div class="header-content" style="justify-content: center">
                   <i class="pi pi-tag"></i>
                   <span>Type</span>
                 </div>
               </th>
-              <th class="full-name-column">
+              <th style="min-width: 180px">
                 <div class="header-content">
-                  <i class="pi pi-id-card"></i>
-                  <span>Full Name</span>
+                  <i class="pi pi-user"></i>
+                  <span>User</span>
                 </div>
               </th>
-              <th class="email-column">
-                <div class="header-content">
-                  <i class="pi pi-envelope"></i>
-                  <span>Email</span>
-                </div>
-              </th>
-              <th class="libraries-column">
+              <th style="min-width: 200px">
                 <div class="header-content">
                   <i class="pi pi-book"></i>
-                  <span>Assigned Libraries</span>
+                  <span>Libraries</span>
                 </div>
               </th>
-              <th class="permission-header">Admin</th>
-              <th class="permission-header">Upload</th>
-              <th class="permission-header">Download</th>
-              <th class="permission-header">Manage Metadata</th>
-              <th class="permission-header">Manage Library</th>
-              <th class="permission-header">Email Books</th>
-              <th class="permission-header">Delete Books</th>
-              <th class="permission-header">Access OPDS</th>
-              <th class="permission-header">KOReader Sync</th>
-              <th class="permission-header">Kobo Sync</th>
-              <th class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-cog"></i>
-                  <span>Edit</span>
-                </div>
+              <th style="width: 120px; text-align: center" pTooltip="Admin permissions" tooltipPosition="top">
+                <i class="pi pi-shield"></i>
               </th>
-              <th class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-key"></i>
-                  <span>Password</span>
-                </div>
+              <th style="width: 120px; text-align: center" pTooltip="Book Management permissions" tooltipPosition="top">
+                <i class="pi pi-book"></i>
               </th>
-              <th class="actions-header">
-                <div class="header-content">
-                  <i class="pi pi-trash"></i>
-                  <span>Delete</span>
+              <th style="width: 120px; text-align: center" pTooltip="Device Sync permissions" tooltipPosition="top">
+                <i class="pi pi-mobile"></i>
+              </th>
+              <th style="width: 120px; text-align: center" pTooltip="System Access permissions" tooltipPosition="top">
+                <i class="pi pi-eye"></i>
+              </th>
+              <th style="width: 120px; text-align: center" pTooltip="System Configuration permissions" tooltipPosition="top">
+                <i class="pi pi-cog"></i>
+              </th>
+              <th style="width: 180px; text-align: center">
+                <div class="header-content" style="justify-content: center">
+                  <i class="pi pi-ellipsis-h"></i>
+                  <span>Actions</span>
                 </div>
               </th>
             </tr>
@@ -96,35 +82,30 @@
           <ng-template pTemplate="body" let-user>
             <tr>
               <td>
+                <button
+                  type="button"
+                  pButton
+                  class="p-button-text p-button-rounded p-button-plain"
+                  (click)="toggleRowExpansion(user)">
+                  <i [class]="isRowExpanded(user) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"></i>
+                </button>
+              </td>
+              <td class="text-center">
+                <span class="user-type-badge" [attr.data-type]="user.provisioningMethod || 'LOCAL'">
+                  {{ (user.provisioningMethod || 'LOCAL') | lowercase | titlecase }}
+                </span>
+              </td>
+              <td>
                 <div class="user-info">
                   <div class="user-avatar">
                     {{ user.username.charAt(0).toUpperCase() }}
                   </div>
-                  <span class="username">{{ user.username }}</span>
+                  <div class="user-details">
+                    <span class="username">{{ user.username }}</span>
+                  </div>
                 </div>
               </td>
               <td>
-                <span class="user-type-badge">
-                  {{ (user.provisioningMethod || 'LOCAL') | lowercase | titlecase }}
-                </span>
-              </td>
-              <td class="full-name-column">
-                @if (user.isEditing) {
-                  <input type="text" [(ngModel)]="user.name" class="p-inputtext w-full" size="small"/>
-                }
-                @if (!user.isEditing) {
-                  <span>{{ user.name }}</span>
-                }
-              </td>
-              <td class="email-column">
-                @if (user.isEditing) {
-                  <input type="email" [(ngModel)]="user.email" class="p-inputtext w-full" size="small"/>
-                }
-                @if (!user.isEditing) {
-                  <span>{{ user.email }}</span>
-                }
-              </td>
-              <td class="libraries-column">
                 @if (user.isEditing) {
                   <p-multiSelect
                     [options]="allLibraries"
@@ -133,102 +114,244 @@
                     [(ngModel)]="editingLibraryIds"
                     placeholder="Select Libraries"
                     appendTo="body"
+                    [style]="{'width': '100%'}"
                     size="small">
                   </p-multiSelect>
+                } @else {
+                  <span class="library-names">{{ user.libraryNames || 'None' }}</span>
                 }
-                @if (!user.isEditing) {
-                  <span class="library-names">{{ user.libraryNames }}</span>
-                }
               </td>
               <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.admin" [disabled]="!user.isEditing"></p-checkbox>
+                <div class="permission-indicator admin-indicator" [class.active]="user.permissions.admin">
+                  @if (user.permissions.admin) {
+                    <i class="pi pi-shield" pTooltip="Administrator"></i>
+                  } @else {
+                    <i class="pi pi-minus" pTooltip="Not Administrator"></i>
+                  }
+                </div>
               </td>
               <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canUpload" [disabled]="!user.isEditing"></p-checkbox>
+                <div class="permission-summary" [attr.data-count]="getBookManagementPermissionsCount(user)" [attr.data-total]="6">
+                  <span class="permission-count">
+                    {{ getBookManagementPermissionsCount(user) }}/6
+                  </span>
+                </div>
               </td>
               <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canDownload" [disabled]="!user.isEditing"></p-checkbox>
+                <div class="permission-summary" [attr.data-count]="getDeviceSyncPermissionsCount(user)" [attr.data-total]="3">
+                  <span class="permission-count">
+                    {{ getDeviceSyncPermissionsCount(user) }}/3
+                  </span>
+                </div>
               </td>
               <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEditMetadata" [disabled]="!user.isEditing"></p-checkbox>
+                <div class="permission-summary" [attr.data-count]="getSystemAccessPermissionsCount(user)" [attr.data-total]="3">
+                  <span class="permission-count">
+                    {{ getSystemAccessPermissionsCount(user) }}/3
+                  </span>
+                </div>
               </td>
               <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManipulateLibrary" [disabled]="!user.isEditing"></p-checkbox>
+                <div class="permission-summary" [attr.data-count]="getSystemConfigPermissionsCount(user)" [attr.data-total]="4">
+                  <span class="permission-count">
+                    {{ getSystemConfigPermissionsCount(user) }}/4
+                  </span>
+                </div>
               </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEmailBook" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canDeleteBook" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessOpds" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKoReader" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="text-center">
-                <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="!user.isEditing"></p-checkbox>
-              </td>
-              <td class="actions-cell">
-                @if (!user.isEditing) {
-                  <p-button
-                    icon="pi pi-pencil"
-                    severity="info"
-                    size="small"
-                    [outlined]="true"
-                    [rounded]="true"
-                    (onClick)="toggleEdit(user)"
-                    pTooltip="Edit user">
-                  </p-button>
-                }
-                @if (user.isEditing) {
-                  <div class="flex gap-1">
+              <td>
+                <div class="actions-group">
+                  @if (!user.isEditing) {
+                    <p-button
+                      icon="pi pi-pencil"
+                      severity="info"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="toggleEdit(user)"
+                      tooltipPosition="top"
+                      pTooltip="Edit user">
+                    </p-button>
+                  }
+                  @if (user.isEditing) {
                     <p-button
                       icon="pi pi-check"
                       severity="success"
-                      size="small"
-                      [outlined]="true"
+                      [text]="true"
                       [rounded]="true"
                       (onClick)="saveUser(user)"
+                      tooltipPosition="top"
                       pTooltip="Save changes">
                     </p-button>
                     <p-button
                       icon="pi pi-times"
                       severity="danger"
-                      size="small"
-                      [outlined]="true"
                       [rounded]="true"
                       (onClick)="toggleEdit(user)"
+                      tooltipPosition="top"
                       pTooltip="Cancel">
                     </p-button>
-                  </div>
-                }
-              </td>
-              <td class="actions-cell">
-                <p-button
-                  icon="pi pi-key"
-                  severity="warn"
-                  size="small"
-                  [outlined]="true"
-                  [rounded]="true"
-                  (onClick)="openChangePasswordDialog(user)"
-                  pTooltip="Change password">
-                </p-button>
-              </td>
-              <td class="actions-cell">
-                <p-button
-                  [disabled]="user.id === currentUser?.id"
-                  icon="pi pi-trash"
-                  severity="danger"
-                  size="small"
-                  [outlined]="true"
-                  [rounded]="true"
-                  (onClick)="deleteUser(user)"
-                  pTooltip="Delete user">
-                </p-button>
+                  }
+                  @if (!user.isEditing) {
+                    <p-button
+                      icon="pi pi-key"
+                      severity="warn"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="openChangePasswordDialog(user)"
+                      tooltipPosition="top"
+                      pTooltip="Change password">
+                    </p-button>
+                    <p-button
+                      [disabled]="user.id === currentUser?.id"
+                      icon="pi pi-trash"
+                      severity="danger"
+                      [text]="true"
+                      [rounded]="true"
+                      (onClick)="deleteUser(user)"
+                      tooltipPosition="top"
+                      pTooltip="Delete user">
+                    </p-button>
+                  }
+                </div>
               </td>
             </tr>
+            @if (isRowExpanded(user)) {
+              <tr>
+                <td colspan="10">
+                  <div class="expanded-content">
+                    <div class="expanded-section">
+                      <h4 class="expanded-title">
+                        <i class="pi pi-id-card"></i>
+                        User Information
+                      </h4>
+                      <div class="info-grid">
+                        <div class="info-item">
+                          <label>Full Name</label>
+                          @if (user.isEditing) {
+                            <input type="text" [(ngModel)]="user.name" class="p-inputtext p-component p-inputtext-sm"/>
+                          } @else {
+                            <span>{{ user.name || 'N/A' }}</span>
+                          }
+                        </div>
+                        <div class="info-item">
+                          <label>Email</label>
+                          @if (user.isEditing) {
+                            <input type="email" [(ngModel)]="user.email" class="p-inputtext p-component p-inputtext-sm"/>
+                          } @else {
+                            <span>{{ user.email || 'N/A' }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="expanded-section">
+                      <h4 class="expanded-title">
+                        <i class="pi pi-lock"></i>
+                        Permissions
+                      </h4>
+                      <div class="permissions-grid">
+                        <div class="permission-group">
+                          <h5><i class="pi pi-book"></i> Book Management</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canUpload" [disabled]="isPermissionDisabled(user)" inputId="upload-{{user.id}}"></p-checkbox>
+                              <label [for]="'upload-'+user.id">Upload Books</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canDownload" [disabled]="isPermissionDisabled(user)" inputId="download-{{user.id}}"></p-checkbox>
+                              <label [for]="'download-'+user.id">Download Books</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canDeleteBook" [disabled]="isPermissionDisabled(user)" inputId="delete-{{user.id}}"></p-checkbox>
+                              <label [for]="'delete-'+user.id">Delete Books</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEditMetadata" [disabled]="isPermissionDisabled(user)" inputId="metadata-{{user.id}}"></p-checkbox>
+                              <label [for]="'metadata-'+user.id">Edit Metadata</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageLibrary" [disabled]="isPermissionDisabled(user)" inputId="library-{{user.id}}"></p-checkbox>
+                              <label [for]="'library-'+user.id">Manage Library</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEmailBook" [disabled]="isPermissionDisabled(user)" inputId="email-{{user.id}}"></p-checkbox>
+                              <label [for]="'email-'+user.id">Email Books</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-mobile"></i> Device Sync</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKoReader" [disabled]="isPermissionDisabled(user)" inputId="koreader-{{user.id}}"></p-checkbox>
+                              <label [for]="'koreader-'+user.id">KOReader Sync</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="isPermissionDisabled(user)" inputId="kobo-{{user.id}}"></p-checkbox>
+                              <label [for]="'kobo-'+user.id">Kobo Sync</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessOpds" [disabled]="isPermissionDisabled(user)" inputId="opds-{{user.id}}"></p-checkbox>
+                              <label [for]="'opds-'+user.id">OPDS Feed Access</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-eye"></i> System Access</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessBookdrop" [disabled]="isPermissionDisabled(user)" inputId="bookdrop-{{user.id}}"></p-checkbox>
+                              <label [for]="'bookdrop-'+user.id">Access Bookdrop</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessLibraryStats" [disabled]="isPermissionDisabled(user)" inputId="stats-{{user.id}}"></p-checkbox>
+                              <label [for]="'stats-'+user.id">View Library Statistics</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessUserStats" [disabled]="isPermissionDisabled(user)" inputId="userstats-{{user.id}}"></p-checkbox>
+                              <label [for]="'userstats-'+user.id">View User Reading Statistics</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-cog"></i> System Configuration</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageMetadataConfig" [disabled]="isPermissionDisabled(user)" inputId="metadataconfig-{{user.id}}"></p-checkbox>
+                              <label [for]="'metadataconfig-'+user.id">Manage Metadata Configuration</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageGlobalPreferences" [disabled]="isPermissionDisabled(user)" inputId="preferences-{{user.id}}"></p-checkbox>
+                              <label [for]="'preferences-'+user.id">Manage Application Preferences</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessTaskManager" [disabled]="isPermissionDisabled(user)" inputId="taskmanager-{{user.id}}"></p-checkbox>
+                              <label [for]="'taskmanager-'+user.id">Access Task Manager</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageIcons" [disabled]="isPermissionDisabled(user)" inputId="icons-{{user.id}}"></p-checkbox>
+                              <label [for]="'icons-'+user.id">Manage Icons</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-shield"></i> Administration</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.admin" (onChange)="onAdminCheckboxChange(user)" [disabled]="!user.isEditing" inputId="admin-{{user.id}}"></p-checkbox>
+                              <label [for]="'admin-'+user.id">Full Administrator Access</label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
           </ng-template>
         </p-table>
       </div>

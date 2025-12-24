@@ -184,7 +184,7 @@ export class DialogLauncherService {
   openIconPickerDialog(): DynamicDialogRef | null {
     return this.openDialog(IconPickerComponent, {
       header: 'Choose an Icon',
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-medium',
     });
   }
 
