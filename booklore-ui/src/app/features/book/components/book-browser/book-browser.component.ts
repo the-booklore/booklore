@@ -465,14 +465,30 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     );
   }
 
-  onCheckboxClicked(event: { index: number; bookId: number; selected: boolean; shiftKey: boolean }) {
-    const {index, bookId, selected, shiftKey} = event;
-    if (!shiftKey || this.lastSelectedIndex === null) {
-      if (selected) {
-        this.selectedBooks.add(bookId);
+  handleBookSelection(book: Book, selected: boolean) {
+    if (selected) {
+      if (book.seriesBooks) {
+        //it is a series
+        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book=>book.id)]);
       } else {
-        this.selectedBooks.delete(bookId);
+      this.selectedBooks.add(book.id);
       }
+    } else {
+      if (book.seriesBooks) {
+        //it is a series
+        book.seriesBooks.forEach(book =>{
+          this.selectedBooks.delete(book.id);
+        });
+      } else {
+      this.selectedBooks.delete(book.id);
+      }
+    }
+  }
+
+  onCheckboxClicked(event: { index: number; book: Book; selected: boolean; shiftKey: boolean }) {
+    const {index, book, selected, shiftKey} = event;
+    if (!shiftKey || this.lastSelectedIndex === null) {
+      this.handleBookSelection(book, selected);
       this.lastSelectedIndex = index;
     } else {
       const start = Math.min(this.lastSelectedIndex, index);
@@ -481,23 +497,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       for (let i = start; i <= end; i++) {
         const book = this.currentBooks[i];
         if (!book) continue;
-
-        if (isUnselectingRange) {
-          this.selectedBooks.delete(book.id);
-        } else {
-          this.selectedBooks.add(book.id);
-        }
+        this.handleBookSelection(book, !isUnselectingRange);
       }
     }
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
 
-  handleBookSelect(bookId: number, selected: boolean): void {
-    if (selected) {
-      this.selectedBooks.add(bookId);
-    } else {
-      this.selectedBooks.delete(bookId);
-    }
+  handleBookSelect(book: Book, selected: boolean): void {
+    this.handleBookSelection(book, selected);
     this.isDrawerVisible = this.selectedBooks.size > 0;
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
   }
@@ -543,8 +550,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
             this.selectedBooks.clear();
           });
       },
-      reject: () => {
-      }
+      reject: () => {}
     });
   }
 
