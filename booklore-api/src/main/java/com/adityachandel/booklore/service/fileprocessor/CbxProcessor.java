@@ -79,10 +79,14 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     boolean saved = fileService.saveCoverImages(image, bookEntity.getId());
                     if (saved) {
                         return true;
+                    } else {
+                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getFileName());
                     }
                 } finally {
                     image.flush(); // Release resources after processing
                 }
+            } else {
+                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getFileName());
             }
         } catch (Exception e) {
             log.error("Error generating cover for '{}': {}", bookEntity.getFileName(), e.getMessage());

@@ -356,9 +356,12 @@ public class BookMetadataService {
         notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + title));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
-        processor.generateCover(book);
+        boolean success = processor.generateCover(book);
+        log.info("{}regenerated cover regeneration for book ID {} ({}) finished with success={}", progress, book.getId(), title, success);
+        if (!success) {
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+        }
 
-        log.info("{}Successfully regenerated cover for book ID {} ({})", progress, book.getId(), title);
     }
 
     public BookMetadata getComicInfoMetadata(long bookId) {
