@@ -17,9 +17,11 @@
   transition: transform 0.3s ease;
   min-height: 3rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
 
   &.hidden {
     transform: translateY(-100%);
+    pointer-events: none;
   }
 }
 
@@ -94,8 +96,8 @@
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  overflow: hidden;
   position: relative;
+  overflow: hidden;
 }
 
 .spinner-wrapper {
@@ -112,15 +114,15 @@
 }
 
 #epubContainer {
-  height: 100%;
+  flex: 1;
   width: 100%;
-  overflow: hidden;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
+  position: relative;
+  overflow: auto;
+  pointer-events: auto;
+
+  &.paginated-mode {
+    overflow: hidden;
+  }
 }
 
 .menu-toggle-button,
@@ -376,8 +378,6 @@
     color: var(--primary-color);
   }
 }
-
-
 
 .empty-state {
   display: flex;
@@ -785,4 +785,15 @@
   50% {
     opacity: 0.5;
   }
+}
+
+.drawer-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  z-index: 999;
+  cursor: pointer;
 }

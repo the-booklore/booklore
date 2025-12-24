@@ -6,19 +6,25 @@
   }
   @if (!isLoading) {
     <div>
-      <div class="epub-header" [class.hidden]="!showHeader">
+      @if (isDrawerVisible) {
+        <div class="drawer-backdrop" (click)="isDrawerVisible = false; startHeaderAutoHide()"></div>
+      }
+      @if (isSettingsDrawerVisible) {
+        <div class="drawer-backdrop" (click)="isSettingsDrawerVisible = false; startHeaderAutoHide()"></div>
+      }
+      <div style="position: absolute; top: 0; left: 0; right: 0; height: 80px; z-index: 1000; pointer-events: auto;" (mouseenter)="onHeaderZoneEnter()" (mouseleave)="onHeaderZoneLeave()" (click)="onHeaderZoneClick($event)"></div>
+      <div class="epub-header" [class.hidden]="!showHeader" (click)="$event.stopPropagation()">
         <div class="header-left">
-          <p-button size="small" class="menu-toggle-button" (click)="toggleDrawer()" icon="pi pi-bars" severity="secondary"></p-button>
+          <p-button size="small" class="menu-toggle-button" (click)="toggleDrawer(); $event.stopPropagation()" icon="pi pi-bars" severity="secondary"></p-button>
           <div class="progress-info">
             <span class="progress-percentage"><span class="progress-label">Progress:  </span>{{ progressPercentage }}%</span>
           </div>
-<p-drawer [(visible)]="isDrawerVisible" [modal]="false" [position]="'left'" [style]="{ width: '320px' }">
+<p-drawer [(visible)]="isDrawerVisible" [modal]="false" [position]="'left'" [style]="{ width: '320px' }" (click)="$event.stopPropagation()">
   <ng-template pTemplate="header">
     <div class="drawer-header">
       <span class="drawer-title">Table of Contents</span>
     </div>
   </ng-template>
-
   <p-tabs value="0">
     <p-tablist>
       <p-tab value="0">
@@ -60,7 +66,8 @@
                 type="text"
                 [(ngModel)]="filterText"
                 placeholder="Search bookmarks..."
-                class="w-full p-inputtext-sm">
+                class="w-full p-inputtext-sm"
+                (click)="$event.stopPropagation()">
             </p-iconfield>
           </div>
           @if (filteredBookmarks.length === 0) {
@@ -108,11 +115,9 @@
   </p-tabs>
 </p-drawer>
         </div>
-
         <div class="header-center">
           <p class="text font-medium">{{ currentChapter }}</p>
         </div>
-
         <div class="header-right">
           <div class="flex gap-4">
             @if (!locationsReady) {
@@ -123,21 +128,19 @@
             <p-button
               size="small"
               [icon]="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'"
-              (click)="addBookmark()"
+              (click)="addBookmark(); $event.stopPropagation()"
               severity="secondary"
               [disabled]="!currentCfi || isAddingBookmark">
             </p-button>
             <div>
-              <p-button size="small" class="settings-toggle-button" (click)="toggleSettingsDrawer()" icon="pi pi-cog" severity="secondary"></p-button>
-              <p-drawer [(visible)]="isSettingsDrawerVisible" [modal]="false" [position]="'right'" [style]="{ width: '340px' }">
+              <p-button size="small" class="settings-toggle-button" (click)="toggleSettingsDrawer(); $event.stopPropagation()" icon="pi pi-cog" severity="secondary"></p-button>
+              <p-drawer [(visible)]="isSettingsDrawerVisible" [modal]="false" [position]="'right'" [style]="{ width: '340px' }" (click)="$event.stopPropagation()">
                 <ng-template pTemplate="header">
                   <div class="drawer-header">
                     <span class="drawer-title">Reader Settings</span>
                   </div>
                 </ng-template>
-
                 <div class="settings-container">
-
                   <div class="settings-card">
                     <div class="card-header">
                       <i class="pi pi-text-height"></i>
@@ -156,7 +159,6 @@
                           </button>
                         </div>
                       </div>
-
                       <div class="setting-row">
                         <label for="font-type">Font Family</label>
                         <p-select
@@ -169,7 +171,6 @@
                           placeholder="Select font">
                         </p-select>
                       </div>
-
                       <div class="setting-row">
                         <label>Line Height</label>
                         <div class="slider-container">
@@ -184,7 +185,6 @@
                           </p-slider>
                         </div>
                       </div>
-
                       <div class="setting-row">
                         <label>Letter Spacing</label>
                         <div class="slider-container">
@@ -201,7 +201,6 @@
                       </div>
                     </div>
                   </div>
-
                   <div class="settings-card">
                     <div class="card-header">
                       <i class="pi pi-palette"></i>
@@ -230,7 +229,6 @@
                       </div>
                     </div>
                   </div>
-
                   <div class="settings-card">
                     <div class="card-header">
                       <i class="pi pi-file"></i>
@@ -256,7 +254,6 @@
                           </button>
                         </div>
                       </div>
-
                       @if (selectedFlow === 'paginated' && !isMobileDevice()) {
                         <div class="setting-row">
                           <label>Page Spread</label>
@@ -280,14 +277,13 @@
                       }
                     </div>
                   </div>
-
                 </div>
               </p-drawer>
             </div>
             <p-button
               size="small"
               icon="pi pi-times"
-              (click)="closeReader()"
+              (click)="closeReader(); $event.stopPropagation()"
               severity="secondary"
               pTooltip="Close Reader"
               tooltipPosition="bottom">
@@ -295,7 +291,11 @@
           </div>
         </div>
       </div>
-      <div id="epubContainer" #epubContainer (click)="onBookClick($event)" (mousemove)="onBookMouseMove($event)"></div>
+      <div id="epubContainer"
+           #epubContainer
+           [class.paginated-mode]="selectedFlow === 'paginated'"
+           (click)="onBookClick($event)"
+           (mousemove)="onBookMouseMove($event)"></div>
       @if (selectedFlow !== 'scrolled') {
         <button class="epub-controls-left" [class.visible]="showControls" [class.dark-theme]="selectedTheme === 'black' || selectedTheme === 'grey'" (click)="prevPage(); onBookTouch()">←</button>
       }
@@ -305,8 +305,6 @@
     </div>
   }
 </div>
-
-  <!-- Bookmark Edit Dialog Component -->
   <app-bookmark-edit-dialog
     [(visible)]="showEditBookmarkDialog"
     [bookmark]="editingBookmark"
@@ -314,8 +312,6 @@
     (save)="onBookmarkSave($event)"
     (cancelEdit)="onBookmarkCancel()">
   </app-bookmark-edit-dialog>
-
-  <!-- Bookmark View Dialog Component -->
   <app-bookmark-view-dialog
     [(visible)]="viewDialogVisible"
     [bookmark]="selectedBookmark">

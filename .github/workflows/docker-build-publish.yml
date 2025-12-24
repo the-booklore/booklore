@@ -9,30 +9,28 @@ on:
     branches:
       - '**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-for-migrations:
     name: Check for DB Migrations
     if: github.event_name == 'pull_request' && (github.base_ref == 'master' || github.base_ref == 'develop')
     runs-on: ubuntu-latest
     outputs:
-      has_migrations: ${{ steps.check_migrations.outputs.has_migrations }}
+      has_migrations: ${{ steps.filter.outputs.migrations }}
     steps:
-      - name: Checkout Repository for Diff
+      - name: Checkout Repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
 
-      - name: Detect Flyway Migration Changes
-        id: check_migrations
-        run: |
-          # Compare PR head with the target base branch
-          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q "booklore-api/src/main/resources/db/migration/V.*.sql"; then
-            echo "Migration file changes detected. Proceeding with migration preview."
-            echo "has_migrations=true" >> $GITHUB_OUTPUT
-          else
-            echo "No migration file changes detected. Skipping migration preview."
-            echo "has_migrations=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Detect Migration Changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            migrations:
+              - 'booklore-api/src/main/resources/db/migration/V*.sql'
 
   flyway-migration-preview:
     name: Flyway DB Migration Preview
@@ -87,46 +85,36 @@ jobs:
       - name: Confirm Flyway Dry Run Success
         run: echo "✅ Flyway migration preview successful. Migrations can be applied cleanly."
 
-  build-and-push:
+  test-pr:
+    name: Run Tests on Pull Request
     needs: [check-for-migrations, flyway-migration-preview]
-    if: always() && (needs.flyway-migration-preview.result == 'success' || needs.flyway-migration-preview.result == 'skipped')
+    if: github.event_name == 'pull_request' && (needs.flyway-migration-preview.result == 'success' || needs.flyway-migration-preview.result == 'skipped')
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      packages: write
-      issues: read
+      contents: read
       checks: write
       pull-requests: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
+
+      - name: Detect Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
         with:
-          fetch-depth: 0
-
-      - name: Authenticate to Docker Hub
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Authenticate to GitHub Container Registry
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ github.token }}
-
-      - name: Set Up QEMU for Multi-Architecture Builds
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+          filters: |
+            backend:
+              - 'booklore-api/**'
+            image_build:
+              - 'booklore-api/**'
+              - 'booklore-ui/**'
+              - 'Dockerfile'
+              - 'start.sh'
 
       - name: Set Up JDK 21
+        if: steps.filter.outputs.backend == 'true'
         uses: actions/setup-java@v5
         with:
           java-version: '21'
@@ -134,16 +122,17 @@ jobs:
           cache: 'gradle'
 
       - name: Execute Backend Tests
+        if: steps.filter.outputs.backend == 'true'
         id: backend_tests
         working-directory: ./booklore-api
         run: |
-          echo "Running backend tests with testcontainers..."
+          echo "Running backend tests..."
           ./gradlew test --no-daemon --parallel --build-cache
         continue-on-error: true
 
       - name: Publish Backend Test Results
+        if: always() && steps.backend_tests.conclusion != 'skipped'
         uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
         with:
           files: booklore-api/build/test-results/**/*.xml
           check_name: Backend Test Results
@@ -152,10 +141,10 @@ jobs:
           report_suite_logs: 'any'
 
       - name: Upload Backend Test Reports
+        if: always() && steps.backend_tests.conclusion != 'skipped'
         uses: actions/upload-artifact@v6
-        if: always()
         with:
-          name: test-reports
+          name: test-reports-pr-${{ github.event.pull_request.number }}
           path: |
             booklore-api/build/reports/tests/
             booklore-api/build/test-results/
@@ -167,7 +156,89 @@ jobs:
           echo "❌ Backend tests failed! Check the test results above."
           exit 1
 
+      - name: Skip Backend Tests
+        if: steps.filter.outputs.backend == 'false'
+        run: |
+          echo "✅ No backend changes detected. Skipping backend tests."
+
+      - name: PR Validation Complete
+        run: |
+          echo "✅ All PR validation checks passed!"
+          echo "Images will be built and pushed when this PR is merged."
+
+  build-and-push:
+    name: Build and Push Docker Images
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Detect Changed Paths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'booklore-api/**'
+            image_build:
+              - 'booklore-api/**'
+              - 'booklore-ui/**'
+              - 'Dockerfile'
+              - 'start.sh'
+
+      - name: Skip Build and Push
+        if: steps.filter.outputs.image_build == 'false'
+        run: |
+          echo "✅ No backend/frontend/Docker changes detected. Skipping image build and publish."
+
+      - name: Set Up JDK 21
+        if: steps.filter.outputs.backend == 'true'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Execute Backend Tests
+        if: steps.filter.outputs.backend == 'true'
+        working-directory: ./booklore-api
+        run: |
+          echo "Running backend tests before building image..."
+          ./gradlew test --no-daemon --parallel --build-cache
+
+      - name: Authenticate to Docker Registries
+        if: steps.filter.outputs.image_build == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Authenticate to GitHub Container Registry
+        if: steps.filter.outputs.image_build == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Set Up QEMU for Multi-Architecture Builds
+        if: steps.filter.outputs.image_build == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set Up Docker Buildx
+        if: steps.filter.outputs.image_build == 'true'
+        uses: docker/setup-buildx-action@v3
+
       - name: Retrieve Latest Master Version Tag
+        if: steps.filter.outputs.image_build == 'true'
         id: get_version
         run: |
           latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
@@ -176,7 +247,7 @@ jobs:
           echo "Latest master tag: $latest_tag"
 
       - name: Determine Version Bump (Master Only)
-        if: github.ref == 'refs/heads/master'
+        if: steps.filter.outputs.image_build == 'true' && github.ref == 'refs/heads/master'
         id: determine_bump
         env:
           GH_TOKEN: ${{ github.token }}
@@ -232,6 +303,7 @@ jobs:
           echo "new_tag=$next_version" >> $GITHUB_ENV
 
       - name: Generate Image Tag
+        if: steps.filter.outputs.image_build == 'true'
         id: set_image_tag
         run: |
           branch="${GITHUB_REF#refs/heads/}"
@@ -247,8 +319,8 @@ jobs:
           echo "image_tag=$image_tag" >> $GITHUB_ENV
           echo "Image tag: $image_tag"
 
-      - name: Build and push Docker image
-        if: github.event_name == 'push'
+      - name: Build and Push Docker Images
+        if: steps.filter.outputs.image_build == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -268,7 +340,7 @@ jobs:
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
       - name: Push Latest Tag (Master Only)
-        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        if: steps.filter.outputs.image_build == 'true' && github.ref == 'refs/heads/master'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -285,7 +357,7 @@ jobs:
           cache-from: type=gha
 
       - name: Update GitHub Release Draft (Master Only)
-        if: github.ref == 'refs/heads/master'
+        if: steps.filter.outputs.image_build == 'true' && github.ref == 'refs/heads/master'
         uses: release-drafter/release-drafter@v6
         with:
           tag: ${{ env.new_tag }}
@@ -294,7 +366,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Publish GitHub Draft Release (Master Only)
-        if: github.ref == 'refs/heads/master'
+        if: steps.filter.outputs.image_build == 'true' && github.ref == 'refs/heads/master'
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |

@@ -449,9 +449,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.headerShownByMobileTouch = false;
       this.clearHeaderTimeout();
     } else {
-      if (!this.isMobileDevice()) {
-        this.startHeaderAutoHide();
-      }
+      this.startHeaderAutoHide();
     }
   }
 
@@ -462,9 +460,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.headerShownByMobileTouch = false;
       this.clearHeaderTimeout();
     } else {
-      if (!this.isMobileDevice()) {
-        this.startHeaderAutoHide();
-      }
+      this.startHeaderAutoHide();
     }
   }
 
@@ -554,13 +550,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   onBookClick(event: MouseEvent): void {
-    if (this.isDrawerVisible || this.isSettingsDrawerVisible) {
-      this.isDrawerVisible = false;
-      this.isSettingsDrawerVisible = false;
-      this.startHeaderAutoHide();
-      return;
-    }
-
     const clickY = event.clientY;
     const screenHeight = window.innerHeight;
 
@@ -572,6 +561,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.showHeader = true;
         this.headerShownByMobileTouch = true;
         this.clearHeaderTimeout();
+        this.startHeaderAutoHide();
       } else if (isBottomClick && this.showHeader && this.headerShownByMobileTouch) {
         this.showHeader = false;
         this.headerShownByMobileTouch = false;
@@ -583,6 +573,26 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.showHeader = true;
         this.startHeaderAutoHide();
       }
+    }
+  }
+
+  onHeaderZoneEnter(): void {
+    if (this.isMobileDevice()) return;
+    this.isMouseInTopRegion = true;
+    this.showHeader = true;
+    this.clearHeaderTimeout();
+  }
+
+  onHeaderZoneLeave(): void {
+    if (this.isMobileDevice()) return;
+    this.isMouseInTopRegion = false;
+    this.startHeaderAutoHide();
+  }
+
+  onHeaderZoneClick(event: MouseEvent): void {
+    if (!this.showHeader) {
+      this.showHeader = true;
+      this.clearHeaderTimeout();
     }
   }
 
@@ -608,25 +618,29 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   onBookTouch(): void {
     if (this.isMobileDevice()) {
       this.showControls = true;
+      this.showHeader = true;
+      this.headerShownByMobileTouch = false;
+      this.clearHeaderTimeout();
+
       if (this.hideControlsTimeout) {
         window.clearTimeout(this.hideControlsTimeout);
       }
+
       this.hideControlsTimeout = window.setTimeout(() => {
         this.ngZone.run(() => {
           this.showControls = false;
+          if (!this.isDrawerVisible && !this.isSettingsDrawerVisible) {
+            this.showHeader = false;
+          }
         });
       }, 2000);
     }
   }
 
-  private startHeaderAutoHide(): void {
+  startHeaderAutoHide(): void {
     this.clearHeaderTimeout();
 
     if (this.isDrawerVisible || this.isSettingsDrawerVisible || this.isMouseInTopRegion) {
-      return;
-    }
-
-    if (this.isMobileDevice() && this.headerShownByMobileTouch) {
       return;
     }
 
@@ -634,9 +648,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         if (!this.isDrawerVisible && !this.isSettingsDrawerVisible && !this.isMouseInTopRegion) {
           this.showHeader = false;
+          this.headerShownByMobileTouch = false;
         }
       });
-    }, 1000);
+    }, this.isMobileDevice() ? 2000 : 1000);
   }
 
   private clearHeaderTimeout(): void {
