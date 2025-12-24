@@ -86,7 +86,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             helper.copyLanguage(clear != null && clear.isLanguage(), val -> replaceAndTrackChange(opfDoc, metadataElement, "language", DC_NS, val, hasChanges));
 
             helper.copyAuthors(clear != null && clear.isAuthors(), names -> {
-                removeElementsByTagNameNS(metadataElement, DC_NS, "creator");
+                removeCreatorsByRole(metadataElement, "");
+                removeCreatorsByRole(metadataElement, "aut");
                 if (names != null) {
                     for (String name : names) {
                         String[] parts = name.split(" ", 2);
@@ -491,6 +492,16 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
+    private void removeMetaByRefines(Element metadataElement, String refines) {
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            if (refines.equals(meta.getAttribute("refines"))) {
+                metadataElement.removeChild(meta);
+            }
+        }
+    }
+
     private Element createMetaElement(Document doc, String name, String content) {
         Element meta = doc.createElementNS(doc.getDocumentElement().getNamespaceURI(), "meta");
         meta.setAttribute("name", name);
@@ -523,6 +534,28 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
+    private void removeCreatorsByRole(Element metadataElement, String role) {
+        NodeList creators = metadataElement.getElementsByTagNameNS("*", "creator");
+        for (int i = creators.getLength() - 1; i >= 0; i--) {
+            Element creatorElement = (Element) creators.item(i);
+            String id = creatorElement.getAttribute("id");
+            String creatorRole = creatorElement.getAttributeNS(OPF_NS, "role");
+            if (StringUtils.isNotBlank(id) && StringUtils.isBlank(creatorRole)) {
+                // Finds any matching role meta tags for this creator ID
+                Element meta = getMetaElementByFilter(metadataElement, el -> ("role".equals(el.getAttribute("property")) && "#".concat(id).equals(el.getAttribute("refines"))));
+                if ( meta != null ) {
+                   creatorRole = meta.hasAttribute("content") ? meta.getAttribute("content").trim() : meta.getTextContent().trim();
+                }
+            }
+            if (role.equalsIgnoreCase(creatorRole)) {
+                metadataElement.removeChild(creatorElement);
+                if (StringUtils.isNotBlank(id)){
+                    removeMetaByRefines(metadataElement, "#".concat(id));
+                }
+            }
+        }
+    }
+
     private Element createCreatorElement(Document doc, String fullName, String fileAs, String role) {
         Element creator = doc.createElementNS("http://purl.org/dc/elements/1.1/", "creator");
         creator.setPrefix("dc");
@@ -543,13 +576,21 @@ public class EpubMetadataWriter implements MetadataWriter {
         return subj;
     }
 
-    private String getMetaContentByName(Element metadataElement, String name) {
+    private Element getMetaElementByFilter(Element metadataElement, java.util.function.Predicate<Element> filter) {
         NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
         for (int i = 0; i < metas.getLength(); i++) {
             Element meta = (Element) metas.item(i);
-            if (name.equals(meta.getAttribute("name"))) {
-                return meta.getAttribute("content");
+            if (filter.test(meta)) {
+                return meta;
             }
+        }
+        return null;
+    }
+
+    private String getMetaContentByName(Element metadataElement, String name) {
+        Element meta = getMetaElementByFilter( metadataElement, el -> name.equals(el.getAttribute("name")) );
+        if (meta != null) {
+           return meta.getAttribute("content");
         }
         return null;
     }
