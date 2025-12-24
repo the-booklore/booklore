@@ -269,8 +269,18 @@ public class BookMetadataService {
 
     public void regenerateCoversForBooks(Set<Long> bookIds) {
         List<BookRegenerationInfo> unlockedBooks = getUnlockedBookRegenerationInfos(bookIds);
-        SecurityContextVirtualThread.runWithSecurityContext(() -> 
-            processBulkCoverRegeneration(unlockedBooks));
+        SecurityContextVirtualThread.runWithSecurityContext(() -> {
+            try {
+                processBulkCoverRegeneration(unlockedBooks);
+                String successMessage = "Selected books covers have been regenerated";
+                notificationService.sendMessage(Topic.LOG, LogNotification.info(successMessage));
+                log.info(successMessage);
+            } catch (Exception e) {
+                String errorMessage = "An error occurred while regenerating books covers: " + e.getMessage();
+                notificationService.sendMessage(Topic.LOG, LogNotification.error(errorMessage));
+                log.error(errorMessage, e);
+            }
+        });
     }
 
     private List<BookRegenerationInfo> getUnlockedBookRegenerationInfos(Set<Long> bookIds) {

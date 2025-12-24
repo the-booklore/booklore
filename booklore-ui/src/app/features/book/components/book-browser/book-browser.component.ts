@@ -700,6 +700,37 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       }
     });
   }
+  regenerateCovers(): void {
+    const bookIds = [...this.selectedBooks];
+    
+    if (bookIds.length === 0) return;
+
+    // First regenerate all covers
+    forkJoin(bookIds.map(bookId => this.bookService.regenerateCover(bookId))).pipe(
+      switchMap(() => {
+        // Then fetch updated book data to refresh covers
+        return forkJoin(bookIds.map(bookId => this.bookService.getBookByIdFromAPI(bookId, false)));
+      }),
+      catchError(() => {
+        this.messageService.add({
+          severity: "error",
+          summary: "Error",
+          detail: "Failed to regenerate covers",
+        });
+        return of([]);
+      })
+    ).subscribe((updatedBooks) => {
+      if (updatedBooks.length > 0) {
+        // Update books in state
+        this.bookService.handleMultipleBookUpdates(updatedBooks);
+        this.messageService.add({
+          severity: "success",
+          summary: "Success",
+          detail: "Book covers regenerated successfully.",
+        });
+      }
+    });
+  }
 
   moveFiles() {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
