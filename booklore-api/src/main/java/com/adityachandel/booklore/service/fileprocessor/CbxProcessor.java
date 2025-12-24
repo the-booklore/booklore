@@ -110,7 +110,11 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
-        try (ZipFile zipFile = ZipFile.builder().setFile(file).get()) {
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(file)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(true)
+                .get()) {
             return Collections.list(zipFile.getEntries()).stream()
                     .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
                     .min(Comparator.comparing(ZipArchiveEntry::getName))

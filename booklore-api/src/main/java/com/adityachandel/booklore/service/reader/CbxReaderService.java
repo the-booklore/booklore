@@ -153,6 +153,8 @@ public class CbxReaderService {
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbzPath)
                              .setCharset(charset)
+                             .setUseUnicodeExtraFields(true)
+                             .setIgnoreLocalFileHeader(true)
                              .get()) {
 
             var entries = zipFile.getEntries();
@@ -349,6 +351,8 @@ public class CbxReaderService {
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbxPath)
                              .setCharset(charset)
+                             .setUseUnicodeExtraFields(true)
+                             .setIgnoreLocalFileHeader(true)
                              .get()) {
 
             long total = 0;

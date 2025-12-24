@@ -198,7 +198,11 @@ public class CbxConversionService {
     private List<Path> extractImagesFromZip(File cbzFile, Path extractedImagesDir) throws IOException {
         List<Path> imagePaths = new ArrayList<>();
         
-        try (ZipFile zipFile = ZipFile.builder().setFile(cbzFile).get()) {
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(cbzFile)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(true)
+                .get()) {
             for (ZipArchiveEntry entry : Collections.list(zipFile.getEntries())) {
                 if (entry.isDirectory() || !isImageFile(entry.getName())) {
                     continue;
