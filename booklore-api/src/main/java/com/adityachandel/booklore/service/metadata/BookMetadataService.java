@@ -269,18 +269,7 @@ public class BookMetadataService {
 
     public void regenerateCoversForBooks(Set<Long> bookIds) {
         List<BookRegenerationInfo> unlockedBooks = getUnlockedBookRegenerationInfos(bookIds);
-        SecurityContextVirtualThread.runWithSecurityContext(() -> {
-            try {
-                processBulkCoverRegeneration(unlockedBooks);
-                String successMessage = "Selected books covers have been regenerated";
-                notificationService.sendMessage(Topic.LOG, LogNotification.info(successMessage));
-                log.info(successMessage);
-            } catch (Exception e) {
-                String errorMessage = "An error occurred while regenerating books covers: " + e.getMessage();
-                notificationService.sendMessage(Topic.LOG, LogNotification.error(errorMessage));
-                log.error(errorMessage, e);
-            }
-        });
+        SecurityContextVirtualThread.runWithSecurityContext(() -> processBulkCoverRegeneration(unlockedBooks));
     }
 
     private List<BookRegenerationInfo> getUnlockedBookRegenerationInfos(Set<Long> bookIds) {
@@ -290,18 +279,25 @@ public class BookMetadataService {
                 .toList();
     }
 
+    @Transactional
     private void processBulkCoverRegeneration(List<BookRegenerationInfo> books) {
         try {
             int total = books.size();
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " selected book(s)"));
 
             int current = 1;
+            List<Book> updatedBooks = new ArrayList<>();
+
             for (BookRegenerationInfo bookInfo : books) {
                 try {
                     String progress = "(" + current + "/" + total + ") ";
                     notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + bookInfo.title()));
                     regenerateCoverForBookId(bookInfo);
                     log.info("{}Successfully regenerated cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
+
+                    bookRepository.findById(bookInfo.id()).ifPresent(book -> {
+                        updatedBooks.add(bookMapper.toBook(book));
+                    });
                 } catch (Exception e) {
                     log.error("Failed to regenerate cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
                 }
@@ -309,6 +305,7 @@ public class BookMetadataService {
                 current++;
             }
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers for selected books"));
+            notificationService.sendMessage(Topic.BOOKS_UPDATE, updatedBooks);
         } catch (Exception e) {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
             notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
