@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.security.Principal;
 import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookLoreUser {
+public class BookLoreUser implements Principal {
     private Long id;
     private String username;
     private boolean isDefaultPassword;
@@ -23,6 +24,11 @@ public class BookLoreUser {
     private List<Library> assignedLibraries;
     private UserPermissions permissions;
     private UserSettings userSettings;
+
+    @Override
+    public String getName() {
+        return username;
+    }
 
     @Data
     public static class UserPermissions {
