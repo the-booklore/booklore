@@ -28,6 +28,7 @@ type SessionHeatmapChartData = ChartData<'matrix', MatrixDataPoint[], string>;
 })
 export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
   @Input() initialYear: number = new Date().getFullYear();
+  @Input() userName: string = '';
 
   public currentYear: number = new Date().getFullYear();
   public readonly chartType = 'matrix' as const;
@@ -224,5 +225,11 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
     const date = new Date(year, 0, 1);
     date.setDate(date.getDate() + (week * 7) - date.getDay());
     return date;
+  }
+
+  public getTitle(): string {
+    return this.userName
+      ? `${this.userName}'s Reading Session Activity`
+      : 'Reading Session Activity';
   }
 }

@@ -382,6 +382,13 @@
   }
 }
 
+.timeline-title-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+  vertical-align: middle;
+  margin-right: 0.25em;
+}
+
 @media (max-width: 768px) {
   .timeline-header {
     flex-direction: column;

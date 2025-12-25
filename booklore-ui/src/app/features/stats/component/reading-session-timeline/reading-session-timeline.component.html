@@ -1,8 +1,11 @@
 <div class="timeline-container">
   <div class="timeline-header">
     <div class="header-title">
-      <h3>Reading Session Timeline</h3>
-      <p class="timeline-subtitle">Your reading schedule throughout the week</p>
+      <h3>
+        <i class="pi pi-clock timeline-title-icon"></i>
+        {{ getTitle() }}
+      </h3>
+      <p class="timeline-subtitle">Weekly overview of your reading sessions and patterns</p>
     </div>
     <div class="week-selector">
       <button type="button"

@@ -44,11 +44,12 @@ interface DayTimeline {
 export class ReadingSessionTimelineComponent implements OnInit {
   @Input() initialYear: number = new Date().getFullYear();
   @Input() weekNumber: number = this.getCurrentWeekNumber();
+  @Input() userName: string = '';
 
   private userStatsService = inject(UserStatsService);
   private urlHelperService = inject(UrlHelperService);
 
-  public daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  public daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   public hourLabels: string[] = [];
   public timelineData: DayTimeline[] = [];
   public currentYear: number = new Date().getFullYear();
@@ -198,13 +199,15 @@ export class ReadingSessionTimelineComponent implements OnInit {
     });
 
     this.timelineData = [];
+    const displayOrder = [1, 2, 3, 4, 5, 6, 0];
     for (let i = 0; i < 7; i++) {
-      const sessionsForDay = dayMap.get(i) || [];
+      const dayOfWeek = displayOrder[i];
+      const sessionsForDay = dayMap.get(dayOfWeek) || [];
       const timelineSessions = this.layoutSessionsForDay(sessionsForDay);
 
       this.timelineData.push({
         day: this.daysOfWeek[i],
-        dayOfWeek: i,
+        dayOfWeek: dayOfWeek,
         sessions: timelineSessions
       });
     }
@@ -321,5 +324,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
   public getCoverUrl(bookId: number): string {
     return this.urlHelperService.getThumbnailUrl1(bookId);
+  }
+
+  public getTitle(): string {
+    return this.userName
+      ? `${this.userName}'s Reading Session Timeline`
+      : 'Reading Session Timeline';
   }
 }

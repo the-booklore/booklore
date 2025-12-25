@@ -346,7 +346,7 @@ services:
 
 Found an issue?
 
-[![Open Issue](https://img.shields.io/badge/Report-ff6b6b?style=for-the-badge)](https://github.com/adityachandelgit/BookLore/issues)
+[![Open Issue](https://img.shields.io/badge/Report-ff6b6b?style=for-the-badge)](https://github.com/booklore-app/booklore/issues)
 
 </td>
 <td align="center">
@@ -355,7 +355,7 @@ Found an issue?
 
 Have an idea?
 
-[![Request Feature](https://img.shields.io/badge/Suggest-4ecdc4?style=for-the-badge)](https://github.com/adityachandelgit/BookLore/issues/new)
+[![Request Feature](https://img.shields.io/badge/Suggest-4ecdc4?style=for-the-badge)](https://github.com/booklore-app/booklore/issues/new?template=feature_request.md)
 
 </td>
 <td align="center">
