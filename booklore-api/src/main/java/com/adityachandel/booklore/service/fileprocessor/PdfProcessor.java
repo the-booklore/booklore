@@ -24,7 +24,6 @@ import org.springframework.stereotype.Service;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 
 import static com.adityachandel.booklore.util.FileService.truncate;

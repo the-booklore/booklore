@@ -26,7 +26,6 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 
