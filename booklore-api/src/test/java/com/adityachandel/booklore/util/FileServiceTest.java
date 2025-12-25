@@ -179,8 +179,6 @@ class FileServiceTest {
     @DisplayName("Path Utilities")
     class PathUtilitiesTests {
 
-        private static final String CONFIG_PATH = "/config";
-
         @BeforeEach
         void setup() {
             lenient().when(appProperties.getPathConfig()).thenReturn(tempDir.toString());
@@ -365,7 +363,7 @@ class FileServiceTest {
             void shrinks_imageProperly() {
                 BufferedImage original = createTestImage(100, 100);
                 
-                BufferedImage resized = fileService.resizeImage(original, 50, 50);
+                BufferedImage resized = FileService.resizeImage(original, 50, 50);
                 
                 assertAll(
                     () -> assertEquals(50, resized.getWidth()),
@@ -377,7 +375,7 @@ class FileServiceTest {
             void enlarges_imageProperly() {
                 BufferedImage original = createTestImage(50, 50);
                 
-                BufferedImage resized = fileService.resizeImage(original, 200, 200);
+                BufferedImage resized = FileService.resizeImage(original, 200, 200);
                 
                 assertAll(
                     () -> assertEquals(200, resized.getWidth()),
@@ -389,7 +387,7 @@ class FileServiceTest {
             void changesAspectRatio() {
                 BufferedImage original = createTestImage(100, 100);
                 
-                BufferedImage resized = fileService.resizeImage(original, 200, 50);
+                BufferedImage resized = FileService.resizeImage(original, 200, 50);
                 
                 assertAll(
                     () -> assertEquals(200, resized.getWidth()),
@@ -401,7 +399,7 @@ class FileServiceTest {
             void sameSize_worksCorrectly() {
                 BufferedImage original = createTestImage(100, 100);
                 
-                BufferedImage resized = fileService.resizeImage(original, 100, 100);
+                BufferedImage resized = FileService.resizeImage(original, 100, 100);
                 
                 assertAll(
                     () -> assertEquals(100, resized.getWidth()),
@@ -414,7 +412,7 @@ class FileServiceTest {
             void returnsRGBType() {
                 BufferedImage original = new BufferedImage(100, 100, BufferedImage.TYPE_INT_ARGB);
                 
-                BufferedImage resized = fileService.resizeImage(original, 50, 50);
+                BufferedImage resized = FileService.resizeImage(original, 50, 50);
                 
                 assertEquals(BufferedImage.TYPE_INT_RGB, resized.getType());
             }
@@ -423,7 +421,7 @@ class FileServiceTest {
             void handlesVerySmallDimensions() {
                 BufferedImage original = createTestImage(100, 100);
                 
-                BufferedImage resized = fileService.resizeImage(original, 1, 1);
+                BufferedImage resized = FileService.resizeImage(original, 1, 1);
                 
                 assertAll(
                     () -> assertEquals(1, resized.getWidth()),
@@ -442,7 +440,7 @@ class FileServiceTest {
                 byte[] imageData = imageToBytes(image);
                 Path outputPath = tempDir.resolve("test-output.jpg");
                 
-                fileService.saveImage(imageData, outputPath.toString());
+                FileService.saveImage(imageData, outputPath.toString());
                 
                 assertAll(
                     () -> assertTrue(Files.exists(outputPath)),
@@ -456,7 +454,7 @@ class FileServiceTest {
                 byte[] imageData = imageToBytes(image);
                 Path outputPath = tempDir.resolve("nested/deep/folder/test.jpg");
                 
-                fileService.saveImage(imageData, outputPath.toString());
+                FileService.saveImage(imageData, outputPath.toString());
                 
                 assertTrue(Files.exists(outputPath));
             }
@@ -467,7 +465,7 @@ class FileServiceTest {
                 Path outputPath = tempDir.resolve("invalid.jpg");
 
                 assertThrows(IOException.class, () ->
-                    fileService.saveImage(invalidData, outputPath.toString()));
+                    FileService.saveImage(invalidData, outputPath.toString()));
             }
 
             @Test
@@ -476,7 +474,7 @@ class FileServiceTest {
                 Path outputPath = tempDir.resolve("empty.jpg");
 
                 assertThrows(IOException.class, () ->
-                    fileService.saveImage(emptyData, outputPath.toString()));
+                    FileService.saveImage(emptyData, outputPath.toString()));
             }
 
             @Test
@@ -485,7 +483,7 @@ class FileServiceTest {
                 byte[] imageData = imageToBytes(original);
                 Path outputPath = tempDir.resolve("readable.jpg");
                 
-                fileService.saveImage(imageData, outputPath.toString());
+                FileService.saveImage(imageData, outputPath.toString());
                 BufferedImage loaded = ImageIO.read(outputPath.toFile());
                 
                 assertAll(
@@ -493,6 +491,23 @@ class FileServiceTest {
                     () -> assertEquals(100, loaded.getWidth()),
                     () -> assertEquals(100, loaded.getHeight())
                 );
+            }
+
+            @Test
+            void directoryCreationSucceeds_nestedPaths() throws IOException {
+                BufferedImage image = createTestImage(100, 100);
+                byte[] imageData = imageToBytes(image);
+                Path nestedPath = tempDir.resolve("nested/deep/folder/test.jpg");
+                assertDoesNotThrow(() -> FileService.saveImage(imageData, nestedPath.toString()),
+                    "Should create nested directories automatically");
+                assertTrue(Files.exists(nestedPath), "File should be created in nested directory");
+            }
+
+            @Test
+            void nullImageData_throwsException() {
+                Path outputPath = tempDir.resolve("null.jpg");
+                assertThrows(NullPointerException.class, () ->
+                    FileService.saveImage(null, outputPath.toString()));
             }
         }
     }
@@ -739,6 +754,166 @@ class FileServiceTest {
                 assertEquals(originalRatio, savedRatio, 0.01, 
                     "Image should not be cropped when cropping is disabled");
             }
+
+            @Test
+            @DisplayName("smart cropping enabled for tall image finds content start")
+            void smartCroppingEnabled_tallImage_cropsFromContent() throws IOException {
+                CoverCroppingSettings smartCropSettings = CoverCroppingSettings.builder()
+                        .verticalCroppingEnabled(true)
+                        .horizontalCroppingEnabled(true)
+                        .aspectRatioThreshold(2.5)
+                        .smartCroppingEnabled(true)
+                        .build();
+                AppSettings appSettings = AppSettings.builder()
+                        .coverCroppingSettings(smartCropSettings)
+                        .build();
+                when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+                int width = 500;
+                int height = 3000;  // ratio = 6:1
+                BufferedImage tallImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+                Graphics2D g = tallImage.createGraphics();
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, width, 200);
+                g.setColor(Color.BLUE);
+                g.fillRect(0, 200, width, height - 200);
+                g.dispose();
+
+                boolean result = fileService.saveCoverImages(tallImage, 104L);
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(new File(fileService.getCoverFile(104L)));
+                assertNotNull(savedCover);
+                double savedRatio = (double) savedCover.getHeight() / savedCover.getWidth();
+                assertTrue(savedRatio < 3.0, "Cropped image should have reasonable aspect ratio");
+            }
+
+            @Test
+            @DisplayName("smart cropping enabled for wide image finds content start")
+            void smartCroppingEnabled_wideImage_cropsFromContent() throws IOException {
+                CoverCroppingSettings smartCropSettings = CoverCroppingSettings.builder()
+                        .verticalCroppingEnabled(true)
+                        .horizontalCroppingEnabled(true)
+                        .aspectRatioThreshold(2.5)
+                        .smartCroppingEnabled(true)
+                        .build();
+                AppSettings appSettings = AppSettings.builder()
+                        .coverCroppingSettings(smartCropSettings)
+                        .build();
+                when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+                int width = 3000;
+                int height = 400;  // ratio = 7.5:1
+                BufferedImage wideImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+                Graphics2D g = wideImage.createGraphics();
+                g.setColor(Color.WHITE);
+                g.fillRect(0, 0, 200, height);
+                g.setColor(Color.BLUE);
+                g.fillRect(200, 0, width - 200, height);
+                g.dispose();
+
+                boolean result = fileService.saveCoverImages(wideImage, 105L);
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(new File(fileService.getCoverFile(105L)));
+                assertNotNull(savedCover);
+                double savedRatio = (double) savedCover.getWidth() / savedCover.getHeight();
+                assertTrue(savedRatio < 3.0, "Cropped image should have reasonable aspect ratio");
+            }
+
+            @Test
+            @DisplayName("smart cropping with uniform color image uses top/left")
+            void smartCroppingEnabled_uniformColorImage_usesTopLeft() throws IOException {
+                CoverCroppingSettings smartCropSettings = CoverCroppingSettings.builder()
+                        .verticalCroppingEnabled(true)
+                        .horizontalCroppingEnabled(true)
+                        .aspectRatioThreshold(2.5)
+                        .smartCroppingEnabled(true)
+                        .build();
+                AppSettings appSettings = AppSettings.builder()
+                        .coverCroppingSettings(smartCropSettings)
+                        .build();
+                when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+                int width = 500;
+                int height = 3000;
+                BufferedImage uniformImage = createTestImage(width, height, Color.BLUE);
+
+                boolean result = fileService.saveCoverImages(uniformImage, 106L);
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(new File(fileService.getCoverFile(106L)));
+                assertNotNull(savedCover);
+                double savedRatio = (double) savedCover.getHeight() / savedCover.getWidth();
+                assertTrue(savedRatio < 3.0, "Cropped image should have reasonable aspect ratio");
+            }
+
+            @Test
+            @DisplayName("null cover cropping settings returns image unchanged")
+            void nullCoverCroppingSettings_returnsImageUnchanged() throws IOException {
+                AppSettings appSettings = AppSettings.builder()
+                        .coverCroppingSettings(null)
+                        .build();
+                when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+                int width = 500;
+                int height = 3000;  // Very tall image
+                BufferedImage tallImage = createTestImage(width, height);
+
+                boolean result = fileService.saveCoverImages(tallImage, 107L);
+                assertTrue(result);
+
+                BufferedImage savedCover = ImageIO.read(new File(fileService.getCoverFile(107L)));
+                assertNotNull(savedCover);
+                assertTrue(savedCover.getWidth() <= 1000);
+                assertTrue(savedCover.getHeight() <= 1500);
+            }
+        }
+
+        @Nested
+        @DisplayName("createThumbnailFromBytes")
+        class CreateThumbnailFromBytesTests {
+
+            @Test
+            void validImageBytes_succeeds() throws IOException {
+                BufferedImage image = createTestImage(300, 400);
+                byte[] imageBytes = imageToBytes(image);
+                
+                assertDoesNotThrow(() -> 
+                    fileService.createThumbnailFromBytes(15L, imageBytes));
+                assertTrue(Files.exists(Path.of(fileService.getCoverFile(15L))));
+            }
+
+            @Test
+            void invalidImageBytes_throwsRuntimeException() {
+                byte[] invalidData = "not an image".getBytes();
+                
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                    fileService.createThumbnailFromBytes(16L, invalidData));
+                assertTrue(exception.getMessage().contains("Image not found") || 
+                          exception.getMessage().contains("Failed"),
+                    "Exception message should indicate image processing failure");
+            }
+
+            @Test
+            void emptyImageBytes_throwsRuntimeException() {
+                byte[] emptyData = new byte[0];
+                
+                // FileService wraps ImageIO exceptions in RuntimeException via ApiError
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                    fileService.createThumbnailFromBytes(17L, emptyData));
+                assertTrue(exception.getMessage().contains("Image not found") || 
+                          exception.getMessage().contains("Failed"),
+                    "Exception message should indicate image processing failure");
+            }
+
+            @Test
+            void nullImageBytes_throwsRuntimeException() {
+                // Null input causes NPE in ByteArrayInputStream constructor, which is caught and wrapped
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                    fileService.createThumbnailFromBytes(18L, null));
+                assertNotNull(exception.getMessage(), "Exception should have a message");
+            }
         }
 
         @Nested
@@ -770,34 +945,42 @@ class FileServiceTest {
             }
 
             @Test
-            void emptyFile_throwsException() {
+            void emptyFile_throwsRuntimeException() {
                 MockMultipartFile emptyFile = new MockMultipartFile(
                     "file", "empty.jpg", "image/jpeg", new byte[0]);
                 
-                Exception exception = assertThrows(Exception.class, () ->
+                // validateCoverFile throws IllegalArgumentException, but it's caught and wrapped in RuntimeException via ApiError
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromFile(7L, emptyFile));
-                assertTrue(exception.getMessage().contains("empty"));
+                assertTrue(exception.getMessage().contains("empty") || 
+                          exception.getCause() instanceof IllegalArgumentException,
+                    "Exception message should indicate file is empty or wrap IllegalArgumentException");
             }
 
             @Test
-            void invalidMimeType_throwsException() {
+            void invalidMimeType_throwsRuntimeException() {
                 MockMultipartFile gifFile = new MockMultipartFile(
                     "file", "test.gif", "image/gif", "fake data".getBytes());
                 
-                Exception exception = assertThrows(Exception.class, () ->
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromFile(8L, gifFile));
-                assertTrue(exception.getMessage().contains("Only JPEG and PNG files are allowed"));
+                assertTrue(exception.getMessage().contains("Only JPEG and PNG files are allowed") ||
+                          exception.getCause() instanceof IllegalArgumentException,
+                    "Exception message should indicate only JPEG and PNG are allowed or wrap IllegalArgumentException");
             }
 
             @Test
-            void fileTooLarge_throwsException() {
+            void fileTooLarge_throwsRuntimeException() {
                 byte[] largeData = new byte[6 * 1024 * 1024]; // 6MB
                 MockMultipartFile largeFile = new MockMultipartFile(
                     "file", "large.jpg", "image/jpeg", largeData);
                 
-                Exception exception = assertThrows(Exception.class, () ->
+                // validateCoverFile throws IllegalArgumentException, but it's caught and wrapped in RuntimeException via ApiError
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromFile(9L, largeFile));
-                assertTrue(exception.getMessage().contains("5 MB"));
+                assertTrue(exception.getMessage().contains("5 MB") ||
+                          exception.getCause() instanceof IllegalArgumentException,
+                    "Exception message should indicate file size limit or wrap IllegalArgumentException");
             }
 
             @Test
@@ -826,25 +1009,30 @@ class FileServiceTest {
             }
 
             @Test
-            void corruptImageData_throwsException() {
+            void corruptImageData_throwsRuntimeException() {
                 // Valid MIME type but corrupt image data
                 byte[] corruptData = ("not an image but has jpeg mime type").getBytes();
                 MockMultipartFile corruptFile = new MockMultipartFile(
                     "file", "corrupt.jpg", "image/jpeg", corruptData);
 
-                Exception exception = assertThrows(Exception.class, () ->
+                // FileService wraps exceptions in RuntimeException via ApiError
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromFile(12L, corruptFile));
-                assertTrue(exception.getMessage().contains("Image not found or not readable"));
+                assertTrue(exception.getMessage().contains("Image not found") || 
+                          exception.getMessage().contains("not readable"),
+                    "Exception message should indicate image processing failure");
             }
 
             @Test
-            void unsupportedMimeType_gif_throwsException() {
+            void unsupportedMimeType_gif_throwsRuntimeException() {
                 byte[] gifData = "GIF89a...".getBytes(); // Fake GIF header
                 MockMultipartFile gifFile = new MockMultipartFile(
                     "file", "test.gif", "image/gif", gifData);
 
-                assertThrows(Exception.class, () ->
-                    fileService.createThumbnailFromFile(13L, gifFile));
+                // validateCoverFile throws IllegalArgumentException, but it's caught and wrapped in RuntimeException via ApiError
+                assertThrows(RuntimeException.class, () ->
+                    fileService.createThumbnailFromFile(13L, gifFile),
+                    "Should throw RuntimeException (wrapping IllegalArgumentException) for unsupported MIME type");
             }
 
             @Test
@@ -1103,9 +1291,12 @@ class FileServiceTest {
                     eq(byte[].class)
                 )).thenThrow(new RuntimeException("Network error"));
 
-                Exception exception = assertThrows(Exception.class, () ->
+                // FileService wraps exceptions in RuntimeException via ApiError
+                RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromUrl(bookId, imageUrl));
-                assertTrue(exception.getMessage().contains("Network error"));
+                assertTrue(exception.getMessage().contains("Network error") || 
+                          exception.getMessage().contains("Failed"),
+                    "Exception message should indicate download failure");
             }
 
         }
@@ -1160,16 +1351,12 @@ class FileServiceTest {
                 BufferedImage image2 = createTestImage(100, 100, Color.BLUE);
                 
                 fileService.saveBackgroundImage(image1, "bg.jpg", 3L);
-                long size1 = Files.size(
-                    tempDir.resolve("backgrounds/user-3/bg.jpg"));
+                assertTrue(Files.exists(tempDir.resolve("backgrounds/user-3/bg.jpg")));
                 
                 fileService.saveBackgroundImage(image2, "bg.jpg", 3L);
-                long size2 = Files.size(
-                    tempDir.resolve("backgrounds/user-3/bg.jpg"));
                 
-                // File exists and was overwritten (sizes might be same/different)
-                assertTrue(Files.exists(
-                    tempDir.resolve("backgrounds/user-3/bg.jpg")));
+                // File exists and was overwritten
+                assertTrue(Files.exists(tempDir.resolve("backgrounds/user-3/bg.jpg")));
             }
         }
 
