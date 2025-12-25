@@ -715,7 +715,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.5rem;
 
   .year-nav-btn {
     background: rgba(255, 255, 255, 0.1);
@@ -908,7 +908,7 @@
     &.publisher-chart,
     &.author-rating-chart,
     &.book-size-chart {
-      height: 350px;
+      height: 100px;
     }
 
     &.year-chart,

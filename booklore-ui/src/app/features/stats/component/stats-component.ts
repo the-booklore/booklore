@@ -28,8 +28,6 @@ import {BookSizeChartService} from '../service/book-size-chart.service';
 import {ReadingVelocityTimelineChartService} from '../service/reading-velocity-timeline-chart.service';
 import {MonthlyReadingPatternsChartService} from '../service/monthly-reading-patterns-chart.service';
 import {TopSeriesChartService} from '../service/top-series-chart.service';
-import {ReadingDNAChartService} from '../service/reading-dna-chart.service';
-import {ReadingHabitsChartService} from '../service/reading-habits-chart.service';
 import {ChartConfig, ChartConfigService} from '../service/chart-config.service';
 
 @Component({
@@ -67,8 +65,6 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly readingVelocityTimelineChartService = inject(ReadingVelocityTimelineChartService);
   protected readonly monthlyReadingPatternsChartService = inject(MonthlyReadingPatternsChartService);
   protected readonly topSeriesChartService = inject(TopSeriesChartService);
-  protected readonly readingDNAChartService = inject(ReadingDNAChartService);
-  protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
   private readonly pageTitle = inject(PageTitleService);
 

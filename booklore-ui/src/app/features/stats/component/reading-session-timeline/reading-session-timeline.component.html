@@ -3,18 +3,18 @@
     <div class="header-title">
       <h3>
         <i class="pi pi-clock timeline-title-icon"></i>
-        {{ getTitle() }}
+        Reading Session Timeline
       </h3>
       <p class="timeline-subtitle">Weekly overview of your reading sessions and patterns</p>
     </div>
-    <div class="week-selector">
+    <div class="week-info">
       <button type="button"
               class="week-nav-btn"
               (click)="changeWeek(-1)"
               title="Previous week">
         <i class="pi pi-chevron-left"></i>
       </button>
-      <div class="week-info">
+      <div class="week-display">
         <span class="week-label">Week {{ currentWeek }}</span>
         <span class="week-dates">{{ getWeekDateRange() }}</span>
       </div>
@@ -24,6 +24,26 @@
               title="Next week">
         <i class="pi pi-chevron-right"></i>
       </button>
+    </div>
+    <div class="filter-controls">
+      <p-select
+        [options]="yearOptions"
+        [(ngModel)]="currentYear"
+        (onChange)="onYearChange()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select Year"
+        [style]="{'min-width': '120px'}">
+      </p-select>
+      <p-select
+        [options]="weekOptions"
+        [(ngModel)]="currentWeek"
+        (onChange)="onWeekChange()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select Week"
+        [style]="{'min-width': '120px'}">
+      </p-select>
     </div>
   </div>
 

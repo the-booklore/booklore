@@ -30,9 +30,7 @@ export class ChartConfigService {
     {id: 'pageCount', name: 'Page Count Distribution', enabled: true, category: 'medium', order: 11},
     {id: 'topBooksBySize', name: 'Top 20 Largest Books', enabled: true, category: 'large', order: 12},
     {id: 'topSeries', name: 'Top 20 Series', enabled: true, category: 'large', order: 13},
-    {id: 'readingDNA', name: 'Reading DNA Profile', enabled: true, category: 'large', order: 14},
-    {id: 'readingHabits', name: 'Reading Habits Analysis', enabled: true, category: 'large', order: 15},
-    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 16}
+    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 14}
   ];
 
   private chartsConfigSubject = new BehaviorSubject<ChartConfig[]>(this.loadConfig());
