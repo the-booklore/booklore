@@ -303,30 +303,32 @@ public class BookMetadataService {
                 current++;
             }
 
-            // fetch all refreshed entities once inside a transaction so lazy fields load correctly
             List<Book> updatedBooks = new ArrayList<>();
             if (!refreshedIds.isEmpty()) {
                 org.springframework.transaction.support.TransactionTemplate tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
-                List<Book> refreshedBooks = tx.execute(status -> {
-                    List<BookEntity> entities = bookQueryService.findAllWithMetadataByIds(new java.util.HashSet<>(refreshedIds));
-                    if (entities == null || entities.isEmpty()) return List.<Book>of();
 
-                    // ensure lazy associations used by the mapper are initialized while session is open
+                List<java.util.Map<String, Object>> refreshedPatches = tx.execute(status -> {
+                    List<BookEntity> entities = bookQueryService.findAllWithMetadataByIds(new java.util.HashSet<>(refreshedIds));
+                    if (entities == null || entities.isEmpty()) return List.<java.util.Map<String, Object>>of();
+
                     entities.forEach(e -> {
-                        if (e.getMetadata() != null) e.getMetadata().getTitle();
-                        if (e.getLibrary() != null) e.getLibrary().getName();
-                        // touch any other lazy fields the mapper accesses here, e.g. shelf, series, etc.
+                        if (e.getMetadata() != null) e.getMetadata().getCoverUpdatedOn();
                     });
 
-                    return entities.stream().map(bookMapper::toBook).toList();
+                    return entities.stream()
+                            .map(e -> java.util.Map.<String, Object>of(
+                                    "id", e.getId(),
+                                    "coverUpdatedOn", e.getMetadata() == null ? null : e.getMetadata().getCoverUpdatedOn()
+                            ))
+                            .toList();
                 });
-                if (refreshedBooks != null && !refreshedBooks.isEmpty()) {
-                    updatedBooks.addAll(refreshedBooks);
+
+                if (refreshedPatches != null && !refreshedPatches.isEmpty()) {
+                    notificationService.sendMessage(Topic.BOOKS_COVER_UPDATE, refreshedPatches);
                 }
             }
 
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers for selected books"));
-            notificationService.sendMessage(Topic.BOOKS_UPDATE, updatedBooks);
         } catch (Exception e) {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
             notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));

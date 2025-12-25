@@ -632,6 +632,24 @@ export class BookService {
     this.bookStateSubject.next({...currentState, books: updatedBooks})
   }
 
+
+  /**
+   * Incoming payload: [{ id: number, coverUpdatedOn: "2025-12-25T00:48:17Z" }, ...]
+   * Apply minimal patch to local state so UI updates the cover image (and can use cache-busting).
+   */
+  handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
+    if (!patches || patches.length === 0) return;
+    const currentState = this.bookStateSubject.value;
+    const books = currentState.books || [];
+    patches.forEach(p => {
+      const index = books.findIndex(b=>b.id === p.id);
+      if (index !== -1 && books[index].metadata) {
+        books[index].metadata.coverUpdatedOn = p.coverUpdatedOn;
+      }
+    });
+    this.bookStateSubject.next({...currentState, books});
+  }
+
   toggleFieldLocks(bookIds: number[] | Set<number>, fieldActions: Record<string, 'LOCK' | 'UNLOCK'>): Observable<void> {
     const bookIdSet = bookIds instanceof Set ? bookIds : new Set(bookIds);
 
