@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -24,8 +25,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
+        ThreadPoolTaskScheduler brokerTaskScheduler = new ThreadPoolTaskScheduler();
+        brokerTaskScheduler.setPoolSize(1);
+        brokerTaskScheduler.setThreadNamePrefix("websocket-broker-");
+        brokerTaskScheduler.initialize();
+
         registry.enableSimpleBroker("/queue", "/topic")
-                .setHeartbeatValue(new long[]{10000, 10000}); // 10 seconds
+                .setHeartbeatValue(new long[]{10000, 10000}) // 10 seconds
+                .setTaskScheduler(brokerTaskScheduler);
         registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
     }
