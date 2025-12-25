@@ -233,6 +233,21 @@ class EpubMetadataExtractorTest {
         }
 
         @Test
+        @DisplayName("Should not extract non-authors from EPUB metadata")
+        void extractMetadata_withExtraCreators_returnsOnlyAuthors() throws IOException {
+            File epubFile = createEpubWithExtraCreators(DEFAULT_TITLE, DEFAULT_AUTHOR, "Jane Smith", "Alice", "Bob");
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertNotNull(result);
+            assertTrue(result.getAuthors().contains(DEFAULT_AUTHOR));
+            assertTrue(result.getAuthors().contains("Jane Smith"));
+            assertFalse(result.getAuthors().contains("Alice"));
+            assertFalse(result.getAuthors().contains("Bob"));
+            assertEquals(2, result.getAuthors().size());
+        }
+
+        @Test
         @DisplayName("Should extract publisher from EPUB metadata")
         void extractMetadata_withPublisher_returnsPublisher() throws IOException {
             File epubFile = createEpubWithMetadata(DEFAULT_TITLE, null, DEFAULT_PUBLISHER, null);
@@ -531,6 +546,23 @@ class EpubMetadataExtractorTest {
             </package>
             """, title, author1, author2);
         return createEpubWithOpf(opfContent, "test-multiauthor-" + System.nanoTime() + ".epub");
+    }
+
+    private File createEpubWithExtraCreators(String title, String author1, String author2, String illustrator, String editor) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                    <dc:title>%s</dc:title>
+                    <dc:creator>%s</dc:creator>
+                    <dc:creator opf:role="aut">%s</dc:creator>
+                    <dc:creator opf:role="ill">%s</dc:creator>
+                    <dc:creator id="creator04">%s</dc:creator>
+                    <meta property="role" refines="#creator04" scheme="marc:relators">edt</meta>
+                </metadata>
+            </package>
+            """, title, author1, author2, illustrator, editor);
+        return createEpubWithOpf(opfContent, "test-extracreator-" + System.nanoTime() + ".epub");
     }
 
     private File createEpubWithCalibreSeries(String title, String seriesName, String seriesIndex) throws IOException {

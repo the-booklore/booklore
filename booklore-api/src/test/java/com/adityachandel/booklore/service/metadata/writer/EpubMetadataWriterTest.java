@@ -15,11 +15,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -49,6 +52,40 @@ class EpubMetadataWriterTest {
         bookEntity.setLibraryPath(libraryPath);
         bookEntity.setFileSubPath("");
         bookEntity.setFileName("test.epub");
+    }
+
+    @Nested
+    @DisplayName("Metadata writing Tests")
+    class MetadataWritingTests {
+        @Test
+        @DisplayName("Should only overwrite authors of EPUB metadata")
+        void writeMetadata_withAuthor_onlyAuthor() throws IOException {
+            StringBuilder existingMetadata = new StringBuilder();
+            existingMetadata.append("<metadata xmlns:dc=\"http://purl.org/dc/elements/1.1/\">");
+            existingMetadata.append("<dc:creator id=\"creator02\">Alice</dc:creator>");
+            existingMetadata.append("<meta property=\"role\" refines=\"#creator02\">ill</meta>");
+            existingMetadata.append("</metadata>");
+            String opfContent = String.format("""
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    %s
+                </package>
+                """, existingMetadata);
+            File epubFile = createEpubWithOpf(opfContent, "test-metadata-" + System.nanoTime() + ".epub");
+
+            assertDoesNotThrow(() -> writer.writeMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
+
+            assertTrue(epubFile.exists());
+            assertTrue(epubFile.length() > 0);
+            try (ZipFile zf = new ZipFile(epubFile)) {
+                ZipEntry ze = zf.getEntry("OEBPS/content.opf");
+                try (InputStream is = zf.getInputStream(ze)) {
+                    byte[] fileBytes = is.readAllBytes();
+                    String fileString = new String(fileBytes);
+                    assertTrue(fileString.contains("id=\"creator02\""));
+                }
+            }
+        }
     }
 
     @Nested
@@ -87,6 +124,35 @@ class EpubMetadataWriterTest {
                 writer.replaceCoverImageFromUpload(bookEntity, coverFile);
             });
         }
+    }
+
+    private File createEpubWithOpf(String opfContent, String filename) throws IOException {
+        File epubFile = tempDir.resolve(filename).toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+        }
+
+        return epubFile;
     }
 
     private byte[] createEpubWithUnicodeCoverHref() throws IOException {
