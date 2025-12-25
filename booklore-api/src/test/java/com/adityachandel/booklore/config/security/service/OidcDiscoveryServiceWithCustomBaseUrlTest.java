@@ -1,59 +1,11 @@
 package com.adityachandel.booklore.config.security.service;
 
-import com.adityachandel.booklore.service.oidc.OidcDiscoveryService;
 import com.adityachandel.booklore.util.OidcUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.env.StandardEnvironment;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class OidcDiscoveryServiceWithCustomBaseUrlTest {
-
-    private OidcDiscoveryService oidcDiscoveryService;
-
-    @BeforeEach
-    void setUp() {
-        OidcProperties.Jwks jwks = new OidcProperties.Jwks(
-            java.time.Duration.ofSeconds(5),
-            java.time.Duration.ofSeconds(5),
-            1048576,
-            java.time.Duration.ofMinutes(30),
-            java.time.Duration.ofMinutes(10),
-            true,
-            100,
-            "",
-            null,
-            "BookLore-OIDC-Client/1.0",
-            "",
-            "",
-            ""
-        );
-
-        OidcProperties.Jwt jwt = new OidcProperties.Jwt(
-            java.time.Duration.ofSeconds(60),
-            false,
-            10000,
-            null
-        );
-
-        OidcProperties oidcProperties = new OidcProperties(
-            jwks,
-            jwt,
-            false,  // allowIssuerProtocolMismatch
-            true,   // strictIssuerValidation
-            false,  // strictAudienceValidation
-            false,  // allowUnsafeAlgorithmFallback
-            false   // allowInsecureOidcProviders
-        );
-
-        oidcDiscoveryService = new OidcDiscoveryService(
-            new org.springframework.boot.web.client.RestTemplateBuilder(),
-            new com.fasterxml.jackson.databind.ObjectMapper(),
-            new org.springframework.core.env.StandardEnvironment(),
-            oidcProperties
-        );
-    }
 
     @Test
     void resolveDiscoveryUri_ShouldHandleCustomBasePath() {
