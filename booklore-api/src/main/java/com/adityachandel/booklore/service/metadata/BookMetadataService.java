@@ -74,6 +74,7 @@ public class BookMetadataService {
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -279,14 +280,13 @@ public class BookMetadataService {
                 .toList();
     }
 
-    @Transactional
     private void processBulkCoverRegeneration(List<BookRegenerationInfo> books) {
         try {
             int total = books.size();
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " selected book(s)"));
 
             int current = 1;
-            List<Book> updatedBooks = new ArrayList<>();
+            List<Long> refreshedIds = new ArrayList<>();
 
             for (BookRegenerationInfo bookInfo : books) {
                 try {
@@ -295,15 +295,36 @@ public class BookMetadataService {
                     regenerateCoverForBookId(bookInfo);
                     log.info("{}Successfully regenerated cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
 
-                    bookRepository.findById(bookInfo.id()).ifPresent(book -> {
-                        updatedBooks.add(bookMapper.toBook(book));
-                    });
+                    refreshedIds.add(bookInfo.id());
                 } catch (Exception e) {
                     log.error("Failed to regenerate cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
                 }
                 pauseAfterBatchIfNeeded(current, total);
                 current++;
             }
+
+            // fetch all refreshed entities once inside a transaction so lazy fields load correctly
+            List<Book> updatedBooks = new ArrayList<>();
+            if (!refreshedIds.isEmpty()) {
+                org.springframework.transaction.support.TransactionTemplate tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+                List<Book> refreshedBooks = tx.execute(status -> {
+                    List<BookEntity> entities = bookQueryService.findAllWithMetadataByIds(new java.util.HashSet<>(refreshedIds));
+                    if (entities == null || entities.isEmpty()) return List.<Book>of();
+
+                    // ensure lazy associations used by the mapper are initialized while session is open
+                    entities.forEach(e -> {
+                        if (e.getMetadata() != null) e.getMetadata().getTitle();
+                        if (e.getLibrary() != null) e.getLibrary().getName();
+                        // touch any other lazy fields the mapper accesses here, e.g. shelf, series, etc.
+                    });
+
+                    return entities.stream().map(bookMapper::toBook).toList();
+                });
+                if (refreshedBooks != null && !refreshedBooks.isEmpty()) {
+                    updatedBooks.addAll(refreshedBooks);
+                }
+            }
+
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers for selected books"));
             notificationService.sendMessage(Topic.BOOKS_UPDATE, updatedBooks);
         } catch (Exception e) {
