@@ -2,6 +2,7 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.enums.PermissionType;
+import com.adityachandel.booklore.repository.custom.UserRepositoryCustom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long> {
+public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long>, UserRepositoryCustom {
 
     Optional<BookLoreUserEntity> findByUsername(String username);
 
@@ -28,6 +29,5 @@ public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long> 
 
     List<BookLoreUserEntity> findAllByLibraries_Id(Long libraryId);
 
-    @Query("SELECT u FROM BookLoreUserEntity u JOIN u.permissions.permissions p WHERE p IN :permissionTypes")
-    List<BookLoreUserEntity> findByPermissions_PermissionTypeIn(@Param("permissionTypes") Set<PermissionType> permissionTypes);
+    List<BookLoreUserEntity> findByPermissions_PermissionTypeIn(Set<PermissionType> permissionTypes);
 }
