@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.config;
 
+import com.adityachandel.booklore.config.properties.WebSocketProperties;
 import jakarta.annotation.PostConstruct;
+import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
@@ -11,9 +13,12 @@ import org.springframework.web.socket.config.WebSocketMessageBrokerStats;
 import java.time.Duration;
 
 @Configuration
+@AllArgsConstructor
 public class BeanConfig {
 
-    @Autowired
+    private final WebSocketProperties webSocketProperties;
+
+    @Autowired(required = false)
     private WebSocketMessageBrokerStats webSocketMessageBrokerStats;
 
     @Bean
@@ -24,6 +29,10 @@ public class BeanConfig {
 
     @PostConstruct
     public void init() {
-        webSocketMessageBrokerStats.setLoggingPeriod(30 * 24 * 60 * 60 * 1000L); // 30 days
+        if (webSocketMessageBrokerStats != null) {
+            // Use configurable logging period in days
+            long loggingPeriodMs = webSocketProperties.getLoggingPeriodDays() * 24L * 60L * 60L * 1000L; // days to milliseconds
+            webSocketMessageBrokerStats.setLoggingPeriod(loggingPeriodMs);
+        }
     }
 }

@@ -9,11 +9,12 @@ import com.adityachandel.booklore.repository.UserRepository;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static com.adityachandel.booklore.util.UserPermissionUtils.hasPermission;
 
@@ -40,27 +41,52 @@ public class NotificationService {
         }
     }
 
+    /**
+     * Send message to a specific user by username
+     */
+    public void sendMessageToUser(String username, Topic topic, Object message) {
+        try {
+            messagingTemplate.convertAndSendToUser(username, topic.getPath(), message);
+        } catch (Exception e) {
+            log.error("Error sending message to user {} for topic {}: {}", username, topic, e.getMessage(), e);
+        }
+    }
+
+    public CompletableFuture<Void> sendAsyncMessage(Topic topic, Object message) {
+        var user = authenticationService.getAuthenticatedUser();
+        if (user == null) {
+            log.warn("No authenticated user found. Message not sent: {}", topic);
+            return CompletableFuture.completedFuture(null);
+        }
+        String username = user.getUsername();
+        return CompletableFuture.runAsync(() ->
+                messagingTemplate.convertAndSendToUser(username, topic.getPath(), message)
+        );
+    }
+
+    @Async
+    public CompletableFuture<Void> sendAsyncMessageToUser(String username, Topic topic, Object message) {
+        messagingTemplate.convertAndSendToUser(username, topic.getPath(), message);
+        return CompletableFuture.completedFuture(null);
+    }
+
     public void sendMessageToPermissions(Topic topic, Object message, Set<PermissionType> permissionTypes) {
         if (permissionTypes == null || permissionTypes.isEmpty()) return;
 
-        Set<PermissionType> permissionSet = EnumSet.noneOf(PermissionType.class);
-        permissionSet.addAll(permissionTypes);
-
-        try {
-            List<BookLoreUserEntity> users = userRepository.findAll();
-            for (BookLoreUserEntity user : users) {
-                UserPermissionsEntity perms = user.getPermissions();
-                if (perms != null) {
-                    for (PermissionType p : permissionSet) {
-                        if (hasPermission(perms, p)) {
-                            messagingTemplate.convertAndSendToUser(user.getUsername(), topic.getPath(), message);
-                            break;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error sending message to users with permissions {}: {}", permissionSet, e.getMessage(), e);
+        List<BookLoreUserEntity> users = userRepository.findByPermissions_PermissionTypeIn(permissionTypes);
+        for (BookLoreUserEntity user : users) {
+            messagingTemplate.convertAndSendToUser(user.getUsername(), topic.getPath(), message);
         }
+    }
+
+    @Async
+    public CompletableFuture<Void> sendAsyncMessageToPermissions(Topic topic, Object message, Set<PermissionType> permissionTypes) {
+        if (permissionTypes == null || permissionTypes.isEmpty()) return CompletableFuture.completedFuture(null);
+
+        List<BookLoreUserEntity> users = userRepository.findByPermissions_PermissionTypeIn(permissionTypes);
+        for (BookLoreUserEntity user : users) {
+            messagingTemplate.convertAndSendToUser(user.getUsername(), topic.getPath(), message);
+        }
+        return CompletableFuture.completedFuture(null);
     }
 }

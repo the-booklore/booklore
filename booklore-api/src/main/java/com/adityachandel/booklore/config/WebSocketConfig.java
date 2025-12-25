@@ -1,6 +1,9 @@
 package com.adityachandel.booklore.config;
 
+import com.adityachandel.booklore.config.properties.CorsProperties;
+import com.adityachandel.booklore.config.properties.WebSocketProperties;
 import com.adityachandel.booklore.config.security.interceptor.WebSocketAuthInterceptor;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -12,29 +15,39 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Slf4j
 @Configuration
 @EnableWebSocketMessageBroker
+@AllArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
-
-    public WebSocketConfig(WebSocketAuthInterceptor webSocketAuthInterceptor) {
-        this.webSocketAuthInterceptor = webSocketAuthInterceptor;
-    }
+    private final WebSocketProperties webSocketProperties;
+    private final CorsProperties corsProperties;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        registry.enableSimpleBroker("/queue", "/topic");
+        registry.enableSimpleBroker("/queue", "/topic")
+                .setHeartbeatValue(new long[]{10000, 10000}); // 10 seconds
         registry.setApplicationDestinationPrefixes("/app");
         registry.setUserDestinationPrefix("/user");
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").setAllowedOrigins("*");
+        registry.addEndpoint("/ws")
+                .setAllowedOrigins(corsProperties.getAllowedOrigins()); // Use configurable allowed origins from properties
         log.info("WebSocket endpoint registered at /ws");
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
         registration.interceptors(webSocketAuthInterceptor);
+    }
+
+    @Override
+    public void configureClientOutboundChannel(ChannelRegistration registration) {
+        // Set up thread pool for outbound messages to prevent blocking using configurable values
+        registration.taskExecutor()
+                .corePoolSize(webSocketProperties.getOutboundChannel().getCorePoolSize())
+                .maxPoolSize(webSocketProperties.getOutboundChannel().getMaxPoolSize())
+                .keepAliveSeconds(webSocketProperties.getOutboundChannel().getKeepAliveSeconds());
     }
 }

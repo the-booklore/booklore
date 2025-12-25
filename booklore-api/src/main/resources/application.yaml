@@ -13,6 +13,14 @@ app:
     header-groups: ${REMOTE_AUTH_HEADER_GROUPS:Remote-Groups}
     admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
     groups-delimiter: ${REMOTE_AUTH_GROUPS_DELIMITER:\\s+}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,https://localhost:3000,https://localhost:8080, http://localhost:4200, https://localhost:4200}
+  websocket:
+    logging-period-days: ${WEBSOCKET_LOGGING_PERIOD_DAYS:30}
+    outbound-channel:
+      core-pool-size: ${WEBSOCKET_OUTBOUND_CORE_POOL_SIZE:8}
+      max-pool-size: ${WEBSOCKET_OUTBOUND_MAX_POOL_SIZE:16}
+      keep-alive-seconds: ${WEBSOCKET_OUTBOUND_KEEP_ALIVE_SECONDS:60}
   force-disable-oidc: ${FORCE_DISABLE_OIDC:false}
 
 booklore:
