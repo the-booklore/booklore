@@ -5,7 +5,7 @@ import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {LibraryService} from '../../service/library.service';
 import {BookService} from '../../service/book.service';
 import {catchError, debounceTime, filter, map, switchMap, take} from 'rxjs/operators';
-import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, finalize, forkJoin, Observable, of, Subject} from 'rxjs';
 import {ShelfService} from '../../service/shelf.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -696,7 +696,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
               life: 3000
             });
           }
-        });
+          });
       }
     });
   }
