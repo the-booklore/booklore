@@ -40,6 +40,7 @@ export interface Book extends FileInfo {
   koreaderProgress?: KoReaderProgress;
   koboProgress?: KoboProgress;
   seriesCount?: number | null;
+  seriesBooks?: Book[] | null;
   metadataMatchScore?: number | null;
   personalRating?: number | null;
   readStatus?: ReadStatus;

@@ -356,7 +356,12 @@ public class BookMetadataUpdater {
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        try {
+            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        } catch (Exception ex) {
+            log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
+            // Don't rethrow - cover failures shouldn't roll back metadata updates
+        }
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {

@@ -21,6 +21,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -332,7 +334,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         String properties = item.getAttribute("properties");
                         if (properties != null && properties.contains("cover-image")) {
                             String href = item.getAttribute("href");
-                            return resolvePath(opfPath, href);
+                            String decodedHref = URLDecoder.decode(href, StandardCharsets.UTF_8);
+                            return resolvePath(opfPath, decodedHref);
                         }
                     }
                 }

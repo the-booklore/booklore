@@ -29,6 +29,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -406,7 +408,8 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         String coverHref = existingCoverItem.getAttribute("href");
-        if (coverHref == null || coverHref.isBlank()) {
+        String decodedCoverHref = URLDecoder.decode(coverHref, StandardCharsets.UTF_8);
+        if (decodedCoverHref == null || decodedCoverHref.isBlank()) {
             throw new IOException("Cover item has no href attribute");
         }
 
@@ -418,7 +421,7 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         Path opfDir = opfPath.getParent();
-        Path coverFilePath = opfDir.resolve(coverHref).normalize();
+        Path coverFilePath = opfDir.resolve(decodedCoverHref).normalize();
 
         Files.createDirectories(coverFilePath.getParent());
         Files.write(coverFilePath, coverData);

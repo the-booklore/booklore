@@ -79,10 +79,14 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     boolean saved = fileService.saveCoverImages(image, bookEntity.getId());
                     if (saved) {
                         return true;
+                    } else {
+                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getFileName());
                     }
                 } finally {
                     image.flush(); // Release resources after processing
                 }
+            } else {
+                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getFileName());
             }
         } catch (Exception e) {
             log.error("Error generating cover for '{}': {}", bookEntity.getFileName(), e.getMessage());
@@ -110,22 +114,43 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
-        try (ZipFile zipFile = ZipFile.builder().setFile(file).get()) {
-            return Collections.list(zipFile.getEntries()).stream()
-                    .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
-                    .min(Comparator.comparing(ZipArchiveEntry::getName))
-                    .map(entry -> {
-                        try (InputStream is = zipFile.getInputStream(entry)) {
-                            return ImageIO.read(is);
-                        } catch (Exception e) {
-                            log.warn("Failed to read image from ZIP entry {}: {}", entry.getName(), e.getMessage());
-                            return null;
-                        }
-                    });
+        // Fast path: Try reading from Central Directory
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(file)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(true)
+                .get()) {
+             Optional<BufferedImage> image = findAndReadFirstImage(zipFile);
+             if (image.isPresent()) return image;
+        } catch (Exception e) {
+            log.debug("Fast path failed for ZIP extraction: {}", e.getMessage());
+        }
+
+        // Slow path: Fallback to scanning local file headers
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(file)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(false)
+                .get()) {
+            return findAndReadFirstImage(zipFile);
         } catch (Exception e) {
             log.error("Error extracting ZIP: {}", e.getMessage());
             return Optional.empty();
         }
+    }
+
+    private Optional<BufferedImage> findAndReadFirstImage(ZipFile zipFile) {
+        return Collections.list(zipFile.getEntries()).stream()
+                .filter(e -> !e.isDirectory() && IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN.matcher(e.getName()).matches())
+                .min(Comparator.comparing(ZipArchiveEntry::getName))
+                .map(entry -> {
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        return ImageIO.read(is);
+                    } catch (Exception e) {
+                        log.warn("Failed to read image from ZIP entry {}: {}", entry.getName(), e.getMessage());
+                        return null;
+                    }
+                });
     }
 
     private Optional<BufferedImage> extractFirstImageFrom7z(File file) {

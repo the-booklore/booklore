@@ -137,25 +137,36 @@ public class CbxReaderService {
         String[] encodingsToTry = {"UTF-8", "Shift_JIS", "ISO-8859-1", "CP437", "MS932"};
 
         for (String encoding : encodingsToTry) {
+            Charset charset = Charset.forName(encoding);
             try {
-                extractZipWithEncoding(cbzPath, targetDir, Charset.forName(encoding));
-                return;
-            } catch (IllegalArgumentException | java.util.zip.ZipException e) {
-                log.debug("Failed to extract with encoding {}: {}", encoding, e.getMessage());
+                // Fast path: Try reading from Central Directory only
+                if (extractZipWithEncoding(cbzPath, targetDir, charset, true)) return;
+            } catch (Exception e) {
+                log.debug("Fast path failed for encoding {}: {}", encoding, e.getMessage());
+            }
+            
+            try {
+                // Slow path: Fallback to scanning local file headers
+                if (extractZipWithEncoding(cbzPath, targetDir, charset, false)) return;
+            } catch (Exception e) {
+                log.debug("Slow path failed for encoding {}: {}", encoding, e.getMessage());
             }
         }
 
         throw new IOException("Unable to extract ZIP archive with any supported encoding");
     }
 
-    private void extractZipWithEncoding(Path cbzPath, Path targetDir, Charset charset) throws IOException {
+    private boolean extractZipWithEncoding(Path cbzPath, Path targetDir, Charset charset, boolean useFastPath) throws IOException {
         try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbzPath)
                              .setCharset(charset)
+                             .setUseUnicodeExtraFields(true)
+                             .setIgnoreLocalFileHeader(useFastPath)
                              .get()) {
 
             var entries = zipFile.getEntries();
+            boolean foundImages = false;
             while (entries.hasMoreElements()) {
                 ZipArchiveEntry entry = entries.nextElement();
                 if (!entry.isDirectory() && isImageFile(entry.getName())) {
@@ -163,9 +174,11 @@ public class CbxReaderService {
                     Path target = targetDir.resolve(fileName);
                     try (InputStream in = zipFile.getInputStream(entry)) {
                         Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+                        foundImages = true;
                     }
                 }
             }
+            return foundImages;
         }
     }
 
@@ -333,10 +346,19 @@ public class CbxReaderService {
         String[] encodingsToTry = {"UTF-8", "Shift_JIS", "ISO-8859-1", "CP437", "MS932"};
 
         for (String encoding : encodingsToTry) {
+            Charset charset = Charset.forName(encoding);
             try {
-                return estimateCbzWithEncoding(cbxPath, Charset.forName(encoding));
-            } catch (IllegalArgumentException | java.util.zip.ZipException e) {
-                log.debug("Failed to estimate with encoding {}: {}", encoding, e.getMessage());
+                long size = estimateCbzWithEncoding(cbxPath, charset, true);
+                if (size > 0) return size;
+            } catch (Exception e) {
+                log.debug("Fast path estimation failed for encoding {}: {}", encoding, e.getMessage());
+            }
+
+            try {
+                long size = estimateCbzWithEncoding(cbxPath, charset, false);
+                if (size > 0) return size;
+            } catch (Exception e) {
+                log.debug("Slow path estimation failed for encoding {}: {}", encoding, e.getMessage());
             }
         }
 
@@ -344,11 +366,13 @@ public class CbxReaderService {
         return Long.MAX_VALUE;
     }
 
-    private long estimateCbzWithEncoding(Path cbxPath, Charset charset) throws IOException {
+    private long estimateCbzWithEncoding(Path cbxPath, Charset charset, boolean useFastPath) throws IOException {
         try (org.apache.commons.compress.archivers.zip.ZipFile zipFile =
                      org.apache.commons.compress.archivers.zip.ZipFile.builder()
                              .setPath(cbxPath)
                              .setCharset(charset)
+                             .setUseUnicodeExtraFields(true)
+                             .setIgnoreLocalFileHeader(useFastPath)
                              .get()) {
 
             long total = 0;
