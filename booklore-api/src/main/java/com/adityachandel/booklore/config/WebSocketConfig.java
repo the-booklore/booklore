@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.config;
 
-import com.adityachandel.booklore.config.properties.CorsProperties;
 import com.adityachandel.booklore.config.properties.WebSocketProperties;
 import com.adityachandel.booklore.config.security.interceptor.WebSocketAuthInterceptor;
 import lombok.AllArgsConstructor;
@@ -21,7 +20,6 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
     private final WebSocketProperties webSocketProperties;
-    private final CorsProperties corsProperties;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -40,7 +38,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins(corsProperties.getAllowedOrigins()); // Use configurable allowed origins from properties
+                .setAllowedOriginPatterns("*"); // Allow all origins for WebSocket
         log.info("WebSocket endpoint registered at /ws");
     }
 

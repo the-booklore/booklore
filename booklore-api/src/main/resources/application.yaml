@@ -13,8 +13,6 @@ app:
     header-groups: ${REMOTE_AUTH_HEADER_GROUPS:Remote-Groups}
     admin-group: ${REMOTE_AUTH_ADMIN_GROUP}
     groups-delimiter: ${REMOTE_AUTH_GROUPS_DELIMITER:\\s+}
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080,https://localhost:3000,https://localhost:8080, http://localhost:4200, https://localhost:4200}
   websocket:
     logging-period-days: ${WEBSOCKET_LOGGING_PERIOD_DAYS:30}
     outbound-channel:
