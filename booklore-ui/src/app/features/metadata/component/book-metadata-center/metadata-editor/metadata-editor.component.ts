@@ -654,18 +654,22 @@ export class MetadataEditorComponent implements OnInit {
   regenerateCover(bookId: number) {
     this.bookService.regenerateCover(bookId).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: "success",
-          summary: "Success",
-          detail:
-            "Book cover regenerated successfully. Refresh page to see the new cover.",
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: "error",
-          summary: "Error",
-          detail: "Failed to start cover regeneration",
+        this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+            this.messageService.add({
+              severity: "success",
+              summary: "Success",
+              detail: "Book cover regenerated successfully.",
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: "warning",
+              summary: "Partial Success",
+              detail: "Cover regenerated but failed to refresh display. Please refresh the page.",
+            });
+          },
         });
       },
     });
