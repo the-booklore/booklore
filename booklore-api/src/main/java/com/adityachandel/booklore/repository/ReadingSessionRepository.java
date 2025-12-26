@@ -2,6 +2,8 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.dto.*;
 import com.adityachandel.booklore.model.entity.ReadingSessionEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -109,4 +111,16 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             ORDER BY totalSessions DESC
             """)
     List<GenreStatisticsDto> findGenreStatisticsByUser(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT rs
+            FROM ReadingSessionEntity rs
+            WHERE rs.user.id = :userId
+            AND rs.book.id = :bookId
+            ORDER BY rs.startTime DESC
+            """)
+    Page<ReadingSessionEntity> findByUserIdAndBookId(
+            @Param("userId") Long userId,
+            @Param("bookId") Long bookId,
+            Pageable pageable);
 }

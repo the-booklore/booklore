@@ -53,30 +53,33 @@ export interface PeakHoursResponse {
   providedIn: 'root'
 })
 export class UserStatsService {
-  private readonly readingSessionsUrl = `${API_CONFIG.BASE_URL}/api/v1/reading-sessions`;
+  private readonly readingSessionsUrl = `${API_CONFIG.BASE_URL}/api/v1/user-stats`;
   private http = inject(HttpClient);
 
   getHeatmapForYear(year: number): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
-      `${this.readingSessionsUrl}/heatmap/year/${year}`
+      `${this.readingSessionsUrl}/heatmap`,
+      { params: { year: year.toString() } }
     );
   }
 
   getTimelineForWeek(year: number, month: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
     return this.http.get<ReadingSessionTimelineResponse[]>(
-      `${this.readingSessionsUrl}/timeline/week/${year}/${month}/${week}`
+      `${this.readingSessionsUrl}/timeline`,
+      { params: { year: year.toString(), month: month.toString(), week: week.toString() } }
     );
   }
 
   getGenreStats(): Observable<GenreStatsResponse[]> {
     return this.http.get<GenreStatsResponse[]>(
-      `${this.readingSessionsUrl}/stats/genres`
+      `${this.readingSessionsUrl}/genres`
     );
   }
 
   getCompletionTimelineForYear(year: number): Observable<CompletionTimelineResponse[]> {
     return this.http.get<CompletionTimelineResponse[]>(
-      `${this.readingSessionsUrl}/stats/completion-timeline/year/${year}`
+      `${this.readingSessionsUrl}/completion-timeline`,
+      { params: { year: year.toString() } }
     );
   }
 
@@ -90,7 +93,7 @@ export class UserStatsService {
     }
 
     return this.http.get<FavoriteDaysResponse[]>(
-      `${this.readingSessionsUrl}/stats/favorite-days`,
+      `${this.readingSessionsUrl}/favorite-days`,
       {params}
     );
   }
@@ -105,7 +108,7 @@ export class UserStatsService {
     }
 
     return this.http.get<PeakHoursResponse[]>(
-      `${this.readingSessionsUrl}/stats/peak-hours`,
+      `${this.readingSessionsUrl}/peak-hours`,
       {params}
     );
   }

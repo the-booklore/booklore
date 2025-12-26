@@ -1,0 +1,51 @@
+.reading-sessions-container {
+  padding: 1rem 0;
+}
+
+.loading-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  gap: 1rem;
+}
+
+.loading-text {
+  color: var(--text-color-secondary);
+  font-size: 0.9rem;
+}
+
+.empty-state p {
+  color: var(--text-color-secondary);
+  font-size: 1rem;
+}
+
+.location-text {
+  font-size: 0.875rem;
+  color: var(--text-color);
+}
+
+:host ::ng-deep {
+  .p-datatable {
+    .p-datatable-thead > tr > th {
+      background-color: var(--card-background);
+      color: var(--text-color);
+      font-weight: 600;
+      font-size: 0.875rem;
+      white-space: nowrap;
+      border-color: var(--border-color);
+    }
+
+    .p-datatable-tbody > tr > td {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.875rem;
+      border-color: var(--border-color);
+    }
+
+    .p-datatable-wrapper {
+      overflow-x: auto;
+    }
+  }
+}

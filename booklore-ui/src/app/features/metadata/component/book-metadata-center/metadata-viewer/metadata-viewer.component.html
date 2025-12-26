@@ -19,7 +19,7 @@
             </div>
           }
 
-          <div 
+          <div
             class="cover-progress-bar-container"
             [style.--progress-count]="getProgressCount(book)">
             @let progress = getProgressPercent(book);
@@ -605,6 +605,9 @@
           <i class="pi pi-pen-to-square"></i> Notes
         </p-tab>
         <p-tab [value]="4">
+          <i class="pi pi-clock"></i> Reading Sessions
+        </p-tab>
+        <p-tab [value]="5">
           <i class="pi pi-comments"></i> Reviews
         </p-tab>
       </p-tablist>
@@ -641,6 +644,9 @@
           <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
         </p-tabpanel>
         <p-tabpanel [value]="4">
+          <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+        </p-tabpanel>
+        <p-tabpanel [value]="5">
           <app-book-reviews [bookId]="book.id"></app-book-reviews>
         </p-tabpanel>
       </p-tabpanels>

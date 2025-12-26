@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.dto.response.FavoriteReadingDaysResponse
 import com.adityachandel.booklore.model.dto.response.GenreStatisticsResponse;
 import com.adityachandel.booklore.model.dto.response.PeakReadingHoursResponse;
 import com.adityachandel.booklore.model.dto.response.ReadingSessionHeatmapResponse;
+import com.adityachandel.booklore.model.dto.response.ReadingSessionResponse;
 import com.adityachandel.booklore.model.dto.response.ReadingSessionTimelineResponse;
 import com.adityachandel.booklore.model.dto.response.ReadingSpeedResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
@@ -21,6 +22,9 @@ import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -209,5 +213,32 @@ public class ReadingSessionService {
                     return cmp != 0 ? cmp : b.getMonth().compareTo(a.getMonth());
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ReadingSessionResponse> getReadingSessionsForBook(Long bookId, int page) {
+        BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
+        Long userId = authenticatedUser.getId();
+
+        bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        Pageable pageable = PageRequest.of(page, 5);
+        Page<ReadingSessionEntity> sessions = readingSessionRepository.findByUserIdAndBookId(userId, bookId, pageable);
+
+        return sessions.map(session -> ReadingSessionResponse.builder()
+                .id(session.getId())
+                .bookId(session.getBook().getId())
+                .bookTitle(session.getBook().getMetadata().getTitle())
+                .bookType(session.getBookType())
+                .startTime(session.getStartTime())
+                .endTime(session.getEndTime())
+                .durationSeconds(session.getDurationSeconds())
+                .startProgress(session.getStartProgress())
+                .endProgress(session.getEndProgress())
+                .progressDelta(session.getProgressDelta())
+                .startLocation(session.getStartLocation())
+                .endLocation(session.getEndLocation())
+                .createdAt(session.getCreatedAt())
+                .build());
     }
 }
