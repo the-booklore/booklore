@@ -51,6 +51,9 @@
           <p-tab [value]="SettingsTab.DeviceSettings">
             <i class="pi pi-mobile"></i> Devices
           </p-tab>
+          <p-tab [value]="SettingsTab.ExportImport">
+            <i class="pi pi-download"></i> Export/Import
+          </p-tab>
         </p-tablist>
         <p-tabpanels>
           <p-tabpanel [value]="SettingsTab.ReaderSettings">
@@ -100,6 +103,9 @@
           </p-tabpanel>
           <p-tabpanel [value]="SettingsTab.DeviceSettings">
             <app-device-settings-component></app-device-settings-component>
+          </p-tabpanel>
+          <p-tabpanel [value]="SettingsTab.ExportImport">
+            <app-export-import></app-export-import>
           </p-tabpanel>
         </p-tabpanels>
       </p-tabs>
