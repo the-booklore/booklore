@@ -23,23 +23,23 @@
                    style="cursor: pointer;">
                 </i>
               </label>
-              <div class="radio-group">
-                <div class="radio-option">
-                  <p-radioButton name="viewMode"
-                                 [value]="'route'"
-                                 [(ngModel)]="viewMode"
-                                 inputId="viewModeRoute"
-                                 (onClick)="onViewModeChange('route')"></p-radioButton>
-                  <label for="viewModeRoute">Open in Page</label>
-                </div>
-                <div class="radio-option">
-                  <p-radioButton name="viewMode"
-                                 [value]="'dialog'"
-                                 [(ngModel)]="viewMode"
-                                 inputId="viewModeDialog"
-                                 (onClick)="onViewModeChange('dialog')"></p-radioButton>
-                  <label for="viewModeDialog">Open in Popup</label>
-                </div>
+              <div class="button-group">
+                <button
+                  type="button"
+                  class="option-button"
+                  [class.selected]="viewMode === 'route'"
+                  (click)="onViewModeChange('route')">
+                  <i class="pi pi-window-maximize"></i>
+                  <span class="option-text">Open in Page</span>
+                </button>
+                <button
+                  type="button"
+                  class="option-button"
+                  [class.selected]="viewMode === 'dialog'"
+                  (click)="onViewModeChange('dialog')">
+                  <i class="pi pi-external-link"></i>
+                  <span class="option-text">Open in Dialog</span>
+                </button>
               </div>
             </div>
             <p class="setting-description">
@@ -59,23 +59,23 @@
                    style="cursor: pointer;">
                 </i>
               </label>
-              <div class="radio-group">
-                <div class="radio-option">
-                  <p-radioButton name="seriesViewMode"
-                                 [value]="true"
-                                 [(ngModel)]="seriesViewMode"
-                                 inputId="seriesViewModeTrue"
-                                 (onClick)="onSeriesViewModeChange(true)"></p-radioButton>
-                  <label for="seriesViewModeTrue">Enabled</label>
-                </div>
-                <div class="radio-option">
-                  <p-radioButton name="seriesViewMode"
-                                 [value]="false"
-                                 [(ngModel)]="seriesViewMode"
-                                 inputId="seriesViewModeFalse"
-                                 (onClick)="onSeriesViewModeChange(false)"></p-radioButton>
-                  <label for="seriesViewModeFalse">Disabled</label>
-                </div>
+              <div class="button-group">
+                <button
+                  type="button"
+                  class="option-button"
+                  [class.selected]="seriesViewMode === true"
+                  (click)="onSeriesViewModeChange(true)">
+                  <i class="pi pi-check-circle"></i>
+                  <span class="option-text">Enabled</span>
+                </button>
+                <button
+                  type="button"
+                  class="option-button"
+                  [class.selected]="seriesViewMode === false"
+                  (click)="onSeriesViewModeChange(false)">
+                  <i class="pi pi-times-circle"></i>
+                  <span class="option-text">Disabled</span>
+                </button>
               </div>
             </div>
             <p class="setting-description">
