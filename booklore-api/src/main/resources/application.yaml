@@ -2,6 +2,7 @@ app:
   path-config: '/app/data'
   bookdrop-folder: '/bookdrop'
   version: 'development'
+  base-path: ${BASE_PATH:}
   swagger:
     enabled: ${SWAGGER_ENABLED:false}
   remote-auth:
@@ -18,6 +19,8 @@ app:
 server:
   forward-headers-strategy: native
   port: 8080
+  servlet:
+    context-path: ${app.base-path:}
   tomcat:
     relaxed-query-chars: '[,],%,{,},|'
 

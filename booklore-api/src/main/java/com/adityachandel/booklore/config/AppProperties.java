@@ -13,6 +13,7 @@ public class AppProperties {
     private String pathConfig;
     private String bookdropFolder;
     private String version;
+    private String basePath = "";
     private RemoteAuth remoteAuth;
     private Swagger swagger = new Swagger();
     private Boolean forceDisableOidc = false;

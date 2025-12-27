@@ -64,6 +64,10 @@ spec:
           env:
             - name: BOOKLORE_PORT
               value: "6060"
+            {{- if .Values.basePath }}
+            - name: BASE_PATH
+              value: {{ .Values.basePath | quote }}
+            {{- end }}
             - name: DATABASE_URL
               value: jdbc:mariadb://{{ .Release.Name }}-mariadb:{{ .Values.mariadb.primary.service.ports.mysql }}/{{ .Values.mariadb.auth.database }}
             - name: DATABASE_USERNAME

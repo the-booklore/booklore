@@ -53,6 +53,9 @@ LABEL org.opencontainers.image.title="BookLore" \
 
 RUN apk update && apk add nginx gettext su-exec
 
+# Set default environment variables
+ENV BASE_PATH=""
+
 COPY ./nginx.conf /etc/nginx/nginx.conf
 COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
 COPY --from=springboot-build /springboot-app/build/libs/booklore-api-0.0.1-SNAPSHOT.jar /app/app.jar
