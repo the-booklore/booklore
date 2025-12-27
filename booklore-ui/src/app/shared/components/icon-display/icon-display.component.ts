@@ -12,7 +12,7 @@ import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
   template: `
     @if (icon) {
       @if (icon.type === 'PRIME_NG') {
-        <i [class]="getPrimeNgIconClass(icon.value)" [ngClass]="iconClass" [ngStyle]="iconStyle"></i>
+        <i [class]="getPrimeNgIconClass(icon.value)" [ngClass]="iconClass" [ngStyle]="getPrimeNgStyle()"></i>
       } @else {
         <div
           class="svg-icon-inline"
@@ -67,7 +67,7 @@ export class IconDisplayComponent implements OnInit, OnChanges {
       const previousIcon = changes['icon'].previousValue;
 
       if (currentIcon?.type === 'CUSTOM_SVG' &&
-          currentIcon?.value !== previousIcon?.value) {
+        currentIcon?.value !== previousIcon?.value) {
         this.loadIconIfNeeded();
       }
     }
@@ -111,6 +111,22 @@ export class IconDisplayComponent implements OnInit, OnChanges {
     return {
       width: this.size,
       height: this.size,
+      ...this.iconStyle
+    };
+  }
+
+  getPrimeNgStyle(): Record<string, string> {
+    const fontSize = this.size.endsWith('px')
+      ? `${parseInt(this.size) * 0.85}px`
+      : `calc(${this.size} * 0.85)`;
+
+    return {
+      fontSize: fontSize,
+      width: this.size,
+      height: this.size,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
       ...this.iconStyle
     };
   }

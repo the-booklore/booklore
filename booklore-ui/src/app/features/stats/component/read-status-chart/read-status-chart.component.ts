@@ -13,10 +13,17 @@ interface ReadingStatusStats {
   percentage: number;
 }
 
-const CHART_COLORS = [
-  '#28a745', '#17a2b8', '#ffc107', '#6f42c1',
-  '#fd7e14', '#6c757d', '#dc3545', '#343a40', '#e9ecef'
-] as const;
+const STATUS_COLOR_MAP: Record<string, string> = {
+  'Unread': '#6c757d',           // Gray
+  'Currently Reading': '#17a2b8', // Cyan
+  'Re-reading': '#6f42c1',        // Purple
+  'Read': '#28a745',              // Green
+  'Partially Read': '#ffc107',    // Yellow
+  'Paused': '#fd7e14',            // Orange
+  "Won't Read": '#dc3545',        // Red
+  'Abandoned': '#e74c3c',         // Light Red
+  'No Status': '#343a40'          // Dark Gray
+} as const;
 
 const CHART_DEFAULTS = {
   borderColor: '#ffffff',
@@ -89,7 +96,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     labels: [],
     datasets: [{
       data: [],
-      backgroundColor: [...CHART_COLORS],
+      backgroundColor: [...Object.values(STATUS_COLOR_MAP)],
       ...CHART_DEFAULTS
     }]
   });
@@ -122,7 +129,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     try {
       const labels = stats.map(s => s.status);
       const dataValues = stats.map(s => s.count);
-      const colors = this.getColorsForData(stats.length);
+      const colors = stats.map(s => STATUS_COLOR_MAP[s.status] || '#6c757d');
 
       this.chartDataSubject.next({
         labels,
@@ -135,14 +142,6 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error updating chart data:', error);
     }
-  }
-
-  private getColorsForData(dataLength: number): string[] {
-    const colors = [...CHART_COLORS];
-    while (colors.length < dataLength) {
-      colors.push(...CHART_COLORS);
-    }
-    return colors.slice(0, dataLength);
   }
 
   private calculateReadingStatusStats(): ReadingStatusStats[] {
@@ -246,4 +245,3 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     return `${label}: ${value} books (${percentage}%)`;
   }
 }
-
