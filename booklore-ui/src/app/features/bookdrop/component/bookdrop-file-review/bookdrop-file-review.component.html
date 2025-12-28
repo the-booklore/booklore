@@ -163,8 +163,8 @@
             <div class="file-row">
               <p-checkbox
                 [binary]="true"
-                [(ngModel)]="file.selected"
-                (click)="toggleFileSelection(file.file.id, !file.selected, $event)">
+                [ngModel]="file.selected"
+                (onChange)="onCheckboxChange(file, $event)">
               </p-checkbox>
 
               @if (file.metadataForm.get('thumbnailUrl')?.value) {

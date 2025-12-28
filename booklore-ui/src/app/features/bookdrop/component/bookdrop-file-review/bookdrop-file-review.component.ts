@@ -334,12 +334,23 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
         }
       }
       this.onMetadataCopied(file.file.id, true);
-      
-      this.messageService.add({
-        severity: 'success',
-        summary: 'Metadata Copied',
-        detail: 'Fetched metadata has been copied to the form',
-        life: 2000
+
+      const textToCopy = JSON.stringify(form.getRawValue(), null, 2);
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Metadata Applied & Copied',
+          detail: 'Fetched metadata applied to form. Full metadata copied to clipboard.',
+          life: 2000
+        });
+      }).catch(err => {
+        console.error('Failed to copy to clipboard', err);
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Metadata Applied',
+          detail: 'Fetched metadata applied to form (Clipboard copy failed).',
+          life: 2000
+        });
       });
     }
   }
@@ -574,6 +585,10 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
     }
     // Clear the last clicked file when selecting/clearing all
     this.lastClickedFileId = null;
+  }
+
+  onCheckboxChange(file: BookdropFileUI, event: any) {
+    this.toggleFileSelection(file.file.id, event.checked, event.originalEvent);
   }
 
   toggleFileSelection(fileId: number, selected: boolean, event?: MouseEvent): void {
