@@ -98,8 +98,10 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
   selectAllAcrossPages = false;
   excludedFiles = new Set<number>();
 
-  private lastClickedFileId: number | null = null;
+  protected lastClickedFileId: number | null = null;
   private keyboardNavigationEnabled = true;
+  private boundHandleKeyDown!: (event: KeyboardEvent) => void;
+  private focusTimeoutId?: number;
 
   ngOnInit(): void {
     this.pageTitle.setPageTitle('Review Bookdrop Files');
@@ -128,14 +130,20 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.disableKeyboardNavigation();
+    if (this.focusTimeoutId) {
+      clearTimeout(this.focusTimeoutId);
+    }
   }
 
   private enableKeyboardNavigation(): void {
-    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    this.boundHandleKeyDown = this.handleKeyDown.bind(this);
+    document.addEventListener('keydown', this.boundHandleKeyDown);
   }
 
   private disableKeyboardNavigation(): void {
-    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+    if (this.boundHandleKeyDown) {
+      document.removeEventListener('keydown', this.boundHandleKeyDown);
+    }
   }
 
   private handleKeyDown(event: KeyboardEvent): void {
@@ -263,13 +271,22 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
   }
 
   private scrollToFile(file: BookdropFileUI): void {
+    if (this.focusTimeoutId) {
+      clearTimeout(this.focusTimeoutId);
+    }
+
     setTimeout(() => {
       const element = document.querySelector(`[data-file-id="${file.file.id}"]`);
       if (element) {
+        document.querySelectorAll('.keyboard-focused').forEach(el =>
+          el.classList.remove('keyboard-focused')
+        );
+
         element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         element.classList.add('keyboard-focused');
-        setTimeout(() => {
+        this.focusTimeoutId = window.setTimeout(() => {
           element.classList.remove('keyboard-focused');
+          this.focusTimeoutId = undefined;
         }, 1000);
       }
     }, 0);
@@ -317,6 +334,13 @@ export class BookdropFileReviewComponent implements OnInit, OnDestroy {
         }
       }
       this.onMetadataCopied(file.file.id, true);
+      
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Metadata Copied',
+        detail: 'Fetched metadata has been copied to the form',
+        life: 2000
+      });
     }
   }
 

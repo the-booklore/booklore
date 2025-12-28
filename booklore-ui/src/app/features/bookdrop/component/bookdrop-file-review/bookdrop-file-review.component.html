@@ -147,7 +147,7 @@
       }
     </div>
 
-    <div class="content-area">
+    <div class="content-area" role="listbox" aria-label="File list" [attr.aria-activedescendant]="lastClickedFileId ? 'file-' + lastClickedFileId : null">
       @if (bookdropFileUis.length === 0) {
         <div class="empty-state">
           No bookdrop files to review.
@@ -155,7 +155,11 @@
       } @else {
         @for (file of bookdropFileUis; track file) {
 
-          <div class="file-item" [attr.data-file-id]="file.file.id">
+          <div class="file-item" 
+               [attr.id]="'file-' + file.file.id"
+               [attr.data-file-id]="file.file.id" 
+               role="option" 
+               [attr.aria-selected]="file.selected">
             <div class="file-row">
               <p-checkbox
                 [binary]="true"
