@@ -23,6 +23,7 @@ export interface MetadataMatchWeights {
   hardcoverReviewCount: number;
   doubanRating: number;
   doubanReviewCount: number;
+  lubimyczytacRating: number;
   coverImage: number;
 }
 
@@ -50,6 +51,7 @@ export interface MetadataProviderSettings {
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
+  lubimyczytac: Lubimyczytac;
 }
 
 export interface Amazon {
@@ -78,6 +80,10 @@ export interface Comicvine {
 }
 
 export interface Douban {
+  enabled: boolean;
+}
+
+export interface Lubimyczytac {
   enabled: boolean;
 }
 
