@@ -324,7 +324,7 @@ public class KomgaService {
         log.debug("Getting page {} from book {} (convert to PNG: {})", pageNumber, bookId, convertToPng);
         
         BookEntity book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new RuntimeException("Book not found"));
+                .orElseThrow(() -> new RuntimeException("Book not found: " + bookId));
         
         // Make sure pages are cached
         cbxReaderService.getAvailablePages(bookId);
@@ -343,13 +343,13 @@ public class KomgaService {
     }
     
     private byte[] convertImageToPng(byte[] imageData) throws IOException {
-        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(imageData)) {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(imageData);
+             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             BufferedImage image = ImageIO.read(inputStream);
             if (image == null) {
                 throw new IOException("Failed to read image data");
             }
             
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(image, "png", outputStream);
             return outputStream.toByteArray();
         }

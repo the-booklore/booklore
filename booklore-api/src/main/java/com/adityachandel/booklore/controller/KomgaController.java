@@ -122,6 +122,8 @@ public class KomgaController {
             @Parameter(description = "Convert image to PNG format") @RequestParam(required = false, defaultValue = "false") boolean convert) {
         try {
             Resource pageImage = komgaService.getBookPageImage(bookId, pageNumber, convert);
+            // Note: When not converting, we assume JPEG as most CBZ files contain JPEG images,
+            // but the actual format may vary (PNG, WebP, etc.)
             String contentType = convert ? "image/png" : "image/jpeg";
             return ResponseEntity.ok()
                     .header("Content-Type", contentType)
