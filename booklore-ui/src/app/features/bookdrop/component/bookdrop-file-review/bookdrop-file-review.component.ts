@@ -1,4 +1,4 @@
-import {Component, DestroyRef, inject, OnInit, QueryList, ViewChildren} from '@angular/core';
+import {Component, DestroyRef, inject, OnDestroy, OnInit, QueryList, ViewChildren} from '@angular/core';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
@@ -62,7 +62,7 @@ export interface BookdropFileUI {
     InputGroupAddonModule,
   ],
 })
-export class BookdropFileReviewComponent implements OnInit {
+export class BookdropFileReviewComponent implements OnInit, OnDestroy {
   private readonly bookdropService = inject(BookdropService);
   private readonly libraryService = inject(LibraryService);
   private readonly confirmationService = inject(ConfirmationService);
@@ -98,8 +98,12 @@ export class BookdropFileReviewComponent implements OnInit {
   selectAllAcrossPages = false;
   excludedFiles = new Set<number>();
 
+  private lastClickedFileId: number | null = null;
+  private keyboardNavigationEnabled = true;
+
   ngOnInit(): void {
     this.pageTitle.setPageTitle('Review Bookdrop Files');
+    this.lastClickedFileId = null;
 
     this.activatedRoute.queryParams
       .pipe(startWith({}), tap(() => {
@@ -118,6 +122,202 @@ export class BookdropFileReviewComponent implements OnInit {
       .subscribe(settings => {
         this.uploadPattern = settings?.uploadPattern ?? '';
       });
+
+    this.enableKeyboardNavigation();
+  }
+
+  ngOnDestroy(): void {
+    this.disableKeyboardNavigation();
+  }
+
+  private enableKeyboardNavigation(): void {
+    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
+  private disableKeyboardNavigation(): void {
+    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
+  private handleKeyDown(event: KeyboardEvent): void {
+    if (!this.keyboardNavigationEnabled || this.isInputElement(event.target as HTMLElement)) {
+      return;
+    }
+
+    switch (event.key) {
+      case 'ArrowUp':
+        event.preventDefault();
+        this.navigateToPreviousFile();
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.navigateToNextFile();
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.navigateToFirstFile();
+        break;
+      case 'End':
+        event.preventDefault();
+        this.navigateToLastFile();
+        break;
+      case ' ':
+        // Spacebar to toggle selection of currently focused file
+        if (this.lastClickedFileId !== null) {
+          event.preventDefault();
+          this.toggleCurrentFileSelection();
+        }
+        break;
+      case 'Enter':
+        // Enter key to toggle details view of currently focused file
+        if (this.lastClickedFileId !== null) {
+          event.preventDefault();
+          this.toggleCurrentFileDetails();
+        }
+        break;
+      case 'a':
+      case 'A':
+        // Ctrl+A for select all (only when Ctrl is pressed)
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.selectAll(true);
+        }
+        break;
+      case 'Escape':
+        // Escape to clear selection
+        event.preventDefault();
+        this.clearAllSelections();
+        break;
+      case 'x':
+      case 'X':
+        // X key to toggle selection of current file (like in many file managers)
+        if (this.lastClickedFileId !== null) {
+          event.preventDefault();
+          this.toggleCurrentFileSelection();
+        }
+        break;
+      case 'c':
+      case 'C':
+        // Ctrl+C to copy metadata from fetched for current file
+        if ((event.ctrlKey || event.metaKey) && this.lastClickedFileId !== null) {
+          event.preventDefault();
+          this.copyMetadataFromCurrentFile();
+        }
+        break;
+    }
+  }
+
+  private isInputElement(element: HTMLElement): boolean {
+    return ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) || element.contentEditable === 'true';
+  }
+
+  private navigateToPreviousFile(): void {
+    if (this.bookdropFileUis.length === 0) return;
+
+    let currentIndex = -1;
+    if (this.lastClickedFileId !== null) {
+      currentIndex = this.bookdropFileUis.findIndex(file => file.file.id === this.lastClickedFileId);
+    }
+
+    if (currentIndex === -1) {
+      currentIndex = this.bookdropFileUis.length;
+    }
+
+    const newIndex = Math.max(0, currentIndex - 1);
+    this.focusFile(this.bookdropFileUis[newIndex]);
+  }
+
+  private navigateToNextFile(): void {
+    if (this.bookdropFileUis.length === 0) return;
+
+    let currentIndex = -1;
+    if (this.lastClickedFileId !== null) {
+      currentIndex = this.bookdropFileUis.findIndex(file => file.file.id === this.lastClickedFileId);
+    }
+
+    if (currentIndex === -1) {
+      currentIndex = -1;
+    }
+
+    const newIndex = Math.min(this.bookdropFileUis.length - 1, currentIndex + 1);
+    this.focusFile(this.bookdropFileUis[newIndex]);
+  }
+
+  private navigateToFirstFile(): void {
+    if (this.bookdropFileUis.length > 0) {
+      this.focusFile(this.bookdropFileUis[0]);
+    }
+  }
+
+  private navigateToLastFile(): void {
+    if (this.bookdropFileUis.length > 0) {
+      this.focusFile(this.bookdropFileUis[this.bookdropFileUis.length - 1]);
+    }
+  }
+
+  private focusFile(file: BookdropFileUI): void {
+    if (!file) return;
+
+    this.lastClickedFileId = file.file.id;
+
+    this.scrollToFile(file);
+  }
+
+  private scrollToFile(file: BookdropFileUI): void {
+    setTimeout(() => {
+      const element = document.querySelector(`[data-file-id="${file.file.id}"]`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        element.classList.add('keyboard-focused');
+        setTimeout(() => {
+          element.classList.remove('keyboard-focused');
+        }, 1000);
+      }
+    }, 0);
+  }
+
+  private toggleCurrentFileSelection(): void {
+    if (this.lastClickedFileId === null) return;
+
+    const file = this.bookdropFileUis.find(f => f.file.id === this.lastClickedFileId);
+    if (file) {
+      const newSelectionState = !file.selected;
+      this.toggleFileSelection(file.file.id, newSelectionState);
+    }
+  }
+
+  private toggleCurrentFileDetails(): void {
+    if (this.lastClickedFileId === null) return;
+
+    const file = this.bookdropFileUis.find(f => f.file.id === this.lastClickedFileId);
+    if (file) {
+      file.showDetails = !file.showDetails;
+    }
+  }
+
+  private clearAllSelections(): void {
+    // Deselect all files
+    this.selectAll(false);
+  }
+
+  private copyMetadataFromCurrentFile(): void {
+    if (this.lastClickedFileId === null) return;
+
+    const file = this.bookdropFileUis.find(f => f.file.id === this.lastClickedFileId);
+    if (file && file.file.fetchedMetadata) {
+      // Copy metadata from fetched to form
+      const fetched = file.file.fetchedMetadata;
+      const form = file.metadataForm;
+
+      for (const key of Object.keys(fetched)) {
+        if (!this.includeCoversOnCopy && key === 'thumbnailUrl') continue;
+        const value = fetched[key as keyof typeof fetched];
+        if (value != null) {
+          form.get(key)?.setValue(value);
+          file.copiedFields[key] = true;
+        }
+      }
+      this.onMetadataCopied(file.file.id, true);
+    }
   }
 
   get defaultLibraryId() {
@@ -203,6 +403,7 @@ export class BookdropFileReviewComponent implements OnInit {
           this.currentPage = page;
           this.loading = false;
           this.syncCurrentPageSelection();
+          this.lastClickedFileId = null;
         },
         error: err => {
           console.error('Error loading files:', err);
@@ -347,22 +548,49 @@ export class BookdropFileReviewComponent implements OnInit {
       Object.values(this.fileUiCache).forEach(file => file.selected = false);
       this.bookdropFileUis.forEach(file => file.selected = false);
     }
+    // Clear the last clicked file when selecting/clearing all
+    this.lastClickedFileId = null;
   }
 
-  toggleFileSelection(fileId: number, selected: boolean): void {
-    if (this.selectAllAcrossPages) {
-      if (!selected) {
-        this.excludedFiles.add(fileId);
-      } else {
-        this.excludedFiles.delete(fileId);
-      }
-      const cachedFile = this.fileUiCache[fileId];
-      if (cachedFile) cachedFile.selected = selected;
+  toggleFileSelection(fileId: number, selected: boolean, event?: MouseEvent): void {
+    if (event && event.shiftKey && this.lastClickedFileId !== null && !this.selectAllAcrossPages) {
+      this.selectRange(this.lastClickedFileId, fileId);
     } else {
-      const cachedFile = this.fileUiCache[fileId];
-      if (cachedFile) cachedFile.selected = selected;
+      if (this.selectAllAcrossPages) {
+        if (!selected) {
+          this.excludedFiles.add(fileId);
+        } else {
+          this.excludedFiles.delete(fileId);
+        }
+        const cachedFile = this.fileUiCache[fileId];
+        if (cachedFile) cachedFile.selected = selected;
+      } else {
+        const cachedFile = this.fileUiCache[fileId];
+        if (cachedFile) cachedFile.selected = selected;
+      }
+      this.syncCurrentPageSelection();
     }
-    this.syncCurrentPageSelection();
+
+    this.lastClickedFileId = fileId;
+  }
+
+  private selectRange(startFileId: number, endFileId: number): void {
+    const startIndex = this.bookdropFileUis.findIndex(file => file.file.id === startFileId);
+    const endIndex = this.bookdropFileUis.findIndex(file => file.file.id === endFileId);
+
+    if (startIndex === -1 || endIndex === -1) {
+      return; // Files not found in current view
+    }
+
+    const minIndex = Math.min(startIndex, endIndex);
+    const maxIndex = Math.max(startIndex, endIndex);
+
+    for (let i = minIndex; i <= maxIndex; i++) {
+      const file = this.bookdropFileUis[i];
+      file.selected = true;
+      const cachedFile = this.fileUiCache[file.file.id];
+      if (cachedFile) cachedFile.selected = true;
+    }
   }
 
   confirmReset(): void {
@@ -446,6 +674,7 @@ export class BookdropFileReviewComponent implements OnInit {
 
             this.selectAllAcrossPages = false;
             this.excludedFiles.clear();
+            this.lastClickedFileId = null; // Clear last clicked file when files are deleted
             this.loadPage(this.currentPage);
           },
           error: (err) => {
@@ -532,6 +761,7 @@ export class BookdropFileReviewComponent implements OnInit {
 
         this.selectAllAcrossPages = false;
         this.excludedFiles.clear();
+        this.lastClickedFileId = null; // Clear last clicked file when files are finalized
         this.loadPage(this.currentPage);
       },
       error: (err) => {
@@ -617,10 +847,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openBulkEditDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -647,10 +877,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openPatternExtractDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',

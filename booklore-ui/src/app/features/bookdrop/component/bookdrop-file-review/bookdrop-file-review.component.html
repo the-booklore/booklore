@@ -154,12 +154,12 @@
       } @else {
         @for (file of bookdropFileUis; track file) {
 
-          <div class="file-item">
+          <div class="file-item" [attr.data-file-id]="file.file.id">
             <div class="file-row">
               <p-checkbox
                 [binary]="true"
                 [(ngModel)]="file.selected"
-                (ngModelChange)="toggleFileSelection(file.file.id, $event)">
+                (click)="toggleFileSelection(file.file.id, !file.selected, $event)">
               </p-checkbox>
 
               @if (file.metadataForm.get('thumbnailUrl')?.value) {

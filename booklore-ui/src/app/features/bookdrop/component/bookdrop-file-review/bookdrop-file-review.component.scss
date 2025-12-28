@@ -263,6 +263,12 @@ p-inputgroup.disabled {
   flex-direction: column;
 }
 
+.file-item.keyboard-focused {
+  background-color: rgba(59, 130, 246, 0.1); /* Light blue background */
+  border-left: 3px solid #3b82f6; /* Blue border on the left */
+  transition: background-color 0.3s ease;
+}
+
 .file-row {
   display: flex;
   align-items: center;
