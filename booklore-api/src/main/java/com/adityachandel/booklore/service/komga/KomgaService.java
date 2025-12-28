@@ -1,20 +1,30 @@
 package com.adityachandel.booklore.service.komga;
 
 import com.adityachandel.booklore.mapper.komga.KomgaMapper;
+import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
+import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.service.reader.CbxReaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,6 +36,8 @@ public class KomgaService {
     private final BookRepository bookRepository;
     private final LibraryRepository libraryRepository;
     private final KomgaMapper komgaMapper;
+    private final MagicShelfService magicShelfService;
+    private final CbxReaderService cbxReaderService;
 
     public List<KomgaLibraryDto> getAllLibraries() {
         return libraryRepository.findAll().stream()
@@ -256,5 +268,90 @@ public class KomgaService {
         }
         
         return seriesMap;
+    }
+    
+    public KomgaPageableDto<KomgaCollectionDto> getCollections(int page, int size, boolean unpaged) {
+        log.debug("Getting collections, page: {}, size: {}, unpaged: {}", page, size, unpaged);
+        
+        List<MagicShelf> magicShelves = magicShelfService.getUserShelves();
+        log.debug("Found {} magic shelves", magicShelves.size());
+        
+        // Convert to collection DTOs - for now, series count is 0 since we don't have 
+        // the series filter implementation
+        List<KomgaCollectionDto> allCollections = magicShelves.stream()
+                .map(shelf -> komgaMapper.toKomgaCollectionDto(shelf, 0))
+                .sorted(Comparator.comparing(KomgaCollectionDto::getName))
+                .collect(Collectors.toList());
+        
+        log.debug("Mapped to {} collection DTOs", allCollections.size());
+        
+        // Handle unpaged mode
+        int totalElements = allCollections.size();
+        List<KomgaCollectionDto> content;
+        int actualPage;
+        int actualSize;
+        int totalPages;
+        
+        if (unpaged) {
+            content = allCollections;
+            actualPage = 0;
+            actualSize = totalElements;
+            totalPages = totalElements > 0 ? 1 : 0;
+        } else {
+            // Paginate
+            totalPages = (int) Math.ceil((double) totalElements / size);
+            int fromIndex = Math.min(page * size, totalElements);
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            
+            content = allCollections.subList(fromIndex, toIndex);
+            actualPage = page;
+            actualSize = size;
+        }
+        
+        return KomgaPageableDto.<KomgaCollectionDto>builder()
+                .content(content)
+                .number(actualPage)
+                .size(actualSize)
+                .totalElements(totalElements)
+                .totalPages(totalPages)
+                .first(actualPage == 0)
+                .last(totalElements == 0 || actualPage >= totalPages - 1)
+                .empty(content.isEmpty())
+                .build();
+    }
+    
+    public Resource getBookPageImage(Long bookId, Integer pageNumber, boolean convertToPng) throws IOException {
+        log.debug("Getting page {} from book {} (convert to PNG: {})", pageNumber, bookId, convertToPng);
+        
+        BookEntity book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new RuntimeException("Book not found"));
+        
+        // Make sure pages are cached
+        cbxReaderService.getAvailablePages(bookId);
+        
+        // Stream the page to a ByteArrayOutputStream
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
+        byte[] imageData = outputStream.toByteArray();
+        
+        // If conversion to PNG is requested, convert the image
+        if (convertToPng) {
+            imageData = convertImageToPng(imageData);
+        }
+        
+        return new ByteArrayResource(imageData);
+    }
+    
+    private byte[] convertImageToPng(byte[] imageData) throws IOException {
+        try (ByteArrayInputStream inputStream = new ByteArrayInputStream(imageData)) {
+            BufferedImage image = ImageIO.read(inputStream);
+            if (image == null) {
+                throw new IOException("Failed to read image data");
+            }
+            
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            ImageIO.write(image, "png", outputStream);
+            return outputStream.toByteArray();
+        }
     }
 }

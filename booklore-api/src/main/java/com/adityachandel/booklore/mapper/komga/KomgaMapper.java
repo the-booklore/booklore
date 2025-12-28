@@ -1,9 +1,12 @@
 package com.adityachandel.booklore.mapper.komga;
 
+import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.*;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -281,6 +284,21 @@ public class KomgaMapper {
                 .email(opdsUser.getUsername() + "@booklore.local")
                 .roles(List.of("USER"))
                 .sharedAllLibraries(true)
+                .build();
+    }
+    
+    public KomgaCollectionDto toKomgaCollectionDto(MagicShelf magicShelf, int seriesCount) {
+        String now = Instant.now()
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        
+        return KomgaCollectionDto.builder()
+                .id(magicShelf.getId().toString())
+                .name(magicShelf.getName())
+                .ordered(false)
+                .seriesCount(seriesCount)
+                .createdDate(now)
+                .lastModifiedDate(now)
                 .build();
     }
 }
