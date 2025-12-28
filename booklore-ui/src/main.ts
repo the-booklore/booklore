@@ -14,35 +14,36 @@ import {routes} from './app/app.routes';
 import {AuthInterceptorService} from './app/core/security/auth-interceptor.service';
 import {AuthService, websocketInitializer} from './app/shared/service/auth.service';
 import {OAuthStorage, provideOAuthClient} from 'angular-oauth2-oidc';
-import {APP_INITIALIZER, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
+import {inject, provideAppInitializer, provideZoneChangeDetection} from '@angular/core';
 import {initializeAuthFactory} from './app/core/security/auth-initializer';
+import {StartupService} from './app/shared/service/startup.service';
+import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import {IconService} from './app/shared/services/icon.service';
+import {firstValueFrom} from 'rxjs';
 
 export function storageFactory(): OAuthStorage {
   return localStorage;
 }
 
-import {StartupService} from './app/shared/service/startup.service';
-import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
-
 bootstrapApplication(AppComponent, {
   providers: [
-    provideZoneChangeDetection(),provideCharts(withDefaultRegisterables(), ChartDataLabels),
-    {
-      provide: APP_INITIALIZER,
-      useFactory: websocketInitializer,
-      deps: [AuthService],
-      multi: true
-    },
-    {
-      provide: APP_INITIALIZER,
-      useFactory: (startup: StartupService) => () => startup.load(),
-      deps: [StartupService],
-      multi: true
-    },
+    provideZoneChangeDetection(),
+    provideCharts(withDefaultRegisterables(), ChartDataLabels),
+    provideAppInitializer(() => {
+      const authService = inject(AuthService);
+      return websocketInitializer(authService)();
+    }),
+    provideAppInitializer(() => {
+      const startup = inject(StartupService);
+      return startup.load();
+    }),
+    provideAppInitializer(() => {
+      const iconService = inject(IconService);
+      return firstValueFrom(iconService.preloadAllIcons());
+    }),
     provideHttpClient(withInterceptors([AuthInterceptorService])),
     provideOAuthClient(),
-    // Configure OAuth to use localStorage instead of sessionStorage
     {
       provide: OAuthStorage,
       useFactory: storageFactory
