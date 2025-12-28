@@ -13,8 +13,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class BookMark {
     private Long id;
+    private Long userId;
     private Long bookId;
     private String cfi;
     private String title;
+    private String color;
+    private String notes;
+    private Integer priority;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

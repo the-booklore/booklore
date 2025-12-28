@@ -13,12 +13,9 @@ import {MatrixController, MatrixElement} from 'chartjs-chart-matrix';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {LibraryFilterService, LibraryOption} from '../service/library-filter.service';
 import {LibrariesSummaryService} from '../service/libraries-summary.service';
-import {ReadStatusChartService} from '../service/read-status-chart.service';
 import {BookTypeChartService} from '../service/book-type-chart.service';
-import {ReadingProgressChartService} from '../service/reading-progress-chart-service';
 import {PageCountChartService} from '../service/page-count-chart.service';
 import {BookRatingChartService} from '../service/book-rating-chart.service';
-import {PersonalRatingChartService} from '../service/personal-rating-chart.service';
 import {PublicationYearChartService} from '../service/publication-year-chart-service';
 import {AuthorPopularityChartService} from '../service/author-popularity-chart.service';
 import {ReadingCompletionChartService} from '../service/reading-completion-chart.service';
@@ -28,10 +25,7 @@ import {BookSizeChartService} from '../service/book-size-chart.service';
 import {ReadingVelocityTimelineChartService} from '../service/reading-velocity-timeline-chart.service';
 import {MonthlyReadingPatternsChartService} from '../service/monthly-reading-patterns-chart.service';
 import {TopSeriesChartService} from '../service/top-series-chart.service';
-import {ReadingDNAChartService} from '../service/reading-dna-chart.service';
-import {ReadingHabitsChartService} from '../service/reading-habits-chart.service';
 import {ChartConfig, ChartConfigService} from '../service/chart-config.service';
-import {ReadingHeatmapChartService} from '../service/reading-heatmap-chart.service';
 
 @Component({
   selector: 'app-stats-component',
@@ -53,12 +47,9 @@ export class StatsComponent implements OnInit, OnDestroy {
 
   private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly librariesSummaryService = inject(LibrariesSummaryService);
-  protected readonly readStatusChartService = inject(ReadStatusChartService);
   protected readonly bookTypeChartService = inject(BookTypeChartService);
-  protected readonly readingProgressChartService = inject(ReadingProgressChartService);
   protected readonly pageCountChartService = inject(PageCountChartService);
   protected readonly bookRatingChartService = inject(BookRatingChartService);
-  protected readonly personalRatingChartService = inject(PersonalRatingChartService);
   protected readonly publicationYearChartService = inject(PublicationYearChartService);
   protected readonly authorPopularityChartService = inject(AuthorPopularityChartService);
   protected readonly readingCompletionChartService = inject(ReadingCompletionChartService);
@@ -68,10 +59,7 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly readingVelocityTimelineChartService = inject(ReadingVelocityTimelineChartService);
   protected readonly monthlyReadingPatternsChartService = inject(MonthlyReadingPatternsChartService);
   protected readonly topSeriesChartService = inject(TopSeriesChartService);
-  protected readonly readingDNAChartService = inject(ReadingDNAChartService);
-  protected readonly readingHabitsChartService = inject(ReadingHabitsChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
-  protected readonly readingHeatmapChartService = inject(ReadingHeatmapChartService);
   private readonly pageTitle = inject(PageTitleService);
 
   private readonly destroy$ = new Subject<void>();
@@ -100,7 +88,6 @@ export class StatsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     Chart.register(...registerables, Tooltip, ChartDataLabels, MatrixController, MatrixElement);
-    // Register matrix chart - it's automatically registered when imported
     Chart.defaults.plugins.legend.labels.font = {
       family: "'Inter', sans-serif",
       size: 11.5,
@@ -215,14 +202,6 @@ export class StatsComponent implements OnInit, OnDestroy {
 
   public resetChartPositions(): void {
     this.chartConfigService.resetPositions();
-  }
-
-  trackByTrait(index: number, insight: any): string {
-    return insight.trait;
-  }
-
-  trackByHabit(index: number, habit: any): string {
-    return habit.habit;
   }
 
   protected readonly ChartDataLabels = ChartDataLabels;

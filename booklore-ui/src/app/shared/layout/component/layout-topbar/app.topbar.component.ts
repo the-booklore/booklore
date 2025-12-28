@@ -24,6 +24,7 @@ import {BookdropFileService} from '../../../../features/bookdrop/service/bookdro
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {UnifiedNotificationBoxComponent} from '../../../components/unified-notification-popover/unified-notification-popover-component';
 import {Severity, LogNotification} from '../../../websocket/model/log-notification.model';
+import {Menu} from 'primeng/menu';
 
 @Component({
   selector: 'app-topbar',
@@ -45,15 +46,19 @@ import {Severity, LogNotification} from '../../../websocket/model/log-notificati
     Popover,
     UnifiedNotificationBoxComponent,
     NgStyle,
+    Menu,
   ],
 })
 export class AppTopBarComponent implements OnDestroy {
   items!: MenuItem[];
   ref?: DynamicDialogRef;
+  statsMenuItems: MenuItem[] = [];
 
   @ViewChild('menubutton') menuButton!: ElementRef;
   @ViewChild('topbarmenubutton') topbarMenuButton!: ElementRef;
   @ViewChild('topbarmenu') menu!: ElementRef;
+  @ViewChild('statsMenu') statsMenu: any;
+  @ViewChild('statsMenuMobile') statsMenuMobile: any;
 
   isMenuVisible = true;
   progressHighlight = false;
@@ -100,6 +105,12 @@ export class AppTopBarComponent implements OnDestroy {
         this.updateCompletedTaskCount();
         this.updateTaskVisibilityWithBookdrop();
       });
+
+    this.userService.userState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.initializeStatsMenu();
+      });
   }
 
   ngOnDestroy(): void {
@@ -143,11 +154,25 @@ export class AppTopBarComponent implements OnDestroy {
   }
 
   navigateToStats() {
-    this.router.navigate(['/stats']);
+    this.router.navigate(['/library-stats']);
+  }
+
+  navigateToUserStats() {
+    this.router.navigate(['/reading-stats']);
   }
 
   logout() {
     this.authService.logout();
+  }
+
+  handleStatsButtonClick(event: Event) {
+    if (this.statsMenuItems.length === 0) {
+      return;
+    }
+
+    if (this.statsMenuItems.length === 1) {
+      this.statsMenuItems[0].command?.({originalEvent: event, item: this.statsMenuItems[0]});
+    }
   }
 
   private subscribeToMetadataProgress() {
@@ -189,6 +214,47 @@ export class AppTopBarComponent implements OnDestroy {
 
   private updateTaskVisibilityWithBookdrop() {
     this.hasActiveOrCompletedTasks = this.hasActiveOrCompletedTasks || this.hasPendingBookdropFiles;
+  }
+
+  private initializeStatsMenu() {
+    const userState = this.userService.userStateSubject.value;
+    const user = userState.user;
+
+    this.statsMenuItems = [];
+
+    if (user?.permissions?.canAccessLibraryStats || user?.permissions?.admin) {
+      this.statsMenuItems.push({
+        label: 'Library Stats',
+        icon: 'pi pi-chart-line',
+        command: () => this.navigateToStats()
+      });
+    }
+
+    if (user?.permissions?.canAccessUserStats || user?.permissions?.admin) {
+      this.statsMenuItems.push({
+        label: 'Reading Stats',
+        icon: 'pi pi-users',
+        command: () => this.navigateToUserStats()
+      });
+    }
+  }
+
+  get hasStatsAccess(): boolean {
+    return this.statsMenuItems.length > 0;
+  }
+
+  get shouldShowStatsMenu(): boolean {
+    return this.statsMenuItems.length > 1;
+  }
+
+  get statsTooltip(): string {
+    if (this.statsMenuItems.length === 0) {
+      return 'Stats';
+    }
+    if (this.statsMenuItems.length === 1) {
+      return this.statsMenuItems[0].label || 'Stats';
+    }
+    return 'Stats';
   }
 
   get iconClass(): string {

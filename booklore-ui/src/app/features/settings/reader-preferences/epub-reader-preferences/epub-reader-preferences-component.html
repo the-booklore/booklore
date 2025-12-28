@@ -3,17 +3,21 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Theme</label>
-        <div class="radio-group">
+        <div class="theme-selector">
           @for (theme of themes; track theme) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="'theme-' + theme.key"
-                name="theme"
-                [value]="theme.key"
-                [(ngModel)]="selectedTheme">
-              </p-radiobutton>
-              <label [for]="'theme-' + theme.key">{{ theme.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="theme-option"
+              [class.selected]="selectedTheme === theme.key"
+              [style.background-color]="theme.color"
+              (click)="selectedTheme = theme.key"
+              [attr.aria-label]="theme.name"
+              [pTooltip]="theme.name"
+              tooltipPosition="bottom">
+              @if (selectedTheme === theme.key) {
+                <i class="pi pi-check"></i>
+              }
+            </button>
           }
         </div>
       </div>
@@ -27,17 +31,18 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Font</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (font of fonts; track font) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="'font-' + font.key"
-                name="font"
-                [value]="font.key"
-                [(ngModel)]="selectedFont">
-              </p-radiobutton>
-              <label [for]="'font-' + font.key">{{ font.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button font-button"
+              [class.selected]="selectedFont === font.key"
+              [attr.data-font]="font.key"
+              (click)="selectedFont = font.key"
+              [pTooltip]="font.name"
+              tooltipPosition="bottom">
+              <span class="option-text">{{ font.displayName }}</span>
+            </button>
           }
         </div>
       </div>
@@ -51,17 +56,16 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Flow</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (flow of flowOptions; track flow) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="'flow-' + flow.key"
-                name="flow"
-                [value]="flow.key"
-                [(ngModel)]="selectedFlow">
-              </p-radiobutton>
-              <label [for]="'flow-' + flow.key">{{ flow.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedFlow === flow.key"
+              (click)="selectedFlow = flow.key">
+              <i [class]="flow.icon"></i>
+              <span class="option-text">{{ flow.name }}</span>
+            </button>
           }
         </div>
       </div>
@@ -75,17 +79,16 @@
     <div class="setting-info">
       <div class="setting-label-row">
         <label class="setting-label">Page Spread</label>
-        <div class="radio-group">
+        <div class="button-group">
           @for (spread of spreadOptions; track spread) {
-            <div class="radio-option">
-              <p-radiobutton
-                [inputId]="'spread-' + spread.key"
-                name="spread"
-                [value]="spread.key"
-                [(ngModel)]="selectedSpread">
-              </p-radiobutton>
-              <label [for]="'spread-' + spread.key">{{ spread.name }}</label>
-            </div>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="selectedSpread === spread.key"
+              (click)="selectedSpread = spread.key">
+              <i [class]="spread.icon"></i>
+              <span class="option-text">{{ spread.name }}</span>
+            </button>
           }
         </div>
       </div>

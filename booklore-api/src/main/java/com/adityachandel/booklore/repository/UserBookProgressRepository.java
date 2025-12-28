@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.repository;
 
+import com.adityachandel.booklore.model.dto.CompletionTimelineDto;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -40,4 +41,23 @@ public interface UserBookProgressRepository extends JpaRepository<UserBookProgre
             @Param("userId") Long userId,
             @Param("snapshotId") String snapshotId
     );
+
+    @Query("""
+            SELECT 
+                YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) as year,
+                MONTH(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) as month,
+                ubp.readStatus as readStatus,
+                COUNT(ubp) as bookCount
+            FROM UserBookProgressEntity ubp
+            WHERE ubp.user.id = :userId
+            AND ubp.readStatus IS NOT NULL
+            AND ubp.readStatus NOT IN (com.adityachandel.booklore.model.enums.ReadStatus.UNSET, com.adityachandel.booklore.model.enums.ReadStatus.UNREAD)
+            AND COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime) IS NOT NULL
+            AND YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)) = :year
+            GROUP BY YEAR(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)),
+                     MONTH(COALESCE(ubp.dateFinished, ubp.readStatusModifiedTime, ubp.lastReadTime)),
+                     ubp.readStatus
+            ORDER BY year DESC, month DESC
+            """)
+    List<CompletionTimelineDto> findCompletionTimelineByUser(@Param("userId") Long userId, @Param("year") int year);
 }

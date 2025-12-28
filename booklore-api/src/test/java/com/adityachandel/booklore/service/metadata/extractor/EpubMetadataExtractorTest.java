@@ -233,6 +233,21 @@ class EpubMetadataExtractorTest {
         }
 
         @Test
+        @DisplayName("Should not extract non-authors from EPUB metadata")
+        void extractMetadata_withExtraCreators_returnsOnlyAuthors() throws IOException {
+            File epubFile = createEpubWithExtraCreators(DEFAULT_TITLE, DEFAULT_AUTHOR, "Jane Smith", "Alice", "Bob");
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertNotNull(result);
+            assertTrue(result.getAuthors().contains(DEFAULT_AUTHOR));
+            assertTrue(result.getAuthors().contains("Jane Smith"));
+            assertFalse(result.getAuthors().contains("Alice"));
+            assertFalse(result.getAuthors().contains("Bob"));
+            assertEquals(2, result.getAuthors().size());
+        }
+
+        @Test
         @DisplayName("Should extract publisher from EPUB metadata")
         void extractMetadata_withPublisher_returnsPublisher() throws IOException {
             File epubFile = createEpubWithMetadata(DEFAULT_TITLE, null, DEFAULT_PUBLISHER, null);
@@ -533,6 +548,23 @@ class EpubMetadataExtractorTest {
         return createEpubWithOpf(opfContent, "test-multiauthor-" + System.nanoTime() + ".epub");
     }
 
+    private File createEpubWithExtraCreators(String title, String author1, String author2, String illustrator, String editor) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:opf="http://www.idpf.org/2007/opf">
+                    <dc:title>%s</dc:title>
+                    <dc:creator>%s</dc:creator>
+                    <dc:creator opf:role="aut">%s</dc:creator>
+                    <dc:creator opf:role="ill">%s</dc:creator>
+                    <dc:creator id="creator04">%s</dc:creator>
+                    <meta property="role" refines="#creator04" scheme="marc:relators">edt</meta>
+                </metadata>
+            </package>
+            """, title, author1, author2, illustrator, editor);
+        return createEpubWithOpf(opfContent, "test-extracreator-" + System.nanoTime() + ".epub");
+    }
+
     private File createEpubWithCalibreSeries(String title, String seriesName, String seriesIndex) throws IOException {
         String opfContent = String.format("""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -715,6 +747,97 @@ class EpubMetadataExtractorTest {
             zos.closeEntry();
 
             zos.putNextEntry(new ZipEntry("OEBPS/" + href));
+            zos.write(coverImageData);
+            zos.closeEntry();
+        }
+
+        return epubFile;
+    }
+
+    @Nested
+    @DisplayName("URL Decoding Tests")
+    class UrlDecodingTests {
+
+        @Test
+        @DisplayName("Should properly decode unicode characters in cover href")
+        void extractCover_withUnicodeHref_decodesCorrectly() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            String encodedHref = "cover%C3%A1.png";  // coverá.png URL-encoded
+            File epubFile = createEpubWithUnicodeCover(pngImage, "cover_image", encodedHref);
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted from EPUB with URL-encoded href");
+            assertTrue(cover.length > 0);
+        }
+
+        @Test
+        @DisplayName("Should extract cover with URL-encoded characters in manifest")
+        void findCoverImageHrefInOpf_withEncodedHref_returnsDecodedPath() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            String encodedHref = "images%2Fcover%C3%A1.jpg";  // images/coverá.jpg URL-encoded
+            File epubFile = createEpubWithUnicodeCover(pngImage, "cover_image", encodedHref);
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted even with encoded path");
+            assertArrayEquals(pngImage, cover, "Extracted cover should match original image");
+        }
+
+        @Test
+        @DisplayName("Should handle multiple encoded unicode characters")
+        void extractCover_withMultipleEncodedChars_handlesCorrectly() throws IOException {
+            byte[] pngImage = createMinimalPngImage();
+            String encodedHref = "c%C3%B3ver%20t%C3%ADtle%20%C3%A1nd%20%C3%B1ame.png";
+            File epubFile = createEpubWithUnicodeCover(pngImage, "multi_unicode_cover", encodedHref);
+
+            byte[] cover = extractor.extractCover(epubFile);
+
+            assertNotNull(cover, "Cover should be extracted from filename with multiple encoded chars");
+            assertTrue(cover.length > 0);
+        }
+    }
+
+    private File createEpubWithUnicodeCover(byte[] coverImageData, String id, String encodedHref) throws IOException {
+        String opfContent = String.format("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                    <dc:title>Book with Unicode Cover</dc:title>
+                </metadata>
+                <manifest>
+                    <item id="%s" href="%s" media-type="image/png" properties="cover-image"/>
+                </manifest>
+            </package>
+            """, id, encodedHref);
+
+        File epubFile = tempDir.resolve("test-unicode-cover-" + System.nanoTime() + ".epub").toFile();
+
+        String containerXml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                <rootfiles>
+                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                </rootfiles>
+            </container>
+            """;
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
+            zos.putNextEntry(new ZipEntry("mimetype"));
+            zos.write("application/epub+zip".getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("META-INF/container.xml"));
+            zos.write(containerXml.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            zos.putNextEntry(new ZipEntry("OEBPS/content.opf"));
+            zos.write(opfContent.getBytes(StandardCharsets.UTF_8));
+            zos.closeEntry();
+
+            // The actual file path in the zip should match the decoded href
+            String decodedPath = java.net.URLDecoder.decode(encodedHref, java.nio.charset.StandardCharsets.UTF_8);
+            zos.putNextEntry(new ZipEntry("OEBPS/" + decodedPath));
             zos.write(coverImageData);
             zos.closeEntry();
         }

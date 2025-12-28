@@ -40,6 +40,7 @@ export interface Book extends FileInfo {
   koreaderProgress?: KoReaderProgress;
   koboProgress?: KoboProgress;
   seriesCount?: number | null;
+  seriesBooks?: Book[] | null;
   metadataMatchScore?: number | null;
   personalRating?: number | null;
   readStatus?: ReadStatus;
@@ -88,6 +89,7 @@ export interface BookMetadata {
   goodreadsId?: string;
   comicvineId?: string;
   hardcoverId?: string;
+  hardcoverBookId?: number | null;
   googleId?: string;
   pageCount?: number | null;
   language?: string;
@@ -122,6 +124,7 @@ export interface BookMetadata {
   comicvineIdLocked?: boolean;
   goodreadsIdLocked?: boolean;
   hardcoverIdLocked?: boolean;
+  hardcoverBookIdLocked?: boolean;
   googleIdLocked?: boolean;
   pageCountLocked?: boolean;
   languageLocked?: boolean;
@@ -156,6 +159,7 @@ export interface MetadataClearFlags {
   goodreadsId?: boolean;
   comicvineId?: boolean;
   hardcoverId?: boolean;
+  hardcoverBookId?: boolean;
   googleId?: boolean;
   pageCount?: boolean;
   language?: boolean;

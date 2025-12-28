@@ -97,6 +97,9 @@ public class BookMetadataEntity {
     @Column(name = "hardcover_id", length = 100)
     private String hardcoverId;
 
+    @Column(name = "hardcover_book_id")
+    private Integer hardcoverBookId;
+
     @Column(name = "google_id", length = 100)
     private String googleId;
 
@@ -208,6 +211,10 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean hardcoverIdLocked = Boolean.FALSE;
 
+    @Column(name = "hardcover_book_id_locked")
+    @Builder.Default
+    private Boolean hardcoverBookIdLocked = Boolean.FALSE;
+
     @Column(name = "google_id_locked")
     @Builder.Default
     private Boolean googleIdLocked = Boolean.FALSE;
@@ -309,6 +316,7 @@ public class BookMetadataEntity {
         this.comicvineIdLocked = lock;
         this.goodreadsIdLocked = lock;
         this.hardcoverIdLocked = lock;
+        this.hardcoverBookIdLocked = lock;
         this.googleIdLocked = lock;
         this.reviewsLocked = lock;
     }
@@ -341,6 +349,7 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.goodreadsIdLocked)
                 && Boolean.TRUE.equals(this.comicvineIdLocked)
                 && Boolean.TRUE.equals(this.hardcoverIdLocked)
+                && Boolean.TRUE.equals(this.hardcoverBookIdLocked)
                 && Boolean.TRUE.equals(this.googleIdLocked)
                 && Boolean.TRUE.equals(this.reviewsLocked)
                 ;

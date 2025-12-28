@@ -3,7 +3,7 @@ import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {filter, startWith, take, tap} from 'rxjs/operators';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
 
-import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService} from '../../service/bookdrop.service';
+import {BookdropFile, BookdropFinalizePayload, BookdropFinalizeResult, BookdropService, FileExtractionResult, BulkEditRequest as BackendBulkEditRequest, BulkEditResult as BackendBulkEditResult} from '../../service/bookdrop.service';
 import {LibraryService} from '../../../book/service/library.service';
 import {Library} from '../../../book/model/library.model';
 
@@ -15,16 +15,19 @@ import {Tooltip} from 'primeng/tooltip';
 import {Divider} from 'primeng/divider';
 import {ConfirmationService, MessageService} from 'primeng/api';
 import {Observable, Subscription} from 'rxjs';
-
+import {InputGroup} from 'primeng/inputgroup';
+import {InputGroupAddonModule} from 'primeng/inputgroupaddon';
 import {AppSettings} from '../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {BookMetadata} from '../../../book/model/book.model';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {Checkbox} from 'primeng/checkbox';
-import {NgClass, NgStyle} from '@angular/common';
+import {NgClass} from '@angular/common';
 import {Paginator} from 'primeng/paginator';
 import {ActivatedRoute} from '@angular/router';
 import {BookdropFileMetadataPickerComponent} from '../bookdrop-file-metadata-picker/bookdrop-file-metadata-picker.component';
+import {BookdropBulkEditDialogComponent, BulkEditResult} from '../bookdrop-bulk-edit-dialog/bookdrop-bulk-edit-dialog.component';
+import {BookdropPatternExtractDialogComponent} from '../bookdrop-pattern-extract-dialog/bookdrop-pattern-extract-dialog.component';
 import {DialogLauncherService} from '../../../../shared/services/dialog-launcher.service';
 
 export interface BookdropFileUI {
@@ -53,9 +56,10 @@ export interface BookdropFileUI {
     Tooltip,
     Divider,
     Checkbox,
-    NgStyle,
     NgClass,
     Paginator,
+    InputGroup,
+    InputGroupAddonModule,
   ],
 })
 export class BookdropFileReviewComponent implements OnInit {
@@ -105,7 +109,6 @@ export class BookdropFileReviewComponent implements OnInit {
       .subscribe();
 
     this.libraryService.libraryState$
-      .pipe(filter(state => !!state?.loaded), take(1))
       .subscribe(state => {
         this.libraries = state.libraries ?? [];
       });
@@ -208,6 +211,45 @@ export class BookdropFileReviewComponent implements OnInit {
       });
   }
 
+  private async loadAllPagesIntoCache(): Promise<void> {
+    const totalPages = Math.ceil(this.totalRecords / this.pageSize);
+    const pagePromises: Promise<void>[] = [];
+
+    for (let page = 0; page < totalPages; page++) {
+      const promise = new Promise<void>((resolve, reject) => {
+        this.bookdropService.getPendingFiles(page, this.pageSize)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: response => {
+              response.content.forEach(file => {
+                if (!this.fileUiCache[file.id]) {
+                  const fresh = this.createFileUI(file);
+
+                  if (this.defaultLibraryId) {
+                    const selectedLib = this.libraries.find(l => String(l.id) === this.defaultLibraryId);
+                    const selectedPaths = selectedLib?.paths ?? [];
+                    fresh.selectedLibraryId = this.defaultLibraryId;
+                    fresh.availablePaths = selectedPaths.map(p => ({id: String(p.id ?? ''), name: p.path}));
+                    fresh.selectedPathId = this.defaultPathId ?? null;
+                  }
+
+                  this.fileUiCache[file.id] = fresh;
+                }
+              });
+              resolve();
+            },
+            error: err => {
+              console.error('Error loading page:', err);
+              reject(err);
+            }
+          });
+      });
+      pagePromises.push(promise);
+    }
+
+    await Promise.all(pagePromises);
+  }
+
   onLibraryChange(file: BookdropFileUI): void {
     const lib = this.libraries.find(l => String(l.id) === file.selectedLibraryId);
     file.availablePaths = lib?.paths.map(p => ({id: String(p.id ?? ''), name: p.path})) ?? [];
@@ -218,44 +260,41 @@ export class BookdropFileReviewComponent implements OnInit {
     this.copiedFlags[fileId] = copied;
   }
 
-  applyDefaultsToAll(): void {
+  applyLibraryDefaults(): void {
     if (!this.defaultLibraryId || !this.libraries) return;
 
     const selectedLib = this.libraries.find(l => String(l.id) === this.defaultLibraryId);
     const selectedPaths = selectedLib?.paths ?? [];
 
-    Object.values(this.fileUiCache).forEach(file => {
-      file.selectedLibraryId = this.defaultLibraryId;
-      file.availablePaths = selectedPaths.map(path => ({id: String(path.id), name: path.path}));
-      file.selectedPathId = this.defaultPathId ?? null;
+    this.getSelectedFiles().map(fileUi => {
+      const cachedfUi = this.fileUiCache[fileUi.file.id];
+      cachedfUi.selectedLibraryId = this.defaultLibraryId;
+      cachedfUi.availablePaths = selectedPaths.map(path => ({id: String(path.id), name: path.path}));
+      cachedfUi.selectedPathId = this.defaultPathId ?? null;
     });
   }
 
-  copyAll(): void {
-    Object.values(this.fileUiCache).forEach(fileUi => {
-      const fetched = fileUi.file.fetchedMetadata;
-      const form = fileUi.metadataForm;
+  copyMetadata(): void {
+    const files = this.getSelectedFiles().map(fileUi => {
+      const cachedfUi = this.fileUiCache[fileUi.file.id];
+      const fetched = cachedfUi.file.fetchedMetadata;
+      const form = cachedfUi.metadataForm;
       if (!fetched) return;
       for (const key of Object.keys(fetched)) {
         if (!this.includeCoversOnCopy && key === 'thumbnailUrl') continue;
         const value = fetched[key as keyof typeof fetched];
         if (value != null) {
           form.get(key)?.setValue(value);
-          fileUi.copiedFields[key] = true;
+          cachedfUi.copiedFields[key] = true;
         }
       }
-      this.onMetadataCopied(fileUi.file.id, true);
+      this.onMetadataCopied(cachedfUi.file.id, true);
     });
   }
 
+
   resetMetadata(): void {
-    const selectedFiles = Object.values(this.fileUiCache).filter(file => {
-      if (this.selectAllAcrossPages) {
-        return !this.excludedFiles.has(file.file.id);
-      } else {
-        return file.selected;
-      }
-    });
+    const selectedFiles = this.getSelectedFiles();
 
     const files = selectedFiles.map(fileUi => {
       const original = fileUi.file.originalMetadata;
@@ -280,6 +319,7 @@ export class BookdropFileReviewComponent implements OnInit {
         goodreadsRating: original?.goodreadsRating ?? null,
         goodreadsReviewCount: original?.goodreadsReviewCount ?? null,
         hardcoverId: original?.hardcoverId ?? null,
+        hardcoverBookId: original?.hardcoverBookId ?? null,
         hardcoverRating: original?.hardcoverRating ?? null,
         hardcoverReviewCount: original?.hardcoverReviewCount ?? null,
         googleId: original?.googleId ?? null,
@@ -382,7 +422,7 @@ export class BookdropFileReviewComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       acceptButtonStyleClass: 'p-button-danger',
       accept: () => {
-        const payload: any = {
+        const payload: { selectAll: boolean; excludedIds?: number[]; selectedIds?: number[] } = {
           selectAll: this.selectAllAcrossPages,
         };
 
@@ -402,12 +442,7 @@ export class BookdropFileReviewComponent implements OnInit {
               detail: 'Selected Bookdrop files were deleted successfully.',
             });
 
-            const toDelete = Object.values(this.fileUiCache).filter(file => {
-              return this.selectAllAcrossPages
-                ? !this.excludedFiles.has(file.file.id)
-                : file.selected;
-            });
-            toDelete.forEach(file => delete this.fileUiCache[file.file.id]);
+            this.getSelectedFiles().forEach(file => delete this.fileUiCache[file.file.id]);
 
             this.selectAllAcrossPages = false;
             this.excludedFiles.clear();
@@ -451,13 +486,7 @@ export class BookdropFileReviewComponent implements OnInit {
   private finalizeImport(): void {
     this.saving = true;
 
-    const selectedFiles = Object.values(this.fileUiCache).filter(file => {
-      if (this.selectAllAcrossPages) {
-        return !this.excludedFiles.has(file.file.id);
-      } else {
-        return file.selected;
-      }
-    });
+    const selectedFiles = this.getSelectedFiles();
 
     const files = selectedFiles.map(fileUi => {
       const rawMetadata = fileUi.metadataForm.value;
@@ -539,6 +568,7 @@ export class BookdropFileReviewComponent implements OnInit {
       goodreadsRating: new FormControl(original?.goodreadsRating ?? ''),
       goodreadsReviewCount: new FormControl(original?.goodreadsReviewCount ?? ''),
       hardcoverId: new FormControl(original?.hardcoverId ?? ''),
+      hardcoverBookId: new FormControl(original?.hardcoverBookId ?? ''),
       hardcoverRating: new FormControl(original?.hardcoverRating ?? ''),
       hardcoverReviewCount: new FormControl(original?.hardcoverReviewCount ?? ''),
       googleId: new FormControl(original?.googleId ?? ''),
@@ -582,6 +612,210 @@ export class BookdropFileReviewComponent implements OnInit {
         });
         console.error(err);
       }
+    });
+  }
+
+  openBulkEditDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to bulk edit.',
+      });
+      return;
+    }
+
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropBulkEditDialogComponent, {
+      header: `Bulk Edit ${totalCount} Files`,
+      width: '600px',
+      modal: true,
+      closable: true,
+      data: {fileCount: totalCount},
+    });
+
+    dialogRef?.onClose.subscribe((result: BulkEditResult | null) => {
+      if (result) {
+        this.applyBulkMetadataViaBackend(result);
+      }
+    });
+  }
+
+  openPatternExtractDialog(): void {
+    const selectedFiles = this.getSelectedFiles();
+    const totalCount = this.selectAllAcrossPages 
+      ? this.totalRecords - this.excludedFiles.size 
+      : selectedFiles.length;
+      
+    if (totalCount === 0) {
+      this.messageService.add({
+        severity: 'warn',
+        summary: 'No files selected',
+        detail: 'Please select files to extract metadata from.',
+      });
+      return;
+    }
+
+    const sampleFiles = selectedFiles.slice(0, 5).map(f => f.file.fileName);
+    const selectedIds = selectedFiles.map(f => f.file.id);
+
+    const dialogRef = this.dialogLauncherService.openDialog(BookdropPatternExtractDialogComponent, {
+      header: 'Extract Metadata from Filenames',
+      width: '700px',
+      modal: true,
+      closable: true,
+      data: {
+        sampleFiles,
+        fileCount: totalCount,
+        selectAll: this.selectAllAcrossPages,
+        excludedIds: Array.from(this.excludedFiles),
+        selectedIds,
+      },
+    });
+
+    dialogRef?.onClose.subscribe((result: { results: FileExtractionResult[] } | null) => {
+      if (result?.results) {
+        this.applyExtractedMetadata(result.results);
+      }
+    });
+  }
+
+  private getSelectedFiles(): BookdropFileUI[] {
+    return Object.values(this.fileUiCache).filter(file => {
+      if (this.selectAllAcrossPages) {
+        return !this.excludedFiles.has(file.file.id);
+      }
+      return file.selected;
+    });
+  }
+
+  private async applyBulkMetadataViaBackend(result: BulkEditResult): Promise<void> {
+    if (this.selectAllAcrossPages) {
+      try {
+        await this.loadAllPagesIntoCache();
+      } catch (err) {
+        console.error('Error loading pages into cache:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bulk Edit Failed',
+          detail: 'An error occurred while loading files into cache.',
+        });
+        return;
+      }
+    }
+
+    const selectedFiles = this.getSelectedFiles();
+    const selectedIds = selectedFiles.map(f => f.file.id);
+
+    this.applyBulkMetadataToUI(result, selectedFiles);
+
+    const enabledFieldsArray = Array.from(result.enabledFields);
+
+    const payload: BackendBulkEditRequest = {
+      fields: result.fields,
+      enabledFields: enabledFieldsArray,
+      mergeArrays: result.mergeArrays,
+      selectAll: this.selectAllAcrossPages,
+      excludedIds: this.selectAllAcrossPages ? Array.from(this.excludedFiles) : undefined,
+      selectedIds: !this.selectAllAcrossPages ? selectedIds : undefined,
+    };
+
+    this.bookdropService.bulkEditMetadata(payload).subscribe({
+      next: (backendResult: BackendBulkEditResult) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Bulk Edit Applied',
+          detail: `Updated metadata for ${backendResult.successfullyUpdated} of ${backendResult.totalFiles} file(s).`,
+        });
+      },
+      error: (err) => {
+        console.error('Error applying bulk edit:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Bulk Edit Failed',
+          detail: 'An error occurred while applying bulk edits.',
+        });
+      },
+    });
+  }
+
+  private applyBulkMetadataToUI(result: BulkEditResult, selectedFiles: BookdropFileUI[]): void {
+    selectedFiles.forEach(fileUi => {
+      result.enabledFields.forEach(fieldName => {
+        const value = result.fields[fieldName as keyof BookMetadata];
+        if (value === undefined || value === null) {
+          return;
+        }
+
+        if (Array.isArray(value) && value.length === 0) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(fieldName);
+        if (!control) {
+          return;
+        }
+
+        if (result.mergeArrays && Array.isArray(value)) {
+          const currentValue = control.value || [];
+          const merged = [...new Set([...currentValue, ...value])];
+          control.setValue(merged);
+        } else {
+          control.setValue(value);
+        }
+      });
+    });
+  }
+
+  private async applyExtractedMetadata(results: FileExtractionResult[]): Promise<void> {
+    if (this.selectAllAcrossPages) {
+      try {
+        await this.loadAllPagesIntoCache();
+      } catch (err) {
+        console.error('Error loading pages into cache:', err);
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Pattern Extraction Failed',
+          detail: 'An error occurred while loading files into cache.',
+        });
+        return;
+      }
+    }
+
+    let appliedCount = 0;
+
+    results.forEach(result => {
+      if (!result.success || !result.extractedMetadata) {
+        return;
+      }
+
+      const fileUi = this.fileUiCache[result.fileId];
+      if (!fileUi) {
+        return;
+      }
+
+      Object.entries(result.extractedMetadata).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          return;
+        }
+
+        const control = fileUi.metadataForm.get(key);
+        if (control) {
+          control.setValue(value);
+        }
+      });
+
+      appliedCount++;
+    });
+
+    this.messageService.add({
+      severity: 'success',
+      summary: 'Pattern Extraction Applied',
+      detail: `Applied extracted metadata to ${appliedCount} file(s).`,
     });
   }
 }

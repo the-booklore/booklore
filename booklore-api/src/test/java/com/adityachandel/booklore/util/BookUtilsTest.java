@@ -3,6 +3,8 @@ package com.adityachandel.booklore.util;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -10,6 +12,8 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BookUtilsTest {
+
+    private static final int MAX_SEARCH_TERM_LENGTH = 60; // From BookUtils.cleanAndTruncateSearchTerm
 
     @Test
     void testBuildSearchText() {
@@ -123,7 +127,8 @@ class BookUtilsTest {
     void testCleanAndTruncateSearchTerm_longText() {
         String longText = "This is a very long search term that should be truncated because it exceeds sixty characters in length and needs to be shortened";
         String result = BookUtils.cleanAndTruncateSearchTerm(longText);
-        assertTrue(result.length() <= 60);
+        assertTrue(result.length() <= MAX_SEARCH_TERM_LENGTH, 
+            String.format("Result length %d should not exceed max %d", result.length(), MAX_SEARCH_TERM_LENGTH));
         assertEquals("This is a very long search term that should be truncated", result);
     }
 
@@ -131,16 +136,18 @@ class BookUtilsTest {
     void testCleanAndTruncateSearchTerm_longTextWithSpecialChars() {
         String longText = "This-is,a@very#long$search%term^with&special*chars(that)should[be]truncated{because}it<exceeds>sixty?characters";
         String result = BookUtils.cleanAndTruncateSearchTerm(longText);
-        assertTrue(result.length() <= 60);
+        assertTrue(result.length() <= MAX_SEARCH_TERM_LENGTH,
+            String.format("Result length %d should not exceed max %d", result.length(), MAX_SEARCH_TERM_LENGTH));
         assertEquals("This-is,avery#longsearchtermwithspecialchars(that)should[be]", result);
     }
 
     @Test
     void testCleanAndTruncateSearchTerm_exactly60Chars() {
-        String text = "A".repeat(60);
+        String text = "A".repeat(MAX_SEARCH_TERM_LENGTH);
         String result = BookUtils.cleanAndTruncateSearchTerm(text);
         assertEquals(text, result);
-        assertEquals(60, result.length());
+        assertEquals(MAX_SEARCH_TERM_LENGTH, result.length(), 
+            "Text at max length should not be truncated");
     }
 
     @Test
@@ -326,5 +333,131 @@ class BookUtilsTest {
         
         assertNotNull(searchText);
         assertEquals("test book", searchText);
+    }
+
+    @Test
+    void testBuildSearchText_withNullMetadata() {
+        String result = BookUtils.buildSearchText(null);
+        assertNull(result);
+    }
+
+    @Test
+    void testBuildSearchText_withAllNullFields() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+    }
+
+    @Test
+    void testBuildSearchText_withNullAuthors() {
+        BookMetadataEntity metadata = new BookMetadataEntity();
+        metadata.setTitle("Test Book");
+        metadata.setAuthors(null); // null authors set
+        
+        String searchText = BookUtils.buildSearchText(metadata);
+        
+        assertNotNull(searchText);
+        assertTrue(searchText.contains("test book"));
+    }
+
+    @Test
+    void testCleanAndTruncateSearchTerm_singleLongWord() {
+        String longWord = "A".repeat(100);
+        String result = BookUtils.cleanAndTruncateSearchTerm(longWord);
+        
+        assertEquals(MAX_SEARCH_TERM_LENGTH, result.length(), 
+            "Single long word should be truncated to max length");
+    }
+
+    @Test
+    void testCleanAndTruncateSearchTerm_exactly60CharsWithWords() {
+        String text = "word ".repeat(12); // 60 chars exactly
+        String result = BookUtils.cleanAndTruncateSearchTerm(text);
+        
+        assertEquals(text.trim(), result);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "'Book (Author) (Year) (Z-Library).pdf', 'Book'",
+        "'Book (Z-Library) More Text.pdf', 'Book More Text'",
+        "'Book ((Nested)) (Author).pdf', 'Book'",
+        "'Simple Book.epub', 'Simple Book'",
+        "'Book (Author Name).pdf', 'Book'",
+        "'Complex (Nested (Deep)) (Multiple) File.epub', 'Complex File'"
+    })
+    void testCleanFileName_parameterized(String input, String expected) {
+        String result = BookUtils.cleanFileName(input);
+        assertEquals(expected, result, 
+            String.format("Input: '%s' should result in: '%s'", input, expected));
+    }
+
+    @Test
+    void testCleanFileName_withMultipleParentheses() {
+        String result = BookUtils.cleanFileName("Book (Author) (Year) (Z-Library).pdf");
+        assertEquals("Book", result);
+    }
+
+    @Test
+    void testCleanFileName_withNestedParentheses() {
+        String result = BookUtils.cleanFileName("Book ((Nested)) (Author).pdf");
+        assertEquals("Book", result);
+    }
+
+    @Test
+    void testCleanFileName_withZLibraryInMiddle() {
+        String result = BookUtils.cleanFileName("Book (Z-Library) More Text.pdf");
+        assertEquals("Book More Text", result);
+    }
+
+    @Test
+    void testCleanSearchTerm_withOnlySpecialChars() {
+        String result = BookUtils.cleanSearchTerm("!@#$%^&*()");
+        // Pattern [!@$%^&*_=|~`<>?/\"] doesn't include # or (), so they remain
+        // After removing matched chars and trimming, we get "#()"
+        assertEquals("#()", result);
+    }
+
+    @Test
+    void testCleanSearchTerm_withMixedSpecialChars() {
+        String result = BookUtils.cleanSearchTerm("Hello! World@ Test#");
+        assertEquals("Hello World Test#", result);
+    }
+
+    @Test
+    void testCleanSearchTerm_removesSpecialCharacters() {
+        String input = "Harry Potter: The #1 Sorcerer's Stone!";
+        String result = BookUtils.cleanSearchTerm(input);
+        
+        assertFalse(result.contains("!"), "Should remove exclamation mark (in pattern)");
+        assertTrue(result.contains(":"), "Colon is not in removal pattern, so it remains");
+        assertTrue(result.contains("Harry Potter"), "Should preserve text content");
+        assertTrue(result.contains("#1"), "Should preserve # (not in removal pattern)");
+    }
+
+    @Test
+    void testNormalizeForSearch_withEmptyString() {
+        String result = BookUtils.normalizeForSearch("");
+        assertEquals("", result);
+    }
+
+    @Test
+    void testNormalizeForSearch_withOnlyWhitespace() {
+        String result = BookUtils.normalizeForSearch("   ");
+        assertEquals("", result);
+    }
+
+    @Test
+    void testNormalizeForSearch_preservesNumbers() {
+        assertEquals("12345", BookUtils.normalizeForSearch("12345"));
+        assertEquals("book 123", BookUtils.normalizeForSearch("Book 123"));
+    }
+
+    @Test
+    void testNormalizeForSearch_handlesMixedCaseDiacritics() {
+        assertEquals("francois", BookUtils.normalizeForSearch("François"));
+        assertEquals("francois", BookUtils.normalizeForSearch("FRANÇOIS"));
     }
 }

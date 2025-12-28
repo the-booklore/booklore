@@ -1,5 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {CommonModule} from '@angular/common';
+
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {API_CONFIG} from '../../../core/config/api-config';
@@ -23,7 +23,6 @@ import {Select} from 'primeng/select';
 @Component({
   selector: 'app-opds-settings',
   imports: [
-    CommonModule,
     Button,
     InputText,
     Tooltip,
@@ -35,7 +34,7 @@ import {Select} from 'primeng/select';
     ToggleSwitch,
     ExternalDocLinkComponent,
     Select
-  ],
+],
   providers: [ConfirmationService],
   templateUrl: './opds-settings.html',
   styleUrl: './opds-settings.scss'

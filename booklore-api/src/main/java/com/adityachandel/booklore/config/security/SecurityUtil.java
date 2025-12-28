@@ -40,9 +40,14 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanDownload();
     }
 
-    public boolean canManipulateLibrary() {
+    public boolean canManageLibrary() {
         var user = getCurrentUser();
-        return user != null && user.getPermissions().isCanManipulateLibrary();
+        return user != null && user.getPermissions().isCanManageLibrary();
+    }
+
+    public boolean canManageIcons() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanManageIcons();
     }
 
     public boolean canSyncKoReader() {
@@ -88,5 +93,20 @@ public class SecurityUtil {
                     .orElse(false);
         }
         return false;
+    }
+
+    public boolean canAccessBookdrop() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanAccessBookdrop();
+    }
+
+    public boolean canAccessUserStats() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanAccessUserStats();
+    }
+
+    public boolean canAccessTaskManager() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanAccessTaskManager();
     }
 }

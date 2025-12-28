@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.controller;
 
-import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.annotation.CheckBookAccess;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
@@ -13,18 +12,16 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.metadata.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import io.swagger.v3.oas.annotations.tags.Tag;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.Parameter;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +34,6 @@ public class MetadataController {
 
     private final BookMetadataService bookMetadataService;
     private final BookMetadataUpdater bookMetadataUpdater;
-    private final AuthenticationService authenticationService;
     private final BookMetadataMapper bookMetadataMapper;
     private final MetadataMatchService metadataMatchService;
     private final DuckDuckGoCoverService duckDuckGoCoverService;
@@ -64,7 +60,9 @@ public class MetadataController {
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
             @Parameter(description = "Merge categories") @RequestParam(defaultValue = "true") boolean mergeCategories) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId)).stream()
+                .findFirst()
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         MetadataUpdateContext context = MetadataUpdateContext.builder()
                 .bookEntity(bookEntity)
@@ -154,6 +152,27 @@ public class MetadataController {
     public void regenerateCovers(
             @Parameter(description = "ID of the book") @PathVariable Long bookId) {
         bookMetadataService.regenerateCover(bookId);
+    }
+
+    @Operation(summary = "Regenerate covers for selected books", description = "Regenerate covers for a list of books. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Cover regeneration started successfully")
+    @PostMapping("/bulk-regenerate-covers")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    public ResponseEntity<Void> regenerateCoversForBooks(
+            @Parameter(description = "List of book IDs") @Validated @RequestBody BulkBookIdsRequest request) {
+        bookMetadataService.regenerateCoversForBooks(request.getBookIds());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Upload cover image for multiple books", description = "Upload a cover image to apply to multiple books. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Cover upload started successfully")
+    @PostMapping("/bulk-upload-cover")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    public ResponseEntity<Void> bulkUploadCover(
+            @Parameter(description = "Cover image file") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @jakarta.validation.constraints.NotEmpty java.util.Set<Long> bookIds) {
+        bookMetadataService.updateCoverImageFromFileForBooks(bookIds, file);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(summary = "Recalculate metadata match scores", description = "Recalculate match scores for all metadata. Requires admin.")

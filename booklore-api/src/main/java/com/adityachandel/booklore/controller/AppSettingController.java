@@ -36,8 +36,7 @@ public class AppSettingController {
         @ApiResponse(responseCode = "400", description = "Invalid request")
     })
     @PutMapping
-    public void updateSettings(
-            @Parameter(description = "List of settings to update") @RequestBody List<SettingRequest> settingRequests) throws JsonProcessingException {
+    public void updateSettings(@Parameter(description = "List of settings to update") @RequestBody List<SettingRequest> settingRequests) throws JsonProcessingException {
         for (SettingRequest settingRequest : settingRequests) {
             AppSettingKey key = AppSettingKey.valueOf(settingRequest.getName());
             appSettingService.updateSetting(key, settingRequest.getValue());

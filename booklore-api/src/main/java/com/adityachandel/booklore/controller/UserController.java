@@ -41,8 +41,7 @@ public class UserController {
     })
     @GetMapping("/{id}")
     @PreAuthorize("@securityUtil.canViewUserProfile(#id)")
-    public ResponseEntity<BookLoreUser> getUser(
-            @Parameter(description = "ID of the user") @PathVariable Long id) {
+    public ResponseEntity<BookLoreUser> getUser(@Parameter(description = "ID of the user") @PathVariable Long id) {
         return ResponseEntity.ok(userService.getBookLoreUser(id));
     }
 
@@ -69,16 +68,14 @@ public class UserController {
     @ApiResponse(responseCode = "204", description = "User deleted successfully")
     @DeleteMapping("/{id}")
     @PreAuthorize("@securityUtil.isAdmin()")
-    public void deleteUser(
-            @Parameter(description = "ID of the user") @PathVariable Long id) {
+    public void deleteUser(@Parameter(description = "ID of the user") @PathVariable Long id) {
         userService.deleteUser(id);
     }
 
     @Operation(summary = "Change password", description = "Change the password for the current user.")
     @ApiResponse(responseCode = "200", description = "Password changed successfully")
     @PutMapping("/change-password")
-    public ResponseEntity<?> changePassword(
-            @Parameter(description = "Change password request") @RequestBody ChangePasswordRequest request) {
+    public ResponseEntity<?> changePassword(@Parameter(description = "Change password request") @RequestBody ChangePasswordRequest request) {
         userService.changePassword(request);
         return ResponseEntity.ok().build();
     }
@@ -87,8 +84,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Password changed successfully")
     @PutMapping("/change-user-password")
     @PreAuthorize("@securityUtil.isAdmin()")
-    public ResponseEntity<?> changeUserPassword(
-            @Parameter(description = "Change user password request") @RequestBody ChangeUserPasswordRequest request) {
+    public ResponseEntity<?> changeUserPassword(@Parameter(description = "Change user password request") @RequestBody ChangeUserPasswordRequest request) {
         userService.changeUserPassword(request);
         return ResponseEntity.ok().build();
     }

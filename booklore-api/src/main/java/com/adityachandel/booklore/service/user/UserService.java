@@ -50,12 +50,19 @@ public class UserService {
             user.getPermissions().setPermissionUpload(updateRequest.getPermissions().isCanUpload());
             user.getPermissions().setPermissionDownload(updateRequest.getPermissions().isCanDownload());
             user.getPermissions().setPermissionEditMetadata(updateRequest.getPermissions().isCanEditMetadata());
-            user.getPermissions().setPermissionManipulateLibrary(updateRequest.getPermissions().isCanManipulateLibrary());
+            user.getPermissions().setPermissionManageLibrary(updateRequest.getPermissions().isCanManageLibrary());
             user.getPermissions().setPermissionEmailBook(updateRequest.getPermissions().isCanEmailBook());
             user.getPermissions().setPermissionDeleteBook(updateRequest.getPermissions().isCanDeleteBook());
             user.getPermissions().setPermissionAccessOpds(updateRequest.getPermissions().isCanAccessOpds());
             user.getPermissions().setPermissionSyncKoreader(updateRequest.getPermissions().isCanSyncKoReader());
             user.getPermissions().setPermissionSyncKobo(updateRequest.getPermissions().isCanSyncKobo());
+            user.getPermissions().setPermissionManageMetadataConfig(updateRequest.getPermissions().isCanManageMetadataConfig());
+            user.getPermissions().setPermissionAccessBookdrop(updateRequest.getPermissions().isCanAccessBookdrop());
+            user.getPermissions().setPermissionAccessLibraryStats(updateRequest.getPermissions().isCanAccessLibraryStats());
+            user.getPermissions().setPermissionAccessUserStats(updateRequest.getPermissions().isCanAccessUserStats());
+            user.getPermissions().setPermissionAccessTaskManager(updateRequest.getPermissions().isCanAccessTaskManager());
+            user.getPermissions().setPermissionManageGlobalPreferences(updateRequest.getPermissions().isCanManageGlobalPreferences());
+            user.getPermissions().setPermissionManageIcons(updateRequest.getPermissions().isCanManageIcons());
         }
 
         if (updateRequest.getAssignedLibraries() != null && getMyself().getPermissions().isAdmin()) {
@@ -92,8 +99,13 @@ public class UserService {
 
     public void changePassword(ChangePasswordRequest changePasswordRequest) {
         BookLoreUser bookLoreUser = authenticationService.getAuthenticatedUser();
+
         BookLoreUserEntity bookLoreUserEntity = userRepository.findById(bookLoreUser.getId())
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(bookLoreUser.getId()));
+
+        if(bookLoreUserEntity.getPermissions().isPermissionDemoUser()) {
+            throw ApiError.DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED.createException();
+        }
 
         if (!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(), bookLoreUserEntity.getPasswordHash())) {
             throw ApiError.PASSWORD_INCORRECT.createException();

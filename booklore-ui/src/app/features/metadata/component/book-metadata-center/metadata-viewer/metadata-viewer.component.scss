@@ -26,17 +26,21 @@
 
 .cover-section {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
   flex-shrink: 0;
+  gap: 1rem;
 
   @media (min-width: 768px) {
     justify-content: flex-start;
+    align-items: flex-start;
   }
 }
 
 .cover-wrapper {
   position: relative;
-  width: 175px;
+  width: 250px;
   overflow: hidden;
 
   @media (min-width: 768px) {
@@ -59,28 +63,28 @@
   z-index: 2;
 }
 
-.cover-progress-bar,
-.cover-progress-bar-ko-both,
-.cover-progress-bar-ko-only {
+.cover-progress-bar-container {
   position: absolute;
+  bottom: 0;
   left: 0;
   right: 0;
   z-index: 2;
-  pointer-events: none;
+  border-radius: 9999px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--progress-count, 0) * 6px);
 }
 
 .cover-progress-bar {
-  bottom: 0;
+  z-index: 2;
+  pointer-events: none;
+  height: 6px;
+  flex-shrink: 0;
 }
 
-.cover-progress-bar-ko-both {
-  bottom: 0;
-  height: 12px;
-  z-index: 3;
-}
-
-.cover-progress-bar-ko-only {
-  bottom: 0;
+::ng-deep .cover-progress-bar {
+  --p-progressbar-border-radius: 0 !important;
 }
 
 ::ng-deep .progress-incomplete .p-progressbar-value {
@@ -92,11 +96,19 @@
 }
 
 ::ng-deep .progress-incomplete-ko .p-progressbar-value {
-  background-color: var(--primary-text-color);
+  background-color: #fbbf24;
 }
 
 ::ng-deep .progress-complete-ko .p-progressbar-value {
-  background-color: var(--primary-hover-color);
+  background-color: #8b5cf6;
+}
+
+::ng-deep .progress-incomplete-kobo .p-progressbar-value {
+  background-color: #bf0000;
+}
+
+::ng-deep .progress-complete-kobo .p-progressbar-value {
+  background-color: #f65c9c;
 }
 
 .info-section {
@@ -461,6 +473,60 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
+}
+
+::ng-deep .action-divider {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
+@media (max-width: 767px) {
+  ::ng-deep .mobile-icon-only .p-button-label {
+    display: none !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only .p-button {
+    min-width: auto !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only.p-splitbutton .p-button-label {
+    display: none !important;
+    padding: 10px !important;
+  }
+
+  ::ng-deep .mobile-icon-only.p-splitbutton .p-button {
+    min-width: auto !important;
+    padding: 10px !important;
+  }
+}
+
+.navigation-buttons-desktop {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.navigation-buttons-mobile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .navigation-buttons-desktop {
+    display: flex;
+  }
+
+  .navigation-buttons-mobile {
+    display: none;
+  }
 }
 
 .description-section {

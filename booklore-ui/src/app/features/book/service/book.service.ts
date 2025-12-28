@@ -11,6 +11,7 @@ import {MessageService} from 'primeng/api';
 import {ResetProgressType, ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
 import {AuthService} from '../../../shared/service/auth.service';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
+import {Router} from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -23,6 +24,7 @@ export class BookService {
   private messageService = inject(MessageService);
   private authService = inject(AuthService);
   private fileDownloadService = inject(FileDownloadService);
+  private router = inject(Router);
 
   private bookStateSubject = new BehaviorSubject<BookState>({
     books: null,
@@ -188,32 +190,36 @@ export class BookService {
     this.bookStateSubject.next({...currentState, books: updatedBooks});
   }
 
-  readBook(bookId: number, reader?: "ngx" | "streaming"): void {
+  readBook(bookId: number, reader?: 'ngx' | 'streaming'): void {
     const book = this.bookStateSubject.value.books?.find(b => b.id === bookId);
     if (!book) {
       console.error('Book not found');
       return;
     }
 
-    let url: string | null = null;
+    let url: string;
+
     switch (book.bookType) {
-      case "PDF":
-        url = !reader || reader === "ngx"
+      case 'PDF':
+        url = !reader || reader === 'ngx'
           ? `/pdf-reader/book/${book.id}`
           : `/cbx-reader/book/${book.id}`;
         break;
-      case "EPUB":
+
+      case 'EPUB':
         url = `/epub-reader/book/${book.id}`;
         break;
-      case "CBX":
+
+      case 'CBX':
         url = `/cbx-reader/book/${book.id}`;
         break;
+
       default:
         console.error('Unsupported book type:', book.bookType);
         return;
     }
 
-    window.open(url, '_blank');
+    this.router.navigate([url]);
     this.updateLastReadTime(book.id);
   }
 
@@ -432,6 +438,17 @@ export class BookService {
     return this.http.post<void>(`${this.url}/${bookId}/regenerate-cover`, {});
   }
 
+  regenerateCoversForBooks(bookIds: number[]): Observable<void> {
+    return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, { bookIds });
+  }
+
+  bulkUploadCover(bookIds: number[], file: File): Observable<void> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bookIds', bookIds.join(','));
+    return this.http.post<void>(`${this.url}/bulk-upload-cover`, formData);
+  }
+
 
   /*------------------ All the metadata related calls go here ------------------*/
 
@@ -613,6 +630,24 @@ export class BookService {
       return book.id == bookId ? {...book, metadata: updatedMetadata} : book
     });
     this.bookStateSubject.next({...currentState, books: updatedBooks})
+  }
+
+
+  /**
+   * Incoming payload: [{ id: number, coverUpdatedOn: "2025-12-25T00:48:17Z" }, ...]
+   * Apply minimal patch to local state so UI updates the cover image (and can use cache-busting).
+   */
+  handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
+    if (!patches || patches.length === 0) return;
+    const currentState = this.bookStateSubject.value;
+    const books = currentState.books || [];
+    patches.forEach(p => {
+      const index = books.findIndex(b=>b.id === p.id);
+      if (index !== -1 && books[index].metadata) {
+        books[index].metadata.coverUpdatedOn = p.coverUpdatedOn;
+      }
+    });
+    this.bookStateSubject.next({...currentState, books});
   }
 
   toggleFieldLocks(bookIds: number[] | Set<number>, fieldActions: Record<string, 'LOCK' | 'UNLOCK'>): Observable<void> {

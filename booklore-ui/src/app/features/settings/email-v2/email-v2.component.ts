@@ -8,19 +8,18 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
 import {UserService} from '../user-management/user.service';
 import {Subject} from 'rxjs';
 import {filter, takeUntil, tap} from 'rxjs/operators';
-import {CommonModule} from '@angular/common';
+
 
 @Component({
   selector: 'app-email-v2',
   imports: [
-    CommonModule,
     FormsModule,
     TableModule,
     Divider,
     EmailV2ProviderComponent,
     EmailV2RecipientComponent,
     ExternalDocLinkComponent
-  ],
+],
   templateUrl: './email-v2.component.html',
   styleUrls: ['./email-v2.component.scss'],
 })

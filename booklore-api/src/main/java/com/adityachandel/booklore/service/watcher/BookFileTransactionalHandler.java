@@ -23,7 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.adityachandel.booklore.model.enums.PermissionType.ADMIN;
-import static com.adityachandel.booklore.model.enums.PermissionType.MANIPULATE_LIBRARY;
+import static com.adityachandel.booklore.model.enums.PermissionType.MANAGE_LIBRARY;
 
 @Slf4j
 @Service
@@ -43,7 +43,7 @@ public class BookFileTransactionalHandler {
         String fileName = path.getFileName().toString();
         String libraryPath = bookFilePersistenceService.findMatchingLibraryPath(libraryEntity, path);
 
-        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Started processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Started processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
 
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
 
@@ -59,7 +59,7 @@ public class BookFileTransactionalHandler {
 
         libraryProcessingService.processLibraryFiles(List.of(libraryFile), libraryEntity);
 
-        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANIPULATE_LIBRARY));
+        notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
         log.info("[CREATE] Completed processing for file '{}'", filePath);
     }
 }

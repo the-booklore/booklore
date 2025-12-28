@@ -22,6 +22,7 @@ import {ResetProgressTypes} from '../../../../../shared/constants/reset-progress
 import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../BookDialogHelperService';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
+import {BookNavigationService} from '../../../service/book-navigation.service';
 
 @Component({
   selector: 'app-book-card',
@@ -32,13 +33,13 @@ import {TaskHelperService} from '../../../../settings/task-management/task-helpe
 })
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
-  @Output() checkboxClick = new EventEmitter<{ index: number; bookId: number; selected: boolean; shiftKey: boolean }>();
+  @Output() checkboxClick = new EventEmitter<{ index: number; book: Book; selected: boolean; shiftKey: boolean }>();
   @Output() menuToggled = new EventEmitter<boolean>();
 
   @Input() index!: number;
   @Input() book!: Book;
   @Input() isCheckboxEnabled: boolean = false;
-  @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
+  @Input() onBookSelect?: (book: Book, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
   @Input() seriesViewEnabled: boolean = false;
@@ -61,6 +62,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected urlHelper = inject(UrlHelperService);
   private confirmationService = inject(ConfirmationService);
   private bookDialogHelperService = inject(BookDialogHelperService);
+  private bookNavigationService = inject(BookNavigationService);
 
   private userPermissions: any;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
@@ -108,9 +110,15 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     return null;
   }
 
+  get koboProgressPercentage(): number | null {
+    if (this.book.koboProgress?.percentage != null) {
+      return this.book.koboProgress.percentage;
+    }
+    return null;
+  }
+
   get displayTitle(): string | undefined {
     return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata?.seriesName : this.book.metadata?.title;
-    // return (this.isSeriesCollapsed && this.book.metadata?.seriesName) ? this.book.metadata.seriesName : this.book.metadata?.title;
   }
 
   onImageLoad(): void {
@@ -132,7 +140,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   onMenuToggle(event: Event, menu: TieredMenu): void {
     menu.toggle(event);
 
-    // Load additional files if not already loaded and needed
     if (!this.additionalFilesLoaded && !this.isSubMenuLoading && this.needsAdditionalFilesData()) {
       this.isSubMenuLoading = true;
       this.bookService.getBookByIdFromAPI(this.book.id, true).subscribe({
@@ -446,6 +453,11 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   openBookInfo(book: Book): void {
+    const allBookIds = this.bookNavigationService.getAvailableBookIds();
+    if (allBookIds.length > 0) {
+      this.bookNavigationService.setNavigationContext(allBookIds, book.id);
+    }
+
     if (this.metadataCenterViewMode === 'route') {
       this.router.navigate(['/book', book.id], {
         queryParams: {tab: 'view'}
@@ -682,13 +694,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this.checkboxClick.emit({
       index: this.index,
-      bookId: this.book.id,
+      book: this.book,
       selected: selected,
       shiftKey: shiftKey,
     });
 
     if (this.onBookSelect) {
-      this.onBookSelect(this.book.id, selected);
+      this.onBookSelect(this.book, selected);
     }
 
     this.lastMouseEvent = null;

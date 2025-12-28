@@ -11,12 +11,13 @@ public class BookUtils {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[!@$%^&*_=|~`<>?/\"]");
-    private static final Pattern PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN = Pattern.compile("\\s?\\(.*?\\)");
+    private static final Pattern DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\s?\\([^()]*\\)");
 
     public static String buildSearchText(BookMetadataEntity e) {
         if (e == null) return null;
         
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(256);
         if (e.getTitle() != null) sb.append(e.getTitle()).append(" ");
         if (e.getSubtitle() != null) sb.append(e.getSubtitle()).append(" ");
         if (e.getSeriesName() != null) sb.append(e.getSeriesName()).append(" ");
@@ -41,7 +42,7 @@ public class BookUtils {
             return null;
         }
         String s = java.text.Normalizer.normalize(term, java.text.Normalizer.Form.NFD);
-        s = s.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
+        s = DIACRITICAL_MARKS_PATTERN.matcher(s).replaceAll("");
         s = s.replace("ø", "o").replace("Ø", "O")
                 .replace("ł", "l").replace("Ł", "L")
                 .replace("æ", "ae").replace("Æ", "AE")
@@ -59,11 +60,20 @@ public class BookUtils {
             return null;
         }
         name = name.replace("(Z-Library)", "").trim();
-        name = PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN.matcher(name).replaceAll("").trim(); // Remove the author name inside parentheses (e.g. (Jon Yablonski))
+        
+        String previous;
+        do {
+            previous = name;
+            name = PARENTHESIS_PATTERN.matcher(name).replaceAll("").trim();
+        } while (!name.equals(previous));
+        
         int dotIndex = name.lastIndexOf('.'); // Remove the file extension (e.g., .pdf, .docx)
         if (dotIndex > 0) {
             name = name.substring(0, dotIndex).trim();
         }
+        
+        name = WHITESPACE_PATTERN.matcher(name).replaceAll(" ").trim();
+        
         return name;
     }
 
@@ -82,7 +92,7 @@ public class BookUtils {
         if (s.length() > 60) {
             String[] words = WHITESPACE_PATTERN.split(s);
             if (words.length > 1) {
-                StringBuilder truncated = new StringBuilder();
+                StringBuilder truncated = new StringBuilder(64);
                 for (String word : words) {
                     if (truncated.length() + word.length() + 1 > 60) break;
                     if (!truncated.isEmpty()) truncated.append(" ");

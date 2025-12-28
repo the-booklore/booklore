@@ -1,6 +1,5 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Tooltip} from 'primeng/tooltip';
-import {RadioButton} from 'primeng/radiobutton';
 import {FormsModule} from '@angular/forms';
 import {UserService} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
@@ -11,7 +10,6 @@ import {Subject} from 'rxjs';
   selector: 'app-meta-center-view-mode-component',
   imports: [
     Tooltip,
-    RadioButton,
     FormsModule
   ],
   templateUrl: './meta-center-view-mode-component.html',

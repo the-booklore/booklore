@@ -12,7 +12,10 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @Tag(name = "Icons", description = "Endpoints for managing SVG icons")
 @AllArgsConstructor
@@ -25,6 +28,7 @@ public class IconController {
     @Operation(summary = "Save an SVG icon", description = "Saves an SVG icon to the system.")
     @ApiResponse(responseCode = "200", description = "SVG icon saved successfully")
     @PostMapping
+    @PreAuthorize("@securityUtil.canManageIcons() or @securityUtil.isAdmin()")
     public ResponseEntity<?> saveSvgIcon(@Valid @RequestBody SvgIconCreateRequest svgIconCreateRequest) {
         iconService.saveSvgIcon(svgIconCreateRequest);
         return ResponseEntity.ok().build();
@@ -33,6 +37,7 @@ public class IconController {
     @Operation(summary = "Save multiple SVG icons", description = "Saves multiple SVG icons to the system in batch.")
     @ApiResponse(responseCode = "200", description = "Batch save completed with detailed results")
     @PostMapping("/batch")
+    @PreAuthorize("@securityUtil.canManageIcons() or @securityUtil.isAdmin()")
     public ResponseEntity<SvgIconBatchResponse> saveBatchSvgIcons(@Valid @RequestBody SvgIconBatchRequest request) {
         SvgIconBatchResponse response = iconService.saveBatchSvgIcons(request.getIcons());
         return ResponseEntity.ok(response);
@@ -61,8 +66,17 @@ public class IconController {
     @Operation(summary = "Delete an SVG icon", description = "Deletes an SVG icon by its name.")
     @ApiResponse(responseCode = "200", description = "SVG icon deleted successfully")
     @DeleteMapping("/{svgName}")
+    @PreAuthorize("@securityUtil.canManageIcons() or @securityUtil.isAdmin()")
     public ResponseEntity<?> deleteSvgIcon(@Parameter(description = "SVG icon name") @PathVariable String svgName) {
         iconService.deleteSvgIcon(svgName);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get all icon contents", description = "Retrieve all SVG icons as a map of icon names to their content.")
+    @ApiResponse(responseCode = "200", description = "All icon contents retrieved successfully")
+    @GetMapping("/all/content")
+    public ResponseEntity<Map<String, String>> getAllIconsContent() {
+        Map<String, String> iconsMap = iconService.getAllIconsContent();
+        return ResponseEntity.ok(iconsMap);
     }
 }

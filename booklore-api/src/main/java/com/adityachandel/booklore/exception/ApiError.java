@@ -33,6 +33,7 @@ public enum ApiError {
     SCHEDULE_REFRESH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to schedule metadata refresh job. Error: %s"),
     ANOTHER_METADATA_JOB_RUNNING(HttpStatus.CONFLICT, "A metadata refresh job is currently running. Please wait for it to complete before initiating a new one."),
     METADATA_SOURCE_NOT_IMPLEMENT_OR_DOES_NOT_EXIST(HttpStatus.BAD_REQUEST, "Metadata source not implement or does not exist"),
+    FAILED_TO_REGENERATE_COVER(HttpStatus.BAD_REQUEST, "Failed to regenerate cover"),
     FAILED_TO_DOWNLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "Error while downloading file, bookId: %s"),
     INVALID_REFRESH_TYPE(HttpStatus.BAD_REQUEST, "The refresh type is invalid"),
     METADATA_LOCKED(HttpStatus.FORBIDDEN, "Attempt to update locked metadata"),
@@ -52,10 +53,11 @@ public enum ApiError {
     UNSUPPORTED_FILE_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "%s"),
     CONFLICT(HttpStatus.CONFLICT, "%s"),
     FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File not found: %s"),
-    SHELF_CANNOT_BE_DELETED(HttpStatus.FORBIDDEN, "'%s' shelf can't be deleted" ),
+    SHELF_CANNOT_BE_DELETED(HttpStatus.FORBIDDEN, "'%s' shelf can't be deleted"),
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "Scheduled task not found: %s"),
     TASK_ALREADY_RUNNING(HttpStatus.CONFLICT, "Task is already running: %s"),
-    ICON_ALREADY_EXISTS(HttpStatus.CONFLICT, "SVG icon with name '%s' already exists"),;
+    ICON_ALREADY_EXISTS(HttpStatus.CONFLICT, "SVG icon with name '%s' already exists"),
+    DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Demo user password change not allowed.");
 
     private final HttpStatus status;
     private final String message;

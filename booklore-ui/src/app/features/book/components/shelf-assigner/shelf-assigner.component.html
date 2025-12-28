@@ -47,7 +47,11 @@
               <label [for]="'shelf-' + shelf.id" class="shelf-label">
                 <div class="shelf-icon-wrapper">
                   @if (shelf.icon) {
-                    <i [class]="'pi pi-' + shelf.icon + ' shelf-icon'"></i>
+                    <app-icon-display
+                      [icon]="getShelfIcon(shelf)"
+                      size="20px"
+                      iconClass="shelf-icon"
+                    />
                   } @else {
                     <i class="pi pi-bookmark shelf-icon"></i>
                   }

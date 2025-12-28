@@ -14,6 +14,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.KoboReadingStateRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateBuilder;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import com.adityachandel.booklore.service.kobo.KoboSettingsService;
@@ -57,6 +58,9 @@ class KoboStatusSyncProtectionTest {
     private KoboSettingsService koboSettingsService;
     @Mock
     private KoboReadingStateBuilder readingStateBuilder;
+
+    @Mock
+    private HardcoverSyncService hardcoverSyncService;
 
     @InjectMocks
     private KoboReadingStateService service;

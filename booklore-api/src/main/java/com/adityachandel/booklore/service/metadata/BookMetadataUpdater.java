@@ -160,6 +160,7 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getGoodreadsIdLocked(), clear.isGoodreadsId(), m.getGoodreadsId(), v -> e.setGoodreadsId(nullIfBlank(v)), e::getGoodreadsId, replaceMode);
         handleFieldUpdate(e.getComicvineIdLocked(), clear.isComicvineId(), m.getComicvineId(), v -> e.setComicvineId(nullIfBlank(v)), e::getComicvineId, replaceMode);
         handleFieldUpdate(e.getHardcoverIdLocked(), clear.isHardcoverId(), m.getHardcoverId(), v -> e.setHardcoverId(nullIfBlank(v)), e::getHardcoverId, replaceMode);
+        handleFieldUpdate(e.getHardcoverBookIdLocked(), clear.isHardcoverBookId(), m.getHardcoverBookId(), e::setHardcoverBookId, e::getHardcoverBookId, replaceMode);
         handleFieldUpdate(e.getGoogleIdLocked(), clear.isGoogleId(), m.getGoogleId(), v -> e.setGoogleId(nullIfBlank(v)), e::getGoogleId, replaceMode);
         handleFieldUpdate(e.getPageCountLocked(), clear.isPageCount(), m.getPageCount(), e::setPageCount, e::getPageCount, replaceMode);
         handleFieldUpdate(e.getLanguageLocked(), clear.isLanguage(), m.getLanguage(), v -> e.setLanguage(nullIfBlank(v)), e::getLanguage, replaceMode);
@@ -355,8 +356,12 @@ public class BookMetadataUpdater {
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
-        e.setCoverUpdatedOn(Instant.now());
+        try {
+            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        } catch (Exception ex) {
+            log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
+            // Don't rethrow - cover failures shouldn't roll back metadata updates
+        }
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {
@@ -375,6 +380,7 @@ public class BookMetadataUpdater {
                 Pair.of(m.getGoodreadsIdLocked(), e::setGoodreadsIdLocked),
                 Pair.of(m.getComicvineIdLocked(), e::setComicvineIdLocked),
                 Pair.of(m.getHardcoverIdLocked(), e::setHardcoverIdLocked),
+                Pair.of(m.getHardcoverBookIdLocked(), e::setHardcoverBookIdLocked),
                 Pair.of(m.getGoogleIdLocked(), e::setGoogleIdLocked),
                 Pair.of(m.getPageCountLocked(), e::setPageCountLocked),
                 Pair.of(m.getLanguageLocked(), e::setLanguageLocked),

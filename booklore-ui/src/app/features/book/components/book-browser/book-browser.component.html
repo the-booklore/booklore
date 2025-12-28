@@ -29,7 +29,7 @@
 
           @if (userService.userState$ | async; as userState) {
             @if (entityType !== EntityType.ALL_BOOKS && entityType !== EntityType.UNSHELVED &&
-            (userState.user!.permissions.admin || userState.user!.permissions.canManipulateLibrary)) {
+            (userState.user!.permissions.admin || userState.user!.permissions.canManageLibrary)) {
               <div class="ml-2 flex-shrink-0">
                 <p-button
                   icon="pi pi-ellipsis-v"
@@ -296,7 +296,7 @@
                     @if (entityType$ | async; as entityType) {
                       <div class="flex gap-2 md:gap-6">
                         @if (userState.user!.permissions.canEditMetadata) {
-                          <p-menu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body" class="hidden"/>
+                          <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                           <p-button
                             (click)="menu.toggle($event)"
                             pTooltip="Metadata actions"

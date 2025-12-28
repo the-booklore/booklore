@@ -86,10 +86,10 @@ class BookReviewServiceTest {
             .build();
     }
 
-    private BookLoreUser createUser(boolean isAdmin, boolean canManipulateLibrary) {
+    private BookLoreUser createUser(boolean isAdmin, boolean canManageLibrary) {
         BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
         permissions.setAdmin(isAdmin);
-        permissions.setCanManipulateLibrary(canManipulateLibrary);
+        permissions.setCanManageLibrary(canManageLibrary);
 
         BookLoreUser user = new BookLoreUser();
         user.setPermissions(permissions);

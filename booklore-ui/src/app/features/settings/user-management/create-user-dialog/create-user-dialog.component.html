@@ -9,82 +9,92 @@
         Set up a new user account with permissions and library access
       </p>
     </div>
+    <p-button
+      icon="pi pi-times"
+      [text]="true"
+      [rounded]="true"
+      severity="secondary"
+      (onClick)="closeDialog()"
+      class="close-button"
+    />
   </div>
 
   <form [formGroup]="userForm" (ngSubmit)="createUser()">
     <div class="form-container">
-      <div class="form-section">
+      <div class="form-section basic-info-section">
         <h3 class="section-title">
           <i class="pi pi-id-card"></i>
           Basic Information
         </h3>
 
-        <div class="form-field">
-          <label class="field-label">Full Name</label>
-          <input
-            type="text"
-            pInputText
-            formControlName="name"
-            placeholder="Enter full name..."
-            class="field-input"
-          />
-          @if (userForm.get('name')?.invalid && (userForm.get('name')?.dirty || userForm.get('name')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              Name is required and must be at least 3 characters.
-            </small>
-          }
-        </div>
+        <div class="form-fields-grid">
+          <div class="form-field">
+            <label class="field-label">Full Name</label>
+            <input
+              type="text"
+              pInputText
+              formControlName="name"
+              placeholder="Enter full name..."
+              class="field-input"
+            />
+            @if (userForm.get('name')?.invalid && (userForm.get('name')?.dirty || userForm.get('name')?.touched)) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Name is required and must be at least 3 characters.
+              </small>
+            }
+          </div>
 
-        <div class="form-field">
-          <label class="field-label">Email</label>
-          <input
-            type="email"
-            pInputText
-            formControlName="email"
-            placeholder="Enter email..."
-            class="field-input"
-          />
-          @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              Enter a valid email address.
-            </small>
-          }
-        </div>
+          <div class="form-field">
+            <label class="field-label">Email</label>
+            <input
+              type="email"
+              pInputText
+              formControlName="email"
+              placeholder="Enter email..."
+              class="field-input"
+            />
+            @if (userForm.get('email')?.invalid && (userForm.get('email')?.dirty || userForm.get('email')?.touched)) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Enter a valid email address.
+              </small>
+            }
+          </div>
 
-        <div class="form-field">
-          <label class="field-label">Username</label>
-          <input
-            type="text"
-            pInputText
-            formControlName="username"
-            placeholder="Enter username..."
-            class="field-input"
-          />
-          @if (userForm.get('username')?.invalid && (userForm.get('username')?.dirty || userForm.get('username')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              Username is required.
-            </small>
-          }
-        </div>
+          <div class="form-field">
+            <label class="field-label">Username</label>
+            <input
+              type="text"
+              pInputText
+              formControlName="username"
+              placeholder="Enter username..."
+              class="field-input"
+            />
+            @if (userForm.get('username')?.invalid && (userForm.get('username')?.dirty || userForm.get('username')?.touched)) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Username is required.
+              </small>
+            }
+          </div>
 
-        <div class="form-field">
-          <label class="field-label">Password</label>
-          <input
-            type="password"
-            pInputText
-            formControlName="password"
-            placeholder="Enter password..."
-            class="field-input"
-          />
-          @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
-            <small class="field-error">
-              <i class="pi pi-exclamation-circle"></i>
-              Password must be at least 6 characters long.
-            </small>
-          }
+          <div class="form-field">
+            <label class="field-label">Password</label>
+            <input
+              type="password"
+              pInputText
+              formControlName="password"
+              placeholder="Enter password..."
+              class="field-input"
+            />
+            @if (userForm.get('password')?.invalid && (userForm.get('password')?.dirty || userForm.get('password')?.touched)) {
+              <small class="field-error">
+                <i class="pi pi-exclamation-circle"></i>
+                Password must be at least 6 characters long.
+              </small>
+            }
+          </div>
         </div>
       </div>
 
@@ -124,105 +134,215 @@
           Permissions
         </h3>
 
-        <div class="permissions-grid">
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionUpload" [binary]="true" inputId="perm-upload"></p-checkbox>
-            <label for="perm-upload" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-upload permission-icon"></i>
+        <div class="permissions-container">
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-book"></i>
+              Book Management
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionUpload" [binary]="true" inputId="perm-upload"></p-checkbox>
+                <label for="perm-upload" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-upload permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Upload Books</span>
+                </label>
               </div>
-              <span class="permission-name">Upload Books</span>
-            </label>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionDownload" [binary]="true" inputId="perm-download"></p-checkbox>
+                <label for="perm-download" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-download permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Download Books</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionDeleteBook" [binary]="true" inputId="perm-delete"></p-checkbox>
+                <label for="perm-delete" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-trash permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Delete Books</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionEditMetadata" [binary]="true" inputId="perm-edit"></p-checkbox>
+                <label for="perm-edit" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-pencil permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Edit Metadata</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionManipulateLibrary" [binary]="true" inputId="perm-library"></p-checkbox>
+                <label for="perm-library" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-folder permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Manage Library</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionEmailBook" [binary]="true" inputId="perm-email"></p-checkbox>
+                <label for="perm-email" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-envelope permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Email Books</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionDownload" [binary]="true" inputId="perm-download"></p-checkbox>
-            <label for="perm-download" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-download permission-icon"></i>
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-mobile"></i>
+              Device Sync
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionSyncKoreader" [binary]="true" inputId="perm-koreader"></p-checkbox>
+                <label for="perm-koreader" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-sync permission-icon"></i>
+                  </div>
+                  <span class="permission-name">KOReader Sync</span>
+                </label>
               </div>
-              <span class="permission-name">Download Books</span>
-            </label>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionSyncKobo" [binary]="true" inputId="perm-kobo"></p-checkbox>
+                <label for="perm-kobo" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-tablet permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Kobo Sync</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionAccessOpds" [binary]="true" inputId="perm-opds"></p-checkbox>
+                <label for="perm-opds" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-globe permission-icon"></i>
+                  </div>
+                  <span class="permission-name">OPDS Feed Access</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionEditMetadata" [binary]="true" inputId="perm-edit"></p-checkbox>
-            <label for="perm-edit" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-pencil permission-icon"></i>
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-eye"></i>
+              System Access
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionAccessBookdrop" [binary]="true" inputId="perm-bookdrop"></p-checkbox>
+                <label for="perm-bookdrop" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-cloud-upload permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Access Bookdrop</span>
+                </label>
               </div>
-              <span class="permission-name">Edit Metadata</span>
-            </label>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionAccessLibraryStats" [binary]="true" inputId="perm-library-stats"></p-checkbox>
+                <label for="perm-library-stats" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-chart-bar permission-icon"></i>
+                  </div>
+                  <span class="permission-name">View Library Statistics</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionAccessUserStats" [binary]="true" inputId="perm-user-stats"></p-checkbox>
+                <label for="perm-user-stats" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-chart-line permission-icon"></i>
+                  </div>
+                  <span class="permission-name">View User Reading Statistics</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionManipulateLibrary" [binary]="true" inputId="perm-library"></p-checkbox>
-            <label for="perm-library" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-folder permission-icon"></i>
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-cog"></i>
+              System Configuration
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionManageMetadataConfig" [binary]="true" inputId="perm-metadata-config"></p-checkbox>
+                <label for="perm-metadata-config" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-cog permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Manage Metadata Configuration</span>
+                </label>
               </div>
-              <span class="permission-name">Manage Library</span>
-            </label>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionManageGlobalPreferences" [binary]="true" inputId="perm-global-prefs"></p-checkbox>
+                <label for="perm-global-prefs" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-sliders-h permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Manage Application Preferences</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionAccessTaskManager" [binary]="true" inputId="perm-task-manager"></p-checkbox>
+                <label for="perm-task-manager" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-list-check permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Access Task Manager</span>
+                </label>
+              </div>
+
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionManageIcons" [binary]="true" inputId="perm-icons"></p-checkbox>
+                <label for="perm-icons" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-images permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Manage Icons</span>
+                </label>
+              </div>
+            </div>
           </div>
 
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionEmailBook" [binary]="true" inputId="perm-email"></p-checkbox>
-            <label for="perm-email" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-envelope permission-icon"></i>
+          <div class="permission-group full-width">
+            <h4 class="permission-group-title">
+              <i class="pi pi-shield"></i>
+              Administration
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item admin-permission">
+                <p-checkbox formControlName="permissionAdmin" [binary]="true" inputId="perm-admin"></p-checkbox>
+                <label for="perm-admin" class="permission-label">
+                  <div class="permission-icon-wrapper admin-icon">
+                    <i class="pi pi-shield permission-icon"></i>
+                  </div>
+                  <span class="permission-name admin-name">Full Administrator Access</span>
+                </label>
               </div>
-              <span class="permission-name">Email Book</span>
-            </label>
-          </div>
-
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionDeleteBook" [binary]="true" inputId="perm-delete"></p-checkbox>
-            <label for="perm-delete" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-trash permission-icon"></i>
-              </div>
-              <span class="permission-name">Delete Book</span>
-            </label>
-          </div>
-
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionAccessOpds" [binary]="true" inputId="perm-opds"></p-checkbox>
-            <label for="perm-opds" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-globe permission-icon"></i>
-              </div>
-              <span class="permission-name">Access OPDS</span>
-            </label>
-          </div>
-
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionSyncKoreader" [binary]="true" inputId="perm-koreader"></p-checkbox>
-            <label for="perm-koreader" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-sync permission-icon"></i>
-              </div>
-              <span class="permission-name">KOReader Sync</span>
-            </label>
-          </div>
-
-          <div class="permission-item">
-            <p-checkbox formControlName="permissionSyncKobo" [binary]="true" inputId="perm-kobo"></p-checkbox>
-            <label for="perm-kobo" class="permission-label">
-              <div class="permission-icon-wrapper">
-                <i class="pi pi-tablet permission-icon"></i>
-              </div>
-              <span class="permission-name">Kobo Sync</span>
-            </label>
-          </div>
-
-          <div class="permission-item admin-permission">
-            <p-checkbox formControlName="permissionAdmin" [binary]="true" inputId="perm-admin"></p-checkbox>
-            <label for="perm-admin" class="permission-label">
-              <div class="permission-icon-wrapper admin-icon">
-                <i class="pi pi-shield permission-icon"></i>
-              </div>
-              <span class="permission-name admin-name">Admin</span>
-            </label>
+            </div>
           </div>
         </div>
       </div>

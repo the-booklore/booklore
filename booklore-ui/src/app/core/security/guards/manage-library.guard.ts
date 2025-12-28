@@ -10,7 +10,7 @@ export const ManageLibraryGuard: CanActivateFn = () => {
   return userService.userState$.pipe(
     map(state => {
       const user = state.user;
-      if (user && (user.permissions.admin || user.permissions.canManipulateLibrary)) {
+      if (user && (user.permissions.admin || user.permissions.canManageLibrary)) {
         return true;
       }
       router.navigate(['/dashboard']);

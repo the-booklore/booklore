@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnInit, OnChanges, SimpleChanges} from '@angular/core';
+import {Component, inject, Input, OnInit, OnChanges, SimpleChanges, ChangeDetectionStrategy, ChangeDetectorRef} from '@angular/core';
 import {IconSelection} from '../../service/icon-picker.service';
 import {NgClass, NgStyle} from '@angular/common';
 import {IconCacheService} from '../../services/icon-cache.service';
@@ -41,7 +41,8 @@ import {DomSanitizer, SafeHtml} from '@angular/platform-browser';
       height: 100%;
       display: block;
     }
-  `]
+  `],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class IconDisplayComponent implements OnInit, OnChanges {
   @Input() icon: IconSelection | null = null;
@@ -53,28 +54,42 @@ export class IconDisplayComponent implements OnInit, OnChanges {
   private iconCache = inject(IconCacheService);
   private iconService = inject(IconService);
   private sanitizer = inject(DomSanitizer);
+  private cdr = inject(ChangeDetectorRef);
+  private lastLoadedIconName: string | null = null;
 
   ngOnInit(): void {
     this.loadIconIfNeeded();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['icon'] && this.icon?.type === 'CUSTOM_SVG') {
-      this.loadIconIfNeeded();
+    if (changes['icon']) {
+      const currentIcon = changes['icon'].currentValue;
+      const previousIcon = changes['icon'].previousValue;
+
+      if (currentIcon?.type === 'CUSTOM_SVG' &&
+          currentIcon?.value !== previousIcon?.value) {
+        this.loadIconIfNeeded();
+      }
     }
   }
 
   private loadIconIfNeeded(): void {
-    if (this.icon?.type === 'CUSTOM_SVG') {
-      this.iconService.getSanitizedSvgContent(this.icon.value).subscribe({
-        error: () => {
-          if (this.icon?.type === 'CUSTOM_SVG') {
-            const errorSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="red"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-            const sanitized = this.sanitizer.bypassSecurityTrustHtml(errorSvg);
-            this.iconCache.cacheIcon(this.icon.value, errorSvg, sanitized);
+    if (this.icon?.type === 'CUSTOM_SVG' && this.icon.value !== this.lastLoadedIconName) {
+      this.lastLoadedIconName = this.icon.value;
+
+      if (!this.iconCache.getCachedSanitized(this.icon.value)) {
+        this.iconService.getSanitizedSvgContent(this.icon.value).subscribe({
+          next: () => this.cdr.markForCheck(),
+          error: () => {
+            if (this.icon?.type === 'CUSTOM_SVG') {
+              const errorSvg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="red"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+              const sanitized = this.sanitizer.bypassSecurityTrustHtml(errorSvg);
+              this.iconCache.cacheIcon(this.icon.value, errorSvg, sanitized);
+              this.cdr.markForCheck();
+            }
           }
-        }
-      });
+        });
+      }
     }
   }
 
