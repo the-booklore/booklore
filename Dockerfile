@@ -51,21 +51,13 @@ LABEL org.opencontainers.image.title="BookLore" \
       org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:21.0.9_10-jre-alpine"
 
 RUN apk add --no-cache nginx gettext \
-    && mkdir -p \
-        /app \
-        /var/log/nginx \
-        /var/lib/nginx/logs \
-        /var/lib/nginx/tmp \
-        /var/cache/nginx \
-        /var/run/nginx \
-    && chown -R 65534:65534 \
-        /app \
-        /var/log/nginx \
-        /usr/share/nginx \
+    && rm -rf /var/cache/apk/* \
+    && install -d -m 777 \
+        /run/nginx \
         /var/lib/nginx \
-        /var/cache/nginx \
-        /var/run/nginx \
-        /etc/nginx
+        /var/lib/nginx/tmp \
+        /var/lib/nginx/logs \
+        /var/log/nginx
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=angular-build /angular-app/dist/booklore/browser /usr/share/nginx/html
