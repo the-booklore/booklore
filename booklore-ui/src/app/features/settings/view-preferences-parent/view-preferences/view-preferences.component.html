@@ -28,11 +28,11 @@
               <label class="setting-label">Default Preferences</label>
               <div class="select-group">
                 <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                          [(ngModel)]="selectedSort" placeholder="Sort" class="select-item"></p-select>
+                          [(ngModel)]="selectedSort" placeholder="Sort By" class="select-item" appendTo="body"></p-select>
                 <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="selectedSortDir"
-                          placeholder="Direction" class="select-item"></p-select>
+                          placeholder="Direction" class="select-item" appendTo="body"></p-select>
                 <p-select size="small" [options]="viewModeOptions" [(ngModel)]="selectedView"
-                          placeholder="View" class="select-item"></p-select>
+                          placeholder="View Mode" class="select-item" appendTo="body"></p-select>
               </div>
             </div>
             <p class="setting-description">
@@ -57,35 +57,35 @@
       <div class="settings-card">
         <div class="setting-item no-border">
           <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Override Management</label>
-              <p-button label="Add New Override" outlined size="small" (onClick)="addOverride()"
-                        severity="info" icon="pi pi-plus" [disabled]="availableLibraries.length === 0"></p-button>
-            </div>
+            <label class="setting-label">Override Management</label>
             <p class="setting-description">
-              Add custom preferences for specific libraries or shelves.
+              Add custom preferences for specific libraries or shelves. These will override your default settings.
             </p>
+          </div>
+          <div class="setting-control">
+            <p-button label="Add Override" outlined size="small" (onClick)="addOverride()"
+                      severity="success" icon="pi pi-plus" [disabled]="availableLibraries.length === 0"></p-button>
           </div>
         </div>
 
         @if (overrides.length > 0) {
           <div class="overrides-table">
-            <p-table [value]="overrides">
+            <p-table [value]="overrides" [tableStyle]="{'width': '100%'}">
               <ng-template pTemplate="header">
                 <tr>
-                  <th class="min-w-[150px] max-w-[220px]">Type</th>
-                  <th class="min-w-[220px] max-w-[280px]">Name</th>
-                  <th class="min-w-[190px] max-w-[250px]">Sort By</th>
-                  <th class="min-w-[125px]">Sort Dir</th>
-                  <th class="min-w-[125px]">View</th>
-                  <th class="w-[75px] text-center"></th>
+                  <th style="min-width: 150px; max-width: 220px;">Type</th>
+                  <th style="min-width: 220px; max-width: 280px;">Name</th>
+                  <th style="min-width: 190px; max-width: 250px;">Sort By</th>
+                  <th style="min-width: 125px;">Direction</th>
+                  <th style="min-width: 125px;">View Mode</th>
+                  <th style="width: 75px; text-align: center;">Actions</th>
                 </tr>
               </ng-template>
               <ng-template pTemplate="body" let-override let-rowIndex="rowIndex">
                 <tr>
                   <td>
                     <p-select size="small" [options]="entityTypeOptions" [(ngModel)]="override.entityType"
-                              class="w-full" appendTo="body"></p-select>
+                              [style]="{'width': '100%'}" appendTo="body"></p-select>
                   </td>
                   <td>
                     @if (override.entityType) {
@@ -93,24 +93,24 @@
                                 [options]="getAvailableEntities(rowIndex, override.entityType)"
                                 [(ngModel)]="override.library"
                                 optionLabel="label" optionValue="value"
-                                class="w-full" appendTo="body"></p-select>
+                                [style]="{'width': '100%'}" appendTo="body"></p-select>
                     }
                   </td>
                   <td>
                     <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                              [(ngModel)]="override.sort" class="w-full" appendTo="body"></p-select>
+                              [(ngModel)]="override.sort" [style]="{'width': '100%'}" appendTo="body"></p-select>
                   </td>
                   <td>
                     <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="override.sortDir"
-                              class="w-full" appendTo="body"></p-select>
+                              [style]="{'width': '100%'}" appendTo="body"></p-select>
                   </td>
                   <td>
                     <p-select size="small" [options]="viewModeOptions" [(ngModel)]="override.view"
-                              class="w-full" appendTo="body"></p-select>
+                              [style]="{'width': '100%'}" appendTo="body"></p-select>
                   </td>
-                  <td class="text-center">
+                  <td style="text-align: center;">
                     <p-button icon="pi pi-trash" severity="danger" size="small" [outlined]="true"
-                              (onClick)="removeOverride(rowIndex)"></p-button>
+                              (onClick)="removeOverride(rowIndex)" [pTooltip]="'Remove override'" tooltipPosition="left"></p-button>
                   </td>
                 </tr>
               </ng-template>
@@ -121,7 +121,7 @@
     </div>
 
     <div class="save-section">
-      <p-button label="Save Settings" icon="pi pi-save" severity="success" outlined (onClick)="saveSettings()"></p-button>
+      <p-button label="Save Settings" icon="pi pi-save" severity="success" (onClick)="saveSettings()"></p-button>
     </div>
   </div>
 </div>

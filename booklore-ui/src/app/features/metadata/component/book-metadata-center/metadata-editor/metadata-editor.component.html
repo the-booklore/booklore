@@ -508,6 +508,30 @@
           </div>
         </div>
         <div class="flex flex-col gap-1 md:w-1/6">
+          <label class="text-sm" for="lubimyczytacId">LC ID</label>
+          <div class="flex withbutton">
+            <input pSize="small" pInputText id="lubimyczytacId" formControlName="lubimyczytacId" class="w-full"/>
+            @if (!book.metadata!['lubimyczytacIdLocked']) {
+              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="success"></p-button>
+            }
+            @if (book.metadata!['lubimyczytacIdLocked']) {
+              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="warn"></p-button>
+            }
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 md:w-1/6">
+          <label class="text-sm" for="lubimyczytacRating">LC ★</label>
+          <div class="flex withbutton">
+            <input pSize="small" pInputText id="lubimyczytacRating" formControlName="lubimyczytacRating" class="w-full"/>
+            @if (!book.metadata!['lubimyczytacRatingLocked']) {
+              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="success"></p-button>
+            }
+            @if (book.metadata!['lubimyczytacRatingLocked']) {
+              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="warn"></p-button>
+            }
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 md:w-1/6">
           <label class="text-sm" for="comicvineId">Comicvine ID</label>
           <div class="flex withbutton">
             <input pSize="small" pInputText id="comicvineId" formControlName="comicvineId" class="w-full"/>

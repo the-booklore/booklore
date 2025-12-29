@@ -21,7 +21,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
     Checkbox,
     MultiSelectModule,
     Button
-],
+  ],
   templateUrl: './create-user-dialog.component.html',
   styleUrl: './create-user-dialog.component.scss'
 })
@@ -53,6 +53,14 @@ export class CreateUserDialogComponent implements OnInit {
       permissionAccessOpds: [false],
       permissionSyncKoreader: [false],
       permissionSyncKobo: [false],
+      permissionManageMetadataConfig: [false],
+      permissionAccessBookdrop: [false],
+      permissionAccessLibraryStats: [false],
+      permissionAccessUserStats: [false],
+      permissionAccessTaskManager: [false],
+      permissionManageEmailConfig: [false],
+      permissionManageGlobalPreferences: [false],
+      permissionManageIcons: [false],
       permissionAdmin: [false],
     });
   }

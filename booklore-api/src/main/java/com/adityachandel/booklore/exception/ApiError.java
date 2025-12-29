@@ -33,6 +33,7 @@ public enum ApiError {
     SCHEDULE_REFRESH_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to schedule metadata refresh job. Error: %s"),
     ANOTHER_METADATA_JOB_RUNNING(HttpStatus.CONFLICT, "A metadata refresh job is currently running. Please wait for it to complete before initiating a new one."),
     METADATA_SOURCE_NOT_IMPLEMENT_OR_DOES_NOT_EXIST(HttpStatus.BAD_REQUEST, "Metadata source not implement or does not exist"),
+    FAILED_TO_REGENERATE_COVER(HttpStatus.BAD_REQUEST, "Failed to regenerate cover"),
     FAILED_TO_DOWNLOAD_FILE(HttpStatus.INTERNAL_SERVER_ERROR, "Error while downloading file, bookId: %s"),
     INVALID_REFRESH_TYPE(HttpStatus.BAD_REQUEST, "The refresh type is invalid"),
     METADATA_LOCKED(HttpStatus.FORBIDDEN, "Attempt to update locked metadata"),

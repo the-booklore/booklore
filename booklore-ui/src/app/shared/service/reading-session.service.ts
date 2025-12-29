@@ -1,9 +1,12 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { fromEvent, merge, Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
-import { API_CONFIG } from '../../core/config/api-config';
-import {BookType} from '../../features/book/model/book.model';
+import { BookType } from '../../features/book/model/book.model';
+import {
+  ReadingSessionApiService,
+  CreateReadingSessionDto
+} from './reading-session-api.service';
 
 export interface ReadingSession {
   bookId: number;
@@ -22,8 +25,7 @@ export interface ReadingSession {
   providedIn: 'root'
 })
 export class ReadingSessionService {
-  private readonly http = inject(HttpClient);
-  private readonly url = `${API_CONFIG.BASE_URL}/api/v1/reading-sessions`;
+  private readonly apiService = inject(ReadingSessionApiService);
 
   private currentSession: ReadingSession | null = null;
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -139,15 +141,9 @@ export class ReadingSessionService {
 
     this.log('Reading session ended (sync)', sessionData);
 
-    try {
-      const blob = new Blob([JSON.stringify(sessionData)], { type: 'application/json' });
-      const success = navigator.sendBeacon(this.url, blob);
-
-      if (!success) {
-        this.logError('sendBeacon failed, request may not have been queued');
-      }
-    } catch (error) {
-      this.logError('Failed to send session data', error);
+    const success = this.apiService.sendSessionBeacon(sessionData);
+    if (!success) {
+      this.logError('sendBeacon failed, request may not have been queued');
     }
 
     this.cleanup();
@@ -167,13 +163,17 @@ export class ReadingSessionService {
 
     this.log('Reading session completed', sessionData);
 
-    this.http.post<void>(this.url, sessionData).subscribe({
+    this.apiService.createSession(sessionData).subscribe({
       next: () => this.log('Session saved to backend'),
       error: (err: HttpErrorResponse) => this.logError('Failed to save session', err)
     });
   }
 
-  private buildSessionData(session: ReadingSession, endTime: Date, durationSeconds: number) {
+  private buildSessionData(
+    session: ReadingSession,
+    endTime: Date,
+    durationSeconds: number
+  ): CreateReadingSessionDto {
     return {
       bookId: session.bookId,
       bookType: session.bookType,

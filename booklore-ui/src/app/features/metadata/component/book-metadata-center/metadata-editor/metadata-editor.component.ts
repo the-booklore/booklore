@@ -166,6 +166,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: new FormControl(""),
       hardcoverRating: new FormControl(""),
       hardcoverReviewCount: new FormControl(""),
+      lubimyczytacId: new FormControl(""),
+      lubimyczytacRating: new FormControl(""),
       googleId: new FormControl(""),
       seriesName: new FormControl(""),
       seriesNumber: new FormControl(""),
@@ -196,6 +198,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: new FormControl(false),
       hardcoverRatingLocked: new FormControl(false),
       hardcoverReviewCountLocked: new FormControl(false),
+      lubimyczytacIdLocked: new FormControl(false),
+      lubimyczytacRatingLocked: new FormControl(false),
       googleIdLocked: new FormControl(false),
       seriesNameLocked: new FormControl(false),
       seriesNumberLocked: new FormControl(false),
@@ -296,6 +300,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: metadata.hardcoverBookId ?? null,
       hardcoverRating: metadata.hardcoverRating ?? null,
       hardcoverReviewCount: metadata.hardcoverReviewCount ?? null,
+      lubimyczytacId: metadata.lubimyczytacId ?? null,
+      lubimyczytacRating: metadata.lubimyczytacRating ?? null,
       googleId: metadata.googleId ?? null,
       seriesName: metadata.seriesName ?? null,
       seriesNumber: metadata.seriesNumber ?? null,
@@ -324,6 +330,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: metadata.hardcoverBookIdLocked ?? false,
       hardcoverRatingLocked: metadata.hardcoverRatingLocked ?? false,
       hardcoverReviewCountLocked: metadata.hardcoverReviewCountLocked ?? false,
+      lubimyczytacIdLocked: metadata.lubimyczytacIdLocked ?? false,
+      lubimyczytacRatingLocked: metadata.lubimyczytacRatingLocked ?? false,
       googleIdLocked: metadata.googleIdLocked ?? false,
       seriesNameLocked: metadata.seriesNameLocked ?? false,
       seriesNumberLocked: metadata.seriesNumberLocked ?? false,
@@ -654,18 +662,22 @@ export class MetadataEditorComponent implements OnInit {
   regenerateCover(bookId: number) {
     this.bookService.regenerateCover(bookId).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: "success",
-          summary: "Success",
-          detail:
-            "Book cover regenerated successfully. Refresh page to see the new cover.",
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: "error",
-          summary: "Error",
-          detail: "Failed to start cover regeneration",
+        this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+            this.messageService.add({
+              severity: "success",
+              summary: "Success",
+              detail: "Book cover regenerated successfully.",
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: "warning",
+              summary: "Partial Success",
+              detail: "Cover regenerated but failed to refresh display. Please refresh the page.",
+            });
+          },
         });
       },
     });

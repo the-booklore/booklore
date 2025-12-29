@@ -1,8 +1,12 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {UserStatsService, ReadingSessionTimelineResponse} from '../../../settings/user-management/user-stats.service';
+import {ReadingSessionTimelineResponse, UserStatsService} from '../../../settings/user-management/user-stats.service';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
 import {BookType} from '../../../book/model/book.model';
+import {catchError} from 'rxjs/operators';
+import {of} from 'rxjs';
+import {Select} from 'primeng/select';
+import {FormsModule} from '@angular/forms';
 
 interface ReadingSession {
   startTime: Date;
@@ -37,7 +41,7 @@ interface DayTimeline {
 @Component({
   selector: 'app-reading-session-timeline',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, Select, FormsModule],
   templateUrl: './reading-session-timeline.component.html',
   styleUrls: ['./reading-session-timeline.component.scss']
 })
@@ -48,16 +52,54 @@ export class ReadingSessionTimelineComponent implements OnInit {
   private userStatsService = inject(UserStatsService);
   private urlHelperService = inject(UrlHelperService);
 
-  public daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  public daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   public hourLabels: string[] = [];
   public timelineData: DayTimeline[] = [];
   public currentYear: number = new Date().getFullYear();
   public currentWeek: number = this.getCurrentWeekNumber();
+  public currentMonth: number = new Date().getMonth() + 1;
+
+  public yearOptions: { label: string; value: number }[] = [];
+  public weekOptions: { label: string; value: number }[] = [];
 
   ngOnInit(): void {
     this.currentYear = this.initialYear;
     this.currentWeek = this.weekNumber;
+    this.updateCurrentMonth();
+    this.initializeYearOptions();
+    this.updateWeekOptions();
     this.initializeHourLabels();
+    this.loadReadingSessions();
+  }
+
+  private initializeYearOptions(): void {
+    const currentYear = new Date().getFullYear();
+    this.yearOptions = [];
+    for (let year = currentYear; year >= currentYear - 10; year--) {
+      this.yearOptions.push({ label: year.toString(), value: year });
+    }
+  }
+
+  private updateWeekOptions(): void {
+    const weeksInYear = this.getWeeksInYear(this.currentYear);
+    this.weekOptions = [];
+    for (let week = 1; week <= weeksInYear; week++) {
+      this.weekOptions.push({ label: `Week ${week}`, value: week });
+    }
+  }
+
+  public onYearChange(): void {
+    this.updateWeekOptions();
+    const maxWeeks = this.getWeeksInYear(this.currentYear);
+    if (this.currentWeek > maxWeeks) {
+      this.currentWeek = maxWeeks;
+    }
+    this.updateCurrentMonth();
+    this.loadReadingSessions();
+  }
+
+  public onWeekChange(): void {
+    this.updateCurrentMonth();
     this.loadReadingSessions();
   }
 
@@ -70,15 +112,17 @@ export class ReadingSessionTimelineComponent implements OnInit {
   }
 
   private loadReadingSessions(): void {
-    this.userStatsService.getTimelineForWeek(this.currentYear, this.currentWeek)
+    this.userStatsService.getTimelineForWeek(this.currentYear, this.currentMonth, this.currentWeek)
+      .pipe(
+        catchError((error) => {
+          console.error('Error loading reading sessions:', error);
+          return of([]);
+        })
+      )
       .subscribe({
         next: (response) => {
           const sessions = this.convertResponseToSessions(response);
           this.processSessionData(sessions);
-        },
-        error: (error) => {
-          console.error('Error loading reading sessions:', error);
-          this.processSessionData([]);
         }
       });
   }
@@ -88,8 +132,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
     response.forEach((item) => {
       const startTime = new Date(item.startDate);
-      const endTime = new Date(item.endDate);
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+      const duration = item.totalDurationSeconds / 60;
+      const endTime = new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
 
       sessions.push({
         startTime,
@@ -118,12 +162,26 @@ export class ReadingSessionTimelineComponent implements OnInit {
     if (this.currentWeek > weeksInYear) {
       this.currentWeek = 1;
       this.currentYear++;
+      this.updateWeekOptions();
     } else if (this.currentWeek < 1) {
       this.currentYear--;
       this.currentWeek = this.getWeeksInYear(this.currentYear);
+      this.updateWeekOptions();
     }
 
+    this.updateCurrentMonth();
     this.loadReadingSessions();
+  }
+
+  private updateCurrentMonth(): void {
+    const startOfYear = new Date(this.currentYear, 0, 1);
+    const daysToAdd = (this.currentWeek - 1) * 7;
+    const weekStart = new Date(startOfYear.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+
+    const dayOfWeek = weekStart.getDay();
+    weekStart.setDate(weekStart.getDate() - dayOfWeek);
+
+    this.currentMonth = weekStart.getMonth() + 1;
   }
 
   private getWeeksInYear(year: number): number {
@@ -198,13 +256,15 @@ export class ReadingSessionTimelineComponent implements OnInit {
     });
 
     this.timelineData = [];
+    const displayOrder = [1, 2, 3, 4, 5, 6, 0];
     for (let i = 0; i < 7; i++) {
-      const sessionsForDay = dayMap.get(i) || [];
+      const dayOfWeek = displayOrder[i];
+      const sessionsForDay = dayMap.get(dayOfWeek) || [];
       const timelineSessions = this.layoutSessionsForDay(sessionsForDay);
 
       this.timelineData.push({
         day: this.daysOfWeek[i],
-        dayOfWeek: i,
+        dayOfWeek: dayOfWeek,
         sessions: timelineSessions
       });
     }
@@ -291,12 +351,32 @@ export class ReadingSessionTimelineComponent implements OnInit {
   }
 
   public formatDuration(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours > 0) {
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
-    return `${mins}m`;
+    const totalSeconds = Math.round(minutes * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    const parts: string[] = [];
+    if (hours) parts.push(`${hours}H`);
+    if (mins || hours) parts.push(`${mins}M`);
+    parts.push(`${secs}S`);
+
+    return parts.join(' ');
+  }
+
+  public formatDurationCompact(minutes: number): string {
+    const totalSeconds = Math.round(minutes * 60);
+    const hours = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+
+    if (hours > 0) return `${hours}h${mins > 0 ? mins + 'm' : ''}`;
+    if (mins > 0) return `${mins}m${secs > 0 ? secs + 's' : ''}`;
+    return `${secs}s`;
+  }
+
+  public isDurationGreaterThanOneHour(minutes: number): boolean {
+    return minutes >= 60;
   }
 
   public getCoverUrl(bookId: number): string {

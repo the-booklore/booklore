@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @Tag(name = "Icons", description = "Endpoints for managing SVG icons")
 @AllArgsConstructor
 @RestController
@@ -68,5 +70,13 @@ public class IconController {
     public ResponseEntity<?> deleteSvgIcon(@Parameter(description = "SVG icon name") @PathVariable String svgName) {
         iconService.deleteSvgIcon(svgName);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Get all icon contents", description = "Retrieve all SVG icons as a map of icon names to their content.")
+    @ApiResponse(responseCode = "200", description = "All icon contents retrieved successfully")
+    @GetMapping("/all/content")
+    public ResponseEntity<Map<String, String>> getAllIconsContent() {
+        Map<String, String> iconsMap = iconService.getAllIconsContent();
+        return ResponseEntity.ok(iconsMap);
     }
 }

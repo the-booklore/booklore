@@ -1,21 +1,16 @@
 package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.model.dto.request.ReadingSessionRequest;
-import com.adityachandel.booklore.model.dto.response.ReadingSessionHeatmapResponse;
-import com.adityachandel.booklore.model.dto.response.ReadingSessionTimelineResponse;
+import com.adityachandel.booklore.model.dto.response.ReadingSessionResponse;
 import com.adityachandel.booklore.service.ReadingSessionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @RestController
 @AllArgsConstructor
@@ -35,30 +30,15 @@ public class ReadingSessionController {
         return ResponseEntity.accepted().build();
     }
 
-    @Operation(summary = "Get reading session heatmap for a year", description = "Returns daily reading session counts for the authenticated user for a specific year")
+    @Operation(summary = "Get reading sessions for a book", description = "Returns paginated reading sessions for a specific book for the authenticated user")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Heatmap data retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
+            @ApiResponse(responseCode = "200", description = "Reading sessions retrieved successfully"),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
     })
-    @GetMapping("/heatmap/year/{year}")
-    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
-    public ResponseEntity<List<ReadingSessionHeatmapResponse>> getHeatmapForYear(@PathVariable int year) {
-        List<ReadingSessionHeatmapResponse> heatmapData = readingSessionService.getSessionHeatmapForYear(year);
-        return ResponseEntity.ok(heatmapData);
-    }
-
-    @Operation(summary = "Get reading session timeline for a week", description = "Returns reading sessions grouped by book for calendar timeline view")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Timeline data retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid week or year"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized")
-    })
-    @GetMapping("/timeline/week/{year}/{week}")
-    @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
-    public ResponseEntity<List<ReadingSessionTimelineResponse>> getTimelineForWeek(
-            @PathVariable int year,
-            @PathVariable int week) {
-        List<ReadingSessionTimelineResponse> timelineData = readingSessionService.getSessionTimelineForWeek(year, week);
-        return ResponseEntity.ok(timelineData);
+    @GetMapping("/book/{bookId}")
+    public ResponseEntity<Page<ReadingSessionResponse>> getReadingSessionsForBook(@PathVariable Long bookId, @RequestParam(defaultValue = "0") int page) {
+        Page<ReadingSessionResponse> sessions = readingSessionService.getReadingSessionsForBook(bookId, page);
+        return ResponseEntity.ok(sessions);
     }
 }

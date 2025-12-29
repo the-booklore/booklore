@@ -16,23 +16,18 @@ export class ChartConfigService {
   private readonly STORAGE_KEY = 'booklore-chart-config';
 
   private readonly defaultCharts: ChartConfig[] = [
-    {id: 'readingStatus', name: 'Reading Status', enabled: true, category: 'small', order: 0},
-    {id: 'bookFormats', name: 'Book Formats', enabled: true, category: 'small', order: 1},
-    {id: 'bookMetadataScore', name: 'Book Metadata Score', enabled: true, category: 'small', order: 2},
-    {id: 'languageDistribution', name: 'Language Distribution', enabled: true, category: 'small', order: 3},
+    {id: 'bookFormats', name: 'Book Formats', enabled: true, category: 'small', order: 0},
+    {id: 'bookMetadataScore', name: 'Book Metadata Score', enabled: true, category: 'small', order: 1},
+    {id: 'languageDistribution', name: 'Language Distribution', enabled: true, category: 'small', order: 2},
+    {id: 'pageCount', name: 'Page Count Distribution', enabled: true, category: 'medium', order: 3},
     {id: 'topAuthors', name: 'Top 25 Authors', enabled: true, category: 'large', order: 4},
     {id: 'topCategories', name: 'Top 25 Categories', enabled: true, category: 'large', order: 5},
     {id: 'monthlyReadingPatterns', name: 'Monthly Reading Patterns', enabled: true, category: 'large', order: 6},
     {id: 'readingVelocityTimeline', name: 'Reading Velocity Timeline', enabled: true, category: 'large', order: 7},
-    {id: 'readingProgress', name: 'Reading Progress', enabled: true, category: 'medium', order: 8},
-    {id: 'externalRating', name: 'External Rating Distribution', enabled: true, category: 'medium', order: 9},
-    {id: 'personalRating', name: 'Personal Rating Distribution', enabled: true, category: 'medium', order: 10},
-    {id: 'pageCount', name: 'Page Count Distribution', enabled: true, category: 'medium', order: 11},
-    {id: 'topBooksBySize', name: 'Top 20 Largest Books', enabled: true, category: 'large', order: 12},
-    {id: 'topSeries', name: 'Top 20 Series', enabled: true, category: 'large', order: 13},
-    {id: 'readingDNA', name: 'Reading DNA Profile', enabled: true, category: 'large', order: 14},
-    {id: 'readingHabits', name: 'Reading Habits Analysis', enabled: true, category: 'large', order: 15},
-    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 16}
+    {id: 'topBooksBySize', name: 'Top 20 Largest Books', enabled: true, category: 'large', order: 8},
+    {id: 'topSeries', name: 'Top 20 Series', enabled: true, category: 'large', order: 9},
+    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 10},
+    {id: 'externalRating', name: 'External Rating Distribution', enabled: true, category: 'medium', order: 11},
   ];
 
   private chartsConfigSubject = new BehaviorSubject<ChartConfig[]>(this.loadConfig());

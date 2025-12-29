@@ -11,6 +11,9 @@ envsubst '${BOOKLORE_PORT}' < /etc/nginx/nginx.conf > "$TMP_CONF"
 # Move to final location
 mv "$TMP_CONF" /etc/nginx/nginx.conf
 
+# Disable nginx IPv6 listener when IPv6 is disabled on host
+[ "$(cat /proc/sys/net/ipv6/conf/all/disable_ipv6 2>/dev/null)" = "0" ] || sed -i '/^[[:space:]]*listen \[\:\:\]:6060;$/d' /etc/nginx/nginx.conf
+
 # Start nginx in background
 nginx -g 'daemon off;' &
 

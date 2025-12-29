@@ -46,12 +46,54 @@ public class GoodReadsParser implements BookParser {
 
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
+        // If book already has a Goodreads ID, use it directly instead of searching
+        // This ensures we fetch ratings for previously matched books
+        String existingGoodreadsId = getExistingGoodreadsId(book);
+        if (existingGoodreadsId != null) {
+            log.info("GoodReads: Using existing Goodreads ID: {}", existingGoodreadsId);
+            try {
+                Document document = fetchDoc(BASE_BOOK_URL + existingGoodreadsId);
+                BookMetadata metadata = parseBookDetails(document, existingGoodreadsId);
+                if (metadata != null) {
+                    return metadata;
+                }
+                log.warn("GoodReads: Failed to parse details for existing ID: {}, falling back to search", existingGoodreadsId);
+            } catch (Exception e) {
+                log.warn("GoodReads: Error fetching existing ID {}: {}, falling back to search", existingGoodreadsId, e.getMessage());
+            }
+        }
+
+        // Fall back to search-based approach
         Optional<BookMetadata> preview = fetchMetadataPreviews(book, fetchMetadataRequest).stream().findFirst();
         if (preview.isEmpty()) {
             return null;
         }
         List<BookMetadata> fetchedMetadata = fetchMetadataUsingPreviews(List.of(preview.get()));
         return fetchedMetadata.isEmpty() ? null : fetchedMetadata.getFirst();
+    }
+
+    /**
+     * Extracts existing Goodreads ID from book metadata if available.
+     * Returns null if no valid ID exists.
+     */
+    private String getExistingGoodreadsId(Book book) {
+        if (book == null || book.getMetadata() == null) {
+            return null;
+        }
+        String goodreadsId = book.getMetadata().getGoodreadsId();
+        if (goodreadsId == null || goodreadsId.isBlank()) {
+            return null;
+        }
+        // Validate it looks like a Goodreads ID (numeric, possibly with suffix like "11590-salems-lot")
+        // Strip any non-numeric suffix for the URL
+        String numericId = goodreadsId.split("-")[0].split("\\.")[0];
+        try {
+            Long.parseLong(numericId);
+            return goodreadsId; // Return original ID (Goodreads handles both formats)
+        } catch (NumberFormatException e) {
+            log.debug("GoodReads: Invalid Goodreads ID format: {}", goodreadsId);
+            return null;
+        }
     }
 
     @Override

@@ -64,6 +64,11 @@
   gap: 2rem;
   padding: 0.25rem 0;
 
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   @media (max-width: 768px) {
     flex-direction: column;
     gap: 1rem;
@@ -96,16 +101,6 @@
       flex-shrink: 0;
       min-width: 150px;
     }
-
-    .radio-group {
-      display: flex;
-      gap: 1.5rem;
-
-      @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-    }
   }
 
   .setting-description {
@@ -129,24 +124,50 @@
   }
 }
 
-.radio-group {
+.button-group {
   display: flex;
-  gap: 1.5rem;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-}
-
-.radio-option {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
+  flex-wrap: wrap;
 
-  label {
-    font-size: 0.875rem;
-    color: var(--p-text-color);
+  .option-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    border: 1.5px solid color-mix(in srgb, var(--text-color) 20%, transparent);
+    background: color-mix(in srgb, var(--text-color) 5%, transparent);
+    color: var(--text-color);
     cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    min-width: 4.5rem;
+
+    i {
+      font-size: 0.875rem;
+    }
+
+    .option-text {
+      white-space: nowrap;
+    }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: color-mix(in srgb, var(--primary-color) 40%, transparent);
+    }
+
+    &.selected {
+      border-color: var(--primary-color);
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+      color: var(--primary-color);
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 15%, transparent);
+
+      &:hover {
+        transform: translateY(-2px);
+      }
+    }
   }
 }

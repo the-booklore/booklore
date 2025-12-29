@@ -1,0 +1,65 @@
+<div class="reading-sessions-container">
+  @if (loading && sessions.length === 0) {
+    <div class="loading-state">
+      <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s"></p-progressSpinner>
+      <p class="loading-text">Loading reading sessions...</p>
+    </div>
+  } @else if (sessions.length === 0) {
+    <div class="empty-state">
+      <i class="pi pi-clock" style="font-size: 3rem; color: var(--text-color-secondary);"></i>
+      <p>No reading sessions recorded yet</p>
+    </div>
+  } @else {
+    <p-table
+      [value]="sessions"
+      [lazy]="true"
+      [paginator]="true"
+      [rows]="rows"
+      [totalRecords]="totalRecords"
+      [loading]="loading"
+      [first]="first"
+      (onLazyLoad)="onPageChange($event)"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} sessions"
+      class="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>Start Time</th>
+          <th>End Time</th>
+          <th>Duration</th>
+          <th>Progress</th>
+          <th>Progress Delta</th>
+          <th>Location</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-session>
+        <tr>
+          <td>{{ formatDate(session.startTime) }}</td>
+          <td>{{ formatDate(session.endTime) }}</td>
+          <td>{{ formatDuration(session.durationSeconds) }}</td>
+          <td>
+            @if (session.startProgress !== null && session.startProgress !== undefined && session.endProgress !== null && session.endProgress !== undefined) {
+              <span>{{ session.startProgress }}% → {{ session.endProgress }}%</span>
+            } @else {
+              <span class="text-color-secondary">-</span>
+            }
+          </td>
+          <td>
+            @if (session.progressDelta !== null && session.progressDelta !== undefined) {
+              <p-tag [value]="(session.progressDelta > 0 ? '+' : '') + session.progressDelta + '%'" [severity]="getProgressColor(session.progressDelta)"></p-tag>
+            } @else {
+              <span class="text-color-secondary">N/A</span>
+            }
+          </td>
+          <td>
+            @if (session.startLocation && session.endLocation && isPageNumber(session.startLocation)) {
+              <span class="location-text">Page {{ session.startLocation }} → Page {{ session.endLocation }}</span>
+            } @else {
+              <span class="text-color-secondary">-</span>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  }
+</div>

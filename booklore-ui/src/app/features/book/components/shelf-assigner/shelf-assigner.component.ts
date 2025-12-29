@@ -14,6 +14,8 @@ import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {BookDialogHelperService} from '../book-browser/BookDialogHelperService';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
+import {IconSelection} from '../../../../shared/service/icon-picker.service';
 
 @Component({
   selector: 'app-shelf-assigner',
@@ -24,7 +26,8 @@ import {LoadingService} from '../../../../core/services/loading.service';
     Button,
     Checkbox,
     AsyncPipe,
-    FormsModule
+    FormsModule,
+    IconDisplayComponent
   ]
 })
 export class ShelfAssignerComponent implements OnInit {
@@ -106,5 +109,13 @@ export class ShelfAssignerComponent implements OnInit {
 
   isShelfSelected(shelf: Shelf): boolean {
     return this.selectedShelves.some(s => s.id === shelf.id);
+  }
+
+  getShelfIcon(shelf: Shelf): IconSelection {
+    if (shelf.iconType === 'PRIME_NG') {
+      return {type: 'PRIME_NG', value: `pi pi-${shelf.icon}`};
+    } else {
+      return {type: 'CUSTOM_SVG', value: shelf.icon};
+    }
   }
 }

@@ -47,7 +47,8 @@ export class DialogLauncherService {
 
   openDashboardSettingsDialog(): DynamicDialogRef | null {
     return this.openDialog(DashboardSettingsComponent, {
-      header: 'Configure Dashboard',
+      showHeader: false,
+      styleClass: 'dynamic-dialog-minimal',
     });
   }
 
@@ -144,7 +145,7 @@ export class DialogLauncherService {
   openVersionChangelogDialog(): DynamicDialogRef | null {
     return this.openDialog(VersionChangelogDialogComponent, {
       header: "What's New",
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-medium',
     });
   }
 

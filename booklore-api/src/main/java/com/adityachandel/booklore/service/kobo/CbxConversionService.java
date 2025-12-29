@@ -196,23 +196,44 @@ public class CbxConversionService {
     }
     
     private List<Path> extractImagesFromZip(File cbzFile, Path extractedImagesDir) throws IOException {
+        // Fast path: Try reading from Central Directory
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(cbzFile)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(true)
+                .get()) {
+            List<Path> paths = extractImagesFromZipFile(zipFile, extractedImagesDir);
+            if (!paths.isEmpty()) return paths;
+        } catch (Exception e) {
+            log.debug("Fast path extraction failed for {}: {}", cbzFile.getName(), e.getMessage());
+        }
+
+        // Slow path: Fallback to scanning local file headers
+        try (ZipFile zipFile = ZipFile.builder()
+                .setFile(cbzFile)
+                .setUseUnicodeExtraFields(true)
+                .setIgnoreLocalFileHeader(false)
+                .get()) {
+            return extractImagesFromZipFile(zipFile, extractedImagesDir);
+        }
+    }
+
+    private List<Path> extractImagesFromZipFile(ZipFile zipFile, Path extractedImagesDir) {
         List<Path> imagePaths = new ArrayList<>();
-        
-        try (ZipFile zipFile = ZipFile.builder().setFile(cbzFile).get()) {
-            for (ZipArchiveEntry entry : Collections.list(zipFile.getEntries())) {
-                if (entry.isDirectory() || !isImageFile(entry.getName())) {
-                    continue;
-                }
-                
+        for (ZipArchiveEntry entry : Collections.list(zipFile.getEntries())) {
+            if (entry.isDirectory() || !isImageFile(entry.getName())) {
+                continue;
+            }
+
+            try {
                 validateImageSize(entry.getName(), entry.getSize());
-                
+                Path outputPath = extractedImagesDir.resolve(extractFileName(entry.getName()));
                 try (InputStream inputStream = zipFile.getInputStream(entry)) {
-                    Path outputPath = extractedImagesDir.resolve(extractFileName(entry.getName()));
                     Files.copy(inputStream, outputPath);
                     imagePaths.add(outputPath);
-                } catch (Exception e) {
-                    log.warn("Error extracting image {}: {}", entry.getName(), e.getMessage());
                 }
+            } catch (Exception e) {
+                log.warn("Error extracting image {}: {}", entry.getName(), e.getMessage());
             }
         }
         

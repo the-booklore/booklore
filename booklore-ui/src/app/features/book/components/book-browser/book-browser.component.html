@@ -296,7 +296,7 @@
                     @if (entityType$ | async; as entityType) {
                       <div class="flex gap-2 md:gap-6">
                         @if (userState.user!.permissions.canEditMetadata) {
-                          <p-menu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body" class="hidden"/>
+                          <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                           <p-button
                             (click)="menu.toggle($event)"
                             pTooltip="Metadata actions"
