@@ -265,6 +265,10 @@
   background-clip: unset !important;
 }
 
+:host-context(:root:not(.p-dark)) .dashboard-scroller-infinite {
+  scrollbar-color: var(--primary-color) rgba(235, 235, 240, 0.5);
+}
+
 @media (max-width: 767px) {
 
   .dashboard-scroller-card {
