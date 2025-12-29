@@ -62,16 +62,16 @@ public class AppMigrationService {
         if (setting == null) {
             LocalDateTime now = LocalDateTime.now();
             String uuid = UUID.randomUUID().toString();
-            String combined = now.toString() + "_" + uuid;
+            String combined = now + "_" + uuid;
 
-            String installationId = hashToSha256(combined);
+            String installationId = hashToSha256(combined).substring(0, 24);
 
             setting = new AppSettingEntity();
             setting.setName(INSTALLATION_ID_KEY);
             setting.setVal(installationId);
             appSettingsRepository.save(setting);
 
-            log.info("Generated new installation ID: {}", installationId);
+            log.info("Generated new installation ID");
         }
 
         migrationRepository.save(new AppMigrationEntity("generateInstallationId", LocalDateTime.now(), "Generate unique installation ID using timestamp and UUID"));

@@ -21,15 +21,14 @@ public class CronService {
     @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS, initialDelay = 24)
     public void sendTelemetryData() {
         try {
-            log.info("Starting telemetry data collection and submission");
             BookloreTelemetry telemetry = telemetryService.collectTelemetry();
             restClient.post()
-                    .uri("https://httpbin.org/post")
+                    .uri("https://telemetry.booklore.dev/api/v1/ingest")
                     .body(telemetry)
                     .retrieve()
                     .body(String.class);
-        } catch (Exception e) {
-            log.error("Failed to send telemetry data", e);
+        } catch (Exception ignored) {
+
         }
     }
 }
