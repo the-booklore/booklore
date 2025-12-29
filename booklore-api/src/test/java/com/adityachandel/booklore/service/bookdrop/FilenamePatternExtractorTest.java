@@ -510,6 +510,34 @@ class FilenamePatternExtractorTest {
     }
 
     @Test
+    void extractFromFilename_WithPublishedYearMonth_ShouldExtractAndDefaultToFirstDay() {
+        String filename = "The Lost City (2012-05).epub";
+        String pattern = "{Title} ({Published:yyyy-MM})";
+
+        BookMetadata result = extractor.extractFromFilename(filename, pattern);
+
+        assertNotNull(result);
+        assertEquals("The Lost City", result.getTitle());
+        assertEquals(2012, result.getPublishedDate().getYear());
+        assertEquals(5, result.getPublishedDate().getMonthValue());
+        assertEquals(1, result.getPublishedDate().getDayOfMonth());
+    }
+
+    @Test
+    void extractFromFilename_WithPublishedYearMonthDots_ShouldExtractAndDefaultToFirstDay() {
+        String filename = "Chronicles of Tomorrow (2025.12).epub";
+        String pattern = "{Title} ({Published:yyyy.MM})";
+
+        BookMetadata result = extractor.extractFromFilename(filename, pattern);
+
+        assertNotNull(result);
+        assertEquals("Chronicles of Tomorrow", result.getTitle());
+        assertEquals(2025, result.getPublishedDate().getYear());
+        assertEquals(12, result.getPublishedDate().getMonthValue());
+        assertEquals(1, result.getPublishedDate().getDayOfMonth());
+    }
+
+    @Test
     void extractFromFilename_PublishedWithoutFormat_AutoDetectsISODate() {
         String filename = "The Lost City (2023-05-15).epub";
         String pattern = "{Title} ({Published})";
@@ -561,6 +589,20 @@ class FilenamePatternExtractorTest {
         assertNotNull(result);
         assertEquals("Chronicles of Tomorrow", result.getTitle());
         assertEquals(1999, result.getPublishedDate().getYear());
+    }
+
+    @Test
+    void extractFromFilename_PublishedWithoutFormat_AutoDetectsYearMonth() {
+        String filename = "The Lost City (2012-05).epub";
+        String pattern = "{Title} ({Published})";
+
+        BookMetadata result = extractor.extractFromFilename(filename, pattern);
+
+        assertNotNull(result);
+        assertEquals("The Lost City", result.getTitle());
+        assertEquals(2012, result.getPublishedDate().getYear());
+        assertEquals(5, result.getPublishedDate().getMonthValue());
+        assertEquals(1, result.getPublishedDate().getDayOfMonth());
     }
 
     @Test
