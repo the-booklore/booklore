@@ -574,8 +574,8 @@
                 </p-splitbutton>
               }
             }
-            @if (userState.user!.permissions.canUpload || userState.user!.permissions.canManageLibrary || userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
-              @if (otherItems$ | async; as otherItems) {
+            @if (otherItems$ | async; as otherItems) {
+              @if (otherItems.length > 0) {
                 <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
