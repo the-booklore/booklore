@@ -50,28 +50,6 @@
             }
           </div>
 
-          @if (totalSvgPages > 1) {
-            <div class="pagination-controls">
-              <p-button
-                (onClick)="loadSvgIcons(currentSvgPage - 1)"
-                [disabled]="currentSvgPage === 0"
-                label="Prev"
-                icon="pi pi-chevron-left"
-                outlined>
-              </p-button>
-              <span class="pagination-info">
-                  Page {{ currentSvgPage + 1 }} of {{ totalSvgPages }}
-                </span>
-              <p-button
-                (onClick)="loadSvgIcons(currentSvgPage + 1)"
-                [disabled]="currentSvgPage >= totalSvgPages - 1"
-                label="Next"
-                icon="pi pi-chevron-right"
-                iconPos="right"
-                outlined>
-              </p-button>
-            </div>
-          }
 
           @if (canManageIcons) {
             <div style="display: flex; align-items: center; position: fixed; right: 32px; bottom: 32px; z-index: 101;">

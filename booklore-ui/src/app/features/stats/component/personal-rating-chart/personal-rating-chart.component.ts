@@ -1,10 +1,11 @@
-import {inject, Injectable, OnDestroy} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
-import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
-import {LibraryFilterService} from './library-filter.service';
-import {BookService} from '../../book/service/book.service';
-import {Book} from '../../book/model/book.model';
-import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
+import {catchError, filter, first, takeUntil} from 'rxjs/operators';
+import {ChartConfiguration, ChartData} from 'chart.js';
+import {BookService} from '../../../book/service/book.service';
+import {Book} from '../../../book/model/book.model';
 
 interface RatingStats {
   ratingRange: string;
@@ -42,44 +43,65 @@ const RATING_RANGES = [
   {range: '7', min: 7.0, max: 7.0},
   {range: '8', min: 8.0, max: 8.0},
   {range: '9', min: 9.0, max: 9.0},
-  {range: '10', min: 10.0, max: 10.0},
-  {range: 'No Rating', min: 0, max: 0}
+  {range: '10', min: 10.0, max: 10.0}
 ] as const;
 
 type RatingChartData = ChartData<'bar', number[], string>;
 
-@Injectable({
-  providedIn: 'root'
+@Component({
+  selector: 'app-personal-rating-chart',
+  standalone: true,
+  imports: [CommonModule, BaseChartDirective],
+  templateUrl: './personal-rating-chart.component.html',
+  styleUrls: ['./personal-rating-chart.component.scss']
 })
-export class PersonalRatingChartService implements OnDestroy {
+export class PersonalRatingChartComponent implements OnInit, OnDestroy {
   private readonly bookService = inject(BookService);
-  private readonly libraryFilterService = inject(LibraryFilterService);
   private readonly destroy$ = new Subject<void>();
 
-  public readonly personalRatingChartType = 'bar' as const;
+  public readonly chartType = 'bar' as const;
 
-  public readonly personalRatingChartOptions: ChartConfiguration['options'] = {
+  public readonly chartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {top: 25}
+    },
     plugins: {
       legend: {display: false},
       tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        enabled: true,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         titleColor: '#ffffff',
         bodyColor: '#ffffff',
-        borderColor: '#666666',
+        borderColor: '#ffffff',
         borderWidth: 1,
+        cornerRadius: 6,
+        displayColors: true,
+        padding: 12,
+        titleFont: {size: 14, weight: 'bold'},
+        bodyFont: {size: 13},
         callbacks: {
-          title: (context) => `Personal Rating Range: ${context[0].label}`,
+          title: (context) => `Personal Rating: ${context[0].label}`,
           label: (context) => {
             const value = context.parsed.y;
             return `${value} book${value === 1 ? '' : 's'}`;
           }
         }
-      }
+      },
+      datalabels: {display: false}
     },
     scales: {
       x: {
+        title: {
+          display: true,
+          text: 'Personal Rating',
+          color: '#ffffff',
+          font: {
+            family: "'Inter', sans-serif",
+            size: 12
+          }
+        },
         ticks: {
           color: '#ffffff',
           font: {
@@ -87,18 +109,19 @@ export class PersonalRatingChartService implements OnDestroy {
             size: 11
           }
         },
-        grid: {color: 'rgba(255, 255, 255, 0.1)'},
+        grid: {display: false},
+        border: {display: false}
+      },
+      y: {
         title: {
           display: true,
-          text: 'Personal Rating Range',
+          text: 'Number of Books',
           color: '#ffffff',
           font: {
             family: "'Inter', sans-serif",
-            size: 11.5
+            size: 12
           }
-        }
-      },
-      y: {
+        },
         beginAtZero: true,
         ticks: {
           color: '#ffffff',
@@ -106,23 +129,18 @@ export class PersonalRatingChartService implements OnDestroy {
             family: "'Inter', sans-serif",
             size: 11
           },
-          stepSize: 1
+          stepSize: 1,
+          maxTicksLimit: 8
         },
-        grid: {color: 'rgba(255, 255, 255, 0.05)'},
-        title: {
-          display: true,
-          text: 'Number of Books',
-          color: '#ffffff',
-          font: {
-            family: "'Inter', sans-serif",
-            size: 11.5
-          }
-        }
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        border: {display: false}
       }
     }
   };
 
-  private readonly personalRatingChartDataSubject = new BehaviorSubject<RatingChartData>({
+  private readonly chartDataSubject = new BehaviorSubject<RatingChartData>({
     labels: [],
     datasets: [{
       label: 'Books by Personal Rating',
@@ -132,23 +150,18 @@ export class PersonalRatingChartService implements OnDestroy {
     }]
   });
 
-  public readonly personalRatingChartData$: Observable<RatingChartData> =
-    this.personalRatingChartDataSubject.asObservable();
+  public readonly chartData$: Observable<RatingChartData> = this.chartDataSubject.asObservable();
 
-  constructor() {
+  ngOnInit(): void {
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
         first(),
-        switchMap(() =>
-          this.libraryFilterService.selectedLibrary$.pipe(
-            takeUntil(this.destroy$)
-          )
-        ),
         catchError((error) => {
-          console.error('Error processing personal rating stats:', error);
+          console.error('Error processing personal rating data:', error);
           return EMPTY;
-        })
+        }),
+        takeUntil(this.destroy$)
       )
       .subscribe(() => {
         const stats = this.calculatePersonalRatingStats();
@@ -163,17 +176,25 @@ export class PersonalRatingChartService implements OnDestroy {
 
   private updateChartData(stats: RatingStats[]): void {
     try {
-      const labels = stats.map(s => s.ratingRange);
-      const dataValues = stats.map(s => s.count);
-      const colors = stats.map((_, index) => CHART_COLORS[index % CHART_COLORS.length]);
+      // Always show all rating labels from 1-10, even if there's no data
+      const allLabels = RATING_RANGES.map(r => r.range);
+      const dataValues = allLabels.map(label => {
+        const stat = stats.find(s => s.ratingRange === label);
+        return stat ? stat.count : 0;
+      });
+      const colors = allLabels.map((_, index) => CHART_COLORS[index % CHART_COLORS.length]);
 
-      this.personalRatingChartDataSubject.next({
-        labels,
+      this.chartDataSubject.next({
+        labels: allLabels,
         datasets: [{
           label: 'Books by Personal Rating',
           data: dataValues,
           backgroundColor: colors,
-          ...CHART_DEFAULTS
+          borderColor: colors.map(color => color),
+          borderWidth: 1,
+          borderRadius: 4,
+          barPercentage: 0.8,
+          categoryPercentage: 0.6
         }]
       });
     } catch (error) {
@@ -183,24 +204,16 @@ export class PersonalRatingChartService implements OnDestroy {
 
   private calculatePersonalRatingStats(): RatingStats[] {
     const currentState = this.bookService.getCurrentBookState();
-    const selectedLibraryId = this.libraryFilterService.getCurrentSelectedLibrary();
 
     if (!this.isValidBookState(currentState)) {
       return [];
     }
 
-    const filteredBooks = this.filterBooksByLibrary(currentState.books!, selectedLibraryId);
-    return this.processPersonalRatingStats(filteredBooks);
+    return this.processPersonalRatingStats(currentState.books!);
   }
 
   private isValidBookState(state: any): boolean {
     return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
-  }
-
-  private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
-    return selectedLibraryId
-      ? books.filter(book => book.libraryId === selectedLibraryId)
-      : books;
   }
 
   private processPersonalRatingStats(books: Book[]): RatingStats[] {
@@ -210,12 +223,9 @@ export class PersonalRatingChartService implements OnDestroy {
     books.forEach(book => {
       const personalRating = book.personalRating;
 
-      if (!personalRating || personalRating === 0) {
-        const noRatingData = rangeCounts.get('No Rating')!;
-        noRatingData.count++;
-      } else {
+      if (personalRating && personalRating > 0) {
         for (const range of RATING_RANGES) {
-          if (range.range !== 'No Rating' && personalRating >= range.min && personalRating <= range.max) {
+          if (personalRating >= range.min && personalRating <= range.max) {
             const rangeData = rangeCounts.get(range.range)!;
             rangeData.count++;
             rangeData.totalRating += personalRating;
@@ -225,6 +235,7 @@ export class PersonalRatingChartService implements OnDestroy {
       }
     });
 
+    // Return all ratings, including those with 0 count
     return RATING_RANGES.map(range => {
       const data = rangeCounts.get(range.range)!;
       return {
@@ -232,6 +243,6 @@ export class PersonalRatingChartService implements OnDestroy {
         count: data.count,
         averageRating: data.count > 0 ? data.totalRating / data.count : 0
       };
-    }).filter(stat => stat.ratingRange !== 'No Rating');
+    });
   }
 }

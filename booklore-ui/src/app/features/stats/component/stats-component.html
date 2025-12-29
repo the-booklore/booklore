@@ -177,16 +177,6 @@
           </div>
 
           @switch (chartConfig.id) {
-            @case ('readingStatus') {
-              <h3>Reading Status</h3>
-              <div class="chart-wrapper status-chart">
-                <canvas baseChart
-                        [data]="(readStatusChartService.statusChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readStatusChartService.statusChartOptions"
-                        [type]="readStatusChartService.statusChartType">
-                </canvas>
-              </div>
-            }
             @case ('bookFormats') {
               <h3>Book Formats</h3>
               <div class="chart-wrapper book-type-chart">
@@ -257,16 +247,6 @@
                 </canvas>
               </div>
             }
-            @case ('readingProgress') {
-              <h3>Reading Progress</h3>
-              <div class="chart-wrapper progress-chart">
-                <canvas baseChart
-                        [data]="(readingProgressChartService.progressChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingProgressChartService.progressChartOptions"
-                        [type]="readingProgressChartService.progressChartType">
-                </canvas>
-              </div>
-            }
             @case ('externalRating') {
               <h3>External Rating Distribution</h3>
               <div class="chart-wrapper rating-chart">
@@ -274,16 +254,6 @@
                         [data]="(bookRatingChartService.ratingChartData$ | async) ?? {labels: [], datasets: []}"
                         [options]="bookRatingChartService.ratingChartOptions"
                         [type]="bookRatingChartService.ratingChartType">
-                </canvas>
-              </div>
-            }
-            @case ('personalRating') {
-              <h3>Personal Rating Distribution</h3>
-              <div class="chart-wrapper personal-rating-chart">
-                <canvas baseChart
-                        [data]="(personalRatingChartService.personalRatingChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="personalRatingChartService.personalRatingChartOptions"
-                        [type]="personalRatingChartService.personalRatingChartType">
                 </canvas>
               </div>
             }

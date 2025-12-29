@@ -10,8 +10,11 @@ import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ShelvesAssignmentRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
+import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
+import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.service.book.BookService;
+import com.adityachandel.booklore.service.book.BookUpdateService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
 import com.adityachandel.booklore.service.recommender.BookRecommendationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,6 +43,7 @@ import java.util.Set;
 public class BookController {
 
     private final BookService bookService;
+    private final BookUpdateService bookUpdateService;
     private final BookRecommendationService bookRecommendationService;
     private final BookMetadataService bookMetadataService;
 
@@ -54,8 +58,8 @@ public class BookController {
 
     @Operation(summary = "Get a book by ID", description = "Retrieve details of a specific book by its ID.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Book details returned successfully"),
-        @ApiResponse(responseCode = "404", description = "Book not found")
+            @ApiResponse(responseCode = "200", description = "Book details returned successfully"),
+            @ApiResponse(responseCode = "404", description = "Book not found")
     })
     @GetMapping("/{bookId}")
     @CheckBookAccess(bookIdParam = "bookId")
@@ -67,8 +71,8 @@ public class BookController {
 
     @Operation(summary = "Delete books", description = "Delete one or more books by their IDs. Requires admin or delete permission.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Books deleted successfully"),
-        @ApiResponse(responseCode = "403", description = "Forbidden")
+            @ApiResponse(responseCode = "200", description = "Books deleted successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     @PreAuthorize("@securityUtil.canDeleteBook() or @securityUtil.isAdmin()")
     @DeleteMapping
@@ -105,8 +109,8 @@ public class BookController {
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Book downloaded successfully"),
-        @ApiResponse(responseCode = "403", description = "Forbidden")
+            @ApiResponse(responseCode = "200", description = "Book downloaded successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden")
     })
     @GetMapping("/{bookId}/download")
     @PreAuthorize("@securityUtil.canDownload() or @securityUtil.isAdmin()")
@@ -165,50 +169,46 @@ public class BookController {
 
     @Operation(summary = "Update read status", description = "Update the read status for one or more books.")
     @ApiResponse(responseCode = "200", description = "Read status updated successfully")
-    @PutMapping("/read-status")
-    public ResponseEntity<List<Book>> updateReadStatus(
-            @Parameter(description = "Read status update request") @RequestBody @Valid ReadStatusUpdateRequest request) {
-        List<Book> updatedBooks = bookService.updateReadStatus(request.ids(), request.status());
-        return ResponseEntity.ok(updatedBooks);
+    @PostMapping("/status")
+    public List<BookStatusUpdateResponse> updateReadStatus(@RequestBody @Valid ReadStatusUpdateRequest request) {
+        return bookService.updateReadStatus(request.getBookIds(), request.getStatus());
     }
 
     @Operation(summary = "Reset reading progress", description = "Reset the reading progress for one or more books.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Progress reset successfully"),
-        @ApiResponse(responseCode = "400", description = "No book IDs provided")
+            @ApiResponse(responseCode = "200", description = "Progress reset successfully"),
+            @ApiResponse(responseCode = "400", description = "No book IDs provided")
     })
     @PostMapping("/reset-progress")
-    public ResponseEntity<List<Book>> resetProgress(
+    public ResponseEntity<List<BookStatusUpdateResponse>> resetProgress(
             @Parameter(description = "List of book IDs to reset progress for") @RequestBody List<Long> bookIds,
             @Parameter(description = "Type of progress reset") @RequestParam ResetProgressType type) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
-        List<Book> updatedBooks = bookService.resetProgress(bookIds, type);
-        return ResponseEntity.ok(updatedBooks);
+        return ResponseEntity.ok(bookUpdateService.resetProgress(bookIds, type));
     }
 
     @Operation(summary = "Update personal rating", description = "Update the personal rating for one or more books.")
     @ApiResponse(responseCode = "200", description = "Personal rating updated successfully")
     @PutMapping("/personal-rating")
-    public ResponseEntity<List<Book>> updatePersonalRating(
+    public ResponseEntity<List<PersonalRatingUpdateResponse>> updatePersonalRating(
             @Parameter(description = "Personal rating update request") @RequestBody @Valid PersonalRatingUpdateRequest request) {
-        List<Book> updatedBooks = bookService.updatePersonalRating(request.ids(), request.rating());
-        return ResponseEntity.ok(updatedBooks);
+        return ResponseEntity.ok(bookUpdateService.updatePersonalRating(request.ids(), request.rating()));
     }
 
     @Operation(summary = "Reset personal rating", description = "Reset the personal rating for one or more books.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Personal rating reset successfully"),
-        @ApiResponse(responseCode = "400", description = "No book IDs provided")
+            @ApiResponse(responseCode = "200", description = "Personal rating reset successfully"),
+            @ApiResponse(responseCode = "400", description = "No book IDs provided")
     })
     @PostMapping("/reset-personal-rating")
-    public ResponseEntity<List<Book>> resetPersonalRating(
+    public ResponseEntity<List<PersonalRatingUpdateResponse>> resetPersonalRating(
             @Parameter(description = "List of book IDs to reset personal rating for") @RequestBody List<Long> bookIds) {
         if (bookIds == null || bookIds.isEmpty()) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("No book IDs provided");
         }
-        List<Book> updatedBooks = bookService.resetPersonalRating(bookIds);
+        List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
     }
 }

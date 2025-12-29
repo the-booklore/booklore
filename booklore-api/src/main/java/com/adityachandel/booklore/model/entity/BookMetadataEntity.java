@@ -106,6 +106,11 @@ public class BookMetadataEntity {
     @Column(name = "comicvine_id", length = 100)
     private String comicvineId;
 
+    @Column(name = "lubimyczytac_id", length = 100)
+    private String lubimyczytacId;
+
+    @Column(name = "lubimyczytac_rating")
+    private Double lubimyczytacRating;
 
     @Column(name = "title_locked")
     @Builder.Default
@@ -223,6 +228,14 @@ public class BookMetadataEntity {
     @Builder.Default
     private Boolean comicvineIdLocked = Boolean.FALSE;
 
+    @Column(name = "lubimyczytac_id_locked")
+    @Builder.Default
+    private Boolean lubimyczytacIdLocked = Boolean.FALSE;
+
+    @Column(name = "lubimyczytac_rating_locked")
+    @Builder.Default
+    private Boolean lubimyczytacRatingLocked = Boolean.FALSE;
+
     @Column(name = "reviews_locked")
     @Builder.Default
     private Boolean reviewsLocked = Boolean.FALSE;
@@ -313,11 +326,13 @@ public class BookMetadataEntity {
         this.goodreadsReviewCountLocked = lock;
         this.hardcoverRatingLocked = lock;
         this.hardcoverReviewCountLocked = lock;
+        this.lubimyczytacRatingLocked = lock;
         this.comicvineIdLocked = lock;
         this.goodreadsIdLocked = lock;
         this.hardcoverIdLocked = lock;
         this.hardcoverBookIdLocked = lock;
         this.googleIdLocked = lock;
+        this.lubimyczytacIdLocked = lock;
         this.reviewsLocked = lock;
     }
 
@@ -346,11 +361,13 @@ public class BookMetadataEntity {
                 && Boolean.TRUE.equals(this.goodreadsReviewCountLocked)
                 && Boolean.TRUE.equals(this.hardcoverRatingLocked)
                 && Boolean.TRUE.equals(this.hardcoverReviewCountLocked)
+                && Boolean.TRUE.equals(this.lubimyczytacRatingLocked)
                 && Boolean.TRUE.equals(this.goodreadsIdLocked)
                 && Boolean.TRUE.equals(this.comicvineIdLocked)
                 && Boolean.TRUE.equals(this.hardcoverIdLocked)
                 && Boolean.TRUE.equals(this.hardcoverBookIdLocked)
                 && Boolean.TRUE.equals(this.googleIdLocked)
+                && Boolean.TRUE.equals(this.lubimyczytacIdLocked)
                 && Boolean.TRUE.equals(this.reviewsLocked)
                 ;
     }

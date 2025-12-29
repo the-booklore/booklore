@@ -43,6 +43,9 @@ export class ReadingHabitsChartComponent implements OnInit, OnDestroy {
   public readonly chartOptions: ChartConfiguration<'radar'>['options'] = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {top: 15}
+    },
     scales: {
       r: {
         beginAtZero: true,

@@ -6,7 +6,7 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   gap: 1rem;
 
   .header-title {
@@ -184,7 +184,7 @@
 
   .hour-label {
     display: none;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
     position: absolute;
     left: 0;

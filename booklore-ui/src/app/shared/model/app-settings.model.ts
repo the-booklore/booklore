@@ -23,6 +23,7 @@ export interface MetadataMatchWeights {
   hardcoverReviewCount: number;
   doubanRating: number;
   doubanReviewCount: number;
+  lubimyczytacRating: number;
   coverImage: number;
 }
 
@@ -50,6 +51,7 @@ export interface MetadataProviderSettings {
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
+  lubimyczytac: Lubimyczytac;
 }
 
 export interface Amazon {
@@ -78,6 +80,10 @@ export interface Comicvine {
 }
 
 export interface Douban {
+  enabled: boolean;
+}
+
+export interface Lubimyczytac {
   enabled: boolean;
 }
 
@@ -135,6 +141,7 @@ export interface AppSettings {
   koboSettings: KoboSettings;
   coverCroppingSettings: CoverCroppingSettings;
   metadataDownloadOnBookdrop: boolean;
+  telemetryEnabled: boolean;
 }
 
 export enum AppSettingKey {
@@ -155,5 +162,6 @@ export enum AppSettingKey {
   METADATA_DOWNLOAD_ON_BOOKDROP = 'METADATA_DOWNLOAD_ON_BOOKDROP',
   METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS',
   KOBO_SETTINGS = 'KOBO_SETTINGS',
-  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS'
+  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
+  TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
 }

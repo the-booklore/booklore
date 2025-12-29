@@ -37,7 +37,7 @@ export class GenreStatsChartComponent implements OnInit, OnDestroy {
       responsive: true,
       maintainAspectRatio: false,
       layout: {
-        padding: {top: 10, bottom: 10, left: 10, right: 10}
+        padding: {top: 10}
       },
       plugins: {
         legend: {display: false},

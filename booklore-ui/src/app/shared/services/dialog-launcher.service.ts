@@ -145,7 +145,7 @@ export class DialogLauncherService {
   openVersionChangelogDialog(): DynamicDialogRef | null {
     return this.openDialog(VersionChangelogDialogComponent, {
       header: "What's New",
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-medium',
     });
   }
 

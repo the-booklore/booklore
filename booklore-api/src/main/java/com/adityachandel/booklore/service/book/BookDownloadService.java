@@ -12,7 +12,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -56,8 +56,8 @@ public class BookDownloadService {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
             }
 
-            InputStream inputStream = new FileInputStream(bookFile);
-            InputStreamResource resource = new InputStreamResource(inputStream);
+            // Use FileSystemResource which properly handles file resources and closing
+            Resource resource = new FileSystemResource(bookFile);
 
             String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
                     .replace("+", "%20");

@@ -15,6 +15,10 @@ import {PeakHoursChartComponent} from '../peak-hours-chart/peak-hours-chart.comp
 import {ReadingDNAChartComponent} from '../reading-dna-chart/reading-dna-chart.component';
 import {ReadingHabitsChartComponent} from '../reading-habits-chart/reading-habits-chart.component';
 import {UserChartConfig, UserChartConfigService} from '../../service/user-chart-config.service';
+import {ReadingHeatmapChartComponent} from '../reading-heatmap-chart/reading-heatmap-chart.component';
+import {PersonalRatingChartComponent} from '../personal-rating-chart/personal-rating-chart.component';
+import {ReadingProgressChartComponent} from '../reading-progress-chart/reading-progress-chart.component';
+import {ReadStatusChartComponent} from '../read-status-chart/read-status-chart.component';
 
 @Component({
   selector: 'app-user-stats',
@@ -31,7 +35,11 @@ import {UserChartConfig, UserChartConfigService} from '../../service/user-chart-
     FavoriteDaysChartComponent,
     PeakHoursChartComponent,
     ReadingDNAChartComponent,
-    ReadingHabitsChartComponent
+    ReadingHabitsChartComponent,
+    ReadingHeatmapChartComponent,
+    PersonalRatingChartComponent,
+    ReadingProgressChartComponent,
+    ReadStatusChartComponent
   ],
   templateUrl: './user-stats.component.html',
   styleUrls: ['./user-stats.component.scss']

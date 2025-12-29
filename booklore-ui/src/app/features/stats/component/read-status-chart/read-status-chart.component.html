@@ -1,0 +1,18 @@
+<div class="read-status-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-book read-status-icon"></i>
+        Reading Status Distribution
+      </h3>
+      <p class="chart-description">Books by their reading status</p>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>

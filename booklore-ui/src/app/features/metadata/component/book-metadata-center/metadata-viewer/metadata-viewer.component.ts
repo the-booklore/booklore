@@ -788,7 +788,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     return p != null ? Math.round(p * 10) / 10 : null;
   }
 
-  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover'): string {
+  getRatingTooltip(book: Book, source: 'amazon' | 'goodreads' | 'hardcover' | 'lubimyczytac'): string {
     const meta = book?.metadata;
     if (!meta) return '';
 
@@ -804,6 +804,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       case 'hardcover':
         return meta.hardcoverRating != null
           ? `★ ${meta.hardcoverRating} | ${meta.hardcoverReviewCount?.toLocaleString() ?? '0'} reviews`
+          : '';
+      case 'lubimyczytac':
+        return meta.lubimyczytacRating != null
+          ? `★ ${meta.lubimyczytacRating}`
           : '';
       default:
         return '';
