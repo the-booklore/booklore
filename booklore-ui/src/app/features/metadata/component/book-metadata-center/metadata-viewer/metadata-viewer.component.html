@@ -162,7 +162,7 @@
               @if (book?.metadata?.amazonRating) {
                 <a
                   class="rating-link"
-                  [href]="'https://www.amazon.com/dp/' + (book.metadata?.asin ?? '')"
+                  [href]="'https://www.amazon.' + amazonDomain + '/dp/' + (book.metadata?.asin ?? '')"
                   target="_blank"
                   rel="noopener noreferrer"
                   [pTooltip]="getRatingTooltip(book, 'amazon')"
@@ -574,7 +574,7 @@
                 </p-splitbutton>
               }
             }
-            @if (userState.user!.permissions.canDeleteBook || userState.user!.permissions.admin) {
+            @if (userState.user!.permissions.canUpload || userState.user!.permissions.canManageLibrary || userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
               @if (otherItems$ | async; as otherItems) {
                 <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
