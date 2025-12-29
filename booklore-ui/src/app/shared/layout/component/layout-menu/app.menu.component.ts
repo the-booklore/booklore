@@ -208,6 +208,12 @@ export class AppMenuComponent implements OnInit {
       : `https://github.com/booklore-app/booklore/commit/${version}`;
   }
 
+  isSemanticVersion(version: string | undefined): boolean {
+    if (!version) return false;
+    const semanticVersionPattern = /^v\d+\.\d+\.\d+$/;
+    return semanticVersionPattern.test(version);
+  }
+
   private sortArray<T>(array: T[], field: 'name' | 'id', order: 'asc' | 'desc'): T[] {
     return [...array].sort((a, b) => {
       const aVal = (a as any)[field] ?? '';

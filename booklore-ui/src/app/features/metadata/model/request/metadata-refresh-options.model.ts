@@ -35,12 +35,14 @@ export interface FieldOptions {
   comicvineId: FieldProvider;
   hardcoverId: FieldProvider;
   googleId: FieldProvider;
+  lubimyczytacId: FieldProvider;
   amazonRating: FieldProvider;
   amazonReviewCount: FieldProvider;
   goodreadsRating: FieldProvider;
   goodreadsReviewCount: FieldProvider;
   hardcoverRating: FieldProvider;
   hardcoverReviewCount: FieldProvider;
+  lubimyczytacRating: FieldProvider;
   moods: FieldProvider;
   tags: FieldProvider;
 }

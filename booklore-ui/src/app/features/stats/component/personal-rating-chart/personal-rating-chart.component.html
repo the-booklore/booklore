@@ -1,0 +1,19 @@
+<div class="personal-rating-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-star-fill personal-rating-icon"></i>
+        Personal Rating Distribution
+      </h3>
+      <p class="chart-description">Books by your rating (1–10)</p>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>
+

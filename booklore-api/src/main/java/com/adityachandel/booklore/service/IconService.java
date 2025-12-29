@@ -19,7 +19,9 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -270,5 +272,36 @@ public class IconService {
 
     ConcurrentHashMap<String, String> getSvgCache() {
         return svgCache;
+    }
+
+    public Map<String, String> getAllIconsContent() {
+        Path iconsPath = getIconsSvgPath();
+
+        if (!Files.exists(iconsPath)) {
+            return Collections.emptyMap();
+        }
+
+        try (Stream<Path> paths = Files.list(iconsPath)) {
+            Map<String, String> iconMap = new HashMap<>();
+
+            paths.filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(SVG_EXTENSION))
+                    .forEach(path -> {
+                        try {
+                            String filename = path.getFileName().toString();
+                            String iconName = filename.replace(SVG_EXTENSION, "");
+                            String content = svgCache.getOrDefault(filename, Files.readString(path));
+                            iconMap.put(iconName, content);
+                        } catch (IOException e) {
+                            log.warn("Failed to read icon: {}", path.getFileName(), e);
+                        }
+                    });
+
+            log.info("Retrieved {} icons for bulk content request", iconMap.size());
+            return iconMap;
+        } catch (IOException e) {
+            log.error("Failed to read icons directory: {}", e.getMessage(), e);
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read icons: " + e.getMessage());
+        }
     }
 }

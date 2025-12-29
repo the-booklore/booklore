@@ -81,6 +81,7 @@ export class SeriesCollapseFilter implements BookFilter, OnDestroy {
           const firstBook = sortedGroup[0];
           collapsedBooks.push({
             ...firstBook,
+            seriesBooks: group,
             seriesCount: group.length
           });
         }

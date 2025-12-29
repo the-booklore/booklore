@@ -21,6 +21,8 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -34,6 +36,7 @@ import java.util.regex.Pattern;
 public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("^\\d{4}$");
+    private static final String OPF_NS = "http://www.idpf.org/2007/opf";
 
     @Override
     public byte[] extractCover(File epubFile) {
@@ -98,13 +101,17 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                     if (metadata == null) return null;
 
                     BookMetadata.BookMetadataBuilder builderMeta = BookMetadata.builder();
-                    Set<String> authors = new HashSet<>();
                     Set<String> categories = new HashSet<>();
 
                     boolean seriesFound = false;
                     boolean seriesIndexFound = false;
 
                     NodeList children = metadata.getChildNodes();
+
+                    Map<String, String> creatorsById = new HashMap<>();
+                    Map<String, String> creatorRoleById = new HashMap<>();
+                    Map<String, Set<String>> creatorsByRole = new HashMap<>();
+                    creatorsByRole.put("aut", new HashSet<>());
 
                     Map<String, String> titlesById = new HashMap<>();
                     Map<String, String> titleTypeById = new HashMap<>();
@@ -132,6 +139,10 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if ("title-type".equals(prop) && StringUtils.isNotBlank(refines)) {
                                     titleTypeById.put(refines.substring(1), content.toLowerCase());
+                                }
+
+                                if ("role".equals(prop) && StringUtils.isNotBlank(refines)) {
+                                   creatorRoleById.put(refines.substring(1), content.toLowerCase());
                                 }
 
                                 if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
@@ -174,13 +185,25 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:page_count" -> safeParseInt(content, builderMeta::pageCount);
                                 }
                             }
-                            case "creator" -> authors.add(text);
+                            case "creator" -> {
+                                String role = el.getAttributeNS(OPF_NS, "role");
+                                if (StringUtils.isNotBlank(role)) {
+                                    creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(text);
+                                } else {
+                                    String id = el.getAttribute("id");
+                                    if (StringUtils.isNotBlank(id)) {
+                                        creatorsById.put(id, text);
+                                    } else {
+                                        creatorsByRole.get("aut").add(text);
+                                    }
+                                }
+                            }
                             case "subject" -> categories.add(text);
                             case "description" -> builderMeta.description(text);
                             case "publisher" -> builderMeta.publisher(text);
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
-                                String scheme = el.getAttributeNS("http://www.idpf.org/2007/opf", "scheme").toUpperCase();
+                                String scheme = el.getAttributeNS(OPF_NS, "scheme").toUpperCase();
                                 String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
 
                                 if (!scheme.isEmpty()) {
@@ -233,7 +256,14 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         }
                     }
 
-                    builderMeta.authors(authors);
+                    for (Map.Entry<String, String> entry : creatorsById.entrySet()) {
+                        String id = entry.getKey();
+                        String value = entry.getValue();
+                        String role = creatorRoleById.getOrDefault(id, "aut");
+                        creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(value);
+                    }
+
+                    builderMeta.authors(creatorsByRole.get("aut"));
                     builderMeta.categories(categories);
 
                     BookMetadata extractedMetadata = builderMeta.build();
@@ -332,7 +362,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         String properties = item.getAttribute("properties");
                         if (properties != null && properties.contains("cover-image")) {
                             String href = item.getAttribute("href");
-                            return resolvePath(opfPath, href);
+                            String decodedHref = URLDecoder.decode(href, StandardCharsets.UTF_8);
+                            return resolvePath(opfPath, decodedHref);
                         }
                     }
                 }

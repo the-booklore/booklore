@@ -11,8 +11,8 @@ public class BookUtils {
 
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[!@$%^&*_=|~`<>?/\"]");
-    private static final Pattern PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN = Pattern.compile("\\s?\\(.*?\\)");
     private static final Pattern DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\s?\\([^()]*\\)");
 
     public static String buildSearchText(BookMetadataEntity e) {
         if (e == null) return null;
@@ -60,11 +60,20 @@ public class BookUtils {
             return null;
         }
         name = name.replace("(Z-Library)", "").trim();
-        name = PARENTHESES_WITH_OPTIONAL_SPACE_PATTERN.matcher(name).replaceAll("").trim(); // Remove the author name inside parentheses (e.g. (Jon Yablonski))
+        
+        String previous;
+        do {
+            previous = name;
+            name = PARENTHESIS_PATTERN.matcher(name).replaceAll("").trim();
+        } while (!name.equals(previous));
+        
         int dotIndex = name.lastIndexOf('.'); // Remove the file extension (e.g., .pdf, .docx)
         if (dotIndex > 0) {
             name = name.substring(0, dotIndex).trim();
         }
+        
+        name = WHITESPACE_PATTERN.matcher(name).replaceAll(" ").trim();
+        
         return name;
     }
 

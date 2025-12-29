@@ -1,0 +1,38 @@
+<div class="favorite-days-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-calendar-plus favorite-days-icon"></i>
+        Favorite Reading Days
+      </h3>
+      <p class="chart-description">Reading sessions and duration by day of the week</p>
+    </div>
+    <div class="filter-controls">
+      <p-select
+        [options]="yearOptions"
+        [(ngModel)]="selectedYear"
+        (onChange)="onFilterChange()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select Year"
+        [style]="{'min-width': '90px'}">
+      </p-select>
+      <p-select
+        [options]="monthOptions"
+        [(ngModel)]="selectedMonth"
+        (onChange)="onFilterChange()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Select Month"
+        [style]="{'min-width': '120px'}">
+      </p-select>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>

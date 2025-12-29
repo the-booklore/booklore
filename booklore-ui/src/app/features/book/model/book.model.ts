@@ -40,6 +40,7 @@ export interface Book extends FileInfo {
   koreaderProgress?: KoReaderProgress;
   koboProgress?: KoboProgress;
   seriesCount?: number | null;
+  seriesBooks?: Book[] | null;
   metadataMatchScore?: number | null;
   personalRating?: number | null;
   readStatus?: ReadStatus;
@@ -100,6 +101,8 @@ export interface BookMetadata {
   goodreadsReviewCount?: number | null;
   hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
+  lubimyczytacId?: string;
+  lubimyczytacRating?: number | null;
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
@@ -133,6 +136,8 @@ export interface BookMetadata {
   goodreadsReviewCountLocked?: boolean;
   hardcoverRatingLocked?: boolean;
   hardcoverReviewCountLocked?: boolean;
+  lubimyczytacIdLocked?: boolean;
+  lubimyczytacRatingLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
@@ -168,6 +173,8 @@ export interface MetadataClearFlags {
   goodreadsReviewCount?: boolean;
   hardcoverRating?: boolean;
   hardcoverReviewCount?: boolean;
+  lubimyczytacId?: boolean;
+  lubimyczytacRating?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;

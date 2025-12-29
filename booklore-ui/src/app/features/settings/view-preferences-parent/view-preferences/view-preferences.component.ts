@@ -10,6 +10,7 @@ import {ShelfService} from '../../../book/service/shelf.service';
 import {combineLatest, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {ToastModule} from 'primeng/toast';
+import {Tooltip} from 'primeng/tooltip';
 import {filter, take, takeUntil} from 'rxjs/operators';
 
 @Component({
@@ -20,7 +21,8 @@ import {filter, take, takeUntil} from 'rxjs/operators';
     FormsModule,
     Button,
     TableModule,
-    ToastModule
+    ToastModule,
+    Tooltip
   ],
   templateUrl: './view-preferences.component.html',
   styleUrl: './view-preferences.component.scss'

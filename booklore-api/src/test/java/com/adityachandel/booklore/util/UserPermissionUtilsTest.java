@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.entity.UserPermissionsEntity;
 import com.adityachandel.booklore.model.enums.PermissionType;
 import org.junit.jupiter.api.Test;
@@ -20,6 +21,20 @@ class UserPermissionUtilsTest {
     @EnumSource(PermissionType.class)
     void testHasPermission_false(PermissionType permissionType) {
         UserPermissionsEntity perms = createPermissionsWith(permissionType, false);
+        assertFalse(UserPermissionUtils.hasPermission(perms, permissionType));
+    }
+
+    @ParameterizedTest
+    @EnumSource(PermissionType.class)
+    void testHasPermission_BookLoreUserPermissions_true(PermissionType permissionType) {
+        BookLoreUser.UserPermissions perms = createBookLoreUserPermissionsWith(permissionType, true);
+        assertTrue(UserPermissionUtils.hasPermission(perms, permissionType));
+    }
+
+    @ParameterizedTest
+    @EnumSource(PermissionType.class)
+    void testHasPermission_BookLoreUserPermissions_false(PermissionType permissionType) {
+        BookLoreUser.UserPermissions perms = createBookLoreUserPermissionsWith(permissionType, false);
         assertFalse(UserPermissionUtils.hasPermission(perms, permissionType));
     }
 
@@ -119,8 +134,55 @@ class UserPermissionUtilsTest {
             case MANAGE_ICONS -> builder.permissionManageIcons(value);
             case DEMO_USER -> builder.permissionDemoUser(value);
             case ADMIN -> builder.permissionAdmin(value);
+            default -> throw new IllegalArgumentException("Test helper missing mapping for PermissionType: " + permissionType);
         }
 
         return builder.build();
+    }
+
+    private BookLoreUser.UserPermissions createBookLoreUserPermissionsWith(PermissionType permissionType, boolean value) {
+        BookLoreUser.UserPermissions perms = new BookLoreUser.UserPermissions();
+        perms.setAdmin(false);
+        perms.setCanUpload(false);
+        perms.setCanDownload(false);
+        perms.setCanEditMetadata(false);
+        perms.setCanManageLibrary(false);
+        perms.setCanEmailBook(false);
+        perms.setCanDeleteBook(false);
+        perms.setCanAccessOpds(false);
+        perms.setCanSyncKoReader(false);
+        perms.setCanSyncKobo(false);
+        perms.setCanManageMetadataConfig(false);
+        perms.setCanAccessBookdrop(false);
+        perms.setCanAccessLibraryStats(false);
+        perms.setCanAccessUserStats(false);
+        perms.setCanAccessTaskManager(false);
+        perms.setCanManageIcons(false);
+        perms.setCanManageGlobalPreferences(false);
+        perms.setDemoUser(false);
+
+        switch (permissionType) {
+            case UPLOAD -> perms.setCanUpload(value);
+            case DOWNLOAD -> perms.setCanDownload(value);
+            case EDIT_METADATA -> perms.setCanEditMetadata(value);
+            case MANAGE_LIBRARY -> perms.setCanManageLibrary(value);
+            case EMAIL_BOOK -> perms.setCanEmailBook(value);
+            case DELETE_BOOK -> perms.setCanDeleteBook(value);
+            case ACCESS_OPDS -> perms.setCanAccessOpds(value);
+            case SYNC_KOREADER -> perms.setCanSyncKoReader(value);
+            case SYNC_KOBO -> perms.setCanSyncKobo(value);
+            case MANAGE_METADATA_CONFIG -> perms.setCanManageMetadataConfig(value);
+            case ACCESS_BOOKDROP -> perms.setCanAccessBookdrop(value);
+            case ACCESS_LIBRARY_STATS -> perms.setCanAccessLibraryStats(value);
+            case ACCESS_USER_STATS -> perms.setCanAccessUserStats(value);
+            case ACCESS_TASK_MANAGER -> perms.setCanAccessTaskManager(value);
+            case MANAGE_GLOBAL_PREFERENCES -> perms.setCanManageGlobalPreferences(value);
+            case MANAGE_ICONS -> perms.setCanManageIcons(value);
+            case DEMO_USER -> perms.setDemoUser(value);
+            case ADMIN -> perms.setAdmin(value);
+            default -> throw new IllegalArgumentException("Test helper missing mapping for PermissionType: " + permissionType);
+        }
+
+        return perms;
     }
 }

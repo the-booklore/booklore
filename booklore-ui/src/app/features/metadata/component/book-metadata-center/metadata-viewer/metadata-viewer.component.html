@@ -19,7 +19,7 @@
             </div>
           }
 
-          <div 
+          <div
             class="cover-progress-bar-container"
             [style.--progress-count]="getProgressCount(book)">
             @let progress = getProgressPercent(book);
@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -198,6 +198,20 @@
                 >
                   <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.lubimyczytacRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://lubimyczytac.pl/ksiazka/' + (book.metadata?.lubimyczytacId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'lubimyczytac')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
                 </a>
               }
 
@@ -605,6 +619,9 @@
           <i class="pi pi-pen-to-square"></i> Notes
         </p-tab>
         <p-tab [value]="4">
+          <i class="pi pi-clock"></i> Reading Sessions
+        </p-tab>
+        <p-tab [value]="5">
           <i class="pi pi-comments"></i> Reviews
         </p-tab>
       </p-tablist>
@@ -641,6 +658,9 @@
           <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
         </p-tabpanel>
         <p-tabpanel [value]="4">
+          <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+        </p-tabpanel>
+        <p-tabpanel [value]="5">
           <app-book-reviews [bookId]="book.id"></app-book-reviews>
         </p-tabpanel>
       </p-tabpanels>

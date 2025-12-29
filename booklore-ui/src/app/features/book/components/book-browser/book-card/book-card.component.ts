@@ -33,13 +33,13 @@ import {BookNavigationService} from '../../../service/book-navigation.service';
 })
 export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
-  @Output() checkboxClick = new EventEmitter<{ index: number; bookId: number; selected: boolean; shiftKey: boolean }>();
+  @Output() checkboxClick = new EventEmitter<{ index: number; book: Book; selected: boolean; shiftKey: boolean }>();
   @Output() menuToggled = new EventEmitter<boolean>();
 
   @Input() index!: number;
   @Input() book!: Book;
   @Input() isCheckboxEnabled: boolean = false;
-  @Input() onBookSelect?: (bookId: number, selected: boolean) => void;
+  @Input() onBookSelect?: (book: Book, selected: boolean) => void;
   @Input() isSelected: boolean = false;
   @Input() bottomBarHidden: boolean = false;
   @Input() seriesViewEnabled: boolean = false;
@@ -694,13 +694,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
 
     this.checkboxClick.emit({
       index: this.index,
-      bookId: this.book.id,
+      book: this.book,
       selected: selected,
       shiftKey: shiftKey,
     });
 
     if (this.onBookSelect) {
-      this.onBookSelect(this.book.id, selected);
+      this.onBookSelect(this.book, selected);
     }
 
     this.lastMouseEvent = null;

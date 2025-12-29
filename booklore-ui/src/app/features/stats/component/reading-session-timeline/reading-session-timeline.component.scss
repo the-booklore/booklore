@@ -3,15 +3,13 @@
 }
 
 .timeline-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: flex-start;
   margin-bottom: 0.5rem;
   gap: 1rem;
 
   .header-title {
-    flex: 1;
-
     h3 {
       color: var(--text-color, #ffffff);
       font-size: 1.25rem;
@@ -27,17 +25,16 @@
     }
   }
 
-  .week-selector {
+  .week-info {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    flex-shrink: 0;
+    justify-self: center;
 
     .week-nav-btn {
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 6px;
-      padding: 0.5rem 0.75rem;
+      padding: 0.6rem 0.6rem;
       color: #ffffff;
       cursor: pointer;
       transition: all 0.3s ease;
@@ -60,24 +57,94 @@
       }
     }
 
-    .week-info {
+    .week-display {
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-width: 100px;
+      min-width: 120px;
 
       .week-label {
-        font-size: 1.125rem;
+        font-size: 1rem;
         font-weight: 600;
         color: #ffffff;
         white-space: nowrap;
+        line-height: 1.2;
       }
 
       .week-dates {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         color: var(--text-secondary-color);
         white-space: nowrap;
+        margin-top: 0.1rem;
+        line-height: 1.2;
       }
+    }
+  }
+
+  .filter-controls {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-self: end;
+  }
+}
+
+.week-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  .week-nav-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 0.6rem 6rem;
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    i {
+      font-size: 0.875rem;
+    }
+  }
+
+  .week-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 150px;
+
+    .week-label {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+
+    .week-dates {
+      font-size: 0.85rem;
+      color: var(--text-secondary-color);
+      white-space: nowrap;
+      margin-top: 0.25rem;
     }
   }
 }
@@ -117,7 +184,7 @@
 
   .hour-label {
     display: none;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
     position: absolute;
     left: 0;
@@ -153,7 +220,7 @@
     background: rgba(255, 255, 255, 0.02);
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    min-height: 40px;
+    min-height: 35px;
   }
 }
 
@@ -188,29 +255,32 @@
     box-sizing: border-box;
 
     &.book-type-epub, &.book-type-default {
-      background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-      box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
+      background: rgba(59, 130, 246, 0.8);
+      border: 1px solid rgba(59, 130, 246, 1);
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 
       &:hover {
-        box-shadow: 0 4px 16px rgba(74, 144, 226, 0.5);
+        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.5);
       }
     }
 
     &.book-type-pdf {
-      background: linear-gradient(135deg, #e24a4a 0%, #bd3535 100%);
-      box-shadow: 0 2px 8px rgba(226, 74, 74, 0.3);
+      background: rgba(239, 68, 68, 0.8);
+      border: 1px solid rgba(239, 68, 68, 1);
+      box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 
       &:hover {
-        box-shadow: 0 4px 16px rgba(226, 74, 74, 0.5);
+        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.5);
       }
     }
 
     &.book-type-cbx {
-      background: linear-gradient(135deg, #e2b74a 0%, #bd9635 100%);
-      box-shadow: 0 2px 8px rgba(226, 183, 74, 0.3);
+      background: rgba(255, 193, 7, 0.8);
+      border: 1px solid rgba(255, 193, 7, 1);
+      box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
 
       &:hover {
-        box-shadow: 0 4px 16px rgba(226, 183, 74, 0.5);
+        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.5);
       }
     }
 
@@ -311,7 +381,7 @@
 
     i {
       font-size: 1.1rem;
-      color: #4a90e2;
+      color: rgba(239, 68, 68, 1);
     }
 
     .tooltip-title {
@@ -382,17 +452,79 @@
   }
 }
 
+.timeline-title-icon {
+  font-size: 1.5rem;
+  color: rgba(239, 68, 68, 1);
+  vertical-align: middle;
+  margin-right: 0.25em;
+}
+
+@media (max-width: 1024px) {
+  .timeline-header {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+
+    .header-title {
+      grid-column: 1;
+    }
+
+    .week-info {
+      grid-column: 1;
+      justify-self: stretch;
+      justify-content: center;
+    }
+
+    .filter-controls {
+      grid-column: 1;
+      justify-self: stretch;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+
+      ::ng-deep p-select {
+        width: 100%;
+
+        .p-select {
+          width: 100% !important;
+        }
+      }
+    }
+  }
+}
+
 @media (max-width: 768px) {
   .timeline-header {
-    flex-direction: column;
-    align-items: stretch;
+    .header-title {
+      h3 {
+        font-size: 1.1rem;
+      }
 
-    .week-selector {
-      justify-content: center;
-      margin-top: 0.5rem;
+      .timeline-subtitle {
+        font-size: 0.85rem;
+      }
+    }
 
-      .week-info {
-        min-width: 120px;
+    .week-info {
+      padding: 0.6rem 0.6rem;
+
+      .week-display {
+        min-width: 100px;
+
+        .week-label {
+          font-size: 0.9rem;
+        }
+
+        .week-dates {
+          font-size: 0.7rem;
+        }
+      }
+
+      .week-nav-btn {
+        padding: 0.35rem 0.5rem;
+
+        i {
+          font-size: 0.8rem;
+        }
       }
     }
   }
@@ -460,24 +592,30 @@
   .timeline-header {
     .header-title {
       h3 {
-        font-size: 1.1rem;
+        font-size: 1rem;
       }
 
       .timeline-subtitle {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
       }
     }
-  }
 
-  .week-selector {
+    .filter-controls {
+      grid-template-columns: 1fr;
+    }
+
     .week-info {
-      .week-label {
-        font-size: 1rem;
-      }
-    }
+      .week-display {
+        min-width: 90px;
 
-    .week-nav-btn {
-      padding: 0.4rem 0.6rem;
+        .week-label {
+          font-size: 0.85rem;
+        }
+
+        .week-dates {
+          font-size: 0.65rem;
+        }
+      }
     }
   }
 }

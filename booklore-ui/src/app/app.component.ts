@@ -58,6 +58,11 @@ export class AppComponent implements OnInit, OnDestroy {
       )
     );
     this.subscriptions.push(
+      this.rxStompService.watch('/user/queue/books-cover-update').subscribe(msg =>
+        this.bookService.handleMultipleBookCoverPatches(JSON.parse(msg.body))
+      )
+    );
+    this.subscriptions.push(
       this.rxStompService.watch('/user/queue/books-remove').subscribe(msg =>
         this.bookService.handleRemovedBookIds(JSON.parse(msg.body))
       )

@@ -542,4 +542,148 @@ public class MetadataChangeDetectorTest {
         boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
         assertFalse(result, "Should return false when strings are equal after whitespace normalization");
     }
+
+    @Test
+    void testIsDifferent_whenAuthorsSetOrderChanges_returnsFalse() {
+        newMeta.setAuthors(Set.of("Author Two", "Author One"));
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false when only author order changes");
+    }
+
+    @Test
+    void testIsDifferent_whenAuthorsSetContentChanges_returnsTrue() {
+        newMeta.setAuthors(Set.of("Author One", "Author Three")); // Different author
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when author set content changes");
+    }
+
+    @Test
+    void testIsDifferent_whenCategoriesSetChanges_returnsTrue() {
+        newMeta.setCategories(Set.of("Fiction", "New Category"));
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when categories change");
+    }
+
+    @Test
+    void testIsDifferent_whenMoodsSetChanges_returnsTrue() {
+        newMeta.setMoods(Set.of("Dark", "New Mood"));
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when moods change");
+    }
+
+    @Test
+    void testIsDifferent_whenTagsSetChanges_returnsTrue() {
+        newMeta.setTags(Set.of("Thriller", "New Tag"));
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when tags change");
+    }
+
+    @Test
+    void testHasValueChanges_whenAuthorsSetOrderChanges_returnsFalse() {
+        newMeta.setAuthors(Set.of("Author Two", "Author One"));
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false when only author order changes");
+    }
+
+    @Test
+    void testHasValueChanges_whenMultipleCollectionsChange_returnsTrue() {
+        newMeta.setAuthors(Set.of("New Author"));
+        newMeta.setCategories(Set.of("New Category"));
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when multiple collections change");
+    }
+
+    @Test
+    void testHasValueChanges_whenEmptyStringToNull_returnsTrue() {
+        existingMeta.setTitle("");
+        newMeta.setTitle(null);
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true for empty string to null transition");
+    }
+
+    @Test
+    void testHasValueChanges_whenNullToEmptyString_returnsFalse() {
+        existingMeta.setTitle(null);
+        newMeta.setTitle("");
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false for null to empty string transition");
+    }
+
+    @Test
+    void testHasValueChanges_whenEmptySetToNull_returnsTrue() {
+        BookMetadataEntity testExisting = BookMetadataEntity.builder()
+                .bookId(1L)
+                .title("Test")
+                .authors(Set.of())
+                .authorsLocked(false)
+                .build();
+        BookMetadata testNew = BookMetadata.builder()
+                .bookId(1L)
+                .title("Test")
+                .authors(null)
+                .authorsLocked(false)
+                .build();
+        boolean result = MetadataChangeDetector.hasValueChanges(testNew, testExisting, clearFlags);
+        assertTrue(result, "Should return true for empty set to null transition");
+    }
+
+    @Test
+    void testHasValueChangesForFileWrite_whenTitleAndPageCountChange_onlyTitleTriggers() {
+        newMeta.setTitle("New Title");
+        newMeta.setPageCount(999);
+        boolean result = MetadataChangeDetector.hasValueChangesForFileWrite(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when title changes, even if pageCount also changes");
+    }
+
+    @Test
+    void testIsDifferent_whenOnlyLockChanges_noValueChange_returnsTrue() {
+        newMeta.setTitleLocked(true);
+        // Title value is same, only lock changes
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when only lock changes, even if value is same");
+    }
+
+    @Test
+    void testIsDifferent_whenCoverLockChanges_returnsTrue() {
+        newMeta.setCoverLocked(true);
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when cover lock changes");
+    }
+
+    @Test
+    void testIsDifferent_whenCoverLockUnchanged_returnsFalse() {
+        existingMeta.setCoverLocked(true);
+        newMeta.setCoverLocked(true);
+        boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false when cover lock unchanged");
+    }
+
+    @Test
+    void testHasValueChanges_whenStringWithWhitespaceChanges_returnsTrue() {
+        existingMeta.setTitle("Original Title");
+        newMeta.setTitle("  New Title  ");
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when normalized strings differ");
+    }
+
+    @Test
+    void testHasValueChanges_whenStringWhitespaceOnly_returnsFalse() {
+        existingMeta.setTitle("Original Title");
+        newMeta.setTitle("  Original Title  "); // Same after normalization
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false when strings are same after normalization");
+    }
+
+    @Test
+    void testHasValueChanges_whenFloatSeriesNumberChanges_returnsTrue() {
+        newMeta.setSeriesNumber(2.5f);
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertTrue(result, "Should return true when series number changes");
+    }
+
+    @Test
+    void testHasValueChanges_whenFloatSeriesNumberUnchanged_returnsFalse() {
+        boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
+        assertFalse(result, "Should return false when series number unchanged");
+    }
 }

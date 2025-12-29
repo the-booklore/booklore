@@ -118,4 +118,62 @@ class FileUtilsTest {
 
         assertFalse(Files.exists(dir));
     }
+
+    @Test
+    void testDeleteDirectoryRecursively_nonExistentPath() {
+        Path nonExistent = tempDir.resolve("doesNotExist");
+        assertDoesNotThrow(() -> FileUtils.deleteDirectoryRecursively(nonExistent));
+    }
+
+    @Test
+    void testShouldIgnore_hiddenFile_returnsTrue() {
+        Path hiddenFile = tempDir.resolve(".hidden");
+        assertTrue(FileUtils.shouldIgnore(hiddenFile));
+    }
+
+    @Test
+    void testShouldIgnore_hiddenDirectory_returnsTrue() {
+        Path hiddenDir = tempDir.resolve(".git");
+        assertTrue(FileUtils.shouldIgnore(hiddenDir));
+    }
+
+    @Test
+    void testShouldIgnore_normalFile_returnsFalse() {
+        Path normalFile = tempDir.resolve("normal.txt");
+        assertFalse(FileUtils.shouldIgnore(normalFile));
+    }
+
+    @Test
+    void testShouldIgnore_pathWithCaltrash_returnsTrue() {
+        Path caltrashPath = tempDir.resolve(".caltrash").resolve("file.txt");
+        assertTrue(FileUtils.shouldIgnore(caltrashPath));
+    }
+
+    @Test
+    void testShouldIgnore_pathWithCaltrashInSubdirectory_returnsTrue() {
+        Path caltrashPath = tempDir.resolve("subdir").resolve(".caltrash").resolve("file.txt");
+        assertTrue(FileUtils.shouldIgnore(caltrashPath));
+    }
+
+    @Test
+    void testShouldIgnore_pathWithoutCaltrash_returnsFalse() {
+        Path normalPath = tempDir.resolve("subdir").resolve("file.txt");
+        assertFalse(FileUtils.shouldIgnore(normalPath));
+    }
+
+    @Test
+    void testShouldIgnore_emptyFileName_returnsFalse() {
+        Path emptyPath = tempDir.resolve("");
+        assertFalse(FileUtils.shouldIgnore(emptyPath));
+    }
+
+    @Test
+    void testGetFileSizeInKb_validFile_returnsSize() throws IOException {
+        Path file = tempDir.resolve("test.txt");
+        Files.write(file, "test".getBytes());
+        
+        Long size = FileUtils.getFileSizeInKb(file);
+        assertNotNull(size, "File size should not be null for existing file");
+        assertTrue(size >= 0, "File size should be non-negative");
+    }
 }

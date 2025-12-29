@@ -177,16 +177,6 @@
           </div>
 
           @switch (chartConfig.id) {
-            @case ('readingStatus') {
-              <h3>Reading Status</h3>
-              <div class="chart-wrapper status-chart">
-                <canvas baseChart
-                        [data]="(readStatusChartService.statusChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readStatusChartService.statusChartOptions"
-                        [type]="readStatusChartService.statusChartType">
-                </canvas>
-              </div>
-            }
             @case ('bookFormats') {
               <h3>Book Formats</h3>
               <div class="chart-wrapper book-type-chart">
@@ -257,16 +247,6 @@
                 </canvas>
               </div>
             }
-            @case ('readingProgress') {
-              <h3>Reading Progress</h3>
-              <div class="chart-wrapper progress-chart">
-                <canvas baseChart
-                        [data]="(readingProgressChartService.progressChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingProgressChartService.progressChartOptions"
-                        [type]="readingProgressChartService.progressChartType">
-                </canvas>
-              </div>
-            }
             @case ('externalRating') {
               <h3>External Rating Distribution</h3>
               <div class="chart-wrapper rating-chart">
@@ -274,16 +254,6 @@
                         [data]="(bookRatingChartService.ratingChartData$ | async) ?? {labels: [], datasets: []}"
                         [options]="bookRatingChartService.ratingChartOptions"
                         [type]="bookRatingChartService.ratingChartType">
-                </canvas>
-              </div>
-            }
-            @case ('personalRating') {
-              <h3>Personal Rating Distribution</h3>
-              <div class="chart-wrapper personal-rating-chart">
-                <canvas baseChart
-                        [data]="(personalRatingChartService.personalRatingChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="personalRatingChartService.personalRatingChartOptions"
-                        [type]="personalRatingChartService.personalRatingChartType">
                 </canvas>
               </div>
             }
@@ -326,70 +296,6 @@
                         [type]="publicationYearChartService.yearChartType"
                         [plugins]="[ChartDataLabels]">
                 </canvas>
-              </div>
-            }
-            @case ('readingDNA') {
-              <h3>Your Reading DNA Profile</h3>
-              <div class="chart-description">
-                Discover your unique reading personality based on behavioral patterns and preferences
-              </div>
-              <div class="chart-wrapper reading-dna-chart">
-                <canvas baseChart
-                        [data]="(readingDNAChartService.readingDNAChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingDNAChartService.readingDNAChartOptions"
-                        [type]="readingDNAChartService.readingDNAChartType">
-                </canvas>
-              </div>
-              <div class="dna-insights">
-                @if ((readingDNAChartService.readingDNAChartData$ | async)?.datasets?.[0]?.data?.length) {
-                  <div class="insights-grid">
-                    @for (insight of readingDNAChartService.getPersonalityInsights(); track trackByTrait($index, insight)) {
-                      <div class="insight-card">
-                        <div class="insight-header">
-                          <div class="trait-dot" [style.background-color]="insight.color"></div>
-                          <span class="trait-name">{{ insight.trait }}</span>
-                          <span class="trait-score">{{ insight.score.toFixed(0) }}%</span>
-                        </div>
-                        <div class="insight-bar">
-                          <div class="insight-fill" [style.width.%]="insight.score" [style.background-color]="insight.color"></div>
-                        </div>
-                        <p class="insight-description">{{ insight.description }}</p>
-                      </div>
-                    }
-                  </div>
-                }
-              </div>
-            }
-            @case ('readingHabits') {
-              <h3>Reading Habits Analysis</h3>
-              <div class="chart-description">
-                Analyze your behavioral reading patterns, routines, and systematic approaches
-              </div>
-              <div class="chart-wrapper reading-habits-chart">
-                <canvas baseChart
-                        [data]="(readingHabitsChartService.readingHabitsChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingHabitsChartService.readingHabitsChartOptions"
-                        [type]="readingHabitsChartService.readingHabitsChartType">
-                </canvas>
-              </div>
-              <div class="dna-insights">
-                @if ((readingHabitsChartService.readingHabitsChartData$ | async)?.datasets?.[0]?.data?.length) {
-                  <div class="insights-grid">
-                    @for (habit of readingHabitsChartService.getHabitInsights(); track trackByHabit($index, habit)) {
-                      <div class="insight-card">
-                        <div class="insight-header">
-                          <div class="trait-dot" [style.background-color]="habit.color"></div>
-                          <span class="trait-name">{{ habit.habit }}</span>
-                          <span class="trait-score">{{ habit.score.toFixed(0) }}%</span>
-                        </div>
-                        <div class="insight-bar">
-                          <div class="insight-fill" [style.width.%]="habit.score" [style.background-color]="habit.color"></div>
-                        </div>
-                        <p class="insight-description">{{ habit.description }}</p>
-                      </div>
-                    }
-                  </div>
-                }
               </div>
             }
           }

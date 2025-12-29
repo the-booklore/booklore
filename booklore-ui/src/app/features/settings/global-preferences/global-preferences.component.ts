@@ -11,6 +11,7 @@ import {AppSettingKey, AppSettings, CoverCroppingSettings} from '../../../shared
 import {filter, take} from 'rxjs/operators';
 import {InputText} from 'primeng/inputtext';
 import {Slider} from 'primeng/slider';
+import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 
 @Component({
   selector: 'app-global-preferences',
@@ -20,7 +21,8 @@ import {Slider} from 'primeng/slider';
     ToggleSwitch,
     FormsModule,
     InputText,
-    Slider
+    Slider,
+    ExternalDocLinkComponent
   ],
   templateUrl: './global-preferences.component.html',
   styleUrl: './global-preferences.component.scss'
@@ -30,6 +32,7 @@ export class GlobalPreferencesComponent implements OnInit {
   toggles = {
     autoBookSearch: false,
     similarBookRecommendation: false,
+    enableTelemetry: true,
   };
 
   coverCroppingSettings: CoverCroppingSettings = {
@@ -63,6 +66,7 @@ export class GlobalPreferencesComponent implements OnInit {
       }
       this.toggles.autoBookSearch = settings.autoBookSearch ?? false;
       this.toggles.similarBookRecommendation = settings.similarBookRecommendation ?? false;
+      this.toggles.enableTelemetry = settings?.telemetryEnabled ?? true;
     });
   }
 
@@ -71,6 +75,7 @@ export class GlobalPreferencesComponent implements OnInit {
     const toggleKeyMap: Record<string, AppSettingKey> = {
       autoBookSearch: AppSettingKey.AUTO_BOOK_SEARCH,
       similarBookRecommendation: AppSettingKey.SIMILAR_BOOK_RECOMMENDATION,
+      enableTelemetry: AppSettingKey.TELEMETRY_ENABLED,
     };
     const keyToSend = toggleKeyMap[settingKey];
     if (keyToSend) {

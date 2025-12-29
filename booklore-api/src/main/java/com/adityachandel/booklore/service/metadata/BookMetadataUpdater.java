@@ -170,6 +170,8 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getGoodreadsReviewCountLocked(), clear.isGoodreadsReviewCount(), m.getGoodreadsReviewCount(), e::setGoodreadsReviewCount, e::getGoodreadsReviewCount, replaceMode);
         handleFieldUpdate(e.getHardcoverRatingLocked(), clear.isHardcoverRating(), m.getHardcoverRating(), e::setHardcoverRating, e::getHardcoverRating, replaceMode);
         handleFieldUpdate(e.getHardcoverReviewCountLocked(), clear.isHardcoverReviewCount(), m.getHardcoverReviewCount(), e::setHardcoverReviewCount, e::getHardcoverReviewCount, replaceMode);
+        handleFieldUpdate(e.getLubimyczytacIdLocked(), clear.isLubimyczytacId(), m.getLubimyczytacId(), v -> e.setLubimyczytacId(nullIfBlank(v)), e::getLubimyczytacId, replaceMode);
+        handleFieldUpdate(e.getLubimyczytacRatingLocked(), clear.isLubimyczytacRating(), m.getLubimyczytacRating(), e::setLubimyczytacRating, e::getLubimyczytacRating, replaceMode);
     }
 
     private <T> void handleFieldUpdate(Boolean locked, boolean shouldClear, T newValue, Consumer<T> setter, Supplier<T> getter, MetadataReplaceMode mode) {
@@ -356,7 +358,12 @@ public class BookMetadataUpdater {
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
-        fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        try {
+            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+        } catch (Exception ex) {
+            log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
+            // Don't rethrow - cover failures shouldn't roll back metadata updates
+        }
     }
 
     private void updateLocks(BookMetadata m, BookMetadataEntity e) {

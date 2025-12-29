@@ -2,13 +2,14 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.enums.PermissionType;
+import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.custom.UserRepositoryCustom;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long>,
 
     Optional<BookLoreUserEntity> findByEmail(String email);
 
-    Optional<BookLoreUserEntity> findById(Long id);
+    Optional<BookLoreUserEntity> findById(@NonNull Long id);
 
     /**
      * Find user by their immutable OIDC subject identifier.
@@ -30,4 +31,7 @@ public interface UserRepository extends JpaRepository<BookLoreUserEntity, Long>,
     List<BookLoreUserEntity> findAllByLibraries_Id(Long libraryId);
 
     List<BookLoreUserEntity> findByPermissions_PermissionTypeIn(Set<PermissionType> permissionTypes);
+
+    long countByProvisioningMethod(ProvisioningMethod provisioningMethod);
 }
+

@@ -74,6 +74,7 @@ public class BookMetadataService {
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
+    private final org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -269,8 +270,7 @@ public class BookMetadataService {
 
     public void regenerateCoversForBooks(Set<Long> bookIds) {
         List<BookRegenerationInfo> unlockedBooks = getUnlockedBookRegenerationInfos(bookIds);
-        SecurityContextVirtualThread.runWithSecurityContext(() -> 
-            processBulkCoverRegeneration(unlockedBooks));
+        SecurityContextVirtualThread.runWithSecurityContext(() -> processBulkCoverRegeneration(unlockedBooks));
     }
 
     private List<BookRegenerationInfo> getUnlockedBookRegenerationInfos(Set<Long> bookIds) {
@@ -286,18 +286,48 @@ public class BookMetadataService {
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Started regenerating covers for " + total + " selected book(s)"));
 
             int current = 1;
+            List<Long> refreshedIds = new ArrayList<>();
+
             for (BookRegenerationInfo bookInfo : books) {
                 try {
                     String progress = "(" + current + "/" + total + ") ";
                     notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + bookInfo.title()));
                     regenerateCoverForBookId(bookInfo);
                     log.info("{}Successfully regenerated cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
+
+                    refreshedIds.add(bookInfo.id());
                 } catch (Exception e) {
                     log.error("Failed to regenerate cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
                 }
                 pauseAfterBatchIfNeeded(current, total);
                 current++;
             }
+
+            List<Book> updatedBooks = new ArrayList<>();
+            if (!refreshedIds.isEmpty()) {
+                org.springframework.transaction.support.TransactionTemplate tx = new org.springframework.transaction.support.TransactionTemplate(transactionManager);
+
+                List<java.util.Map<String, Object>> refreshedPatches = tx.execute(status -> {
+                    List<BookEntity> entities = bookQueryService.findAllWithMetadataByIds(new java.util.HashSet<>(refreshedIds));
+                    if (entities == null || entities.isEmpty()) return List.<java.util.Map<String, Object>>of();
+
+                    entities.forEach(e -> {
+                        if (e.getMetadata() != null) e.getMetadata().getCoverUpdatedOn();
+                    });
+
+                    return entities.stream()
+                            .map(e -> java.util.Map.<String, Object>of(
+                                    "id", e.getId(),
+                                    "coverUpdatedOn", e.getMetadata() == null ? null : e.getMetadata().getCoverUpdatedOn()
+                            ))
+                            .toList();
+                });
+
+                if (refreshedPatches != null && !refreshedPatches.isEmpty()) {
+                    notificationService.sendMessage(Topic.BOOKS_COVER_UPDATE, refreshedPatches);
+                }
+            }
+
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished regenerating covers for selected books"));
         } catch (Exception e) {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
@@ -356,9 +386,12 @@ public class BookMetadataService {
         notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Regenerating cover for: " + title));
 
         BookFileProcessor processor = processorRegistry.getProcessorOrThrow(book.getBookType());
-        processor.generateCover(book);
+        boolean success = processor.generateCover(book);
+        log.info("{}regenerated cover regeneration for book ID {} ({}) finished with success={}", progress, book.getId(), title, success);
+        if (!success) {
+            throw ApiError.FAILED_TO_REGENERATE_COVER.createException();
+        }
 
-        log.info("{}Successfully regenerated cover for book ID {} ({})", progress, book.getId(), title);
     }
 
     public BookMetadata getComicInfoMetadata(long bookId) {
