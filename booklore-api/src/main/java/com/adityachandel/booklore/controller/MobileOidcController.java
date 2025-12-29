@@ -5,7 +5,6 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.service.RateLimitingService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.exception.APIException;
-import com.adityachandel.booklore.mapper.custom.BookLoreUserTransformer;
 import com.adityachandel.booklore.model.dto.settings.OidcAutoProvisionDetails;
 import com.adityachandel.booklore.model.dto.settings.OidcProviderDetails;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;

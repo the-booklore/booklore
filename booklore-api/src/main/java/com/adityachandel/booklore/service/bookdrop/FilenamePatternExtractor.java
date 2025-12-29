@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.PreDestroy;
 import java.time.LocalDate;
+import java.time.Year;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -26,6 +28,7 @@ import java.util.regex.PatternSyntaxException;
 @RequiredArgsConstructor
 public class FilenamePatternExtractor {
 
+    private static final Pattern PATTERN = Pattern.compile("[,;&]");
     private final BookdropFileRepository bookdropFileRepository;
     private final BookdropMetadataHelper metadataHelper;
     private final ExecutorService regexExecutor = Executors.newCachedThreadPool(runnable -> {
@@ -62,6 +65,8 @@ public class FilenamePatternExtractor {
     private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
     private static final Pattern TWO_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{2}");
     private static final Pattern COMPACT_DATE_PATTERN = Pattern.compile("\\d{8}");
+    private static final Pattern YEAR_MONTH_PATTERN = Pattern.compile("(\\d{4})([^\\d])(\\d{1,2})");
+    private static final Pattern MONTH_YEAR_PATTERN = Pattern.compile("(\\d{1,2})([^\\d])(\\d{4})");
     private static final Pattern FLEXIBLE_DATE_PATTERN = Pattern.compile("(\\d{1,4})([^\\d])(\\d{1,2})\\2(\\d{1,4})");
 
     @Transactional
@@ -426,7 +431,7 @@ public class FilenamePatternExtractor {
     }
 
     private Set<String> parseAuthors(String value) {
-        String[] parts = value.split("[,;&]");
+        String[] parts = PATTERN.split(value);
         Set<String> authors = new LinkedHashSet<>();
         for (String part : parts) {
             String trimmed = part.trim();
@@ -455,18 +460,32 @@ public class FilenamePatternExtractor {
         }
         
         try {
-            if ("yyyy".equals(detectedFormat) || "yy".equals(detectedFormat)) {
+            if ("yyyy".equals(detectedFormat)) {
+                Year year = Year.parse(value, DateTimeFormatter.ofPattern("yyyy"));
+                metadata.setPublishedDate(year.atMonthDay(java.time.MonthDay.of(1, 1)));
+                return;
+            }
+            
+            if ("yy".equals(detectedFormat)) {
                 int year = Integer.parseInt(value);
-                if ("yy".equals(detectedFormat) && year < 100) {
+                if (year < 100) {
                     year += (year < TWO_DIGIT_YEAR_CUTOFF) ? 2000 : TWO_DIGIT_YEAR_CENTURY_BASE;
                 }
                 metadata.setPublishedDate(LocalDate.of(year, 1, 1));
                 return;
             }
             
+            if (isYearMonthFormat(detectedFormat)) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
+                YearMonth yearMonth = YearMonth.parse(value, formatter);
+                metadata.setPublishedDate(yearMonth.atDay(1));
+                return;
+            }
+            
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
             LocalDate date = LocalDate.parse(value, formatter);
             metadata.setPublishedDate(date);
+            return;
         } catch (NumberFormatException e) {
             log.warn("Failed to parse year value '{}': {}", value, e.getMessage());
         } catch (DateTimeParseException e) {
@@ -494,6 +513,22 @@ public class FilenamePatternExtractor {
         
         if (length == COMPACT_DATE_LENGTH && COMPACT_DATE_PATTERN.matcher(trimmed).matches()) {
             return "yyyyMMdd";
+        }
+        
+        Matcher yearMonthMatcher = YEAR_MONTH_PATTERN.matcher(trimmed);
+        if (yearMonthMatcher.matches()) {
+            String separator = yearMonthMatcher.group(2);
+            String monthPart = yearMonthMatcher.group(3);
+            String monthFormat = monthPart.length() == 1 ? "M" : "MM";
+            return "yyyy" + separator + monthFormat;
+        }
+        
+        Matcher monthYearMatcher = MONTH_YEAR_PATTERN.matcher(trimmed);
+        if (monthYearMatcher.matches()) {
+            String monthPart = monthYearMatcher.group(1);
+            String separator = monthYearMatcher.group(2);
+            String monthFormat = monthPart.length() == 1 ? "M" : "MM";
+            return monthFormat + separator + "yyyy";
         }
         
         Matcher flexibleMatcher = FLEXIBLE_DATE_PATTERN.matcher(trimmed);
@@ -617,6 +652,13 @@ public class FilenamePatternExtractor {
         if (!filesToSave.isEmpty()) {
             bookdropFileRepository.saveAll(filesToSave);
         }
+    }
+    
+    private boolean isYearMonthFormat(String format) {
+        return format != null && 
+               (format.contains("y") || format.contains("Y")) &&
+               (format.contains("M")) &&
+               !(format.contains("d") || format.contains("D"));
     }
 
     private record PlaceholderConfig(String regex, String metadataField) {}
