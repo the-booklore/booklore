@@ -574,7 +574,7 @@
                 </p-splitbutton>
               }
             }
-            @if (userState.user!.permissions.canDeleteBook || userState.user!.permissions.admin) {
+            @if (userState.user!.permissions.canDeleteBook || userState.user!.permissions.canEmailBook || userState.user!.permissions.admin) {
               @if (otherItems$ | async; as otherItems) {
                 <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>

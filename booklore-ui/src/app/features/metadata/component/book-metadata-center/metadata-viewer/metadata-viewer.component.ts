@@ -169,22 +169,24 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         this.userService.userState$.pipe(
           take(1),
           map(userState => {
-            const items: MenuItem[] = [
-              {
+            const items: MenuItem[] = [];
+
+            if (userState?.user?.permissions.canEditMetadata || userState?.user?.permissions.admin) {
+              items.push({
                 label: 'Upload File',
                 icon: 'pi pi-upload',
                 command: () => {
                   this.bookDialogHelperService.openAdditionalFileUploaderDialog(book);
                 },
-              },
-              {
+              });
+              items.push({
                 label: 'Organize Files',
                 icon: 'pi pi-arrows-h',
                 command: () => {
                   this.openFileMoverDialog(book.id);
                 },
-              },
-            ];
+              });
+            }
 
             // Add Send Book submenu if user has permission
             if (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin) {
