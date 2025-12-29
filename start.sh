@@ -9,7 +9,7 @@ export BASE_PATH
 # Normalize BASE_PATH: ensure it starts with / (if not empty) and has no trailing /
 if [ -n "$BASE_PATH" ]; then
     # Remove trailing slashes
-    BASE_PATH="$(echo ${BASE_PATH} | sed 's:/*$::')"
+    BASE_PATH="$(echo "${BASE_PATH}" | sed 's:/*$::')"
     # Ensure leading slash
     if [ "${BASE_PATH#/}" = "$BASE_PATH" ]; then
         BASE_PATH="/$BASE_PATH"
