@@ -65,6 +65,7 @@ public class FilenamePatternExtractor {
     private static final Pattern TWO_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{2}");
     private static final Pattern COMPACT_DATE_PATTERN = Pattern.compile("\\d{8}");
     private static final Pattern YEAR_MONTH_PATTERN = Pattern.compile("(\\d{4})([^\\d])(\\d{1,2})");
+    private static final Pattern MONTH_YEAR_PATTERN = Pattern.compile("(\\d{1,2})([^\\d])(\\d{4})");
     private static final Pattern FLEXIBLE_DATE_PATTERN = Pattern.compile("(\\d{1,4})([^\\d])(\\d{1,2})\\2(\\d{1,4})");
 
     @Transactional
@@ -519,6 +520,14 @@ public class FilenamePatternExtractor {
             String monthPart = yearMonthMatcher.group(3);
             String monthFormat = monthPart.length() == 1 ? "M" : "MM";
             return "yyyy" + separator + monthFormat;
+        }
+        
+        Matcher monthYearMatcher = MONTH_YEAR_PATTERN.matcher(trimmed);
+        if (monthYearMatcher.matches()) {
+            String monthPart = monthYearMatcher.group(1);
+            String separator = monthYearMatcher.group(2);
+            String monthFormat = monthPart.length() == 1 ? "M" : "MM";
+            return monthFormat + separator + "yyyy";
         }
         
         Matcher flexibleMatcher = FLEXIBLE_DATE_PATTERN.matcher(trimmed);
