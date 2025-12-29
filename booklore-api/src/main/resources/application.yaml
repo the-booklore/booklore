@@ -48,7 +48,6 @@ booklore:
         # Default 1MB should be sufficient for most JWKS documents
         size-limit: ${OIDC_JWKS_SIZE_LIMIT:1048576}
         
-        # Previous default: 6h (too long for security-sensitive environments)
         # New default: 30m (balances security and performance)
         # For high-security environments, consider: cache-ttl: 15m, cache-refresh: 5m
         # How long to cache JWKS keys (Spring Duration format)
@@ -56,7 +55,6 @@ booklore:
         # How often to refresh JWKS cache (Spring Duration format)
         cache-refresh: ${OIDC_JWKS_CACHE_REFRESH:10m}
         
-        # SECURITY: Rate limiting enabled by default (changed from false)
         # Protects JWKS endpoint from flooding attacks
         # Safe to enable even for internal networks
         rate-limit-enabled: ${OIDC_JWKS_RATE_LIMIT_ENABLED:true}
