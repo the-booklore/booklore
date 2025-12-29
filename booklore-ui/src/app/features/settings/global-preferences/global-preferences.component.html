@@ -213,5 +213,33 @@
         </div>
       </div>
     </div>
+
+    <!-- Telemetry Setting Section -->
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-chart-bar"></i>
+          Telemetry
+          <app-external-doc-link docType="telemetry"></app-external-doc-link>
+        </h3>
+      </div>
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">Enable Telemetry</label>
+              <p-toggleswitch
+                [(ngModel)]="toggles.enableTelemetry"
+                (onChange)="onToggleChange('enableTelemetry', $event.checked)">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              Help improve Booklore by sharing anonymous usage statistics. This data lets the developers see which features are most used, identify bugs, and spot performance issues so they know what to work on next. No personal information, book content, or any identifiable data is ever sent. Data
+              is sent to the Booklore server automatically once every 24 hours. It’s completely safe and very helpful to the developers. </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
