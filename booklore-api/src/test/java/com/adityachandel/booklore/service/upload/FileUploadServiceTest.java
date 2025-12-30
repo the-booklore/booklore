@@ -208,6 +208,9 @@ class FileUploadServiceTest {
         when(libraryRepository.findById(7L)).thenReturn(Optional.of(lib));
         when(fileMovingHelper.getFileNamingPattern(lib)).thenReturn("{currentFilename}");
 
+        BookMetadata metadata = BookMetadata.builder().title("book").build();
+        when(metadataExtractorFactory.extractMetadata(any(BookFileExtension.class), any(File.class))).thenReturn(metadata);
+
         service.uploadFile(file, 7L, 2L);
 
         Path moved = tempDir.resolve("book.cbz");

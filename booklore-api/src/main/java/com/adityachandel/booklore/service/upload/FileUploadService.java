@@ -66,7 +66,7 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final BookFileExtension fileExtension = getFileExtension(originalFileName);
-            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile());
+            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
@@ -174,7 +174,12 @@ public class FileUploadService {
     }
 
     private Path createTempFile(String prefix, String fileName) throws IOException {
-        return Files.createTempFile(prefix, fileName);
+        String suffix = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex >= 0) {
+            suffix = fileName.substring(lastDotIndex);
+        }
+        return Files.createTempFile(prefix, suffix);
     }
 
     private void validateFinalPath(Path finalPath) {
@@ -225,8 +230,102 @@ public class FileUploadService {
         }
     }
 
-    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) {
-        return metadataExtractorFactory.extractMetadata(fileExt, file);
+    private BookMetadata extractMetadata(BookFileExtension fileExt, File file, String originalFileName) {
+        BookMetadata metadata = metadataExtractorFactory.extractMetadata(fileExt, file);
+
+        // If the metadata title is the same as the temporary file's base name (which happens
+        // when CBX files have no embedded metadata), use the original filename as the title instead
+        String tempFileBaseName = java.nio.file.Paths.get(file.getName()).getFileName().toString();
+        int lastDotIndex = tempFileBaseName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            tempFileBaseName = tempFileBaseName.substring(0, lastDotIndex);
+        }
+
+        String originalFileBaseName = originalFileName;
+        lastDotIndex = originalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            originalFileBaseName = originalFileName.substring(0, lastDotIndex);
+        }
+
+        if (metadata.getTitle() != null && (metadata.getTitle().equals(tempFileBaseName) || metadata.getTitle().startsWith(UPLOAD_TEMP_PREFIX))) {
+            return BookMetadata.builder()
+                    .bookId(metadata.getBookId())
+                    .title(originalFileBaseName)
+                    .subtitle(metadata.getSubtitle())
+                    .publisher(metadata.getPublisher())
+                    .publishedDate(metadata.getPublishedDate())
+                    .description(metadata.getDescription())
+                    .seriesName(metadata.getSeriesName())
+                    .seriesNumber(metadata.getSeriesNumber())
+                    .seriesTotal(metadata.getSeriesTotal())
+                    .isbn13(metadata.getIsbn13())
+                    .isbn10(metadata.getIsbn10())
+                    .pageCount(metadata.getPageCount())
+                    .language(metadata.getLanguage())
+                    .asin(metadata.getAsin())
+                    .amazonRating(metadata.getAmazonRating())
+                    .amazonReviewCount(metadata.getAmazonReviewCount())
+                    .goodreadsId(metadata.getGoodreadsId())
+                    .comicvineId(metadata.getComicvineId())
+                    .goodreadsRating(metadata.getGoodreadsRating())
+                    .goodreadsReviewCount(metadata.getGoodreadsReviewCount())
+                    .hardcoverId(metadata.getHardcoverId())
+                    .hardcoverBookId(metadata.getHardcoverBookId())
+                    .hardcoverRating(metadata.getHardcoverRating())
+                    .hardcoverReviewCount(metadata.getHardcoverReviewCount())
+                    .doubanId(metadata.getDoubanId())
+                    .doubanRating(metadata.getDoubanRating())
+                    .doubanReviewCount(metadata.getDoubanReviewCount())
+                    .lubimyczytacRating(metadata.getLubimyczytacRating())
+                    .googleId(metadata.getGoogleId())
+                    .lubimyczytacId(metadata.getLubimyczytacId())
+                    .coverUpdatedOn(metadata.getCoverUpdatedOn())
+                    .authors(metadata.getAuthors())
+                    .categories(metadata.getCategories())
+                    .moods(metadata.getMoods())
+                    .tags(metadata.getTags())
+                    .provider(metadata.getProvider())
+                    .thumbnailUrl(metadata.getThumbnailUrl())
+                    .bookReviews(metadata.getBookReviews())
+                    .titleLocked(metadata.getTitleLocked())
+                    .subtitleLocked(metadata.getSubtitleLocked())
+                    .publisherLocked(metadata.getPublisherLocked())
+                    .publishedDateLocked(metadata.getPublishedDateLocked())
+                    .descriptionLocked(metadata.getDescriptionLocked())
+                    .seriesNameLocked(metadata.getSeriesNameLocked())
+                    .seriesNumberLocked(metadata.getSeriesNumberLocked())
+                    .seriesTotalLocked(metadata.getSeriesTotalLocked())
+                    .isbn13Locked(metadata.getIsbn13Locked())
+                    .isbn10Locked(metadata.getIsbn10Locked())
+                    .asinLocked(metadata.getAsinLocked())
+                    .goodreadsIdLocked(metadata.getGoodreadsIdLocked())
+                    .comicvineIdLocked(metadata.getComicvineIdLocked())
+                    .hardcoverIdLocked(metadata.getHardcoverIdLocked())
+                    .hardcoverBookIdLocked(metadata.getHardcoverBookIdLocked())
+                    .doubanIdLocked(metadata.getDoubanIdLocked())
+                    .googleIdLocked(metadata.getGoogleIdLocked())
+                    .pageCountLocked(metadata.getPageCountLocked())
+                    .languageLocked(metadata.getLanguageLocked())
+                    .amazonRatingLocked(metadata.getAmazonRatingLocked())
+                    .amazonReviewCountLocked(metadata.getAmazonReviewCountLocked())
+                    .goodreadsRatingLocked(metadata.getGoodreadsRatingLocked())
+                    .goodreadsReviewCountLocked(metadata.getGoodreadsReviewCountLocked())
+                    .hardcoverRatingLocked(metadata.getHardcoverRatingLocked())
+                    .hardcoverReviewCountLocked(metadata.getHardcoverReviewCountLocked())
+                    .doubanRatingLocked(metadata.getDoubanRatingLocked())
+                    .doubanReviewCountLocked(metadata.getDoubanReviewCountLocked())
+                    .lubimyczytacIdLocked(metadata.getLubimyczytacIdLocked())
+                    .lubimyczytacRatingLocked(metadata.getLubimyczytacRatingLocked())
+                    .coverLocked(metadata.getCoverLocked())
+                    .authorsLocked(metadata.getAuthorsLocked())
+                    .categoriesLocked(metadata.getCategoriesLocked())
+                    .moodsLocked(metadata.getMoodsLocked())
+                    .tagsLocked(metadata.getTagsLocked())
+                    .reviewsLocked(metadata.getReviewsLocked())
+                    .build();
+        }
+
+        return metadata;
     }
 
     private void validateFile(MultipartFile file) {
