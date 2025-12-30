@@ -50,13 +50,10 @@ public class BookMetadata {
     private Double ranobedbRating;
     private String externalUrl;
     private Instant coverUpdatedOn;
-    @Singular
     private Set<String> authors;
     @Singular
     private Set<String> categories;
-    @Singular
     private Set<String> moods;
-    @Singular
     private Set<String> tags;
     private MetadataProvider provider;
     private String thumbnailUrl;
