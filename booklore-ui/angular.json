@@ -97,8 +97,7 @@
               "buildTarget": "booklore:build:production"
             },
             "development": {
-              "buildTarget": "booklore:build:development",
-              "proxyConfig": "proxy.conf.json"
+              "buildTarget": "booklore:build:development"
             }
           },
           "defaultConfiguration": "development"
