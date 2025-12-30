@@ -84,12 +84,12 @@ export class UserStatsService {
   }
 
   getFavoriteDays(year?: number, month?: number): Observable<FavoriteDaysResponse[]> {
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<FavoriteDaysResponse[]>(
@@ -99,12 +99,12 @@ export class UserStatsService {
   }
 
   getPeakHours(year?: number, month?: number): Observable<PeakHoursResponse[]> {
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<PeakHoursResponse[]>(

@@ -4,7 +4,7 @@ import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operato
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
-import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
+import {ChartConfiguration, ChartData, ChartType, TooltipItem} from 'chart.js';
 
 interface AuthorStats {
   author: string;
@@ -218,8 +218,9 @@ export class AuthorPopularityChartService implements OnDestroy {
     return this.processAuthorStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return s?.loaded && s?.books && Array.isArray(s.books) && s.books.length > 0;
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
@@ -290,7 +291,7 @@ export class AuthorPopularityChartService implements OnDestroy {
     })).filter(stat => stat.bookCount > 0);
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const stats = this.getLastCalculatedStats();
 

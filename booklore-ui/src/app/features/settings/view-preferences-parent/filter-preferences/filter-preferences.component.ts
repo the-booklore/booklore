@@ -60,7 +60,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
     this.selectedFilterSortingMode = settings.filterSortingMode ?? 'alphabetical';
   }
 
-  private updatePreference(path: string[], value: any): void {
+  private updatePreference(path: string[], value: unknown): void {
     if (!this.currentUser) return;
 
     let target: any = this.currentUser.userSettings;

@@ -192,7 +192,7 @@ export class TopCategoriesChartService implements OnDestroy {
     this.updateChartData(stats);
   }
 
-  private isValidBookState(state: any): boolean {
+  private isValidBookState(state: unknown): boolean {
     return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
   }
 

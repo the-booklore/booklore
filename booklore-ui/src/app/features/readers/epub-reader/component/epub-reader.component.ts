@@ -1,13 +1,14 @@
 import {Component, ElementRef, inject, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
-import ePub from 'epubjs';
+import ePub, { Book as EpubBook, Location as EpubLocation, Rendition, TocItem } from 'epubjs';
 import {Drawer} from 'primeng/drawer';
+
 import {forkJoin, Subscription} from 'rxjs';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {CommonModule, Location} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {ActivatedRoute} from '@angular/router';
-import {Book, BookSetting} from '../../../book/model/book.model';
+import {Book, BookSetting, EpubViewerSetting} from '../../../book/model/book.model';
 import {BookService} from '../../../book/service/book.service';
 import {Select} from 'primeng/select';
 import {UserService} from '../../../settings/user-management/user.service';
@@ -17,6 +18,7 @@ import {BookMark, BookMarkService, UpdateBookMarkRequest} from '../../../../shar
 import {Tooltip} from 'primeng/tooltip';
 import {Slider} from 'primeng/slider';
 import {FALLBACK_EPUB_SETTINGS, getChapter} from '../epub-reader-helper';
+
 import {ReadingSessionService} from '../../../../shared/service/reading-session.service';
 import {EpubTheme, EpubThemeUtil} from '../epub-theme-util';
 import {PageTitleService} from "../../../../shared/service/page-title.service";
@@ -69,9 +71,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   editingBookmark: BookMark | null = null;
   showEditBookmarkDialog = false;
 
-  private book: any;
-  private rendition: any;
-  private keyListener: (e: KeyboardEvent) => void = () => {
+  private epubInstance: EpubBook | null = null;
+  private rendition: Rendition | null = null;
+  private keyListener: (event: KeyboardEvent | unknown) => void = () => {
+    // Key listener implementation - currently empty but may be populated later
   };
 
   fontSize?: number = 100;
@@ -82,7 +85,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   lineHeight?: number;
   letterSpacing?: number;
 
-  fontTypes: any[] = [
+  fontTypes: unknown[] = [
     {label: "Publisher's Default", value: null},
     {label: 'Serif', value: 'serif'},
     {label: 'Sans Serif', value: 'sans-serif'},
@@ -91,7 +94,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     {label: 'Monospace', value: 'monospace'},
   ];
 
-  themes: any[] = [
+  themes: { label: string; value: string }[] = [
     {label: 'White', value: EpubTheme.WHITE},
     {label: 'Black', value: EpubTheme.BLACK},
     {label: 'Grey', value: EpubTheme.GREY},
@@ -143,10 +146,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
           this.pageTitle.setBookPageTitle(epub);
 
           fileReader.onload = () => {
-            this.book = ePub(fileReader.result as ArrayBuffer);
+            this.epubInstance = ePub(fileReader.result as ArrayBuffer);
 
-            this.book.loaded.navigation.then((nav: any) => {
-              this.chapters = this.extractChapters(nav.toc, 0);
+            this.epubInstance?.loaded.navigation.then((nav: { toc: TocItem[] }) => {
+              this.chapters = this.extractChapters(nav.toc || [], 0);
             });
 
             const settingScope = myself.userSettings.perBookSetting.epub;
@@ -168,7 +171,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
             if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
-            this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+            this.rendition = this.epubInstance!.renderTo(this.epubContainer.nativeElement, {
               flow: this.selectedFlow ?? 'paginated',
               manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
               width: '100%',
@@ -177,32 +180,32 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
               allowScriptedContent: true,
             });
 
-            const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') || {};
+            const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') as Record<string, unknown> || {};
             const combinedTheme = {
               ...baseTheme,
               body: {
-                ...baseTheme.body,
+                ...((baseTheme as any).body || {}),
                 ...(this.selectedFontType ? {'font-family': this.selectedFontType} : {}),
                 ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
                 ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
               },
               '*': {
-                ...baseTheme['*'],
+                ...((baseTheme as any)['*'] || {}),
                 ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
                 ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
               },
             };
 
-            this.rendition.themes.override('font-size', `${this.fontSize}%`);
-            this.rendition.themes.register('custom', combinedTheme);
-            this.rendition.themes.select('custom');
+            this.rendition!.themes.override('font-size', `${this.fontSize}%`);
+            this.rendition!.themes.register('custom', combinedTheme);
+            this.rendition!.themes.select('custom');
 
             const displayPromise = this.epub?.epubProgress?.cfi
-              ? this.rendition.display(this.epub.epubProgress.cfi)
-              : this.rendition.display();
+              ? this.rendition!.display(this.epub.epubProgress.cfi)
+              : this.rendition!.display();
 
             displayPromise.then(() => {
-              this.updateCurrentChapter(this.rendition.currentLocation());
+              this.updateCurrentChapter(this.rendition?.currentLocation() || null);
               this.setupKeyListener();
               this.trackProgress();
               this.setupTouchListener();
@@ -263,12 +266,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   changeScrollMode(): void {
-    if (!this.rendition || !this.book) return;
+    if (!this.rendition || !this.epubInstance) return;
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     this.rendition.destroy();
 
-    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+    this.rendition = this.epubInstance.renderTo(this.epubContainer.nativeElement, {
       flow: this.selectedFlow,
       manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
       width: '100%',
@@ -285,12 +288,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   changeSpreadMode(): void {
-    if (!this.rendition || !this.book || this.selectedFlow === 'scrolled' || this.isMobileDevice()) return;
+    if (!this.rendition || !this.epubInstance || this.selectedFlow === 'scrolled' || this.isMobileDevice()) return;
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     this.rendition.destroy();
 
-    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+    this.rendition = this.epubInstance.renderTo(this.epubContainer.nativeElement, {
       flow: this.selectedFlow,
       manager: 'default',
       width: '100%',
@@ -312,6 +315,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   private applyCombinedTheme(): void {
+    if (!this.rendition) return;
     EpubThemeUtil.applyTheme(
       this.rendition,
       this.selectedTheme ?? 'white',
@@ -351,7 +355,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   private updateViewerSetting(): void {
-    const epubSettings: any = {};
+    const epubSettings: Partial<EpubViewerSetting> = {};
 
     if (this.selectedTheme) epubSettings.theme = this.selectedTheme;
     if (this.selectedFontType) epubSettings.font = this.selectedFontType;
@@ -362,14 +366,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (this.letterSpacing) epubSettings.letterSpacing = this.letterSpacing;
 
     const bookSetting: BookSetting = {
-      epubSettings: epubSettings
+      epubSettings: epubSettings as EpubViewerSetting
     };
 
     this.bookService.updateViewerSetting(bookSetting, this.epub.id).subscribe();
   }
 
   private setupKeyListener(): void {
-    this.keyListener = (e: KeyboardEvent) => {
+    this.keyListener = (e: KeyboardEvent | unknown) => {
+      if (!(e instanceof KeyboardEvent)) return;
       switch (e.key) {
         case 'ArrowLeft':
           this.prevPage();
@@ -409,7 +414,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   prevPage(): void {
     if (this.rendition) {
       this.rendition.prev().then(() => {
-        const location = this.rendition.currentLocation();
+        const location = this.rendition?.currentLocation();
         this.readingSessionService.updateProgress(
           location?.start?.cfi,
           this.progressPercentage
@@ -421,7 +426,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   nextPage(): void {
     if (this.rendition) {
       this.rendition.next().then(() => {
-        const location = this.rendition.currentLocation();
+        const location = this.rendition?.currentLocation();
         this.readingSessionService.updateProgress(
           location?.start?.cfi,
           this.progressPercentage
@@ -431,9 +436,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   navigateToChapter(chapter: { label: string; href: string; level: number }): void {
-    if (this.book && chapter.href) {
-      this.book.rendition.display(chapter.href).then(() => {
-        const location = this.rendition.currentLocation();
+    if (this.epubInstance && chapter.href) {
+      this.epubInstance.rendition.display(chapter.href).then(() => {
+        const location = this.rendition?.currentLocation();
         this.readingSessionService.updateProgress(
           location?.start?.cfi,
           this.progressPercentage
@@ -465,22 +470,22 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   private trackProgress(): void {
-    if (!this.book || !this.rendition) return;
-    this.rendition.on('relocated', (location: any) => {
+    if (!this.epubInstance || !this.rendition) return;
+    this.rendition.on('relocated', (location: EpubLocation) => {
       this.updateCurrentChapter(location);
       const cfi = location.end.cfi;
       this.currentCfi = location.start.cfi;
       this.updateBookmarkStatus();
       const currentIndex = location.start.index;
-      const totalSpineItems = this.book.spine.items.length;
+      const totalSpineItems = this.epubInstance?.spine?.items?.length || 0;
       let percentage: number;
 
-      if (this.locationsReady && this.book.locations.total > 0) {
-        percentage = this.book.locations.percentageFromCfi(cfi);
+      if (this.locationsReady && this.epubInstance && this.epubInstance.locations.total > 0) {
+        percentage = this.epubInstance.locations.percentageFromCfi(cfi);
         this.exactProgress = Math.round(percentage * 1000) / 10;
         this.progressPercentage = Math.round(percentage * 1000) / 10;
       } else {
-        if (totalSpineItems > 0) {
+        if (totalSpineItems > 0 && currentIndex !== undefined) {
           percentage = (currentIndex + 1) / totalSpineItems;
         } else {
           percentage = 0;
@@ -497,21 +502,22 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       );
     });
 
-    this.book.ready.then(() => {
-      return this.book.locations.generate(1600);
+    this.epubInstance?.ready.then(() => {
+      return this.epubInstance?.locations?.generate(1600);
     }).then(() => {
       this.locationsReady = true;
-      if (this.rendition.currentLocation()) {
-        const location = this.rendition.currentLocation();
+      const location = this.rendition?.currentLocation();
+      if (location) {
         const cfi = location.end.cfi;
-        const percentage = this.book.locations.percentageFromCfi(cfi);
-        this.progressPercentage = Math.round(percentage * 1000) / 10;
-
+        const percentage = this.epubInstance?.locations?.percentageFromCfi(cfi);
+        if (percentage !== undefined) {
+          this.progressPercentage = Math.round(percentage * 1000) / 10;
+        }
         this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
       }
     }).catch(() => {
       this.locationsReady = false;
-      const location = this.rendition.currentLocation();
+      const location = this.rendition?.currentLocation();
       if (location) {
         this.readingSessionService.startSession(this.epub.id, "EPUB", location.start.cfi, this.progressPercentage);
       }
@@ -661,24 +667,24 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateCurrentChapter(location: any): void {
-    if (!location) return;
-    const chapter = getChapter(this.book, location);
+  private updateCurrentChapter(location: EpubLocation | null): void {
+    if (!location || !this.epubInstance) return;
+    const chapter = getChapter(this.epubInstance, location);
     if (chapter) {
       if (chapter.label) {
         this.currentChapter = chapter.label;
       }
-      this.currentChapterHref = chapter.href;
+      this.currentChapterHref = chapter.href || null;
     }
   }
 
-  private extractChapters(toc: any[], level: number): { label: string; href: string; level: number }[] {
+  private extractChapters(toc: TocItem[], level: number): { label: string; href: string; level: number }[] {
     const chapters: { label: string; href: string; level: number }[] = [];
 
     for (const item of toc) {
       chapters.push({
-        label: item.label,
-        href: item.href,
+        label: item.label || '',
+        href: item.href || '',
         level: level
       });
 
@@ -768,8 +774,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
   navigateToBookmark(bookmark: BookMark): void {
     if (this.rendition && bookmark.cfi) {
-      this.rendition.display(bookmark.cfi).then(() => {
-        const location = this.rendition.currentLocation();
+      this.rendition?.display(bookmark.cfi).then(() => {
+        const location = this.rendition?.currentLocation();
         this.readingSessionService.updateProgress(
           location?.start?.cfi,
           this.progressPercentage

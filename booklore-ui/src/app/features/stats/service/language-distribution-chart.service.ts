@@ -1,7 +1,7 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {ChartConfiguration, ChartData, Chart, TooltipItem} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
@@ -154,8 +154,9 @@ export class LanguageDistributionChartService implements OnDestroy {
     return this.processLanguageStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return s?.loaded && s?.books && Array.isArray(s.books) && s.books.length > 0;
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | null): Book[] {
@@ -246,7 +247,7 @@ export class LanguageDistributionChartService implements OnDestroy {
       .sort((a, b) => b.count - a.count);
   }
 
-  private generateLegendLabels(chart: any) {
+  private generateLegendLabels(chart: Chart) {
     const data = chart.data;
     if (!data.labels?.length || !data.datasets?.[0]?.data?.length) {
       return [];
@@ -255,13 +256,13 @@ export class LanguageDistributionChartService implements OnDestroy {
     const dataset = data.datasets[0];
     const dataValues = dataset.data as number[];
 
-    return data.labels.map((label: string, index: number) => {
+    return data.labels.map((label: unknown, index: number) => {
       const isVisible = typeof chart.getDataVisibility === 'function'
         ? chart.getDataVisibility(index)
-        : !((chart.getDatasetMeta && chart.getDatasetMeta(0)?.data?.[index]?.hidden) || false);
+        : !((chart.getDatasetMeta && (chart.getDatasetMeta(0)?.data?.[index] as any)?.hidden) || false);
 
       return {
-        text: `${label} (${dataValues[index]})`,
+        text: `${String(label)} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
         strokeStyle: '#ffffff',
         lineWidth: 1,
@@ -272,7 +273,7 @@ export class LanguageDistributionChartService implements OnDestroy {
     });
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const dataset = context.dataset;
     const value = dataset.data[dataIndex] as number;

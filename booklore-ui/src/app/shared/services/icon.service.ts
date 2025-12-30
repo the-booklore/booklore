@@ -105,7 +105,7 @@ export class IconService {
     });
   }
 
-  deleteSvgIcon(svgName: string): Observable<any> {
+  deleteSvgIcon(svgName: string): Observable<unknown> {
     return this.http.delete(`${this.baseUrl}/${encodeURIComponent(svgName)}`).pipe(
       tap(() => {
         this.iconCache.removeIcon(svgName);

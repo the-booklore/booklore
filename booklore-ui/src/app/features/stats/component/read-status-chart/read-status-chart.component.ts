@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {ChartConfiguration, ChartData, Chart, TooltipItem} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book, ReadStatus} from '../../../book/model/book.model';
 
@@ -209,7 +209,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     return STATUS_MAPPING[status] ?? 'No Status';
   }
 
-  private generateLegendLabels(chart: any) {
+  private generateLegendLabels(chart: Chart) {
     const data = chart.data;
     if (!data.labels?.length || !data.datasets?.[0]?.data?.length) {
       return [];
@@ -218,13 +218,13 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     const dataset = data.datasets[0];
     const dataValues = dataset.data as number[];
 
-    return data.labels.map((label: string, index: number) => {
+    return data.labels.map((label: unknown, index: number) => {
       const isVisible = typeof chart.getDataVisibility === 'function'
         ? chart.getDataVisibility(index)
-        : !((chart.getDatasetMeta && chart.getDatasetMeta(0)?.data?.[index]?.hidden) || false);
+        : !((chart.getDatasetMeta && (chart.getDatasetMeta(0)?.data?.[index] as any)?.hidden) || false);
 
       return {
-        text: `${label} (${dataValues[index]})`,
+        text: `${String(label)} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
         strokeStyle: '#ffffff',
         lineWidth: 1,
@@ -235,7 +235,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     });
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const dataset = context.dataset;
     const value = dataset.data[dataIndex] as number;

@@ -1,7 +1,7 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
-import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
+import {ChartConfiguration, ChartData, ChartType, Chart, TooltipItem} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
@@ -154,8 +154,9 @@ export class BookTypeChartService implements OnDestroy {
     this.updateChartData(stats);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return s?.loaded && s?.books && Array.isArray(s.books) && s.books.length > 0;
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | null): Book[] {
@@ -205,7 +206,7 @@ export class BookTypeChartService implements OnDestroy {
     return TYPE_MAPPING[type] || type;
   }
 
-  private generateLegendLabels(chart: any) {
+  private generateLegendLabels(chart: Chart) {
     const data = chart.data;
     if (!data.labels?.length || !data.datasets?.[0]?.data?.length) {
       return [];
@@ -214,8 +215,8 @@ export class BookTypeChartService implements OnDestroy {
     const dataset = data.datasets[0];
     const dataValues = dataset.data as number[];
 
-    return data.labels.map((label: string, index: number) => ({
-      text: `${label} (${dataValues[index]})`,
+    return data.labels.map((label: unknown, index: number) => ({
+      text: `${String(label)} (${dataValues[index]})`,
       fillStyle: (dataset.backgroundColor as string[])[index],
       strokeStyle: '#ffffff',
       lineWidth: 1,
@@ -225,7 +226,7 @@ export class BookTypeChartService implements OnDestroy {
     }));
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const dataset = context.dataset;
     const value = dataset.data[dataIndex] as number;

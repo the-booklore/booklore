@@ -129,7 +129,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   entityType$: Observable<EntityType> | undefined;
   searchTerm$ = new BehaviorSubject<string>('');
   parsedFilters: Record<string, string[]> = {};
-  selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
+  selectedFilter = new BehaviorSubject<Record<string, unknown> | null>(null);
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
@@ -193,17 +193,21 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (filterEntries.length === 1) {
       const [filterType, values] = filterEntries[0];
       const filterName = FilterLabelHelper.getFilterTypeName(filterType);
+      const valuesArray = Array.isArray(values) ? values : [];
 
-      if (values.length === 1) {
-        const displayValue = FilterLabelHelper.getFilterDisplayValue(filterType, values[0]);
+      if (valuesArray.length === 1) {
+        const displayValue = FilterLabelHelper.getFilterDisplayValue(filterType, valuesArray[0]);
         return `${filterName}: ${displayValue}`;
       }
 
-      return `${filterName} (${values.length})`;
+      return `${filterName} (${valuesArray.length})`;
     }
 
     const filterSummary = filterEntries
-      .map(([type, values]) => `${FilterLabelHelper.getFilterTypeName(type)} (${values.length})`)
+      .map(([type, values]) => {
+        const valuesArray = Array.isArray(values) ? values : [];
+        return `${FilterLabelHelper.getFilterTypeName(type)} (${valuesArray.length})`;
+      })
       .join(', ');
 
     return filterSummary.length > 50
@@ -372,7 +376,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.applySortOption(this.bookSorter.selectedSort);
       }
 
-      const queryParams: any = {
+      const queryParams: Record<string, string | null> = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
         [QUERY_PARAMS.SORT]: this.bookSorter.selectedSort.field,
         [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING,
@@ -380,7 +384,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       };
 
       if (Object.keys(parsedFilters).length > 0) {
-        queryParams[QUERY_PARAMS.FILTER] = Object.entries(parsedFilters).map(([k, v]) => `${k}:${v.join('|')}`).join(',');
+        queryParams[QUERY_PARAMS.FILTER] = Object.entries(parsedFilters).map(([k, v]) => `${k}:${Array.isArray(v) ? v.join('|') : v}`).join(',');
       }
 
       const currentParams = this.activatedRoute.snapshot.queryParams;
@@ -407,7 +411,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onFilterSelected(filters: Record<string, any> | null): void {
+  onFilterSelected(filters: Record<string, unknown> | null): void {
     if (this.settingFiltersFromUrl) return;
 
     this.selectedFilter.next(filters);
@@ -416,7 +420,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     const hasSidebarFilters = !!filters && Object.keys(filters).length > 0;
     this.currentFilterLabel = hasSidebarFilters ? this.computedFilterLabel : 'All Books';
 
-    const queryParam = hasSidebarFilters ? Object.entries(filters).map(([k, v]) => `${k}:${v.join('|')}`).join(',') : null;
+    const queryParam = hasSidebarFilters ? Object.entries(filters).map(([k, v]) => {
+      const valuesArray = Array.isArray(v) ? v : [v];
+      return `${k}:${valuesArray.join('|')}`;
+    }).join(',') : null;
     if (queryParam !== this.activatedRoute.snapshot.queryParamMap.get(QUERY_PARAMS.FILTER)) {
       this.router.navigate([], {
         relativeTo: this.activatedRoute,
@@ -433,7 +440,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.selectedFilterMode.next(mode);
 
     // Clear filters if switching from multiple selected to single mode
-    const params: any = {[QUERY_PARAMS.FMODE]: mode};
+    const params: Record<string, string | null> = {[QUERY_PARAMS.FMODE]: mode};
     if (mode === 'single') {
       const categories = Object.keys(this.parsedFilters);
       if (categories.length > 1 || (categories.length == 1 && this.parsedFilters[categories[0]].length > 1)) {
@@ -458,9 +465,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.coverScalePreferenceService.setScale(this.coverScalePreferenceService.scaleFactor);
   }
 
-  onVisibleColumnsChange(selected: any[]) {
+  onVisibleColumnsChange(selected: unknown[]) {
     const allFields = this.bookTableComponent.allColumns.map(col => col.field);
-    this.visibleColumns = selected.sort(
+    this.visibleColumns = (selected as { field: string; header: string }[]).sort(
       (a, b) => allFields.indexOf(a.field) - allFields.indexOf(b.field)
     );
   }
@@ -715,8 +722,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     return (entity as Library).paths !== undefined;
   }
 
-  private isMagicShelf(entity: any): entity is MagicShelf {
-    return entity && 'filterJson' in entity;
+  private isMagicShelf(entity: unknown): entity is MagicShelf {
+    if (!entity || typeof entity !== 'object') return false;
+
+    const candidate = entity as Record<string, unknown>;
+
+    return (
+      'filterJson' in candidate &&
+      typeof candidate['filterJson'] === 'string' &&
+      'name' in candidate &&
+      (candidate['id'] === undefined || typeof candidate['id'] === 'number')
+    );
   }
 
   private getEntityInfoFromRoute(): Observable<{ entityId: number; entityType: EntityType }> {

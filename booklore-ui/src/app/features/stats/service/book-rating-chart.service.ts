@@ -190,8 +190,9 @@ export class BookRatingChartService implements OnDestroy {
     return this.processRatingStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return s?.loaded && s?.books && Array.isArray(s.books) && s.books.length > 0;
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {

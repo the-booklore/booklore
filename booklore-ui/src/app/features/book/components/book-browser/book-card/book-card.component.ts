@@ -10,7 +10,7 @@ import {FormsModule} from '@angular/forms';
 import {MetadataRefreshType} from '../../../../metadata/model/request/metadata-refresh-type.enum';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
 import {NgClass} from '@angular/common';
-import {UserService} from '../../../../settings/user-management/user.service';
+import {User, UserService} from '../../../../settings/user-management/user.service';
 import {filter, Subject} from 'rxjs';
 import {EmailService} from '../../../../settings/email-v2/email.service';
 import {TieredMenu} from 'primeng/tieredmenu';
@@ -64,7 +64,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private bookDialogHelperService = inject(BookDialogHelperService);
   private bookNavigationService = inject(BookNavigationService);
 
-  private userPermissions: any;
+  private userPermissions: User['permissions'] | undefined;
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
   private destroy$ = new Subject<void>();
   protected readStatusHelper = inject(ReadStatusHelper);

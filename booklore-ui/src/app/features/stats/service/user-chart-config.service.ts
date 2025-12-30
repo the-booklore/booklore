@@ -16,7 +16,7 @@ import {ReadStatusChartComponent} from '../component/read-status-chart/read-stat
 export interface UserChartConfig {
   id: string;
   title: string;
-  component: any;
+  component: unknown;
   enabled: boolean;
   sizeClass: string;
   order: number;
@@ -99,7 +99,7 @@ export class UserChartConfigService {
       const config = JSON.parse(savedConfig);
       const charts = JSON.parse(JSON.stringify(this.defaultCharts));
 
-      config.forEach((saved: any) => {
+      config.forEach((saved: Partial<UserChartConfig>) => {
         const chart = charts.find((c: UserChartConfig) => c.id === saved.id);
         if (chart) {
           chart.enabled = saved.enabled;

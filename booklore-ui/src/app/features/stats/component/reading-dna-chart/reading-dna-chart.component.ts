@@ -238,8 +238,15 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
     return this.analyzeReadingDNA(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      'books' in state &&
+      Array.isArray((state as any).books) &&
+      (state as any).books.length > 0
+    );
   }
 
   private analyzeReadingDNA(books: Book[]): ReadingDNAProfile {

@@ -16,7 +16,7 @@ export class NotificationEventService {
   private notificationHighlightSubject = new BehaviorSubject<boolean>(false);
   notificationHighlight$ = this.notificationHighlightSubject.asObservable();
 
-  private highlightTimeout: any;
+  private highlightTimeout: number | undefined;
 
   handleNewNotification(notification: LogNotification): void {
     this.latestNotificationSubject.next(notification);
@@ -28,7 +28,7 @@ export class NotificationEventService {
 
     this.highlightTimeout = setTimeout(() => {
       this.notificationHighlightSubject.next(false);
-    }, 7500);
+    }, 7500) as unknown as number;
 
     setTimeout(() => {
       if (!this.notificationHighlightSubject.value) {

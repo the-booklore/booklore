@@ -2,6 +2,7 @@ import {inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
+import {TooltipItem} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
@@ -280,8 +281,15 @@ export class MonthlyReadingPatternsChartService implements OnDestroy {
     return this.processMonthlyPatternsStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      'books' in state &&
+      Array.isArray((state as any).books) &&
+      (state as any).books.length > 0
+    );
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | null): Book[] {
@@ -456,7 +464,7 @@ export class MonthlyReadingPatternsChartService implements OnDestroy {
     return `${monthNames[parseInt(month) - 1]} ${year}`;
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const datasetLabel = context.dataset.label;
     const value = context.parsed.y;
     const dataIndex = context.dataIndex;

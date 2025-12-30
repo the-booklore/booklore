@@ -206,8 +206,16 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     return this.processHeatmapData(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      'books' in state &&
+      Array.isArray((state as any).books) &&
+      (state as any).books.length > 0
+    );
   }
 
   private processHeatmapData(books: Book[]): YearMonthData[] {

@@ -5,6 +5,7 @@ import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
+import {BookState} from '../../../book/model/state/book-state.model';
 import {Book} from '../../../book/model/book.model';
 
 interface ReadingProgressStats {
@@ -195,8 +196,9 @@ export class ReadingProgressChartComponent implements OnInit, OnDestroy {
     return this.processReadingProgressStats(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return state !== null && typeof state === 'object' && 'loaded' in state && 'books' in state &&
+      (state as BookState).loaded && Array.isArray((state as BookState).books) && (state as BookState).books!.length > 0;
   }
 
   private processReadingProgressStats(books: Book[]): ReadingProgressStats[] {

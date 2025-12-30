@@ -1,7 +1,7 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {ChartConfiguration, ChartData, Chart, TooltipItem} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
@@ -159,8 +159,9 @@ export class BookQualityScoreChartService implements OnDestroy {
     return this.processQualityScoreStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const s = state as any;
+    return s?.loaded && s?.books && Array.isArray(s.books) && s.books.length > 0;
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | null): Book[] {
@@ -242,7 +243,7 @@ export class BookQualityScoreChartService implements OnDestroy {
       .sort((a, b) => b.averageScore - a.averageScore);
   }
 
-  private generateLegendLabels(chart: any) {
+  private generateLegendLabels(chart: Chart) {
     const data = chart.data;
     if (!data.labels?.length || !data.datasets?.[0]?.data?.length) {
       return [];
@@ -250,13 +251,13 @@ export class BookQualityScoreChartService implements OnDestroy {
 
     const dataset = data.datasets[0];
 
-    return data.labels.map((label: string, index: number) => {
+    return data.labels.map((label: unknown, index: number) => {
       const isVisible = typeof chart.getDataVisibility === 'function'
         ? chart.getDataVisibility(index)
-        : !((chart.getDatasetMeta && chart.getDatasetMeta(0)?.data?.[index]?.hidden) || false);
+        : !((chart.getDatasetMeta && (chart.getDatasetMeta(0)?.data?.[index] as any)?.hidden) || false);
 
       return {
-        text: label,
+        text: String(label),
         fillStyle: (dataset.backgroundColor as string[])[index],
         strokeStyle: '#ffffff',
         lineWidth: 1,
@@ -267,7 +268,7 @@ export class BookQualityScoreChartService implements OnDestroy {
     });
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const qualityStats = this.getLastCalculatedStats();
 
@@ -276,8 +277,10 @@ export class BookQualityScoreChartService implements OnDestroy {
     }
 
     const stats = qualityStats[dataIndex];
-    const total = context.chart.data.datasets[0].data.reduce((a: number, b: number) => a + b, 0);
-    const percentage = ((stats.count / total) * 100).toFixed(1);
+    // Defensive: filter to numbers only, avoid division by zero
+    const dataArr = (context.chart.data.datasets[0].data as (number | null | undefined)[]).filter((v): v is number => typeof v === 'number');
+    const total = dataArr.reduce((a, b) => a + b, 0);
+    const percentage = total > 0 ? ((stats.count / total) * 100).toFixed(1) : '0.0';
 
     return `${stats.count} books (${percentage}%) | Average Score: ${stats.averageScore}/10 (${stats.scoreRange})`;
   }

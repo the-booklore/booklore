@@ -1,11 +1,12 @@
 import {inject, Injectable, OnDestroy} from '@angular/core';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operators';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {ChartConfiguration, ChartData, TooltipItem} from 'chart.js';
 
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
+import {BookState} from '../../book/model/state/book-state.model';
 
 interface VelocityTimelineData {
   month: string;
@@ -261,8 +262,9 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
     return this.processVelocityTimelineStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): boolean {
+    const bookState = state as BookState;
+    return !!(bookState?.loaded && bookState?.books && Array.isArray(bookState.books) && bookState.books.length > 0);
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | null): Book[] {
@@ -353,7 +355,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
     return `${monthNames[parseInt(month) - 1]} ${year}`;
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<'line'>): string {
     const datasetLabel = context.dataset.label;
     const value = context.parsed.y;
     const dataIndex = context.dataIndex;
@@ -371,7 +373,7 @@ export class ReadingVelocityTimelineChartService implements OnDestroy {
       case 'Avg Pages/Day':
         return `${value} pages/day | ${monthStats.averagePages} avg pages/book`;
       case 'Avg Rating (×2)':
-        const actualRating = value / 2;
+        const actualRating = (value ?? 0) / 2;
         return `${actualRating.toFixed(1)}/5 avg rating | ${monthStats.booksCompleted} books rated`;
       case 'Reading Velocity':
         return `${value} books/month | ${monthStats.avgPagesPerDay} pages/day velocity`;

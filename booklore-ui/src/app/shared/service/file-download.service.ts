@@ -99,8 +99,8 @@ export class FileDownloadService {
     }, 100);
   }
 
-  private handleDownloadError(error: any): void {
-    if (error?.name !== 'AbortError') {
+  private handleDownloadError(error: unknown): void {
+    if ((error as { name?: string })?.name !== 'AbortError') {
       this.messageService.add({
         severity: 'error',
         summary: 'Download Failed',
