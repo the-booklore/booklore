@@ -257,7 +257,7 @@ public class CbxReaderService {
         return true;
     }
 
-    String baseName(String path) {
+    private String baseName(String path) {
         if (path == null) return null;
         int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
         return slash >= 0 ? path.substring(slash + 1) : path;
