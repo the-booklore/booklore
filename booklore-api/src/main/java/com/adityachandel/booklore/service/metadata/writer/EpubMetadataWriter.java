@@ -129,29 +129,61 @@ public class EpubMetadataWriter implements MetadataWriter {
                 replaceMetaElement(metadataElement, opfDoc, "calibre:series_index", formatted, hasChanges);
             });
 
-            List<String> schemes = List.of("AMAZON", "GOOGLE", "GOODREADS", "HARDCOVER", "ISBN");
-
-            for (String scheme : schemes) {
-
-                boolean clearFlag = clear != null && switch (scheme) {
-                    case "AMAZON" -> clear.isAsin();
-                    case "GOOGLE" -> clear.isGoogleId();
-                    case "COMICVINE" -> clear.isComicvineId();
-                    case "GOODREADS" -> clear.isGoodreadsId();
-                    case "HARDCOVER" -> clear.isHardcoverId();
-                    case "ISBN" -> clear.isIsbn10();
-                    default -> false;
-                };
-
-                switch (scheme) {
-                    case "AMAZON" -> helper.copyAsin(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "GOOGLE" -> helper.copyGoogleId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "GOODREADS" -> helper.copyGoodreadsId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "COMICVINE" -> helper.copyComicvineId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "HARDCOVER" -> helper.copyHardcoverId(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
-                    case "ISBN" -> helper.copyIsbn13(clearFlag, idValue -> updateIdentifier(metadataElement, opfDoc, scheme, idValue, hasChanges));
+            helper.copyIsbn13(clear != null && clear.isIsbn13(), val -> {
+                removeIdentifierByUrn(metadataElement, "isbn");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
                 }
-            }
+                hasChanges[0] = true;
+            });
+            helper.copyIsbn10(clear != null && clear.isIsbn10(), val -> {
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "isbn", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyAsin(clear != null && clear.isAsin(), val -> {
+                removeIdentifierByUrn(metadataElement, "amazon");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "amazon", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), val -> {
+                removeIdentifierByUrn(metadataElement, "goodreads");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "goodreads", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyGoogleId(clear != null && clear.isGoogleId(), val -> {
+                removeIdentifierByUrn(metadataElement, "google");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "google", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyComicvineId(clear != null && clear.isComicvineId(), val -> {
+                removeIdentifierByUrn(metadataElement, "comicvine");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "comicvine", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyHardcoverId(clear != null && clear.isHardcoverId(), val -> {
+                removeIdentifierByUrn(metadataElement, "hardcover");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "hardcover", val));
+                }
+                hasChanges[0] = true;
+            });
+            helper.copyDoubanId(clear != null && clear.isDoubanId(), val -> {
+                removeIdentifierByUrn(metadataElement, "douban");
+                if (val != null && !val.isBlank()) {
+                    metadataElement.appendChild(createIdentifierElement(opfDoc, "douban", val));
+                }
+                hasChanges[0] = true;
+            });
 
             if (StringUtils.isNotBlank(thumbnailUrl)) {
                 byte[] coverData = loadImage(thumbnailUrl);
@@ -520,12 +552,22 @@ public class EpubMetadataWriter implements MetadataWriter {
             }
         }
     }
+    private void removeIdentifierByUrn(Element metadataElement, String urnScheme) {
+        NodeList identifiers = metadataElement.getElementsByTagNameNS("*", "identifier");
+        String urnPrefix = "urn:" + urnScheme.toLowerCase() + ":";
+        for (int i = identifiers.getLength() - 1; i >= 0; i--) {
+            Element idElement = (Element) identifiers.item(i);
+            String content = idElement.getTextContent().trim().toLowerCase();
+            if (content.startsWith(urnPrefix)) {
+                metadataElement.removeChild(idElement);
+            }
+        }
+    }
 
     private Element createIdentifierElement(Document doc, String scheme, String value) {
         Element id = doc.createElementNS("http://purl.org/dc/elements/1.1/", "identifier");
         id.setPrefix("dc");
-        id.setAttributeNS(OPF_NS, "opf:scheme", scheme);
-        id.setTextContent(value);
+        id.setTextContent("urn:" + scheme.toLowerCase() + ":" + value);
         return id;
     }
 
