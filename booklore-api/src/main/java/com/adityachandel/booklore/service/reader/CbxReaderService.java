@@ -242,7 +242,7 @@ public class CbxReaderService {
         return false;
     }
 
-    boolean isContentEntry(String name) {
+    private boolean isContentEntry(String name) {
         if (name == null) return false;
         String norm = name.replace('\\', '/');
         if (norm.startsWith("__MACOSX/") || norm.contains("/__MACOSX/")) return false;
