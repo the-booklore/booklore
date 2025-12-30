@@ -536,6 +536,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
+      this.rendition.destroy();
     }
     document.removeEventListener('keyup', this.keyListener);
 

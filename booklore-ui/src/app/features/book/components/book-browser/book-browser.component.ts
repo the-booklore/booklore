@@ -220,34 +220,43 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.pageTitle.setPageTitle('')
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
 
-    const currentPath = this.activatedRoute.snapshot.routeConfig?.path;
-    if (currentPath === 'all-books' || currentPath === 'unshelved-books') {
-      const entityType = currentPath === 'all-books' ? EntityType.ALL_BOOKS : EntityType.UNSHELVED;
-      this.entityType = entityType;
-      this.entityType$ = of(entityType);
-      this.entity$ = of(null);
+    const currentPath$ = this.activatedRoute.url.pipe(map(url => url.map(segment => segment.path).join('/')));
 
-      this.pageTitle.setPageTitle(currentPath === 'all-books' ? 'All Books' : 'Unshelved Books');
-    } else {
-      const routeEntityInfo$ = this.getEntityInfoFromRoute();
-      this.entityType$ = routeEntityInfo$.pipe(map(info => info.entityType));
-      this.entity$ = routeEntityInfo$.pipe(
-        switchMap(({entityId, entityType}) => this.fetchEntity(entityId, entityType))
-      );
-      this.entity$.subscribe(entity => {
-        if (entity) {
-          this.pageTitle.setPageTitle(entity.name);
-        }
-        this.entity = entity ?? null;
-        this.entityOptions = entity
-          ? this.isLibrary(entity)
-            ? this.libraryShelfMenuService.initializeLibraryMenuItems(entity)
-            : this.isMagicShelf(entity)
-              ? this.libraryShelfMenuService.initializeMagicShelfMenuItems(entity)
-              : this.libraryShelfMenuService.initializeShelfMenuItems(entity)
-          : [];
-      });
-    }
+    this.entityType$ = combineLatest([this.activatedRoute.paramMap, currentPath$]).pipe(
+      map(([params, path]) => {
+        const libraryId = Number(params.get('libraryId') || NaN);
+        const shelfId = Number(params.get('shelfId') || NaN);
+        const magicShelfId = Number(params.get('magicShelfId') || NaN);
+
+        if (!isNaN(libraryId)) return EntityType.LIBRARY;
+        if (!isNaN(shelfId)) return EntityType.SHELF;
+        if (!isNaN(magicShelfId)) return EntityType.MAGIC_SHELF;
+        if (path === 'unshelved-books') return EntityType.UNSHELVED;
+        return EntityType.ALL_BOOKS;
+      })
+    );
+
+    this.entity$ = combineLatest([this.activatedRoute.paramMap, this.entityType$]).pipe(
+      switchMap(([params, type]) => {
+        const id = Number(params.get('libraryId') || params.get('shelfId') || params.get('magicShelfId') || NaN);
+        if (isNaN(id)) return of(null);
+        return this.fetchEntity(id, type);
+      })
+    );
+
+    this.entity$.subscribe(entity => {
+      if (entity) {
+        this.pageTitle.setPageTitle(entity.name);
+      }
+      this.entity = entity ?? null;
+      this.entityOptions = entity
+        ? this.isLibrary(entity)
+          ? this.libraryShelfMenuService.initializeLibraryMenuItems(entity)
+          : this.isMagicShelf(entity)
+            ? this.libraryShelfMenuService.initializeMagicShelfMenuItems(entity)
+            : this.libraryShelfMenuService.initializeShelfMenuItems(entity)
+        : [];
+    });
 
     this.activatedRoute.paramMap.subscribe(() => {
       this.searchTerm$.next('');
@@ -265,15 +274,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     );
     this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
 
-    combineLatest([
+    const routeAndUser$ = combineLatest([
       this.activatedRoute.paramMap,
       this.activatedRoute.queryParamMap,
-      this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
-    ]).subscribe(([paramMap, queryParamMap, user]) => {
+      this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded)),
+      this.entityType$
+    ]);
 
-      const viewParam = queryParamMap.get(QUERY_PARAMS.VIEW);
-      const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
-      const directionParam = queryParamMap.get(QUERY_PARAMS.DIRECTION);
+    routeAndUser$.subscribe(([paramMap, queryParamMap, user, entityType]) => {
+      this.entityType = entityType;
       const filterParams = queryParamMap.get(QUERY_PARAMS.FILTER);
       const filterMode = queryParamMap.get(QUERY_PARAMS.FMODE) || user.user?.userSettings?.filterMode;
 
@@ -289,12 +298,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       });
 
       const parsedFilters: Record<string, string[]> = {};
-
       this.currentFilterLabel = 'All Books';
 
       if (filterParams) {
         this.settingFiltersFromUrl = true;
-
         filterParams.split(',').forEach(pair => {
           const [key, ...valueParts] = pair.split(':');
           const value = valueParts.join(':');
@@ -329,9 +336,10 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
 
+      const id = Number(paramMap.get('libraryId') || paramMap.get('shelfId') || paramMap.get('magicShelfId') || NaN);
       const override = this.entityViewPreferences?.overrides?.find(o =>
         o.entityType?.toUpperCase() === currentEntityTypeStr &&
-        o.entityId === this.entity?.id
+        o.entityId === id
       );
 
       const effectivePrefs = override?.preferences ?? globalPrefs ?? {
@@ -345,6 +353,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         ? SortDirection.DESCENDING
         : SortDirection.ASCENDING;
 
+      const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
+      const directionParam = queryParamMap.get(QUERY_PARAMS.DIRECTION);
       const effectiveSortKey = sortParam || userSortKey;
       const effectiveSortDir = directionParam
         ? (directionParam.toLowerCase() === SORT_DIRECTION.DESCENDING ? SortDirection.DESCENDING : SortDirection.ASCENDING)
@@ -362,6 +372,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         direction: SortDirection.DESCENDING
       };
 
+      const viewParam = queryParamMap.get(QUERY_PARAMS.VIEW);
       const fromParam = queryParamMap.get(QUERY_PARAMS.FROM);
       this.currentViewMode = fromParam === 'toggle'
         ? (viewParam === VIEW_MODES.TABLE || viewParam === VIEW_MODES.GRID
@@ -370,11 +381,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         : (effectivePrefs.view?.toLowerCase() ?? VIEW_MODES.GRID);
 
       this.bookSorter.updateSortOptions();
-
-      if (this.lastAppliedSort?.field !== this.bookSorter.selectedSort.field || this.lastAppliedSort?.direction !== this.bookSorter.selectedSort.direction) {
-        this.lastAppliedSort = {...this.bookSorter.selectedSort};
-        this.applySortOption(this.bookSorter.selectedSort);
-      }
 
       const queryParams: Record<string, string | null> = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
@@ -395,6 +401,47 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           queryParams: mergedParams,
           replaceUrl: true
         });
+      }
+    });
+
+    this.bookState$ = combineLatest([
+      this.activatedRoute.paramMap,
+      this.entityType$,
+      this.bookService.bookState$,
+      this.searchTerm$,
+      this.selectedFilter,
+      this.selectedFilterMode,
+      this.seriesCollapseFilter.seriesCollapse$
+    ]).pipe(
+      switchMap(([params, entityType, state, term, filters, mode, collapsed]) => {
+        const id = Number(params.get('libraryId') || params.get('shelfId') || params.get('magicShelfId') || NaN);
+        let books$: Observable<BookState>;
+
+        if (entityType === EntityType.LIBRARY) {
+          books$ = of(this.processBookState({...state, books: (state.books || []).filter((b: Book) => b.libraryId === id)}));
+        } else if (entityType === EntityType.SHELF) {
+          books$ = of(this.processBookState({...state, books: (state.books || []).filter((b: Book) => b.shelves?.some((s: any) => s.id === id))}));
+        } else if (entityType === EntityType.MAGIC_SHELF) {
+          books$ = this.fetchBooksMagicShelfBooks(id);
+        } else if (entityType === EntityType.UNSHELVED) {
+          books$ = of(this.processBookState({
+            ...state,
+            books: (state.books || []).filter((book: Book) => !book.shelves || book.shelves.length === 0)
+          }));
+        } else {
+          books$ = of(this.processBookState(state));
+        }
+
+        return books$.pipe(
+          switchMap(bookState => this.applyBookFilters(bookState))
+        );
+      })
+    );
+
+    this.bookState$.subscribe(state => {
+      if (state.loaded && !state.error) {
+        this.currentBooks = state.books || [];
+        this.bookNavigationService.setAvailableBookIds(this.currentBooks.map(book => book.id));
       }
     });
 
@@ -566,8 +613,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   }
 
   onManualSortChange(sortOption: SortOption): void {
-    this.applySortOption(sortOption);
-
     const currentParams = this.activatedRoute.snapshot.queryParams;
     const newParams = {
       ...currentParams,
@@ -579,28 +624,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       queryParams: newParams,
       replaceUrl: true
     });
-  }
-
-  applySortOption(sortOption: SortOption): void {
-    if (this.entityType === EntityType.ALL_BOOKS) {
-      this.bookState$ = this.fetchAllBooks();
-    } else if (this.entityType === EntityType.UNSHELVED) {
-      this.bookState$ = this.fetchUnshelvedBooks();
-    } else {
-      const routeParam$ = this.getEntityInfoFromRoute();
-      this.bookState$ = routeParam$.pipe(
-        switchMap(({entityId, entityType}) => this.fetchBooksByEntity(entityId, entityType))
-      );
-    }
-    this.bookState$
-      .pipe(
-        filter(state => state.loaded && !state.error),
-        map(state => state.books || [])
-      )
-      .subscribe(books => {
-        this.currentBooks = books;
-        this.bookNavigationService.setAvailableBookIds(books.map(book => book.id));
-      });
   }
 
   onSearchTermChange(term: string): void {

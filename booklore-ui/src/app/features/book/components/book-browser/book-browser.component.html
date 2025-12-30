@@ -266,7 +266,7 @@
                       class="virtual-scroller-item relative"
                       [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
                       <app-book-card
-                        [index]="books.indexOf(book)"
+                        [index]="i"
                         [book]="book"
                         [isCheckboxEnabled]="true"
                         [seriesViewEnabled]="seriesViewEnabled"
