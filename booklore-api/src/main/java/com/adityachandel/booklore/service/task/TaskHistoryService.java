@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -121,7 +121,7 @@ public class TaskHistoryService {
     }
 
     private Instant toUtcInstant(LocalDateTime localDateTime) {
-        return localDateTime != null ? localDateTime.toInstant(ZoneOffset.UTC) : null;
+        return localDateTime != null ? localDateTime.atZone(ZoneId.systemDefault()).toInstant() : null;
     }
 
     private TasksHistoryResponse.TaskHistory createMetadataOnlyTaskInfo(TaskType taskType) {
