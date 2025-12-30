@@ -11,7 +11,7 @@ import java.util.Set;
 
 @Getter
 @Setter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -50,9 +50,13 @@ public class BookMetadata {
     private Double ranobedbRating;
     private String externalUrl;
     private Instant coverUpdatedOn;
+    @Singular
     private Set<String> authors;
+    @Singular
     private Set<String> categories;
+    @Singular
     private Set<String> moods;
+    @Singular
     private Set<String> tags;
     private MetadataProvider provider;
     private String thumbnailUrl;
