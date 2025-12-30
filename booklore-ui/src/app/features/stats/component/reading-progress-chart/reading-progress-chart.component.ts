@@ -197,8 +197,15 @@ export class ReadingProgressChartComponent implements OnInit, OnDestroy {
   }
 
   private isValidBookState(state: unknown): state is BookState {
-    return state !== null && typeof state === 'object' && 'loaded' in state && 'books' in state &&
-      (state as BookState).loaded && Array.isArray((state as BookState).books) && (state as BookState).books!.length > 0;
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private processReadingProgressStats(books: Book[]): ReadingProgressStats[] {

@@ -43,7 +43,7 @@ export function serializeDateRules(ruleOrGroup: unknown): unknown {
   if (ruleOrGroup !== null && typeof ruleOrGroup === 'object' && 'rules' in ruleOrGroup) {
     const group = ruleOrGroup as { rules: unknown[] };
     return {
-      ...((ruleOrGroup as Record<string, unknown>) || {}),
+      ...(ruleOrGroup as Record<string, unknown>),
       rules: group.rules.map(serializeDateRules)
     };
   }
@@ -53,7 +53,7 @@ export function serializeDateRules(ruleOrGroup: unknown): unknown {
   const serialize = (val: unknown) => (val instanceof Date ? val.toISOString().split('T')[0] : val);
 
   return {
-    ...((ruleOrGroup as Record<string, unknown>) || {}),
+    ...(ruleOrGroup as Record<string, unknown>),
     value: isDateField ? serialize(rule.value) : rule.value,
     valueStart: isDateField ? serialize(rule.valueStart) : rule.valueStart,
     valueEnd: isDateField ? serialize(rule.valueEnd) : rule.valueEnd

@@ -6,6 +6,7 @@ import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book, ReadStatus} from '../../../book/model/book.model';
+import {BookState} from '../../../book/model/state/book-state.model';
 
 interface ReadingHabitsProfile {
   consistency: number;
@@ -238,14 +239,15 @@ export class ReadingHabitsChartComponent implements OnInit, OnDestroy {
     return this.analyzeReadingHabits(currentState.books!);
   }
 
-  private isValidBookState(state: unknown): boolean {
+  private isValidBookState(state: unknown): state is BookState {
     return (
       typeof state === 'object' &&
       state !== null &&
       'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
       'books' in state &&
-      Array.isArray((state as any).books) &&
-      (state as any).books.length > 0
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
     );
   }
 

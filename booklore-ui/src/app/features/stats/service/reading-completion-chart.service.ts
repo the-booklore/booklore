@@ -217,9 +217,16 @@ export class ReadingCompletionChartService implements OnDestroy {
     return this.processCompletionStats(filteredBooks);
   }
 
-  private isValidBookState(state: unknown): boolean {
-    const bookState = state as BookState;
-    return !!(bookState?.loaded && bookState?.books && Array.isArray(bookState.books) && bookState.books.length > 0);
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
