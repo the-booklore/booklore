@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
@@ -6,6 +6,10 @@ import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book} from '../../../book/model/book.model';
+
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
 
 interface MatrixDataPoint {
   x: number; // month (0-11)
@@ -23,6 +27,28 @@ const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 
 type HeatmapChartData = ChartData<'matrix', MatrixDataPoint[], string>;
 
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeBorderColor: mode === 'dark' ? '#ef476f' : '#eb184a',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)',
+    modeTicks: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+    modeAngleLines: mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+    modePoint: mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+  };
+}
+
 @Component({
   selector: 'app-reading-heatmap-chart',
   standalone: true,
@@ -31,8 +57,10 @@ type HeatmapChartData = ChartData<'matrix', MatrixDataPoint[], string>;
   styleUrls: ['./reading-heatmap-chart.component.scss']
 })
 export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
+  @ViewChild(BaseChartDirective) private chart?: BaseChartDirective;
   private readonly bookService = inject(BookService);
   private readonly destroy$ = new Subject<void>();
+  private themeObserver: MutationObserver | null = null;
 
   public readonly chartType = 'matrix' as const;
 
@@ -51,10 +79,10 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
       legend: {display: false},
       tooltip: {
         enabled: true,
-        backgroundColor: 'rgba(0, 0, 0, 0.95)',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        borderColor: '#ef476f',
+        backgroundColor: themeTokens().modeColorBG,
+        titleColor: themeTokens().modeColor,
+        bodyColor: themeTokens().modeColor,
+        borderColor: themeTokens().modeBorderColor,
         borderWidth: 2,
         cornerRadius: 8,
         displayColors: false,
@@ -76,7 +104,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
       },
       datalabels: {
         display: true,
-        color: '#ffffff',
+        color: themeTokens().modeColor,
         font: {
           family: "'Inter', sans-serif",
           size: 10,
@@ -92,7 +120,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
         ticks: {
           stepSize: 1,
           callback: (value) => MONTH_NAMES[value as number] || '',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -105,7 +133,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
         ticks: {
           stepSize: 1,
           callback: (value) => this.yearLabels[value as number] || '',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 11
@@ -127,6 +155,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
   public readonly chartData$: Observable<HeatmapChartData> = this.chartDataSubject.asObservable();
 
   ngOnInit(): void {
+  	this.initThemeObserver();
     this.bookService.bookState$
       .pipe(
         filter(state => state.loaded),
@@ -146,6 +175,78 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.chartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+        }
+        if (options.plugins.datalabels) {
+          options.plugins.datalabels.color = tokens.modeColor;
+        }
+      }
+
+      if (options.scales) {
+        const xScale = options.scales['x'] as any;
+        const yScale = options.scales['y'] as any;
+        if (xScale) {
+          if (xScale.ticks) xScale.ticks.color = tokens.modeColor;
+          if (xScale.grid) xScale.grid.color = tokens.modeGridX;
+        }
+        if (yScale) {
+          if (yScale.ticks) yScale.ticks.color = tokens.modeColor;
+          if (yScale.grid) yScale.grid.color = tokens.modeGridY;
+        }
+      }
+
+      if (options.elements && options.elements.point) {
+        options.elements.point.backgroundColor = tokens.modePoint;
+      }
+    }
+
+    const currentData = this.chartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map((dataset: any) => ({
+        ...dataset,
+        pointBorderColor: tokens.modeColor
+      }));
+
+      this.chartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+      this.chart?.update();
+    }
   }
 
   private updateChartData(yearMonthData: YearMonthData[]): void {
@@ -188,7 +289,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
           const alpha = Math.max(0.2, Math.min(1.0, intensity * 0.8 + 0.2));
           return `rgba(239, 71, 111, ${alpha})`;
         },
-        borderColor: 'rgba(255, 255, 255, 0.2)',
+        borderColor: themeTokens().modeColor,
         borderWidth: 1,
         width: ({chart}) => (chart.chartArea?.width || 0) / 12 - 1,
         height: ({chart}) => (chart.chartArea?.height || 0) / years.length - 1

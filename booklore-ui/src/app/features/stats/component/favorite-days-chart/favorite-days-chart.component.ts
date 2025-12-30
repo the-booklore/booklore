@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, Input, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartData} from 'chart.js';
@@ -8,7 +8,33 @@ import {FavoriteDaysResponse, UserStatsService} from '../../../settings/user-man
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
 type FavoriteDaysChartData = ChartData<'bar', number[], string>;
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeBorderColor: mode === 'dark' ? '#666666' : '#444444',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)',
+    modeTicks: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+    modeAngleLines: mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+    modePoint: mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+  };
+}
 
 @Component({
   selector: 'app-favorite-days-chart',
@@ -18,9 +44,11 @@ type FavoriteDaysChartData = ChartData<'bar', number[], string>;
   styleUrls: ['./favorite-days-chart.component.scss']
 })
 export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
+  @ViewChild(BaseChartDirective) private chart?: BaseChartDirective;
   public readonly chartType = 'bar' as const;
   public readonly chartData$: Observable<FavoriteDaysChartData>;
   public readonly chartOptions: ChartConfiguration['options'];
+  private themeObserver: MutationObserver | null = null;
 
   private readonly userStatsService = inject(UserStatsService);
   private readonly destroy$ = new Subject<void>();
@@ -65,7 +93,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           display: true,
           position: 'top',
           labels: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11},
             boxWidth: 12,
             padding: 10
@@ -73,10 +101,10 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
         },
         tooltip: {
           enabled: true,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          titleColor: '#ffffff',
-          bodyColor: '#ffffff',
-          borderColor: '#ffffff',
+          backgroundColor: themeTokens().modeColorBG,
+          titleColor: themeTokens().modeColor,
+          bodyColor: themeTokens().modeColor,
+          borderColor: themeTokens().modeBorderColor,
           borderWidth: 1,
           cornerRadius: 6,
           displayColors: true,
@@ -104,7 +132,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Day of Week',
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {
               family: "'Inter', sans-serif",
               size: 13,
@@ -112,7 +140,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
             }
           },
           ticks: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11}
           },
           grid: {display: false},
@@ -134,12 +162,12 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           },
           beginAtZero: true,
           ticks: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11},
             stepSize: 1
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: themeTokens().modeGridY
           },
           border: {display: false}
         },
@@ -159,7 +187,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           },
           beginAtZero: true,
           ticks: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11},
             callback: function(value) {
               return (typeof value === 'number' ? value.toFixed(1) : '0.0') + 'h';
@@ -176,12 +204,91 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+  	this.initThemeObserver();
     this.loadFavoriteDays();
   }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.chartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+        }
+        if (options.plugins.legend?.labels) {
+          options.plugins.legend.labels.color = tokens.modeColor;
+        }
+      }
+
+      if (options.scales) {
+        const xScale = options.scales['x'] as any;
+        const yScale = options.scales['y'] as any;
+        const y1Scale = options.scales['y1'] as any;
+        if (xScale) {
+          if (xScale.ticks) xScale.ticks.color = tokens.modeColor;
+          if (xScale.title) xScale.title.color = tokens.modeColor;
+        }
+        if (yScale) {
+          if (yScale.ticks) yScale.ticks.color = tokens.modeColor;
+          if (yScale.title) yScale.title.color = tokens.modeColor;
+          if (yScale.grid) yScale.grid.color = tokens.modeGridY;
+        }
+        if (y1Scale) {
+          if (y1Scale.ticks) y1Scale.ticks.color = tokens.modeColor;
+          if (y1Scale.title) y1Scale.title.color = tokens.modeColor;
+        }
+      }
+
+      if (options.elements && options.elements.point) {
+        options.elements.point.backgroundColor = tokens.modePoint;
+      }
+    }
+
+    const currentData = this.chartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map((dataset: any) => ({
+        ...dataset,
+        pointBorderColor: tokens.modeColor
+      }));
+
+      this.chartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+      this.chart?.update();
+    }
   }
 
   private initializeYearOptions(): void {

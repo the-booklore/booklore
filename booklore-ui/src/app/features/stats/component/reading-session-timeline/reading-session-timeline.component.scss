@@ -1,3 +1,19 @@
+:host {
+  --timeline-text-color: #ffffff;
+  --timeline-secondary-color: rgba(255, 255, 255, 0.7);
+  --timeline-surface-color: rgba(255, 255, 255, 0.02);
+  --timeline-border-color: rgba(255, 255, 255, 0.1);
+  --timeline-grid-color: rgba(255, 255, 255, 0.05);
+  --timeline-button-bg: rgba(255, 255, 255, 0.1);
+  --timeline-button-border: rgba(255, 255, 255, 0.2);
+  --timeline-button-hover-bg: rgba(255, 255, 255, 0.2);
+  --timeline-button-hover-border: rgba(255, 255, 255, 0.3);
+  --timeline-tooltip-bg: rgba(30, 30, 30, 0.98);
+  --timeline-tooltip-border: rgba(255, 255, 255, 0.2);
+  --timeline-tooltip-divider: rgba(255, 255, 255, 0.1);
+  --timeline-hour-label: rgba(255, 255, 255, 0.6);
+}
+
 .timeline-container {
   width: 100%;
 }
@@ -31,11 +47,11 @@
     justify-self: center;
 
     .week-nav-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: var(--timeline-button-bg);
+      border: 1px solid var(--timeline-button-border);
       border-radius: 6px;
       padding: 0.6rem 0.6rem;
-      color: #ffffff;
+      color: var(--timeline-text-color);
       cursor: pointer;
       transition: all 0.3s ease;
       display: flex;
@@ -43,8 +59,8 @@
       justify-content: center;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.3);
+        background: var(--timeline-button-hover-bg);
+        border-color: var(--timeline-button-hover-border);
         transform: translateY(-1px);
       }
 
@@ -66,7 +82,7 @@
       .week-label {
         font-size: 1rem;
         font-weight: 600;
-        color: #ffffff;
+        color: var(--timeline-text-color);
         white-space: nowrap;
         line-height: 1.2;
       }
@@ -96,16 +112,16 @@
   gap: 1rem;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--timeline-surface-color);
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--timeline-border-color);
 
   .week-nav-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--timeline-button-bg);
+    border: 1px solid var(--timeline-button-border);
     border-radius: 6px;
     padding: 0.6rem 6rem;
-    color: #ffffff;
+    color: var(--timeline-text-color);
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -113,8 +129,8 @@
     justify-content: center;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
+      background: var(--timeline-button-hover-bg);
+      border-color: var(--timeline-button-hover-border);
       transform: translateY(-1px);
     }
 
@@ -136,7 +152,7 @@
     .week-label {
       font-size: 1.125rem;
       font-weight: 600;
-      color: #ffffff;
+      color: var(--timeline-text-color);
       white-space: nowrap;
     }
 
@@ -185,7 +201,7 @@
   .hour-label {
     display: none;
     font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--timeline-hour-label);
     position: absolute;
     left: 0;
     transform: translateX(-50%);
@@ -210,16 +226,16 @@
     align-items: center;
     font-size: 0.875rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: var(--timeline-text-color);
     padding-right: 1rem;
   }
 
   .timeline-track {
     flex: 1;
     position: relative;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--timeline-surface-color);
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--timeline-border-color);
     min-height: 35px;
   }
 }
@@ -232,7 +248,7 @@
   pointer-events: none;
 
   .grid-line {
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid var(--timeline-grid-color);
 
     &:last-child {
       border-right: none;
@@ -302,7 +318,7 @@
       align-items: center;
       height: 100%;
       padding: 4px 8px;
-      color: white;
+      color: var(--timeline-text-color);
       font-size: 0.7rem;
       font-weight: 500;
       text-align: center;
@@ -332,8 +348,8 @@
   bottom: calc(100% + 15px);
   left: 50%;
   transform: translate(-50%, 10px);
-  background: rgba(30, 30, 30, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: var(--timeline-tooltip-bg);
+  border: 1px solid var(--timeline-tooltip-border);
   border-radius: 8px;
   padding: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
@@ -361,7 +377,7 @@
       height: 100%;
       object-fit: cover;
       border-radius: 4px;
-      background-color: rgba(255, 255, 255, 0.1);
+      background-color: var(--timeline-grid-color);
     }
   }
 
@@ -385,7 +401,7 @@
     }
 
     .tooltip-title {
-      color: #ffffff;
+      color: var(--timeline-text-color);
       font-weight: 600;
       font-size: 0.95rem;
       flex: 1;
@@ -399,7 +415,7 @@
     height: 1px;
     background: linear-gradient(90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.1) 50%,
+      var(--timeline-tooltip-divider) 50%,
       transparent 100%);
     margin: 0.75rem 0;
   }
@@ -420,18 +436,18 @@
 
     i {
       font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.6);
+      color: var(--timeline-hour-label);
       width: 16px;
       text-align: center;
     }
 
     .tooltip-label {
-      color: rgba(255, 255, 255, 0.7);
+      color: var(--timeline-secondary-color);
       font-weight: 500;
     }
 
     .tooltip-value {
-      color: #ffffff;
+      color: var(--timeline-text-color);
       text-align: right;
       font-weight: 500;
     }
@@ -447,7 +463,7 @@
     height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid rgba(30, 30, 30, 0.98);
+    border-top: 8px solid var(--timeline-tooltip-bg);
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
   }
 }

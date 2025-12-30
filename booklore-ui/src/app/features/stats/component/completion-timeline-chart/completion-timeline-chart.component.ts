@@ -6,7 +6,33 @@ import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, takeUntil} from 'rxjs/operators';
 import {CompletionTimelineResponse, UserStatsService} from '../../../settings/user-management/user-stats.service';
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
 type CompletionChartData = ChartData<'bar', number[], string>;
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeBorderColor: mode === 'dark' ? '#666666' : '#444444',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)',
+    modeTicks: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+    modeAngleLines: mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+    modePoint: mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+  };
+}
 
 @Component({
   selector: 'app-completion-timeline-chart',
@@ -22,6 +48,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
   public readonly chartType = 'bar' as const;
   public readonly chartData$: Observable<CompletionChartData>;
   public readonly chartOptions: ChartConfiguration['options'];
+  private themeObserver: MutationObserver | null = null;
 
   private readonly userStatsService = inject(UserStatsService);
   private readonly destroy$ = new Subject<void>();
@@ -47,7 +74,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
           display: true,
           position: 'top',
           labels: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11},
             boxWidth: 12,
             padding: 10
@@ -55,10 +82,10 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
         },
         tooltip: {
           enabled: true,
-          backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          titleColor: '#ffffff',
-          bodyColor: '#ffffff',
-          borderColor: '#ffffff',
+          backgroundColor: themeTokens().modeColorBG,
+          titleColor: themeTokens().modeColor,
+          bodyColor: themeTokens().modeColor,
+          borderColor: themeTokens().modeBorderColor,
           borderWidth: 1,
           cornerRadius: 6,
           displayColors: true,
@@ -80,7 +107,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Month',
-            color: '#ffffff',
+            color: themeTokens().modeGridX,
             font: {
               family: "'Inter', sans-serif",
               size: 13,
@@ -88,7 +115,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
             }
           },
           ticks: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11}
           },
           grid: {display: false},
@@ -98,7 +125,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
           title: {
             display: true,
             text: 'Number of Books',
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {
               family: "'Inter', sans-serif",
               size: 13,
@@ -107,12 +134,12 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
           },
           beginAtZero: true,
           ticks: {
-            color: '#ffffff',
+            color: themeTokens().modeColor,
             font: {family: "'Inter', sans-serif", size: 11},
             stepSize: 1
           },
           grid: {
-            color: 'rgba(255, 255, 255, 0.1)'
+            color: themeTokens().modeGridY
           },
           border: {display: false}
         }
@@ -121,6 +148,7 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+  	this.initThemeObserver();
     this.currentYear = this.initialYear;
     this.loadCompletionTimeline(this.currentYear);
   }
@@ -128,6 +156,71 @@ export class CompletionTimelineChartComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      let shouldUpdate = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          shouldUpdate = true;
+          break;
+        }
+      }
+      if (shouldUpdate) {
+        this.updateChartTheme();
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateChartTheme(): void {
+    const tokens = themeTokens();
+    const options = this.chartOptions;
+    
+    if (options) {
+      if (options.plugins) {
+        if (options.plugins.tooltip) {
+          options.plugins.tooltip.backgroundColor = tokens.modeColorBG;
+          options.plugins.tooltip.titleColor = tokens.modeColor;
+          options.plugins.tooltip.bodyColor = tokens.modeColor;
+        }
+      }
+
+      if (options.scales && options.scales['r']) {
+        const rScale = options.scales['r'];
+        if (rScale.ticks) {
+          rScale.ticks.color = tokens.modeTicks;
+        }
+        if (rScale.grid) {
+          rScale.grid.color = tokens.modeGrid;
+        }
+      }
+
+      if (options.elements && options.elements.point) {
+        options.elements.point.backgroundColor = tokens.modePoint;
+      }
+    }
+
+    const currentData = this.chartDataSubject.getValue();
+    if (currentData.datasets && currentData.datasets.length > 0) {
+      const updatedDatasets = currentData.datasets.map((dataset: any) => ({
+        ...dataset,
+        pointBorderColor: tokens.modeColor
+      }));
+
+      this.chartDataSubject.next({
+        ...currentData,
+        datasets: updatedDatasets
+      });
+    }
   }
 
   public changeYear(delta: number): void {

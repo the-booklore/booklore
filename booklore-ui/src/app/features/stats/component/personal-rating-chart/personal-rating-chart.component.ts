@@ -119,7 +119,7 @@ export class PersonalRatingChartComponent implements OnInit, OnDestroy {
         title: {
           display: true,
           text: 'Personal Rating',
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 12
@@ -223,7 +223,7 @@ export class PersonalRatingChartComponent implements OnInit, OnDestroy {
 
   private updateChartTheme(): void {
     const tokens = themeTokens();
-    const options = this.personalRatingChartOptions;
+    const options = this.chartOptions;
     
     if (options) {
       if (options.plugins) {
@@ -252,15 +252,15 @@ export class PersonalRatingChartComponent implements OnInit, OnDestroy {
       }
     }
 
-    const currentData = this.personalRatingChartDataSubject.getValue();
+    const currentData = this.chartDataSubject.getValue();
     if (currentData.datasets && currentData.datasets.length > 0) {
-      const updatedDatasets = currentData.datasets.map(dataset => ({
+      const updatedDatasets = currentData.datasets.map((dataset: any) => ({
         ...dataset,
         borderColor: tokens.modeColor,
         hoverBorderColor: tokens.modeColor
       }));
 
-      this.personalRatingChartDataSubject.next({
+      this.chartDataSubject.next({
         ...currentData,
         datasets: updatedDatasets
       });

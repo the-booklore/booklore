@@ -225,7 +225,7 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
 
   private updateChartTheme(): void {
     const tokens = themeTokens();
-    const options = this.readingDNAChartOptions;
+    const options = this.chartOptions;
     
     if (options) {
       if (options.plugins) {
@@ -257,14 +257,14 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
       }
     }
 
-    const currentData = this.readingDNAChartDataSubject.getValue();
+    const currentData = this.chartDataSubject.getValue();
     if (currentData.datasets && currentData.datasets.length > 0) {
-      const updatedDatasets = currentData.datasets.map(dataset => ({
+      const updatedDatasets = currentData.datasets.map((dataset: any) => ({
         ...dataset,
         pointBorderColor: tokens.modeColor
       }));
 
-      this.readingDNAChartDataSubject.next({
+      this.chartDataSubject.next({
         ...currentData,
         datasets: updatedDatasets
       });

@@ -80,7 +80,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
         labels: {
           padding: 15,
           usePointStyle: true,
-          color: '#ffffff',
+          color: themeTokens().modeColor,
           font: {
             family: "'Inter', sans-serif",
             size: 12
@@ -171,19 +171,19 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
 
   private updateChartTheme(): void {
     const tokens = themeTokens();
-    if (this.statusChartOptions?.plugins?.tooltip) {
-      const tooltip = this.statusChartOptions.plugins.tooltip;
+    if (this.chartOptions?.plugins?.tooltip) {
+      const tooltip = this.chartOptions.plugins.tooltip;
       tooltip.backgroundColor = tokens.modeColorBG;
       tooltip.titleColor = tokens.modeColor;
       tooltip.bodyColor = tokens.modeColor;
       tooltip.borderColor = tokens.modeColor;
     }
-    const currentData = this.statusChartDataSubject.getValue();
+    const currentData = this.chartDataSubject.getValue();
     if (currentData.datasets && currentData.datasets.length > 0) {
       const dataset = currentData.datasets[0];
       dataset.borderColor = tokens.modeColor;
       dataset.hoverBorderColor = tokens.modeColor;
-      this.statusChartDataSubject.next({
+      this.chartDataSubject.next({
         ...currentData,
         datasets: [{ ...dataset }]
       });

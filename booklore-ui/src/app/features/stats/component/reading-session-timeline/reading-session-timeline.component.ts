@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnInit} from '@angular/core';
+import {Component, HostBinding, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ReadingSessionTimelineResponse, UserStatsService} from '../../../settings/user-management/user-stats.service';
 import {UrlHelperService} from '../../../../shared/service/url-helper.service';
@@ -38,6 +38,32 @@ interface DayTimeline {
   sessions: TimelineSession[];
 }
 
+function hasClass(cls: string): boolean {
+  return document.documentElement.classList.contains(cls);
+}
+
+type ThemeMode = 'dark' | 'light';
+
+function themeMode(): ThemeMode {
+  return hasClass('p-dark') ? 'dark' : 'light';
+}
+
+function themeTokens() {
+  const mode = themeMode();
+  return {
+    mode,
+    modeColor: mode === 'dark' ? '#ffffff' : '#000000',
+    modeColorBG: mode === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(255, 255, 255, 0.9)',
+    modeBorderColor: mode === 'dark' ? '#666666' : '#444444',
+    modeGridX: mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+    modeGridY: mode === 'dark' ? 'rgba(255, 255, 255, 0.01)' : 'rgba(0, 0, 0, 0.01)',
+    modeTicks: mode === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)',
+    modeGrid: mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.15)',
+    modeAngleLines: mode === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+    modePoint: mode === 'dark' ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
+  };
+}
+
 @Component({
   selector: 'app-reading-session-timeline',
   standalone: true,
@@ -45,9 +71,21 @@ interface DayTimeline {
   templateUrl: './reading-session-timeline.component.html',
   styleUrls: ['./reading-session-timeline.component.scss']
 })
-export class ReadingSessionTimelineComponent implements OnInit {
+export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
   @Input() initialYear: number = new Date().getFullYear();
   @Input() weekNumber: number = this.getCurrentWeekNumber();
+
+  @HostBinding('style.--timeline-text-color') timelineTextColor = themeTokens().modeColor;
+  @HostBinding('style.--timeline-secondary-color') timelineSecondaryColor = themeTokens().modeTicks;
+  @HostBinding('style.--timeline-surface-color') timelineSurfaceColor = themeTokens().modeGridY;
+  @HostBinding('style.--timeline-border-color') timelineBorderColor = themeTokens().modeBorderColor;
+  @HostBinding('style.--timeline-grid-color') timelineGridColor = themeTokens().modeGrid;
+  @HostBinding('style.--timeline-button-bg') timelineButtonBg = themeTokens().modeGrid;
+  @HostBinding('style.--timeline-button-border') timelineButtonBorder = themeTokens().modeBorderColor;
+  @HostBinding('style.--timeline-button-hover-bg') timelineButtonHoverBg = themeTokens().modeColorBG;
+  @HostBinding('style.--timeline-button-hover-border') timelineButtonHoverBorder = themeTokens().modeBorderColor;
+  @HostBinding('style.--timeline-tooltip-bg') timelineTooltipBg = themeTokens().modeColorBG;
+  @HostBinding('style.--timeline-tooltip-border') timelineTooltipBorder = themeTokens().modeBorderColor;
 
   private userStatsService = inject(UserStatsService);
   private urlHelperService = inject(UrlHelperService);
@@ -61,8 +99,11 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
   public yearOptions: { label: string; value: number }[] = [];
   public weekOptions: { label: string; value: number }[] = [];
+  private themeObserver: MutationObserver | null = null;
 
   ngOnInit(): void {
+  	this.initThemeObserver();
+    this.updateThemeVariables();
     this.currentYear = this.initialYear;
     this.currentWeek = this.weekNumber;
     this.updateCurrentMonth();
@@ -78,6 +119,43 @@ export class ReadingSessionTimelineComponent implements OnInit {
     for (let year = currentYear; year >= currentYear - 10; year--) {
       this.yearOptions.push({ label: year.toString(), value: year });
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.themeObserver) {
+      this.themeObserver.disconnect();
+    }
+  }
+
+  private initThemeObserver(): void {
+    this.themeObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+          this.updateThemeVariables();
+          break;
+        }
+      }
+    });
+
+    this.themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+
+  private updateThemeVariables(): void {
+    const tokens = themeTokens();
+    this.timelineTextColor = tokens.modeColor;
+    this.timelineSecondaryColor = tokens.modeTicks;
+    this.timelineSurfaceColor = tokens.modeGridY;
+    this.timelineBorderColor = tokens.modeBorderColor;
+    this.timelineGridColor = tokens.modeGrid;
+    this.timelineButtonBg = tokens.modeGrid;
+    this.timelineButtonBorder = tokens.modeBorderColor;
+    this.timelineButtonHoverBg = tokens.modeColorBG;
+    this.timelineButtonHoverBorder = tokens.modeBorderColor;
+    this.timelineTooltipBg = tokens.modeColorBG;
+    this.timelineTooltipBorder = tokens.modeBorderColor;
   }
 
   private updateWeekOptions(): void {
