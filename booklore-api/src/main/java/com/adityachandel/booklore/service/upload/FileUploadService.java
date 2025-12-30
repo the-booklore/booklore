@@ -66,7 +66,7 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final BookFileExtension fileExtension = getFileExtension(originalFileName);
-            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile());
+            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
@@ -174,7 +174,12 @@ public class FileUploadService {
     }
 
     private Path createTempFile(String prefix, String fileName) throws IOException {
-        return Files.createTempFile(prefix, fileName);
+        String suffix = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex >= 0) {
+            suffix = fileName.substring(lastDotIndex);
+        }
+        return Files.createTempFile(prefix, suffix);
     }
 
     private void validateFinalPath(Path finalPath) {
@@ -225,8 +230,28 @@ public class FileUploadService {
         }
     }
 
-    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) {
-        return metadataExtractorFactory.extractMetadata(fileExt, file);
+    private BookMetadata extractMetadata(BookFileExtension fileExt, File file, String originalFileName) {
+        BookMetadata metadata = metadataExtractorFactory.extractMetadata(fileExt, file);
+
+        // If the metadata title is the same as the temporary file's base name (which happens
+        // when CBX files have no embedded metadata), use the original filename as the title instead
+        String tempFileBaseName = java.nio.file.Paths.get(file.getName()).getFileName().toString();
+        int lastDotIndex = tempFileBaseName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            tempFileBaseName = tempFileBaseName.substring(0, lastDotIndex);
+        }
+
+        String originalFileBaseName = originalFileName;
+        lastDotIndex = originalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            originalFileBaseName = originalFileName.substring(0, lastDotIndex);
+        }
+
+        if (metadata.getTitle() != null && (metadata.getTitle().equals(tempFileBaseName) || metadata.getTitle().startsWith(UPLOAD_TEMP_PREFIX))) {
+            metadata.setTitle(originalFileBaseName);
+        }
+
+        return metadata;
     }
 
     private void validateFile(MultipartFile file) {

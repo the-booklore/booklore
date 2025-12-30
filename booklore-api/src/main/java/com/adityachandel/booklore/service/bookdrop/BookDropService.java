@@ -405,7 +405,13 @@ public class BookDropService {
     private BookdropFileResult performFileMove(BookdropFileEntity bookdropFile, Path source, Path target, LibraryEntity library, LibraryPathEntity path, BookMetadata metadata) {
         Path tempPath = null;
         try {
-            tempPath = Files.createTempFile("bookdrop-finalize-", bookdropFile.getFileName());
+            String suffix = "";
+            String fileName = bookdropFile.getFileName();
+            int lastDotIndex = fileName.lastIndexOf('.');
+            if (lastDotIndex >= 0) {
+                suffix = fileName.substring(lastDotIndex);
+            }
+            tempPath = Files.createTempFile("bookdrop-finalize-", suffix);
             Files.copy(source, tempPath, StandardCopyOption.REPLACE_EXISTING);
 
             Files.createDirectories(target.getParent());

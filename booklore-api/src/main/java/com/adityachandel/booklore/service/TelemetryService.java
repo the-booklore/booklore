@@ -1,63 +1,30 @@
 package com.adityachandel.booklore.service;
 
 import com.adityachandel.booklore.model.dto.BookloreTelemetry;
+import com.adityachandel.booklore.model.dto.Installation;
+import com.adityachandel.booklore.model.dto.InstallationPing;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPublicReviewsSettings;
-import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.ProvisioningMethod;
-import com.adityachandel.booklore.model.enums.IconType;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.ProvisioningMethod;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
 public class TelemetryService {
 
-    private static class EnumMappings {
-        static final Map<BookFileType, Integer> BOOK_FILE_TYPE = Map.of(
-                BookFileType.PDF, 1,
-                BookFileType.EPUB, 2,
-                BookFileType.CBX, 3,
-                BookFileType.FB2, 4
-        );
-        static final Map<IconType, Integer> ICON_TYPE = Map.of(
-                IconType.PRIME_NG, 1,
-                IconType.CUSTOM_SVG, 2
-        );
-        static final Map<LibraryScanMode, Integer> LIBRARY_SCAN_MODE = Map.of(
-                LibraryScanMode.FILE_AS_BOOK, 1,
-                LibraryScanMode.FOLDER_AS_BOOK, 2
-        );
-        static final Map<MetadataProvider, Integer> METADATA_PROVIDER = Map.of(
-                MetadataProvider.Amazon, 1,
-                MetadataProvider.Google, 2,
-                MetadataProvider.GoodReads, 3,
-                MetadataProvider.Hardcover, 4,
-                MetadataProvider.Comicvine, 5,
-                MetadataProvider.Douban, 6
-        );
-        static final Map<MetadataProvider, Integer> REVIEW_PROVIDER = Map.of(
-                MetadataProvider.Amazon, 1,
-                MetadataProvider.Google, 2,
-                MetadataProvider.GoodReads, 3,
-                MetadataProvider.Hardcover, 4,
-                MetadataProvider.Comicvine, 5,
-                MetadataProvider.Douban, 6
-        );
-    }
-
-    private static final String INSTALLATION_ID_KEY = "installation_id";
-    private final AppSettingsRepository appSettingsRepository;
     private final VersionService versionService;
     private final LibraryRepository libraryRepository;
     private final BookRepository bookRepository;
@@ -77,6 +44,18 @@ public class TelemetryService {
     private final KoboUserSettingsRepository koboUserSettingsRepository;
     private final KoreaderUserRepository koreaderUserRepository;
     private final OpdsUserV2Repository opdsUserV2Repository;
+    private final InstallationService installationService;
+
+    public InstallationPing getInstallationPing() {
+        Installation installation = installationService.getOrCreateInstallation();
+
+        return InstallationPing.builder()
+                .pingVersion(1)
+                .appVersion(versionService.appVersion)
+                .installationId(installation.getId())
+                .installationDate(installation.getDate())
+                .build();
+    }
 
     public BookloreTelemetry collectTelemetry() {
         long totalUsers = userRepository.count();
@@ -94,11 +73,15 @@ public class TelemetryService {
                 .map(this::mapLibraryStatistics)
                 .collect(Collectors.toList());
 
-        int[] enabledMetadataProviders = getEnabledMetadataProvidersAsInt(settings.getMetadataProviderSettings());
-        int[] enabledReviewMetadataProviders = getEnabledReviewMetadataProvidersAsInt(settings.getMetadataPublicReviewsSettings());
+        String[] enabledMetadataProviders = getEnabledMetadataProviders(settings.getMetadataProviderSettings());
+        String[] enabledReviewMetadataProviders = getEnabledReviewMetadataProviders(settings.getMetadataPublicReviewsSettings());
+
+        Installation installation = installationService.getOrCreateInstallation();
 
         return BookloreTelemetry.builder()
-                .installationId(getInstallationId())
+                .telemetryVersion(2)
+                .installationId(installation.getId())
+                .installationDate(installation.getDate() != null ? installation.getDate().toString() : null)
                 .appVersion(versionService.appVersion)
                 .totalLibraries((int) libraryRepository.count())
                 .totalBooks(bookRepository.count())
@@ -146,64 +129,50 @@ public class TelemetryService {
                 .build();
     }
 
-    private Map<Integer, Long> getBookFileTypeCounts() {
-        Map<Integer, Long> countByType = new HashMap<>();
+    private Map<String, Long> getBookFileTypeCounts() {
+        Map<String, Long> countByType = new HashMap<>();
         for (BookFileType type : BookFileType.values()) {
-            Integer mapped = EnumMappings.BOOK_FILE_TYPE.get(type);
-            if (mapped != null) {
-                countByType.put(mapped, bookRepository.countByBookType(type));
-            }
+            countByType.put(type.name(), bookRepository.countByBookType(type));
         }
         return countByType;
     }
 
     private BookloreTelemetry.LibraryStatistics mapLibraryStatistics(LibraryEntity lib) {
         return BookloreTelemetry.LibraryStatistics.builder()
-                .libraryName(lib.getName())
                 .totalLibraryPaths(lib.getLibraryPaths() != null ? lib.getLibraryPaths().size() : 0)
                 .bookCount(bookRepository.countByLibraryId(lib.getId()))
                 .watchEnabled(lib.isWatch())
-                .iconType(lib.getIconType() != null ? EnumMappings.ICON_TYPE.getOrDefault(lib.getIconType(), -1) : -1)
-                .scanMode(lib.getScanMode() != null ? EnumMappings.LIBRARY_SCAN_MODE.getOrDefault(lib.getScanMode(), -1) : -1)
+                .iconType(lib.getIconType() != null ? lib.getIconType().name() : null)
+                .scanMode(lib.getScanMode() != null ? lib.getScanMode().name() : null)
                 .build();
     }
 
-    private int[] getEnabledMetadataProvidersAsInt(MetadataProviderSettings providers) {
-        List<Integer> enabled = new ArrayList<>();
+    private String[] getEnabledMetadataProviders(MetadataProviderSettings providers) {
+        List<String> enabled = new ArrayList<>();
         if (providers.getAmazon() != null && providers.getAmazon().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.Amazon));
+            enabled.add(MetadataProvider.Amazon.name());
         if (providers.getGoogle() != null && providers.getGoogle().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.Google));
+            enabled.add(MetadataProvider.Google.name());
         if (providers.getGoodReads() != null && providers.getGoodReads().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.GoodReads));
+            enabled.add(MetadataProvider.GoodReads.name());
         if (providers.getHardcover() != null && providers.getHardcover().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.Hardcover));
+            enabled.add(MetadataProvider.Hardcover.name());
         if (providers.getComicvine() != null && providers.getComicvine().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.Comicvine));
+            enabled.add(MetadataProvider.Comicvine.name());
         if (providers.getDouban() != null && providers.getDouban().isEnabled())
-            enabled.add(EnumMappings.METADATA_PROVIDER.get(MetadataProvider.Douban));
-        return enabled.stream().mapToInt(i -> i).toArray();
+            enabled.add(MetadataProvider.Douban.name());
+        if (providers.getLubimyczytac() != null && providers.getLubimyczytac().isEnabled())
+            enabled.add(MetadataProvider.Lubimyczytac.name());
+        return enabled.toArray(new String[0]);
     }
 
-    private int[] getEnabledReviewMetadataProvidersAsInt(MetadataPublicReviewsSettings reviewSettings) {
-        List<Integer> enabled = new ArrayList<>();
+    private String[] getEnabledReviewMetadataProviders(MetadataPublicReviewsSettings reviewSettings) {
+        List<String> enabled = new ArrayList<>();
         if (reviewSettings.getProviders() != null) {
             reviewSettings.getProviders().stream()
                     .filter(MetadataPublicReviewsSettings.ReviewProviderConfig::isEnabled)
-                    .forEach(cfg -> {
-                        try {
-                            MetadataProvider provider = MetadataProvider.valueOf(cfg.getProvider().name());
-                            Integer mapped = EnumMappings.REVIEW_PROVIDER.get(provider);
-                            if (mapped != null) enabled.add(mapped);
-                        } catch (IllegalArgumentException ignored) {
-                        }
-                    });
+                    .forEach(cfg -> enabled.add(cfg.getProvider().name()));
         }
-        return enabled.stream().mapToInt(i -> i).toArray();
-    }
-
-    private String getInstallationId() {
-        AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
-        return setting != null ? setting.getVal() : "unknown";
+        return enabled.toArray(new String[0]);
     }
 }
