@@ -3,7 +3,7 @@
     <div class="header-content">
       <h2>
         Review Bookdrop Files
-        <a href="https://booklore-app.github.io/booklore-docs/docs/bookdrop" target="_blank" rel="noopener noreferrer">
+        <a href="https://booklore.org/docs/bookdrop" target="_blank" rel="noopener noreferrer">
           <i
             class="pi pi-external-link external-link-icon"
             pTooltip="View documentation"
@@ -106,10 +106,10 @@
               tooltipPosition="top">
             </p-button>
           </div>
-          
+
           <div class="default-controls">
-            <i class="pi pi-book" 
-              pTooltip="Specify library and subpath for selected files" 
+            <i class="pi pi-book"
+              pTooltip="Specify library and subpath for selected files"
               tooltipPosition="left"></i>
 
             <p-select
@@ -189,7 +189,7 @@
               </div>
 
               <div class="file-library">
-                <i 
+                <i
                   class="pi metadata-status"
                   [ngClass]="{
                     'pi-check-circle copied': copiedFlags[file.file.id],
@@ -234,7 +234,7 @@
                   (click)="file.showDetails = !file.showDetails"
                   [pTooltip]="file.showDetails
                     ? 'Hide metadata'
-                    : file.file.fetchedMetadata?.title 
+                    : file.file.fetchedMetadata?.title
                       ? 'Review and copy fetched metadata'
                       : 'Show file metadata (no fetched metadata)'"
                   tooltipPosition="left">

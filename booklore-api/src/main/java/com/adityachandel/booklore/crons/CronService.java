@@ -26,7 +26,7 @@ public class CronService {
             try {
                 BookloreTelemetry telemetry = telemetryService.collectTelemetry();
                 restClient.post()
-                        .uri("https://telemetry.booklore.dev/api/v1/ingest")
+                        .uri("https://telemetry.booklore.org/api/v1/ingest")
                         .body(telemetry)
                         .retrieve()
                         .body(String.class);
