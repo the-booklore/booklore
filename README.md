@@ -140,7 +140,7 @@ Experience BookLore's features in a live environment before deploying your own i
 
 | 🌐 Demo URL                                        | 👤 Username | 🔑 Password        |
 |----------------------------------------------------|-------------|--------------------|
-| **[demo.booklore.dev](https://demo.booklore.dev)** | `booklore`  | `9HC20PGGfitvWaZ1` |
+| **[demo.booklore.org](https://demo.booklore.org)** | `booklore`  | `9HC20PGGfitvWaZ1` |
 
 > ⚠️ **Note:** Demo account has standard user permissions only.  
 > Admin features (user management, library setup) require a self-hosted instance.

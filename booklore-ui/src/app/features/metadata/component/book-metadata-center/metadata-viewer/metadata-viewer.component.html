@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -198,6 +198,20 @@
                 >
                   <img src="https://assets.hardcover.app/static/favicon.ico" alt="Hardcover" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.hardcoverRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.lubimyczytacRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://lubimyczytac.pl/ksiazka/' + (book.metadata?.lubimyczytacId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'lubimyczytac')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
                 </a>
               }
 

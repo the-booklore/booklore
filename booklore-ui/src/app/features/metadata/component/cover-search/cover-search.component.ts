@@ -54,6 +54,10 @@ export class CoverSearchComponent implements OnInit {
         title: book.metadata?.title || '',
         author: book.metadata?.authors && book.metadata?.authors.length > 0 ? book.metadata?.authors[0] : ''
       });
+
+      if (this.searchForm.valid) {
+        this.onSearch();
+      }
     }
   }
 

@@ -19,8 +19,6 @@ import {initializeAuthFactory} from './app/core/security/auth-initializer';
 import {StartupService} from './app/shared/service/startup.service';
 import {provideCharts, withDefaultRegisterables} from 'ng2-charts';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import {IconService} from './app/shared/services/icon.service';
-import {firstValueFrom} from 'rxjs';
 
 export function storageFactory(): OAuthStorage {
   return localStorage;
@@ -37,10 +35,6 @@ bootstrapApplication(AppComponent, {
     provideAppInitializer(() => {
       const startup = inject(StartupService);
       return startup.load();
-    }),
-    provideAppInitializer(() => {
-      const iconService = inject(IconService);
-      return firstValueFrom(iconService.preloadAllIcons());
     }),
     provideHttpClient(withInterceptors([AuthInterceptorService])),
     provideOAuthClient(),

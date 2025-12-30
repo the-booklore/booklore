@@ -14,7 +14,12 @@ interface ReadingProgressStats {
 }
 
 const CHART_COLORS = [
-  '#6c757d', '#ffc107', '#fd7e14', '#17a2b8', '#6f42c1', '#28a745'
+  '#6c757d', // Gray - Not Started (0%)
+  '#ffc107', // Yellow - Just Started (1-25%)
+  '#fd7e14', // Orange - Getting Into It (26-50%)
+  '#17a2b8', // Cyan - Halfway Through (51-75%)
+  '#6f42c1', // Purple - Almost Finished (76-99%)
+  '#28a745'  // Green - Completed (100%)
 ] as const;
 
 const CHART_DEFAULTS = {
