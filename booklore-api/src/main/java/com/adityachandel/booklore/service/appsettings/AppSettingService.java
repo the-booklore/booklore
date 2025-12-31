@@ -95,7 +95,9 @@ public class AppSettingService {
     }
 
     private Map<String, String> getSettingsMap() {
-        return settingPersistenceHelper.appSettingsRepository.findAll().stream().collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
+        return settingPersistenceHelper.appSettingsRepository.findAll().stream()
+                .filter(entity -> entity.getName() != null && entity.getVal() != null)
+                .collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
     }
 
     private PublicAppSetting buildPublicSetting() {
