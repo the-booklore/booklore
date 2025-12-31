@@ -1,38 +1,57 @@
 .thumbnail {
-  width: 10rem;
-  height: 14rem;
+  border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   margin: 0 auto 1rem;
+}
+
+::ng-deep .metapicker .thumbnail {
+  img {
+    border-radius: 0.5rem;
+    max-height: 14rem;
+    max-width: 10em;
+  }
 
   @media (max-width: 768px) {
-    max-width: 50%;
+    margin-bottom: 0;
   }
 }
-.metaeditor .thumbnail {
-  width: 100%;
+
+.metapicker div.thumbnail {
+  background-color: var(--p-inputtext-disabled-background);
+  color: var(--p-inputtext-disabled-color);
+  width: 9rem;
+  height: 14rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+::ng-deep .metaeditor img.thumbnail {
+  border-radius: 0.5rem;
+  max-width: 100%;
+  max-height: 100%;
   height: auto;
+  width: auto;
+  
+  @media (max-width: 768px) {
+    max-height: 14em;
+  }
 }
 
-.arrow-button {
-  padding-left: 1rem;
-  padding-right: 1rem;
+.metaeditor .arrow-button {
+  padding: 0;
 }
 
-.green-outlined-button {
-  --p-button-outlined-primary-border-color: forestgreen;
-  --p-button-outlined-primary-color: forestgreen;
-}
-
-.red-outlined-button {
-  --p-button-outlined-primary-border-color: #E32636;
-  --p-button-outlined-primary-color: #E32636;
-}
-
-input.outlined-input-green,
-textarea.outlined-input-green,
-::ng-deep p-autocomplete.outlined-input-green ul.p-autocomplete-input-multiple {
-  border: 1px solid forestgreen !important;
+.thumbnail.changed,
+input.changed,
+textarea.changed,
+::ng-deep p-datepicker.changed input,
+::ng-deep p-autocomplete.changed ul.p-autocomplete-input-multiple {
+  border: 1px solid var(--p-button-outlined-warn-border-color) !important;
 }
 
 ::ng-deep .p-inputchips {
@@ -52,14 +71,58 @@ textarea.outlined-input-green,
 }
 
 .metapicker label,
-.metaeditor label {
+.metaeditor label,
+.missingmd {
   color: var(--text-color-secondary);
 }
 
+::ng-deep .metapicker {
+  .dest, .src {
+    width: calc(50% - 2rem);
+  }
+
+  .arrow-button {
+    margin: auto 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .arrow-button.nosrc button[disabled] {
+      display: none;
+    }
+  }
+
+  input.diff,
+  textarea.diff,
+  .p-autocomplete.diff .p-chip-label {
+    color: var(--p-primary-color) !important;
+  }
+
+  .src .p-chip.p-disabled {
+    color: var(--p-inputtext-disabled-color) !important;
+    opacity: 1;
+  }
+
+  .src .p-chip-remove-icon {
+    display: none;
+  }
+
+  .src li.p-autocomplete-input-chip {
+    width: 1px;
+  }
+}
+
 .metaheader {
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px dotted var(--border-color);
   padding: 1rem;
   justify-content: space-between;
+
+  p {
+    text-align: center;
+
+    @media (max-width: 768px) {
+      font-size: 0.875rem;
+    }
+  }
 }
 
 .metaheader .midbuttons {
@@ -69,11 +132,41 @@ textarea.outlined-input-green,
 .metacontent {
   padding: 1rem;
 }
+
 .metaeditor .metacontent {
   padding: 0 0 0 1rem;
 
   @media (max-width: 768px) {
     padding: 0;
+  }
+
+  ::ng-deep button {
+    border-left-width: 0;
+    border-radius: 0 6px 6px 0;
+
+    &:disabled {
+      opacity: 1;
+      border-color: var(--p-inputtext-border-color) !important;
+
+      span {
+        opacity: 0.6;
+      }
+    }
+  }
+
+  ::ng-deep input,
+  ::ng-deep ul,
+  textarea {
+    border-radius: 6px 0 0 6px;
+  }
+
+  .field-authors,
+  .field-categories,
+  .field-moods,
+  .field-tags {
+    ::ng-deep button {
+      line-height: 2em;
+    }
   }
 }
 
@@ -91,55 +184,54 @@ textarea.outlined-input-green,
   }
 }
 
+@media (min-width: 768px) {
+  .metaheader,
+  .metapicker .metacontent,
+  .metaeditor .metabody {
+    padding-left: 3.25rem;
+  }
+}
+
 .meta-row {
+  display: flex;
+  align-items: center;
   margin-bottom: 0.5em;
+  
+  label {
+    margin: auto 0;
+  }
+}
+
+.meta-fields {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+}
+
+.field-description .meta-fields {
+  align-items: stretch;
+
+  .src {
+    resize: none;
+  }
 }
 
 @media (max-width: 768px) {
   .meta-row {
-    margin-bottom: 1em;
-  }
-
-  .metapicker .meta-row {
     flex-wrap: wrap;
-    
+    margin-bottom: 1em;
+
     label {
       width: 100%;
     }
   }
-  
-  .metapicker .meta-fields {
-    justify-content: center;
-
-    .dest {
-      width: 50%;
-      order: 1;
-      margin-right: 0.25rem;
-    }
-
-    p-button {
-      padding: 0;
-      order: 3;
-    }
-
-    ::ng-deep button {
-      border-left-width: 0;
-      border-radius: 0 6px 6px 0;
-    }
-
-    .src {
-      width: 50%;
-      order: 2;
-      border-radius: 6px 0 0 6px;
-      margin-left: 0.25rem;
-
-      ::ng-deep ul {
-        border-radius: 6px 0 0 6px;
-      }
-    }
-  }
 
   .metapicker {
+    .field-thumbnail label {
+      display: none;
+    }
+
     .field-title,
     .field-subtitle,
     .field-publisher,
@@ -156,13 +248,31 @@ textarea.outlined-input-green,
       }
 
       .dest {
-        width: 100% !important;
+        flex: 1 !important;
+        width: auto !important;
         margin: 0 0 2px 0;
+
+        &:not(:only-child) {
+          border-radius: 6px 0 0 6px;
+
+          ::ng-deep ul {
+            border-radius: 6px 0 0 6px;
+          }
+        }
+      }
+
+      .arrow-button {
+        margin: 0;
+        padding: 0;
+      }
+
+      ::ng-deep button {
+        border-left-width: 0;
+        border-radius: 0 6px 6px 0;
       }
 
       .src {
-        flex: 1 !important;
-        width: auto !important;
+        width: 100% !important;
         margin: 0;
       }
     }
