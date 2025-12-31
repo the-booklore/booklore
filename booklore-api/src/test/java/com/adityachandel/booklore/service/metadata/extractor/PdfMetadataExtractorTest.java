@@ -41,6 +41,7 @@ class PdfMetadataExtractorTest {
             PDDocumentInformation info = new PDDocumentInformation();
             info.setTitle("The Real Book Title");
             doc.setDocumentInformation(info);
+            // PDFBox 3.x saves in compressed mode by default
             doc.save(pdfFile);
         }
 
@@ -58,6 +59,7 @@ class PdfMetadataExtractorTest {
 
         try (PDDocument doc = new PDDocument()) {
             doc.addPage(new PDPage());
+            // PDFBox 3.x saves in compressed mode by default
             doc.save(pdfFile);
         }
 
@@ -75,6 +77,7 @@ class PdfMetadataExtractorTest {
 
         try (PDDocument doc = new PDDocument()) {
             doc.addPage(new PDPage());
+            // PDFBox 3.x saves in compressed mode by default
             doc.save(pdfFile);
         }
 
@@ -93,6 +96,7 @@ class PdfMetadataExtractorTest {
         try (PDDocument doc = new PDDocument()) {
             PDPage page = new PDPage();
             doc.addPage(page);
+            // PDFBox 3.x saves in compressed mode by default
             doc.save(pdfFile);
         }
 
