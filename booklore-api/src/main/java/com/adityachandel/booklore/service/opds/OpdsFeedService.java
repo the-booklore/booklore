@@ -609,6 +609,16 @@ public class OpdsFeedService {
         return switch (book.getBookType()) {
             case PDF -> "pdf";
             case EPUB -> "epub+zip";
+            case FB2 -> "x-fictionbook+xml";
+            case CBX -> {
+                if (book.getFileName() != null) {
+                    String lower = book.getFileName().toLowerCase();
+                    if (lower.endsWith(".cbr")) yield "x-cbr";
+                    if (lower.endsWith(".cbz")) yield "x-cbz";
+                    if (lower.endsWith(".cb7")) yield "x-cb7";
+                }
+                yield "x-cbz";
+            }
             default -> "octet-stream";
         };
     }
