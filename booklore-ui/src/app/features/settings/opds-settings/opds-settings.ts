@@ -105,7 +105,7 @@ export class OpdsSettings implements OnInit, OnDestroy {
       .subscribe(settings => {
         this.opdsEnabled = settings.opdsServerEnabled ?? false;
         this.komgaApiEnabled = settings.komgaApiEnabled ?? false;
-        if (this.opdsEnabled) {
+        if (this.opdsEnabled || this.komgaApiEnabled) {
           this.loadUsers();
         } else {
           this.loading = false;
@@ -185,7 +185,7 @@ export class OpdsSettings implements OnInit, OnDestroy {
 
   toggleOpdsServer(): void {
     this.saveSetting(AppSettingKey.OPDS_SERVER_ENABLED, this.opdsEnabled);
-    if (this.opdsEnabled) {
+    if (this.opdsEnabled || this.komgaApiEnabled) {
       this.loadUsers();
     } else {
       this.users = [];
@@ -194,6 +194,11 @@ export class OpdsSettings implements OnInit, OnDestroy {
 
   toggleKomgaApi(): void {
     this.saveKomgaSetting(AppSettingKey.KOMGA_API_ENABLED, this.komgaApiEnabled);
+    if (this.opdsEnabled || this.komgaApiEnabled) {
+      this.loadUsers();
+    } else {
+      this.users = [];
+    }
   }
 
   copyKomgaEndpoint(): void {
