@@ -89,28 +89,29 @@ public class FileUploadService {
     public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
+        final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
 
         Path tempPath = null;
         try {
-            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, originalFileName);
+            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, sanitizedFileName);
             file.transferTo(tempPath);
 
             final String fileHash = FileFingerprint.generateHash(tempPath);
             validateAlternativeFormatDuplicate(additionalFileType, fileHash);
 
-            final Path finalPath = buildAdditionalFilePath(book, originalFileName);
+            final Path finalPath = buildAdditionalFilePath(book, sanitizedFileName);
             validateFinalPath(finalPath);
             moveFileToFinalLocation(tempPath, finalPath);
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, originalFileName, additionalFileType, file.getSize(), fileHash, description);
+            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, additionalFileType, file.getSize(), fileHash, description);
             final BookAdditionalFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
         } catch (IOException e) {
-            log.error("Failed to upload additional file for book {}: {}", bookId, originalFileName, e);
+            log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
             cleanupTempFile(tempPath);
@@ -124,13 +125,14 @@ public class FileUploadService {
         Files.createDirectories(dropFolder);
 
         final String originalFilename = getValidatedFileName(file);
+        final String sanitizedFilename = PathPatternResolver.truncateFilenameWithExtension(originalFilename);
         Path tempPath = null;
 
         try {
-            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, originalFilename);
+            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, sanitizedFilename);
             file.transferTo(tempPath);
 
-            final Path finalPath = dropFolder.resolve(originalFilename);
+            final Path finalPath = dropFolder.resolve(sanitizedFilename);
             validateFinalPath(finalPath);
             Files.move(tempPath, finalPath);
 
