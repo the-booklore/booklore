@@ -118,7 +118,7 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   metadataScore: {label: 'Metadata Score', type: 'decimal', max: 100},
   title: {label: 'Title'},
   authors: {label: 'Authors'},
-  categories: {label: 'Categories'},
+  categories: {label: 'Genres'},
   moods: {label: 'Moods'},
   tags: {label: 'Tags'},
   publisher: {label: 'Publisher'},
