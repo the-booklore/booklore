@@ -41,7 +41,6 @@ class PdfMetadataExtractorTest {
             PDDocumentInformation info = new PDDocumentInformation();
             info.setTitle("The Real Book Title");
             doc.setDocumentInformation(info);
-            // PDFBox 3.x saves in compressed mode by default
             doc.save(pdfFile);
         }
 
