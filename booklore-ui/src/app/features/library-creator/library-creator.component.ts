@@ -37,7 +37,8 @@ export class LibraryCreatorComponent implements OnInit {
 
   readonly scanModeOptions = [
     {label: 'Each file is a book (Recommended)', value: 'FILE_AS_BOOK'},
-    {label: 'Each folder is a book with extras', value: 'FOLDER_AS_BOOK'}
+    {label: 'Each folder is a book with extras', value: 'FOLDER_AS_BOOK'},
+    {label: 'Each folder is a series', value: 'FOLDER_AS_SERIES'}
   ];
 
   readonly bookFormatOptions = [

@@ -1,6 +1,6 @@
 import {SortOption} from './sort.model';
 
-export type LibraryScanMode = 'FILE_AS_BOOK' | 'FOLDER_AS_BOOK';
+export type LibraryScanMode = 'FILE_AS_BOOK' | 'FOLDER_AS_BOOK' | 'FOLDER_AS_SERIES';
 export type BookFileType = 'PDF' | 'EPUB' | 'CBX' | 'FB2';
 
 export interface Library {
