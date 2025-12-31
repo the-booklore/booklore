@@ -66,7 +66,7 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final BookFileExtension fileExtension = getFileExtension(originalFileName);
-            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile());
+            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
@@ -89,28 +89,29 @@ public class FileUploadService {
     public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
+        final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
 
         Path tempPath = null;
         try {
-            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, originalFileName);
+            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, sanitizedFileName);
             file.transferTo(tempPath);
 
             final String fileHash = FileFingerprint.generateHash(tempPath);
             validateAlternativeFormatDuplicate(additionalFileType, fileHash);
 
-            final Path finalPath = buildAdditionalFilePath(book, originalFileName);
+            final Path finalPath = buildAdditionalFilePath(book, sanitizedFileName);
             validateFinalPath(finalPath);
             moveFileToFinalLocation(tempPath, finalPath);
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, originalFileName, additionalFileType, file.getSize(), fileHash, description);
+            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, additionalFileType, file.getSize(), fileHash, description);
             final BookAdditionalFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
         } catch (IOException e) {
-            log.error("Failed to upload additional file for book {}: {}", bookId, originalFileName, e);
+            log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
             cleanupTempFile(tempPath);
@@ -124,13 +125,14 @@ public class FileUploadService {
         Files.createDirectories(dropFolder);
 
         final String originalFilename = getValidatedFileName(file);
+        final String sanitizedFilename = PathPatternResolver.truncateFilenameWithExtension(originalFilename);
         Path tempPath = null;
 
         try {
-            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, originalFilename);
+            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, sanitizedFilename);
             file.transferTo(tempPath);
 
-            final Path finalPath = dropFolder.resolve(originalFilename);
+            final Path finalPath = dropFolder.resolve(sanitizedFilename);
             validateFinalPath(finalPath);
             Files.move(tempPath, finalPath);
 
@@ -174,7 +176,12 @@ public class FileUploadService {
     }
 
     private Path createTempFile(String prefix, String fileName) throws IOException {
-        return Files.createTempFile(prefix, fileName);
+        String suffix = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex >= 0) {
+            suffix = fileName.substring(lastDotIndex);
+        }
+        return Files.createTempFile(prefix, suffix);
     }
 
     private void validateFinalPath(Path finalPath) {
@@ -225,8 +232,28 @@ public class FileUploadService {
         }
     }
 
-    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) {
-        return metadataExtractorFactory.extractMetadata(fileExt, file);
+    private BookMetadata extractMetadata(BookFileExtension fileExt, File file, String originalFileName) {
+        BookMetadata metadata = metadataExtractorFactory.extractMetadata(fileExt, file);
+
+        // If the metadata title is the same as the temporary file's base name (which happens
+        // when CBX files have no embedded metadata), use the original filename as the title instead
+        String tempFileBaseName = java.nio.file.Paths.get(file.getName()).getFileName().toString();
+        int lastDotIndex = tempFileBaseName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            tempFileBaseName = tempFileBaseName.substring(0, lastDotIndex);
+        }
+
+        String originalFileBaseName = originalFileName;
+        lastDotIndex = originalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            originalFileBaseName = originalFileName.substring(0, lastDotIndex);
+        }
+
+        if (metadata.getTitle() != null && (metadata.getTitle().equals(tempFileBaseName) || metadata.getTitle().startsWith(UPLOAD_TEMP_PREFIX))) {
+            metadata.setTitle(originalFileBaseName);
+        }
+
+        return metadata;
     }
 
     private void validateFile(MultipartFile file) {

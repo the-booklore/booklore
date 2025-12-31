@@ -7,7 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Data
@@ -27,8 +27,8 @@ public class TasksHistoryResponse {
         private TaskStatus status;
         private Integer progressPercentage;
         private String message;
-        private LocalDateTime createdAt;
-        private LocalDateTime updatedAt;
-        private LocalDateTime completedAt;
+        private Instant createdAt;
+        private Instant updatedAt;
+        private Instant completedAt;
     }
 }

@@ -10,7 +10,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -112,10 +114,14 @@ public class TaskHistoryService {
                 .status(task.getStatus())
                 .progressPercentage(task.getProgressPercentage())
                 .message(task.getMessage())
-                .createdAt(task.getCreatedAt())
-                .updatedAt(task.getUpdatedAt())
-                .completedAt(task.getCompletedAt())
+                .createdAt(toUtcInstant(task.getCreatedAt()))
+                .updatedAt(toUtcInstant(task.getUpdatedAt()))
+                .completedAt(toUtcInstant(task.getCompletedAt()))
                 .build();
+    }
+
+    private Instant toUtcInstant(LocalDateTime localDateTime) {
+        return localDateTime != null ? localDateTime.atZone(ZoneId.systemDefault()).toInstant() : null;
     }
 
     private TasksHistoryResponse.TaskHistory createMetadataOnlyTaskInfo(TaskType taskType) {

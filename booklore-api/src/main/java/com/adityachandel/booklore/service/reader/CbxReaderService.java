@@ -230,6 +230,9 @@ public class CbxReaderService {
     }
 
     private boolean isImageFile(String name) {
+        if (!isContentEntry(name)) {
+            return false;
+        }
         String lower = name.toLowerCase().replace("\\", "/");
         for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
             if (lower.endsWith(extension)) {
@@ -237,6 +240,27 @@ public class CbxReaderService {
             }
         }
         return false;
+    }
+
+    private boolean isContentEntry(String name) {
+        if (name == null) return false;
+        String norm = name.replace('\\', '/');
+        if (norm.startsWith("__MACOSX/") || norm.contains("/__MACOSX/")) return false;
+        String[] parts = norm.split("/");
+        for (String part : parts) {
+            if ("__MACOSX".equalsIgnoreCase(part)) return false;
+        }
+        String base = baseName(norm);
+        if (base.startsWith("._")) return false;
+        if (base.startsWith(".")) return false;
+        if (".ds_store".equalsIgnoreCase(base)) return false;
+        return true;
+    }
+
+    private String baseName(String path) {
+        if (path == null) return null;
+        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return slash >= 0 ? path.substring(slash + 1) : path;
     }
 
 
