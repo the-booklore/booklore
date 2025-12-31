@@ -42,6 +42,7 @@ import {BookNavigationService} from '../../../../book/service/book-navigation.se
 import {Divider} from 'primeng/divider';
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
 import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
+import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
 @Component({
   selector: 'app-metadata-viewer',
@@ -96,6 +97,9 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
 
   private bookNavigationService = inject(BookNavigationService);
   private metadataHostService = inject(BookMetadataHostService);
+  private appSettingsService = inject(AppSettingsService);
+  private appSettings$ = this.appSettingsService.appSettings$;
+  amazonDomain = 'com';
   navigationState$ = this.bookNavigationService.getNavigationState();
 
   ngOnInit(): void {
@@ -169,24 +173,30 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         this.userService.userState$.pipe(
           take(1),
           map(userState => {
-            const items: MenuItem[] = [
-              {
+            const items: MenuItem[] = [];
+            
+            // Add allowed submenus based on user permissions
+
+            if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {
+              items.push({
                 label: 'Upload File',
                 icon: 'pi pi-upload',
                 command: () => {
                   this.bookDialogHelperService.openAdditionalFileUploaderDialog(book);
                 },
-              },
-              {
+              });
+            }
+
+            if (userState?.user?.permissions.canManageLibrary || userState?.user?.permissions.admin) {
+              items.push({
                 label: 'Organize Files',
                 icon: 'pi pi-arrows-h',
                 command: () => {
                   this.openFileMoverDialog(book.id);
                 },
-              },
-            ];
+              });
+            }
 
-            // Add Send Book submenu if user has permission
             if (userState?.user?.permissions.canEmailBook || userState?.user?.permissions.admin) {
               items.push({
                 label: 'Send Book',
@@ -208,74 +218,76 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
               });
             }
 
-            items.push({
-              label: 'Delete Book',
-              icon: 'pi pi-trash',
-              command: () => {
-                this.confirmationService.confirm({
-                  message: `Are you sure you want to delete "${book.metadata?.title}"?`,
-                  header: 'Confirm Deletion',
-                  icon: 'pi pi-exclamation-triangle',
-                  acceptIcon: 'pi pi-trash',
-                  rejectIcon: 'pi pi-times',
-                  acceptButtonStyleClass: 'p-button-danger',
-                  accept: () => {
-                    this.bookService.deleteBooks(new Set([book.id])).subscribe({
-                      next: () => {
-                        if (this.metadataCenterViewMode === 'route') {
-                          this.router.navigate(['/dashboard']);
-                        } else {
-                          this.dialogRef?.close();
-                        }
-                      },
-                      error: () => {
-                      }
-                    });
-                  }
-                });
-              },
-            });
-
-            // Add delete additional files menu if there are any additional files
-            if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
-              (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
-              const deleteFileItems: MenuItem[] = [];
-
-              // Add alternative formats
-              if (book.alternativeFormats && book.alternativeFormats.length > 0) {
-                book.alternativeFormats.forEach(format => {
-                  const extension = this.getFileExtension(format.filePath);
-                  deleteFileItems.push({
-                    label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
-                    icon: this.getFileIcon(extension),
-                    command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
-                  });
-                });
-              }
-
-              // Add separator if both types exist
-              if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
-                book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                deleteFileItems.push({separator: true});
-              }
-
-              // Add supplementary files
-              if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
-                book.supplementaryFiles.forEach(file => {
-                  const extension = this.getFileExtension(file.filePath);
-                  deleteFileItems.push({
-                    label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
-                    icon: this.getFileIcon(extension),
-                    command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
-                  });
-                });
-              }
-
+            if (userState?.user?.permissions.canDeleteBook || userState?.user?.permissions.admin) {
               items.push({
-                label: 'Delete Additional Files',
+                label: 'Delete Book',
                 icon: 'pi pi-trash',
-                items: deleteFileItems
+                command: () => {
+                  this.confirmationService.confirm({
+                    message: `Are you sure you want to delete "${book.metadata?.title}"?`,
+                    header: 'Confirm Deletion',
+                    icon: 'pi pi-exclamation-triangle',
+                    acceptIcon: 'pi pi-trash',
+                    rejectIcon: 'pi pi-times',
+                    acceptButtonStyleClass: 'p-button-danger',
+                    accept: () => {
+                      this.bookService.deleteBooks(new Set([book.id])).subscribe({
+                        next: () => {
+                          if (this.metadataCenterViewMode === 'route') {
+                            this.router.navigate(['/dashboard']);
+                          } else {
+                            this.dialogRef?.close();
+                          }
+                        },
+                        error: () => {
+                        }
+                      });
+                    }
+                  });
+                },
               });
+
+              // Add delete additional files menu if there are any additional files
+              if ((book.alternativeFormats && book.alternativeFormats.length > 0) ||
+                (book.supplementaryFiles && book.supplementaryFiles.length > 0)) {
+                const deleteFileItems: MenuItem[] = [];
+
+                // Add alternative formats
+                if (book.alternativeFormats && book.alternativeFormats.length > 0) {
+                  book.alternativeFormats.forEach(format => {
+                    const extension = this.getFileExtension(format.filePath);
+                    deleteFileItems.push({
+                      label: `${format.fileName} (${this.getFileSizeInMB(format)})`,
+                      icon: this.getFileIcon(extension),
+                      command: () => this.deleteAdditionalFile(book.id, format.id, format.fileName || 'file')
+                    });
+                  });
+                }
+
+                // Add separator if both types exist
+                if (book.alternativeFormats && book.alternativeFormats.length > 0 &&
+                  book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+                  deleteFileItems.push({separator: true});
+                }
+
+                // Add supplementary files
+                if (book.supplementaryFiles && book.supplementaryFiles.length > 0) {
+                  book.supplementaryFiles.forEach(file => {
+                    const extension = this.getFileExtension(file.filePath);
+                    deleteFileItems.push({
+                      label: `${file.fileName} (${this.getFileSizeInMB(file)})`,
+                      icon: this.getFileIcon(extension),
+                      command: () => this.deleteAdditionalFile(book.id, file.id, file.fileName || 'file')
+                    });
+                  });
+                }
+
+                items.push({
+                  label: 'Delete Additional Files',
+                  icon: 'pi pi-trash',
+                  items: deleteFileItems
+                });
+              }
             }
 
             return items;
@@ -306,6 +318,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           this.quillEditor.quill.root.innerHTML = metadata!.description;
         }
         this.selectedReadStatus = book.readStatus ?? ReadStatus.UNREAD;
+      });
+
+    this.appSettings$
+      .pipe(
+        filter(settings => settings != null),
+        take(1)
+      )
+      .subscribe(settings => {
+        this.amazonDomain = settings?.metadataProviderSettings?.amazon?.domain ?? 'com';
       });
   }
 

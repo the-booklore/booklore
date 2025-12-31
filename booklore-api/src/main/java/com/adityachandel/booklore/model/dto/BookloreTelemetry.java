@@ -11,9 +11,9 @@ import java.util.Map;
 @Setter
 @Getter
 public class BookloreTelemetry {
-    @Builder.Default
-    private int telemetryVersion = 1;
+    private int telemetryVersion;
     private String installationId;
+    private String installationDate;
     private String appVersion;
 
     private int totalLibraries;
@@ -49,8 +49,8 @@ public class BookloreTelemetry {
     @Builder
     @Getter
     public static class MetadataStatistics {
-        private int[] enabledMetadataProviders;
-        private int[] enabledReviewMetadataProviders;
+        private String[] enabledMetadataProviders;
+        private String[] enabledReviewMetadataProviders;
         private boolean saveMetadataToFile;
         private boolean moveFileViaPattern;
         private boolean autoBookSearchEnabled;
@@ -85,17 +85,16 @@ public class BookloreTelemetry {
     @Getter
     public static class BookStatistics {
         private long totalBooks;
-        private Map<Integer, Long> bookCountByType;
+        private Map<String, Long> bookCountByType;
     }
 
     @Builder
     @Getter
     public static class LibraryStatistics {
-        private String libraryName;
         private long bookCount;
         private int totalLibraryPaths;
         private boolean watchEnabled;
-        private int iconType;
-        private int scanMode;
+        private String iconType;
+        private String scanMode;
     }
 }

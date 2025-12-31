@@ -11,9 +11,11 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.service.InstallationService;
 import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +35,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -52,45 +55,16 @@ public class AppMigrationService {
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
     private FileService fileService;
+    private ObjectMapper objectMapper;
+    private InstallationService installationService;
 
     @Transactional
     public void generateInstallationId() {
         if (migrationRepository.existsById("generateInstallationId")) return;
 
-        AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
-
-        if (setting == null) {
-            LocalDateTime now = LocalDateTime.now();
-            String uuid = UUID.randomUUID().toString();
-            String combined = now + "_" + uuid;
-
-            String installationId = hashToSha256(combined).substring(0, 24);
-
-            setting = new AppSettingEntity();
-            setting.setName(INSTALLATION_ID_KEY);
-            setting.setVal(installationId);
-            appSettingsRepository.save(setting);
-
-            log.info("Generated new installation ID");
-        }
+        installationService.getOrCreateInstallation();
 
         migrationRepository.save(new AppMigrationEntity("generateInstallationId", LocalDateTime.now(), "Generate unique installation ID using timestamp and UUID"));
-    }
-
-    private String hashToSha256(String input) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            StringBuilder hexString = new StringBuilder();
-            for (byte b : hash) {
-                String hex = Integer.toHexString(0xff & b);
-                if (hex.length() == 1) hexString.append('0');
-                hexString.append(hex);
-            }
-            return hexString.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not found", e);
-        }
     }
 
     @Transactional
@@ -336,6 +310,33 @@ public class AppMigrationService {
             log.error("Error during migration moveIconsToDataFolder", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Transactional
+    public void migrateInstallationIdToJson() {
+        if (migrationRepository.existsById("migrateInstallationIdToJson")) return;
+
+        AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
+
+        if (setting != null) {
+            String value = setting.getVal();
+            try {
+                objectMapper.readTree(value);
+                log.info("Installation ID is already in JSON format, skipping migration");
+            } catch (Exception e) {
+                Instant now = Instant.now();
+                String json = String.format("{\"id\":\"%s\",\"date\":\"%s\"}", value, now);
+                setting.setVal(json);
+                appSettingsRepository.save(setting);
+                log.info("Migrated installation ID to JSON format with current date");
+            }
+        }
+
+        migrationRepository.save(new AppMigrationEntity(
+                "migrateInstallationIdToJson",
+                LocalDateTime.now(),
+                "Migrate existing installation_id from plain string to JSON format with date"
+        ));
     }
 
 }

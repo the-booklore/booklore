@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.crons;
 
+import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.dto.BookloreTelemetry;
+import com.adityachandel.booklore.model.dto.InstallationPing;
 import com.adityachandel.booklore.service.TelemetryService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.AllArgsConstructor;
@@ -16,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class CronService {
 
+    private final AppProperties appProperties;
     private final TelemetryService telemetryService;
     private final RestClient restClient;
     private final AppSettingService appSettingService;
@@ -24,15 +27,31 @@ public class CronService {
     public void sendTelemetryData() {
         if (appSettingService.getAppSettings().isTelemetryEnabled()) {
             try {
+                String url = appProperties.getTelemetry().getBaseUrl() + "/api/v1/ingest";
                 BookloreTelemetry telemetry = telemetryService.collectTelemetry();
-                restClient.post()
-                        .uri("https://telemetry.booklore.dev/api/v1/ingest")
-                        .body(telemetry)
-                        .retrieve()
-                        .body(String.class);
-            } catch (Exception ignored) {
-
+                postData(url, telemetry);
+            } catch (Exception e) {
+                log.warn("Failed to send telemetry data: {}", e.getMessage());
             }
         }
+    }
+
+    @Scheduled(fixedDelay = 24, timeUnit = TimeUnit.HOURS, initialDelay = 10)
+    public void sendPing() {
+        try {
+            String url = appProperties.getTelemetry().getBaseUrl() + "/api/v1/heartbeat";
+            InstallationPing ping = telemetryService.getInstallationPing();
+            postData(url, ping);
+        } catch (Exception e) {
+            log.warn("Failed to send installation ping: {}", e.getMessage());
+        }
+    }
+
+    private void postData(String url, Object body) {
+        restClient.post()
+                .uri(url)
+                .body(body)
+                .retrieve()
+                .body(String.class);
     }
 }

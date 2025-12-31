@@ -19,9 +19,11 @@ public class MetadataRefreshOptions {
     private boolean mergeCategories;
     private Boolean reviewBeforeApply;
     @NotNull(message = "Field options cannot be null")
-    private FieldOptions fieldOptions;
+    @Builder.Default
+    private FieldOptions fieldOptions = new FieldOptions();
     @NotNull(message = "Enabled fields cannot be null")
-    private EnabledFields enabledFields;
+    @Builder.Default
+    private EnabledFields enabledFields = new EnabledFields();
 
     @Getter
     @Setter

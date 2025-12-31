@@ -1,0 +1,95 @@
+package com.adityachandel.booklore.service;
+
+import com.adityachandel.booklore.model.dto.Installation;
+import com.adityachandel.booklore.model.entity.AppSettingEntity;
+import com.adityachandel.booklore.repository.AppSettingsRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+@Slf4j
+public class InstallationService {
+
+    private static final String INSTALLATION_ID_KEY = "installation_id";
+
+    private final AppSettingsRepository appSettingsRepository;
+    private final ObjectMapper objectMapper;
+
+    public InstallationService(AppSettingsRepository appSettingsRepository, ObjectMapper objectMapper) {
+        this.appSettingsRepository = appSettingsRepository;
+        this.objectMapper = objectMapper.copy();
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
+
+    public Installation getOrCreateInstallation() {
+        AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
+
+        if (setting == null) {
+            return createNewInstallation();
+        }
+
+        try {
+            return objectMapper.readValue(setting.getVal(), Installation.class);
+        } catch (Exception e) {
+            log.warn("Failed to parse installation ID, creating new one", e);
+            return createNewInstallation();
+        }
+    }
+
+    private Installation createNewInstallation() {
+        Instant now = Instant.now();
+        String uuid = UUID.randomUUID().toString();
+
+        String combined = now.toString() + "_" + uuid;
+        String installationId = hashToSha256(combined).substring(0, 24);
+
+        Installation installation = new Installation(installationId, now);
+        saveInstallation(installation);
+
+        log.info("Generated new installation ID");
+        return installation;
+    }
+
+    private void saveInstallation(Installation installation) {
+        try {
+            String json = objectMapper.writeValueAsString(installation);
+            AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
+
+            if (setting == null) {
+                setting = new AppSettingEntity();
+                setting.setName(INSTALLATION_ID_KEY);
+            }
+
+            setting.setVal(json);
+            appSettingsRepository.save(setting);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to save installation ID", e);
+        }
+    }
+
+    private String hashToSha256(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 algorithm not found", e);
+        }
+    }
+}
