@@ -20,11 +20,14 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +41,9 @@ public class ComicvineBookParser implements BookParser {
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    private final AtomicBoolean rateLimited = new AtomicBoolean(false);
+    private final AtomicLong rateLimitResetTime = new AtomicLong(0);
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
@@ -58,6 +64,16 @@ public class ComicvineBookParser implements BookParser {
     public List<BookMetadata> getMetadataListByTerm(String term) {
         String apiToken = getApiToken();
         if (apiToken == null) return Collections.emptyList();
+
+        if (rateLimited.get()) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime < rateLimitResetTime.get()) {
+                log.warn("ComicVine API is currently rate limited. Skipping request for term: '{}'", term);
+                return Collections.emptyList();
+            } else {
+                rateLimited.set(false);
+            }
+        }
 
         log.info("Comicvine: Fetching metadata for term: '{}'", term);
         try {
@@ -85,6 +101,11 @@ public class ComicvineBookParser implements BookParser {
 
             if (response.statusCode() == 200) {
                 return parseComicvineApiResponse(response.body());
+            } else if (response.statusCode() == 420) {
+                log.error("ComicVine API rate limit exceeded (Error 420). Setting rate limit flag for 1 hour.");
+                rateLimited.set(true);
+                rateLimitResetTime.set(System.currentTimeMillis() + 3600000);
+                return Collections.emptyList();
             } else {
                 log.error("Comicvine Search API returned status code {}", response.statusCode());
             }
