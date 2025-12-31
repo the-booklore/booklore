@@ -6,6 +6,7 @@ import {API_CONFIG} from '../../core/config/api-config';
 import {createRxStompConfig} from '../websocket/rx-stomp.config';
 import {OAuthService, OAuthStorage} from 'angular-oauth2-oidc';
 import {Router} from '@angular/router';
+import {PostLoginInitializerService} from '../../core/services/post-login-initializer.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,16 +15,17 @@ export class AuthService {
 
   private apiUrl = `${API_CONFIG.BASE_URL}/api/v1/auth`;
   private rxStompService?: RxStompService;
+  private postLoginInitialized = false;
 
   private http = inject(HttpClient);
   private injector = inject(Injector);
   private oAuthService = inject(OAuthService);
   private oAuthStorage = inject(OAuthStorage);
   private router = inject(Router);
+  private postLoginInitializer = inject(PostLoginInitializerService);
 
   public tokenSubject = new BehaviorSubject<string | null>(this.getOidcAccessToken() || this.getInternalAccessToken());
   public token$ = this.tokenSubject.asObservable();
-
 
   internalLogin(credentials: { username: string; password: string }): Observable<{ accessToken: string; refreshToken: string, isDefaultPassword: string }> {
     return this.http.post<{ accessToken: string; refreshToken: string, isDefaultPassword: string }>(`${this.apiUrl}/login`, credentials).pipe(
@@ -31,6 +33,7 @@ export class AuthService {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);
           this.initializeWebSocketConnection();
+          this.handleSuccessfulAuth();
         }
       })
     );
@@ -53,6 +56,7 @@ export class AuthService {
         if (response.accessToken && response.refreshToken) {
           this.saveInternalTokens(response.accessToken, response.refreshToken);
           this.initializeWebSocketConnection();
+          this.handleSuccessfulAuth();
         }
       })
     );
@@ -93,9 +97,8 @@ export class AuthService {
     this.oAuthStorage.removeItem("refresh_token");
     this.oAuthStorage.removeItem("id_token");
     this.tokenSubject.next(null);
+    this.postLoginInitialized = false;
     this.getRxStompService().deactivate();
-
-    // Force reload so user's data is not cached for next user that logs in
     window.location.href = '/login';
   }
 
@@ -114,6 +117,19 @@ export class AuthService {
     const config = createRxStompConfig(this);
     stompService.updateConfig(config);
     stompService.activate();
+
+    if (!this.postLoginInitialized) {
+      this.handleSuccessfulAuth();
+    }
+  }
+
+  private handleSuccessfulAuth() {
+    if (this.postLoginInitialized) return;
+    this.postLoginInitialized = true;
+    this.postLoginInitializer.initialize().subscribe({
+      next: () => console.log('AuthService: Post-login initialization completed'),
+      error: (err) => console.error('AuthService: Post-login initialization failed:', err)
+    });
   }
 }
 

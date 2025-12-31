@@ -11,7 +11,7 @@
 }
 
 @if (!loading && changelog.length > 0) {
-  <div class="space-y-6 p-4 max-h-[70vh] overflow-auto">
+  <div class="space-y-6 p-4 overflow-auto">
     @for (release of changelog; track release) {
       <div class="border-b pb-4">
         <p class="font-bold text-2xl pb-2">

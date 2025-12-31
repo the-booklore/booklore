@@ -6,12 +6,27 @@ on:
       - 'master'
 
 jobs:
+  get-base-ref:
+    name: Get Base Ref
+    runs-on: ubuntu-latest
+    outputs:
+      base_ref: ${{ steps.get_base.outputs.base_ref }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Get Base Ref
+        id: get_base
+        run: echo "base_ref=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+
   migration-check:
     name: Flyway Migration Check on Master
+    needs: [ get-base-ref ]
     uses: ./.github/workflows/migrations-check.yml
     with:
-      base_ref: 'HEAD~1'
-      head_ref: 'HEAD'
+      base_ref: ${{ needs.get-base-ref.outputs.base_ref }}
+      head_ref: ${{ github.sha }}
 
   build-and-release:
     needs: [ migration-check ]

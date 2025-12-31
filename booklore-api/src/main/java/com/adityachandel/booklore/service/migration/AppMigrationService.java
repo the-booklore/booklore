@@ -2,16 +2,20 @@ package com.adityachandel.booklore.service.migration;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.entity.AppMigrationEntity;
+import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.AppMigrationRepository;
+import com.adityachandel.booklore.repository.AppSettingsRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.service.InstallationService;
 import com.adityachandel.booklore.util.BookUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,25 +28,44 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @AllArgsConstructor
 @Service
 public class AppMigrationService {
 
+    private static final String INSTALLATION_ID_KEY = "installation_id";
+
     private AppMigrationRepository migrationRepository;
+    private AppSettingsRepository appSettingsRepository;
     private BookRepository bookRepository;
     private BookQueryService bookQueryService;
     private MetadataMatchService metadataMatchService;
     private AppProperties appProperties;
     private FileService fileService;
+    private ObjectMapper objectMapper;
+    private InstallationService installationService;
+
+    @Transactional
+    public void generateInstallationId() {
+        if (migrationRepository.existsById("generateInstallationId")) return;
+
+        installationService.getOrCreateInstallation();
+
+        migrationRepository.save(new AppMigrationEntity("generateInstallationId", LocalDateTime.now(), "Generate unique installation ID using timestamp and UUID"));
+    }
 
     @Transactional
     public void populateSearchTextOnce() {
@@ -51,14 +74,14 @@ public class AppMigrationService {
         int batchSize = 1000;
         int processedCount = 0;
         int offset = 0;
-        
+
         while (true) {
             List<BookEntity> bookBatch = bookRepository.findBooksForMigrationBatch(offset, batchSize);
             if (bookBatch.isEmpty()) break;
-            
+
             List<Long> bookIds = bookBatch.stream().map(BookEntity::getId).toList();
             List<BookEntity> books = bookRepository.findBooksWithMetadataAndAuthors(bookIds);
-            
+
             for (BookEntity book : books) {
                 BookMetadataEntity m = book.getMetadata();
                 if (m != null) {
@@ -69,13 +92,13 @@ public class AppMigrationService {
                     }
                 }
             }
-            
+
             bookRepository.saveAll(books);
             processedCount += books.size();
             offset += batchSize;
-            
+
             log.info("Migration progress: {} books processed", processedCount);
-            
+
             if (bookBatch.size() < batchSize) break;
         }
 
@@ -287,6 +310,33 @@ public class AppMigrationService {
             log.error("Error during migration moveIconsToDataFolder", e);
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Transactional
+    public void migrateInstallationIdToJson() {
+        if (migrationRepository.existsById("migrateInstallationIdToJson")) return;
+
+        AppSettingEntity setting = appSettingsRepository.findByName(INSTALLATION_ID_KEY);
+
+        if (setting != null) {
+            String value = setting.getVal();
+            try {
+                objectMapper.readTree(value);
+                log.info("Installation ID is already in JSON format, skipping migration");
+            } catch (Exception e) {
+                Instant now = Instant.now();
+                String json = String.format("{\"id\":\"%s\",\"date\":\"%s\"}", value, now);
+                setting.setVal(json);
+                appSettingsRepository.save(setting);
+                log.info("Migrated installation ID to JSON format with current date");
+            }
+        }
+
+        migrationRepository.save(new AppMigrationEntity(
+                "migrateInstallationIdToJson",
+                LocalDateTime.now(),
+                "Migrate existing installation_id from plain string to JSON format with date"
+        ));
     }
 
 }

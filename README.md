@@ -4,13 +4,15 @@
 
 ### *Your Personal Library, Beautifully Organized*
 
+**🌐 Official Website: [https://booklore.org](https://booklore.org/)**
+
 <p align="center">
   <img src="assets/demo.gif" alt="BookLore Demo" width="800px" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
 </p>
 
-[![Release](https://img.shields.io/github/v/release/adityachandelgit/BookLore?color=4c6ef5&style=for-the-badge&logo=github)](https://github.com/adityachandelgit/BookLore/releases)
+[![Release](https://img.shields.io/github/v/release/adityachandelgit/BookLore?color=4c6ef5&style=for-the-badge&logo=github)](https://github.com/booklore-app/booklore/releases)
 [![License](https://img.shields.io/github/license/adityachandelgit/BookLore?color=fab005&style=for-the-badge)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/adityachandelgit/BookLore?style=for-the-badge&color=ffd43b)](https://github.com/adityachandelgit/BookLore/stargazers)
+[![Stars](https://img.shields.io/github/stars/adityachandelgit/BookLore?style=for-the-badge&color=ffd43b)](https://github.com/booklore-app/booklore/stargazers)
 [![Docker Pulls](https://img.shields.io/docker/pulls/booklore/booklore?color=2496ED&style=for-the-badge&logo=docker&logoColor=white)](https://hub.docker.com/r/booklore/booklore)
 
 [![Discord](https://img.shields.io/badge/Join_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/Ee5hd458Uz)
@@ -20,7 +22,7 @@
 
 **BookLore** is a powerful, self-hosted web application designed to organize and manage your personal book collection with elegance and ease. Build your dream library with an intuitive interface, robust metadata management, and seamless multi-user support.
 
-[🚀 Get Started](#-getting-started-with-booklore) • [📖 Documentation](https://booklore-app.github.io/booklore-docs/) • [🎮 Try Demo](#-live-demo-explore-booklore-in-action) • [💬 Community](https://discord.gg/Ee5hd458Uz)
+[🚀 Get Started](#-getting-started-with-booklore) • [📖 Documentation](https://booklore.org/docs/getting-started) • [🎮 Try Demo](#-live-demo-explore-booklore-in-action) • [💬 Community](https://discord.gg/Ee5hd458Uz)
 
 </div>
 
@@ -99,7 +101,7 @@ Your support helps BookLore grow and improve! 🌱
 
 Give us a star to show your support and help others discover BookLore!
 
-[![Star this repo](https://img.shields.io/github/stars/adityachandelgit/BookLore?style=social)](https://github.com/adityachandelgit/BookLore)
+[![Star this repo](https://img.shields.io/github/stars/adityachandelgit/BookLore?style=social)](https://github.com/booklore-app/booklore)
 
 </td>
 <td align="center" width="33%">
@@ -140,7 +142,7 @@ Experience BookLore's features in a live environment before deploying your own i
 
 | 🌐 Demo URL                                        | 👤 Username | 🔑 Password        |
 |----------------------------------------------------|-------------|--------------------|
-| **[demo.booklore.dev](https://demo.booklore.dev)** | `booklore`  | `9HC20PGGfitvWaZ1` |
+| **[demo.booklore.org](https://demo.booklore.org)** | `booklore`  | `9HC20PGGfitvWaZ1` |
 
 > ⚠️ **Note:** Demo account has standard user permissions only.  
 > Admin features (user management, library setup) require a self-hosted instance.
@@ -163,7 +165,7 @@ Experience BookLore's features in a live environment before deploying your own i
 
 Guides for installation, setup, features, and more
 
-[![Read the Docs](https://img.shields.io/badge/📖_Read_the_Docs-4c6ef5?style=for-the-badge)](https://booklore-app.github.io/booklore-docs/docs/getting-started/)
+[![Read the Docs](https://img.shields.io/badge/📖_Read_the_Docs-4c6ef5?style=for-the-badge)](https://booklore.org/docs/getting-started)
 
 *Contribute to the docs at: [booklore-docs](https://github.com/booklore-app/booklore-docs)*
 
@@ -257,6 +259,12 @@ services:
       - ./data:/app/data
       - ./books:/books
       - ./bookdrop:/bookdrop
+    healthcheck:
+      test: wget -q -O - http://localhost:${BOOKLORE_PORT}/api/v1/healthcheck
+      interval: 60s
+      retries: 5
+      start_period: 60s
+      timeout: 10s
     restart: unless-stopped
 
   mariadb:
@@ -412,7 +420,7 @@ Join community!
 
 ### Thanks to all our amazing contributors! 🙏
 
-[![Contributors](https://contrib.rocks/image?repo=adityachandelgit/BookLore)](https://github.com/adityachandelgit/BookLore/graphs/contributors)
+[![Contributors](https://contrib.rocks/image?repo=adityachandelgit/BookLore)](https://github.com/booklore-app/booklore/graphs/contributors)
 
 **Want to see your face here?** [Start contributing today!](CONTRIBUTING.md)
 

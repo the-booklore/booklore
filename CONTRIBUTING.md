@@ -393,7 +393,7 @@ Instances of unacceptable behavior may result in temporary or permanent ban from
 **Need help or want to discuss ideas?**
 
 - 💬 **Discord**: [Join our server](https://discord.gg/Ee5hd458Uz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/adityachandelgit/BookLore/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/booklore-app/booklore/issues)
 
 ---
 
@@ -409,9 +409,9 @@ By contributing, you agree that your contributions will be licensed under the sa
 
 Not sure where to start? Check out:
 
-- Issues labeled [`good first issue`](https://github.com/adityachandelgit/BookLore/labels/good%20first%20issue)
-- Issues labeled [`help wanted`](https://github.com/adityachandelgit/BookLore/labels/help%20wanted)
-- Our [project roadmap](https://github.com/adityachandelgit/BookLore/projects)
+- Issues labeled [`good first issue`](https://github.com/booklore-app/booklore/labels/good%20first%20issue)
+- Issues labeled [`help wanted`](https://github.com/booklore-app/booklore/labels/help%20wanted)
+- Our [project roadmap](https://github.com/booklore-app/booklore/projects)
 
 ---
 
