@@ -4,6 +4,8 @@
 
 ### *Your Personal Library, Beautifully Organized*
 
+**🌐 Official Website: [https://booklore.org](https://booklore.org/)**
+
 <p align="center">
   <img src="assets/demo.gif" alt="BookLore Demo" width="800px" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
 </p>

@@ -306,4 +306,56 @@ class FileUploadServiceTest {
 
         assertDoesNotThrow(() -> service.uploadFile(file, 10L, 3L));
     }
+
+    @Test
+    @DisplayName("Should truncate long filenames in uploadFileBookDrop")
+    void uploadFileBookDrop_truncatesLongFilename() throws IOException {
+        byte[] content = "data".getBytes();
+        String longName = "A".repeat(300) + ".pdf";
+        MockMultipartFile file = new MockMultipartFile("file", longName, "application/pdf", content);
+
+        service.uploadFileBookDrop(file);
+
+        File[] files = tempDir.toFile().listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files).hasSize(1);
+        String savedName = files[0].getName();
+        
+        assertThat(savedName.length()).isLessThan(longName.length());
+        assertThat(savedName).endsWith(".pdf");
+    }
+
+    @Test
+    @DisplayName("Should truncate long filenames in uploadAdditionalFile")
+    void uploadAdditionalFile_truncatesLongFilename() {
+        long bookId = 11L;
+        String longName = "B".repeat(300) + ".pdf";
+        MockMultipartFile file = new MockMultipartFile("file", longName, "application/pdf", "payload".getBytes());
+
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        libPath.setId(1L);
+        libPath.setPath(tempDir.toString());
+        BookEntity book = new BookEntity();
+        book.setId(bookId);
+        book.setLibraryPath(libPath);
+        book.setFileSubPath(".");
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookAdditionalFileRepository.save(any(BookAdditionalFileEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(additionalFileMapper.toAdditionalFile(any(BookAdditionalFileEntity.class))).thenReturn(mock(AdditionalFile.class));
+
+        try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
+             fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("hash");
+
+             service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+
+             File[] files = tempDir.toFile().listFiles();
+             assertThat(files).isNotNull();
+             assertThat(files).hasSize(1);
+             String savedName = files[0].getName();
+
+             assertThat(savedName.length()).isLessThan(longName.length());
+             assertThat(savedName).endsWith(".pdf");
+        }
+    }
 }
