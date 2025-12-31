@@ -23,7 +23,6 @@ export interface MetadataMatchWeights {
   hardcoverReviewCount: number;
   doubanRating: number;
   doubanReviewCount: number;
-  lubimyczytacRating: number;
   coverImage: number;
 }
 
@@ -51,7 +50,6 @@ export interface MetadataProviderSettings {
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
-  lubimyczytac: Lubimyczytac;
 }
 
 export interface Amazon {
@@ -80,10 +78,6 @@ export interface Comicvine {
 }
 
 export interface Douban {
-  enabled: boolean;
-}
-
-export interface Lubimyczytac {
   enabled: boolean;
 }
 
@@ -128,6 +122,7 @@ export interface AppSettings {
   libraryMetadataRefreshOptions: MetadataRefreshOptions[];
   uploadPattern: string;
   opdsServerEnabled: boolean;
+  komgaApiEnabled: boolean;
   remoteAuthEnabled: boolean;
   oidcEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
@@ -141,7 +136,6 @@ export interface AppSettings {
   koboSettings: KoboSettings;
   coverCroppingSettings: CoverCroppingSettings;
   metadataDownloadOnBookdrop: boolean;
-  telemetryEnabled: boolean;
 }
 
 export enum AppSettingKey {
@@ -151,6 +145,7 @@ export enum AppSettingKey {
   LIBRARY_METADATA_REFRESH_OPTIONS = 'LIBRARY_METADATA_REFRESH_OPTIONS',
   UPLOAD_FILE_PATTERN = 'UPLOAD_FILE_PATTERN',
   OPDS_SERVER_ENABLED = 'OPDS_SERVER_ENABLED',
+  KOMGA_API_ENABLED = 'KOMGA_API_ENABLED',
   OIDC_ENABLED = 'OIDC_ENABLED',
   OIDC_PROVIDER_DETAILS = 'OIDC_PROVIDER_DETAILS',
   OIDC_AUTO_PROVISION_DETAILS = 'OIDC_AUTO_PROVISION_DETAILS',
@@ -162,6 +157,5 @@ export enum AppSettingKey {
   METADATA_DOWNLOAD_ON_BOOKDROP = 'METADATA_DOWNLOAD_ON_BOOKDROP',
   METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS',
   KOBO_SETTINGS = 'KOBO_SETTINGS',
-  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
-  TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
+  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS'
 }

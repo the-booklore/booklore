@@ -42,7 +42,9 @@ import {Select} from 'primeng/select';
 export class OpdsSettings implements OnInit, OnDestroy {
 
   opdsEndpoint = `${API_CONFIG.BASE_URL}/api/v1/opds`;
+  komgaEndpoint = `${API_CONFIG.BASE_URL}/komga`;
   opdsEnabled = false;
+  komgaApiEnabled = false;
 
   private opdsService = inject(OpdsService);
   private confirmationService = inject(ConfirmationService);
@@ -102,6 +104,7 @@ export class OpdsSettings implements OnInit, OnDestroy {
       )
       .subscribe(settings => {
         this.opdsEnabled = settings.opdsServerEnabled ?? false;
+        this.komgaApiEnabled = settings.komgaApiEnabled ?? false;
         if (this.opdsEnabled) {
           this.loadUsers();
         } else {
@@ -189,12 +192,36 @@ export class OpdsSettings implements OnInit, OnDestroy {
     }
   }
 
+  toggleKomgaApi(): void {
+    this.saveKomgaSetting(AppSettingKey.KOMGA_API_ENABLED, this.komgaApiEnabled);
+  }
+
+  copyKomgaEndpoint(): void {
+    navigator.clipboard.writeText(this.komgaEndpoint).then(() => {
+      this.showMessage('success', 'Copied', 'Komga API endpoint copied to clipboard');
+    });
+  }
+
   private saveSetting(key: string, value: unknown): void {
     this.appSettingsService.saveSettings([{key, newValue: value}]).subscribe({
       next: () => {
         const successMessage = (value === true)
           ? 'OPDS Server Enabled.'
           : 'OPDS Server Disabled.';
+        this.showMessage('success', 'Settings Saved', successMessage);
+      },
+      error: () => {
+        this.showMessage('error', 'Error', 'There was an error saving the settings.');
+      }
+    });
+  }
+
+  private saveKomgaSetting(key: string, value: unknown): void {
+    this.appSettingsService.saveSettings([{key, newValue: value}]).subscribe({
+      next: () => {
+        const successMessage = (value === true)
+          ? 'Komga API Enabled.'
+          : 'Komga API Disabled.';
         this.showMessage('success', 'Settings Saved', successMessage);
       },
       error: () => {

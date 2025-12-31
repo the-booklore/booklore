@@ -19,6 +19,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addInterceptor(opdsEnabledInterceptor)
                 .addPathPatterns("/api/v1/opds/**", "/api/v2/opds/**");
         registry.addInterceptor(komgaEnabledInterceptor)
-                .addPathPatterns("/api/v1/**", "/api/v2/**");
+                .addPathPatterns("/komga/api/**");
     }
 }

@@ -50,8 +50,7 @@ public class SecurityConfig {
             "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
             "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
             "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
-            "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
-            "/api/v1/healthcheck/**"   // Healthcheck endpoints (must remain accessible for Docker healthchecks)
+            "/api/v1/setup/**"         // Setup wizard endpoints (must remain accessible before initial setup)
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
@@ -92,11 +91,7 @@ public class SecurityConfig {
     @Order(2)
     public SecurityFilterChain komgaBasicAuthSecurityChain(HttpSecurity http) throws Exception {
         http
-                .securityMatcher("/api/v1/libraries/**", "/api/v1/series/**", "/api/v1/books/**", 
-                                "/api/v1/authors/**", "/api/v1/publishers/**", "/api/v1/genres/**",
-                                "/api/v1/languages/**", "/api/v1/tags/**", "/api/v1/age-ratings/**",
-                                "/api/v1/collections/**", "/api/v1/readlists/**",
-                                "/api/v2/users/me")
+                .securityMatcher("/komga/api/v1/**", "/komga/api/v2/**")
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth

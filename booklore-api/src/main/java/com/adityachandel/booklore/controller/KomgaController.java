@@ -20,7 +20,7 @@ import java.util.List;
 @Tag(name = "Komga API", description = "Komga-compatible API endpoints")
 @Slf4j
 @RestController
-@RequestMapping("/api")
+@RequestMapping(value = "/komga/api", produces = "application/json")
 @RequiredArgsConstructor
 public class KomgaController {
 
@@ -34,7 +34,8 @@ public class KomgaController {
     @Operation(summary = "List all libraries")
     @GetMapping("/v1/libraries")
     public ResponseEntity<List<KomgaLibraryDto>> getAllLibraries() {
-        return ResponseEntity.ok(komgaService.getAllLibraries());
+        List<KomgaLibraryDto> libraries = komgaService.getAllLibraries();
+        return ResponseEntity.ok(libraries);
     }
 
     @Operation(summary = "Get library details")
@@ -52,7 +53,8 @@ public class KomgaController {
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(komgaService.getAllSeries(libraryId, page, size));
+        KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(libraryId, page, size);
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get series details")
@@ -97,7 +99,8 @@ public class KomgaController {
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        return ResponseEntity.ok(komgaService.getAllBooks(libraryId, page, size));
+        KomgaPageableDto<KomgaBookDto> result = komgaService.getAllBooks(libraryId, page, size);
+        return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get book details")

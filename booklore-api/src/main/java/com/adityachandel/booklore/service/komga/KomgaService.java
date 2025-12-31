@@ -52,6 +52,7 @@ public class KomgaService {
     }
 
     public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size) {
+        log.debug("Getting all series for libraryId: {}, page: {}, size: {}", libraryId, page, size);
         List<BookEntity> books;
         
         if (libraryId != null) {
@@ -60,20 +61,31 @@ public class KomgaService {
             books = bookRepository.findAllWithMetadata();
         }
         
+        log.debug("Found {} books", books.size());
+        
         // Group books by series
         Map<String, List<BookEntity>> seriesMap = groupBooksBySeries(books);
+        
+        log.debug("Grouped into {} series", seriesMap.size());
         
         // Convert to DTOs
         List<KomgaSeriesDto> allSeries = seriesMap.entrySet().stream()
                 .map(entry -> {
                     String seriesName = entry.getKey();
                     List<BookEntity> seriesBooks = entry.getValue();
-                    Long libId = seriesBooks.get(0).getLibrary().getId();
-                    return komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks);
+                    try {
+                        Long libId = seriesBooks.get(0).getLibrary().getId();
+                        return komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks);
+                    } catch (Exception e) {
+                        log.error("Error mapping series: {}", seriesName, e);
+                        return null;
+                    }
                 })
                 .filter(Objects::nonNull)
                 .sorted(Comparator.comparing(KomgaSeriesDto::getName))
                 .collect(Collectors.toList());
+        
+        log.debug("Mapped to {} series DTOs", allSeries.size());
         
         // Paginate
         int totalElements = allSeries.size();

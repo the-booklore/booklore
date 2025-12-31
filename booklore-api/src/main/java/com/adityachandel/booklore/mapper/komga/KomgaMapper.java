@@ -39,7 +39,7 @@ public class KomgaMapper {
                            : "Unknown Series")
                 .libraryId(book.getLibrary().getId().toString())
                 .name(metadata != null ? metadata.getTitle() : book.getFileName())
-                .url("/api/v1/books/" + book.getId())
+                .url("/komga/api/v1/books/" + book.getId())
                 .number(metadata != null && metadata.getSeriesNumber() != null 
                        ? metadata.getSeriesNumber().intValue() 
                        : 1)
@@ -72,7 +72,7 @@ public class KomgaMapper {
                 .id(seriesId)
                 .libraryId(libraryId.toString())
                 .name(seriesName)
-                .url("/api/v1/series/" + seriesId)
+                .url("/komga/api/v1/series/" + seriesId)
                 .created(firstBook.getAddedOn())
                 .lastModified(firstBook.getAddedOn())
                 .fileLastModified(firstBook.getAddedOn())
