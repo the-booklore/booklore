@@ -620,8 +620,6 @@ public class OpdsFeedService {
                 }
                 yield "application/vnd.comicbook+zip";
             }
-            case DJVU -> "image/vnd.djvu";
-            default -> "application/octet-stream";
         };
     }
 
