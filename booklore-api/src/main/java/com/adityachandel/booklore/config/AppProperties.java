@@ -16,6 +16,7 @@ public class AppProperties {
     private RemoteAuth remoteAuth;
     private Swagger swagger = new Swagger();
     private Boolean forceDisableOidc = false;
+    private Telemetry telemetry = new Telemetry();
 
     @Getter
     @Setter
@@ -34,5 +35,11 @@ public class AppProperties {
     @Setter
     public static class Swagger {
         private boolean enabled = true;
+    }
+
+    @Getter
+    @Setter
+    public static class Telemetry {
+        private String baseUrl = "https://telemetry.booklore.org";
     }
 }
