@@ -144,6 +144,7 @@ public class UserProvisioningService {
             permissions.setCanAccessTaskManager(permsEntity.isPermissionAccessTaskManager());
             permissions.setCanManageGlobalPreferences(permsEntity.isPermissionManageGlobalPreferences());
             permissions.setCanManageIcons(permsEntity.isPermissionManageIcons());
+            permissions.setCanChangePassword(permsEntity.isPermissionChangePassword());
 
             BookLoreUser userDto = BookLoreUser.builder()
                 .id(userEntity.getId())
