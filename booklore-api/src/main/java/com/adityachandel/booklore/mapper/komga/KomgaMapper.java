@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.mapper.komga;
 
+import com.adityachandel.booklore.context.KomgaCleanContext;
 import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.*;
@@ -172,11 +173,11 @@ public class KomgaMapper {
                 .titleLock(false)
                 .titleSort(seriesName)
                 .titleSortLock(false)
-                .summary(description != null ? description : "")
+                .summary(nullIfEmptyInCleanMode(description, ""))
                 .summaryLock(false)
-                .publisher(publisher != null ? publisher : "")
+                .publisher(nullIfEmptyInCleanMode(publisher, ""))
                 .publisherLock(false)
-                .language(language != null ? language : "en")
+                .language(nullIfEmptyInCleanMode(language, "en"))
                 .languageLock(false)
                 .genres(genres)
                 .genresLock(false)
@@ -229,8 +230,9 @@ public class KomgaMapper {
                 .created(firstBook.getAddedOn())
                 .lastModified(firstBook.getAddedOn())
                 .releaseDate(releaseDate)
-                .summary(summary != null ? summary : "")
-                .summaryNumber("")
+                .summary(nullIfEmptyInCleanMode(summary, ""))
+                // summaryNumber is typically empty, but in clean mode should be null to be filtered
+                .summaryNumber(nullIfEmptyInCleanMode(null, ""))
                 .summaryLock(false)
                 .build();
     }
