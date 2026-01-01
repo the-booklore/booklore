@@ -171,6 +171,15 @@ export interface User {
     canManageGlobalPreferences: boolean;
     canManageIcons: boolean;
     demoUser: boolean;
+    canBulkAutoFetchMetadata: boolean;
+    canBulkCustomFetchMetadata: boolean;
+    canBulkEditMetadata: boolean;
+    canBulkRegenerateCover: boolean;
+    canMoveOrganizeFiles: boolean;
+    canBulkLockUnlockMetadata: boolean;
+    canBulkResetBookloreReadProgress?: boolean;
+    canBulkResetKoReaderReadProgress?: boolean;
+    canBulkResetBookReadStatus?: boolean;
   };
   userSettings: UserSettings;
   provisioningMethod?: 'LOCAL' | 'OIDC' | 'REMOTE';

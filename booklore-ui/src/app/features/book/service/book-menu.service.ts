@@ -1,12 +1,14 @@
 import {inject, Injectable} from '@angular/core';
-import {ConfirmationService, MessageService} from 'primeng/api';
-import {MenuItem} from 'primeng/api';
+import {ConfirmationService, MenuItem, MessageService} from 'primeng/api';
 import {BookService} from './book.service';
 import {readStatusLabels} from '../components/book-browser/book-filter/book-filter.component';
 import {ReadStatus} from '../model/book.model';
 import {ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
 import {finalize} from 'rxjs';
 import {LoadingService} from '../../../core/services/loading.service';
+import {User} from '../../settings/user-management/user.service';
+import {APIException} from '../../../shared/models/api-exception.model';
+import {HttpErrorResponse} from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -23,41 +25,59 @@ export class BookMenuService {
     fetchMetadata: () => void,
     bulkEditMetadata: () => void,
     multiBookEditMetadata: () => void,
-    regenerateCovers: () => void): MenuItem[] {
-    return [
-      {
+    regenerateCovers: () => void,
+    user: User | null): MenuItem[] {
+
+    const permissions = user?.permissions;
+    const items: MenuItem[] = [];
+
+    if (permissions?.canBulkAutoFetchMetadata) {
+      items.push({
         label: 'Auto Fetch Metadata',
         icon: 'pi pi-bolt',
         command: autoFetchMetadata
-      },
-      {
+      });
+    }
+
+    if (permissions?.canBulkCustomFetchMetadata) {
+      items.push({
         label: 'Custom Fetch Metadata',
         icon: 'pi pi-sync',
         command: fetchMetadata
-      },
-      {
+      });
+    }
+
+    if (permissions?.canBulkEditMetadata) {
+      items.push({
         label: 'Bulk Metadata Editor',
         icon: 'pi pi-table',
         command: bulkEditMetadata
-      },
-      {
+      });
+      items.push({
         label: 'Multi-Book Metadata Editor',
         icon: 'pi pi-clone',
         command: multiBookEditMetadata
-      },
-      {
+      });
+    }
+
+    if (permissions?.canBulkRegenerateCover) {
+      items.push({
         label: 'Regenerate Covers',
         icon: 'pi pi-image',
         command: regenerateCovers
-      }
-    ];
+      });
+    }
+
+    return items;
   }
 
-  getTieredMenuItems(selectedBooks: Set<number>): MenuItem[] {
+  getBulkReadActionsMenu(selectedBooks: Set<number>, user: User | null): MenuItem[] {
     const count = selectedBooks.size;
+    const permissions = user?.permissions;
+    const items: MenuItem[] = [];
 
-    return [
-      {
+    if (permissions?.canBulkResetBookReadStatus) {
+      items.push({
         label: 'Update Read Status',
         icon: 'pi pi-book',
         items: Object.entries(readStatusLabels).map(([status, label]) => ({
@@ -83,11 +103,12 @@ export class BookMenuService {
                         life: 2000
                       });
                     },
-                    error: () => {
+                    error: (err: HttpErrorResponse) => {
+                      const apiError = err.error as APIException;
                       this.messageService.add({
                         severity: 'error',
                         summary: 'Update Failed',
-                        detail: 'Could not update read status.',
+                        detail: apiError?.message || 'Could not update read status.',
                         life: 3000
                       });
                     }
@@ -96,8 +117,11 @@ export class BookMenuService {
             });
           }
         }))
-      },
-      {
+      });
+    }
+
+    if (permissions?.canBulkResetBookloreReadProgress) {
+      items.push({
         label: 'Reset Booklore Progress',
         icon: 'pi pi-undo',
         command: () => {
@@ -121,20 +145,24 @@ export class BookMenuService {
                       life: 1500
                     });
                   },
-                  error: () => {
+                  error: (err: HttpErrorResponse) => {
+                    const apiError = err.error as APIException;
                     this.messageService.add({
                       severity: 'error',
                       summary: 'Failed',
-                      detail: 'Could not reset progress.',
-                      life: 1500
+                      detail: apiError?.message || 'Could not reset progress.',
+                      life: 3000
                     });
                   }
                 });
             }
           });
         }
-      },
-      {
+      });
+    }
+
+    if (permissions?.canBulkResetKoReaderReadProgress) {
+      items.push({
         label: 'Reset KOReader Progress',
         icon: 'pi pi-undo',
         command: () => {
@@ -158,19 +186,22 @@ export class BookMenuService {
                       life: 1500
                     });
                   },
-                  error: () => {
+                  error: (err: HttpErrorResponse) => {
+                    const apiError = err.error as APIException;
                     this.messageService.add({
                       severity: 'error',
                       summary: 'Failed',
-                      detail: 'Could not reset progress.',
-                      life: 1500
+                      detail: apiError?.message || 'Could not reset progress.',
+                      life: 3000
                     });
                   }
                 });
             }
           });
         }
-      }
-    ];
+      });
+    }
+
+    return items;
   }
 }
