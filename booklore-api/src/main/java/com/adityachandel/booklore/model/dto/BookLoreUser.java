@@ -2,6 +2,7 @@ package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.dto.settings.SidebarSortOption;
 import com.adityachandel.booklore.model.enums.*;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -100,6 +101,7 @@ public class BookLoreUser implements Principal {
             private String sortDir;
             private String view;
             private Float coverSize;
+            @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
         }
 
@@ -121,7 +123,8 @@ public class BookLoreUser implements Principal {
             private String sortKey;
             private String sortDir;
             private String view;
-            private Boolean seriesCollapse;
+            @JsonAlias("seriesCollapse")
+            private Boolean seriesCollapsed;
         }
 
         @Data

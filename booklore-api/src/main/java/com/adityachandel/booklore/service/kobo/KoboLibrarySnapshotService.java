@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.mapper.BookEntityToKoboSnapshotBookMapper;
+import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.KoboDeletedBookProgressEntity;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
 import com.adityachandel.booklore.model.entity.ShelfEntity;
@@ -117,7 +119,10 @@ public class KoboLibrarySnapshotService {
     }
 
     private List<KoboSnapshotBookEntity> mapBooksToKoboSnapshotBook(ShelfEntity shelf, KoboLibrarySnapshotEntity snapshot) {
+        Long userId = snapshot.getUserId();
+
         return shelf.getBookEntities().stream()
+                .filter(book -> isBookOwnedByUser(book, userId))
                 .filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(book -> {
                     KoboSnapshotBookEntity snapshotBook = mapper.toKoboSnapshotBook(book);
@@ -125,6 +130,18 @@ public class KoboLibrarySnapshotService {
                     return snapshotBook;
                 })
                 .collect(Collectors.toList());
+    }
+
+    private boolean isBookOwnedByUser(BookEntity book, Long userId) {
+        if (book == null || book.getLibrary() == null || book.getLibrary().getUsers() == null) {
+            return false;
+        }
+
+        return book.getLibrary()
+                .getUsers()
+                .stream()
+                .map(BookLoreUserEntity::getId)
+                .anyMatch(id -> Objects.equals(id, userId));
     }
 
     public void deleteById(String id) {

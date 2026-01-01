@@ -21,7 +21,7 @@ export interface EntityViewPreference {
 }
 
 export interface EntityViewPreferenceOverride {
-  entityType: 'LIBRARY' | 'SHELF';
+  entityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
   entityId: number;
   preferences: EntityViewPreference;
 }

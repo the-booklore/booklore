@@ -222,6 +222,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.entityType = entityType;
       this.entityType$ = of(entityType);
       this.entity$ = of(null);
+      this.seriesCollapseFilter.setContext(null, null);
 
       this.pageTitle.setPageTitle(currentPath === 'all-books' ? 'All Books' : 'Unshelved Books');
     } else {
@@ -235,6 +236,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           this.pageTitle.setPageTitle(entity.name);
         }
         this.entity = entity ?? null;
+        this.updateSeriesCollapseContext();
         this.entityOptions = entity
           ? this.isLibrary(entity)
             ? this.libraryShelfMenuService.initializeLibraryMenuItems(entity)
@@ -709,6 +711,30 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   moveFiles() {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
+  }
+
+  private updateSeriesCollapseContext() {
+    let type: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF' | null = null;
+    let id: number | null = null;
+
+    if (this.entity && this.entityType) {
+      switch (this.entityType) {
+        case EntityType.LIBRARY:
+          type = 'LIBRARY';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.SHELF:
+          type = 'SHELF';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.MAGIC_SHELF:
+          type = 'MAGIC_SHELF';
+          id = this.entity.id ?? 0;
+          break;
+      }
+    }
+
+    this.seriesCollapseFilter.setContext(type, id);
   }
 
   private isLibrary(entity: Library | Shelf | MagicShelf): entity is Library {

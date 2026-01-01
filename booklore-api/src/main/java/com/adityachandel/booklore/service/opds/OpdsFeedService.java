@@ -547,7 +547,7 @@ public class OpdsFeedService {
     }
 
     private void appendLinks(StringBuilder feed, Book book) {
-        String mimeType = "application/" + fileMimeType(book);
+        String mimeType = fileMimeType(book);
         feed.append("    <link href=\"/api/v1/opds/")
                 .append(book.getId()).append("/download\" rel=\"http://opds-spec.org/acquisition\" type=\"").append(mimeType).append("\"/>\n");
 
@@ -604,12 +604,22 @@ public class OpdsFeedService {
 
     private String fileMimeType(Book book) {
         if (book == null || book.getBookType() == null) {
-            return "octet-stream";
+            return "application/octet-stream";
         }
         return switch (book.getBookType()) {
-            case PDF -> "pdf";
-            case EPUB -> "epub+zip";
-            default -> "octet-stream";
+            case PDF -> "application/pdf";
+            case EPUB -> "application/epub+zip";
+            case FB2 -> "application/x-fictionbook+xml";
+            case CBX -> {
+                if (book.getFileName() != null) {
+                    String lower = book.getFileName().toLowerCase();
+                    if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
+                    if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
+                    if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
+                    if (lower.endsWith(".cbt")) yield "application/x-tar";
+                }
+                yield "application/vnd.comicbook+zip";
+            }
         };
     }
 
