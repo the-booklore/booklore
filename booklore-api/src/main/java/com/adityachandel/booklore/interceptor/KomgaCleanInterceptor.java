@@ -9,8 +9,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 /**
  * Interceptor to handle the "clean" query parameter for Komga API endpoints.
  * When the "clean" parameter is present (with or without a value) or set to "true",
- * it enables clean mode which filters out "Lock" fields and null values from the JSON response.
- * Supports both ?clean and ?clean=true syntax.
+ * it enables clean mode which filters out "Lock" fields, null values, and empty arrays
+ * from the JSON response. Supports both ?clean and ?clean=true syntax.
  */
 @Component
 public class KomgaCleanInterceptor implements HandlerInterceptor {

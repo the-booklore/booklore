@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -74,6 +76,51 @@ class KomgaCleanFilterTest {
     }
 
     @Test
+    void shouldExcludeEmptyArraysInCleanMode() throws Exception {
+        // Given: Clean mode is enabled
+        KomgaCleanContext.setCleanMode(true);
+
+        KomgaBookMetadataDto metadata = KomgaBookMetadataDto.builder()
+                .title("Test Book")
+                .authors(new ArrayList<>())  // Empty list
+                .tags(new ArrayList<>())     // Empty list
+                .build();
+
+        // When: Serializing to JSON
+        String json = objectMapper.writeValueAsString(metadata);
+        Map<String, Object> result = objectMapper.readValue(json, Map.class);
+
+        // Then: Empty arrays should be excluded
+        assertThat(result).containsKey("title");
+        assertThat(result).doesNotContainKey("authors");
+        assertThat(result).doesNotContainKey("tags");
+    }
+
+    @Test
+    void shouldIncludeNonEmptyArraysInCleanMode() throws Exception {
+        // Given: Clean mode is enabled
+        KomgaCleanContext.setCleanMode(true);
+
+        List<String> tags = new ArrayList<>();
+        tags.add("fiction");
+        tags.add("adventure");
+
+        KomgaBookMetadataDto metadata = KomgaBookMetadataDto.builder()
+                .title("Test Book")
+                .tags(tags)  // Non-empty list
+                .build();
+
+        // When: Serializing to JSON
+        String json = objectMapper.writeValueAsString(metadata);
+        Map<String, Object> result = objectMapper.readValue(json, Map.class);
+
+        // Then: Non-empty arrays should be included
+        assertThat(result).containsKey("title");
+        assertThat(result).containsKey("tags");
+        assertThat((List<?>) result.get("tags")).hasSize(2);
+    }
+
+    @Test
     void shouldIncludeAllFieldsWhenCleanModeDisabled() throws Exception {
         // Given: Clean mode is disabled (default)
         KomgaCleanContext.setCleanMode(false);
@@ -83,16 +130,18 @@ class KomgaCleanFilterTest {
                 .titleLock(true)
                 .summary(null)  // Null value
                 .summaryLock(false)
+                .authors(new ArrayList<>())  // Empty list
                 .build();
 
         // When: Serializing to JSON
         String json = objectMapper.writeValueAsString(metadata);
         Map<String, Object> result = objectMapper.readValue(json, Map.class);
 
-        // Then: Lock fields should be included
+        // Then: Lock fields and empty arrays should be included
         assertThat(result).containsKey("title");
         assertThat(result).containsKey("titleLock");
         assertThat(result).containsKey("summaryLock");
+        assertThat(result).containsKey("authors");
         // Note: null values are excluded by @JsonInclude(JsonInclude.Include.NON_NULL) regardless
     }
 }

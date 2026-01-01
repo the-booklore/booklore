@@ -19,7 +19,7 @@ import java.util.List;
 
 @Tag(name = "Komga API", description = "Komga-compatible API endpoints. " +
         "All endpoints support a 'clean' query parameter (default: false). " +
-        "When present (?clean or ?clean=true), responses exclude fields ending with 'Lock' and null values, " +
+        "When present (?clean or ?clean=true), responses exclude fields ending with 'Lock', null values, and empty arrays, " +
         "resulting in smaller and cleaner JSON payloads.")
 @Slf4j
 @RestController

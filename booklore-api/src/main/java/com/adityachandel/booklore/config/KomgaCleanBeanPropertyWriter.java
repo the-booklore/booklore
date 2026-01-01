@@ -5,11 +5,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 
+import java.util.Collection;
+
 /**
  * Custom BeanPropertyWriter that handles clean mode filtering.
  * When clean mode is enabled:
  * - Fields ending with "Lock" are excluded
  * - Null values are excluded
+ * - Empty arrays/collections are excluded
  */
 public class KomgaCleanBeanPropertyWriter extends BeanPropertyWriter {
     
@@ -30,6 +33,11 @@ public class KomgaCleanBeanPropertyWriter extends BeanPropertyWriter {
             // Exclude null values
             Object value = get(bean);
             if (value == null) {
+                return;
+            }
+            
+            // Exclude empty collections/arrays
+            if (value instanceof Collection && ((Collection<?>) value).isEmpty()) {
                 return;
             }
         }

@@ -25,7 +25,8 @@ When the `clean` parameter is present (either `?clean` or `?clean=true`):
 
 1. **Lock Fields Excluded**: All fields ending with "Lock" (e.g., `titleLock`, `summaryLock`, `authorsLock`) are removed from the response
 2. **Null Values Excluded**: All fields with `null` values are removed from the response
-3. **Metadata Fields**: Metadata fields like `summary`, `language`, and `publisher` that would normally default to empty strings or default values can now be `null` and thus filtered out
+3. **Empty Arrays Excluded**: All empty arrays/collections (e.g., empty `genres`, `tags`, `links`) are removed from the response
+4. **Metadata Fields**: Metadata fields like `summary`, `language`, and `publisher` that would normally default to empty strings or default values can now be `null` and thus filtered out
 
 ## Examples
 
@@ -39,7 +40,11 @@ When the `clean` parameter is present (either `?clean` or `?clean=true`):
   "language": "en",
   "languageLock": false,
   "publisher": "",
-  "publisherLock": false
+  "publisherLock": false,
+  "genres": [],
+  "genresLock": false,
+  "tags": [],
+  "tagsLock": false
 }
 ```
 
