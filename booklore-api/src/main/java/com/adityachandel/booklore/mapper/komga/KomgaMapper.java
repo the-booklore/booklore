@@ -122,9 +122,9 @@ public class KomgaMapper {
         }
         
         return KomgaBookMetadataDto.builder()
-                .title(metadata.getTitle())
+                .title(nullIfEmptyInCleanMode(metadata.getTitle(), ""))
                 .titleLock(metadata.getTitleLocked())
-                .summary(metadata.getDescription())
+                .summary(nullIfEmptyInCleanMode(metadata.getDescription(), ""))
                 .summaryLock(metadata.getDescriptionLocked())
                 .number(metadata.getSeriesNumber() != null ? metadata.getSeriesNumber().toString() : null)
                 .numberLock(metadata.getSeriesNumberLocked())
