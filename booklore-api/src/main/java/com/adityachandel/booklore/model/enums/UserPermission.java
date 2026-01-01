@@ -217,6 +217,14 @@ public enum UserPermission {
             UserUpdateRequest.Permissions::isCanBulkResetBookReadStatus,
             UserPermissionsEntity::isPermissionBulkResetBookReadStatus,
             UserPermissionsEntity::setPermissionBulkResetBookReadStatus
+    ),
+    CAN_CHANGE_PASSWORD(
+            "Change password",
+            BookLoreUser.UserPermissions::isCanChangePassword,
+            BookLoreUser.UserPermissions::setCanChangePassword,
+            UserUpdateRequest.Permissions::isCanChangePassword,
+            UserPermissionsEntity::isPermissionChangePassword,
+            UserPermissionsEntity::setPermissionChangePassword
     );
 
     private final String description;
