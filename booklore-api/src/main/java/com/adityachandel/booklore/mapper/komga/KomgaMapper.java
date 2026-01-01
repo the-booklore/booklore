@@ -125,9 +125,9 @@ public class KomgaMapper {
                 .titleLock(metadata.getTitleLocked())
                 .summary(nullIfEmptyInCleanMode(metadata.getDescription(), ""))
                 .summaryLock(metadata.getDescriptionLocked())
-                .number(metadata.getSeriesNumber() != null ? metadata.getSeriesNumber().toString() : null)
+                .number(nullIfEmptyInCleanMode(metadata.getSeriesNumber(), 1.0F).toString())
                 .numberLock(metadata.getSeriesNumberLocked())
-                .numberSort(metadata.getSeriesNumber())
+                .numberSort(nullIfEmptyInCleanMode(metadata.getSeriesNumber(), 1.0F))
                 .numberSortLock(metadata.getSeriesNumberLocked())
                 .releaseDate(metadata.getPublishedDate() != null 
                            ? metadata.getPublishedDate().format(DATE_FORMATTER) 
@@ -287,6 +287,38 @@ public class KomgaMapper {
         } else {
             return (bytes / (1024 * 1024 * 1024)) + " GB";
         }
+    }
+    
+    /**
+     * Helper method to return null for empty strings in clean mode.
+     * In clean mode, we want to allow null values so they can be filtered out.
+     */
+    private String nullIfEmptyInCleanMode(String value, String defaultValue) {
+        if (KomgaCleanContext.isCleanMode()) {
+            return (value != null && !value.isEmpty()) ? value : null;
+        }
+        return value != null ? value : defaultValue;
+    }
+    /**
+     * Helper method to return null for empty integer in clean mode.
+     * In clean mode, we want to allow null values so they can be filtered out.
+     */
+    private Integer nullIfEmptyInCleanMode(Integer value, Integer defaultValue) {
+        if (KomgaCleanContext.isCleanMode()) {
+            return (value != null) ? value : null;
+        }
+        return value != null ? value : defaultValue;
+    }
+
+    /**
+     * Helper method to return null for empty float in clean mode.
+     * In clean mode, we want to allow null values so they can be filtered out.
+     */
+    private Float nullIfEmptyInCleanMode(Float value, Float defaultValue) {
+        if (KomgaCleanContext.isCleanMode()) {
+            return (value != null) ? value : null;
+        }
+        return value != null ? value : defaultValue;
     }
 
     public KomgaUserDto toKomgaUserDto(OpdsUserV2Entity opdsUser) {
