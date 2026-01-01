@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.mapper.komga;
 
+import com.adityachandel.booklore.context.KomgaCleanContext;
 import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.*;
@@ -121,9 +122,9 @@ public class KomgaMapper {
         }
         
         return KomgaBookMetadataDto.builder()
-                .title(metadata.getTitle())
+                .title(nullIfEmptyInCleanMode(metadata.getTitle(), ""))
                 .titleLock(metadata.getTitleLocked())
-                .summary(metadata.getDescription())
+                .summary(nullIfEmptyInCleanMode(metadata.getDescription(), ""))
                 .summaryLock(metadata.getDescriptionLocked())
                 .number(metadata.getSeriesNumber() != null ? metadata.getSeriesNumber().toString() : null)
                 .numberLock(metadata.getSeriesNumberLocked())
@@ -172,11 +173,11 @@ public class KomgaMapper {
                 .titleLock(false)
                 .titleSort(seriesName)
                 .titleSortLock(false)
-                .summary(description != null ? description : "")
+                .summary(nullIfEmptyInCleanMode(description, ""))
                 .summaryLock(false)
-                .publisher(publisher != null ? publisher : "")
+                .publisher(nullIfEmptyInCleanMode(publisher, ""))
                 .publisherLock(false)
-                .language(language != null ? language : "en")
+                .language(nullIfEmptyInCleanMode(language, "en"))
                 .languageLock(false)
                 .genres(genres)
                 .genresLock(false)
@@ -229,8 +230,9 @@ public class KomgaMapper {
                 .created(firstBook.getAddedOn())
                 .lastModified(firstBook.getAddedOn())
                 .releaseDate(releaseDate)
-                .summary(summary != null ? summary : "")
-                .summaryNumber("")
+                .summary(nullIfEmptyInCleanMode(summary, ""))
+                // summaryNumber is typically empty, but in clean mode should be null to be filtered
+                .summaryNumber(nullIfEmptyInCleanMode(null, ""))
                 .summaryLock(false)
                 .build();
     }
@@ -287,6 +289,17 @@ public class KomgaMapper {
         } else {
             return (bytes / (1024 * 1024 * 1024)) + " GB";
         }
+    }
+    
+    /**
+     * Helper method to return null for empty strings in clean mode.
+     * In clean mode, we want to allow null values so they can be filtered out.
+     */
+    private String nullIfEmptyInCleanMode(String value, String defaultValue) {
+        if (KomgaCleanContext.isCleanMode()) {
+            return (value != null && !value.isEmpty()) ? value : null;
+        }
+        return value != null ? value : defaultValue;
     }
 
     public KomgaUserDto toKomgaUserDto(OpdsUserV2Entity opdsUser) {
