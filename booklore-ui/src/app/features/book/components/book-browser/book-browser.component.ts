@@ -256,15 +256,15 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
     this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
       .subscribe(userState => {
-      this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
-        () => this.autoFetchMetadata(),
-        () => this.fetchMetadata(),
-        () => this.bulkEditMetadata(),
-        () => this.multiBookEditMetadata(),
-        () => this.regenerateCoversForSelected(),
-        userState.user
-      );
-    });
+        this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
+          () => this.autoFetchMetadata(),
+          () => this.fetchMetadata(),
+          () => this.bulkEditMetadata(),
+          () => this.multiBookEditMetadata(),
+          () => this.regenerateCoversForSelected(),
+          userState.user
+        );
+      });
 
     this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
 
@@ -476,18 +476,18 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (selected) {
       if (book.seriesBooks) {
         //it is a series
-        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book=>book.id)]);
+        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book => book.id)]);
       } else {
-      this.selectedBooks.add(book.id);
+        this.selectedBooks.add(book.id);
       }
     } else {
       if (book.seriesBooks) {
         //it is a series
-        book.seriesBooks.forEach(book =>{
+        book.seriesBooks.forEach(book => {
           this.selectedBooks.delete(book.id);
         });
       } else {
-      this.selectedBooks.delete(book.id);
+        this.selectedBooks.delete(book.id);
       }
     }
   }
@@ -557,7 +557,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
             this.selectedBooks.clear();
           });
       },
-      reject: () => {}
+      reject: () => {
+      }
     });
   }
 
@@ -656,6 +657,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   openShelfAssigner(): void {
     this.dynamicDialogRef = this.dialogHelperService.openShelfAssignerDialog(null, this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(result => {
+        if (result.assigned) {
+          this.selectedBooks.clear();
+        }
+      });
+    }
   }
 
   lockUnlockMetadata(): void {
@@ -709,7 +717,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
               life: 3000
             });
           }
-          });
+        });
       }
     });
   }
