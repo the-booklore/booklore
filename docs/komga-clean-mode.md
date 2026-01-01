@@ -5,9 +5,15 @@ The Komga API now supports a `clean` query parameter that allows clients to rece
 
 ## Usage
 
-Add the `clean=true` query parameter to any Komga API endpoint:
+Add the `clean` query parameter to any Komga API endpoint. Both syntaxes are supported:
 
 ```
+# Using parameter without value
+GET /komga/api/v1/series?clean
+GET /komga/api/v1/books/123?clean
+GET /komga/api/v1/libraries?clean
+
+# Using parameter with explicit true value
 GET /komga/api/v1/series?clean=true
 GET /komga/api/v1/books/123?clean=true
 GET /komga/api/v1/libraries?clean=true
@@ -15,7 +21,7 @@ GET /komga/api/v1/libraries?clean=true
 
 ## Behavior
 
-When `clean=true` is specified:
+When the `clean` parameter is present (either `?clean` or `?clean=true`):
 
 1. **Lock Fields Excluded**: All fields ending with "Lock" (e.g., `titleLock`, `summaryLock`, `authorsLock`) are removed from the response
 2. **Null Values Excluded**: All fields with `null` values are removed from the response
@@ -37,7 +43,7 @@ When `clean=true` is specified:
 }
 ```
 
-### With Clean Mode (`clean=true`)
+### With Clean Mode (`?clean` or `?clean=true`)
 ```json
 {
   "title": "My Book"
