@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.time.Instant;
 
 @Data
 @Builder
@@ -24,6 +25,10 @@ public class KomgaBookMetadataAggregationDto {
     private String releaseDate;
     
     private String summary;
+    private String summaryNumber;
     
     private Boolean summaryLock;
+
+    private Instant created;
+    private Instant lastModified;
 }

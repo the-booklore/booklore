@@ -17,6 +17,7 @@ public class KomgaPageableDto<T> {
     private List<T> content;
     private Integer number;
     private Integer size;
+    private Integer numberOfElements;
     private Integer totalElements;
     private Integer totalPages;
     private Boolean first;

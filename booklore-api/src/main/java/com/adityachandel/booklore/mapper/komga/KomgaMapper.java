@@ -161,6 +161,9 @@ public class KomgaMapper {
                         .collect(Collectors.toList());
             }
         }
+        String language = firstMetadata != null ? firstMetadata.getLanguage() : null;
+        String description = firstMetadata != null ? firstMetadata.getDescription() : null;
+        String publisher = firstMetadata != null ? firstMetadata.getPublisher() : null;
         
         return KomgaSeriesMetadataDto.builder()
                 .status("ONGOING")
@@ -169,11 +172,11 @@ public class KomgaMapper {
                 .titleLock(false)
                 .titleSort(seriesName)
                 .titleSortLock(false)
-                .summary(firstMetadata != null ? firstMetadata.getDescription() : null)
+                .summary(description != null ? description : "")
                 .summaryLock(false)
-                .publisher(firstMetadata != null ? firstMetadata.getPublisher() : null)
+                .publisher(publisher != null ? publisher : "")
                 .publisherLock(false)
-                .language(firstMetadata != null ? firstMetadata.getLanguage() : "en")
+                .language(language != null ? language : "en")
                 .languageLock(false)
                 .genres(genres)
                 .genresLock(false)
@@ -181,6 +184,10 @@ public class KomgaMapper {
                 .tagsLock(false)
                 .totalBookCount(books.size())
                 .totalBookCountLock(false)
+                // not used but required right now by Mihon/komga apps
+                .ageRatingLock(false)
+                .readingDirection("LEFT_TO_RIGHT")
+                .readingDirectionLock(false)
                 .build();
     }
 
@@ -190,7 +197,8 @@ public class KomgaMapper {
         String releaseDate = null;
         String summary = null;
         
-        for (BookEntity book : books) {
+        BookEntity firstBook = books.get(0);
+            for (BookEntity book : books) {
             BookMetadataEntity metadata = book.getMetadata();
             if (metadata != null) {
                 if (metadata.getAuthors() != null) {
@@ -218,8 +226,11 @@ public class KomgaMapper {
         return KomgaBookMetadataAggregationDto.builder()
                 .authors(authors)
                 .tags(new ArrayList<>(allTags))
+                .created(firstBook.getAddedOn())
+                .lastModified(firstBook.getAddedOn())
                 .releaseDate(releaseDate)
-                .summary(summary)
+                .summary(summary != null ? summary : "")
+                .summaryNumber("")
                 .summaryLock(false)
                 .build();
     }
