@@ -3,15 +3,13 @@ package com.adityachandel.booklore.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BeanPropertyWriter;
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier;
-import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.Arrays;
 
 /**
  * Jackson configuration for Komga API clean mode.
@@ -20,6 +18,7 @@ import java.util.Arrays;
 public class JacksonConfig {
 
     @Bean
+    @Primary
     public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
         ObjectMapper mapper = builder.build();
         

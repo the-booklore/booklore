@@ -231,7 +231,8 @@ public class KomgaMapper {
                 .lastModified(firstBook.getAddedOn())
                 .releaseDate(releaseDate)
                 .summary(nullIfEmptyInCleanMode(summary, ""))
-                .summaryNumber(nullIfEmptyInCleanMode("", ""))
+                // summaryNumber is typically empty, but in clean mode should be null to be filtered
+                .summaryNumber(nullIfEmptyInCleanMode(null, ""))
                 .summaryLock(false)
                 .build();
     }
