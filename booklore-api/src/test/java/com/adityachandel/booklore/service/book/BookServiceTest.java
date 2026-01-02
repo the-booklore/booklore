@@ -208,9 +208,8 @@ class BookServiceTest {
 
     @Test
     void getBookThumbnail_fileExists_returnsUrlResource() throws Exception {
-        when(fileService.getThumbnailFile(1L)).thenReturn("/tmp/cover.jpg");
-        Path path = Paths.get("/tmp/cover.jpg");
-        Files.createFile(path);
+        Path path = Files.createTempFile("booklore-thumbnail-", ".jpg");
+        when(fileService.getThumbnailFile(1L)).thenReturn(path.toString());
         try {
             Resource res = bookService.getBookThumbnail(1L);
             assertTrue(res instanceof UrlResource);
@@ -234,9 +233,8 @@ class BookServiceTest {
 
     @Test
     void getBookCover_fileExists_returnsUrlResource() throws Exception {
-        when(fileService.getCoverFile(1L)).thenReturn("/tmp/cover2.jpg");
-        Path path = Paths.get("/tmp/cover2.jpg");
-        Files.createFile(path);
+        Path path = Files.createTempFile("booklore-cover-", ".jpg");
+        when(fileService.getCoverFile(1L)).thenReturn(path.toString());
         try {
             Resource res = bookService.getBookCover(1L);
             assertTrue(res instanceof UrlResource);
@@ -285,7 +283,7 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(10L);
         when(bookRepository.findById(10L)).thenReturn(Optional.of(entity));
-        Path path = Paths.get("/tmp/bookcontent.txt");
+        Path path = Files.createTempFile("booklore-content-", ".txt");
         Files.write(path, "hello".getBytes());
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
             fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(path.toString());

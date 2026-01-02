@@ -141,11 +141,11 @@ public class FileMoveHelper {
             }
         }
         if (pattern == null || pattern.trim().isEmpty()) {
-            pattern = "{currentFilename}";
-            log.info("No file naming pattern available for library {}. Using fallback pattern: {currentFilename}", library.getName());
+            pattern = "";
+            log.info("No file naming pattern available for library {}. Keeping current filename.", library.getName());
         }
         if (pattern.endsWith("/") || pattern.endsWith("\\")) {
-            pattern += "{currentFilename}";
+            pattern += "{title}";
         }
         return pattern;
     }

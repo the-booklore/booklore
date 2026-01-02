@@ -170,6 +170,14 @@ class PathPatternResolverTest {
         assertThat(PathPatternResolver.resolvePattern(book, "{currentFilename}")).isEqualTo("original.epub");
     }
 
+        @Test void originalFilenamePlaceholder_isUnsupportedAndFallsBack() {
+        var book = createBook(null, null, null, null, null, null, null, null, null, "renamed.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{originalFilename}"))
+            .isEqualTo("renamed.epub");
+        assertThat(PathPatternResolver.resolvePattern(book, "{originalFilename}__{currentFilename}"))
+            .isEqualTo("__renamed.epub");
+    }
+
     @Test void allPlaceholdersMissing_yieldsJustExtension() {
         var book = createBook(null, null, null, null, null, null, null, null, null, "file.cbz");
         String pattern = "{title}-{authors}-{series}-{year}-{language}-{publisher}-{isbn}";
@@ -258,6 +266,33 @@ class PathPatternResolverTest {
     @Test void subtitleWithWhitespace_trimmedAndSanitized() {
         var book = createBook("Title", "   Sub  title  ", List.of("Author"), LocalDate.now(), null, null, null, null, null, null, "file.epub");
         assertThat(PathPatternResolver.resolvePattern(book, "{title} - {subtitle}")).isEqualTo("Title - Sub title.epub");
+    }
+
+    @Test void authorPlaceholder_returnsFirstAuthorOnly() {
+        var book = createBook("Title", List.of("Alice", "Bob", "Carol"), LocalDate.now(), null, null, null, null, null, null, "fileWithoutExt");
+        assertThat(PathPatternResolver.resolvePattern(book, "{author}")).isEqualTo("Alice");
+        assertThat(PathPatternResolver.resolvePattern(book, "{author} - {authors}")).isEqualTo("Alice - Alice, Bob, Carol");
+    }
+
+    @Test void sortablePlaceholders_tr03DoesNotStripInitialArticles() {
+        var book = createBook("The Hobbit", List.of("The Beatles"), LocalDate.now(), "An Epic Series", 1f, null, null, null, null, "fileWithoutExt");
+        String pattern = "{title_sortable}|{author_sortable}|{series_sortable}";
+        assertThat(PathPatternResolver.resolvePattern(book, pattern)).isEqualTo("The Hobbit|The Beatles|An Epic Series");
+    }
+
+    @Test void publisherSortablePlaceholder_tr03NormalizationApplied() {
+        var book = createBook("Title", List.of("Author"), LocalDate.now(), null, null, null, "DAW Books", null, null, "fileWithoutExt");
+        assertThat(PathPatternResolver.resolvePattern(book, "{publisher_sortable}")).isEqualTo("DAW Books");
+    }
+
+    @Test void authorIdPlaceholder_returnsFirstAuthorId() {
+        var book = createBook("Title", List.of("Alice", "Bob", "Carol"), LocalDate.now(), null, null, null, null, null, null, "fileWithoutExt");
+        assertThat(PathPatternResolver.resolvePattern(book, "{author_id}")).isEqualTo("1");
+    }
+
+    @Test void authorIdPlaceholder_missingAuthors_fallsBackToFilename() {
+        var book = createBook("Title", null, LocalDate.now(), null, null, null, null, null, null, "fileWithoutExt");
+        assertThat(PathPatternResolver.resolvePattern(book, "{author_id}")).isEqualTo("fileWithoutExt");
     }
 
     @Test void complexPatternWithSubtitle_allPlaceholdersPresent() {

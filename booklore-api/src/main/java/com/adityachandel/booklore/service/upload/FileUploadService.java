@@ -8,10 +8,12 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -75,6 +77,8 @@ public class FileUploadService {
             validateFinalPath(finalPath);
             moveFileToFinalLocation(tempPath, finalPath);
 
+            persistUploadedBookShell(libraryEntity, libraryPathEntity, relativePath, originalFileName, fileExtension.getType(), finalPath);
+
             log.info("File uploaded to final location: {}", finalPath);
 
         } catch (IOException e) {
@@ -83,6 +87,71 @@ public class FileUploadService {
         } finally {
             cleanupTempFile(tempPath);
         }
+    }
+
+    private void persistUploadedBookShell(LibraryEntity libraryEntity,
+                                         LibraryPathEntity libraryPathEntity,
+                                         String relativePath,
+                                         String originalFileName,
+                                         BookFileType bookFileType,
+                                         Path finalPath) {
+        if (relativePath == null || relativePath.isBlank()) {
+            return;
+        }
+
+        Path relative = Paths.get(relativePath);
+        String fileName = relative.getFileName() != null ? relative.getFileName().toString() : null;
+        String fileSubPath = relative.getParent() != null ? relative.getParent().toString().replace("\\", "/") : "";
+
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
+
+        Optional<BookEntity> existingBookOpt = bookRepository.findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
+                libraryEntity.getId(),
+                libraryPathEntity.getId(),
+                fileSubPath,
+                fileName);
+
+        if (existingBookOpt.isPresent()) {
+            return;
+        }
+
+        long fileSizeKb;
+        try {
+            fileSizeKb = Files.size(finalPath) / BYTES_TO_KB_DIVISOR;
+        } catch (IOException e) {
+            log.warn("Failed to read file size for uploaded file '{}': {}", finalPath, e.getMessage());
+            fileSizeKb = 0;
+        }
+
+        String hash;
+        try {
+            hash = FileFingerprint.generateHash(finalPath);
+        } catch (Exception e) {
+            log.warn("Failed to compute hash for uploaded file '{}': {}", finalPath, e.getMessage());
+            hash = null;
+        }
+
+        BookEntity bookEntity = BookEntity.builder()
+                .library(libraryEntity)
+                .libraryPath(libraryPathEntity)
+                .fileName(fileName)
+                .fileSubPath(fileSubPath)
+                .bookType(bookFileType)
+                .fileSizeKb(fileSizeKb)
+                .addedOn(Instant.now())
+                .initialHash(hash)
+                .currentHash(hash)
+                .deleted(false)
+                .build();
+
+        BookMetadataEntity metadata = BookMetadataEntity.builder()
+                .book(bookEntity)
+                .build();
+        bookEntity.setMetadata(metadata);
+
+        bookRepository.saveAndFlush(bookEntity);
     }
 
     @Transactional
