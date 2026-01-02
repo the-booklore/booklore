@@ -184,13 +184,13 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             const combinedTheme = {
               ...baseTheme,
               body: {
-                ...baseTheme.body,
+                ...(baseTheme.body || {}),
                 ...(this.selectedFontType ? {'font-family': this.selectedFontType} : {}),
                 ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
                 ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
               },
               '*': {
-                ...baseTheme['*'],
+                ...(baseTheme['*'] || {}),
                 ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
                 ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
               },

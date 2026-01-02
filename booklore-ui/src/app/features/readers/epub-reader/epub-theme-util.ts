@@ -40,7 +40,7 @@ export enum EpubTheme {
 }
 
 export class EpubThemeUtil {
-  static readonly themesMap = new Map<string, unknown>([
+  static readonly themesMap = new Map<string, EpubThemeObject>([
     [EpubTheme.BLACK, {
       "body": {"background-color": "#000000", "color": "#f9f9f9"},
       "p": {"color": "#f9f9f9"},
