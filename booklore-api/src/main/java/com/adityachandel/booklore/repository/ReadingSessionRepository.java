@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -36,17 +37,14 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             FROM ReadingSessionEntity rs
             JOIN rs.book b
             WHERE rs.user.id = :userId
-            AND YEAR(rs.startTime) = :year
-            AND MONTH(rs.startTime) = :month
-            AND WEEK(rs.startTime) = :week
+            AND rs.startTime >= :startOfWeek AND rs.startTime < :endOfWeek
             GROUP BY b.id, b.metadata.title, rs.bookType
             ORDER BY MIN(rs.startTime)
             """)
     List<ReadingSessionTimelineDto> findSessionTimelineByUserAndWeek(
             @Param("userId") Long userId,
-            @Param("year") int year,
-            @Param("month") int month,
-            @Param("week") int week);
+            @Param("startOfWeek") Instant startOfWeek,
+            @Param("endOfWeek") Instant endOfWeek);
 
     @Query("""
             SELECT

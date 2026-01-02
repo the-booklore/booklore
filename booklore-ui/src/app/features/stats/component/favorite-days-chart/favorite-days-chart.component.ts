@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {ChartConfiguration, ChartData} from 'chart.js';
@@ -32,19 +32,19 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
   public selectedMonth: number | null = null;
   public yearOptions: { label: string; value: number | null }[] = [];
   public monthOptions: { label: string; value: number | null }[] = [
-    { label: 'All Months', value: null },
-    { label: 'January', value: 1 },
-    { label: 'February', value: 2 },
-    { label: 'March', value: 3 },
-    { label: 'April', value: 4 },
-    { label: 'May', value: 5 },
-    { label: 'June', value: 6 },
-    { label: 'July', value: 7 },
-    { label: 'August', value: 8 },
-    { label: 'September', value: 9 },
-    { label: 'October', value: 10 },
-    { label: 'November', value: 11 },
-    { label: 'December', value: 12 }
+    {label: 'All Months', value: null},
+    {label: 'January', value: 1},
+    {label: 'February', value: 2},
+    {label: 'March', value: 3},
+    {label: 'April', value: 4},
+    {label: 'May', value: 5},
+    {label: 'June', value: 6},
+    {label: 'July', value: 7},
+    {label: 'August', value: 8},
+    {label: 'September', value: 9},
+    {label: 'October', value: 10},
+    {label: 'November', value: 11},
+    {label: 'December', value: 12}
   ];
 
   constructor() {
@@ -161,7 +161,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
           ticks: {
             color: '#ffffff',
             font: {family: "'Inter', sans-serif", size: 11},
-            callback: function(value) {
+            callback: function (value) {
               return (typeof value === 'number' ? value.toFixed(1) : '0.0') + 'h';
             }
           },
@@ -186,9 +186,9 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
 
   private initializeYearOptions(): void {
     const currentYear = new Date().getFullYear();
-    this.yearOptions = [{ label: 'All Years', value: null }];
+    this.yearOptions = [{label: 'All Years', value: null}];
     for (let year = currentYear; year >= currentYear - 10; year--) {
-      this.yearOptions.push({ label: year.toString(), value: year });
+      this.yearOptions.push({label: year.toString(), value: year});
     }
   }
 
@@ -216,7 +216,7 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
   private updateChartData(favoriteDays: FavoriteDaysResponse[]): void {
     const dayMap = new Map<number, FavoriteDaysResponse>();
     favoriteDays.forEach(item => {
-      dayMap.set(item.dayOfWeek, item);
+      dayMap.set(item.dayOfWeek - 1, item);
     });
 
     const labels = this.allDays;

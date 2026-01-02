@@ -29,6 +29,12 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
+import java.time.temporal.WeekFields;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
@@ -88,11 +94,16 @@ public class ReadingSessionService {
     }
 
     @Transactional(readOnly = true)
-    public List<ReadingSessionTimelineResponse> getSessionTimelineForWeek(int year, int month, int week) {
+    public List<ReadingSessionTimelineResponse> getSessionTimelineForWeek(int year, int week) {
         BookLoreUser authenticatedUser = authenticationService.getAuthenticatedUser();
         Long userId = authenticatedUser.getId();
 
-        return readingSessionRepository.findSessionTimelineByUserAndWeek(userId, year, month, week)
+        LocalDate date = LocalDate.of(year, 1, 1)
+                .with(WeekFields.of(DayOfWeek.MONDAY, 1).weekOfYear(), week);
+        LocalDateTime startOfWeek = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay();
+        LocalDateTime endOfWeek = date.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)).plusDays(1).atStartOfDay();
+
+        return readingSessionRepository.findSessionTimelineByUserAndWeek(userId, startOfWeek.atZone(ZoneId.systemDefault()).toInstant(), endOfWeek.atZone(ZoneId.systemDefault()).toInstant())
                 .stream()
                 .map(dto -> ReadingSessionTimelineResponse.builder()
                         .bookId(dto.getBookId())
