@@ -1,9 +1,9 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
-import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.github.junrar.Archive;
-import com.github.junrar.rarfile.FileHeader;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -12,27 +12,34 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-import org.apache.commons.compress.archivers.sevenz.SevenZFile;
-import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+
 import javax.imageio.ImageIO;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
+
+import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.github.junrar.Archive;
+import com.github.junrar.rarfile.FileHeader;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
@@ -159,7 +166,10 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       )
     );
     builder.publisher(getTextContent(document, "Publisher"));
-    builder.seriesName(getTextContent(document, "Series"));
+
+    String series = getTextContent(document, "Series");
+    String volume = getTextContent(document, "Volume");
+    builder.seriesName(volume == null || volume.isBlank() ? series : String.format("%s (%s)", series, volume));
     builder.seriesNumber(parseFloat(getTextContent(document, "Number")));
     builder.seriesTotal(parseInteger(getTextContent(document, "Count")));
     builder.publishedDate(

@@ -236,7 +236,7 @@ class BookUpdateServiceTest {
         verify(userBookProgressRepository).bulkUpdateReadStatus(eq(1L), eq(new ArrayList<>(existing)), eq(ReadStatus.READ), any(), any());
         verify(userBookProgressRepository).saveAll(anyList());
         assertEquals(3, result.size());
-        assertEquals(ReadStatus.READ, result.get(0).getReadStatus());
+        assertEquals(ReadStatus.READ, result.getFirst().getReadStatus());
     }
 
     @Test
@@ -348,7 +348,7 @@ class BookUpdateServiceTest {
         verify(userBookProgressRepository).bulkUpdatePersonalRating(eq(1L), eq(new ArrayList<>(existing)), eq(5));
         verify(userBookProgressRepository).saveAll(anyList());
         assertEquals(3, result.size());
-        assertEquals(5, result.get(0).getPersonalRating());
+        assertEquals(5, result.getFirst().getPersonalRating());
     }
 
     @Test
@@ -365,7 +365,7 @@ class BookUpdateServiceTest {
         List<PersonalRatingUpdateResponse> result = bookUpdateService.resetPersonalRating(bookIds);
         verify(userBookProgressRepository).bulkUpdatePersonalRating(eq(1L), eq(new ArrayList<>(bookIds)), isNull());
         assertEquals(2, result.size());
-        assertNull(result.get(0).getPersonalRating());
+        assertNull(result.getFirst().getPersonalRating());
     }
 
     @Test

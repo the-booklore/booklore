@@ -13,7 +13,7 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, take} from "rxjs/operators";
+import {filter, take, finalize} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
@@ -76,6 +76,7 @@ export class MetadataEditorComponent implements OnInit {
   isUploading = false;
   isLoading = false;
   isSaving = false;
+  isGeneratingCover = false;
 
   refreshingBookIds = new Set<number>();
   isAutoFetching = false;
@@ -681,6 +682,40 @@ export class MetadataEditorComponent implements OnInit {
         });
       },
     });
+  }
+
+  generateCustomCover(bookId: number) {
+    this.isGeneratingCover = true;
+    this.bookService.generateCustomCover(bookId)
+      .pipe(finalize(() => this.isGeneratingCover = false))
+      .subscribe({
+        next: () => {
+          this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+            next: (updatedBook) => {
+              this.bookService.handleBookUpdate(updatedBook);
+              this.messageService.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Custom cover generated successfully.",
+              });
+            },
+            error: () => {
+              this.messageService.add({
+                severity: "warning",
+                summary: "Partial Success",
+                detail: "Cover generated but failed to refresh display. Please refresh the page.",
+              });
+            },
+          });
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to generate custom cover",
+          });
+        }
+      });
   }
 
   autoFetch(bookId: number) {

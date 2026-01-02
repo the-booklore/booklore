@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.task.tasks;
 
-import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
@@ -10,7 +9,6 @@ import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.task.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import static com.adityachandel.booklore.model.enums.UserPermission.CAN_BULK_AUTO_FETCH_METADATA;

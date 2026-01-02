@@ -325,7 +325,7 @@ public class FilenamePatternExtractor {
             String placeholderName;
             String formatParameter = null;
             
-            if (matcher.group(0).equals("*")) {
+            if ("*".equals(matcher.group(0))) {
                 placeholderName = "*";
             } else {
                 placeholderName = matcher.group(1);
@@ -372,13 +372,13 @@ public class FilenamePatternExtractor {
             }
         }
         
-        return "(" + result.toString() + ")";
+        return "(" + result + ")";
     }
 
     private String determineRegexForPlaceholder(PlaceholderConfig config, boolean shouldUseGreedyMatching) {
         if (config != null) {
             String configuredRegex = config.regex();
-            boolean isNonGreedyTextPattern = configuredRegex.equals("(.+?)");
+            boolean isNonGreedyTextPattern = "(.+?)".equals(configuredRegex);
             
             if (shouldUseGreedyMatching && isNonGreedyTextPattern) {
                 return "(.+)";
@@ -485,7 +485,6 @@ public class FilenamePatternExtractor {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(detectedFormat);
             LocalDate date = LocalDate.parse(value, formatter);
             metadata.setPublishedDate(date);
-            return;
         } catch (NumberFormatException e) {
             log.warn("Failed to parse year value '{}': {}", value, e.getMessage());
         } catch (DateTimeParseException e) {

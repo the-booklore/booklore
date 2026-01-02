@@ -35,7 +35,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -121,9 +120,9 @@ public class PdfMetadataWriter implements MetadataWriter {
             helper.copyPublisher(clear != null && clear.isPublisher(), pub -> dc.addPublisher(pub != null ? pub : ""));
             helper.copyLanguage(clear != null && clear.isLanguage(), lang -> dc.addLanguage(lang != null ? lang : ""));
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
-                Calendar cal = GregorianCalendar.from(
-                        (date != null ? date : ZonedDateTime.now().toLocalDate())
-                                .atStartOfDay(ZoneId.systemDefault()));
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
+                                .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
                 dc.addDate(cal);
             });
 

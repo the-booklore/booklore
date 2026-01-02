@@ -61,8 +61,8 @@ class KoboLibrarySnapshotServiceTest {
 
     @BeforeEach
     void setUp() {
-        owner = BookLoreUserEntity.builder().id(1L).build();
-        otherUser = BookLoreUserEntity.builder().id(2L).build();
+        owner = BookLoreUserEntity.builder().id(1L).isDefaultPassword(false).build();
+        otherUser = BookLoreUserEntity.builder().id(2L).isDefaultPassword(false).build();
 
         LibraryEntity ownersLibrary = LibraryEntity.builder()
                 .users(List.of(owner))

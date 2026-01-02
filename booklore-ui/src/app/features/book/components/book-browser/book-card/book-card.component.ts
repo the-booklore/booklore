@@ -328,6 +328,42 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
             command: () => {
               this.bookDialogHelperService.openMetadataRefreshDialog(new Set([this.book!.id]))
             },
+          },
+          {
+            label: 'Regenerate Cover (File)',
+            icon: 'pi pi-image',
+            command: () => {
+              this.bookService.regenerateCover(this.book.id).subscribe({
+                next: () => this.messageService.add({
+                  severity: 'success',
+                  summary: 'Success',
+                  detail: 'Cover regeneration started'
+                }),
+                error: () => this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Failed to regenerate cover'
+                })
+              });
+            }
+          },
+          {
+            label: 'Generate Custom Cover',
+            icon: 'pi pi-palette',
+            command: () => {
+              this.bookService.generateCustomCover(this.book.id).subscribe({
+                next: () => this.messageService.add({
+                  severity: 'success',
+                  summary: 'Success',
+                  detail: 'Cover generated successfully'
+                }),
+                error: () => this.messageService.add({
+                  severity: 'error',
+                  summary: 'Error',
+                  detail: 'Failed to generate cover'
+                })
+              });
+            }
           }
         ]
       });

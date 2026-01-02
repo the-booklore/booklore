@@ -57,8 +57,8 @@ class BookMarkServiceTest {
 
     @BeforeEach
     void setUp() {
-        userDto = BookLoreUser.builder().id(userId).build();
-        userEntity = BookLoreUserEntity.builder().id(userId).build();
+        userDto = BookLoreUser.builder().id(userId).isDefaultPassword(false).build();
+        userEntity = BookLoreUserEntity.builder().id(userId).isDefaultPassword(false).build();
         bookEntity = BookEntity.builder().id(bookId).build();
         bookmarkEntity = BookMarkEntity.builder().id(bookmarkId).user(userEntity).book(bookEntity).cfi("cfi").title("title").version(1L).build();
         bookmarkDto = BookMark.builder().id(bookmarkId).bookId(bookId).cfi("cfi").title("title").build();
@@ -74,7 +74,7 @@ class BookMarkServiceTest {
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(bookmarkId, result.get(0).getId());
+        assertEquals(bookmarkId, result.getFirst().getId());
         verify(bookMarkRepository).findByBookIdAndUserIdOrderByPriorityAscCreatedAtDesc(bookId, userId);
     }
 

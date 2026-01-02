@@ -26,7 +26,7 @@
             <p-button
               icon="pi pi-refresh"
               (onClick)="regenerateCover(book.id)"
-              pTooltip="Regenerate cover"
+              pTooltip="Regenerate cover (From File)"
               tooltipPosition="top"
               [outlined]="true"
               severity="warn"
@@ -34,11 +34,21 @@
               [disabled]="book.metadata!['coverLocked']">
             </p-button>
             <p-button
+              icon="pi pi-palette"
+              (onClick)="generateCustomCover(book.id)"
+              pTooltip="Generate Custom Cover"
+              tooltipPosition="top"
+              [outlined]="true"
+              severity="help"
+              size="small"
+              [loading]="isGeneratingCover"
+              [disabled]="book.metadata!['coverLocked'] || isGeneratingCover">
+            </p-button>
+            <p-button
               [disabled]="book.metadata!['coverLocked']"
               outlined
               size="small"
               icon="pi pi-search"
-              label="Search"
               (onClick)="openCoverSearch()"
               pTooltip="Search for cover"
               tooltipPosition="top"
@@ -55,7 +65,7 @@
               chooseIcon="pi pi-upload"
               accept="image/jpeg,image/png"
               maxFileSize="5000000"
-              chooseLabel="Upload"
+              chooseLabel=""
               (onUpload)="onUpload($event)"
               (onError)="onUploadError($event)"
               [auto]="true"

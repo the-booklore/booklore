@@ -22,19 +22,13 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -46,11 +40,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     // List of all media types that epub4j has so we can lazy load them.
     // Note that we have to add in null to handle files without extentions like mimetype.
-    private static List<MediaType> MEDIA_TYPES = new ArrayList<>();
+    private static final List<MediaType> MEDIA_TYPES = new ArrayList<>();
     static {
-        for (int i = 0; i < MediaTypes.mediaTypes.length; i++) {
-            MEDIA_TYPES.add(MediaTypes.mediaTypes[i]);
-        }
+        MEDIA_TYPES.addAll(Arrays.asList(MediaTypes.mediaTypes));
         MEDIA_TYPES.add(null);
     }
 

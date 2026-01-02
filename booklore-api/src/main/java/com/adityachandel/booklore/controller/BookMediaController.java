@@ -107,6 +107,10 @@ public class BookMediaController {
                     ? MediaType.IMAGE_PNG
                     : MediaType.IMAGE_JPEG;
 
+            if (filename == null) {
+                return ResponseEntity.badRequest().build();
+            }
+
             String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
             String fallbackFilename = NON_ASCII_PATTERN.matcher(filename).replaceAll("_");
             String contentDisposition = String.format("inline; filename=\"%s\"; filename*=UTF-8''%s",
