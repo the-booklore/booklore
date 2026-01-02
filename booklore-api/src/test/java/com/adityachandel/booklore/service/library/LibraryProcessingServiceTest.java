@@ -23,8 +23,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,7 +110,7 @@ class LibraryProcessingServiceTest {
         List<LibraryFile> processedFiles = captor.getValue();
 
         assertThat(processedFiles).hasSize(1);
-        assertThat(processedFiles.get(0).getFileName()).isEqualTo("book2.epub");
+        assertThat(processedFiles.getFirst().getFileName()).isEqualTo("book2.epub");
     }
 
     @Test
@@ -227,8 +225,8 @@ class LibraryProcessingServiceTest {
 
         List<LibraryFile> processedFiles = captor.getValue();
         assertThat(processedFiles).hasSize(1);
-        assertThat(processedFiles.get(0).getFileName()).isEqualTo("book1.epub");
-        assertThat(processedFiles.get(0).getFileSubPath()).isEqualTo("fantasy");
+        assertThat(processedFiles.getFirst().getFileName()).isEqualTo("book1.epub");
+        assertThat(processedFiles.getFirst().getFileSubPath()).isEqualTo("fantasy");
     }
 
     @Test

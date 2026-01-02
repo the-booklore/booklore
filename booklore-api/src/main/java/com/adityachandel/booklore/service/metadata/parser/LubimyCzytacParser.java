@@ -111,7 +111,7 @@ public class LubimyCzytacParser implements BookParser {
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
         List<BookMetadata> results = fetchMetadata(book, fetchMetadataRequest);
-        return results.isEmpty() ? null : results.get(0);
+        return results.isEmpty() ? null : results.getFirst();
     }
 
     private String buildSearchQuery(FetchMetadataRequest request) {
@@ -320,22 +320,15 @@ public class LubimyCzytacParser implements BookParser {
     }
 
     private String mapLanguage(String polishLanguage) {
-        switch (polishLanguage) {
-            case "polski":
-                return "pl";
-            case "angielski":
-                return "en";
-            case "niemiecki":
-                return "de";
-            case "francuski":
-                return "fr";
-            case "hiszpański":
-                return "es";
-            case "włoski":
-                return "it";
-            default:
-                return polishLanguage;
-        }
+        return switch (polishLanguage) {
+            case "polski" -> "pl";
+            case "angielski" -> "en";
+            case "niemiecki" -> "de";
+            case "francuski" -> "fr";
+            case "hiszpański" -> "es";
+            case "włoski" -> "it";
+            default -> polishLanguage;
+        };
     }
 
     private void parseSeriesInfo(String seriesText, BookMetadata metadata) {

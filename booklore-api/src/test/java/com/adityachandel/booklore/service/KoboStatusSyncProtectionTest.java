@@ -72,7 +72,7 @@ class KoboStatusSyncProtectionTest {
 
     @BeforeEach
     void setUp() {
-        testUser = BookLoreUser.builder().id(1L).username("testuser").build();
+        testUser = BookLoreUser.builder().id(1L).username("testuser").isDefaultPassword(false).build();
         testUserEntity = new BookLoreUserEntity();
         testUserEntity.setId(1L);
         testBook = new BookEntity();

@@ -69,7 +69,7 @@ class BookServiceTest {
                 .id(1L)
                 .permissions(perms)
                 .assignedLibraries(List.of())
-                .build();
+                .isDefaultPassword(false).build();
     }
 
     @Test
@@ -106,7 +106,7 @@ class BookServiceTest {
             List<Book> result = bookService.getBooksByIds(Set.of(2L), false);
 
             assertEquals(1, result.size());
-            assertEquals(2L, result.get(0).getId());
+            assertEquals(2L, result.getFirst().getId());
         }
     }
 

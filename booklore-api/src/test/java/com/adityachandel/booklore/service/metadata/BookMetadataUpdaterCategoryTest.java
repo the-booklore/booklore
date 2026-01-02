@@ -385,7 +385,7 @@ class BookMetadataUpdaterCategoryTest {
                 .bookEntity(bookEntity)
                 .metadataUpdateWrapper(wrapper)
                 .mergeCategories(merge)
-                .replaceMode(replaceMode)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .build();
     }
 

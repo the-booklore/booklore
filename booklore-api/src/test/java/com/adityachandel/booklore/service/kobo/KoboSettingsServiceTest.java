@@ -39,7 +39,7 @@ class KoboSettingsServiceTest {
 
     @BeforeEach
     void setUp() {
-        user = BookLoreUser.builder().id(1L).build();
+        user = BookLoreUser.builder().id(1L).isDefaultPassword(false).build();
         settingsEntity = KoboUserSettingsEntity.builder()
                 .id(10L)
                 .userId(1L)

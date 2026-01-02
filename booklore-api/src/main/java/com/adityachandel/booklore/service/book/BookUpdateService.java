@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.service.book;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
-import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.*;
