@@ -44,7 +44,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        top: 30
+        top: 20
       }
     },
     plugins: {
@@ -102,6 +102,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
       },
       y: {
         type: 'linear',
+        offset: true,
         ticks: {
           stepSize: 1,
           callback: (value) => this.yearLabels[value as number] || '',
@@ -150,7 +151,6 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
 
   private updateChartData(yearMonthData: YearMonthData[]): void {
     const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
     const years = Array.from({length: 10}, (_, i) => currentYear - 9 + i);
 
     this.yearLabels = years.map(String);
@@ -159,9 +159,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     const heatmapData: MatrixDataPoint[] = [];
 
     years.forEach((year, yearIndex) => {
-      const maxMonth = year === currentYear ? currentMonth : 11;
-
-      for (let month = 0; month <= maxMonth; month++) {
+      for (let month = 0; month <= 11; month++) {
         const dataPoint = yearMonthData.find(d => d.year === year && d.month === month + 1);
         heatmapData.push({
           x: month,
@@ -172,7 +170,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     });
 
     if (this.chartOptions?.scales?.['y']) {
-      (this.chartOptions.scales['y'] as any).max = years.length - 0.5;
+      (this.chartOptions.scales['y'] as any).max = years.length - 1;
     }
 
     this.chartDataSubject.next({
