@@ -44,5 +44,3 @@ local/
 ### Dev config, books, and data ###
 booklore-api/src/main/resources/application-local.yaml
 /shared/
-docs/tr03.txt
-docs/tr03.pdf
