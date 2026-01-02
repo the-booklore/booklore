@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.dto.request.BulkMetadataUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
 import com.adityachandel.booklore.model.dto.request.ToggleAllLockRequest;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
+import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -75,6 +76,33 @@ public class BookMetadataService {
     private final MetadataWriterFactory metadataWriterFactory;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
     private final org.springframework.transaction.PlatformTransactionManager transactionManager;
+    private final CoverImageGenerator coverImageGenerator;
+
+    public void generateCustomCover(long bookId) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        if (bookEntity.getMetadata().getCoverLocked() != null && bookEntity.getMetadata().getCoverLocked()) {
+            throw ApiError.METADATA_LOCKED.createException();
+        }
+
+        String title = bookEntity.getMetadata().getTitle();
+        String author = null;
+        if (bookEntity.getMetadata().getAuthors() != null && !bookEntity.getMetadata().getAuthors().isEmpty()) {
+            author = bookEntity.getMetadata().getAuthors().stream()
+                    .map(AuthorEntity::getName)
+                    .collect(Collectors.joining(", "));
+        }
+
+        byte[] coverBytes = coverImageGenerator.generateCover(title, author);
+        fileService.createThumbnailFromBytes(bookId, coverBytes);
+
+        bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+        bookRepository.save(bookEntity);
+
+        notificationService.sendMessage(Topic.BOOKS_COVER_UPDATE, List.of(Map.of(
+                "id", bookId,
+                "coverUpdatedOn", bookEntity.getMetadata().getCoverUpdatedOn()
+        )));
+    }
 
     public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));

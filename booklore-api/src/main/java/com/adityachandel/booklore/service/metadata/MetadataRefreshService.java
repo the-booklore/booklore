@@ -145,9 +145,13 @@ public class MetadataRefreshService {
                                 return null;
                             }
                         }
-                        BookMetadata fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+                        BookMetadata fetched = null;
+                        boolean bookReviewMode = false;
+                        if (refreshOptions != null) {
+                            fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+                            bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
+                        }
 
-                        boolean bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
                         if (bookReviewMode) {
                             saveProposal(task, book.getId(), fetched);
                         } else {

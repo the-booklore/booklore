@@ -1,6 +1,5 @@
 package com.adityachandel.booklore.task.tasks;
 
-import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
@@ -12,7 +11,6 @@ import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.util.FileService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;

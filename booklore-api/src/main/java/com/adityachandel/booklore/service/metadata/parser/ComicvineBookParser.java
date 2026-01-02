@@ -112,7 +112,7 @@ public class ComicvineBookParser implements BookParser {
                 List<String> retryAfterHeaders = response.headers().allValues("Retry-After");
                 if (!retryAfterHeaders.isEmpty()) {
                     try {
-                        String retryAfter = retryAfterHeaders.get(0);
+                        String retryAfter = retryAfterHeaders.getFirst();
                         if (DIGIT_PATTERN.matcher(retryAfter).matches()) {
                             resetDelayMs = Long.parseLong(retryAfter) * 1000;
                         } else {
@@ -123,7 +123,7 @@ public class ComicvineBookParser implements BookParser {
                             }
                         }
                     } catch (Exception e) {
-                        log.warn("Could not parse Retry-After header '{}', using default 1 hour delay", retryAfterHeaders.get(0));
+                        log.warn("Could not parse Retry-After header '{}', using default 1 hour delay", retryAfterHeaders.getFirst());
                     }
                 }
 

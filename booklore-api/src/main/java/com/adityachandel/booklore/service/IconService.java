@@ -296,8 +296,6 @@ public class IconService {
                             log.warn("Failed to read icon: {}", path.getFileName(), e);
                         }
                     });
-
-            log.info("Retrieved {} icons for bulk content request", iconMap.size());
             return iconMap;
         } catch (IOException e) {
             log.error("Failed to read icons directory: {}", e.getMessage(), e);
