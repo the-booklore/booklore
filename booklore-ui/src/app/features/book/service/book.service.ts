@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {first, Observable, of, throwError} from 'rxjs';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
-import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BookStatusUpdateResponse, BulkMetadataUpdateRequest, MetadataUpdateWrapper, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {FetchMetadataRequest} from '../../metadata/model/request/fetch-metadata-request.model';
@@ -14,18 +14,6 @@ import {Router} from '@angular/router';
 import {BookStateService} from './book-state.service';
 import {BookSocketService} from './book-socket.service';
 import {BookPatchService} from './book-patch.service';
-
-export interface BookStatusUpdateResponse {
-  bookId: number;
-  readStatus: ReadStatus;
-  readStatusModifiedTime: string;
-  dateFinished?: string;
-}
-
-export interface PersonalRatingUpdateResponse {
-  bookId: number;
-  personalRating?: number;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -585,5 +573,13 @@ export class BookService {
 
   handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
     this.bookSocketService.handleMultipleBookCoverPatches(patches);
+  }
+
+  getBackupMetadata(bookId: number): Observable<BookMetadata> {
+    return this.http.get<BookMetadata>(`${this.url}/${bookId}/backup-metadata`);
+  }
+
+  restoreMetadata(bookId: number): Observable<void> {
+    return this.http.post<void>(`${this.url}/${bookId}/restore-metadata`, {});
   }
 }

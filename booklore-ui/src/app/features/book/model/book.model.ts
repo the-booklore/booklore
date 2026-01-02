@@ -253,6 +253,18 @@ export interface BookDeletionResponse {
   failedFileDeletions: number[];
 }
 
+export interface BookStatusUpdateResponse {
+  bookId: number;
+  readStatus: ReadStatus;
+  readStatusModifiedTime: string;
+  dateFinished?: string;
+}
+
+export interface PersonalRatingUpdateResponse {
+  bookId: number;
+  personalRating?: number;
+}
+
 export enum ReadStatus {
   UNREAD = 'UNREAD',
   READING = 'READING',

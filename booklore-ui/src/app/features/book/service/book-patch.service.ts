@@ -2,11 +2,10 @@ import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 import {tap} from 'rxjs/operators';
-import {Book, ReadStatus} from '../model/book.model';
+import {Book, BookStatusUpdateResponse, PersonalRatingUpdateResponse, ReadStatus} from '../model/book.model';
 import {BookStateService} from './book-state.service';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {ResetProgressType, ResetProgressTypes} from '../../../shared/constants/reset-progress-type';
-import {BookStatusUpdateResponse, PersonalRatingUpdateResponse} from './book.service';
 
 @Injectable({
   providedIn: 'root',
