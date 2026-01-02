@@ -9,6 +9,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -91,7 +92,8 @@ public class PdfReaderService {
         if (!Files.isReadable(pdfPath)) {
             throw new FileNotFoundException("PDF file is not readable: " + pdfPath);
         }
-        try (PDDocument document = Loader.loadPDF(new File(pdfPath.toFile().toURI()))) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(pdfPath.toFile());
+             PDDocument document = Loader.loadPDF(randomAccessRead)) {
             PDFRenderer renderer = new PDFRenderer(document);
             for (int i = 0; i < document.getNumberOfPages(); i++) {
                 BufferedImage image = null;

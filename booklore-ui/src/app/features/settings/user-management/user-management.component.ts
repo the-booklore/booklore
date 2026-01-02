@@ -224,7 +224,6 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canUpload) count++;
     if (permissions.canDownload) count++;
     if (permissions.canDeleteBook) count++;
-    if (permissions.canEditMetadata) count++;
     if (permissions.canManageLibrary) count++;
     if (permissions.canEmailBook) count++;
     return count;
@@ -255,6 +254,28 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canManageGlobalPreferences) count++;
     if (permissions.canManageMetadataConfig) count++;
     if (permissions.canManageIcons) count++;
+    return count;
+  }
+
+  getMetadataEditingPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canEditMetadata) count++;
+    if (permissions.canBulkAutoFetchMetadata) count++;
+    if (permissions.canBulkCustomFetchMetadata) count++;
+    if (permissions.canBulkEditMetadata) count++;
+    if (permissions.canBulkRegenerateCover) count++;
+    if (permissions.canMoveOrganizeFiles) count++;
+    if (permissions.canBulkLockUnlockMetadata) count++;
+    return count;
+  }
+
+  getBulkResetPermissionsCount(user: User): number {
+    const permissions = user.permissions;
+    let count = 0;
+    if (permissions.canBulkResetBookloreReadProgress) count++;
+    if (permissions.canBulkResetKoReaderReadProgress) count++;
+    if (permissions.canBulkResetBookReadStatus) count++;
     return count;
   }
 
@@ -289,6 +310,15 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       user.permissions.canAccessTaskManager = true;
       user.permissions.canManageEmailConfig = true;
       user.permissions.canManageIcons = true;
+      user.permissions.canBulkAutoFetchMetadata = true;
+      user.permissions.canBulkCustomFetchMetadata = true;
+      user.permissions.canBulkEditMetadata = true;
+      user.permissions.canBulkRegenerateCover = true;
+      user.permissions.canMoveOrganizeFiles = true;
+      user.permissions.canBulkLockUnlockMetadata = true;
+      user.permissions.canBulkResetBookloreReadProgress = true;
+      user.permissions.canBulkResetKoReaderReadProgress = true;
+      user.permissions.canBulkResetBookReadStatus = true;
     }
   }
 

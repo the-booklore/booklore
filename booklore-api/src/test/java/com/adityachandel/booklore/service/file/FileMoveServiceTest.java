@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.file;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
+import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -85,14 +86,30 @@ class FileMoveServiceTest {
     @Test
     void moveSingleFile_whenLibraryMonitored_reRegistersLibraryPaths() {
         when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(true);
+        Library libraryDto = Library.builder().watch(true).build();
+        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(libraryDto);
 
         FileMoveResult result = fileMoveService.moveSingleFile(bookEntity);
 
         assertTrue(result.isMoved());
 
         verify(fileMoveHelper).unregisterLibrary(42L);
-        Path expectedRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
-        verify(fileMoveHelper).registerLibraryPaths(42L, expectedRoot);
+        verify(monitoringRegistrationService).registerLibrary(libraryDto);
+        assertTrue(libraryDto.isWatch());
+        verify(fileMoveHelper, never()).registerLibraryPaths(anyLong(), any(Path.class));
+    }
+
+    @Test
+    void moveSingleFile_ensuresLibraryWatchStatusIsRestored() {
+        when(monitoringRegistrationService.isLibraryMonitored(42L)).thenReturn(true);
+        
+        Library libraryDto = Library.builder().watch(false).build();
+        when(libraryMapper.toLibrary(any(LibraryEntity.class))).thenReturn(libraryDto);
+
+        fileMoveService.moveSingleFile(bookEntity);
+
+        verify(monitoringRegistrationService).registerLibrary(libraryDto);
+        assertTrue(libraryDto.isWatch(), "Library watch status must be set to true before re-registering");
     }
 
     @Test

@@ -4,11 +4,11 @@
 .layout-sidebar {
   position: fixed;
   width: 225px;
-  height: calc(100dvh - 6rem);
+  height: calc(100dvh - 6.1rem);
   z-index: 999;
   overflow-y: auto;
   user-select: none;
-  top: 4.9rem;
+  top: 5rem;
   left: 1.1rem;
   transition: transform variables.$transitionDuration, left variables.$transitionDuration;
   background-color: var(--card-background);

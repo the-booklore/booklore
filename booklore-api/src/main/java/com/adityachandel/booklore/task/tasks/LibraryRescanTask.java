@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.exception.APIException;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
@@ -12,6 +14,7 @@ import com.adityachandel.booklore.task.options.LibraryRescanOptions;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,6 +28,12 @@ public class LibraryRescanTask implements Task {
     private final LibraryRescanHelper libraryRescanHelper;
     private final TaskCancellationManager cancellationManager;
 
+    @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        if (user.getPermissions() == null || !user.getPermissions().isCanAccessTaskManager()) {
+            throw new APIException("You do not have permission to run this task", HttpStatus.FORBIDDEN);
+        }
+    }
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {

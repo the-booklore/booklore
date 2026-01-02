@@ -1,13 +1,18 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.exception.APIException;
+import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.task.TaskMetadataHelper;
 import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.util.FileService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -24,6 +29,13 @@ import java.util.stream.Stream;
 public class ClearCbxCacheTask implements Task {
 
     private FileService fileService;
+
+    @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        if (!UserPermission.CAN_ACCESS_TASK_MANAGER.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_ACCESS_TASK_MANAGER);
+        }
+    }
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
