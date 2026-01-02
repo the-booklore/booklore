@@ -97,7 +97,6 @@ public class MobileOidcController {
 
         log.info("Mobile OIDC callback received");
 
-        // Verify OIDC is enabled
         if (!appSettingService.getAppSettings().isOidcEnabled()) {
             throw ApiError.FORBIDDEN.createException("OIDC is not enabled on this server");
         }
