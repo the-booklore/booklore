@@ -7,6 +7,16 @@ import {catchError} from 'rxjs/operators';
 import {of} from 'rxjs';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
+import {
+  addWeeks,
+  endOfISOWeek,
+  getISOWeek,
+  getISOWeeksInYear,
+  getISOWeekYear,
+  setISOWeek,
+  setISOWeekYear,
+  startOfISOWeek
+} from 'date-fns';
 
 interface ReadingSession {
   startTime: Date;
@@ -73,7 +83,7 @@ function themeTokens() {
 })
 export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
   @Input() initialYear: number = new Date().getFullYear();
-  @Input() weekNumber: number = this.getCurrentWeekNumber();
+  @Input() weekNumber: number = getISOWeek(new Date());
 
   @HostBinding('style.--timeline-text-color') timelineTextColor = themeTokens().modeColor;
   @HostBinding('style.--timeline-secondary-color') timelineSecondaryColor = themeTokens().modeTicks;
@@ -94,8 +104,8 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
   public hourLabels: string[] = [];
   public timelineData: DayTimeline[] = [];
   public currentYear: number = new Date().getFullYear();
-  public currentWeek: number = this.getCurrentWeekNumber();
-  public currentMonth: number = new Date().getMonth() + 1;
+  public currentWeek: number = getISOWeek(new Date());
+  private currentDate: Date = new Date();
 
   public yearOptions: { label: string; value: number }[] = [];
   public weekOptions: { label: string; value: number }[] = [];
@@ -106,8 +116,9 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
     this.updateThemeVariables();
     this.currentYear = this.initialYear;
     this.currentWeek = this.weekNumber;
-    this.updateCurrentMonth();
+    this.updateDateFromYearAndWeek();
     this.initializeYearOptions();
+    this.ensureYearInOptions();
     this.updateWeekOptions();
     this.initializeHourLabels();
     this.loadReadingSessions();
@@ -117,7 +128,7 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
     const currentYear = new Date().getFullYear();
     this.yearOptions = [];
     for (let year = currentYear; year >= currentYear - 10; year--) {
-      this.yearOptions.push({ label: year.toString(), value: year });
+      this.yearOptions.push({label: year.toString(), value: year});
     }
   }
 
@@ -159,25 +170,26 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
   }
 
   private updateWeekOptions(): void {
-    const weeksInYear = this.getWeeksInYear(this.currentYear);
+    const weeksInYear = getISOWeeksInYear(this.currentDate);
     this.weekOptions = [];
     for (let week = 1; week <= weeksInYear; week++) {
-      this.weekOptions.push({ label: `Week ${week}`, value: week });
+      this.weekOptions.push({label: `Week ${week}`, value: week});
     }
   }
 
   public onYearChange(): void {
-    this.updateWeekOptions();
-    const maxWeeks = this.getWeeksInYear(this.currentYear);
+    this.updateDateFromYearAndWeek();
+    const maxWeeks = getISOWeeksInYear(this.currentDate);
     if (this.currentWeek > maxWeeks) {
       this.currentWeek = maxWeeks;
+      this.updateDateFromYearAndWeek();
     }
-    this.updateCurrentMonth();
+    this.updateWeekOptions();
     this.loadReadingSessions();
   }
 
   public onWeekChange(): void {
-    this.updateCurrentMonth();
+    this.updateDateFromYearAndWeek();
     this.loadReadingSessions();
   }
 
@@ -190,7 +202,7 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
   }
 
   private loadReadingSessions(): void {
-    this.userStatsService.getTimelineForWeek(this.currentYear, this.currentMonth, this.currentWeek)
+    this.userStatsService.getTimelineForWeek(this.currentYear, this.currentWeek)
       .pipe(
         catchError((error) => {
           console.error('Error loading reading sessions:', error);
@@ -226,59 +238,30 @@ export class ReadingSessionTimelineComponent implements OnInit, OnDestroy {
     return sessions.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
   }
 
-  private getCurrentWeekNumber(): number {
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
-  }
-
   public changeWeek(delta: number): void {
-    this.currentWeek += delta;
+    this.currentDate = addWeeks(this.currentDate, delta);
+    this.currentYear = getISOWeekYear(this.currentDate);
+    this.currentWeek = getISOWeek(this.currentDate);
 
-    const weeksInYear = this.getWeeksInYear(this.currentYear);
-    if (this.currentWeek > weeksInYear) {
-      this.currentWeek = 1;
-      this.currentYear++;
-      this.updateWeekOptions();
-    } else if (this.currentWeek < 1) {
-      this.currentYear--;
-      this.currentWeek = this.getWeeksInYear(this.currentYear);
-      this.updateWeekOptions();
-    }
-
-    this.updateCurrentMonth();
+    this.ensureYearInOptions();
+    this.updateWeekOptions();
     this.loadReadingSessions();
   }
 
-  private updateCurrentMonth(): void {
-    const startOfYear = new Date(this.currentYear, 0, 1);
-    const daysToAdd = (this.currentWeek - 1) * 7;
-    const weekStart = new Date(startOfYear.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-
-    const dayOfWeek = weekStart.getDay();
-    weekStart.setDate(weekStart.getDate() - dayOfWeek);
-
-    this.currentMonth = weekStart.getMonth() + 1;
+  private ensureYearInOptions(): void {
+    if (!this.yearOptions.some(option => option.value === this.currentYear)) {
+      this.yearOptions.unshift({label: this.currentYear.toString(), value: this.currentYear});
+      this.yearOptions.sort((a, b) => b.value - a.value);
+    }
   }
 
-  private getWeeksInYear(year: number): number {
-    const lastDay = new Date(year, 11, 31);
-    const startOfYear = new Date(year, 0, 1);
-    const days = Math.floor((lastDay.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  private updateDateFromYearAndWeek(): void {
+    this.currentDate = setISOWeek(setISOWeekYear(new Date(), this.currentYear), this.currentWeek);
   }
 
   public getWeekDateRange(): string {
-    const startOfYear = new Date(this.currentYear, 0, 1);
-    const daysToAdd = (this.currentWeek - 1) * 7;
-    const weekStart = new Date(startOfYear.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
-
-    const dayOfWeek = weekStart.getDay();
-    weekStart.setDate(weekStart.getDate() - dayOfWeek);
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
+    const weekStart = startOfISOWeek(this.currentDate);
+    const weekEnd = endOfISOWeek(this.currentDate);
 
     const formatDate = (date: Date) => {
       const month = date.toLocaleDateString('en-US', {month: 'short'});

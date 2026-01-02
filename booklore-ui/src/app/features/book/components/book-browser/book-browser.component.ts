@@ -149,7 +149,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   lastAppliedSort: SortOption | null = null;
   private settingFiltersFromUrl = false;
   protected metadataMenuItems: MenuItem[] | undefined;
-  protected tieredMenuItems: MenuItem[] | undefined;
+  protected bulkReadActionsMenuItems: MenuItem[] | undefined;
   currentBooks: Book[] = [];
   lastSelectedIndex: number | null = null;
   showFilter = false;
@@ -222,6 +222,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.entityType = entityType;
       this.entityType$ = of(entityType);
       this.entity$ = of(null);
+      this.seriesCollapseFilter.setContext(null, null);
 
       this.pageTitle.setPageTitle(currentPath === 'all-books' ? 'All Books' : 'Unshelved Books');
     } else {
@@ -235,6 +236,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           this.pageTitle.setPageTitle(entity.name);
         }
         this.entity = entity ?? null;
+        this.updateSeriesCollapseContext();
         this.entityOptions = entity
           ? this.isLibrary(entity)
             ? this.libraryShelfMenuService.initializeLibraryMenuItems(entity)
@@ -252,14 +254,19 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.clearFilter();
     });
 
-    this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
-      () => this.autoFetchMetadata(),
-      () => this.fetchMetadata(),
-      () => this.bulkEditMetadata(),
-      () => this.multiBookEditMetadata(),
-      () => this.regenerateCoversForSelected(),
-    );
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
+      .subscribe(userState => {
+        this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
+          () => this.autoFetchMetadata(),
+          () => this.fetchMetadata(),
+          () => this.bulkEditMetadata(),
+          () => this.multiBookEditMetadata(),
+          () => this.regenerateCoversForSelected(),
+          userState.user
+        );
+      });
+
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
 
     combineLatest([
       this.activatedRoute.paramMap,
@@ -469,18 +476,18 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (selected) {
       if (book.seriesBooks) {
         //it is a series
-        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book=>book.id)]);
+        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book => book.id)]);
       } else {
-      this.selectedBooks.add(book.id);
+        this.selectedBooks.add(book.id);
       }
     } else {
       if (book.seriesBooks) {
         //it is a series
-        book.seriesBooks.forEach(book =>{
+        book.seriesBooks.forEach(book => {
           this.selectedBooks.delete(book.id);
         });
       } else {
-      this.selectedBooks.delete(book.id);
+        this.selectedBooks.delete(book.id);
       }
     }
   }
@@ -500,19 +507,19 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.handleBookSelection(book, !isUnselectingRange);
       }
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   handleBookSelect(book: Book, selected: boolean): void {
     this.handleBookSelection(book, selected);
     this.isDrawerVisible = this.selectedBooks.size > 0;
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.selectedBooks = new Set(selectedBookIds);
     this.isDrawerVisible = this.selectedBooks.size > 0;
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   selectAllBooks(): void {
@@ -523,7 +530,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   deselectAllBooks(): void {
@@ -532,7 +539,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   confirmDeleteBooks(): void {
@@ -550,7 +557,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
             this.selectedBooks.clear();
           });
       },
-      reject: () => {}
+      reject: () => {
+      }
     });
   }
 
@@ -649,6 +657,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   openShelfAssigner(): void {
     this.dynamicDialogRef = this.dialogHelperService.openShelfAssignerDialog(null, this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(result => {
+        if (result.assigned) {
+          this.selectedBooks.clear();
+        }
+      });
+    }
   }
 
   lockUnlockMetadata(): void {
@@ -702,13 +717,37 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
               life: 3000
             });
           }
-          });
+        });
       }
     });
   }
 
   moveFiles() {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
+  }
+
+  private updateSeriesCollapseContext() {
+    let type: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF' | null = null;
+    let id: number | null = null;
+
+    if (this.entity && this.entityType) {
+      switch (this.entityType) {
+        case EntityType.LIBRARY:
+          type = 'LIBRARY';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.SHELF:
+          type = 'SHELF';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.MAGIC_SHELF:
+          type = 'MAGIC_SHELF';
+          id = this.entity.id ?? 0;
+          break;
+      }
+    }
+
+    this.seriesCollapseFilter.setContext(type, id);
   }
 
   private isLibrary(entity: Library | Shelf | MagicShelf): entity is Library {
@@ -897,5 +936,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   get seriesViewEnabled(): boolean {
     return Boolean(this.userService.getCurrentUser()?.userSettings?.enableSeriesView);
+  }
+
+  get hasMetadataMenuItems(): boolean {
+    return this.metadataMenuItems!.length > 0;
+  }
+
+  get hasBulkReadActionsItems(): boolean {
+    return this.bulkReadActionsMenuItems!.length > 0;
+  }
+
+  user() {
+    return this.userService.getCurrentUser();
   }
 }

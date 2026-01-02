@@ -6,6 +6,8 @@ import com.adityachandel.booklore.model.enums.BookFileType;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -63,10 +65,12 @@ public class PdfMetadataWriter implements MetadataWriter {
             log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
         }
 
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead, IOUtils.createMemoryOnlyStreamCache())) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");
+            // PDFBox 3.x saves in compressed mode by default
             pdf.save(tempFile);
             Files.move(tempFile.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
             log.info("Successfully embedded metadata into PDF: {}", file.getName());
