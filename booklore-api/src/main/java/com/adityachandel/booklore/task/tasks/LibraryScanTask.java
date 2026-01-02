@@ -1,9 +1,12 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.service.library.LibraryService;
 import com.adityachandel.booklore.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +21,13 @@ import java.util.UUID;
 public class LibraryScanTask implements Task {
 
     private final LibraryService libraryService;
+
+    @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        if (!UserPermission.CAN_ACCESS_TASK_MANAGER.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_ACCESS_TASK_MANAGER);
+        }
+    }
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {

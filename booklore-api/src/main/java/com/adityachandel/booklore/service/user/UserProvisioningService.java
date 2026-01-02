@@ -64,6 +64,15 @@ public class UserProvisioningService {
         perms.setPermissionAccessTaskManager(true);
         perms.setPermissionManageGlobalPreferences(true);
         perms.setPermissionManageIcons(true);
+        perms.setPermissionBulkAutoFetchMetadata(true);
+        perms.setPermissionBulkCustomFetchMetadata(true);
+        perms.setPermissionBulkEditMetadata(true);
+        perms.setPermissionBulkRegenerateCover(true);
+        perms.setPermissionMoveOrganizeFiles(true);
+        perms.setPermissionBulkLockUnlockMetadata(true);
+        perms.setPermissionBulkResetBookloreReadProgress(true);
+        perms.setPermissionBulkResetKoReaderReadProgress(true);
+        perms.setPermissionBulkResetBookReadStatus(true);
 
         user.setPermissions(perms);
         createUser(user);
@@ -103,6 +112,15 @@ public class UserProvisioningService {
         permissions.setPermissionAccessTaskManager(request.isPermissionAccessTaskManager());
         permissions.setPermissionManageGlobalPreferences(request.isPermissionManageGlobalPreferences());
         permissions.setPermissionManageIcons(request.isPermissionManageIcons());
+        permissions.setPermissionBulkAutoFetchMetadata(request.isPermissionBulkAutoFetchMetadata());
+        permissions.setPermissionBulkCustomFetchMetadata(request.isPermissionBulkCustomFetchMetadata());
+        permissions.setPermissionBulkEditMetadata(request.isPermissionBulkEditMetadata());
+        permissions.setPermissionBulkRegenerateCover(request.isPermissionBulkRegenerateCover());
+        permissions.setPermissionMoveOrganizeFiles(request.isPermissionMoveOrganizeFiles());
+        permissions.setPermissionBulkLockUnlockMetadata(request.isPermissionBulkLockUnlockMetadata());
+        permissions.setPermissionBulkResetBookloreReadProgress(request.isPermissionBulkResetBookloreReadProgress());
+        permissions.setPermissionBulkResetKoReaderReadProgress(request.isPermissionBulkResetKoReaderReadProgress());
+        permissions.setPermissionBulkResetBookReadStatus(request.isPermissionBulkResetBookReadStatus());
         user.setPermissions(permissions);
 
         if (request.getSelectedLibraries() != null && !request.getSelectedLibraries().isEmpty()) {

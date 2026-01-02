@@ -54,11 +54,11 @@ class KoboAutoShelfServiceTest {
 
         testUser1 = BookLoreUserEntity.builder()
                 .id(100L)
-                .build();
+                .isDefaultPassword(false).build();
 
         testUser2 = BookLoreUserEntity.builder()
                 .id(200L)
-                .build();
+                .isDefaultPassword(false).build();
 
         koboShelf1 = ShelfEntity.builder()
                 .id(10L)

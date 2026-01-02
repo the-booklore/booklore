@@ -432,7 +432,12 @@ export class BookService {
 
   updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean): Observable<BookMetadata> {
     const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
-    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params});
+    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params}).pipe(
+      map(updatedMetadata => {
+        this.handleBookMetadataUpdate(bookId!, updatedMetadata);
+        return updatedMetadata;
+      })
+    );
   }
 
   updateBooksMetadata(request: BulkMetadataUpdateRequest): Observable<void> {
@@ -543,6 +548,10 @@ export class BookService {
 
   regenerateCover(bookId: number): Observable<void> {
     return this.http.post<void>(`${this.url}/${bookId}/regenerate-cover`, {});
+  }
+
+  generateCustomCover(bookId: number): Observable<void> {
+    return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
   }
 
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {

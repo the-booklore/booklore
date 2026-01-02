@@ -90,4 +90,40 @@ public class UserPermissionsEntity {
     @Column(name = "permission_demo_user", nullable = false)
     @Builder.Default
     private boolean permissionDemoUser = false;
+
+    @Column(name = "permission_bulk_auto_fetch_metadata", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkAutoFetchMetadata = false;
+
+    @Column(name = "permission_bulk_custom_fetch_metadata", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkCustomFetchMetadata = false;
+
+    @Column(name = "permission_bulk_edit_metadata", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkEditMetadata = false;
+
+    @Column(name = "permission_bulk_regenerate_cover", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkRegenerateCover = false;
+
+    @Column(name = "permission_move_organize_files", nullable = false)
+    @Builder.Default
+    private boolean permissionMoveOrganizeFiles = false;
+
+    @Column(name = "permission_bulk_lock_unlock_metadata", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkLockUnlockMetadata = false;
+
+    @Column(name = "permission_bulk_reset_booklore_read_progress", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkResetBookloreReadProgress = false;
+
+    @Column(name = "permission_bulk_reset_koreader_read_progress", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkResetKoReaderReadProgress = false;
+
+    @Column(name = "permission_bulk_reset_book_read_status", nullable = false)
+    @Builder.Default
+    private boolean permissionBulkResetBookReadStatus = false;
 }

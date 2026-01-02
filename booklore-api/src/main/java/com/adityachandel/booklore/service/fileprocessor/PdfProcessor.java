@@ -16,6 +16,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
@@ -58,7 +59,9 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
 
     @Override
     public boolean generateCover(BookEntity bookEntity) {
-        try (PDDocument pdf = Loader.loadPDF(new File(FileUtils.getBookFullPath(bookEntity)))) {
+        File pdfFile = new File(FileUtils.getBookFullPath(bookEntity));
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(pdfFile);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             return generateCoverImageAndSave(bookEntity.getId(), pdf);
         } catch (OutOfMemoryError e) {
             // Note: Catching OOM is generally discouraged, but for batch processing

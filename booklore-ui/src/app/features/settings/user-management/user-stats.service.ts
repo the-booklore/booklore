@@ -59,14 +59,14 @@ export class UserStatsService {
   getHeatmapForYear(year: number): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
       `${this.readingSessionsUrl}/heatmap`,
-      { params: { year: year.toString() } }
+      {params: {year: year.toString()}}
     );
   }
 
-  getTimelineForWeek(year: number, month: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
+  getTimelineForWeek(year: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
     return this.http.get<ReadingSessionTimelineResponse[]>(
       `${this.readingSessionsUrl}/timeline`,
-      { params: { year: year.toString(), month: month.toString(), week: week.toString() } }
+      {params: {year: year.toString(), week: week.toString()}}
     );
   }
 
@@ -79,7 +79,7 @@ export class UserStatsService {
   getCompletionTimelineForYear(year: number): Observable<CompletionTimelineResponse[]> {
     return this.http.get<CompletionTimelineResponse[]>(
       `${this.readingSessionsUrl}/completion-timeline`,
-      { params: { year: year.toString() } }
+      {params: {year: year.toString()}}
     );
   }
 

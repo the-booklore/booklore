@@ -19,6 +19,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -239,12 +240,12 @@ class CbxConversionServiceTest {
         try (ZipFile zipFile = ZipFile.builder().setFile(epubFile).get()) {
             List<ZipArchiveEntry> imageEntries = Collections.list(zipFile.getEntries()).stream()
                     .filter(entry -> entry.getName().startsWith("OEBPS/Images/page-"))
-                    .sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
+                    .sorted(Comparator.comparing(ZipArchiveEntry::getName))
                     .toList();
 
             List<ZipArchiveEntry> htmlEntries = Collections.list(zipFile.getEntries()).stream()
                     .filter(entry -> entry.getName().startsWith("OEBPS/Text/page-"))
-                    .sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
+                    .sorted(Comparator.comparing(ZipArchiveEntry::getName))
                     .toList();
 
             assertThat(imageEntries).hasSize(expectedPageCount);

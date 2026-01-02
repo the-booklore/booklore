@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshRequest;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
@@ -10,12 +11,24 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import static com.adityachandel.booklore.model.enums.UserPermission.CAN_BULK_AUTO_FETCH_METADATA;
+import static com.adityachandel.booklore.exception.ApiError.PERMISSION_DENIED;
+
 @AllArgsConstructor
 @Component
 @Slf4j
 public class RefreshMetadataTask implements Task {
 
     private final MetadataRefreshService metadataRefreshService;
+
+    @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        MetadataRefreshRequest refreshRequest = request.getOptions(MetadataRefreshRequest.class);
+        if (refreshRequest.getBookIds().size() > 1 &&
+            !CAN_BULK_AUTO_FETCH_METADATA.isGranted(user.getPermissions())) {
+            throw PERMISSION_DENIED.createException(CAN_BULK_AUTO_FETCH_METADATA);
+        }
+    }
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {

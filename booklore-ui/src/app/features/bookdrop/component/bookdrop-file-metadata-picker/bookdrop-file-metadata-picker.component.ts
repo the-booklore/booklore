@@ -11,6 +11,7 @@ import {AutoComplete} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
 import {ConfirmationService} from 'primeng/api';
+import {DatePicker} from 'primeng/datepicker';
 
 @Component({
   selector: 'app-bookdrop-file-metadata-picker-component',
@@ -24,7 +25,8 @@ import {ConfirmationService} from 'primeng/api';
     Textarea,
     AutoComplete,
     Image,
-    LazyLoadImageModule
+    LazyLoadImageModule,
+    DatePicker,
   ],
   templateUrl: './bookdrop-file-metadata-picker.component.html',
   styleUrl: './bookdrop-file-metadata-picker.component.scss'
@@ -47,6 +49,9 @@ export class BookdropFileMetadataPickerComponent {
     {label: 'Title', controlName: 'title', fetchedKey: 'title'},
     {label: 'Subtitle', controlName: 'subtitle', fetchedKey: 'subtitle'},
     {label: 'Publisher', controlName: 'publisher', fetchedKey: 'publisher'},
+  ];
+
+  metadataPublishDate = [
     {label: 'Publish Date', controlName: 'publishedDate', fetchedKey: 'publishedDate'}
   ];
 
@@ -113,16 +118,31 @@ export class BookdropFileMetadataPickerComponent {
 
   copyFetchedToCurrent(field: string): void {
     const value = this.fetchedMetadata[field];
-    if (value && !this.copiedFields[field]) {
+    if (value) {
       this.metadataForm.get(field)?.setValue(value);
       this.copiedFields[field] = true;
-      this.highlightCopiedInput(field);
       this.metadataCopied.emit(true);
     }
   }
 
-  highlightCopiedInput(field: string): void {
-    this.copiedFields[field] = true;
+  isValueChanged(field: string): boolean {
+    const [value, original] = this.prepFieldComparison(this.metadataForm.get(field)?.value, this.originalMetadata?.[field]);
+    return (value && value != original) || (!value && original);
+  }
+  
+  isFetchedDifferent(field: string): boolean {
+    const [value, fetched] = this.prepFieldComparison(this.metadataForm.get(field)?.value, this.fetchedMetadata[field]);
+    return (fetched && fetched != value);
+  }
+  
+  private prepFieldComparison(field1: any, field2: any) {
+    if (Array.isArray(field1)) {
+      field1 = field1.length > 0 ? JSON.stringify(field1.sort()) : undefined;
+    }
+    if (Array.isArray(field2)) {
+      field2 = field2.length > 0 ? JSON.stringify(field2.sort()) : undefined;
+    }
+    return [field1, field2];
   }
 
   isValueCopied(field: string): boolean {
@@ -133,22 +153,9 @@ export class BookdropFileMetadataPickerComponent {
     return this.savedFields[field];
   }
 
-  hoveredFields: { [key: string]: boolean } = {};
-
-  onMouseEnter(controlName: string): void {
-    if (this.isValueCopied(controlName) && !this.isValueSaved(controlName)) {
-      this.hoveredFields[controlName] = true;
-    }
-  }
-
-  onMouseLeave(controlName: string): void {
-    this.hoveredFields[controlName] = false;
-  }
-
   resetField(field: string) {
     this.metadataForm.get(field)?.setValue(this.originalMetadata?.[field]);
     this.copiedFields[field] = false;
-    this.hoveredFields[field] = false;
     if (field === 'thumbnailUrl') {
       this.metadataForm.get('thumbnailUrl')?.setValue(this.urlHelper.getBookdropCoverUrl(this.bookdropFileId));
     }
@@ -216,7 +223,6 @@ export class BookdropFileMetadataPickerComponent {
       });
     }
     this.copiedFields = {};
-    this.hoveredFields = {};
     this.metadataCopied.emit(false);
   }
 }

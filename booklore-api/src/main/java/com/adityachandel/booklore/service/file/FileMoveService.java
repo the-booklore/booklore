@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.file;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.mapper.LibraryMapper;
 import com.adityachandel.booklore.model.dto.FileMoveResult;
+import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.request.FileMoveRequest;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
@@ -54,6 +55,8 @@ public class FileMoveService {
             for (FileMoveRequest.Move move : moves) {
                 processSingleMove(move);
             }
+            // Ensure any file system events from the moves are drained/ignored while we are still unregistered
+            sleep(EVENT_DRAIN_TIMEOUT_MS);
         } finally {
             for (Long libraryId : allAffectedLibraryIds) {
                 libraryRepository.findById(libraryId)
@@ -147,7 +150,9 @@ public class FileMoveService {
         boolean isLibraryMonitoredWhenCalled = false;
 
         try {
-            isLibraryMonitoredWhenCalled = monitoringRegistrationService.isLibraryMonitored(libraryId);
+            Set<Path> existingPaths = monitoringRegistrationService.getPathsForLibraries(Set.of(libraryId));
+            isLibraryMonitoredWhenCalled = monitoringRegistrationService.isLibraryMonitored(libraryId) || !existingPaths.isEmpty();
+
             String pattern = fileMoveHelper.getFileNamingPattern(bookEntity.getLibraryPath().getLibrary());
             Path currentFilePath = bookEntity.getFullFilePath();
             Path expectedFilePath = fileMoveHelper.generateNewFilePath(bookEntity, bookEntity.getLibraryPath(), pattern);
@@ -160,14 +165,18 @@ public class FileMoveService {
 
             if (isLibraryMonitoredWhenCalled) {
                 log.debug("Unregistering library {} before moving a single file", libraryId);
-                Set<Path> libraryPaths = monitoringRegistrationService.getPathsForLibraries(Set.of(libraryId));
                 fileMoveHelper.unregisterLibrary(libraryId);
-                monitoringRegistrationService.waitForEventsDrainedByPaths(libraryPaths, EVENT_DRAIN_TIMEOUT_MS);
+                monitoringRegistrationService.waitForEventsDrainedByPaths(existingPaths, EVENT_DRAIN_TIMEOUT_MS);
             }
 
             fileMoveHelper.moveFile(currentFilePath, expectedFilePath);
 
             fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(currentFilePath.getParent(), Set.of(libraryRoot));
+
+            if (isLibraryMonitoredWhenCalled) {
+                // Ensure any file system events from the move and cleanup are drained/ignored while we are still unregistered
+                sleep(EVENT_DRAIN_TIMEOUT_MS);
+            }
 
             String newFileName = expectedFilePath.getFileName().toString();
             String newFileSubPath = fileMoveHelper.extractSubPath(expectedFilePath, bookEntity.getLibraryPath());
@@ -182,10 +191,22 @@ public class FileMoveService {
         } finally {
             if (isLibraryMonitoredWhenCalled) {
                 log.debug("Registering library paths for library {} with root {}", libraryId, libraryRoot);
-                fileMoveHelper.registerLibraryPaths(libraryId, libraryRoot);
+                LibraryEntity libraryEntity = bookEntity.getLibraryPath().getLibrary();
+                Library library = libraryMapper.toLibrary(libraryEntity);
+                library.setWatch(true);
+                monitoringRegistrationService.registerLibrary(library);
             }
         }
 
         return FileMoveResult.builder().moved(false).build();
+    }
+
+    protected void sleep(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Sleep interrupted", e);
+        }
     }
 }

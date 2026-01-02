@@ -1,15 +1,18 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.BookRecommendationLite;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.TaskType;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.model.websocket.TaskProgressPayload;
 import com.adityachandel.booklore.model.websocket.Topic;
-import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.recommender.BookVectorService;
 import com.adityachandel.booklore.task.TaskStatus;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,13 @@ public class BookRecommendationUpdaterTask implements Task {
 
     private static final int RECOMMENDATION_LIMIT = 25;
     private static final long MIN_NOTIFICATION_INTERVAL_MS = 250;
+
+    @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        if (!UserPermission.CAN_ACCESS_TASK_MANAGER.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_ACCESS_TASK_MANAGER);
+        }
+    }
 
     @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {

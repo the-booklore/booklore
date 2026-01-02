@@ -29,7 +29,8 @@ public class OpdsFeedService {
     private final MagicShelfBookService magicShelfBookService;
 
     public String generateRootNavigation(HttpServletRequest request) {
-        var feed = new StringBuilder("""
+
+        String feed = """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog">
                   <id>urn:booklore:root</id>
@@ -38,9 +39,7 @@ public class OpdsFeedService {
                   <link rel="self" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
                   <link rel="start" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
                   <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
-                """.formatted(now()));
-
-        feed.append("""
+                """.formatted(now()) + """
                   <entry>
                     <title>All Books</title>
                     <id>urn:booklore:catalog:all</id>
@@ -48,80 +47,72 @@ public class OpdsFeedService {
                     <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                     <content type="text">Browse all available books</content>
                   </entry>
-                """.formatted(now(), escapeXml("/api/v1/opds/catalog?page=1&size=" + DEFAULT_PAGE_SIZE)));
-
-        feed.append("""
-                  <entry>
-                    <title>Recently Added</title>
-                    <id>urn:booklore:catalog:recent</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
-                    <content type="text">Recently added books</content>
-                  </entry>
-                """.formatted(now(), escapeXml("/api/v1/opds/recent?page=1&size=" + DEFAULT_PAGE_SIZE)));
-
-        feed.append("""
-                  <entry>
-                    <title>Libraries</title>
-                    <id>urn:booklore:navigation:libraries</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/libraries" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by library</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Shelves</title>
-                    <id>urn:booklore:navigation:shelves</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse your personal shelves</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Magic Shelves</title>
-                    <id>urn:booklore:navigation:magic-shelves</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse your smart, dynamic shelves</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Authors</title>
-                    <id>urn:booklore:navigation:authors</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by author</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Series</title>
-                    <id>urn:booklore:navigation:series</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/series" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by series</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Surprise Me</title>
-                    <id>urn:booklore:catalog:surprise</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/surprise" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
-                    <content type="text">25 random books from the catalog</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("</feed>");
-        return feed.toString();
+                """.formatted(now(), escapeXml("/api/v1/opds/catalog?page=1&size=" + DEFAULT_PAGE_SIZE)) +
+                """
+                          <entry>
+                            <title>Recently Added</title>
+                            <id>urn:booklore:catalog:recent</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                            <content type="text">Recently added books</content>
+                          </entry>
+                        """.formatted(now(), escapeXml("/api/v1/opds/recent?page=1&size=" + DEFAULT_PAGE_SIZE)) +
+                """
+                          <entry>
+                            <title>Libraries</title>
+                            <id>urn:booklore:navigation:libraries</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/libraries" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by library</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Shelves</title>
+                            <id>urn:booklore:navigation:shelves</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse your personal shelves</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Magic Shelves</title>
+                            <id>urn:booklore:navigation:magic-shelves</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse your smart, dynamic shelves</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Authors</title>
+                            <id>urn:booklore:navigation:authors</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by author</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Series</title>
+                            <id>urn:booklore:navigation:series</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/series" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by series</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Surprise Me</title>
+                            <id>urn:booklore:catalog:surprise</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/surprise" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                            <content type="text">25 random books from the catalog</content>
+                          </entry>
+                        """.formatted(now()) +
+                "</feed>";
+        return feed;
     }
 
     public String generateLibrariesNavigation(HttpServletRequest request) {
@@ -547,7 +538,7 @@ public class OpdsFeedService {
     }
 
     private void appendLinks(StringBuilder feed, Book book) {
-        String mimeType = "application/" + fileMimeType(book);
+        String mimeType = fileMimeType(book);
         feed.append("    <link href=\"/api/v1/opds/")
                 .append(book.getId()).append("/download\" rel=\"http://opds-spec.org/acquisition\" type=\"").append(mimeType).append("\"/>\n");
 
@@ -604,12 +595,22 @@ public class OpdsFeedService {
 
     private String fileMimeType(Book book) {
         if (book == null || book.getBookType() == null) {
-            return "octet-stream";
+            return "application/octet-stream";
         }
         return switch (book.getBookType()) {
-            case PDF -> "pdf";
-            case EPUB -> "epub+zip";
-            default -> "octet-stream";
+            case PDF -> "application/pdf";
+            case EPUB -> "application/epub+zip";
+            case FB2 -> "application/x-fictionbook+xml";
+            case CBX -> {
+                if (book.getFileName() != null) {
+                    String lower = book.getFileName().toLowerCase();
+                    if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
+                    if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
+                    if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
+                    if (lower.endsWith(".cbt")) yield "application/x-tar";
+                }
+                yield "application/vnd.comicbook+zip";
+            }
         };
     }
 

@@ -2,13 +2,12 @@
   <form [formGroup]="metadataForm" class="metapicker flex flex-col w-full">
     <div class="flex-grow overflow-auto">
       <div class="metaheader relative flex items-center">
-        <label class="md:w-[8rem]"></label>
+        <label class="md:w-[8rem] text-sm"></label>
         <div class="flex w-full items-center">
-          <p class="w-1/2 pr-3" style="text-align:right">File Metadata</p>
+          <p class="w-1/2">File Data</p>
           <div class="midbuttons">
             <p-button
               size="small"
-              severity="success"
               icon="pi pi-angle-left"
               class="mx-2"
               [outlined]="true"
@@ -18,7 +17,6 @@
             ></p-button>
             <p-button
               size="small"
-              severity="success"
               icon="pi pi-angle-double-left"
               class="mx-2"
               [outlined]="true"
@@ -26,89 +24,163 @@
               tooltipPosition="bottom"
               (onClick)="copyAll()"
             ></p-button>
+            <p-button
+              size="small"
+              severity="warn"
+              icon="pi pi-refresh"
+              class="mx-2"
+              [outlined]="true"
+              pTooltip="Reset all fields to original values"
+              tooltipPosition="bottom"
+              (onClick)="confirmReset()"
+            ></p-button>
           </div>
-          <p class="w-1/2 pl-3">Fetched</p>
-        </div>
-        <div class="ml-auto absolute" style="right:1rem">
-          <p-button
-            size="small"
-            severity="warn"
-            icon="pi pi-refresh"
-            [outlined]="true"
-            pTooltip="Reset all fields to original values"
-            tooltipPosition="left"
-            (onClick)="confirmReset()"
-          ></p-button>
+          <p class="w-1/2">Fetched Data</p>
         </div>
       </div>
       <div class="metacontent">
-        <div class="meta-row flex items-center">
-          <label class="md:w-[8rem] text-sm">Cover</label>
+        <div class="meta-row field-thumbnail">
+          <label class="md:w-[8rem] text-sm"></label>
           <div class="flex w-full items-center justify-center">
-            <p-image class="thumbnail" [src]="metadataForm.get('thumbnailUrl')?.value" alt="Image" appendTo="body" lazyLoad [preview]="true"></p-image>
-            <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl" class="md:!w-1/2"/>
+            <div class="flex w-1/2">
+              @if (metadataForm.get('thumbnailUrl')?.value) {
+                <p-image
+                  class="thumbnail"
+                  [src]="metadataForm.get('thumbnailUrl')?.value"
+                  alt="Image"
+                  appendTo="body"
+                  lazyLoad
+                  [preview]="true"
+                  [ngClass]="{
+                    'changed': isValueCopied('thumbnailUrl'),
+                  }"
+                ></p-image>
+              }
+              @else {
+                <div class="thumbnail text-sm">No cover image</div>
+              }
+              <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
+            </div>
             <p-button
               size="small"
-              [icon]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? 'pi pi-times' : 'pi pi-arrow-left')"
+              [icon]="isValueSaved('thumbnailUrl') ? 'pi pi-check' : (isValueCopied('thumbnailUrl') ? 'pi pi-refresh' : 'pi pi-angle-left')"
               [outlined]="true"
-              [ngClass]="
-              {
-                'green-outlined-button': isValueCopied('thumbnailUrl') && !hoveredFields['thumbnailUrl'],
-                'red-outlined-button': isValueCopied('thumbnailUrl') && hoveredFields['thumbnailUrl']
-              }"
               class="arrow-button"
-              (click)="hoveredFields['thumbnailUrl'] && isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
-              (mouseenter)="onMouseEnter('thumbnailUrl')"
-              (mouseleave)="onMouseLeave('thumbnailUrl')"/>
-            <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" class="md:!w-1/2" readonly/>
-            <p-image class="thumbnail" [src]="fetchedMetadata.thumbnailUrl!" alt="Image" appendTo="body" lazyLoad [preview]="true"></p-image>
+              [severity]="isValueCopied('thumbnailUrl') ? 'warn' : null"
+              [disabled]="!isFetchedDifferent('thumbnailUrl') && !isValueCopied('thumbnailUrl')"
+              (click)="isValueCopied('thumbnailUrl') ? resetField('thumbnailUrl') : copyFetchedToCurrent('thumbnailUrl')"
+            />
+            <div class="flex w-1/2">
+              @if (fetchedMetadata.thumbnailUrl) {
+                <p-image
+                class="thumbnail"
+                [src]="fetchedMetadata.thumbnailUrl!"
+                alt="Image"
+                appendTo="body"
+                lazyLoad
+                [preview]="true"
+                ></p-image>
+              }
+              @else {
+                <div class="thumbnail text-sm">Cover image not found</div>
+              }
+              <input type="hidden" [value]="fetchedMetadata.thumbnailUrl" readonly/>
+            </div>
           </div>
         </div>
         @for (field of metadataFieldsTop; track field) {
-          <div class="meta-row flex items-center field-{{field.controlName}}">
+          <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
-            <div class="meta-fields flex w-full">
+            <div class="meta-fields">
               <input
                 pSize="small"
                 fluid
                 pInputText
                 id="{{field.controlName}}"
                 formControlName="{{field.controlName}}"
-                class="dest md:!w-1/2"
+                class="dest"
                 [ngClass]="{
-                  'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
+                  'changed': isValueChanged(field.controlName),
                 }"
               />
               <p-button
                 size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
+                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
                 [outlined]="true"
-                [ngClass]="
-                {
-                  'green-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName],
-                  'notneeded' : !fetchedMetadata[field.fetchedKey]
+                [ngClass]="{
+                  'nosrc' : !fetchedMetadata[field.fetchedKey]
                 }"
                 class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <input 
-                pSize="small"
-                pInputText
-                [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                class="src md:!w-1/2"
-                disabled
+                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
+                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+              />
+              @if (fetchedMetadata[field.fetchedKey]) {
+                <input 
+                  pSize="small"
+                  pInputText
+                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                  class="src"
+                  disabled
+                  [ngClass]="{
+                    'diff': isFetchedDifferent(field.controlName),
+                  }"
+                />
+              }
+            </div>
+          </div>
+        }
+        @for (field of metadataPublishDate; track field) {
+          <div class="meta-row field-{{field.controlName}}">
+            <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
+            <div class="meta-fields">
+              <p-datepicker
+                size="small"
+                fluid
+                inputId="{{field.controlName}}"
+                formControlName="{{field.controlName}}"
+                dataType="string"
+                dateFormat="yy-mm-dd"
+                [keepInvalid]="true"
+                [showIcon]="true"
+                [iconDisplay]="'input'"
+                appendTo="body"
+                class="dest"
                 [ngClass]="{
-                  'notneeded': !fetchedMetadata[field.fetchedKey],
-                }"/>
+                  'changed': isValueChanged(field.controlName),
+                }">
+              </p-datepicker>
+              <p-button
+                size="small"
+                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
+                [outlined]="true"
+                [ngClass]="{
+                  'nosrc' : !fetchedMetadata[field.fetchedKey]
+                }"
+                class="arrow-button"
+                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
+                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+              />
+              @if (fetchedMetadata[field.fetchedKey]) {
+                <input 
+                  pSize="small"
+                  pInputText
+                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                  class="src"
+                  disabled
+                  [ngClass]="{
+                    'diff': isFetchedDifferent(field.controlName),
+                  }"
+                />
+              }
             </div>
           </div>
         }
         @for (field of metadataChips; track field) {
-          <div class="meta-row flex items-center field-{{field.controlName}}">
+          <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
-            <div class="meta-fields flex w-full items-center">
+            <div class="meta-fields">
               <p-autoComplete
                 size="small"
                 formControlName="{{field.controlName}}"
@@ -117,115 +189,123 @@
                 [dropdown]="false"
                 [forceSelection]="false"
                 class="dest w-full"
-                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
-                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"/>
+                [ngClass]="{
+                  'changed': isValueChanged(field.controlName),
+                }"
+                (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+              />
               <p-button
                 size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
+                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
                 [outlined]="true"
-                [ngClass]="
-                {
-                  'green-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName],
-                  'notneeded' : !fetchedMetadata[field.fetchedKey]
+                [ngClass]="{
+                  'nosrc' : !fetchedMetadata[field.fetchedKey]
                 }"
                 class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <p-autoComplete
-                size="small"
-                [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
-                [ngModelOptions]="{standalone:true}"
-                [disabled]="true"
-                [multiple]="true"
-                [typeahead]="false"
-                [dropdown]="false"
-                [forceSelection]="false"
-                class="src w-full"
-                [ngClass]="{
-                  'notneeded': !fetchedMetadata[field.fetchedKey],
-                }"/>
+                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
+                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+              />
+              @if (fetchedMetadata[field.fetchedKey]) {
+                <p-autoComplete
+                  size="small"
+                  [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
+                  [ngModelOptions]="{standalone:true}"
+                  [disabled]="true"
+                  [multiple]="true"
+                  [typeahead]="false"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  class="src w-full"
+                  [ngClass]="{
+                    'diff': isFetchedDifferent(field.controlName),
+                  }"
+                />
+              }
             </div>
           </div>
         }
         @for (field of metadataDescription; track field) {
-          <div class="meta-row flex items-center field-{{field.controlName}}">
+          <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
-            <div class="meta-fields flex w-full items-center">
+            <div class="meta-fields">
               <textarea
+                pTextarea
                 rows="4"
                 pSize="small"
-                pTextarea
                 id="{{field.controlName}}"
                 formControlName="{{field.controlName}}"
-                class="dest md:!w-1/2"
-                [ngClass]="{'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName]}"
+                class="dest"
+                [ngClass]="{
+                  'changed': isValueChanged(field.controlName),
+                }"
               ></textarea>
               <p-button
                 size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
+                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
                 [outlined]="true"
-                [ngClass]="
-                {
-                  'green-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName],
-                  'notneeded' : !fetchedMetadata[field.fetchedKey]
+                [ngClass]="{
+                  'nosrc' : !fetchedMetadata[field.fetchedKey]
                 }"
                 class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <textarea
-                rows="4"
-                pSize="small"
-                pInputText
-                [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                class="src md:!w-1/2"
-                disabled
-                [ngClass]="{
-                  'notneeded': !fetchedMetadata[field.fetchedKey],
-                }"></textarea>
+                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
+                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+              />
+              @if (fetchedMetadata[field.fetchedKey]) {
+                <textarea
+                  pTextarea
+                  rows="4"
+                  pSize="small"
+                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                  class="src"
+                  disabled
+                  [ngClass]="{
+                    'diff': isFetchedDifferent(field.controlName),
+                  }"
+                ></textarea>
+              }
             </div>
           </div>
         }
         @for (field of metadataFieldsBottom; track field) {
-          <div class="meta-row flex items-cente field-{{field.controlName}}">
+          <div class="meta-row field-{{field.controlName}}">
             <label for="{{field.controlName}}" class="md:w-[8rem] text-sm">{{ field.label }}</label>
-            <div class="meta-fields flex w-full">
+            <div class="meta-fields">
               <input
                 pInputText
                 pSize="small"
                 id="{{field.controlName}}"
                 formControlName="{{field.controlName}}"
-                class="dest md:!w-1/2"
+                class="dest"
                 [ngClass]="{
-                  'outlined-input-green': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
+                  'changed': isValueChanged(field.controlName),
                 }"
               />
               <p-button
                 size="small"
-                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (hoveredFields[field.controlName] && isValueCopied(field.controlName) ? 'pi pi-times' : 'pi pi-arrow-left')"
+                [icon]="isValueSaved(field.controlName) ? 'pi pi-check' : (isValueChanged(field.controlName) || !fetchedMetadata[field.fetchedKey] ? 'pi pi-refresh' : 'pi pi-angle-left')"
                 [outlined]="true"
-                [ngClass]="
-                {
-                  'green-outlined-button': isValueCopied(field.controlName) && !hoveredFields[field.controlName],
-                  'red-outlined-button': isValueCopied(field.controlName) && hoveredFields[field.controlName],
-                  'notneeded' : !fetchedMetadata[field.fetchedKey]
+                [ngClass]="{
+                  'nosrc' : !fetchedMetadata[field.fetchedKey]
                 }"
                 class="arrow-button"
-                (click)="hoveredFields[field.controlName] && isValueCopied(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
-                (mouseenter)="onMouseEnter(field.controlName)"
-                (mouseleave)="onMouseLeave(field.controlName)"/>
-              <input
-                pInputText
-                pSize="small"
-                [value]="fetchedMetadata[field.fetchedKey] ?? null"
-                class="src md:!w-1/2"
-                disabled
-                [ngClass]="{
-                  'notneeded': !fetchedMetadata[field.fetchedKey],
-                }"/>
+                [severity]="isValueChanged(field.controlName) ? 'warn' : null"
+                [disabled]="!isFetchedDifferent(field.controlName) && !isValueChanged(field.controlName)"
+                (click)="isValueChanged(field.controlName) ? resetField(field.controlName) : copyFetchedToCurrent(field.controlName)"
+              />
+              @if (fetchedMetadata[field.fetchedKey]) {
+                <input
+                  pInputText
+                  pSize="small"
+                  [value]="fetchedMetadata[field.fetchedKey] ?? null"
+                  class="src"
+                  disabled
+                  [ngClass]="{
+                    'diff': isFetchedDifferent(field.controlName),
+                  }"
+                />
+              }
             </div>
           </div>
         }
@@ -236,7 +316,7 @@
   <form [formGroup]="metadataForm" class="metaeditor flex w-full">
     <div class="flex-grow overflow-auto">
       <div class="metaheader relative flex items-center">
-        <p class="text-sm flex items-center" style="gap: 0.5rem">
+        <p class="text-sm missingmd">
           Unable to fetch metadata for this file
         </p>
         <p-button
@@ -249,9 +329,9 @@
           (onClick)="confirmReset()"
         ></p-button>
       </div>
-      <div class="flex flex-col p-4 md:flex-row">
+      <div class="metabody flex flex-col p-4 md:flex-row">
         <div class="flex items-start justify-center md:w-[20%] md:h-full">
-          <div class="w-full md:h-full">
+          <div class="w-full md:h-full field-thumbnail">
             <img 
               [src]="metadataForm.get('thumbnailUrl')?.value"
               alt="Book Thumbnail"
@@ -260,10 +340,9 @@
             <input type="hidden" id="thumbnailUrl" formControlName="thumbnailUrl"/>
           </div>
         </div>
-
         <div class="metacontent md:w-[80%]">
           @for (field of metadataFieldsTop; track field) {
-            <div class="meta-row flex items-center">
+            <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
               <div class="flex w-full">
                 <input
@@ -272,39 +351,136 @@
                   pInputText
                   id="{{field.controlName}}"
                   formControlName="{{field.controlName}}"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                />
+                <p-button
+                  size="small"
+                  icon="pi pi-refresh"
+                  [outlined]="true"
+                  class="arrow-button"
+                  severity="warn"
+                  [disabled]="!isValueChanged(field.controlName)"
+                  (click)="resetField(field.controlName)"
+                />
+              </div>
+            </div>
+          }
+
+          @for (field of metadataPublishDate; track field) {
+            <div class="meta-row field-{{field.controlName}}">
+              <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
+              <div class="flex w-full">
+                <p-datepicker
+                  size="small"
+                  fluid
+                  inputId="{{field.controlName}}"
+                  formControlName="{{field.controlName}}"
+                  dataType="string"
+                  dateFormat="yy-mm-dd"
+                  [keepInvalid]="true"
+                  [showIcon]="true"
+                  [iconDisplay]="'input'"
+                  appendTo="body"
+                  class="w-full"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }">
+                </p-datepicker>
+                <p-button
+                  size="small"
+                  icon="pi pi-refresh"
+                  [outlined]="true"
+                  class="arrow-button"
+                  severity="warn"
+                  [disabled]="!isValueChanged(field.controlName)"
+                  (click)="resetField(field.controlName)"
                 />
               </div>
             </div>
           }
 
           @for (field of metadataChips; track field) {
-            <div class="meta-row flex items-center">
+            <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
               <div class="flex w-full">
-                <p-autoComplete formControlName="{{field.controlName}}" [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full" (onBlur)="onAutoCompleteBlur(field.controlName, $event)"></p-autoComplete>
+                <p-autoComplete
+                  size="small"
+                  formControlName="{{field.controlName}}"
+                  [multiple]="true"
+                  [typeahead]="false"
+                  [dropdown]="false"
+                  [forceSelection]="false"
+                  class="w-full"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                  (onBlur)="onAutoCompleteBlur(field.controlName, $event)"
+                />
+                <p-button
+                  size="small"
+                  icon="pi pi-refresh"
+                  [outlined]="true"
+                  class="arrow-button"
+                  severity="warn"
+                  [disabled]="!isValueChanged(field.controlName)"
+                  (click)="resetField(field.controlName)"
+                />
               </div>
             </div>
           }
 
           @for (field of metadataDescription; track field) {
-            <div class="meta-row flex items-center">
+            <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
               <div class="flex w-full">
-                <textarea fluid rows="4" pSize="small" pTextarea id="{{field.controlName}}" formControlName="{{field.controlName}}"></textarea>
+                <textarea
+                  pTextarea
+                  fluid
+                  rows="4"
+                  pSize="small"
+                  id="{{field.controlName}}"
+                  formControlName="{{field.controlName}}"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                ></textarea>
+                <p-button
+                  size="small"
+                  icon="pi pi-refresh"
+                  [outlined]="true"
+                  class="arrow-button"
+                  severity="warn"
+                  [disabled]="!isValueChanged(field.controlName)"
+                  (click)="resetField(field.controlName)"
+                />
               </div>
             </div>
           }
 
           @for (field of metadataFieldsBottom; track field) {
-            <div class="meta-row flex items-center">
+            <div class="meta-row field-{{field.controlName}}">
               <label for="{{field.controlName}}" class="w-[8rem] text-sm">{{ field.label }}</label>
               <div class="flex w-full">
                 <input
+                  pSize="small"
                   fluid
                   pInputText
-                  pSize="small"
                   id="{{field.controlName}}"
                   formControlName="{{field.controlName}}"
+                  [ngClass]="{
+                    'changed': isValueChanged(field.controlName),
+                  }"
+                />
+                <p-button
+                  size="small"
+                  icon="pi pi-refresh"
+                  [outlined]="true"
+                  class="arrow-button"
+                  severity="warn"
+                  [disabled]="!isValueChanged(field.controlName)"
+                  (click)="resetField(field.controlName)"
                 />
               </div>
             </div>

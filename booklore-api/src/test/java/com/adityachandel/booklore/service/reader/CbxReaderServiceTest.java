@@ -52,7 +52,7 @@ class CbxReaderServiceTest {
     private Path cbzFile;
     private Path cacheDir;
     private BookEntity testBook;
-    private Long bookId = 113L;
+    private final Long bookId = 113L;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -101,8 +101,8 @@ class CbxReaderServiceTest {
         
         assertEquals(130, pages.size(), 
             "Page count should be 130 (actual comic pages), not 260 (including __MACOSX files)");
-        assertEquals(1, pages.get(0));
-        assertEquals(130, pages.get(pages.size() - 1));
+        assertEquals(1, pages.getFirst());
+        assertEquals(130, pages.getLast());
         
         List<Path> cachedFiles = Files.list(cacheDir)
                 .filter(Files::isRegularFile)
@@ -153,7 +153,7 @@ class CbxReaderServiceTest {
                 .sorted()
                 .toList();
         
-        assertEquals("DW_4D_001.jpg", cachedFiles.get(0).getFileName().toString());
+        assertEquals("DW_4D_001.jpg", cachedFiles.getFirst().getFileName().toString());
         assertEquals("DW_4D_130.jpg", cachedFiles.get(129).getFileName().toString());
     }
 

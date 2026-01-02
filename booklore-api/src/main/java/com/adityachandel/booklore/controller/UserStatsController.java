@@ -34,16 +34,15 @@ public class UserStatsController {
     @Operation(summary = "Get reading session timeline for a week", description = "Returns reading sessions grouped by book for calendar timeline view")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Timeline data retrieved successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid week, month, or year"),
+            @ApiResponse(responseCode = "400", description = "Invalid week or year"),
             @ApiResponse(responseCode = "401", description = "Unauthorized")
     })
     @GetMapping("/timeline")
     @PreAuthorize("@securityUtil.canAccessUserStats() or @securityUtil.isAdmin()")
     public ResponseEntity<List<ReadingSessionTimelineResponse>> getTimelineForWeek(
             @RequestParam int year,
-            @RequestParam int month,
             @RequestParam int week) {
-        List<ReadingSessionTimelineResponse> timelineData = readingSessionService.getSessionTimelineForWeek(year, month, week);
+        List<ReadingSessionTimelineResponse> timelineData = readingSessionService.getSessionTimelineForWeek(year, week);
         return ResponseEntity.ok(timelineData);
     }
 
@@ -111,4 +110,3 @@ public class UserStatsController {
         return ResponseEntity.ok(timeline);
     }
 }
-
