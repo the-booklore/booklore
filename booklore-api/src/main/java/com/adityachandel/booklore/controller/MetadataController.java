@@ -154,6 +154,16 @@ public class MetadataController {
         bookMetadataService.regenerateCover(bookId);
     }
 
+    @Operation(summary = "Generate custom cover for a book", description = "Generate a custom cover for a specific book based on its metadata. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Custom cover generated successfully")
+    @PostMapping("/{bookId}/generate-custom-cover")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void generateCustomCover(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId) {
+        bookMetadataService.generateCustomCover(bookId);
+    }
+
     @Operation(summary = "Regenerate covers for selected books", description = "Regenerate covers for a list of books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Cover regeneration started successfully")
     @PostMapping("/bulk-regenerate-covers")
