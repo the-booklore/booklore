@@ -821,4 +821,66 @@ class PathPatternResolverTest {
                 MAX_AUTHORS_BYTES, authorsBytes));
         assertTrue(authorsPart.contains("et al."), "Should add 'et al.' when truncating");
     }
+
+    @Test
+    @DisplayName("Should truncate long filename while preserving extension")
+    void testTruncateFilenameWithExtension_truncatesLongFilename() {
+        String longName = "A".repeat(300);
+        String extension = ".pdf";
+        String filename = longName + extension;
+
+        String result = PathPatternResolver.truncateFilenameWithExtension(filename);
+
+        assertTrue(result.length() < filename.length(), "Filename should be truncated");
+        assertTrue(result.endsWith(extension), "Extension should be preserved");
+        assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES, 
+            "Result bytes should be <= " + MAX_FILENAME_BYTES);
+    }
+
+    @Test
+    @DisplayName("Should not truncate short filename")
+    void testTruncateFilenameWithExtension_shortFilename() {
+        String filename = "short_filename.pdf";
+        String result = PathPatternResolver.truncateFilenameWithExtension(filename);
+
+        assertEquals(filename, result, "Short filename should not be modified");
+    }
+
+    @Test
+    @DisplayName("Should truncate filename without extension if too long")
+    void testTruncateFilenameWithExtension_noExtension() {
+        String longName = "A".repeat(300);
+        String result = PathPatternResolver.truncateFilenameWithExtension(longName);
+
+        assertTrue(result.length() < longName.length(), "Filename should be truncated");
+        assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES,
+                "Result bytes should be <= " + MAX_FILENAME_BYTES);
+    }
+
+    @Test
+    @DisplayName("Should handle long unicode filename with extension")
+    void testTruncateFilenameWithExtension_unicode() {
+        String longName = "测试".repeat(100); // 600 bytes
+        String extension = ".txt";
+        String filename = longName + extension;
+
+        String result = PathPatternResolver.truncateFilenameWithExtension(filename);
+
+        assertTrue(result.length() < filename.length(), "Filename should be truncated");
+        assertTrue(result.endsWith(extension), "Extension should be preserved");
+        assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES,
+                "Result bytes should be <= " + MAX_FILENAME_BYTES);
+    }
+
+    @Test
+    @DisplayName("Should handle hidden files (starting with dot)")
+    void testTruncateFilenameWithExtension_hiddenFile() {
+        String longName = ".config" + "A".repeat(300);
+        
+        String result = PathPatternResolver.truncateFilenameWithExtension(longName);
+        
+        assertTrue(result.startsWith(".config"), "Should still start with .config (or be treated as filename)");
+        assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES,
+                "Result bytes should be <= " + MAX_FILENAME_BYTES);
+    }
 }
