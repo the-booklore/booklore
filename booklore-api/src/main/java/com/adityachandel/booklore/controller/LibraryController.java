@@ -2,9 +2,12 @@ package com.adityachandel.booklore.controller;
 
 import com.adityachandel.booklore.config.security.annotation.CheckLibraryAccess;
 import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.LibraryCustomField;
 import com.adityachandel.booklore.model.dto.Library;
+import com.adityachandel.booklore.model.dto.request.CreateLibraryCustomFieldRequest;
 import com.adityachandel.booklore.model.dto.request.CreateLibraryRequest;
 import com.adityachandel.booklore.service.library.LibraryService;
+import com.adityachandel.booklore.service.library.LibraryCustomFieldService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,6 +29,7 @@ import java.util.Map;
 public class LibraryController {
 
     private final LibraryService libraryService;
+    private final LibraryCustomFieldService libraryCustomFieldService;
 
     @Operation(summary = "Get all libraries", description = "Retrieve a list of all libraries.")
     @ApiResponse(responseCode = "200", description = "Libraries returned successfully")
@@ -118,5 +122,37 @@ public class LibraryController {
         String pattern = body.get("fileNamingPattern");
         Library updated = libraryService.setFileNamingPattern(libraryId, pattern);
         return ResponseEntity.ok(updated);
+    }
+
+    @Operation(summary = "Get custom fields for library", description = "Retrieve the list of custom field definitions for a library.")
+    @ApiResponse(responseCode = "200", description = "Custom fields returned successfully")
+    @GetMapping("/{libraryId}/custom-fields")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    public ResponseEntity<List<LibraryCustomField>> getCustomFields(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+        return ResponseEntity.ok(libraryCustomFieldService.getCustomFields(libraryId));
+    }
+
+    @Operation(summary = "Create custom field for library", description = "Create a new custom field definition for a library. Requires admin or manipulation permission.")
+    @ApiResponse(responseCode = "200", description = "Custom field created successfully")
+    @PostMapping("/{libraryId}/custom-fields")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<LibraryCustomField> createCustomField(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId,
+            @Parameter(description = "Custom field create request") @Validated @RequestBody CreateLibraryCustomFieldRequest request) {
+        return ResponseEntity.ok(libraryCustomFieldService.createCustomField(libraryId, request));
+    }
+
+    @Operation(summary = "Delete custom field from library", description = "Delete a custom field definition from a library. Requires admin or manipulation permission.")
+    @ApiResponse(responseCode = "204", description = "Custom field deleted successfully")
+    @DeleteMapping("/{libraryId}/custom-fields/{customFieldId}")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<?> deleteCustomField(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId,
+            @Parameter(description = "ID of the custom field") @PathVariable long customFieldId) {
+        libraryCustomFieldService.deleteCustomField(libraryId, customFieldId);
+        return ResponseEntity.noContent().build();
     }
 }

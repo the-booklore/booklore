@@ -1,5 +1,7 @@
 package com.adityachandel.booklore.service.file;
 
+import com.adityachandel.booklore.mapper.BookMetadataMapper;
+import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -30,6 +32,7 @@ public class FileMoveHelper {
 
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final AppSettingService appSettingService;
+    private final BookMetadataMapper bookMetadataMapper;
 
     private static final int MAX_ATTEMPTS = 3;
     private static final long RETRY_DELAY_MS = 100;
@@ -151,7 +154,9 @@ public class FileMoveHelper {
     }
 
     public Path generateNewFilePath(BookEntity book, LibraryPathEntity libraryPathEntity, String pattern) {
-        String newRelativePathStr = PathPatternResolver.resolvePattern(book, pattern);
+        BookMetadata metadata = bookMetadataMapper.toBookMetadata(book.getMetadata(), false);
+        String currentFilename = book.getFileName() != null ? book.getFileName() : "";
+        String newRelativePathStr = PathPatternResolver.resolvePattern(metadata, pattern, currentFilename);
         if (newRelativePathStr.startsWith("/") || newRelativePathStr.startsWith("\\")) {
             newRelativePathStr = newRelativePathStr.substring(1);
         }

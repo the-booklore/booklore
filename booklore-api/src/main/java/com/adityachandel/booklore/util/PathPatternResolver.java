@@ -113,6 +113,16 @@ public class PathPatternResolver {
         values.put("isbn", isbn);
         values.put("currentFilename", filename);
 
+        if (metadata != null && metadata.getCustomFields() != null && !metadata.getCustomFields().isEmpty()) {
+            metadata.getCustomFields().forEach((key, value) -> {
+                if (key == null || key.isBlank() || value == null || value.isBlank()) {
+                    return;
+                }
+                String sanitizedValue = sanitize(value);
+                values.put("custom:" + key, truncatePathComponent(sanitizedValue, MAX_COMPONENT_BYTES));
+            });
+        }
+
         return resolvePatternWithValues(pattern, values, filename);
     }
 
@@ -344,6 +354,10 @@ public class PathPatternResolver {
 
         LocalDate getPublishedDate();
 
+        default Map<String, String> getCustomFields() {
+            return Collections.emptyMap();
+        }
+
         static BookMetadataProvider from(BookMetadata metadata) {
             if (metadata == null) {
                 return null;
@@ -416,6 +430,11 @@ public class PathPatternResolver {
         @Override
         public LocalDate getPublishedDate() {
             return metadata.getPublishedDate();
+        }
+
+        @Override
+        public Map<String, String> getCustomFields() {
+            return metadata.getCustomFields() != null ? metadata.getCustomFields() : Collections.emptyMap();
         }
     }
 

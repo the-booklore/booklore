@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
@@ -54,6 +55,8 @@ public class BookMetadata {
     private MetadataProvider provider;
     private String thumbnailUrl;
     private List<BookReview> bookReviews;
+
+    private Map<String, String> customFields;
 
     private Boolean titleLocked;
     private Boolean subtitleLocked;

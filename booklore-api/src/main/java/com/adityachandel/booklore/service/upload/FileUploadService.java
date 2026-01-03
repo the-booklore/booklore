@@ -14,6 +14,7 @@ import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.repository.LibraryCustomFieldRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -52,6 +53,7 @@ public class FileUploadService {
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final AdditionalFileMapper additionalFileMapper;
     private final FileMovingHelper fileMovingHelper;
+    private final LibraryCustomFieldRepository libraryCustomFieldRepository;
 
     public void uploadFile(MultipartFile file, long libraryId, long pathId) {
         validateFile(file);
@@ -68,6 +70,20 @@ public class FileUploadService {
             final BookFileExtension fileExtension = getFileExtension(originalFileName);
             final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
+
+            // Populate defaults so {custom:<name>} placeholders work on upload.
+            var defs = libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(libraryId);
+            if (!defs.isEmpty()) {
+                var map = new java.util.LinkedHashMap<String, String>();
+                defs.forEach(def -> {
+                    if (def.getName() != null && def.getDefaultValue() != null) {
+                        map.put(def.getName(), def.getDefaultValue());
+                    }
+                });
+                if (!map.isEmpty()) {
+                    metadata.setCustomFields(map);
+                }
+            }
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
             final Path finalPath = Paths.get(libraryPathEntity.getPath(), relativePath);

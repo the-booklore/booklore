@@ -51,6 +51,7 @@ public class BookMetadataUpdater {
     private final MetadataWriterFactory metadataWriterFactory;
     private final BookReviewUpdateService bookReviewUpdateService;
     private final FileMoveService fileMoveService;
+    private final CustomFieldValueService customFieldValueService;
 
     @Transactional
     public void setBookMetadata(MetadataUpdateContext context) {
@@ -76,13 +77,18 @@ public class BookMetadataUpdater {
         boolean thumbnailRequiresUpdate = StringUtils.hasText(newMetadata.getThumbnailUrl());
         boolean hasMetadataChanges = MetadataChangeDetector.isDifferent(newMetadata, metadata, clearFlags);
         boolean hasValueChanges = MetadataChangeDetector.hasValueChanges(newMetadata, metadata, clearFlags);
-        if (!thumbnailRequiresUpdate && !hasMetadataChanges) {
+
+        boolean hasCustomFieldChanges = customFieldValueService.hasCustomFieldChanges(bookEntity, newMetadata);
+        boolean hasAnyMetadataChanges = hasMetadataChanges || hasCustomFieldChanges;
+        boolean hasAnyValueChanges = hasValueChanges || hasCustomFieldChanges;
+
+        if (!thumbnailRequiresUpdate && !hasAnyMetadataChanges) {
             log.info("No changes in metadata for book ID {}. Skipping update.", bookId);
             return;
         }
 
         // If all fields are locked we must allow unlocking, hasValueChanges will be false
-        if (metadata.areAllFieldsLocked() && hasValueChanges) {
+        if (metadata.areAllFieldsLocked() && hasAnyValueChanges && !hasCustomFieldChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
             return;
         }
@@ -99,6 +105,7 @@ public class BookMetadataUpdater {
         updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
+        customFieldValueService.applyCustomFields(bookEntity, newMetadata);
         updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
         updateLocks(newMetadata, metadata);
 
