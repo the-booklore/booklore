@@ -28,10 +28,21 @@ public class MonitoringRegistrationService {
     }
 
     public void unregisterSpecificPath(Path path) {
+        if (!Files.exists(path)) {
+            log.debug("Path does not exist, attempting to unregister anyway: {}", path);
+        }
         monitoringService.unregisterPath(path);
     }
 
     public void registerSpecificPath(Path path, Long libraryId) {
+        if (!Files.exists(path)) {
+            log.warn("Cannot register path that does not exist: {}", path);
+            return;
+        }
+        if (!Files.isDirectory(path)) {
+            log.warn("Cannot register path that is not a directory: {}", path);
+            return;
+        }
         monitoringService.registerPath(path, libraryId);
     }
 
