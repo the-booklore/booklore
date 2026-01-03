@@ -753,7 +753,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       ...baseTheme,
       body: {
         ...(baseTheme.body || {}),
-        ...(this.selectedFontType ? {'font-family': this.selectedFontType} : {}),
         ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
         ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
       },
@@ -772,7 +771,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       ? this.rendition.display(targetCfi)
       : (this.epub?.epubProgress?.cfi ? this.rendition.display(this.epub.epubProgress.cfi) : this.rendition.display());
 
-    displayPromise.then(() => {
+    displayPromise.then(async () => {
+      // Apply custom font after rendition is displayed
+      await this.applyEpubTheme();
+
       this.updateCurrentChapter(this.rendition.currentLocation());
       this.setupKeyListener();
       this.trackProgress();
