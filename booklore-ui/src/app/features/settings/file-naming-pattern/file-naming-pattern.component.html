@@ -140,7 +140,30 @@
                 <li><code class="placeholder-code">{{ '{publisher}' }}</code> – Publisher name</li>
                 <li><code class="placeholder-code">{{ '{isbn}' }}</code> – ISBN number</li>
                 <li><code class="placeholder-code">{{ '{currentFilename}' }}</code> Original file name (with extension)</li>
+                <li><code class="placeholder-code">&#123;custom:&lt;name&gt;&#125;</code> – Custom field value for the library (e.g. <code class="placeholder-code">&#123;custom:edition&#125;</code>)</li>
               </ul>
+
+              <p-divider></p-divider>
+
+              <h4 class="subsection-title">Custom Field Placeholders (per library)</h4>
+              <p class="section-description">
+                Custom field placeholders are created when you add custom fields to a library. They can be used anywhere in patterns.
+              </p>
+
+              @if (libraries?.length) {
+                <ul>
+                  @for (library of libraries; track library.id) {
+                    @if (library.id && (customFieldsByLibraryId[library.id] ?? []).length) {
+                      <li>
+                        <strong>{{ library.name }}:</strong>
+                        @for (field of (customFieldsByLibraryId[library.id] ?? []); track field.id) {
+                          <code class="placeholder-code">&#123;custom:{{ field.name }}&#125;</code>
+                        }
+                      </li>
+                    }
+                  }
+                </ul>
+              }
             </div>
 
             <div class="optional-blocks-info">

@@ -5,9 +5,13 @@ import {Observable} from 'rxjs';
 import {map} from 'rxjs/operators';
 import {AccordionModule} from 'primeng/accordion';
 import {MessageService} from 'primeng/api';
+import {Button} from 'primeng/button';
+import {InputText} from 'primeng/inputtext';
+import {Select} from 'primeng/select';
 
 import {Library} from '../../book/model/library.model';
 import {LibraryService} from '../../book/service/library.service';
+import {CustomFieldType, LibraryCustomField} from '../../book/model/library-custom-field.model';
 import {MetadataRefreshOptions} from '../../metadata/model/request/metadata-refresh-options.model';
 import {AppSettingKey, AppSettings} from '../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../shared/service/app-settings.service';
@@ -17,7 +21,7 @@ import {MetadataAdvancedFetchOptionsComponent} from '../../metadata/component/me
 @Component({
   selector: 'app-library-metadata-settings-component',
   standalone: true,
-  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, ExternalDocLinkComponent],
+  imports: [CommonModule, FormsModule, MetadataAdvancedFetchOptionsComponent, AccordionModule, ExternalDocLinkComponent, Button, InputText, Select],
   templateUrl: './library-metadata-settings.component.html',
   styleUrls: ['./library-metadata-settings.component.scss']
 })
@@ -31,14 +35,23 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   );
 
   defaultMetadataOptions: MetadataRefreshOptions = this.getDefaultMetadataOptions();
-  libraryMetadataOptions: { [libraryId: number]: MetadataRefreshOptions } = {};
+  libraryMetadataOptions: Record<number, MetadataRefreshOptions> = {};
+
+  customFieldsByLibraryId: Record<number, LibraryCustomField[]> = {};
+  newCustomFieldByLibraryId: Record<number, { name: string; fieldType: CustomFieldType; defaultValue?: string | null }> = {};
+
+  customFieldTypeOptions: { label: string; value: CustomFieldType }[] = [
+    {label: 'String', value: 'STRING'},
+    {label: 'Number', value: 'NUMBER'},
+    {label: 'Date', value: 'DATE'},
+  ];
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {
       if (appSettings) {
         this.defaultMetadataOptions = appSettings.defaultMetadataRefreshOptions;
         this.initializeLibraryOptions(appSettings);
-        this.updateLibraryOptionsFromSettings(appSettings);
+        this.updateLibraryOptionsFromSettings();
       }
     });
 
@@ -50,7 +63,63 @@ export class LibraryMetadataSettingsComponent implements OnInit {
             this.libraryMetadataOptions[library.id] = libraryOptions;
           }
         }
+
+        if (library.id && !this.customFieldsByLibraryId[library.id]) {
+          this.loadCustomFields(library.id);
+        }
       });
+    });
+  }
+
+  loadCustomFields(libraryId: number) {
+    this.libraryService.getCustomFields(libraryId).subscribe({
+      next: (fields) => {
+        this.customFieldsByLibraryId[libraryId] = fields;
+        if (!this.newCustomFieldByLibraryId[libraryId]) {
+          this.newCustomFieldByLibraryId[libraryId] = {name: '', fieldType: 'STRING', defaultValue: null};
+        }
+      },
+      error: () => {
+        this.customFieldsByLibraryId[libraryId] = [];
+        if (!this.newCustomFieldByLibraryId[libraryId]) {
+          this.newCustomFieldByLibraryId[libraryId] = {name: '', fieldType: 'STRING', defaultValue: null};
+        }
+      }
+    });
+  }
+
+  addCustomField(libraryId: number) {
+    const draft = this.newCustomFieldByLibraryId[libraryId];
+    if (!draft?.name?.trim()) {
+      this.showMessage('error', 'Invalid', 'Custom field name is required.');
+      return;
+    }
+
+    this.libraryService.createCustomField(libraryId, {
+      name: draft.name.trim(),
+      fieldType: draft.fieldType,
+      defaultValue: (draft.defaultValue ?? null)
+    }).subscribe({
+      next: () => {
+        this.showMessage('success', 'Created', 'Custom field created.');
+        this.newCustomFieldByLibraryId[libraryId] = {name: '', fieldType: 'STRING', defaultValue: null};
+        this.loadCustomFields(libraryId);
+      },
+      error: (error) => {
+        this.showMessage('error', 'Create Failed', error?.error?.message || 'Failed to create custom field.');
+      }
+    });
+  }
+
+  deleteCustomField(libraryId: number, customFieldId: number) {
+    this.libraryService.deleteCustomField(libraryId, customFieldId).subscribe({
+      next: () => {
+        this.showMessage('success', 'Deleted', 'Custom field deleted.');
+        this.loadCustomFields(libraryId);
+      },
+      error: (error) => {
+        this.showMessage('error', 'Delete Failed', error?.error?.message || 'Failed to delete custom field.');
+      }
     });
   }
 
@@ -147,7 +216,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
     }
   }
 
-  private updateLibraryOptionsFromSettings(appSettings: AppSettings) {
+  private updateLibraryOptionsFromSettings() {
     Object.keys(this.libraryMetadataOptions).forEach(libraryIdStr => {
       const libraryId = parseInt(libraryIdStr, 10);
       if (!this.hasLibrarySpecificOptions(libraryId)) {

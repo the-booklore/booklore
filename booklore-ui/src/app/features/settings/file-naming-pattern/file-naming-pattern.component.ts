@@ -11,6 +11,7 @@ import {LibraryService} from '../../book/service/library.service';
 import {InputText} from 'primeng/inputtext';
 import {Divider} from 'primeng/divider';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {LibraryCustomField} from '../../book/model/library-custom-field.model';
 
 @Component({
   selector: 'app-file-naming-pattern',
@@ -36,6 +37,8 @@ export class FileNamingPatternComponent implements OnInit {
   libraries: Library[] = [];
   defaultErrorMessage = '';
 
+  customFieldsByLibraryId: Record<number, LibraryCustomField[]> = {};
+
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
   private libraryService = inject(LibraryService);
@@ -53,6 +56,17 @@ export class FileNamingPatternComponent implements OnInit {
       .pipe(filter(state => state.loaded && !!state.libraries))
       .subscribe(state => {
         this.libraries = state.libraries ?? [];
+
+        // Fetch custom fields so we can show placeholders and preview them per library.
+        this.libraries.forEach(lib => {
+          if (!lib.id || this.customFieldsByLibraryId[lib.id]) {
+            return;
+          }
+          this.libraryService.getCustomFields(lib.id).subscribe({
+            next: (fields) => (this.customFieldsByLibraryId[lib.id!] = fields),
+            error: () => (this.customFieldsByLibraryId[lib.id!] = []),
+          });
+        });
       });
   }
 
@@ -73,8 +87,19 @@ export class FileNamingPatternComponent implements OnInit {
     return hasExtension ? path : path + ext;
   }
 
-  private generatePreview(pattern: string): string {
-    let path = this.replacePlaceholders(pattern || '', this.exampleMetadata);
+  private buildPreviewValues(customFields: LibraryCustomField[] | undefined): Record<string, string> {
+    const values: Record<string, string> = { ...this.exampleMetadata };
+
+    (customFields ?? []).forEach((f) => {
+      const key = `custom:${f.name}`;
+      values[key] = f.defaultValue ?? 'Example';
+    });
+
+    return values;
+  }
+
+  private generatePreview(pattern: string, customFields?: LibraryCustomField[]): string {
+    let path = this.replacePlaceholders(pattern || '', this.buildPreviewValues(customFields));
 
     if (!path) return '/original_filename.pdf';
     if (path.endsWith('/')) return path + 'original_filename.pdf';
@@ -91,11 +116,12 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   generateLibraryPreview(library: Library): string {
-    return this.generatePreview(library.fileNamingPattern || this.defaultPattern);
+    const customFields = library.id ? this.customFieldsByLibraryId[library.id] : undefined;
+    return this.generatePreview(library.fileNamingPattern || this.defaultPattern, customFields);
   }
 
   validatePattern(pattern: string): boolean {
-    const validPatternRegex = /^[\w\s\-{}\[\]\/().<>.,:'"#]*$/;
+    const validPatternRegex = /^[[\]\w\s\-{}/().<>.,:'"#]*$/;
     return validPatternRegex.test(pattern);
   }
 
@@ -104,7 +130,10 @@ export class FileNamingPatternComponent implements OnInit {
     this.defaultErrorMessage = this.validatePattern(pattern) ? '' : 'Pattern contains invalid characters.';
   }
 
-  onLibraryPatternChange(library: Library): void {
+  onLibraryPatternChange(_library: Library): void {
+    if (_library) {
+      // noop
+    }
     // Optionally add per-library validation here
   }
 

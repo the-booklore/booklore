@@ -80,6 +80,72 @@
                       [submitButtonLabel]="'Save ' + library.name + ' Settings'"
                       (metadataOptionsSubmitted)="onLibraryMetadataOptionsSubmitted(library.id!, $event)">
                     </app-metadata-advanced-fetch-options>
+
+                    <div class="mt-6">
+                      <h4 class="section-title">
+                        <i class="pi pi-tags"></i>
+                        Custom Fields
+                      </h4>
+                      <p class="section-description">
+                        Custom fields are library-specific and can be used in file naming patterns via
+                        <code>&#123;custom:&lt;name&gt;&#125;</code>
+                        (for example <code>&#123;custom:edition&#125;</code>).
+                      </p>
+
+                      @if (library.id) {
+                        <div class="settings-card mt-3">
+                          @if ((customFieldsByLibraryId[library.id] ?? []).length) {
+                            <div class="flex flex-col gap-2">
+                              @for (field of (customFieldsByLibraryId[library.id] ?? []); track field.id) {
+                                <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 border-[1px] border-solid border-[var(--p-content-border-color)] rounded-md p-3">
+                                  <div class="flex-1">
+                                    <div class="font-semibold">{{ field.name }}</div>
+                                    <div class="text-sm" style="color: var(--p-text-muted-color)">
+                                      Type: {{ field.fieldType }}
+                                      @if (field.defaultValue) { <span>• Default: {{ field.defaultValue }}</span> }
+                                    </div>
+                                  </div>
+                                  <div class="flex items-center gap-2">
+                                    <code>&#123;custom:{{ field.name }}&#125;</code>
+                                    <p-button icon="pi pi-trash" severity="danger" [outlined]="true" (onClick)="deleteCustomField(library.id!, field.id)"></p-button>
+                                  </div>
+                                </div>
+                              }
+                            </div>
+                          } @else {
+                            <div class="text-sm" style="color: var(--p-text-muted-color)">
+                              No custom fields configured for this library.
+                            </div>
+                          }
+
+                          <div class="mt-4 border-t-[1px] border-solid border-[var(--p-content-border-color)] pt-4">
+                            <div class="font-semibold mb-2">Add Custom Field</div>
+                            <div class="flex flex-col md:flex-row gap-2 md:items-end">
+                              <div class="flex flex-col gap-1 md:basis-[30%]">
+                                <label class="text-sm">Name</label>
+                                <input pInputText [(ngModel)]="newCustomFieldByLibraryId[library.id!].name" placeholder="e.g. edition" />
+                              </div>
+                              <div class="flex flex-col gap-1 md:basis-[25%]">
+                                <label class="text-sm">Type</label>
+                                <p-select
+                                  [options]="customFieldTypeOptions"
+                                  optionLabel="label"
+                                  optionValue="value"
+                                  [(ngModel)]="newCustomFieldByLibraryId[library.id!].fieldType">
+                                </p-select>
+                              </div>
+                              <div class="flex flex-col gap-1 md:basis-[35%]">
+                                <label class="text-sm">Default Value</label>
+                                <input pInputText [(ngModel)]="newCustomFieldByLibraryId[library.id!].defaultValue" placeholder="(optional)" />
+                              </div>
+                              <div class="md:basis-[10%]">
+                                <p-button label="Add" icon="pi pi-plus" severity="success" [outlined]="true" (onClick)="addCustomField(library.id!)"></p-button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
                   </div>
                 </p-accordion-content>
               </p-accordion-panel>

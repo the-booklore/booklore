@@ -555,6 +555,38 @@
         </div>
       </div>
 
+      @if (libraryCustomFields.length > 0) {
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 mb-4" formGroupName="customFields">
+          @for (field of libraryCustomFields; track field.id) {
+            <div class="flex flex-col gap-1 w-full">
+              <label class="text-sm" [for]="'custom-' + field.name">{{ field.name }}</label>
+
+              @if (field.fieldType === 'DATE') {
+                <p-datepicker
+                  class="w-full"
+                  [inputId]="'custom-' + field.name"
+                  [formControlName]="field.name"
+                  dataType="string"
+                  dateFormat="yy-mm-dd"
+                  [keepInvalid]="true"
+                  [showIcon]="false"
+                  [iconDisplay]="'input'"
+                  fluid="true"
+                  appendTo="body">
+                </p-datepicker>
+              } @else {
+                <input
+                  pInputText
+                  [id]="'custom-' + field.name"
+                  [type]="field.fieldType === 'NUMBER' ? 'number' : 'text'"
+                  [formControlName]="field.name"
+                  class="w-full"/>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <div class="flex flex-col flex-grow md:flex-row w-full gap-4 mt-4 mb-4">
         <div class="flex flex-col gap-1 w-full h-full">
           <label class="text-sm" for="description">Description</label>

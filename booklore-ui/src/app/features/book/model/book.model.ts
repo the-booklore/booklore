@@ -145,7 +145,8 @@ export interface BookMetadata {
   tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
-  [key: string]: any;
+  customFields?: Record<string, string>;
+  [key: string]: unknown;
 }
 
 export interface MetadataClearFlags {
@@ -215,7 +216,7 @@ export interface BookSetting {
   epubSettings?: EpubViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface BookRecommendation {

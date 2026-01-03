@@ -3,7 +3,7 @@ import {InputText} from "primeng/inputtext";
 import {Button} from "primeng/button";
 import {Divider} from "primeng/divider";
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule,} from "@angular/forms";
-import {Observable, sample} from "rxjs";
+import {Observable, of, sample} from "rxjs";
 import {AsyncPipe} from "@angular/common";
 import {MessageService} from "primeng/api";
 import {Book, BookMetadata, MetadataClearFlags, MetadataUpdateWrapper,} from "../../../../book/model/book.model";
@@ -13,7 +13,7 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, take, finalize} from "rxjs/operators";
+import {catchError, filter, finalize, take} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
@@ -27,6 +27,13 @@ import {BookNavigationService} from '../../../../book/service/book-navigation.se
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
 import {Router} from '@angular/router';
 import {UserService} from '../../../../settings/user-management/user.service';
+import {LibraryService} from '../../../../book/service/library.service';
+import {LibraryCustomField} from '../../../../book/model/library-custom-field.model';
+
+interface AutoCompleteSelectEvent {
+  value: string;
+  originalEvent: Event;
+}
 
 @Component({
   selector: "app-metadata-editor",
@@ -69,6 +76,7 @@ export class MetadataEditorComponent implements OnInit {
   private metadataHostService = inject(BookMetadataHostService);
   private router = inject(Router);
   private userService = inject(UserService);
+  private libraryService = inject(LibraryService);
   private destroyRef = inject(DestroyRef);
 
   metadataForm: FormGroup;
@@ -82,6 +90,9 @@ export class MetadataEditorComponent implements OnInit {
   isAutoFetching = false;
 
   originalMetadata!: BookMetadata;
+
+  libraryCustomFields: LibraryCustomField[] = [];
+  private currentLibraryId: number | null = null;
 
   allAuthors!: string[];
   allCategories!: string[];
@@ -207,6 +218,8 @@ export class MetadataEditorComponent implements OnInit {
       seriesTotalLocked: new FormControl(false),
       coverLocked: new FormControl(false),
       reviewsLocked: new FormControl(false),
+
+      customFields: new FormGroup({}),
     });
   }
 
@@ -221,6 +234,8 @@ export class MetadataEditorComponent implements OnInit {
       }
       this.originalMetadata = structuredClone(metadata);
       this.populateFormFromMetadata(metadata);
+
+      this.loadLibraryCustomFields(book.libraryId, metadata);
     });
 
     this.prepareAutoComplete();
@@ -233,6 +248,62 @@ export class MetadataEditorComponent implements OnInit {
       .subscribe(userState => {
         this.metadataCenterViewMode = userState.user?.userSettings.metadataCenterViewMode ?? 'route';
       });
+  }
+
+  private loadLibraryCustomFields(libraryId: number, metadata: BookMetadata): void {
+    // Avoid refetching on every metadata update within the same library.
+    if (this.currentLibraryId === libraryId && this.libraryCustomFields.length > 0) {
+      this.syncCustomFieldControls(this.libraryCustomFields, metadata.customFields ?? {});
+      return;
+    }
+
+    this.currentLibraryId = libraryId;
+    this.libraryService
+      .getCustomFields(libraryId)
+      .pipe(
+        take(1),
+        catchError(() => of([]))
+      )
+      .subscribe((defs) => {
+        this.libraryCustomFields = defs;
+        this.syncCustomFieldControls(defs, metadata.customFields ?? {});
+      });
+  }
+
+  private syncCustomFieldControls(
+    defs: LibraryCustomField[],
+    currentValues: Record<string, string>
+  ): void {
+    const group = this.metadataForm.get('customFields') as FormGroup | null;
+    if (!group) {
+      return;
+    }
+
+    // Remove any previous library's controls.
+    for (const key of Object.keys(group.controls)) {
+      group.removeControl(key);
+    }
+
+    for (const def of defs) {
+      const value = currentValues?.[def.name] ?? def.defaultValue ?? '';
+      group.addControl(def.name, new FormControl(value));
+    }
+  }
+
+  private buildCustomFieldsPayload(): Record<string, string> | undefined {
+    if (!this.libraryCustomFields || this.libraryCustomFields.length === 0) {
+      return undefined;
+    }
+
+    const group = this.metadataForm.get('customFields') as FormGroup | null;
+    const raw = (group?.getRawValue?.() ?? {}) as Record<string, unknown>;
+
+    const payload: Record<string, string> = {};
+    for (const def of this.libraryCustomFields) {
+      const value = raw[def.name];
+      payload[def.name] = value === null || value === undefined ? '' : String(value);
+    }
+    return payload;
   }
 
   private prepareAutoComplete(): void {
@@ -378,12 +449,16 @@ export class MetadataEditorComponent implements OnInit {
       const isLocked = metadata[key] === true;
       const formControl = this.metadataForm.get(control);
       if (formControl) {
-        isLocked ? formControl.disable() : formControl.enable();
+        if (isLocked) {
+          formControl.disable();
+        } else {
+          formControl.enable();
+        }
       }
     }
   }
 
-  onAutoCompleteSelect(fieldName: string, event: any) {
+  onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent): void {
     const values = this.metadataForm.get(fieldName)?.value || [];
     if (!values.includes(event.value)) {
       this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
@@ -414,7 +489,7 @@ export class MetadataEditorComponent implements OnInit {
         false
       )
       .subscribe({
-        next: (response) => {
+        next: () => {
           this.isSaving = false;
           this.messageService.add({
             severity: "info",
@@ -510,6 +585,8 @@ export class MetadataEditorComponent implements OnInit {
       seriesTotal: form.get("seriesTotal")?.value,
       thumbnailUrl: form.get("thumbnailUrl")?.value,
 
+      customFields: this.buildCustomFieldsPayload(),
+
       // Locks
       titleLocked: form.get("titleLocked")?.value,
       subtitleLocked: form.get("subtitleLocked")?.value,
@@ -550,10 +627,10 @@ export class MetadataEditorComponent implements OnInit {
     const original = this.originalMetadata;
 
     const wasCleared = (key: keyof BookMetadata): boolean => {
-      const current = (metadata[key] as any) ?? null;
-      const prev = (original[key] as any) ?? null;
+      const current = (metadata[key] ?? null) as unknown;
+      const prev = (original[key] ?? null) as unknown;
 
-      const isEmpty = (val: any): boolean =>
+      const isEmpty = (val: unknown): boolean =>
         val === null || val === "" || (Array.isArray(val) && val.length === 0);
 
       return isEmpty(current) && !isEmpty(prev);
@@ -594,11 +671,11 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    let metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
+    const metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
     this.bookService
       .updateBookMetadata(this.currentBookId, metadataUpdateWrapper, false)
       .subscribe({
-        next: (response) => {
+        next: () => {
           if (shouldLockAllFields !== undefined) {
             this.messageService.add({
               severity: "success",
@@ -630,8 +707,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onUpload(event: FileUploadEvent): void {
-    const response: HttpResponse<any> =
-      event.originalEvent as HttpResponse<any>;
+    const response = event.originalEvent as HttpResponse<BookMetadata>;
     if (response && response.status === 200) {
       const bookMetadata: BookMetadata = response.body as BookMetadata;
       this.bookService.handleBookMetadataUpdate(
@@ -650,7 +726,10 @@ export class MetadataEditorComponent implements OnInit {
     }
   }
 
-  onUploadError($event: FileUploadErrorEvent) {
+  onUploadError(_event: FileUploadErrorEvent): void {
+    if (_event) {
+      // noop
+    }
     this.isUploading = false;
     this.messageService.add({
       severity: "error",
@@ -687,7 +766,7 @@ export class MetadataEditorComponent implements OnInit {
   generateCustomCover(bookId: number) {
     this.isGeneratingCover = true;
     this.bookService.generateCustomCover(bookId)
-      .pipe(finalize(() => this.isGeneratingCover = false))
+      .pipe(finalize(() => (this.isGeneratingCover = false)))
       .subscribe({
         next: () => {
           this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
@@ -708,7 +787,7 @@ export class MetadataEditorComponent implements OnInit {
             },
           });
         },
-        error: (err) => {
+        error: () => {
           this.messageService.add({
             severity: "error",
             summary: "Error",

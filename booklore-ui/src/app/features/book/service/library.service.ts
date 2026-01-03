@@ -8,6 +8,7 @@ import {LibraryState} from '../model/state/library-state.model';
 import {BookService} from './book.service';
 import {API_CONFIG} from '../../../core/config/api-config';
 import {AuthService} from '../../../shared/service/auth.service';
+import {LibraryCustomField} from '../model/library-custom-field.model';
 
 @Injectable({providedIn: 'root'})
 export class LibraryService {
@@ -23,6 +24,7 @@ export class LibraryService {
   });
 
   private loading$: Observable<Library[]> | null = null;
+  private customFieldsCache = new Map<number, Observable<LibraryCustomField[]>>();
 
   constructor() {
     this.authService.token$.pipe(
@@ -131,6 +133,32 @@ export class LibraryService {
           return updated;
         })
       );
+  }
+
+  getCustomFields(libraryId: number): Observable<LibraryCustomField[]> {
+    const cached = this.customFieldsCache.get(libraryId);
+    if (cached) {
+      return cached;
+    }
+
+    const request$ = this.http
+      .get<LibraryCustomField[]>(`${this.url}/${libraryId}/custom-fields`)
+      .pipe(shareReplay(1));
+
+    this.customFieldsCache.set(libraryId, request$);
+    return request$;
+  }
+
+  createCustomField(libraryId: number, body: Pick<LibraryCustomField, 'name' | 'fieldType'> & { defaultValue?: string | null }): Observable<LibraryCustomField> {
+    return this.http
+      .post<LibraryCustomField>(`${this.url}/${libraryId}/custom-fields`, body)
+      .pipe(tap(() => this.customFieldsCache.delete(libraryId)));
+  }
+
+  deleteCustomField(libraryId: number, customFieldId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.url}/${libraryId}/custom-fields/${customFieldId}`)
+      .pipe(tap(() => this.customFieldsCache.delete(libraryId)));
   }
 
 
