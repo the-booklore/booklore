@@ -22,6 +22,34 @@ export class HeaderFilter implements BookFilter {
       s = s.replace(/\s+/g, ' ').trim();
       return s.toLowerCase();
     };
+    
+    const normalizeAuthorNameForSearch = (author: string): string[] => {
+      // Convert "LastName, FirstName" to "FirstName LastName" if in comma format
+      const commaPattern = /,\s*/;
+      let normalizedAuthor = normalize(author);
+      
+      const results = [normalizedAuthor];
+      
+      // If in comma format, also add the converted format
+      if (commaPattern.test(author)) {
+        const parts = author.split(commaPattern);
+        if (parts.length >= 2) {
+          const firstName = normalize(parts[1].trim());
+          const lastName = normalize(parts[0].trim());
+          results.push(`${firstName} ${lastName}`.trim());
+        }
+      } else if (normalizedAuthor.includes(' ')) {
+        // If in "FirstName LastName" format, also add the comma format for matching
+        const authorParts = normalizedAuthor.split(' ');
+        if (authorParts.length >= 2) {
+          const firstName = authorParts.slice(0, -1).join(' ');
+          const lastName = authorParts[authorParts.length - 1];
+          results.push(`${lastName}, ${firstName}`.trim());
+        }
+      }
+      
+      return results;
+    };
 
     return this.searchTerm$.pipe(
       distinctUntilChanged(),
@@ -43,7 +71,10 @@ export class HeaderFilter implements BookFilter {
 
               const matchesTitle = normalize(title).includes(nTerm);
               const matchesSeries = normalize(series).includes(nTerm);
-              const matchesAuthor = authors.some(author => normalize(author).includes(nTerm));
+              const matchesAuthor = authors.some(author => {
+                const authorFormats = normalizeAuthorNameForSearch(author);
+                return authorFormats.some(format => format.includes(nTerm));
+              });
               const matchesCategory = categories.some(category => normalize(category).includes(nTerm));
               const matchesIsbn = normalize(isbn).includes(nTerm) || normalize(isbn13).includes(nTerm);
 

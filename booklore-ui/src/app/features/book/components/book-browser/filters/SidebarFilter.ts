@@ -45,6 +45,76 @@ export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean
   return selected.includes(status);
 }
 
+function normalizeAuthorName(author: string): string {
+  // Check if the author name is in "Lastname, Firstname" format
+  // This pattern looks for a comma followed by optional whitespace and then other characters
+  const commaPattern = /,\s*/;
+  if (commaPattern.test(author)) {
+    const parts = author.split(commaPattern);
+    if (parts.length >= 2) {
+      // Return "Firstname Lastname" format
+      // Also trim whitespace and handle potential middle names
+      const firstNamePart = parts[1].trim();
+      const lastNamePart = parts[0].trim();
+      return `${firstNamePart} ${lastNamePart}`.trim().toLowerCase();
+    }
+  }
+  // If not in comma format, return as is (but normalized)
+  return author.trim().toLowerCase();
+}
+
+function matchesAuthorFilter(bookAuthor: string, filterValue: string): boolean {
+  const normalizedBookAuthor = normalizeAuthorName(bookAuthor);
+  const normalizedFilterValue = normalizeAuthorName(filterValue);
+  
+  // Exact match after normalization
+  if (normalizedBookAuthor === normalizedFilterValue) {
+    return true;
+  }
+  
+  // Substring/partial match - allows searching for parts of names
+  if (normalizedBookAuthor.includes(normalizedFilterValue) || normalizedFilterValue.includes(normalizedBookAuthor)) {
+    return true;
+  }
+  
+  // Check if filter value (in either format) matches the normalized book author
+  // Handle "LastName, FirstName" pattern in filter
+  const filterCommaPattern = /,\s*/;
+  if (filterCommaPattern.test(filterValue)) {
+    const filterParts = filterValue.split(filterCommaPattern);
+    if (filterParts.length >= 2) {
+      const filterFirstName = filterParts[1].trim().toLowerCase();
+      const filterLastName = filterParts[0].trim().toLowerCase();
+      const filterNormalized = `${filterFirstName} ${filterLastName}`.toLowerCase();
+      if (normalizedBookAuthor === filterNormalized) {
+        return true;
+      }
+      // Also check for substring matches
+      if (normalizedBookAuthor.includes(filterNormalized) || filterNormalized.includes(normalizedBookAuthor)) {
+        return true;
+      }
+    }
+  }
+  
+  // Check if filter value (in either format) matches the book author (in either format)
+  // Convert book author to "LastName, FirstName" if it's in "FirstName LastName" format
+  const bookAuthorParts = normalizedBookAuthor.split(' ');
+  if (bookAuthorParts.length >= 2) {
+    const bookFirstName = bookAuthorParts.slice(0, -1).join(' ');
+    const bookLastName = bookAuthorParts[bookAuthorParts.length - 1];
+    const bookAuthorCommaFormat = `${bookLastName}, ${bookFirstName}`;
+    if (bookAuthorCommaFormat === normalizedFilterValue) {
+      return true;
+    }
+    // Also check for substring matches
+    if (bookAuthorCommaFormat.includes(normalizedFilterValue) || normalizedFilterValue.includes(bookAuthorCommaFormat)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 export class SideBarFilter implements BookFilter {
 
   constructor(private selectedFilter$: Observable<unknown>, private selectedFilterMode$: Observable<BookFilterMode>) {
@@ -62,8 +132,12 @@ export class SideBarFilter implements BookFilter {
             switch (filterType) {
               case 'author':
                 return mode === 'or'
-                  ? filterValues.some(val => book.metadata?.authors?.includes(val))
-                  : filterValues.every(val => book.metadata?.authors?.includes(val));
+                  ? filterValues.some(filterVal =>
+                      book.metadata?.authors?.some(author => matchesAuthorFilter(author, filterVal))
+                    )
+                  : filterValues.every(filterVal =>
+                      book.metadata?.authors?.some(author => matchesAuthorFilter(author, filterVal))
+                    );
               case 'category':
                 return mode === 'or'
                   ? filterValues.some(val => book.metadata?.categories?.includes(val))
