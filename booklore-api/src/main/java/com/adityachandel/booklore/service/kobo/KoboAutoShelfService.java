@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -64,6 +65,10 @@ public class KoboAutoShelfService {
             if (shelf == null) {
                 log.debug("User {} has auto-add enabled but no Kobo shelf exists", setting.getUserId());
                 continue;
+            }
+
+            if (book.getShelves() == null) {
+                book.setShelves(new HashSet<>());
             }
 
             if (book.getShelves().contains(shelf)) {
