@@ -1,0 +1,123 @@
+<div class="main-container enclosing-container">
+  <div class="settings-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h2 class="settings-title">
+          <i class="pi pi-palette"></i>
+          Custom Fonts
+        </h2>
+        <p class="settings-description">
+          Upload and manage your own fonts for a personalized reading experience in the EPUB reader.
+          You have {{ customFonts.length }} of {{ maxFonts }} custom fonts.
+        </p>
+      </div>
+      <p-button
+        label="Add New Font"
+        icon="pi pi-plus"
+        (click)="openUploadDialog()"
+        [disabled]="customFonts.length >= maxFonts"
+      ></p-button>
+    </div>
+  </div>
+
+  <div class="settings-content">
+
+    <!-- Font Library Section -->
+    @if (isLoading) {
+      <div class="preferences-section">
+        <div class="loading-state">
+          <p-progressSpinner></p-progressSpinner>
+          <p>Loading your fonts...</p>
+        </div>
+      </div>
+    } @else if (customFonts.length === 0) {
+      <div class="preferences-section">
+        <div class="empty-state">
+          <div class="empty-icon-wrapper">
+            <i class="pi pi-palette empty-icon"></i>
+          </div>
+          <h3 class="empty-title">No Custom Fonts Yet</h3>
+          <p class="empty-description">
+            Upload your favorite fonts to personalize your reading experience.<br>
+            Click the "Add New Font" button above to get started.
+          </p>
+          <p class="empty-hint">
+            <i class="pi pi-info-circle"></i>
+            Supported formats: <strong>TTF</strong>, <strong>OTF</strong>, <strong>WOFF</strong>, <strong>WOFF2</strong>
+          </p>
+        </div>
+      </div>
+    } @else {
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-book"></i>
+            Your Font Library
+            <span class="font-count">({{ customFonts.length }})</span>
+          </h3>
+          <p class="section-description">
+            Manage your uploaded custom fonts. Each font can be selected in the EPUB reader settings.
+          </p>
+        </div>
+
+        <div class="fonts-grid">
+          @for (font of customFonts; track font.id) {
+            <div class="settings-card font-card">
+              <div class="font-card-header">
+                <div class="font-title-group">
+                  <h4 class="font-name">{{ font.fontName }}</h4>
+                  <span class="format-tag">{{ font.format }}</span>
+                </div>
+                <p-button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  [text]="true"
+                  [rounded]="true"
+                  size="small"
+                  (click)="deleteFont(font)"
+                  pTooltip="Delete font"
+                  tooltipPosition="left"
+                ></p-button>
+              </div>
+
+              <div class="font-preview-area">
+                <label class="preview-label">
+                  <i class="pi pi-eye"></i>
+                  Preview
+                </label>
+                <div class="font-preview" [style.font-family]="font.fontName">
+                  <p class="preview-paragraph">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+                  </p>
+                  <p class="preview-paragraph-small">
+                    Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  </p>
+                  <div class="preview-characters">
+                    <span>ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="font-metadata">
+                <div class="metadata-row">
+                  <span class="meta-label"><i class="pi pi-file"></i>File</span>
+                  <span class="meta-value">{{ font.originalFileName }}</span>
+                </div>
+                <div class="metadata-row">
+                  <span class="meta-label"><i class="pi pi-database"></i>Size</span>
+                  <span class="meta-value">{{ formatFileSize(font.fileSize) }}</span>
+                </div>
+                <div class="metadata-row">
+                  <span class="meta-label"><i class="pi pi-calendar"></i>Uploaded</span>
+                  <span class="meta-value">{{ font.uploadedAt | date: 'mediumDate' }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</div>
+
+<p-confirmDialog></p-confirmDialog>

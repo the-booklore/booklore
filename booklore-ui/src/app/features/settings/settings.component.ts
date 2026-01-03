@@ -17,9 +17,11 @@ import {DeviceSettingsComponent} from './device-settings/device-settings-compone
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings/library-metadata-settings.component';
 import { PageTitleService } from "../../shared/service/page-title.service";
 import {EmailV2Component} from './email-v2/email-v2.component';
+import {CustomFontsComponent} from './custom-fonts/custom-fonts.component';
 
 export enum SettingsTab {
   ReaderSettings = 'reader',
+  CustomFonts = 'custom-fonts',
   ViewPreferences = 'view',
   DeviceSettings = 'device',
   UserManagement = 'user',
@@ -47,6 +49,7 @@ export enum SettingsTab {
     AuthenticationSettingsComponent,
     ViewPreferencesParentComponent,
     ReaderPreferences,
+    CustomFontsComponent,
     MetadataSettingsComponent,
     DeviceSettingsComponent,
     FileNamingPatternComponent,

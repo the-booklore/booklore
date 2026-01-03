@@ -6,6 +6,9 @@
           <p-tab [value]="SettingsTab.ReaderSettings">
             <i class="pi pi-book"></i> Reader
           </p-tab>
+          <p-tab [value]="SettingsTab.CustomFonts">
+            <i class="pi pi-palette"></i> Custom Fonts
+          </p-tab>
           <p-tab [value]="SettingsTab.ViewPreferences">
             <i class="pi pi-desktop"></i> View
           </p-tab>
@@ -55,6 +58,9 @@
         <p-tabpanels>
           <p-tabpanel [value]="SettingsTab.ReaderSettings">
             <app-reader-preferences></app-reader-preferences>
+          </p-tabpanel>
+          <p-tabpanel [value]="SettingsTab.CustomFonts">
+            <app-custom-fonts></app-custom-fonts>
           </p-tabpanel>
           <p-tabpanel [value]="SettingsTab.ViewPreferences">
             <app-view-preferences-parent></app-view-preferences-parent>
