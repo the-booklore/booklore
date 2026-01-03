@@ -285,10 +285,10 @@ export class BookFilterComponent implements OnInit, OnDestroy {
           bookType: this.getFilterStream(getBookTypeFilter, 'id', 'name'),
           shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
           fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
-          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount), 'id', 'name', 'sortIndex'),
-          amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating), 'id', 'name', 'sortIndex'),
-          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating), 'id', 'name', 'sortIndex'),
-          hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating), 'id', 'name', 'sortIndex'),
+          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount ?? undefined), 'id', 'name', 'sortIndex'),
+          amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating ?? undefined), 'id', 'name', 'sortIndex'),
+          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex'),
+          hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating ?? undefined), 'id', 'name', 'sortIndex'),
         };
 
         this.filterTypes = Object.keys(this.filterStreams) as FilterType[];

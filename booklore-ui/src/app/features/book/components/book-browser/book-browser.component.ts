@@ -414,7 +414,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     }
   }
 
-  onFilterSelected(filters: Record<string, string[]> | null): void {
+  onFilterSelected(filters: Record<string, any> | null): void {
     if (this.settingFiltersFromUrl) return;
 
     this.selectedFilter.next(filters);
