@@ -207,6 +207,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         asin: {p1: null, p2: null, p3: null, p4: null},
         goodreadsId: {p1: null, p2: null, p3: null, p4: null},
         comicvineId: {p1: null, p2: null, p3: null, p4: null},
+        koboId: {p1: null, p2: null, p3: null, p4: null},
         hardcoverId: {p1: null, p2: null, p3: null, p4: null},
         googleId: {p1: null, p2: null, p3: null, p4: null},
         amazonRating: {p1: null, p2: null, p3: null, p4: null},
