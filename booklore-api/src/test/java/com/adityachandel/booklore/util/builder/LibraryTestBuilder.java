@@ -1,7 +1,5 @@
 package com.adityachandel.booklore.util.builder;
 
-import com.adityachandel.booklore.mapper.BookMapper;
-import com.adityachandel.booklore.mapper.BookMapperImpl;
 import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
@@ -24,9 +22,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -38,8 +39,6 @@ public class LibraryTestBuilder {
 
     public static final String DEFAULT_LIBRARY_NAME = "Test Library";
     public static final String DEFAULT_LIBRARY_PATH = "/library/books";
-
-    private static final BookMapper BOOK_MAPPER = new BookMapperImpl();
 
     private Long libraryId = 1L;
 
@@ -96,6 +95,27 @@ public class LibraryTestBuilder {
                     BookAdditionalFileEntity additionalFile = invocation.getArgument(0);
                     return saveBookAdditionalFile(additionalFile);
                 });
+
+        // Mockito default for Optional is Optional.empty(), but we want realistic behavior so
+        // FolderAsBookFileProcessor's "exists" check prevents duplicates.
+        lenient().when(bookAdditionalFileRepositoryMock.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), anyString(), anyString()))
+            .thenAnswer(invocation -> {
+                Long libraryPathId = invocation.getArgument(0);
+                String fileSubPath = invocation.getArgument(1);
+                String fileName = invocation.getArgument(2);
+
+                Optional<BookAdditionalFileEntity> found = bookAdditionalFileRepository.values().stream()
+                    .filter(a -> a.getBook() != null
+                        && a.getBook().getLibraryPath() != null
+                        && a.getBook().getLibraryPath().getId() != null
+                        && a.getBook().getLibraryPath().getId().equals(libraryPathId)
+                        && a.getFileSubPath() != null
+                        && a.getFileSubPath().equals(fileSubPath)
+                        && a.getFileName() != null
+                        && a.getFileName().equals(fileName))
+                    .findFirst();
+                return found;
+            });
     }
 
     /**
@@ -175,6 +195,7 @@ public class LibraryTestBuilder {
                 .orElse(0L)+ 1;
         LibraryPathEntity libraryPath = LibraryPathEntity.builder()
                 .id(id)
+            .library(library)
                 .path(path)
                 .build();
         library.getLibraryPaths().add(libraryPath);
@@ -238,10 +259,12 @@ public class LibraryTestBuilder {
         }
         var libraryPath = library.getLibraryPaths().getLast();
 
+        String subPath = removeLeadingSlash(fileSubPath);
+
         // Really don't want to check if there is subpath in library paths
         var libraryFile = LibraryFile.builder()
                 .libraryPathEntity(libraryPath)
-                .fileSubPath(fileSubPath)
+            .fileSubPath(subPath)
                 .fileName(fileName)
                 .bookFileType(getBookFileType(fileName))
                 .build();
@@ -284,6 +307,7 @@ public class LibraryTestBuilder {
         var hash = computeFileHash(libraryFile.getFullPath());
 
         long id = libraryFiles.indexOf(libraryFile) + 1L;
+        String subPath = removeLeadingSlash(libraryFile.getFileSubPath());
         BookMetadataEntity metadata = BookMetadataEntity.builder()
                 .title(FilenameUtils.removeExtension(libraryFile.getFileName()))
                 .bookId(id)
@@ -291,10 +315,10 @@ public class LibraryTestBuilder {
         BookEntity bookEntity = BookEntity.builder()
                 .id(id) // Simple ID generation based on index
                 .fileName(libraryFile.getFileName())
-                .fileSubPath(libraryFile.getFileSubPath())
+            .fileSubPath(subPath)
                 .bookType(libraryFile.getBookFileType())
                 .fileSizeKb(1024L)
-                .library(libraryFile.getLibraryPathEntity().getLibrary())
+            .library(libraryFile.getLibraryPathEntity().getLibrary())
                 .libraryPath(libraryFile.getLibraryPathEntity())
                 .addedOn(java.time.Instant.now())
                 .initialHash(hash)
@@ -306,7 +330,14 @@ public class LibraryTestBuilder {
         bookRepository.put(bookEntity.getId(), bookEntity);
         bookMap.put(metadata.getTitle(), bookEntity);
 
-        return BOOK_MAPPER.toBook(bookEntity);
+        // In unit tests we only need a minimal DTO so FolderAsBookFileProcessor can reference book id.
+        // Avoid MapStruct mappers here because they rely on Spring injection.
+        return Book.builder()
+            .id(bookEntity.getId())
+            .bookType(bookEntity.getBookType())
+            .fileName(bookEntity.getFileName())
+            .fileSubPath(bookEntity.getFileSubPath())
+            .build();
     }
 
     private BookEntity getBookById(Long bookId) {
@@ -332,6 +363,23 @@ public class LibraryTestBuilder {
 
         additionalFile.setId((long) bookAdditionalFileRepository.size() + 1);
         bookAdditionalFileRepository.put(additionalFile.getId(), additionalFile);
+
+        // Mirror the in-memory association that callers/assertions expect.
+        if (additionalFile.getBook() != null) {
+            if (additionalFile.getBook().getAdditionalFiles() == null) {
+                additionalFile.getBook().setAdditionalFiles(new ArrayList<>());
+            }
+
+            boolean alreadyLinked = additionalFile.getBook().getAdditionalFiles().stream()
+                    .anyMatch(existing -> existing != null
+                            && existing.getAdditionalFileType() == additionalFile.getAdditionalFileType()
+                            && Objects.equals(existing.getFileSubPath(), additionalFile.getFileSubPath())
+                            && Objects.equals(existing.getFileName(), additionalFile.getFileName()));
+
+            if (!alreadyLinked) {
+                additionalFile.getBook().getAdditionalFiles().add(additionalFile);
+            }
+        }
         return additionalFile;
     }
 

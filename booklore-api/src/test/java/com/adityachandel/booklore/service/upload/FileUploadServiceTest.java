@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.repository.LibraryCustomFieldRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -71,6 +72,8 @@ class FileUploadServiceTest {
     FileMovingHelper fileMovingHelper;
     @Mock
     AdditionalFileMapper additionalFileMapper;
+    @Mock
+    LibraryCustomFieldRepository libraryCustomFieldRepository;
 
     AppProperties appProperties;
     FileUploadService service;
@@ -86,9 +89,12 @@ class FileUploadServiceTest {
         settings.setUploadPattern("{currentFilename}");
         when(appSettingService.getAppSettings()).thenReturn(settings);
 
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(anyLong())).thenReturn(List.of());
+
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper
+            appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper,
+            libraryCustomFieldRepository
         );
     }
 

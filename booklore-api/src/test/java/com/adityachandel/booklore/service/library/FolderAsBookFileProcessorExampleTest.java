@@ -70,8 +70,8 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addLibraryFile("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Anatomy", "Anatomy 101.pdf");
+                                .addLibraryFile("101/Accounting", "Accounting 101.pdf")
+                                .addLibraryFile("101/Anatomy", "Anatomy 101.pdf");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -87,9 +87,9 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addLibraryFile("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
-                .addLibraryFile("/101/Anatomy", "Anatomy 101.pdf");
+                                .addLibraryFile("101/Accounting", "Accounting 101.pdf")
+                                .addLibraryFile("101/Accounting", "Accounting 101.epub")
+                                .addLibraryFile("101/Anatomy", "Anatomy 101.pdf");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -107,10 +107,10 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addLibraryFile("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
-                .addLibraryFile("/101/Accounting", "Accounting 101.zip")
-                .addLibraryFile("/101/Anatomy", "Anatomy 101.pdf");
+                                .addLibraryFile("101/Accounting", "Accounting 101.pdf")
+                                .addLibraryFile("101/Accounting", "Accounting 101.epub")
+                                .addLibraryFile("101/Accounting", "Accounting 101.zip")
+                                .addLibraryFile("101/Anatomy", "Anatomy 101.pdf");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -129,14 +129,14 @@ class FolderAsBookFileProcessorExampleTest {
         String supplementaryFileHash = "hash-accounting-101";
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addLibraryFile("/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("101/Accounting", "Accounting 101.pdf")
                 .addLibraryFile(
-                        "/101/Accounting",
+                        "101/Accounting",
                         "Accounting 101.zip",
                         supplementaryFileHash)
-                .addLibraryFile("/101/Accounting 2nd Edition", "Accounting 101 2nd Edition.pdf")
+                .addLibraryFile("101/Accounting 2nd Edition", "Accounting 101 2nd Edition.pdf")
                 .addLibraryFile(
-                        "/101/Accounting 2nd Edition",
+                        "101/Accounting 2nd Edition",
                         "Accounting 101 2nd Edition.zip",
                         supplementaryFileHash);
 
@@ -156,14 +156,14 @@ class FolderAsBookFileProcessorExampleTest {
         String additionalFormatHash = "hash-accounting-101";
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
+                .addLibraryFile("101/Accounting", "Accounting 101.epub")
                 .addLibraryFile(
-                        "/101/Accounting",
+                        "101/Accounting",
                         "Accounting 101.pdf",
                         additionalFormatHash)
-                .addLibraryFile("/101/Accounting 2nd Edition", "Accounting 101 2nd Edition.epub")
+                .addLibraryFile("101/Accounting 2nd Edition", "Accounting 101 2nd Edition.epub")
                 .addLibraryFile(
-                        "/101/Accounting 2nd Edition",
+                        "101/Accounting 2nd Edition",
                         "Accounting 101 2nd Edition.pdf",
                         additionalFormatHash);
 
@@ -182,8 +182,8 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addBook("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Accounting", "Accounting 101.epub");
+                .addBook("101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("101/Accounting", "Accounting 101.epub");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -200,8 +200,8 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addBook("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Accounting", "sources.zip");
+                .addBook("101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("101/Accounting", "sources.zip");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -218,9 +218,9 @@ class FolderAsBookFileProcessorExampleTest {
         // Given
         libraryTestBuilder
                 .addDefaultLibrary()
-                .addBook("/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/101/Accounting", "Accounting 101.epub")
-                .addLibraryFile("/101/Accounting", "sources.zip");
+                .addBook("101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("101/Accounting", "Accounting 101.epub")
+                .addLibraryFile("101/Accounting", "sources.zip");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());
@@ -239,40 +239,40 @@ class FolderAsBookFileProcessorExampleTest {
         libraryTestBuilder
                 .addDefaultLibrary()
                 // Basic books
-                .addLibraryFile("/Basic/101/Accounting", "Accounting 101.epub")
-                .addLibraryFile("/Basic/101/Accounting", "Accounting 101.pdf")
-                .addLibraryFile("/Basic/101/Anatomy", "Anatomy 101.pdf")
-                .addLibraryFile("/Basic/How-To/Repair", "How to Repair.epub")
-                .addLibraryFile("/Basic/How-To/Repair", "How to Repair.pdf")
+                .addLibraryFile("Basic/101/Accounting", "Accounting 101.epub")
+                .addLibraryFile("Basic/101/Accounting", "Accounting 101.pdf")
+                .addLibraryFile("Basic/101/Anatomy", "Anatomy 101.pdf")
+                .addLibraryFile("Basic/How-To/Repair", "How to Repair.epub")
+                .addLibraryFile("Basic/How-To/Repair", "How to Repair.pdf")
                 // Software Engineering books
-                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.pdf")
-                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.epub")
-                .addLibraryFile("/Software Engineering/Java/Design Patterns", "Design Patterns.zip", javaSourcesSameHash)
-                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.pdf")
-                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.epub")
-                .addLibraryFile("/Software Engineering/Java/Effective Java", "Effective Java.zip", javaSourcesSameHash)
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.pdf")
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.epub")
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/Pytorch", "sources.zip")
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.pdf")
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.epub")
-                .addLibraryFile("/Software Engineering/Python/AI/Machine Learning/TensorFlow", "sources.zip")
-                .addLibraryFile("/Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.pdf")
-                .addLibraryFile("/Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.epub")
+                .addLibraryFile("Software Engineering/Java/Design Patterns", "Design Patterns.pdf")
+                .addLibraryFile("Software Engineering/Java/Design Patterns", "Design Patterns.epub")
+                .addLibraryFile("Software Engineering/Java/Design Patterns", "Design Patterns.zip", javaSourcesSameHash)
+                .addLibraryFile("Software Engineering/Java/Effective Java", "Effective Java.pdf")
+                .addLibraryFile("Software Engineering/Java/Effective Java", "Effective Java.epub")
+                .addLibraryFile("Software Engineering/Java/Effective Java", "Effective Java.zip", javaSourcesSameHash)
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.pdf")
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/Pytorch", "PyTorch for Machine Learning.epub")
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/Pytorch", "sources.zip")
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.pdf")
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/TensorFlow", "TensorFlow for Machine Learning.epub")
+                .addLibraryFile("Software Engineering/Python/AI/Machine Learning/TensorFlow", "sources.zip")
+                .addLibraryFile("Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.pdf")
+                .addLibraryFile("Software Engineering/Python/Flask/Flask Web Development", "Flask Web Development.epub")
                 // Comics Marvel
-                .addLibraryFile("/Comics/Marvel/Batman/Volume 1", "Batman v1.cbr")
-                .addLibraryFile("/Comics/Marvel/Batman/Volume 2", "Batman v2.cbr")
-                .addLibraryFile("/Comics/Marvel/Spiderman/Volume 1", "Spiderman v1.cbz")
-                .addLibraryFile("/Comics/Marvel/Spiderman/Volume 2", "Spiderman v2.cbz")
+                .addLibraryFile("Comics/Marvel/Batman/Volume 1", "Batman v1.cbr")
+                .addLibraryFile("Comics/Marvel/Batman/Volume 2", "Batman v2.cbr")
+                .addLibraryFile("Comics/Marvel/Spiderman/Volume 1", "Spiderman v1.cbz")
+                .addLibraryFile("Comics/Marvel/Spiderman/Volume 2", "Spiderman v2.cbz")
                 // Comics DC
-                .addLibraryFile("/Comics/DC/Superman/Volume 1", "Superman v1.cbr")
-                .addLibraryFile("/Comics/DC/Superman/Volume 1", "Poster.jpg")
-                .addLibraryFile("/Comics/DC/Superman/Volume 2", "Superman v2.cbr")
+                .addLibraryFile("Comics/DC/Superman/Volume 1", "Superman v1.cbr")
+                .addLibraryFile("Comics/DC/Superman/Volume 1", "Poster.jpg")
+                .addLibraryFile("Comics/DC/Superman/Volume 2", "Superman v2.cbr")
                 // Manga
-                .addLibraryFile("/Manga/One Piece/Volume 1", "One Piece v1.cbz")
-                .addLibraryFile("/Manga/One Piece/Volume 2", "One Piece v2.cbz")
-                .addLibraryFile("/Manga/Naruto/Volume 1", "Naruto v1.cbr")
-                .addLibraryFile("/Manga/Naruto/Volume 2", "Naruto v2.cbr");
+                .addLibraryFile("Manga/One Piece/Volume 1", "One Piece v1.cbz")
+                .addLibraryFile("Manga/One Piece/Volume 2", "One Piece v2.cbz")
+                .addLibraryFile("Manga/Naruto/Volume 1", "Naruto v1.cbr")
+                .addLibraryFile("Manga/Naruto/Volume 2", "Naruto v2.cbr");
 
         // When
         processor.processLibraryFiles(libraryTestBuilder.getLibraryFiles(), libraryTestBuilder.getLibraryEntity());

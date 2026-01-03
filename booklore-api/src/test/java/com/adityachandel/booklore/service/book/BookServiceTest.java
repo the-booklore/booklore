@@ -17,6 +17,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -40,6 +41,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
 class BookServiceTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock private BookRepository bookRepository;
     @Mock private PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
@@ -91,7 +95,7 @@ class BookServiceTest {
         entity.setId(2L);
         entity.setBookType(BookFileType.EPUB);
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        libPath.setPath(tempDir.toString());
         LibraryEntity library = new LibraryEntity();
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
@@ -102,7 +106,7 @@ class BookServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
-            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/library/book.epub");
+            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(tempDir.resolve("book.epub").toString());
             List<Book> result = bookService.getBooksByIds(Set.of(2L), false);
 
             assertEquals(1, result.size());
@@ -116,7 +120,7 @@ class BookServiceTest {
         entity.setId(3L);
         entity.setBookType(BookFileType.PDF);
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        libPath.setPath(tempDir.toString());
         LibraryEntity library = new LibraryEntity();
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
@@ -127,7 +131,7 @@ class BookServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
-            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/library/book.pdf");
+            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(tempDir.resolve("book.pdf").toString());
             Book result = bookService.getBook(3L, true);
             assertEquals(3L, result.getId());
             verify(bookRepository).findById(3L);
@@ -208,8 +212,8 @@ class BookServiceTest {
 
     @Test
     void getBookThumbnail_fileExists_returnsUrlResource() throws Exception {
-        when(fileService.getThumbnailFile(1L)).thenReturn("/tmp/cover.jpg");
-        Path path = Paths.get("/tmp/cover.jpg");
+        Path path = tempDir.resolve("cover.jpg");
+        when(fileService.getThumbnailFile(1L)).thenReturn(path.toString());
         Files.createFile(path);
         try {
             Resource res = bookService.getBookThumbnail(1L);
@@ -221,7 +225,7 @@ class BookServiceTest {
 
     @Test
     void getBookThumbnail_fileMissing_returnsDefault() throws Exception {
-        when(fileService.getThumbnailFile(1L)).thenReturn("/tmp/nonexistent.jpg");
+        when(fileService.getThumbnailFile(1L)).thenReturn(tempDir.resolve("nonexistent.jpg").toString());
         Resource res = bookService.getBookThumbnail(1L);
         assertTrue(res instanceof UrlResource);
     }
@@ -234,8 +238,8 @@ class BookServiceTest {
 
     @Test
     void getBookCover_fileExists_returnsUrlResource() throws Exception {
-        when(fileService.getCoverFile(1L)).thenReturn("/tmp/cover2.jpg");
-        Path path = Paths.get("/tmp/cover2.jpg");
+        Path path = tempDir.resolve("cover2.jpg");
+        when(fileService.getCoverFile(1L)).thenReturn(path.toString());
         Files.createFile(path);
         try {
             Resource res = bookService.getBookCover(1L);
@@ -247,7 +251,7 @@ class BookServiceTest {
 
     @Test
     void getBookCover_fileMissing_returnsClassPathResource() {
-        when(fileService.getCoverFile(1L)).thenReturn("/tmp/nonexistent2.jpg");
+        when(fileService.getCoverFile(1L)).thenReturn(tempDir.resolve("nonexistent2.jpg").toString());
         Resource res = bookService.getBookCover(1L);
         assertTrue(res instanceof ClassPathResource);
     }
@@ -285,7 +289,7 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(10L);
         when(bookRepository.findById(10L)).thenReturn(Optional.of(entity));
-        Path path = Paths.get("/tmp/bookcontent.txt");
+        Path path = tempDir.resolve("bookcontent.txt");
         Files.write(path, "hello".getBytes());
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
             fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(path.toString());
@@ -309,7 +313,7 @@ class BookServiceTest {
         entity.setId(12L);
         when(bookRepository.findById(12L)).thenReturn(Optional.of(entity));
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
-            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/nonexistentfile.txt");
+            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(tempDir.resolve("nonexistentfile.txt").toString());
             assertThrows(java.io.FileNotFoundException.class, () -> bookService.getBookContent(12L));
         }
     }
@@ -320,10 +324,12 @@ class BookServiceTest {
         entity.setId(11L);
         LibraryEntity library = new LibraryEntity();
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        Path libraryRoot = tempDir.resolve("library");
+        Files.createDirectories(libraryRoot);
+        libPath.setPath(libraryRoot.toString());
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
-        Path filePath = Paths.get("/tmp/bookfile.txt");
+        Path filePath = libraryRoot.resolve("bookfile.txt");
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, "abc".getBytes());
 
@@ -348,15 +354,13 @@ class BookServiceTest {
         entity.setId(13L);
         LibraryEntity library = new LibraryEntity();
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        libPath.setPath(tempDir.resolve("library").toString());
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
 
         BookEntity spyEntity = spy(entity);
-        doReturn(Paths.get("/tmp/nonexistentfile.txt")).when(spyEntity).getFullFilePath();
-
         when(bookQueryService.findAllWithMetadataByIds(Set.of(13L))).thenReturn(List.of(spyEntity));
-        doNothing().when(bookRepository).deleteAll(anyList());
+        doReturn(tempDir.resolve("nonexistentfile.txt")).when(spyEntity).getFullFilePath();
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(13L)).getBody();
 

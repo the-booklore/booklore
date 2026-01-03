@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +45,7 @@ class BookMetadataUpdaterTest {
     @Mock private MetadataWriterFactory metadataWriterFactory;
     @Mock private BookReviewUpdateService bookReviewUpdateService;
     @Mock private FileMoveService fileMoveService;
+        @Mock private CustomFieldValueService customFieldValueService;
 
     @InjectMocks
     private BookMetadataUpdater bookMetadataUpdater;
@@ -53,6 +55,10 @@ class BookMetadataUpdaterTest {
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPersistenceSettings(new MetadataPersistenceSettings());
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+                // Custom fields are not part of these tests; keep behavior neutral.
+                when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(false);
+                when(customFieldValueService.applyCustomFields(any(), any())).thenReturn(false);
     }
 
     @Test

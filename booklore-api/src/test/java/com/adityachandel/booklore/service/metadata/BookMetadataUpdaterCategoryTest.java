@@ -43,6 +43,7 @@ class BookMetadataUpdaterCategoryTest {
     @Mock private MetadataWriterFactory metadataWriterFactory;
     @Mock private BookReviewUpdateService bookReviewUpdateService;
     @Mock private FileMoveService fileMoveService;
+    @Mock private CustomFieldValueService customFieldValueService;
 
     @InjectMocks
     private BookMetadataUpdater bookMetadataUpdater;
@@ -52,6 +53,10 @@ class BookMetadataUpdaterCategoryTest {
         AppSettings appSettings = new AppSettings();
         appSettings.setMetadataPersistenceSettings(new MetadataPersistenceSettings());
         lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        // Custom fields are not part of these tests; keep behavior neutral.
+        lenient().when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(false);
+        lenient().when(customFieldValueService.applyCustomFields(any(), any())).thenReturn(false);
 
         lenient().when(categoryRepository.findByName(anyString())).thenAnswer(invocation -> {
             String name = invocation.getArgument(0);

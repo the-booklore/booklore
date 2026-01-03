@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.file;
 
+import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,9 @@ class FileMoveHelperTest {
     @Mock
     private AppSettingService appSettingService;
 
+    @Mock
+    private BookMetadataMapper bookMetadataMapper;
+
     private FileMoveHelper fileMoveHelper;
 
     @TempDir
@@ -39,7 +43,7 @@ class FileMoveHelperTest {
 
     @BeforeEach
     void setUp() {
-        fileMoveHelper = new FileMoveHelper(monitoringRegistrationService, appSettingService);
+        fileMoveHelper = new FileMoveHelper(monitoringRegistrationService, appSettingService, bookMetadataMapper);
     }
 
     @Nested

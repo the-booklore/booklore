@@ -41,16 +41,20 @@ public class LibraryTestBuilderAssert extends AbstractAssert<LibraryTestBuilderA
                 .describedAs("Book with title '%s' should exist", bookTitle)
                 .isNotNull();
 
-        Assertions.assertThat(book.getAdditionalFiles()
-                    .stream()
-                    .filter(a -> a.getAdditionalFileType() == AdditionalFileType.ALTERNATIVE_FORMAT)
-                    .map(BookAdditionalFileEntity::getFileName)
-                    .map(BookFileExtension::fromFileName)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .map(BookFileExtension::getType))
-                .describedAs("Book '%s' should have additional formats: %s", bookTitle, additionalFormatTypes)
-                .containsExactlyInAnyOrder(additionalFormatTypes);
+        var additionalFormatFileNames = book.getAdditionalFiles()
+            .stream()
+            .filter(a -> a.getAdditionalFileType() == AdditionalFileType.ALTERNATIVE_FORMAT)
+            .map(BookAdditionalFileEntity::getFileName)
+            .toList();
+
+        Assertions.assertThat(additionalFormatFileNames
+                .stream()
+                .map(BookFileExtension::fromFileName)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(BookFileExtension::getType))
+            .describedAs("Book '%s' should have additional formats: %s (actual files: %s)", bookTitle, additionalFormatTypes, additionalFormatFileNames)
+            .containsExactlyInAnyOrder(additionalFormatTypes);
 
         return this;
     }
