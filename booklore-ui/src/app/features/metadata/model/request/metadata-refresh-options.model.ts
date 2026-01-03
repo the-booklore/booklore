@@ -33,6 +33,7 @@ export interface FieldOptions {
   asin: FieldProvider;
   goodreadsId: FieldProvider;
   comicvineId: FieldProvider;
+  koboId: FieldProvider;
   hardcoverId: FieldProvider;
   googleId: FieldProvider;
   lubimyczytacId: FieldProvider;

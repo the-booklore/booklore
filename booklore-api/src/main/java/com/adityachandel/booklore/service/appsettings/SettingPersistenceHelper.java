@@ -99,12 +99,24 @@ public class SettingPersistenceHelper {
         MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
         defaultDouban.setEnabled(false);
 
+        MetadataProviderSettings.Lubimyczytac defaultLubimyczytac = new MetadataProviderSettings.Lubimyczytac();
+        defaultLubimyczytac.setEnabled(false);
+
+        MetadataProviderSettings.Kobo defaultKobo = new MetadataProviderSettings.Kobo();
+        defaultKobo.setEnabled(false);
+        defaultKobo.setCountry("us");
+        defaultKobo.setLanguage("en");
+        defaultKobo.setMaxResults(5);
+        defaultKobo.setResizeCover(true);
+
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
         defaultMetadataProviderSettings.setDouban(defaultDouban);
+        defaultMetadataProviderSettings.setLubimyczytac(defaultLubimyczytac);
+        defaultMetadataProviderSettings.setKobo(defaultKobo);
 
         return defaultMetadataProviderSettings;
     }
@@ -136,6 +148,7 @@ public class SettingPersistenceHelper {
                 .asin(nullProvider)
                 .goodreadsId(nullProvider)
                 .comicvineId(nullProvider)
+                .koboId(nullProvider)
                 .hardcoverId(nullProvider)
                 .googleId(nullProvider)
                 .amazonRating(nullProvider)
@@ -167,6 +180,7 @@ public class SettingPersistenceHelper {
                 .asin(true)
                 .goodreadsId(true)
                 .comicvineId(true)
+                .koboId(true)
                 .hardcoverId(true)
                 .googleId(true)
                 .amazonRating(true)

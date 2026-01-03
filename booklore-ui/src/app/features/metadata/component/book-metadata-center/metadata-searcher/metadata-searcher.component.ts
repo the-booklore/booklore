@@ -191,6 +191,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       return `<a href="https://book.douban.com/subject/${metadata['doubanId']}" target="_blank">Douban</a>`;
     } else if (metadata['lubimyczytacId']) {
       return `<a href="https://lubimyczytac.pl/ksiazka/${metadata['lubimyczytacId']}" target="_blank">Lubimyczytac</a>`;
+    } else if (metadata['koboId']) {
+      return `<a href="https://www.kobo.com/us/en/ebook/${metadata['koboId']}" target="_blank">Kobo</a>`;
     } else if (metadata.comicvineId) {
       if (metadata.comicvineId.startsWith('4000')) {
         const name = metadata.seriesName ? metadata.seriesName.replace(/ /g, '-').toLowerCase() + "-" + metadata.seriesNumber : '';

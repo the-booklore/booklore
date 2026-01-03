@@ -77,6 +77,11 @@ export class MetadataProviderSettingsComponent implements OnInit {
   comicvineToken: string = '';
   doubanEnabled: boolean = false;
   lubimyCzytacEnabled: boolean = false;
+  koboEnabled: boolean = false;
+  koboCountry: string = 'us';
+  koboLanguage: string = 'en';
+  koboMaxResults: number = 5;
+  koboResizeCover: boolean = true;
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -103,6 +108,11 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.comicvineToken = metadataProviderSettings?.comicvine?.apiKey ?? '';
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
         this.lubimyCzytacEnabled = metadataProviderSettings?.lubimyczytac?.enabled ?? false;
+        this.koboEnabled = metadataProviderSettings?.kobo?.enabled ?? false;
+        this.koboCountry = metadataProviderSettings?.kobo?.country ?? 'us';
+        this.koboLanguage = metadataProviderSettings?.kobo?.language ?? 'en';
+        this.koboMaxResults = metadataProviderSettings?.kobo?.maxResults ?? 5;
+        this.koboResizeCover = metadataProviderSettings?.kobo?.resizeCover ?? true;
       });
   }
 
@@ -144,6 +154,13 @@ export class MetadataProviderSettingsComponent implements OnInit {
           hardcover: {
             enabled: this.hardcoverEnabled,
             apiKey: this.hardcoverToken.trim()
+          },
+          kobo: {
+            enabled: this.koboEnabled,
+            country: this.koboCountry?.trim() || 'us',
+            language: this.koboLanguage?.trim() || 'en',
+            maxResults: Number(this.koboMaxResults) || 5,
+            resizeCover: this.koboResizeCover
           },
           douban: {enabled: this.doubanEnabled},
           lubimyczytac: {enabled: this.lubimyCzytacEnabled}

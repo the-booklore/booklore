@@ -51,6 +51,7 @@ export interface MetadataProviderSettings {
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
+  kobo: Kobo;
   lubimyczytac: Lubimyczytac;
 }
 
@@ -85,6 +86,14 @@ export interface Douban {
 
 export interface Lubimyczytac {
   enabled: boolean;
+}
+
+export interface Kobo {
+  enabled: boolean;
+  country: string;
+  language: string;
+  maxResults: number;
+  resizeCover: boolean;
 }
 
 export interface MetadataPersistenceSettings {

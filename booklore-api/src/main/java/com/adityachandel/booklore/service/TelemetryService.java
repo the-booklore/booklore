@@ -163,6 +163,8 @@ public class TelemetryService {
             enabled.add(MetadataProvider.Douban.name());
         if (providers.getLubimyczytac() != null && providers.getLubimyczytac().isEnabled())
             enabled.add(MetadataProvider.Lubimyczytac.name());
+        if (providers.getKobo() != null && providers.getKobo().isEnabled())
+            enabled.add(MetadataProvider.Kobo.name());
         return enabled.toArray(new String[0]);
     }
 

@@ -34,6 +34,7 @@ public class MetadataChangeDetector {
         compare(changes, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()), newMeta.getAsinLocked(), existingMeta.getAsinLocked());
         compare(changes, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()), newMeta.getGoodreadsIdLocked(), existingMeta.getGoodreadsIdLocked());
         compare(changes, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()), newMeta.getComicvineIdLocked(), existingMeta.getComicvineIdLocked());
+        compare(changes, "koboId", clear.isKoboId(), newMeta.getKoboId(), existingMeta.getKoboId(), () -> !isTrue(existingMeta.getKoboIdLocked()), newMeta.getKoboIdLocked(), existingMeta.getKoboIdLocked());
         compare(changes, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()), newMeta.getHardcoverIdLocked(), existingMeta.getHardcoverIdLocked());
         compare(changes, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()), newMeta.getHardcoverBookIdLocked(), existingMeta.getHardcoverBookIdLocked());
         compare(changes, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()), newMeta.getGoogleIdLocked(), existingMeta.getGoogleIdLocked());
@@ -77,6 +78,7 @@ public class MetadataChangeDetector {
         compareValue(diffs, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()));
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
+        compareValue(diffs, "koboId", clear.isKoboId(), newMeta.getKoboId(), existingMeta.getKoboId(), () -> !isTrue(existingMeta.getKoboIdLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
@@ -112,6 +114,7 @@ public class MetadataChangeDetector {
         compareValue(diffs, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()));
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
+        compareValue(diffs, "koboId", clear.isKoboId(), newMeta.getKoboId(), existingMeta.getKoboId(), () -> !isTrue(existingMeta.getKoboIdLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));

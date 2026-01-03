@@ -11,6 +11,7 @@ public class MetadataProviderSettings {
     private Hardcover hardcover;
     private Comicvine comicvine;
     private Douban douban;
+    private Kobo kobo;
     @JsonProperty("lubimyczytac")
     private Lubimyczytac lubimyczytac;
 
@@ -52,5 +53,14 @@ public class MetadataProviderSettings {
     @Data
     public static class Lubimyczytac {
         private boolean enabled;
+    }
+
+    @Data
+    public static class Kobo {
+        private boolean enabled;
+        private String country;
+        private String language;
+        private Integer maxResults;
+        private Boolean resizeCover;
     }
 }

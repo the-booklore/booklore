@@ -149,6 +149,49 @@
     <div class="provider-item">
       <div class="provider-control">
         <div class="provider-info">
+          <p-checkbox [(ngModel)]="koboEnabled" [binary]="true"></p-checkbox>
+          <label class="provider-label">Kobo</label>
+        </div>
+      </div>
+
+      <div class="provider-config">
+        <div class="config-field">
+          <label class="config-label">Country</label>
+          <input
+            type="text"
+            pInputText
+            placeholder="us"
+            class="config-input max-w-[12rem]"
+            [(ngModel)]="koboCountry"/>
+        </div>
+        <div class="config-field">
+          <label class="config-label">Language</label>
+          <input
+            type="text"
+            pInputText
+            placeholder="en"
+            class="config-input max-w-[12rem]"
+            [(ngModel)]="koboLanguage"/>
+        </div>
+        <div class="config-field">
+          <label class="config-label">Max Results</label>
+          <input
+            type="number"
+            pInputText
+            min="1"
+            class="config-input max-w-[12rem]"
+            [(ngModel)]="koboMaxResults"/>
+        </div>
+        <div class="config-field inline-flex items-center gap-2">
+          <p-checkbox [(ngModel)]="koboResizeCover" [binary]="true"></p-checkbox>
+          <label class="config-label mb-0">Request high-res covers</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="provider-item">
+      <div class="provider-control">
+        <div class="provider-info">
           <p-checkbox [(ngModel)]="lubimyCzytacEnabled" [binary]="true"></p-checkbox>
           <label class="provider-label">Lubimyczytac</label>
         </div>

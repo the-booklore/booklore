@@ -49,6 +49,7 @@ public class MetadataRefreshOptions {
         private FieldProvider asin;
         private FieldProvider goodreadsId;
         private FieldProvider comicvineId;
+        private FieldProvider koboId;
         private FieldProvider hardcoverId;
         private FieldProvider googleId;
         private FieldProvider amazonRating;
@@ -97,6 +98,7 @@ public class MetadataRefreshOptions {
         private boolean asin;
         private boolean goodreadsId;
         private boolean comicvineId;
+        private boolean koboId;
         private boolean hardcoverId;
         private boolean googleId;
         private boolean amazonRating;

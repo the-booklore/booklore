@@ -46,6 +46,7 @@ public class BookMetadata {
     private Double lubimyczytacRating;
     private String googleId;
     private String lubimyczytacId;
+    private String koboId;
     private Instant coverUpdatedOn;
     private Set<String> authors;
     private Set<String> categories;
@@ -80,6 +81,7 @@ public class BookMetadata {
     private Boolean goodreadsReviewCountLocked;
     private Boolean hardcoverRatingLocked;
     private Boolean hardcoverReviewCountLocked;
+    private Boolean koboIdLocked;
     private Boolean doubanRatingLocked;
     private Boolean doubanReviewCountLocked;
     private Boolean lubimyczytacIdLocked;

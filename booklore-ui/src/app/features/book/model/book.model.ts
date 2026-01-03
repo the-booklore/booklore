@@ -92,6 +92,7 @@ export interface BookMetadata {
   hardcoverId?: string;
   hardcoverBookId?: number | null;
   googleId?: string;
+  koboId?: string;
   pageCount?: number | null;
   language?: string;
   rating?: number | null;
@@ -129,6 +130,7 @@ export interface BookMetadata {
   hardcoverIdLocked?: boolean;
   hardcoverBookIdLocked?: boolean;
   googleIdLocked?: boolean;
+  koboIdLocked?: boolean;
   pageCountLocked?: boolean;
   languageLocked?: boolean;
   amazonRatingLocked?: boolean;
@@ -163,6 +165,7 @@ export interface MetadataClearFlags {
   asin?: boolean;
   goodreadsId?: boolean;
   comicvineId?: boolean;
+  koboId?: boolean;
   hardcoverId?: boolean;
   hardcoverBookId?: boolean;
   googleId?: boolean;
