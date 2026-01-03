@@ -19,7 +19,6 @@ import {StatsComponent} from './features/stats/component/stats-component';
 import {EpubReaderComponent} from './features/readers/epub-reader/component/epub-reader.component';
 import {PdfReaderComponent} from './features/readers/pdf-reader/pdf-reader.component';
 import {BookdropFileReviewComponent} from './features/bookdrop/component/bookdrop-file-review/bookdrop-file-review.component';
-import {ManageLibraryGuard} from './core/security/guards/manage-library.guard';
 import {LoginGuard} from './shared/components/setup/login.guard';
 import {UserStatsComponent} from './features/stats/component/user-stats/user-stats.component';
 import {BookdropGuard} from './core/security/guards/bookdrop.guard';

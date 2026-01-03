@@ -11,6 +11,7 @@ import {BookService} from '../../../book/service/book.service';
 import {Book, BulkMetadataUpdateRequest} from '../../../book/model/book.model';
 import {Checkbox} from 'primeng/checkbox';
 import {AutoComplete} from 'primeng/autocomplete';
+import {AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {filter, take} from "rxjs/operators";
 
@@ -181,10 +182,10 @@ export class BulkMetadataUpdateComponent implements OnInit {
     }
   }
 
-  onAutoCompleteSelect(fieldName: string, event: any) {
-    const values = this.metadataForm.get(fieldName)?.value || [];
-    if (!values.includes(event.value)) {
-      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+  onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
+    const values = (this.metadataForm.get(fieldName)?.value as string[]) || [];
+    if (!values.includes(event.value as string)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value as string]);
     }
     (event.originalEvent.target as HTMLInputElement).value = "";
   }

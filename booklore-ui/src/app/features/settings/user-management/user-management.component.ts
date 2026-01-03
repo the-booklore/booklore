@@ -5,6 +5,12 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
 import {User, UserService} from './user.service';
+
+interface UserWithEditing extends User {
+  isEditing?: boolean;
+  selectedLibraryIds?: number[];
+  libraryNames?: string;
+}
 import {MessageService} from 'primeng/api';
 import {Checkbox} from 'primeng/checkbox';
 import {MultiSelect} from 'primeng/multiselect';
@@ -43,7 +49,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private readonly destroy$ = new Subject<void>();
 
-  users: User[] = [];
+  users: UserWithEditing[] = [];
   currentUser: User | null = null;
   editingLibraryIds: number[] = [];
   allLibraries: Library[] = [];
@@ -91,7 +97,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         this.users = data.map((user) => ({
           ...user,
           isEditing: false,
-          selectedLibraryIds: user.assignedLibraries?.map((lib) => lib.id) || [],
+          selectedLibraryIds: user.assignedLibraries?.map((lib) => lib.id!).filter(id => id !== undefined) as number[] || [],
           libraryNames:
             user.assignedLibraries?.map((lib) => lib.name).join(', ') || '',
         }));
@@ -115,10 +121,10 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleEdit(user: any) {
+  toggleEdit(user: UserWithEditing) {
     user.isEditing = !user.isEditing;
     if (user.isEditing) {
-      this.editingLibraryIds = [...user.selectedLibraryIds];
+      this.editingLibraryIds = [...(user.selectedLibraryIds || [])];
     } else {
       user.libraryNames =
         user.assignedLibraries
@@ -127,14 +133,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  saveUser(user: any) {
+  saveUser(user: UserWithEditing) {
     user.selectedLibraryIds = [...this.editingLibraryIds];
     this.userService
       .updateUser(user.id, {
         name: user.name,
         email: user.email,
         permissions: user.permissions,
-        assignedLibraries: user.selectedLibraryIds,
+        assignedLibraries: this.allLibraries.filter(lib => lib.id && user.selectedLibraryIds?.includes(lib.id)),
       })
       .subscribe({
         next: () => {
@@ -291,7 +297,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     return this.expandedRows[user.id];
   }
 
-  onAdminCheckboxChange(user: any) {
+  onAdminCheckboxChange(user: User) {
     if (user.permissions.admin) {
       user.permissions.canUpload = true;
       user.permissions.canDownload = true;
@@ -322,7 +328,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  isPermissionDisabled(user: any): boolean {
+  isPermissionDisabled(user: UserWithEditing): boolean {
     return !user.isEditing || user.permissions.admin;
   }
 }

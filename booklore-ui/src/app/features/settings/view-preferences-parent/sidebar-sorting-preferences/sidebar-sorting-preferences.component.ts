@@ -56,7 +56,7 @@ export class SidebarSortingPreferencesComponent implements OnInit, OnDestroy {
     this.selectedMagicShelfSorting = settings.sidebarMagicShelfSorting;
   }
 
-  private updatePreference(path: string[], value: any): void {
+  private updatePreference(path: string[], value: unknown): void {
     if (!this.currentUser) return;
     let target: any = this.currentUser.userSettings;
     for (let i = 0; i < path.length - 1; i++) {

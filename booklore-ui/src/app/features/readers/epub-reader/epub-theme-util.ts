@@ -1,3 +1,26 @@
+interface EpubThemeObject {
+  body?: Record<string, string>;
+  p?: Record<string, string>;
+  'h1, h2, h3, h4, h5, h6'?: Record<string, string>;
+  a?: Record<string, string>;
+  img?: Record<string, string>;
+  code?: Record<string, string>;
+  '*'?: Record<string, string>;
+  [key: string]: Record<string, string> | undefined;
+}
+
+interface EpubRenditionThemes {
+  register(name: string, theme: EpubThemeObject): void;
+  select(name: string): void;
+}
+
+interface EpubRenditionMinimal {
+  themes: {
+    register(name: string, theme: Record<string, Record<string, string>>): void;
+    select(name: string): void;
+  };
+}
+
 export enum EpubTheme {
   WHITE = 'white',
   BLACK = 'black',
@@ -17,7 +40,7 @@ export enum EpubTheme {
 }
 
 export class EpubThemeUtil {
-  static readonly themesMap = new Map<string, any>([
+  static readonly themesMap = new Map<string, EpubThemeObject>([
     [EpubTheme.BLACK, {
       "body": {"background-color": "#000000", "color": "#f9f9f9"},
       "p": {"color": "#f9f9f9"},
@@ -177,27 +200,27 @@ export class EpubThemeUtil {
     }
   }
 
-  static applyTheme(rendition: any, themeKey: string, fontFamily?: string, fontSize?: number, lineHeight?: number, letterSpacing?: number): void {
+  static applyTheme(rendition: EpubRenditionMinimal, themeKey: string, fontFamily?: string, fontSize?: number, lineHeight?: number, letterSpacing?: number): void {
     if (!rendition) return;
 
-    const baseTheme = this.themesMap.get(themeKey ?? 'black') ?? {};
-    const combined = {
+    const baseTheme = this.themesMap.get(themeKey ?? 'black') as EpubThemeObject ?? {};
+    const combined: EpubThemeObject = {
       ...baseTheme,
       body: {
-        ...baseTheme.body,
-        'font-family': fontFamily,
+        ...(baseTheme.body || {}),
+        ...(fontFamily && { 'font-family': fontFamily }),
         'font-size': `${fontSize ?? 100}%`,
-        'line-height': lineHeight,
-        'letter-spacing': `${letterSpacing}em`
+        ...(lineHeight && { 'line-height': lineHeight.toString() }),
+        'letter-spacing': `${letterSpacing ?? 0}em`
       },
       '*': {
-        ...baseTheme['*'],
-        'line-height': lineHeight,
-        'letter-spacing': `${letterSpacing}em`
+        ...(baseTheme['*'] || {}),
+        ...(lineHeight && { 'line-height': lineHeight.toString() }),
+        'letter-spacing': `${letterSpacing ?? 0}em`
       }
     };
 
-    rendition.themes.register('custom', combined);
+    rendition.themes.register('custom', combined as Record<string, Record<string, string>>);
     rendition.themes.select('custom');
   }
 }

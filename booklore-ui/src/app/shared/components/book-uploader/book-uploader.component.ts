@@ -144,13 +144,20 @@ export class BookUploaderComponent implements OnInit {
     if (filesToUpload.length === 0) return;
 
     this.isUploading = true;
-    this.uploadBatch(filesToUpload, 0, 5);
+    const destination = this.value;
+    const libraryId = this.selectedLibrary?.id?.toString();
+    const pathId = this.selectedPath?.id?.toString();
+
+    this.uploadBatch(filesToUpload, 0, 1, destination, libraryId, pathId);
   }
 
-  private uploadBatch(files: UploadingFile[], startIndex: number, batchSize: number): void {
+  private uploadBatch(files: UploadingFile[], startIndex: number, batchSize: number, destination: string, libraryId?: string, pathId?: string): void {
     const batch = files.slice(startIndex, startIndex + batchSize);
     if (batch.length === 0) {
       this.isUploading = false;
+      if (destination === 'bookdrop') {
+        this.ref.close('uploaded_to_bookdrop');
+      }
       return;
     }
 
@@ -160,14 +167,16 @@ export class BookUploaderComponent implements OnInit {
       uploadFile.status = 'Uploading';
 
       const formData = new FormData();
-      formData.append('file', uploadFile.file);
+      // Reconstruct the file to ensure strict type and name handling
+      const cleanFile = new File([uploadFile.file], uploadFile.file.name, {type: uploadFile.file.type});
+      formData.append('file', cleanFile, uploadFile.file.name);
 
       let uploadUrl: string;
-      if (this.value === 'library') {
-        const libraryId = this.selectedLibrary!.id!.toString();
-        const pathId = this.selectedPath!.id!.toString();
-        formData.append('libraryId', libraryId);
-        formData.append('pathId', pathId);
+      if (destination === 'library') {
+        if (libraryId && pathId) {
+          formData.append('libraryId', libraryId);
+          formData.append('pathId', pathId);
+        }
         uploadUrl = `${API_CONFIG.BASE_URL}/api/v1/files/upload`;
       } else {
         uploadUrl = `${API_CONFIG.BASE_URL}/api/v1/files/upload/bookdrop`;
@@ -177,7 +186,9 @@ export class BookUploaderComponent implements OnInit {
         next: () => {
           uploadFile.status = 'Uploaded';
           if (--pending === 0) {
-            this.uploadBatch(files, startIndex + batchSize, batchSize);
+            setTimeout(() => {
+              this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
+            }, 1000);
           }
         },
         error: (err) => {
@@ -185,7 +196,9 @@ export class BookUploaderComponent implements OnInit {
           uploadFile.errorMessage = err?.error?.message || 'Upload failed due to unknown error.';
           console.error('Upload failed for', uploadFile.file.name, err);
           if (--pending === 0) {
-            this.uploadBatch(files, startIndex + batchSize, batchSize);
+            setTimeout(() => {
+              this.uploadBatch(files, startIndex + batchSize, batchSize, destination, libraryId, pathId);
+            }, 1000);
           }
         }
       });

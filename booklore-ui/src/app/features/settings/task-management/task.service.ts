@@ -66,7 +66,7 @@ export interface CronConfig {
   taskType: string;
   cronExpression: string | null;
   enabled: boolean;
-  options: Record<string, any> | null;
+  options: Record<string, unknown> | null;
   createdAt: string | null;
   updatedAt: string | null;
 }

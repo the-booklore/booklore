@@ -92,7 +92,7 @@ export class AppSettingsService {
     }
   }
 
-  saveSettings(settings: { key: string; newValue: any }[]): Observable<void> {
+  saveSettings(settings: { key: string; newValue: unknown }[]): Observable<void> {
     const payload = settings.map(setting => ({
       name: setting.key,
       value: setting.newValue

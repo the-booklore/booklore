@@ -48,6 +48,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+  [key: string]: unknown;
 }
 
 export interface EpubProgress {
