@@ -369,6 +369,8 @@ public class MetadataRefreshService {
             case Hardcover -> settings.getHardcover() != null && settings.getHardcover().isEnabled();
             case Comicvine -> settings.getComicvine() != null && settings.getComicvine().isEnabled();
             case Douban -> settings.getDouban() != null && settings.getDouban().isEnabled();
+            case Kobo -> settings.getKobo() != null && settings.getKobo().isEnabled();
+            case Lubimyczytac -> settings.getLubimyczytac() != null && settings.getLubimyczytac().isEnabled();
             default -> true;
         };
     }
@@ -495,6 +497,11 @@ public class MetadataRefreshService {
             if (metadataMap.containsKey(Hardcover)) {
                 metadata.setHardcoverId(metadataMap.get(Hardcover).getHardcoverId());
                 metadata.setHardcoverBookId(metadataMap.get(Hardcover).getHardcoverBookId());
+            }
+        }
+        if (enabledFields.isKoboId()) {
+            if (metadataMap.containsKey(Kobo)) {
+                metadata.setKoboId(metadataMap.get(Kobo).getKoboId());
             }
         }
         if (enabledFields.isGoogleId()) {
