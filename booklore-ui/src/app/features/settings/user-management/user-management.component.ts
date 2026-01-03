@@ -53,7 +53,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   editingLibraryIds: number[] = [];
   allLibraries: Library[] = [];
-  expandedRows: { [key: string]: boolean } = {};
+  expandedRows: Record<string, boolean> = {};
 
   isPasswordDialogVisible = false;
   selectedUser: User | null = null;

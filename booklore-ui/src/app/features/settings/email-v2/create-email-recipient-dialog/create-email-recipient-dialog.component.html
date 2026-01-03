@@ -35,7 +35,7 @@
             class="input-full"
             placeholder="Enter recipient name..."
             [class.filled]="emailRecipientForm.get('name')?.value"
-            autofocus
+           
           />
           @if (emailRecipientForm.get('name')?.value && emailRecipientForm.get('name')?.valid) {
             <i class="pi pi-check-circle input-icon success"></i>

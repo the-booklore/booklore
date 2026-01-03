@@ -439,7 +439,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   }
 
   assignShelf(bookId: number) {
-    this.bookDialogHelperService.openShelfAssignerDialog(<Book>this.bookService.getBookByIdFromState(bookId), null);
+    this.bookDialogHelperService.openShelfAssignerDialog((this.bookService.getBookByIdFromState(bookId) as Book), null);
   }
 
   updateReadStatus(status: ReadStatus): void {

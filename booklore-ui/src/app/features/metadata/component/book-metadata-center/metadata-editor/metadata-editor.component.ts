@@ -595,7 +595,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    let metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
+    const metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
     this.bookService
       .updateBookMetadata(this.currentBookId, metadataUpdateWrapper, false)
       .subscribe({

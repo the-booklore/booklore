@@ -37,7 +37,7 @@ export class DirectoryPickerComponent implements OnInit {
   filteredPaths: string[] = [];
   selectedProductName: string = '';
   selectedFolders: string[] = [];
-  selectedFoldersMap: { [key: string]: boolean } = {};
+  selectedFoldersMap: Record<string, boolean> = {};
   searchQuery: string = '';
   isLoading: boolean = false;
   breadcrumbItems: MenuItem[] = [];
