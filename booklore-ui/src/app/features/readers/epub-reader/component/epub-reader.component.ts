@@ -228,6 +228,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
 
+    if (this.rendition) {
+      this.rendition.destroy();
+      this.rendition = null;
+    }
+
     this.initBook(locations);
     this.initRendition(cfi);
     this.updateViewerSetting();
@@ -238,6 +243,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
+
+    if (this.rendition) {
+      this.rendition.destroy();
+      this.rendition = null;
+    }
 
     this.initBook(locations);
     this.initRendition(cfi);
