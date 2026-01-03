@@ -130,15 +130,15 @@ export class EpubReaderPreferencesComponent implements OnInit {
 
       this.userSettings.epubReaderSetting.customFontId = fontId;
       this.userSettings.epubReaderSetting.font = value;
+      // Single API call for both customFontId and font
       this.readerPreferencesService.updatePreference(['epubReaderSetting', 'customFontId'], fontId);
-      this.readerPreferencesService.updatePreference(['epubReaderSetting', 'font'], value);
     } else {
       // Clear customFontId for non-custom fonts
       this.userSettings.epubReaderSetting.customFontId = null;
       if (typeof value === "string") {
         this.userSettings.epubReaderSetting.font = value;
       }
-      this.readerPreferencesService.updatePreference(['epubReaderSetting', 'customFontId'], null);
+      // Single API call for both customFontId and font
       this.readerPreferencesService.updatePreference(['epubReaderSetting', 'font'], value);
     }
   }
