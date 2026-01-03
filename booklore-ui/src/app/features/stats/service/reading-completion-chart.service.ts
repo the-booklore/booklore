@@ -4,7 +4,8 @@ import {catchError, filter, first, map, switchMap, takeUntil} from 'rxjs/operato
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book, ReadStatus} from '../../book/model/book.model';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {BookState} from '../../book/model/state/book-state.model';
+import {ChartConfiguration, ChartData, TooltipItem} from 'chart.js';
 
 interface CompletionStats {
   category: string;
@@ -216,8 +217,16 @@ export class ReadingCompletionChartService implements OnDestroy {
     return this.processCompletionStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
@@ -269,7 +278,7 @@ export class ReadingCompletionChartService implements OnDestroy {
     ).join(' ');
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<'bar'>): string {
     const dataIndex = context.dataIndex;
     const stats = this.getLastCalculatedStats();
 

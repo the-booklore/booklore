@@ -484,7 +484,7 @@ export class BookService {
           for (const [field, action] of Object.entries(fieldActions)) {
             const lockField = field.endsWith('Locked') ? field : `${field}Locked`;
             if (lockField in updatedMetadata) {
-              (updatedMetadata as any)[lockField] = action === 'LOCK';
+              (updatedMetadata as Record<string, unknown>)[lockField] = action === 'LOCK';
             }
           }
           return {
@@ -508,7 +508,7 @@ export class BookService {
     );
   }
 
-  consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<any> {
+  consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<unknown> {
     const payload = {metadataType, targetValues, valuesToMerge};
     return this.http.post(`${this.url}/metadata/manage/consolidate`, payload).pipe(
       tap(() => {
@@ -517,7 +517,7 @@ export class BookService {
     );
   }
 
-  deleteMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', valuesToDelete: string[]): Observable<any> {
+  deleteMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', valuesToDelete: string[]): Observable<unknown> {
     const payload = {metadataType, valuesToDelete};
     return this.http.post(`${this.url}/metadata/manage/delete`, payload).pipe(
       tap(() => {

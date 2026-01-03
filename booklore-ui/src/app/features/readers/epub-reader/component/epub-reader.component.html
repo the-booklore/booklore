@@ -1,11 +1,9 @@
-<div #epubContainer class="epub-viewer-container">
+<div class="epub-viewer-container">
   @if (isLoading) {
     <div class="spinner-wrapper">
       <p-progressSpinner></p-progressSpinner>
     </div>
   }
-  @if (!isLoading) {
-    <div>
       @if (isDrawerVisible) {
         <div class="drawer-backdrop" (click)="isDrawerVisible = false; startHeaderAutoHide()"></div>
       }
@@ -302,8 +300,6 @@
       @if (selectedFlow !== 'scrolled') {
         <button class="epub-controls-right" [class.visible]="showControls" [class.dark-theme]="selectedTheme === 'black' || selectedTheme === 'grey'" (click)="nextPage(); onBookTouch()">→</button>
       }
-    </div>
-  }
 </div>
 <app-bookmark-edit-dialog
   [(visible)]="showEditBookmarkDialog"
