@@ -59,6 +59,7 @@ public class KoboParser implements BookParser {
             return List.of();
         }
 
+        boolean usedIsbn = StringUtils.hasText(fetchMetadataRequest.getIsbn());
         String country = defaultIfBlank(koboSettings.getCountry(), DEFAULT_COUNTRY);
         String language = defaultIfBlank(koboSettings.getLanguage(), DEFAULT_LANGUAGE);
         int maxResults = Optional.ofNullable(koboSettings.getMaxResults()).filter(v -> v > 0).orElse(DEFAULT_MAX_RESULTS);
@@ -66,6 +67,13 @@ public class KoboParser implements BookParser {
 
         try {
             List<String> bookUrls = performQuery(query, country, language, maxResults);
+            if (bookUrls.isEmpty() && usedIsbn) {
+                String fallbackQuery = buildQueryWithoutIsbn(fetchMetadataRequest);
+                if (StringUtils.hasText(fallbackQuery)) {
+                    log.debug("No Kobo results for ISBN query '{}', retrying with '{}'", query, fallbackQuery);
+                    bookUrls = performQuery(fallbackQuery, country, language, maxResults);
+                }
+            }
             List<BookMetadata> results = new ArrayList<>();
             for (String url : bookUrls) {
                 Document doc = fetchDocument(url);
@@ -100,6 +108,19 @@ public class KoboParser implements BookParser {
                 return (request.getTitle().trim() + " " + request.getAuthor().trim()).strip();
             }
             return request.getTitle().trim();
+        }
+        return "";
+    }
+
+    private String buildQueryWithoutIsbn(FetchMetadataRequest request) {
+        if (StringUtils.hasText(request.getTitle())) {
+            if (StringUtils.hasText(request.getAuthor())) {
+                return (request.getTitle().trim() + " " + request.getAuthor().trim()).strip();
+            }
+            return request.getTitle().trim();
+        }
+        if (StringUtils.hasText(request.getAuthor())) {
+            return request.getAuthor().trim();
         }
         return "";
     }
