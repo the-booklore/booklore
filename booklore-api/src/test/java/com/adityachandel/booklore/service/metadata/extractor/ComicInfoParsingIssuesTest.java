@@ -119,18 +119,6 @@ class ComicInfoParsingIssuesTest {
     }
 
     @Test
-    void testComicInfoExtractionFallbackWhenNoComicInfo() throws Exception {
-        File cbz = createCbz("Daredevil_v1964_c001.cbz", new LinkedHashMap<>() {{
-            put("page1.jpg", createTestImage(Color.YELLOW));
-            put("page2.jpg", createTestImage(Color.CYAN));
-        }});
-
-        BookMetadata metadata = extractor.extractMetadata(cbz);
-        
-        assertEquals("Daredevil v1964 c001", metadata.getTitle());
-    }
-
-    @Test
     void testComicInfoWithExtendedFields() throws Exception {
         String xml = "<ComicInfo>" +
                 "  <Title>Daredevil #500</Title>" +

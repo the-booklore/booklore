@@ -51,12 +51,11 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     @Override
   public BookMetadata extractMetadata(File file) {
     String baseName = FilenameUtils.getBaseName(file.getName());
-    String processedBaseName = processFilename(baseName);
     String lowerName = file.getName().toLowerCase();
 
     // Non-archive (fallback)
     if (!lowerName.endsWith(".cbz") && !lowerName.endsWith(".cbr") && !lowerName.endsWith(".cb7")) {
-      return BookMetadata.builder().title(processedBaseName).build();
+      return BookMetadata.builder().title(baseName).build();
     }
 
     // CBZ path (ZIP)
@@ -64,15 +63,15 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       try (ZipFile zipFile = new ZipFile(file)) {
         ZipEntry entry = findComicInfoEntry(zipFile);
         if (entry == null) {
-          return BookMetadata.builder().title(processedBaseName).build();
+          return BookMetadata.builder().title(baseName).build();
         }
         try (InputStream is = zipFile.getInputStream(entry)) {
           Document document = buildSecureDocument(is);
-          return mapDocumentToMetadata(document, processedBaseName);
+          return mapDocumentToMetadata(document, baseName);
         }
       } catch (Exception e) {
         log.warn("Failed to extract metadata from CBZ", e);
-        return BookMetadata.builder().title(processedBaseName).build();
+        return BookMetadata.builder().title(baseName).build();
       }
     }
 
@@ -81,19 +80,19 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       try (SevenZFile sevenZ = SevenZFile.builder().setFile(file).get()) {
         SevenZArchiveEntry entry = findSevenZComicInfoEntry(sevenZ);
         if (entry == null) {
-          return BookMetadata.builder().title(processedBaseName).build();
+          return BookMetadata.builder().title(baseName).build();
         }
         byte[] xmlBytes = readSevenZEntryBytes(sevenZ, entry);
         if (xmlBytes == null) {
-          return BookMetadata.builder().title(processedBaseName).build();
+          return BookMetadata.builder().title(baseName).build();
         }
         try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
           Document document = buildSecureDocument(is);
-          return mapDocumentToMetadata(document, processedBaseName);
+          return mapDocumentToMetadata(document, baseName);
         }
       } catch (Exception e) {
         log.warn("Failed to extract metadata from CB7", e);
-        return BookMetadata.builder().title(processedBaseName).build();
+        return BookMetadata.builder().title(baseName).build();
       }
     }
 
@@ -102,23 +101,23 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
             try {
                 FileHeader header = findComicInfoHeader(archive);
                 if (header == null) {
-                    return BookMetadata.builder().title(processedBaseName).build();
+                    return BookMetadata.builder().title(baseName).build();
                 }
                 byte[] xmlBytes = readRarEntryBytes(archive, header);
                 if (xmlBytes == null) {
-                    return BookMetadata.builder().title(processedBaseName).build();
+                    return BookMetadata.builder().title(baseName).build();
                 }
                 try (InputStream is = new ByteArrayInputStream(xmlBytes)) {
                     Document document = buildSecureDocument(is);
-                    return mapDocumentToMetadata(document, processedBaseName);
+                    return mapDocumentToMetadata(document, baseName);
                 }
             } catch (Exception e) {
                 log.warn("Failed to extract metadata from CBR", e);
-                return BookMetadata.builder().title(processedBaseName).build();
+                return BookMetadata.builder().title(baseName).build();
             }
         } catch (Exception ignore) {
         }
-        return BookMetadata.builder().title(processedBaseName).build();
+        return BookMetadata.builder().title(baseName).build();
   }
 
   private ZipEntry findComicInfoEntry(ZipFile zipFile) {
@@ -806,11 +805,6 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       if (likelyCoverName(baseName(e.getName()))) return e;
     }
     return null;
-  }
-
-  private String processFilename(String baseName) {
-      // Replace underscores and hyphens with spaces
-      return Pattern.compile("[_\\-]").matcher(baseName).replaceAll(" ").trim();
   }
 
   private static boolean isComicInfoName(String name) {
