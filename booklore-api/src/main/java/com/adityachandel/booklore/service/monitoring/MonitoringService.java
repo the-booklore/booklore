@@ -101,6 +101,14 @@ public class MonitoringService {
     }
 
     public synchronized boolean registerPath(Path path, Long libraryId) {
+        if (!Files.exists(path)) {
+            log.warn("Cannot register path that does not exist: {}", path);
+            return false;
+        }
+        if (!Files.isDirectory(path)) {
+            log.warn("Cannot register path that is not a directory: {}", path);
+            return false;
+        }
         try {
             if (monitoredPaths.add(path)) {
                 WatchKey key = path.register(watchService,
@@ -122,6 +130,9 @@ public class MonitoringService {
     }
 
     public synchronized void unregisterPath(Path path, boolean logUnregister) {
+        if (!Files.exists(path)) {
+            log.debug("Path does not exist, removing from monitoring if present: {}", path);
+        }
         if (monitoredPaths.remove(path)) {
             WatchKey key = registeredWatchKeys.remove(path);
             if (key != null) key.cancel();

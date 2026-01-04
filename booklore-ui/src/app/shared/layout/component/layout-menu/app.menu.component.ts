@@ -12,6 +12,7 @@ import {AppVersion, VersionService} from '../../../service/version.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {MagicShelfService, MagicShelfState} from '../../../../features/magic-shelf/service/magic-shelf.service';
+import {MenuItem} from 'primeng/api';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 
 @Component({
@@ -21,10 +22,10 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
   templateUrl: './app.menu.component.html',
 })
 export class AppMenuComponent implements OnInit {
-  libraryMenu$: Observable<any> | undefined;
-  shelfMenu$: Observable<any> | undefined;
-  homeMenu$: Observable<any> | undefined;
-  magicShelfMenu$: Observable<any> | undefined;
+  libraryMenu$: Observable<MenuItem[]> | undefined;
+  shelfMenu$: Observable<MenuItem[]> | undefined;
+  homeMenu$: Observable<MenuItem[]> | undefined;
+  magicShelfMenu$: Observable<MenuItem[]> | undefined;
 
   versionInfo: AppVersion | null = null;
   dynamicDialogRef: DynamicDialogRef | undefined | null;
@@ -216,8 +217,8 @@ export class AppMenuComponent implements OnInit {
 
   private sortArray<T>(array: T[], field: 'name' | 'id', order: 'asc' | 'desc'): T[] {
     return [...array].sort((a, b) => {
-      const aVal = (a as any)[field] ?? '';
-      const bVal = (b as any)[field] ?? '';
+      const aVal = (a as Record<string, unknown>)[field] ?? '';
+      const bVal = (b as Record<string, unknown>)[field] ?? '';
       let comparison = 0;
 
       if (typeof aVal === 'string' && typeof bVal === 'string') {

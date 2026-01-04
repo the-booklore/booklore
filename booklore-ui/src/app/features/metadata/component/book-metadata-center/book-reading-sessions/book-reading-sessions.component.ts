@@ -49,7 +49,8 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
       });
   }
 
-  onPageChange(event: any) {
+  onPageChange(event: { first?: number; rows?: number | null }): void {
+    if (event.first === undefined || event.rows === undefined || event.rows === null) return;
     this.first = event.first;
     const page = Math.floor(event.first / event.rows);
     this.loadSessions(page);

@@ -16,7 +16,7 @@ import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService, IconSelection} from '../../../shared/service/icon-picker.service';
-import {CheckboxModule} from "primeng/checkbox";
+import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
 
@@ -79,9 +79,9 @@ type FieldType = 'number' | 'decimal' | 'date' | undefined;
 export interface Rule {
   field: RuleField;
   operator: RuleOperator;
-  value: any;
-  valueStart?: any;
-  valueEnd?: any;
+  value: unknown;
+  valueStart?: unknown;
+  valueEnd?: unknown;
 }
 
 export interface FieldConfig {
@@ -214,7 +214,7 @@ export class MagicShelfComponent implements OnInit {
 
   selectedIcon: IconSelection | null = null;
 
-  trackByFn(ruleCtrl: AbstractControl, index: number): any {
+  trackByFn(ruleCtrl: AbstractControl, index: number): unknown {
     return ruleCtrl;
   }
 
@@ -446,8 +446,9 @@ export class MagicShelfComponent implements OnInit {
     });
   }
 
-  onAutoCompleteBlur(formControl: any, event: any) {
-    const inputValue = event.target.value?.trim();
+  onAutoCompleteBlur(formControl: { value: unknown; setValue: (value: unknown[]) => void }, event: Event) {
+    const target = event.target as HTMLInputElement | null;
+    const inputValue = target?.value?.trim();
     if (inputValue) {
       const currentValue = formControl.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
@@ -457,12 +458,15 @@ export class MagicShelfComponent implements OnInit {
         values.push(inputValue);
         formControl.setValue(values);
       }
-      event.target.value = '';
+      if (target) {
+        target.value = '';
+      }
     }
   }
 
-  onIsPublicChange(event: any) {
-    this.form.get('isPublic')?.setValue(event.checked);
+  onIsPublicChange(event: CheckboxChangeEvent): void {
+    const checked = event.checked ?? false;
+    this.form.get('isPublic')?.setValue(checked);
   }
 
   submit() {

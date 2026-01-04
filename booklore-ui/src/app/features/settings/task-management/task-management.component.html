@@ -76,8 +76,8 @@
                     <i class="pi pi-clock"></i>
                     <span class="cron-label">Scheduled:</span>
                     @if (!isEditingCron(taskInfo.taskType)) {
-                      @if (getCronConfig(taskInfo.taskType).cronExpression) {
-                        <span class="cron-expression">{{ getCronConfig(taskInfo.taskType).cronExpression }}</span>
+                      @if (getCronConfig(taskInfo.taskType)?.cronExpression) {
+                        <span class="cron-expression">{{ getCronConfig(taskInfo.taskType)!.cronExpression }}</span>
                       } @else {
                         <span class="cron-expression empty">Not configured</span>
                       }
@@ -131,7 +131,7 @@
                       </div>
                     }
                     <p-toggleswitch
-                      [ngModel]="getCronConfig(taskInfo.taskType).enabled"
+                      [ngModel]="getCronConfig(taskInfo.taskType)?.enabled ?? false"
                       [disabled]="isEditingCron(taskInfo.taskType) || cronUpdating"
                       (ngModelChange)="toggleCronEnabled(taskInfo.taskType)">
                     </p-toggleswitch>

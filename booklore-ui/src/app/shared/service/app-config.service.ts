@@ -348,7 +348,7 @@ export class AppConfigService {
       }
       this.saveAppState(state);
       this.onPresetChange();
-    }, {allowSignalWrites: true});
+    });
   }
 
   private loadAppState(): AppState {

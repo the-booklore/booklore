@@ -12,6 +12,7 @@ import {UserService} from '../../../../features/settings/user-management/user.se
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
 import {BookDialogHelperService} from '../../../../features/book/components/book-browser/BookDialogHelperService';
 import {IconDisplayComponent} from '../../../components/icon-display/icon-display.component';
+import {MenuItem} from 'primeng/api';
 import {IconSelection} from '../../../service/icon-picker.service';
 
 @Component({

@@ -339,6 +339,8 @@ public class BookService {
             } catch (IOException e) {
                 log.warn("Failed to delete book file: {}", fullFilePath, e);
                 failedFileDeletions.add(book.getId());
+            } finally {
+                monitoringRegistrationService.registerSpecificPath(fullFilePath.getParent(), book.getLibrary().getId());
             }
         }
 

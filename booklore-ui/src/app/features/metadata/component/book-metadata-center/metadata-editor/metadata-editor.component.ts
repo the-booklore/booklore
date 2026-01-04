@@ -17,6 +17,7 @@ import {filter, take, finalize} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete} from "primeng/autocomplete";
+import {AutoCompleteSelectEvent} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
@@ -383,10 +384,10 @@ export class MetadataEditorComponent implements OnInit {
     }
   }
 
-  onAutoCompleteSelect(fieldName: string, event: any) {
-    const values = this.metadataForm.get(fieldName)?.value || [];
-    if (!values.includes(event.value)) {
-      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+  onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
+    const values = (this.metadataForm.get(fieldName)?.value as string[]) || [];
+    if (!values.includes(event.value as string)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value as string]);
     }
     (event.originalEvent.target as HTMLInputElement).value = "";
   }
@@ -550,10 +551,10 @@ export class MetadataEditorComponent implements OnInit {
     const original = this.originalMetadata;
 
     const wasCleared = (key: keyof BookMetadata): boolean => {
-      const current = (metadata[key] as any) ?? null;
-      const prev = (original[key] as any) ?? null;
+      const current = (metadata[key] as unknown) ?? null;
+      const prev = (original[key] as unknown) ?? null;
 
-      const isEmpty = (val: any): boolean =>
+      const isEmpty = (val: unknown): boolean =>
         val === null || val === "" || (Array.isArray(val) && val.length === 0);
 
       return isEmpty(current) && !isEmpty(prev);
@@ -630,8 +631,8 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onUpload(event: FileUploadEvent): void {
-    const response: HttpResponse<any> =
-      event.originalEvent as HttpResponse<any>;
+    const response: HttpResponse<unknown> =
+      event.originalEvent as HttpResponse<unknown>;
     if (response && response.status === 200) {
       const bookMetadata: BookMetadata = response.body as BookMetadata;
       this.bookService.handleBookMetadataUpdate(

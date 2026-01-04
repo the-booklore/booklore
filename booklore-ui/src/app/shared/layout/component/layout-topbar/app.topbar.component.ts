@@ -68,7 +68,7 @@ export class AppTopBarComponent implements OnDestroy {
   hasAnyTasks = false;
   hasPendingBookdropFiles = false;
 
-  private eventTimer: any;
+  private eventTimer: number | undefined;
   private destroy$ = new Subject<void>();
 
   private latestTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
@@ -197,7 +197,7 @@ export class AppTopBarComponent implements OnDestroy {
     clearTimeout(this.eventTimer);
     this.eventTimer = setTimeout(() => {
       this.showPulse = false;
-    }, 4000);
+    }, 4000) as unknown as number;
   }
 
   private updateCompletedTaskCount() {

@@ -311,7 +311,7 @@ export class UserService {
     );
   }
 
-  updateUserSetting(userId: number, key: string, value: any): void {
+  updateUserSetting(userId: number, key: string, value: unknown): void {
     const payload = {
       key,
       value
