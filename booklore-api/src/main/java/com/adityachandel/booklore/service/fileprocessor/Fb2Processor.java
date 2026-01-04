@@ -7,11 +7,11 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.Fb2MetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +38,6 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileService fileService,
-                        BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService,
                         Fb2MetadataExtractor fb2MetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
@@ -51,6 +50,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
         return bookEntity;
     }

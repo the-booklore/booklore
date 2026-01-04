@@ -19,7 +19,8 @@ public class BookEntitlement {
     private ActivePeriod activePeriod;
 
     @JsonProperty("IsRemoved")
-    private boolean isRemoved;
+    @Builder.Default
+    private Boolean removed = false;
 
     private String status;
 
@@ -31,7 +32,7 @@ public class BookEntitlement {
 
     @JsonProperty("IsHiddenFromArchive")
     @Builder.Default
-    private boolean isHiddenFromArchive = false;
+    private boolean hiddenFromArchive = false;
 
     private String id;
     private String created;
@@ -39,7 +40,7 @@ public class BookEntitlement {
 
     @JsonProperty("IsLocked")
     @Builder.Default
-    private boolean isLocked = false;
+    private boolean locked = false;
 
     @Builder.Default
     private String originCategory = "Imported";

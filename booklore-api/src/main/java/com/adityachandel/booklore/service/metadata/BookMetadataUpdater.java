@@ -30,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -102,8 +103,8 @@ public class BookMetadataUpdater {
         updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
         updateLocks(newMetadata, metadata);
 
+        bookEntity.setMetadataUpdatedAt(Instant.now());
         bookRepository.save(bookEntity);
-
         try {
             Float score = metadataMatchService.calculateMatchScore(bookEntity);
             bookEntity.setMetadataMatchScore(score);
@@ -122,7 +123,9 @@ public class BookMetadataUpdater {
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                     bookEntity.setCurrentHash(newHash);
+                    bookRepository.save(bookEntity);
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }
