@@ -134,6 +134,12 @@
   }
 }
 
+.config-field.toggleswitch-field {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
 .setting-actions {
   display: flex;
   justify-content: flex-start;

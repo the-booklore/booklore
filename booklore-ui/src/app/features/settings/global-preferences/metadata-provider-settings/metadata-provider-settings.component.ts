@@ -2,6 +2,7 @@ import {Component, inject, OnInit} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
 import {Checkbox} from 'primeng/checkbox';
+import {ToggleSwitch} from 'primeng/toggleswitch';
 import {InputText} from 'primeng/inputtext';
 import {Button} from 'primeng/button';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
@@ -17,6 +18,7 @@ import {ExternalDocLinkComponent} from '../../../../shared/components/external-d
     ReactiveFormsModule,
     TableModule,
     Checkbox,
+    ToggleSwitch,
     InputText,
     Button,
     FormsModule,

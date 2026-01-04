@@ -189,12 +189,11 @@
             class="config-input max-w-[12rem]"
             [(ngModel)]="koboMaxResults"/>
         </div>
-        <div class="config-field">
+        <div class="config-field toggleswitch-field">
           <label class="config-label">Request high-res covers</label>
-          <p-checkbox 
-            [(ngModel)]="koboResizeCover"
-            [binary]="true">
-          </p-checkbox>
+          <p-toggleswitch
+            [(ngModel)]="koboResizeCover">
+          </p-toggleswitch>
         </div>
       </div>
     </div>
