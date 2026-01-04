@@ -74,13 +74,14 @@ public class FileUtils {
         return "";
     }
 
-    private List<String> systemDirs = Arrays.asList(
+    final private List<String> systemDirs = Arrays.asList(
       // synology
       "#recycle",
       "@eaDir",
       // calibre
       ".caltrash"
     );
+
     public boolean shouldIgnore(Path path) {
         if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
             return true;
