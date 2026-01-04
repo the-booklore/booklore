@@ -53,6 +53,7 @@ public abstract class BookMetadataMapper {
                 .collect(Collectors.toMap(v -> v.getCustomField().getId(), v -> v, (a, b) -> a));
 
         Map<String, String> customFields = new LinkedHashMap<>();
+        Map<String, Boolean> customFieldLocks = new LinkedHashMap<>();
         defs.forEach(def -> {
             if (def.getName() == null) {
                 return;
@@ -70,6 +71,9 @@ public abstract class BookMetadataMapper {
                 value = def.getDefaultValue();
             }
             customFields.put(def.getName(), value);
+
+            boolean locked = valueEntity != null && Boolean.TRUE.equals(valueEntity.getLocked());
+            customFieldLocks.put(def.getName(), locked);
         });
 
         // Remove null entries so we don't spam empty keys in payloads.
@@ -79,6 +83,10 @@ public abstract class BookMetadataMapper {
 
         if (!nonNullCustomFields.isEmpty()) {
             bookMetadata.setCustomFields(nonNullCustomFields);
+        }
+
+        if (!customFieldLocks.isEmpty()) {
+            bookMetadata.setCustomFieldLocks(customFieldLocks);
         }
     }
 

@@ -17,6 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.commons.lang3.BooleanUtils.isTrue;
+
 @Service
 @AllArgsConstructor
 public class CustomFieldValueService {
@@ -29,7 +31,13 @@ public class CustomFieldValueService {
         if (book == null || book.getId() == null || book.getLibrary() == null || book.getLibrary().getId() == null) {
             return false;
         }
-        if (incomingMetadata == null || incomingMetadata.getCustomFields() == null || incomingMetadata.getCustomFields().isEmpty()) {
+        if (incomingMetadata == null) {
+            return false;
+        }
+
+        boolean hasIncomingValues = incomingMetadata.getCustomFields() != null && !incomingMetadata.getCustomFields().isEmpty();
+        boolean hasIncomingLocks = incomingMetadata.getCustomFieldLocks() != null && !incomingMetadata.getCustomFieldLocks().isEmpty();
+        if (!hasIncomingValues && !hasIncomingLocks) {
             return false;
         }
 
@@ -41,7 +49,8 @@ public class CustomFieldValueService {
             return false;
         }
 
-        Map<String, String> incoming = incomingMetadata.getCustomFields();
+        Map<String, String> incoming = incomingMetadata.getCustomFields() != null ? incomingMetadata.getCustomFields() : Map.of();
+        Map<String, Boolean> incomingLocks = incomingMetadata.getCustomFieldLocks() != null ? incomingMetadata.getCustomFieldLocks() : Map.of();
         List<BookCustomFieldValueEntity> existing = bookCustomFieldValueRepository.findAllByBook_Id(bookId);
         Map<Long, BookCustomFieldValueEntity> existingByFieldId = new HashMap<>();
         for (BookCustomFieldValueEntity v : existing) {
@@ -56,76 +65,105 @@ public class CustomFieldValueService {
             if (def.getId() == null || def.getName() == null) {
                 continue;
             }
-            if (!incoming.containsKey(def.getName())) {
+            boolean valueProvided = incoming.containsKey(def.getName());
+            boolean lockProvided = incomingLocks.containsKey(def.getName());
+
+            if (!valueProvided && !lockProvided) {
                 continue;
-            }
-
-            String raw = incoming.get(def.getName());
-            if (raw != null && raw.isBlank()) {
-                raw = null;
-            }
-
-            // If incoming equals default, we don't need to store a value.
-            if (raw != null && def.getDefaultValue() != null && raw.equals(def.getDefaultValue())) {
-                raw = null;
             }
 
             BookCustomFieldValueEntity existingValue = existingByFieldId.get(def.getId());
-            if (raw == null) {
-                if (existingValue != null) {
-                    bookCustomFieldValueRepository.delete(existingValue);
+
+            // Apply value first (respecting existing lock), then lock state.
+            boolean isLocked = existingValue != null && isTrue(existingValue.getLocked());
+
+
+            if (valueProvided && !isLocked) {
+                String raw = incoming.get(def.getName());
+                if (raw != null && raw.isBlank()) {
+                    raw = null;
+                }
+
+                // If incoming equals default, we don't need to store a value.
+                if (raw != null && def.getDefaultValue() != null && raw.equals(def.getDefaultValue())) {
+                    raw = null;
+                }
+
+                if (raw == null) {
+                    if (existingValue != null && !isTrue(existingValue.getLocked())) {
+                        bookCustomFieldValueRepository.delete(existingValue);
+                        existingValue = null;
+                        changed = true;
+                    }
+                } else {
+                    BookCustomFieldValueEntity toSave = existingValue;
+                    if (toSave == null) {
+                        toSave = BookCustomFieldValueEntity.builder()
+                                .book(book)
+                                .customField(def)
+                                .locked(false)
+                                .build();
+                        existingValue = toSave;
+                    }
+
+                    switch (def.getFieldType()) {
+                        case STRING -> {
+                            if (!raw.equals(toSave.getValueString())) {
+                                toSave.setValueString(raw);
+                                toSave.setValueNumber(null);
+                                toSave.setValueDate(null);
+                                bookCustomFieldValueRepository.save(toSave);
+                                changed = true;
+                            }
+                        }
+                        case NUMBER -> {
+                            Double parsed;
+                            try {
+                                parsed = Double.valueOf(raw);
+                            } catch (NumberFormatException e) {
+                                throw ApiError.INVALID_INPUT.createException("Invalid number for custom field '" + def.getName() + "'");
+                            }
+                            if (toSave.getValueNumber() == null || Double.compare(parsed, toSave.getValueNumber()) != 0) {
+                                toSave.setValueString(null);
+                                toSave.setValueNumber(parsed);
+                                toSave.setValueDate(null);
+                                bookCustomFieldValueRepository.save(toSave);
+                                changed = true;
+                            }
+                        }
+                        case DATE -> {
+                            LocalDate parsed;
+                            try {
+                                parsed = LocalDate.parse(raw);
+                            } catch (DateTimeParseException e) {
+                                throw ApiError.INVALID_INPUT.createException("Invalid date for custom field '" + def.getName() + "' (expected YYYY-MM-DD)");
+                            }
+                            if (toSave.getValueDate() == null || !parsed.equals(toSave.getValueDate())) {
+                                toSave.setValueString(null);
+                                toSave.setValueNumber(null);
+                                toSave.setValueDate(parsed);
+                                bookCustomFieldValueRepository.save(toSave);
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (lockProvided) {
+                boolean desiredLocked = Boolean.TRUE.equals(incomingLocks.get(def.getName()));
+                boolean currentLocked = existingValue != null && Boolean.TRUE.equals(existingValue.getLocked());
+                if (desiredLocked != currentLocked) {
+                    BookCustomFieldValueEntity toSave = existingValue;
+                    if (toSave == null) {
+                        toSave = BookCustomFieldValueEntity.builder()
+                                .book(book)
+                                .customField(def)
+                                .build();
+                    }
+                    toSave.setLocked(desiredLocked);
+                    bookCustomFieldValueRepository.save(toSave);
                     changed = true;
-                }
-                continue;
-            }
-
-            BookCustomFieldValueEntity toSave = existingValue;
-            if (toSave == null) {
-                toSave = BookCustomFieldValueEntity.builder()
-                        .book(book)
-                        .customField(def)
-                        .build();
-            }
-
-            switch (def.getFieldType()) {
-                case STRING -> {
-                    if (!raw.equals(toSave.getValueString())) {
-                        toSave.setValueString(raw);
-                        toSave.setValueNumber(null);
-                        toSave.setValueDate(null);
-                        bookCustomFieldValueRepository.save(toSave);
-                        changed = true;
-                    }
-                }
-                case NUMBER -> {
-                    Double parsed;
-                    try {
-                        parsed = Double.valueOf(raw);
-                    } catch (NumberFormatException e) {
-                        throw ApiError.INVALID_INPUT.createException("Invalid number for custom field '" + def.getName() + "'");
-                    }
-                    if (toSave.getValueNumber() == null || Double.compare(parsed, toSave.getValueNumber()) != 0) {
-                        toSave.setValueString(null);
-                        toSave.setValueNumber(parsed);
-                        toSave.setValueDate(null);
-                        bookCustomFieldValueRepository.save(toSave);
-                        changed = true;
-                    }
-                }
-                case DATE -> {
-                    LocalDate parsed;
-                    try {
-                        parsed = LocalDate.parse(raw);
-                    } catch (DateTimeParseException e) {
-                        throw ApiError.INVALID_INPUT.createException("Invalid date for custom field '" + def.getName() + "' (expected YYYY-MM-DD)");
-                    }
-                    if (toSave.getValueDate() == null || !parsed.equals(toSave.getValueDate())) {
-                        toSave.setValueString(null);
-                        toSave.setValueNumber(null);
-                        toSave.setValueDate(parsed);
-                        bookCustomFieldValueRepository.save(toSave);
-                        changed = true;
-                    }
                 }
             }
         }
@@ -137,7 +175,13 @@ public class CustomFieldValueService {
         if (book == null || book.getId() == null || book.getLibrary() == null || book.getLibrary().getId() == null) {
             return false;
         }
-        if (incomingMetadata == null || incomingMetadata.getCustomFields() == null || incomingMetadata.getCustomFields().isEmpty()) {
+        if (incomingMetadata == null) {
+            return false;
+        }
+
+        boolean hasIncomingValues = incomingMetadata.getCustomFields() != null && !incomingMetadata.getCustomFields().isEmpty();
+        boolean hasIncomingLocks = incomingMetadata.getCustomFieldLocks() != null && !incomingMetadata.getCustomFieldLocks().isEmpty();
+        if (!hasIncomingValues && !hasIncomingLocks) {
             return false;
         }
 
@@ -149,7 +193,8 @@ public class CustomFieldValueService {
             return false;
         }
 
-        Map<String, String> incoming = incomingMetadata.getCustomFields();
+        Map<String, String> incoming = incomingMetadata.getCustomFields() != null ? incomingMetadata.getCustomFields() : Map.of();
+        Map<String, Boolean> incomingLocks = incomingMetadata.getCustomFieldLocks() != null ? incomingMetadata.getCustomFieldLocks() : Map.of();
         List<BookCustomFieldValueEntity> existing = bookCustomFieldValueRepository.findAllByBook_Id(bookId);
         Map<Long, BookCustomFieldValueEntity> existingByFieldId = new HashMap<>();
         for (BookCustomFieldValueEntity v : existing) {
@@ -162,7 +207,28 @@ public class CustomFieldValueService {
             if (def.getId() == null || def.getName() == null) {
                 continue;
             }
-            if (!incoming.containsKey(def.getName())) {
+            boolean valueProvided = incoming.containsKey(def.getName());
+            boolean lockProvided = incomingLocks.containsKey(def.getName());
+
+            if (!valueProvided && !lockProvided) {
+                continue;
+            }
+            BookCustomFieldValueEntity existingValue = existingByFieldId.get(def.getId());
+
+            if (lockProvided) {
+                boolean desiredLocked = Boolean.TRUE.equals(incomingLocks.get(def.getName()));
+                boolean currentLocked = existingValue != null && Boolean.TRUE.equals(existingValue.getLocked());
+                if (desiredLocked != currentLocked) {
+                    return true;
+                }
+            }
+
+            if (!valueProvided) {
+                continue;
+            }
+
+            if (existingValue != null && isTrue(existingValue.getLocked())) {
+                // Value changes are ignored while locked (locks are handled above).
                 continue;
             }
 
@@ -173,8 +239,6 @@ public class CustomFieldValueService {
             if (raw != null && def.getDefaultValue() != null && raw.equals(def.getDefaultValue())) {
                 raw = null;
             }
-
-            BookCustomFieldValueEntity existingValue = existingByFieldId.get(def.getId());
 
             if (raw == null) {
                 if (existingValue != null) {

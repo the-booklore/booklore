@@ -58,6 +58,12 @@ public class BookMetadata {
 
     private Map<String, String> customFields;
 
+    /**
+     * Per custom-field lock flags keyed by custom field name.
+     * When absent, callers should treat fields as unlocked.
+     */
+    private Map<String, Boolean> customFieldLocks;
+
     private Boolean titleLocked;
     private Boolean subtitleLocked;
     private Boolean publisherLocked;

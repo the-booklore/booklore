@@ -1,0 +1,2 @@
+ALTER TABLE book_custom_field_value
+    ADD COLUMN IF NOT EXISTS locked BOOLEAN DEFAULT FALSE;

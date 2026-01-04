@@ -147,6 +147,7 @@ export interface BookMetadata {
   coverLocked?: boolean;
   reviewsLocked?: boolean;
   customFields?: Record<string, string>;
+  customFieldLocks?: Record<string, boolean>;
   [key: string]: unknown;
 }
 

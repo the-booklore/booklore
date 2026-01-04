@@ -48,6 +48,7 @@ class BookMetadataMapperCustomFieldsTest {
         mapper.invokeMapCustomFields(entity, dto);
 
         assertNull(dto.getCustomFields());
+        assertNull(dto.getCustomFieldLocks());
     }
 
     @Test
@@ -66,6 +67,9 @@ class BookMetadataMapperCustomFieldsTest {
 
         assertNotNull(dto.getCustomFields());
         assertEquals(Map.of("a", "DefaultA"), dto.getCustomFields(), "Null-valued defaults should be filtered out");
+
+        assertNotNull(dto.getCustomFieldLocks());
+        assertEquals(Map.of("a", false, "b", false), dto.getCustomFieldLocks());
     }
 
     @Test
@@ -82,14 +86,17 @@ class BookMetadataMapperCustomFieldsTest {
         BookCustomFieldValueEntity shelfValue = BookCustomFieldValueEntity.builder()
                 .customField(shelf)
                 .valueString("Read")
+            .locked(true)
                 .build();
         BookCustomFieldValueEntity ratingValue = BookCustomFieldValueEntity.builder()
                 .customField(rating)
                 .valueNumber(4.5)
+            .locked(false)
                 .build();
         BookCustomFieldValueEntity startedValue = BookCustomFieldValueEntity.builder()
                 .customField(started)
                 .valueDate(LocalDate.of(2025, 1, 3))
+            .locked(false)
                 .build();
 
         when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of(shelfValue, ratingValue, startedValue));
@@ -100,6 +107,11 @@ class BookMetadataMapperCustomFieldsTest {
         assertEquals("Read", dto.getCustomFields().get("shelf"));
         assertEquals("4.5", dto.getCustomFields().get("rating"));
         assertEquals("2025-01-03", dto.getCustomFields().get("started"));
+
+        assertNotNull(dto.getCustomFieldLocks());
+        assertEquals(true, dto.getCustomFieldLocks().get("shelf"));
+        assertEquals(false, dto.getCustomFieldLocks().get("rating"));
+        assertEquals(false, dto.getCustomFieldLocks().get("started"));
 
         // Default should only be used when stored value is missing
         assertNotEquals("Unread", dto.getCustomFields().get("shelf"));

@@ -561,27 +561,48 @@
             <div class="flex flex-col gap-1 w-full">
               <label class="text-sm" [for]="'custom-' + field.name">{{ field.name }}</label>
 
-              @if (field.fieldType === 'DATE') {
-                <p-datepicker
-                  class="w-full"
-                  [inputId]="'custom-' + field.name"
-                  [formControlName]="field.name"
-                  dataType="string"
-                  dateFormat="yy-mm-dd"
-                  [keepInvalid]="true"
-                  [showIcon]="false"
-                  [iconDisplay]="'input'"
-                  fluid="true"
-                  appendTo="body">
-                </p-datepicker>
-              } @else {
-                <input
-                  pInputText
-                  [id]="'custom-' + field.name"
-                  [type]="field.fieldType === 'NUMBER' ? 'number' : 'text'"
-                  [formControlName]="field.name"
-                  class="w-full"/>
-              }
+              <div class="flex withbutton">
+                @if (field.fieldType === 'DATE') {
+                  <p-datepicker
+                    class="w-full"
+                    [inputId]="'custom-' + field.name"
+                    [formControlName]="field.name"
+                    dataType="string"
+                    dateFormat="yy-mm-dd"
+                    [keepInvalid]="true"
+                    [showIcon]="false"
+                    [iconDisplay]="'input'"
+                    fluid="true"
+                    appendTo="body">
+                  </p-datepicker>
+                } @else {
+                  <input
+                    pInputText
+                    [id]="'custom-' + field.name"
+                    [type]="field.fieldType === 'NUMBER' ? 'number' : 'text'"
+                    [formControlName]="field.name"
+                    class="w-full"/>
+                }
+
+                @if (!isCustomFieldLocked(field.name)) {
+                  <p-button
+                    size="small"
+                    icon="pi pi-lock-open"
+                    [outlined]="true"
+                    (onClick)="toggleCustomFieldLock(field.name)"
+                    severity="success">
+                  </p-button>
+                }
+                @if (isCustomFieldLocked(field.name)) {
+                  <p-button
+                    size="small"
+                    icon="pi pi-lock"
+                    [outlined]="true"
+                    (onClick)="toggleCustomFieldLock(field.name)"
+                    severity="warn">
+                  </p-button>
+                }
+              </div>
             </div>
           }
         </div>

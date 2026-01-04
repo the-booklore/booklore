@@ -221,6 +221,7 @@ export class MetadataEditorComponent implements OnInit {
       reviewsLocked: new FormControl(false),
 
       customFields: new FormGroup({}),
+      customFieldLocks: new FormGroup({}),
     });
   }
 
@@ -254,7 +255,11 @@ export class MetadataEditorComponent implements OnInit {
   private loadLibraryCustomFields(libraryId: number, metadata: BookMetadata): void {
     // Avoid refetching on every metadata update within the same library.
     if (this.currentLibraryId === libraryId && this.libraryCustomFields.length > 0) {
-      this.syncCustomFieldControls(this.libraryCustomFields, metadata.customFields ?? {});
+      this.syncCustomFieldControls(
+        this.libraryCustomFields,
+        metadata.customFields ?? {},
+        metadata.customFieldLocks ?? {}
+      );
       return;
     }
 
@@ -267,16 +272,22 @@ export class MetadataEditorComponent implements OnInit {
       )
       .subscribe((defs) => {
         this.libraryCustomFields = defs;
-        this.syncCustomFieldControls(defs, metadata.customFields ?? {});
+        this.syncCustomFieldControls(
+          defs,
+          metadata.customFields ?? {},
+          metadata.customFieldLocks ?? {}
+        );
       });
   }
 
   private syncCustomFieldControls(
     defs: LibraryCustomField[],
-    currentValues: Record<string, string>
+    currentValues: Record<string, string>,
+    currentLocks: Record<string, boolean>
   ): void {
     const group = this.metadataForm.get('customFields') as FormGroup | null;
-    if (!group) {
+    const locksGroup = this.metadataForm.get('customFieldLocks') as FormGroup | null;
+    if (!group || !locksGroup) {
       return;
     }
 
@@ -285,9 +296,23 @@ export class MetadataEditorComponent implements OnInit {
       group.removeControl(key);
     }
 
+    for (const key of Object.keys(locksGroup.controls)) {
+      locksGroup.removeControl(key);
+    }
+
     for (const def of defs) {
       const value = currentValues?.[def.name] ?? def.defaultValue ?? '';
-      group.addControl(def.name, new FormControl(value));
+
+      const isLocked = currentLocks?.[def.name] === true;
+      const valueControl = new FormControl(value);
+      const lockControl = new FormControl(isLocked);
+
+      if (isLocked) {
+        valueControl.disable();
+      }
+
+      group.addControl(def.name, valueControl);
+      locksGroup.addControl(def.name, lockControl);
     }
   }
 
@@ -305,6 +330,43 @@ export class MetadataEditorComponent implements OnInit {
       payload[def.name] = value === null || value === undefined ? '' : String(value);
     }
     return payload;
+  }
+
+  private buildCustomFieldLocksPayload(): Record<string, boolean> | undefined {
+    if (!this.libraryCustomFields || this.libraryCustomFields.length === 0) {
+      return undefined;
+    }
+
+    const group = this.metadataForm.get('customFieldLocks') as FormGroup | null;
+    const raw = (group?.getRawValue?.() ?? {}) as Record<string, unknown>;
+
+    const payload: Record<string, boolean> = {};
+    for (const def of this.libraryCustomFields) {
+      payload[def.name] = raw[def.name] === true;
+    }
+    return payload;
+  }
+
+  isCustomFieldLocked(fieldName: string): boolean {
+    return this.metadataForm.get(['customFieldLocks', fieldName])?.value === true;
+  }
+
+  toggleCustomFieldLock(fieldName: string): void {
+    const lockControl = this.metadataForm.get(['customFieldLocks', fieldName]);
+    const valueControl = this.metadataForm.get(['customFields', fieldName]);
+    if (!lockControl || !valueControl) {
+      return;
+    }
+
+    const updatedLockedState = !(lockControl.value === true);
+    lockControl.setValue(updatedLockedState);
+    if (updatedLockedState) {
+      valueControl.disable();
+    } else {
+      valueControl.enable();
+    }
+
+    this.updateMetadata(undefined);
   }
 
   private prepareAutoComplete(): void {
@@ -533,6 +595,16 @@ export class MetadataEditorComponent implements OnInit {
         this.metadataForm.get(fieldName)?.disable();
       }
     });
+
+    const locksGroup = this.metadataForm.get('customFieldLocks') as FormGroup | null;
+    const valuesGroup = this.metadataForm.get('customFields') as FormGroup | null;
+    if (locksGroup && valuesGroup) {
+      for (const def of this.libraryCustomFields ?? []) {
+        locksGroup.get(def.name)?.setValue(true);
+        valuesGroup.get(def.name)?.disable();
+      }
+    }
+
     this.updateMetadata(true);
   }
 
@@ -544,6 +616,16 @@ export class MetadataEditorComponent implements OnInit {
         this.metadataForm.get(fieldName)?.enable();
       }
     });
+
+    const locksGroup = this.metadataForm.get('customFieldLocks') as FormGroup | null;
+    const valuesGroup = this.metadataForm.get('customFields') as FormGroup | null;
+    if (locksGroup && valuesGroup) {
+      for (const def of this.libraryCustomFields ?? []) {
+        locksGroup.get(def.name)?.setValue(false);
+        valuesGroup.get(def.name)?.enable();
+      }
+    }
+
     this.updateMetadata(false);
   }
 
@@ -587,6 +669,7 @@ export class MetadataEditorComponent implements OnInit {
       thumbnailUrl: form.get("thumbnailUrl")?.value,
 
       customFields: this.buildCustomFieldsPayload(),
+      customFieldLocks: this.buildCustomFieldLocksPayload(),
 
       // Locks
       titleLocked: form.get("titleLocked")?.value,

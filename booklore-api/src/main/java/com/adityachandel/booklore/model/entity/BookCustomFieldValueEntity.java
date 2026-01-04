@@ -39,4 +39,7 @@ public class BookCustomFieldValueEntity {
 
     @Column(name = "value_date")
     private LocalDate valueDate;
+
+        @Column(name = "locked")
+        private Boolean locked;
 }
