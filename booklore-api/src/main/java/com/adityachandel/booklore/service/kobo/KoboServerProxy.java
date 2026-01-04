@@ -99,7 +99,7 @@ public class KoboServerProxy {
                 uriBuilder.query(queryString);
             }
 
-            URI uri = uriBuilder.build(true).toUri();
+            URI uri = uriBuilder.build(false).toUri();
             log.info("Kobo proxy URL: {}", uri);
 
             String bodyString = body != null ? objectMapper.writeValueAsString(body) : "{}";
