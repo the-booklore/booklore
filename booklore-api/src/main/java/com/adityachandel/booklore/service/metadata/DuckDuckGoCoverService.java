@@ -26,7 +26,7 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
 
     private static final String SEARCH_BASE_URL = "https://duckduckgo.com/?q=";
     private static final String JSON_BASE_URL = "https://duckduckgo.com/i.js?o=json&q=";
-    private static final String SITE_FILTER = "+(site%3Aamazon.com+OR+site%3Agoodreads.com)";
+    private static final String SITE_FILTER = "+(site%3Aamazon.com+OR+site%3Agoodreads.com+OR+site%3Akobo.com)";
     private static final String SEARCH_PARAMS = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
     private static final String JSON_PARAMS = "&iar=images&iaf=size%3ALarge%2Clayout%3ATall";
 
@@ -57,7 +57,7 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
             return Collections.emptyList();
         }
         String siteSearchToken = siteMatcher.group(1);
-        List<CoverImage> siteFilteredImages = fetchImagesFromApi(searchTerm + " (site:amazon.com OR site:goodreads.com)", siteSearchToken);
+        List<CoverImage> siteFilteredImages = fetchImagesFromApi(searchTerm + " (site:amazon.com OR site:goodreads.com OR site:kobo.com)", siteSearchToken);
         siteFilteredImages.removeIf(dto -> dto.getWidth() < 350);
         siteFilteredImages.removeIf(dto -> dto.getWidth() >= dto.getHeight());
         if (siteFilteredImages.size() > 7) {
@@ -122,7 +122,7 @@ public class DuckDuckGoCoverService implements BookCoverProvider {
                     int w = img.path("width").asInt();
                     int h = img.path("height").asInt();
                     CoverImage dto = new CoverImage(link, w, h, 0);
-                    if (link.contains("amazon") || link.contains("goodreads")) {
+                    if (link.contains("amazon") || link.contains("goodreads") || link.contains("kobo")) {
                         priority.add(dto);
                     } else {
                         others.add(dto);
