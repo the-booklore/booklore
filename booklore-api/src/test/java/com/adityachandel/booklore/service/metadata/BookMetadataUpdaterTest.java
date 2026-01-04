@@ -29,6 +29,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,9 +58,65 @@ class BookMetadataUpdaterTest {
         appSettings.setMetadataPersistenceSettings(new MetadataPersistenceSettings());
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
-                // Custom fields are not part of these tests; keep behavior neutral.
-                when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(false);
-                when(customFieldValueService.applyCustomFields(any(), any())).thenReturn(false);
+        // Custom fields are not part of most tests; keep behavior neutral by default.
+        when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(false);
+        when(customFieldValueService.applyCustomFields(any(), any())).thenReturn(false);
+    }
+
+    @Test
+    void setBookMetadata_whenOnlyCustomFieldChanges_shouldApplyAndSave() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        bookEntity.setMetadata(metadataEntity);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .build();
+
+        when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(true);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        verify(customFieldValueService).applyCustomFields(any(), any());
+        verify(bookRepository).save(any(BookEntity.class));
+    }
+
+    @Test
+    void setBookMetadata_whenAllFieldsLockedButCustomFieldChanges_shouldStillProceed() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.applyLockToAllFields(true);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookMetadata newMetadata = new BookMetadata();
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .build();
+
+        when(customFieldValueService.hasCustomFieldChanges(any(), any())).thenReturn(true);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        verify(customFieldValueService).applyCustomFields(any(), any());
+        verify(bookRepository).save(any(BookEntity.class));
+        verify(fileMoveService, never()).moveSingleFile(any());
     }
 
     @Test

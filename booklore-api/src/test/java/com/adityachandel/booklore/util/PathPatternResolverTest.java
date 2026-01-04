@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -97,6 +98,35 @@ class PathPatternResolverTest {
         // Authors from a Set may be in any order
         assertTrue(result.equals("John Doe, Jane Smith - Test Book (2023).pdf") || 
                    result.equals("Jane Smith, John Doe - Test Book (2023).pdf"));
+    }
+
+    @Test
+    void testResolvePattern_customFieldPlaceholder() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Test Book")
+                .customFields(Map.of("shelf", "Read"))
+                .build();
+
+        String result = PathPatternResolver.resolvePattern(metadata, "Books/{custom:shelf}/{title}", "original.pdf");
+
+        assertEquals("Books/Read/Test Book.pdf", result);
+    }
+
+    @Test
+    void testResolvePattern_optionalBlockWithCustomField_isIncludedOnlyWhenPresent() {
+        BookMetadata withField = BookMetadata.builder()
+                .title("Test Book")
+                .customFields(Map.of("shelf", "Read"))
+                .build();
+
+        BookMetadata withoutField = BookMetadata.builder()
+                .title("Test Book")
+                .build();
+
+        String pattern = "{title}< - {custom:shelf}>";
+
+        assertEquals("Test Book - Read.pdf", PathPatternResolver.resolvePattern(withField, pattern, "original.pdf"));
+        assertEquals("Test Book.pdf", PathPatternResolver.resolvePattern(withoutField, pattern, "original.pdf"));
     }
 
     @Test
