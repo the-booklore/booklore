@@ -45,6 +45,7 @@ interface UploadingFile {
 export class BookUploaderComponent implements OnInit {
   files: UploadingFile[] = [];
   isUploading: boolean = false;
+  uploadCompleted: boolean = false;
   _selectedLibrary: Library | null = null;
   selectedPath: LibraryPath | null = null;
 
@@ -57,6 +58,7 @@ export class BookUploaderComponent implements OnInit {
   readonly libraryState$: Observable<LibraryState> = this.libraryService.libraryState$;
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
   maxFileSizeBytes?: number;
+  maxFileSizeDisplay: string = '100 MB';
   stateOptions = [
     {label: 'Library', value: 'library'},
     {label: 'Bookdrop', value: 'bookdrop'}
@@ -70,7 +72,9 @@ export class BookUploaderComponent implements OnInit {
         take(1)
       )
       .subscribe(settings => {
-        this.maxFileSizeBytes = (settings?.maxFileUploadSizeInMb ?? 100) * 1024 * 1024;
+        const maxSizeMb = settings?.maxFileUploadSizeInMb ?? 100;
+        this.maxFileSizeBytes = maxSizeMb * 1024 * 1024;
+        this.maxFileSizeDisplay = `${maxSizeMb} MB`;
       });
 
     this.libraryState$.subscribe(state => {
@@ -89,7 +93,7 @@ export class BookUploaderComponent implements OnInit {
   set selectedLibrary(library: Library | null) {
     this._selectedLibrary = library;
 
-    if(library?.paths?.length === 1) {
+    if (library?.paths?.length === 1) {
       this.selectedPath = library.paths[0];
     }
   }
@@ -115,7 +119,24 @@ export class BookUploaderComponent implements OnInit {
     const newFiles = event.currentFiles;
     for (const file of newFiles) {
       const exists = this.files.some(f => f.file.name === file.name && f.file.size === file.size);
-      if (!exists) {
+      if (exists) {
+        continue;
+      }
+
+      if (this.maxFileSizeBytes && file.size > this.maxFileSizeBytes) {
+        const errorMsg = `File exceeds maximum size of ${this.formatSize(this.maxFileSizeBytes)}`;
+        this.files.unshift({
+          file,
+          status: 'Failed',
+          errorMessage: errorMsg
+        });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'File Too Large',
+          detail: `${file.name} exceeds the maximum file size of ${this.formatSize(this.maxFileSizeBytes)}`,
+          life: 5000
+        });
+      } else {
         this.files.unshift({file, status: 'Pending'});
       }
     }
@@ -144,6 +165,7 @@ export class BookUploaderComponent implements OnInit {
     if (filesToUpload.length === 0) return;
 
     this.isUploading = true;
+    this.uploadCompleted = false;
     const destination = this.value;
     const libraryId = this.selectedLibrary?.id?.toString();
     const pathId = this.selectedPath?.id?.toString();
@@ -155,6 +177,7 @@ export class BookUploaderComponent implements OnInit {
     const batch = files.slice(startIndex, startIndex + batchSize);
     if (batch.length === 0) {
       this.isUploading = false;
+      this.uploadCompleted = true;
       if (destination === 'bookdrop') {
         this.ref.close('uploaded_to_bookdrop');
       }
@@ -167,7 +190,6 @@ export class BookUploaderComponent implements OnInit {
       uploadFile.status = 'Uploading';
 
       const formData = new FormData();
-      // Reconstruct the file to ensure strict type and name handling
       const cleanFile = new File([uploadFile.file], uploadFile.file.name, {type: uploadFile.file.type});
       formData.append('file', cleanFile, uploadFile.file.name);
 
@@ -216,6 +238,13 @@ export class BookUploaderComponent implements OnInit {
     return this.isChooseDisabled() || !this.filesPresent() || !this.hasPendingFiles();
   }
 
+  isUploadZoneActive(): boolean {
+    if (this.value === 'bookdrop') {
+      return true;
+    }
+    return !!(this.selectedLibrary && this.selectedPath);
+  }
+
   formatSize(bytes: number): string {
     const k = 1024;
     const dm = 2;
@@ -237,6 +266,28 @@ export class BookUploaderComponent implements OnInit {
       default:
         return 'info';
     }
+  }
+
+  getFileStatusLabel(uploadFile: UploadingFile): string {
+    if (uploadFile.status === 'Failed' && uploadFile.errorMessage?.includes('exceeds maximum size')) {
+      return 'Too Large';
+    }
+    switch (uploadFile.status) {
+      case 'Pending':
+        return 'Ready';
+      case 'Uploading':
+        return 'Uploading';
+      case 'Uploaded':
+        return 'Uploaded';
+      case 'Failed':
+        return 'Failed';
+      default:
+        return uploadFile.status;
+    }
+  }
+
+  hasUploadCompleted(): boolean {
+    return this.uploadCompleted;
   }
 
   closeDialog(): void {
