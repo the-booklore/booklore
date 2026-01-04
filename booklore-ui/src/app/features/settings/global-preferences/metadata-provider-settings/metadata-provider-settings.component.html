@@ -157,21 +157,28 @@
       <div class="provider-config">
         <div class="config-field">
           <label class="config-label">Country</label>
-          <input
-            type="text"
-            pInputText
-            placeholder="us"
-            class="config-input max-w-[12rem]"
-            [(ngModel)]="koboCountry"/>
+          <p-select
+            [options]="koboCountries"
+            [(ngModel)]="koboCountry"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="false"
+            placeholder="Select country"
+            class="config-select"
+            (onChange)="onKoboCountryChange($event.value)">
+          </p-select>
         </div>
         <div class="config-field">
           <label class="config-label">Language</label>
-          <input
-            type="text"
-            pInputText
-            placeholder="en"
-            class="config-input max-w-[12rem]"
-            [(ngModel)]="koboLanguage"/>
+          <p-select
+            [options]="koboLanguages"
+            [(ngModel)]="koboLanguage"
+            optionLabel="label"
+            optionValue="value"
+            [showClear]="true"
+            placeholder="Select language"
+            class="config-select">
+          </p-select>
         </div>
         <div class="config-field">
           <label class="config-label">Max Results</label>

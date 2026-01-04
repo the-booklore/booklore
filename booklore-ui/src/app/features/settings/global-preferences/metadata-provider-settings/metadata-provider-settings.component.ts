@@ -67,6 +67,76 @@ export class MetadataProviderSettingsComponent implements OnInit {
 
   selectedGoogleLanguage = '';
 
+  koboCountries = [
+    {label: 'Argentina', value: 'ar', language: 'es'},
+    {label: 'Australia', value: 'au', language: 'en'},
+    {label: 'Austria', value: 'at', language: 'de'},
+    {label: 'Belgium', value: 'be', language: 'fr'},
+    {label: 'Brasil', value: 'br', language: 'pt'},
+    {label: 'Canada', value: 'ca', language: 'en'},
+    {label: 'Chile', value: 'cl', language: 'es'},
+    {label: 'Colômbia', value: 'co', language: 'es'},
+    {label: 'Cyprus', value: 'cy', language: 'en'},
+    {label: 'Czech Republic', value: 'cz', language: 'cs'},
+    {label: 'Denmark', value: 'dk', language: 'da'},
+    {label: 'Estonia', value: 'ee', language: 'en'},
+    {label: 'Finland', value: 'fi', language: 'fi'},
+    {label: 'France', value: 'fr', language: 'fr'},
+    {label: 'Germany', value: 'de', language: 'de'},
+    {label: 'Greece', value: 'gr', language: 'en'},
+    {label: 'Hong Kong', value: 'hk', language: 'zh'},
+    {label: 'India', value: 'in', language: 'en'},
+    {label: 'Ireland', value: 'ie', language: 'en'},
+    {label: 'Italy', value: 'it', language: 'it'},
+    {label: 'Japan', value: 'jp', language: 'ja'},
+    {label: 'Lithuania', value: 'lt', language: 'en'},
+    {label: 'Luxembourg', value: 'lu', language: 'fr'},
+    {label: 'Malaysia', value: 'my', language: 'en'},
+    {label: 'Malta', value: 'mt', language: 'en'},
+    {label: 'México', value: 'mx', language: 'es'},
+    {label: 'Netherlands', value: 'nl', language: 'nl'},
+    {label: 'New Zealand', value: 'nz', language: 'en'},
+    {label: 'Norway', value: 'no', language: 'nb'},
+    {label: 'Peru', value: 'pe', language: 'es'},
+    {label: 'Philippines', value: 'ph', language: 'en'},
+    {label: 'Poland', value: 'pl', language: 'pl'},
+    {label: 'Portugal', value: 'pt', language: 'pt'},
+    {label: 'Romania', value: 'ro', language: 'ro'},
+    {label: 'Singapore', value: 'sg', language: 'en'},
+    {label: 'Slovak Republic', value: 'sk', language: 'en'},
+    {label: 'Slovenia', value: 'si', language: 'en'},
+    {label: 'South Africa', value: 'za', language: 'en'},
+    {label: 'Spain', value: 'es', language: 'es'},
+    {label: 'Sweden', value: 'se', language: 'sv'},
+    {label: 'Switzerland', value: 'ch', language: 'fr'},
+    {label: 'Taiwan', value: 'tw', language: 'zh'},
+    {label: 'Thailand', value: 'th', language: 'en'},
+    {label: 'Turkey', value: 'tr', language: 'tr'},
+    {label: 'United Kingdom', value: 'gb', language: 'en'},
+    {label: 'United States', value: 'us', language: 'en'},
+    {label: 'Other', value: 'ww', language: 'en'}
+  ];
+
+  koboLanguages = [
+    {label: 'Chinese', value: 'zh'},
+    {label: 'English', value: 'en'},
+    {label: 'Czech', value: 'cs'},
+    {label: 'Danish', value: 'da'},
+    {label: 'Deutsch', value: 'de'},
+    {label: 'Español', value: 'es'},
+    {label: 'Finnish', value: 'fi'},
+    {label: 'Français', value: 'fr'},
+    {label: 'Italiano', value: 'it'},
+    {label: 'Japanese', value: 'ja'},
+    {label: 'Nederlands', value: 'nl'},
+    {label: 'Norwegian', value: 'nb'},
+    {label: 'Polish', value: 'pl'},
+    {label: 'Português', value: 'pt'},
+    {label: 'Romanian', value: 'ro'},
+    {label: 'Swedish', value: 'sv'},
+    {label: 'Turkish', value: 'tr'}
+  ];
+
   hardcoverToken: string = '';
   amazonCookie: string = '';
   hardcoverEnabled: boolean = false;
@@ -127,6 +197,14 @@ export class MetadataProviderSettingsComponent implements OnInit {
     this.comicvineToken = newToken;
     if (!newToken.trim()) {
       this.comicvineEnabled = false;
+    }
+  }
+
+  onKoboCountryChange(newCountry: string): void {
+    this.koboCountry = newCountry;
+    const country = this.koboCountries.find(c => c.value === newCountry);
+    if (country?.language) {
+      this.koboLanguage = country.language;
     }
   }
 
