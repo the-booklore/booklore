@@ -5,23 +5,24 @@ import {MessageService} from 'primeng/api';
 import {CustomFontService} from '../../../shared/service/custom-font.service';
 import {CustomFont, formatFileSize} from '../../../shared/model/custom-font.model';
 import {ConfirmDialog} from 'primeng/confirmdialog';
-import {ProgressSpinner} from 'primeng/progressspinner';
 import {ConfirmationService} from 'primeng/api';
 import {Tooltip} from 'primeng/tooltip';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {FontUploadDialogComponent} from './font-upload-dialog/font-upload-dialog.component';
+import {Skeleton} from 'primeng/skeleton';
 
 @Component({
   selector: 'app-custom-fonts',
   standalone: true,
-  imports: [CommonModule, Button, ConfirmDialog, ProgressSpinner, Tooltip],
+  imports: [CommonModule, Button, ConfirmDialog, Tooltip, Skeleton],
   templateUrl: './custom-fonts.component.html',
   styleUrls: ['./custom-fonts.component.scss'],
   providers: [ConfirmationService, DialogService]
 })
 export class CustomFontsComponent implements OnInit {
   customFonts: CustomFont[] = [];
-  isLoading = false;
+  isLoading = true;
+  fontsLoadedInBrowser = false;
   uploadDialogRef: DynamicDialogRef | null = null;
 
   readonly maxFonts = 10;
@@ -37,23 +38,33 @@ export class CustomFontsComponent implements OnInit {
     this.loadFonts();
   }
 
-  loadFonts(): void {
-    this.isLoading = true;
-    this.customFontService.getUserFonts().subscribe({
-      next: (fonts) => {
-        this.customFonts = fonts;
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Failed to load fonts:', error);
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to load custom fonts'
+  async loadFonts(): Promise<void> {
+    this.fontsLoadedInBrowser = false;
+
+    try {
+      const fonts = await new Promise<CustomFont[]>((resolve, reject) => {
+        this.customFontService.getUserFonts().subscribe({
+          next: resolve,
+          error: reject
         });
-        this.isLoading = false;
-      }
-    });
+      });
+
+      this.customFonts = fonts;
+      this.isLoading = false;
+
+      await this.customFontService.loadAllFonts(fonts);
+
+      this.fontsLoadedInBrowser = true;
+    } catch (error) {
+      console.error('Failed to load fonts:', error);
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to load custom fonts'
+      });
+      this.isLoading = false;
+      this.fontsLoadedInBrowser = true;
+    }
   }
 
   openUploadDialog(): void {
@@ -118,9 +129,5 @@ export class CustomFontsComponent implements OnInit {
 
   formatFileSize(bytes: number): string {
     return formatFileSize(bytes);
-  }
-
-  getRemainingSlots(): number {
-    return this.maxFonts - this.customFonts.length;
   }
 }

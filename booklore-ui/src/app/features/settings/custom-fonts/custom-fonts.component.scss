@@ -112,22 +112,6 @@
   gap: 1rem;
 }
 
-// ==================== Loading State ====================
-.loading-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1.5rem;
-  gap: 1rem;
-
-  p {
-    margin: 0;
-    color: var(--p-text-muted-color);
-    font-size: 0.875rem;
-  }
-}
-
 // ==================== Empty State ====================
 .empty-state {
   display: flex;
@@ -346,6 +330,16 @@
           font-weight: 400;
         }
       }
+    }
+
+    .font-preview-skeleton {
+      padding: 1rem;
+      border: 1px solid var(--p-content-border-color);
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--p-surface-ground) 30%, var(--p-content-background));
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
     }
   }
 

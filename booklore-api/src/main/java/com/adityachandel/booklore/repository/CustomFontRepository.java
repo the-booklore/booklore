@@ -16,5 +16,4 @@ public interface CustomFontRepository extends JpaRepository<CustomFontEntity, Lo
 
     Optional<CustomFontEntity> findByIdAndUserId(Long id, Long userId);
 
-    boolean existsByFileNameAndUserId(String fileName, Long userId);
 }

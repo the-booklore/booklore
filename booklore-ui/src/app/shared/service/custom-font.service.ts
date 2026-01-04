@@ -12,7 +12,7 @@ export class CustomFontService {
   private apiUrl = `${API_CONFIG.BASE_URL}/api/v1/custom-fonts`;
   private fontsSubject = new BehaviorSubject<CustomFont[]>([]);
   public fonts$ = this.fontsSubject.asObservable();
-  private loadedFonts = new Set<string>(); // Track loaded font identifiers
+  private loadedFonts = new Set<string>();
   private authService = inject(AuthService);
 
   constructor(private http: HttpClient) {}
@@ -77,18 +77,16 @@ export class CustomFontService {
   }
 
   async loadFontFace(font: CustomFont): Promise<void> {
-    // Check if already loaded
     if (this.loadedFonts.has(font.fontName)) {
       return;
     }
 
     try {
-      // Use getFontUrl to get the full absolute URL and append authentication token
       const absoluteFontUrl = this.getFontUrl(font.id);
       const fontUrlWithToken = this.appendToken(absoluteFontUrl);
 
       const fontFace = new FontFace(
-        font.fontName,  // Use actual font name like "Bookerly"
+        font.fontName,
         `url(${fontUrlWithToken})`,
         {
           weight: 'normal',
@@ -114,31 +112,11 @@ export class CustomFontService {
     return this.loadedFonts.has(fontName);
   }
 
-  clearCache(): void {
-    // Remove all loaded fonts from document.fonts
-    this.loadedFonts.forEach(fontName => {
-      this.removeFontFace(fontName);
-    });
-
-    this.fontsSubject.next([]);
-    this.loadedFonts.clear();
-  }
-
-  /**
-   * Remove a FontFace from document.fonts by font family name
-   * @param fontName The font family name to remove
-   */
   private removeFontFace(fontName: string): void {
-    // Iterate through document.fonts and remove matching FontFace
-    const fontsToRemove: FontFace[] = [];
-    document.fonts.forEach((font: FontFace) => {
+    for (const font of document.fonts) {
       if (font.family === fontName) {
-        fontsToRemove.push(font);
+        document.fonts.delete(font);
       }
-    });
-
-    fontsToRemove.forEach(font => {
-      document.fonts.delete(font);
-    });
+    }
   }
 }

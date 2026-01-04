@@ -5,8 +5,6 @@ export interface CustomFont {
   format: FontFormat;
   fileSize: number;
   uploadedAt: string;
-  cssIdentifier: string;
-  fontUrl: string;
 }
 
 export enum FontFormat {

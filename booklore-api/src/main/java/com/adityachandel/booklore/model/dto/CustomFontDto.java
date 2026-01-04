@@ -19,6 +19,4 @@ public class CustomFontDto {
     private FontFormat format;
     private Long fileSize;
     private LocalDateTime uploadedAt;
-    private String cssIdentifier;
-    private String fontUrl;
 }

@@ -41,7 +41,4 @@ public class CustomFontEntity {
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
-
-    @Column(name = "css_identifier", nullable = false)
-    private String cssIdentifier;
 }

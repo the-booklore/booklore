@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {Button} from 'primeng/button';
 import {MessageService} from 'primeng/api';
 import {CustomFontService} from '../../../../shared/service/custom-font.service';
-import {CustomFont, formatFileSize} from '../../../../shared/model/custom-font.model';
+import {formatFileSize} from '../../../../shared/model/custom-font.model';
 import {InputText} from 'primeng/inputtext';
 import {FormsModule} from '@angular/forms';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
@@ -23,8 +23,10 @@ export class FontUploadDialogComponent implements OnDestroy {
   selectedFile: File | null = null;
   isDragOver = false;
   previewFontFamily: string | null = null;
+  isLoadingPreview = false;
+  currentPreviewToken: number | null = null;
 
-  readonly maxFileSize = 5242880; // 5MB
+  readonly maxFileSize = 5242880;
   readonly maxFonts = 10;
   readonly acceptedFormats = ['.ttf', '.otf', '.woff', '.woff2'];
 
@@ -47,67 +49,61 @@ export class FontUploadDialogComponent implements OnDestroy {
 
     if (!file) return;
 
-    // Validate file type
-    const fileName = file.name.toLowerCase();
-    const isValidFormat = this.acceptedFormats.some(format => fileName.endsWith(format));
-
-    if (!isValidFormat) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'Invalid File Type',
-        detail: 'Please upload a TTF, OTF, WOFF, or WOFF2 font file'
-      });
-      input.value = ''; // Reset input
+    if (!this.validateFile(file)) {
+      input.value = '';
       return;
     }
 
-    // Validate file size
-    if (file.size > this.maxFileSize) {
-      this.messageService.add({
-        severity: 'error',
-        summary: 'File Too Large',
-        detail: `File size must not exceed ${this.formatFileSize(this.maxFileSize)}`
-      });
-      input.value = ''; // Reset input
-      return;
-    }
-
-    this.selectedFile = file;
-    this.uploadedFontName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
-    this.loadFontPreview(file);
-    input.value = ''; // Reset input for future uploads
+    this.processFile(file);
+    input.value = '';
   }
 
   async loadFontPreview(file: File): Promise<void> {
-    // Clean up any previous preview font before loading new one
     this.cleanupPreviewFont();
 
-    try {
-      // Generate a unique font family name for preview
-      const previewFontName = `preview-font-${Date.now()}`;
+    const previewToken = Date.now();
+    this.currentPreviewToken = previewToken;
 
-      // Read file as ArrayBuffer
+    if (this.isLoadingPreview) {
+      console.log('Cancelling previous preview load');
+    }
+
+    this.isLoadingPreview = true;
+
+    try {
+      const previewFontName = `preview-font-${previewToken}`;
       const arrayBuffer = await file.arrayBuffer();
 
-      // Create a FontFace object
-      const fontFace = new FontFace(previewFontName, arrayBuffer);
+      if (this.currentPreviewToken !== previewToken) {
+        console.log('Preview operation cancelled - newer preview started');
+        return;
+      }
 
-      // Load the font
+      const fontFace = new FontFace(previewFontName, arrayBuffer);
       await fontFace.load();
 
-      // Add to document fonts
-      document.fonts.add(fontFace);
+      if (this.currentPreviewToken !== previewToken) {
+        console.log('Preview operation cancelled after load - newer preview started');
+        document.fonts.delete(fontFace);
+        return;
+      }
 
-      // Set the preview font family
+      document.fonts.add(fontFace);
       this.previewFontFamily = `"${previewFontName}"`;
     } catch (error) {
-      console.error('Failed to load font preview:', error);
-      this.previewFontFamily = null;
-      this.messageService.add({
-        severity: 'warn',
-        summary: 'Preview Failed',
-        detail: 'Unable to preview font, but you can still upload it'
-      });
+      if (this.currentPreviewToken === previewToken) {
+        console.error('Failed to load font preview:', error);
+        this.previewFontFamily = null;
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Preview Failed',
+          detail: 'Unable to preview font, but you can still upload it'
+        });
+      }
+    } finally {
+      if (this.currentPreviewToken === previewToken) {
+        this.isLoadingPreview = false;
+      }
     }
   }
 
@@ -143,7 +139,11 @@ export class FontUploadDialogComponent implements OnDestroy {
           summary: 'Upload Failed',
           detail: errorMessage
         });
+
         this.isUploading = false;
+        this.selectedFile = null;
+        this.uploadedFontName = '';
+        this.cleanupPreviewFont();
       }
     });
   }
@@ -178,49 +178,64 @@ export class FontUploadDialogComponent implements OnDestroy {
     if (files && files.length > 0) {
       const file = files[0];
 
-      // Validate file type
-      const fileName = file.name.toLowerCase();
-      const isValidFormat = this.acceptedFormats.some(format => fileName.endsWith(format));
-
-      if (!isValidFormat) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'Invalid File Type',
-          detail: 'Please upload a TTF, OTF, WOFF, or WOFF2 font file'
-        });
+      if (!this.validateFile(file)) {
         return;
       }
 
-      // Validate file size
-      if (file.size > this.maxFileSize) {
-        this.messageService.add({
-          severity: 'error',
-          summary: 'File Too Large',
-          detail: `File size must not exceed ${this.formatFileSize(this.maxFileSize)}`
-        });
-        return;
-      }
-
-      this.selectedFile = file;
-      this.uploadedFontName = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
-      this.loadFontPreview(file);
+      this.processFile(file);
     }
+  }
+
+  private validateFile(file: File): boolean {
+    const fileName = file.name.toLowerCase();
+    const isValidFormat = this.acceptedFormats.some(format => fileName.endsWith(format));
+
+    if (!isValidFormat) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Invalid File Type',
+        detail: 'Please upload a TTF, OTF, WOFF, or WOFF2 font file'
+      });
+      return false;
+    }
+
+    if (file.size > this.maxFileSize) {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'File Too Large',
+        detail: `File size must not exceed ${this.formatFileSize(this.maxFileSize)}`
+      });
+      return false;
+    }
+
+    return true;
+  }
+
+  private processFile(file: File): void {
+    this.selectedFile = file;
+    this.uploadedFontName = file.name.replace(/\.[^/.]+$/, '');
+    this.loadFontPreview(file);
   }
 
   cleanupPreviewFont(): void {
     if (this.previewFontFamily) {
-      // Extract font name from quoted string
       const fontName = this.previewFontFamily.replace(/"/g, '');
 
-      // Remove from document fonts
-      document.fonts.forEach(font => {
-        if (font.family === fontName) {
-          document.fonts.delete(font);
+      try {
+        for (const font of document.fonts) {
+          if (font.family === fontName) {
+            document.fonts.delete(font);
+          }
         }
-      });
+      } catch (error) {
+        console.error('Failed to cleanup preview font:', fontName, error);
+      }
 
       this.previewFontFamily = null;
     }
+
+    this.currentPreviewToken = null;
+    this.isLoadingPreview = false;
   }
 
   ngOnDestroy(): void {

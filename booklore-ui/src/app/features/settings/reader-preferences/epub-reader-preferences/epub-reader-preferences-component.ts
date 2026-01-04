@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnInit} from '@angular/core';
+import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule} from '@angular/forms';
 import {ReaderPreferencesService} from '../reader-preferences-service';
@@ -6,24 +6,28 @@ import {UserSettings} from '../../user-management/user.service';
 import {Tooltip} from 'primeng/tooltip';
 import {CustomFontService} from '../../../../shared/service/custom-font.service';
 import {CustomFont} from '../../../../shared/model/custom-font.model';
-import {firstValueFrom} from 'rxjs';
+import {skip, Subject, takeUntil} from 'rxjs';
+import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
+import {Skeleton} from 'primeng/skeleton';
 
 @Component({
   selector: 'app-epub-reader-preferences-component',
   imports: [
     Button,
     FormsModule,
-    Tooltip
+    Tooltip,
+    Skeleton
   ],
   templateUrl: './epub-reader-preferences-component.html',
   styleUrl: './epub-reader-preferences-component.scss'
 })
-export class EpubReaderPreferencesComponent implements OnInit {
+export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
 
   @Input() userSettings!: UserSettings;
 
   private readonly readerPreferencesService = inject(ReaderPreferencesService);
   private readonly customFontService = inject(CustomFontService);
+  private readonly destroy$ = new Subject<void>();
 
   customFonts: CustomFont[] = [];
 
@@ -67,35 +71,76 @@ export class EpubReaderPreferencesComponent implements OnInit {
   customFontsReady = false;
 
   ngOnInit(): void {
-    this.loadCustomFonts();
+    this.subscribeToFontUpdates();
+
+    this.customFontService.getUserFonts().subscribe({
+      next: () => {
+        this.customFontsReady = true;
+      },
+      error: (err) => {
+        console.error('Failed to load custom fonts:', err);
+        this.customFontsReady = true;
+      }
+    });
   }
 
-  private async loadCustomFonts(): Promise<void> {
-    try {
-      // Fetch custom fonts from server
-      const fonts = await firstValueFrom(this.customFontService.getUserFonts());
-      this.customFonts = fonts;
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
-      // Wait for all fonts to load into browser before allowing selection
-      await this.customFontService.loadAllFonts(fonts);
+  private subscribeToFontUpdates(): void {
+    this.customFontService.fonts$
+      .pipe(
+        skip(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(async fonts => {
+        try {
+          const selectedFontDeleted = this.isCurrentlySelectedFontDeleted(fonts);
 
-      // Add to fonts array after fonts are loaded
-      if (fonts.length > 0) {
-        this.fonts.push({name: '--- Custom Fonts ---', displayName: '---', key: 'separator'});
-        fonts.forEach(font => {
-          this.fonts.push({
-            name: font.fontName,
-            displayName: font.fontName.substring(0, 12),
-            key: `custom:${font.id}`
-          });
-        });
-      }
+          if (this.hasCustomFontsChanged(fonts)) {
+            this.customFonts = fonts;
+            await this.customFontService.loadAllFonts(fonts);
+            this.updateFontsDropdown(fonts);
+          }
 
-      this.customFontsReady = true;
-    } catch (err) {
-      console.error('Failed to load custom fonts:', err);
-      this.customFontsReady = true; // Allow UI to proceed even on error
+          if (selectedFontDeleted) {
+            this.resetToDefaultFont();
+          }
+        } catch (err) {
+          console.error('Failed to process custom fonts:', err);
+        }
+      });
+  }
+
+  private hasCustomFontsChanged(newFonts: CustomFont[]): boolean {
+    if (newFonts.length !== this.customFonts.length) {
+      return true;
     }
+    const newIds = new Set(newFonts.map(f => f.id));
+    const currentIds = new Set(this.customFonts.map(f => f.id));
+    return newFonts.some(f => !currentIds.has(f.id)) || this.customFonts.some(f => !newIds.has(f.id));
+  }
+
+  private updateFontsDropdown(fonts: CustomFont[]): void {
+    this.fonts = this.fonts.filter(font => !font.key || !font.key.startsWith('custom:'));
+    addCustomFontsToDropdown(fonts, this.fonts, 'preference');
+  }
+
+  private isCurrentlySelectedFontDeleted(newFonts: CustomFont[]): boolean {
+    const customFontId = this.userSettings.epubReaderSetting.customFontId;
+    if (!customFontId) {
+      return false;
+    }
+
+    const fontStillExists = newFonts.some(font => font.id === customFontId);
+    return !fontStillExists;
+  }
+
+  private resetToDefaultFont(): void {
+    console.log('Selected custom font was deleted, resetting to default font');
+    this.selectedFont = null;
   }
 
   get selectedTheme(): string | null {
@@ -128,19 +173,22 @@ export class EpubReaderPreferencesComponent implements OnInit {
         return;
       }
 
+      // Update both fields in local state
       this.userSettings.epubReaderSetting.customFontId = fontId;
       this.userSettings.epubReaderSetting.font = value;
-      // Single API call for both customFontId and font
-      this.readerPreferencesService.updatePreference(['epubReaderSetting', 'customFontId'], fontId);
     } else {
-      // Clear customFontId for non-custom fonts
+      // Clear customFontId and set font in local state
       this.userSettings.epubReaderSetting.customFontId = null;
       if (typeof value === "string") {
         this.userSettings.epubReaderSetting.font = value;
+      } else {
+        // value is null - set to default font
+        this.userSettings.epubReaderSetting.font = null as any;
       }
-      // Single API call for both customFontId and font
-      this.readerPreferencesService.updatePreference(['epubReaderSetting', 'font'], value);
     }
+
+    // Single API call with entire epubReaderSetting object
+    this.readerPreferencesService.updatePreference(['epubReaderSetting'], this.userSettings.epubReaderSetting);
   }
 
   get selectedFlow(): string | null {
