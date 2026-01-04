@@ -189,9 +189,12 @@
             class="config-input max-w-[12rem]"
             [(ngModel)]="koboMaxResults"/>
         </div>
-        <div class="config-field inline-flex items-center gap-2">
-          <p-checkbox [(ngModel)]="koboResizeCover" [binary]="true"></p-checkbox>
-          <label class="config-label mb-0">Request high-res covers</label>
+        <div class="config-field">
+          <label class="config-label">Request high-res covers</label>
+          <p-checkbox 
+            [(ngModel)]="koboResizeCover"
+            [binary]="true">
+          </p-checkbox>
         </div>
       </div>
     </div>
