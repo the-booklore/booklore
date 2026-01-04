@@ -180,8 +180,8 @@ class CustomFieldValueServiceTest {
         assertFalse(Boolean.TRUE.equals(saved.getLocked()));
     }
 
-        @Test
-        void applyCustomFields_whenExistingLocked_valueUpdatesAreIgnored() {
+    @Test
+    void applyCustomFields_whenExistingLocked_valueUpdatesAreIgnored() {
         BookEntity book = book(1L, 10L);
 
         LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
@@ -205,10 +205,37 @@ class CustomFieldValueServiceTest {
         assertFalse(changed);
         verify(bookCustomFieldValueRepository, never()).delete(any());
         verify(bookCustomFieldValueRepository, never()).save(any());
-        }
+    }
 
-        @Test
-        void applyCustomFields_canToggleLockState() {
+    @Test
+    void applyCustomFields_whenExistingLocked_blankIncomingValue_doesNotDeleteExisting() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+
+        BookCustomFieldValueEntity existing = BookCustomFieldValueEntity.builder()
+                .id(6L)
+                .book(book)
+                .customField(shelfDef)
+                .valueString("Read")
+                .locked(true)
+                .build();
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of(existing));
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFields(Map.of("shelf", "   "))
+                .build();
+
+        boolean changed = service.applyCustomFields(book, incoming);
+
+        assertFalse(changed);
+        verify(bookCustomFieldValueRepository, never()).delete(any());
+        verify(bookCustomFieldValueRepository, never()).save(any());
+    }
+
+    @Test
+    void applyCustomFields_canToggleLockState() {
         BookEntity book = book(1L, 10L);
 
         LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
@@ -233,10 +260,64 @@ class CustomFieldValueServiceTest {
         ArgumentCaptor<BookCustomFieldValueEntity> captor = ArgumentCaptor.forClass(BookCustomFieldValueEntity.class);
         verify(bookCustomFieldValueRepository).save(captor.capture());
         assertTrue(Boolean.TRUE.equals(captor.getValue().getLocked()));
-        }
+    }
 
-        @Test
-        void hasCustomFieldChanges_whenExistingLocked_valueDifferencesIgnored() {
+    @Test
+    void applyCustomFields_whenLockProvidedAndNoExisting_createsValueRowWithLockState() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of());
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFieldLocks(Map.of("shelf", true))
+                .build();
+
+        boolean changed = service.applyCustomFields(book, incoming);
+        assertTrue(changed);
+
+        ArgumentCaptor<BookCustomFieldValueEntity> captor = ArgumentCaptor.forClass(BookCustomFieldValueEntity.class);
+        verify(bookCustomFieldValueRepository).save(captor.capture());
+        BookCustomFieldValueEntity saved = captor.getValue();
+
+        assertSame(book, saved.getBook());
+        assertSame(shelfDef, saved.getCustomField());
+        assertTrue(Boolean.TRUE.equals(saved.getLocked()));
+        assertNull(saved.getValueString());
+        assertNull(saved.getValueNumber());
+        assertNull(saved.getValueDate());
+    }
+
+    @Test
+    void applyCustomFields_whenLockProvidedMatchesExisting_doesNothing() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+
+        BookCustomFieldValueEntity existing = BookCustomFieldValueEntity.builder()
+                .id(6L)
+                .book(book)
+                .customField(shelfDef)
+                .valueString("Read")
+                .locked(true)
+                .build();
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of(existing));
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFieldLocks(Map.of("shelf", true))
+                .build();
+
+        boolean changed = service.applyCustomFields(book, incoming);
+
+        assertFalse(changed);
+        verify(bookCustomFieldValueRepository, never()).delete(any());
+        verify(bookCustomFieldValueRepository, never()).save(any());
+    }
+
+    @Test
+    void hasCustomFieldChanges_whenExistingLocked_valueDifferencesIgnored() {
         BookEntity book = book(1L, 10L);
 
         LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
@@ -256,10 +337,33 @@ class CustomFieldValueServiceTest {
             .build();
 
         assertFalse(service.hasCustomFieldChanges(book, incoming));
-        }
+    }
 
-        @Test
-        void hasCustomFieldChanges_whenLockDiffers_returnsTrue() {
+    @Test
+    void hasCustomFieldChanges_whenExistingLocked_blankIncomingValueIgnored() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+
+        BookCustomFieldValueEntity existing = BookCustomFieldValueEntity.builder()
+                .id(6L)
+                .book(book)
+                .customField(shelfDef)
+                .valueString("Read")
+                .locked(true)
+                .build();
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of(existing));
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFields(Map.of("shelf", "   "))
+                .build();
+
+        assertFalse(service.hasCustomFieldChanges(book, incoming));
+    }
+
+    @Test
+    void hasCustomFieldChanges_whenLockDiffers_returnsTrue() {
         BookEntity book = book(1L, 10L);
 
         LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
@@ -279,7 +383,38 @@ class CustomFieldValueServiceTest {
             .build();
 
         assertTrue(service.hasCustomFieldChanges(book, incoming));
-        }
+
+    }
+
+    @Test
+    void hasCustomFieldChanges_whenLockProvidedTrueAndNoExisting_returnsTrue() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of());
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFieldLocks(Map.of("shelf", true))
+                .build();
+
+        assertTrue(service.hasCustomFieldChanges(book, incoming));
+    }
+
+    @Test
+    void hasCustomFieldChanges_whenLockProvidedFalseAndNoExisting_returnsFalse() {
+        BookEntity book = book(1L, 10L);
+
+        LibraryCustomFieldEntity shelfDef = def(200L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelfDef));
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of());
+
+        BookMetadata incoming = BookMetadata.builder()
+                .customFieldLocks(Map.of("shelf", false))
+                .build();
+
+        assertFalse(service.hasCustomFieldChanges(book, incoming));
+    }
 
     @Test
     void hasCustomFieldChanges_invalidNumber_returnsTrue() {

@@ -117,6 +117,30 @@ class BookMetadataMapperCustomFieldsTest {
         assertNotEquals("Unread", dto.getCustomFields().get("shelf"));
     }
 
+    @Test
+    void mapCustomFields_whenStoredLockIsNull_defaultsLockToFalse() {
+        BookMetadataEntity entity = metadataEntity(1L, 10L);
+        BookMetadata dto = new BookMetadata();
+
+        LibraryCustomFieldEntity shelf = def(1L, "shelf", CustomFieldType.STRING, "Unread");
+        when(libraryCustomFieldRepository.findAllByLibrary_IdOrderByNameAsc(10L)).thenReturn(List.of(shelf));
+
+        BookCustomFieldValueEntity shelfValue = BookCustomFieldValueEntity.builder()
+                .customField(shelf)
+                .valueString("Read")
+                .locked(null)
+                .build();
+        when(bookCustomFieldValueRepository.findAllByBook_Id(1L)).thenReturn(List.of(shelfValue));
+
+        mapper.invokeMapCustomFields(entity, dto);
+
+        assertNotNull(dto.getCustomFields());
+        assertEquals("Read", dto.getCustomFields().get("shelf"));
+
+        assertNotNull(dto.getCustomFieldLocks());
+        assertEquals(false, dto.getCustomFieldLocks().get("shelf"));
+    }
+
     private static BookMetadataEntity metadataEntity(long bookId, long libraryId) {
         LibraryEntity library = new LibraryEntity();
         library.setId(libraryId);
