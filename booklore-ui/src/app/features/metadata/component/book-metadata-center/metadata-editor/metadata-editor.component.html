@@ -22,7 +22,7 @@
               class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
             </p-progressSpinner>
           }
-          <div class="flex items-center gap-2 pt-4">
+          <div class="flex items-center gap-3 pt-3">
             <p-button
               icon="pi pi-refresh"
               (onClick)="regenerateCover(book.id)"
@@ -55,7 +55,7 @@
               severity="info">
             </p-button>
             <p-fileupload
-              [chooseStyleClass]="'p-button-sm p-button-outlined'"
+              [chooseStyleClass]="'p-button-sm p-button-outlined p-button-danger'"
               pTooltip="Upload cover"
               tooltipPosition="top"
               [disabled]="book.metadata!['coverLocked']"
@@ -65,7 +65,6 @@
               chooseIcon="pi pi-upload"
               accept="image/jpeg,image/png"
               maxFileSize="5000000"
-              chooseLabel=""
               (onUpload)="onUpload($event)"
               (onError)="onUploadError($event)"
               [auto]="true"
