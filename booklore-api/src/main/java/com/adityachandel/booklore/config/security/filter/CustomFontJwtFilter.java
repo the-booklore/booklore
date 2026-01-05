@@ -9,9 +9,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CoverJwtFilter extends AbstractQueryParameterJwtFilter {
+public class CustomFontJwtFilter extends AbstractQueryParameterJwtFilter {
 
-    public CoverJwtFilter(
+    public CustomFontJwtFilter(
             JwtUtils jwtUtils,
             UserRepository userRepository,
             BookLoreUserTransformer bookLoreUserTransformer,
@@ -23,6 +23,7 @@ public class CoverJwtFilter extends AbstractQueryParameterJwtFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return !path.startsWith("/api/v1/media/");
+        // Only filter requests to custom font file endpoints (e.g., /api/v1/custom-fonts/123/file)
+        return !(path.startsWith("/api/v1/custom-fonts/") && path.endsWith("/file"));
     }
 }

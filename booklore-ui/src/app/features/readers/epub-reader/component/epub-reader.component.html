@@ -166,7 +166,8 @@
                           [(ngModel)]="selectedFontType"
                           (onChange)="changeFontType()"
                           [style]="{ width: '100%' }"
-                          placeholder="Select font">
+                          [loading]="!customFontsReady"
+                          placeholder="Loading fonts...">
                         </p-select>
                       </div>
                       <div class="setting-row">

@@ -105,6 +105,7 @@ export interface EpubReaderSetting {
   lineHeight: number;
   margin: number;
   letterSpacing: number;
+  customFontId?: number | null;
 }
 
 export interface CbxReaderSetting {
