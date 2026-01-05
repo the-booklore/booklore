@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.metadata;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
@@ -26,11 +27,13 @@ import org.mockito.*;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.Instant;
-import java.util.*;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class BookCoverServiceTest {
@@ -243,7 +246,7 @@ class BookCoverServiceTest {
         assertThat(result).isNotNull();
     }
 
-    private com.adityachandel.booklore.model.dto.settings.AppSettings mockAppSettings(boolean saveToOriginalFile, boolean convertCbrCb7ToCbz) {
+    private AppSettings mockAppSettings(boolean saveToOriginalFile, boolean convertCbrCb7ToCbz) {
         MetadataPersistenceSettings settings = new MetadataPersistenceSettings();
         settings.setSaveToOriginalFile(saveToOriginalFile);
         settings.setConvertCbrCb7ToCbz(convertCbrCb7ToCbz);

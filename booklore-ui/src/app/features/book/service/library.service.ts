@@ -133,7 +133,6 @@ export class LibraryService {
       );
   }
 
-
   doesLibraryExistByName(name: string): boolean {
     return (this.libraryStateSubject.value.libraries || []).some(l => l.name === name);
   }
@@ -144,12 +143,6 @@ export class LibraryService {
 
   getLibrariesFromState(): Library[] {
     return this.libraryStateSubject.value.libraries || [];
-  }
-
-  getLibraryPathById(pathId: number): string | undefined {
-    return this.libraryStateSubject.value.libraries
-      ?.find(lib => lib.paths.some(p => p.id === pathId))
-      ?.paths.find(p => p.id === pathId)?.path;
   }
 
   getBookCount(libraryId: number): Observable<number> {
