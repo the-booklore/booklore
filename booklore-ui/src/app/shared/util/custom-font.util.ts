@@ -1,4 +1,4 @@
-import { CustomFont } from '../model/custom-font.model';
+import {CustomFont} from '../model/custom-font.model';
 
 /**
  * Font dropdown item for epub-reader component (PrimeNG Select format)
@@ -39,12 +39,6 @@ export function addCustomFontsToDropdown<T extends FontDropdownItem | FontPrefer
       targetArray.splice(separatorIndex, 1);
     }
 
-    (targetArray as FontDropdownItem[]).push({
-      label: '--- Custom Fonts ---',
-      value: 'separator',
-      disabled: true
-    });
-
     fonts.forEach(font => {
       (targetArray as FontDropdownItem[]).push({
         label: font.fontName,
@@ -56,12 +50,6 @@ export function addCustomFontsToDropdown<T extends FontDropdownItem | FontPrefer
     if (separatorIndex !== -1) {
       targetArray.splice(separatorIndex, 1);
     }
-
-    (targetArray as FontPreferenceItem[]).push({
-      name: '--- Custom Fonts ---',
-      displayName: '---',
-      key: 'separator'
-    });
 
     fonts.forEach(font => {
       (targetArray as FontPreferenceItem[]).push({

@@ -9,13 +9,14 @@ import {ReaderPreferencesService} from './reader-preferences-service';
 import {EpubReaderPreferencesComponent} from './epub-reader-preferences/epub-reader-preferences-component';
 import {PdfReaderPreferencesComponent} from './pdf-reader-preferences/pdf-reader-preferences-component';
 import {CbxReaderPreferencesComponent} from './cbx-reader-preferences/cbx-reader-preferences-component';
+import {CustomFontsComponent} from '../custom-fonts/custom-fonts.component';
 
 @Component({
   selector: 'app-reader-preferences',
   templateUrl: './reader-preferences.component.html',
   standalone: true,
   styleUrls: ['./reader-preferences.component.scss'],
-  imports: [FormsModule, TooltipModule, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent]
+  imports: [FormsModule, TooltipModule, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent, CustomFontsComponent]
 })
 export class ReaderPreferences implements OnInit, OnDestroy {
   readonly scopeOptions = [
