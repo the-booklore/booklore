@@ -57,6 +57,13 @@ public class BookCoverService {
     private record BookRegenerationInfo(Long id, String title, BookFileType bookType) {
     }
 
+    // =========================
+    // SECTION: COVER UPDATES
+    // =========================
+
+    /**
+     * Generate a custom cover for a single book.
+     */
     public void generateCustomCover(long bookId) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         if (isCoverLocked(bookEntity)) {
@@ -71,18 +78,27 @@ public class BookCoverService {
         notifyBookCoverUpdate(bookEntity);
     }
 
+    /**
+     * Update cover image from uploaded file for a single book.
+     */
     @Transactional
     public BookMetadata updateCoverImageFromFile(Long bookId, MultipartFile file) {
         fileService.createThumbnailFromFile(bookId, file);
         return updateCover(bookId, (writer, book) -> writer.replaceCoverImageFromUpload(book, file));
     }
 
+    /**
+     * Update cover image from a URL for a single book.
+     */
     @Transactional
     public BookMetadata updateCoverImageFromUrl(Long bookId, String url) {
         fileService.createThumbnailFromUrl(bookId, url);
         return updateCover(bookId, (writer, book) -> writer.replaceCoverImageFromUrl(book, url));
     }
 
+    /**
+     * Bulk update cover images from a file for multiple books.
+     */
     public void updateCoverImageFromFileForBooks(Set<Long> bookIds, MultipartFile file) {
         validateCoverFile(file);
         byte[] coverImageBytes = extractBytesFromMultipartFile(file);
@@ -90,24 +106,34 @@ public class BookCoverService {
         SecurityContextVirtualThread.runWithSecurityContext(() -> processBulkCoverUpdate(unlockedBooks, coverImageBytes));
     }
 
-    public void regenerateCover(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId)
-                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+    // =========================
+    // SECTION: COVER REGENERATION
+    // =========================
 
+    /**
+     * Regenerate cover for a single book.
+     */
+    public void regenerateCover(long bookId) {
+        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         if (isCoverLocked(bookEntity)) {
             throw ApiError.METADATA_LOCKED.createException();
         }
-
         regenerateCoverForBook(bookEntity, "");
         updateBookCoverMetadata(bookEntity);
         bookRepository.save(bookEntity);
     }
 
+    /**
+     * Regenerate covers for a set of books.
+     */
     public void regenerateCoversForBooks(Set<Long> bookIds) {
         List<BookRegenerationInfo> unlockedBooks = getUnlockedBookRegenerationInfos(bookIds);
         SecurityContextVirtualThread.runWithSecurityContext(() -> processBulkCoverRegeneration(unlockedBooks));
     }
 
+    /**
+     * Regenerate covers for all books.
+     */
     public void regenerateCovers() {
         SecurityContextVirtualThread.runWithSecurityContext(() -> {
             try {
@@ -135,30 +161,9 @@ public class BookCoverService {
         });
     }
 
-    private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
-        BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId)).stream()
-                .findFirst()
-                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-
-        updateBookCoverMetadata(bookEntity);
-
-        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
-        boolean saveToOriginalFile = settings.isSaveToOriginalFile();
-        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
-
-        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
-            metadataWriterFactory.getWriter(bookEntity.getBookType())
-                    .ifPresent(writer -> {
-                        writerAction.accept(writer, bookEntity);
-                        String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
-                        bookEntity.setCurrentHash(newHash);
-                    });
-        }
-
-        bookEntity.setMetadataUpdatedAt(Instant.now());
-        bookRepository.save(bookEntity);
-        return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
-    }
+    // =========================
+    // SECTION: BULK OPERATIONS
+    // =========================
 
     private void processBulkCoverUpdate(List<BookCoverInfo> books, byte[] coverImageBytes) {
         try {
@@ -219,6 +224,34 @@ public class BookCoverService {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
             notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
         }
+    }
+
+    // =========================
+    // SECTION: INTERNAL HELPERS
+    // =========================
+
+    private BookMetadata updateCover(Long bookId, BiConsumer<MetadataWriter, BookEntity> writerAction) {
+        BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(Collections.singleton(bookId)).stream()
+                .findFirst()
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+
+        MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
+        boolean saveToOriginalFile = settings.isSaveToOriginalFile();
+        boolean convertCbrCb7ToCbz = settings.isConvertCbrCb7ToCbz();
+
+        if (saveToOriginalFile && (bookEntity.getBookType() != BookFileType.CBX || convertCbrCb7ToCbz)) {
+            metadataWriterFactory.getWriter(bookEntity.getBookType())
+                    .ifPresent(writer -> {
+                        writerAction.accept(writer, bookEntity);
+                        String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                        bookEntity.setCurrentHash(newHash);
+                    });
+        }
+
+        bookEntity.setMetadataUpdatedAt(Instant.now());
+        updateBookCoverMetadata(bookEntity);
+        bookRepository.save(bookEntity);
+        return bookMetadataMapper.toBookMetadata(bookEntity.getMetadata(), true);
     }
 
     private void regenerateCoverForBook(BookEntity book, String progress) {
