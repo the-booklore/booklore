@@ -288,6 +288,11 @@ public class BookService {
         }
     }
 
+    public Resource getBookCover(String coverHash) {
+        BookEntity bookEntity = bookRepository.findByBookCoverHash(coverHash).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(coverHash));
+        return getBookCover(bookEntity.getId());
+    }
+
     public Resource getBackgroundImage() {
         try {
             BookLoreUser user = authenticationService.getAuthenticatedUser();
