@@ -197,6 +197,24 @@ curl http://localhost:8080/actuator/health
 
 Always run tests before submitting a pull request to ensure your changes don't break existing functionality.
 
+### Frontend Tests (Angular + Vitest)
+
+Booklore uses [Vitest](https://vitest.dev/) for fast, modern frontend testing in the Angular app.
+
+```bash
+cd booklore-ui
+
+# Run all frontend tests
+ng test
+
+# Run tests with coverage report
+ng test --coverage
+```
+
+- The coverage report will be generated in the `coverage/` directory.
+- You can open `coverage/index.html` in your browser to view detailed coverage metrics.
+- All new features and bug fixes should include relevant unit tests.
+
 ### Backend Tests
 
 ```bash
