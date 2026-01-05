@@ -33,11 +33,11 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
 
   fonts = [
     {name: 'Book Default', displayName: 'Default', key: null},
-    {name: 'Serif', displayName: 'Aa', key: 'serif'},
-    {name: 'Sans Serif', displayName: 'Aa', key: 'sans-serif'},
-    {name: 'Roboto', displayName: 'Aa', key: 'roboto'},
-    {name: 'Cursive', displayName: 'Aa', key: 'cursive'},
-    {name: 'Monospace', displayName: 'Aa', key: 'monospace'}
+    {name: 'Serif', displayName: 'Serif', key: 'serif'},
+    {name: 'Sans Serif', displayName: 'Sans Serif', key: 'sans-serif'},
+    {name: 'Roboto', displayName: 'Roboto', key: 'roboto'},
+    {name: 'Cursive', displayName: 'Cursive', key: 'cursive'},
+    {name: 'Monospace', displayName: 'Monospace', key: 'monospace'}
   ];
 
   readonly flowOptions = [

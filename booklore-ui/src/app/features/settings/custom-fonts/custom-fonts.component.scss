@@ -65,13 +65,10 @@
   gap: 2rem;
 }
 
-.preferences-section {
-  @media (min-width: 768px) {
-    padding: 0 1rem;
-  }
-}
-
 .section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   margin-bottom: 1rem;
 }
 
