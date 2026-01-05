@@ -14,7 +14,7 @@
     &.layout-overlay {
       .layout-main-container {
         margin-left: 0;
-        padding: 5rem 1.1rem 2rem 3.6rem;
+        padding: 5rem 1.1rem 1.1rem 3.6rem;
       }
 
       .layout-sidebar {
@@ -47,7 +47,7 @@
 
         .layout-main-container {
           margin-left: 0;
-          padding: 5rem 1rem 2rem 1.5rem;
+          padding: 5rem 1.1rem 1.1rem 1.1rem;
         }
       }
     }
@@ -65,7 +65,7 @@
 
   .layout-wrapper {
     .layout-main-container {
-      padding: 4.4rem 0.5rem 0.5rem 0.5rem;
+      padding-left: 1.1rem;
     }
 
     .layout-sidebar {
@@ -97,6 +97,14 @@
         display: block;
         animation: fadein variables.$transitionDuration;
       }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .layout-wrapper {
+    .layout-main-container {
+      padding: 4.4rem 0 0;
     }
   }
 }

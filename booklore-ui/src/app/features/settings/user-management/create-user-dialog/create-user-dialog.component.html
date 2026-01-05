@@ -327,6 +327,105 @@
             </div>
           </div>
 
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-pencil"></i>
+              Metadata Editing
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkAutoFetchMetadata" [binary]="true" inputId="perm-bulk-auto-fetch"></p-checkbox>
+                <label for="perm-bulk-auto-fetch" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-sync permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Auto Fetch Metadata</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkCustomFetchMetadata" [binary]="true" inputId="perm-bulk-custom-fetch"></p-checkbox>
+                <label for="perm-bulk-custom-fetch" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-cog permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Custom Fetch Metadata</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkEditMetadata" [binary]="true" inputId="perm-bulk-edit-metadata"></p-checkbox>
+                <label for="perm-bulk-edit-metadata" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-pencil permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Edit Metadata</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkRegenerateCover" [binary]="true" inputId="perm-bulk-regenerate-cover"></p-checkbox>
+                <label for="perm-bulk-regenerate-cover" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-image permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Regenerate Cover</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionMoveOrganizeFiles" [binary]="true" inputId="perm-move-organize-files"></p-checkbox>
+                <label for="perm-move-organize-files" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-folder-open permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Move/Organize Files</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkLockUnlockMetadata" [binary]="true" inputId="perm-bulk-lock-unlock"></p-checkbox>
+                <label for="perm-bulk-lock-unlock" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-lock-open permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Lock/Unlock Metadata</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="permission-group">
+            <h4 class="permission-group-title">
+              <i class="pi pi-refresh"></i>
+              Bulk Reset
+            </h4>
+            <div class="permission-group-items">
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkResetBookloreReadProgress" [binary]="true" inputId="perm-bulk-reset-booklore"></p-checkbox>
+                <label for="perm-bulk-reset-booklore" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-history permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Reset Booklore Read Progress</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkResetKoReaderReadProgress" [binary]="true" inputId="perm-bulk-reset-koreader"></p-checkbox>
+                <label for="perm-bulk-reset-koreader" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-tablet permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Reset KoReader Read Progress</span>
+                </label>
+              </div>
+              <div class="permission-item">
+                <p-checkbox formControlName="permissionBulkResetBookReadStatus" [binary]="true" inputId="perm-bulk-reset-read-status"></p-checkbox>
+                <label for="perm-bulk-reset-read-status" class="permission-label">
+                  <div class="permission-icon-wrapper">
+                    <i class="pi pi-check-square permission-icon"></i>
+                  </div>
+                  <span class="permission-name">Bulk Reset Book Read Status</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <div class="permission-group full-width">
             <h4 class="permission-group-title">
               <i class="pi pi-shield"></i>

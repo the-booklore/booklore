@@ -25,7 +25,7 @@ export class DownloadProgressService {
   private lastUpdateTime = 0;
   private updateThrottleMs = 100;
   private pendingUpdate: DownloadProgress | null = null;
-  private throttleTimer: any = null;
+  private throttleTimer: ReturnType<typeof setTimeout> | null = null;
 
   downloadProgress$ = this.downloadProgressSubject.asObservable();
 

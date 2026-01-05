@@ -28,6 +28,7 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -76,6 +77,7 @@ public class BookDropService {
     private final ObjectMapper objectMapper;
     private final FileMovingHelper fileMovingHelper;
     private final MonitoringRegistrationService monitoringRegistrationService;
+    private final KoboAutoShelfService koboAutoShelfService;
 
     private static final int CHUNK_SIZE = 100;
 
@@ -476,6 +478,7 @@ public class BookDropService {
                 .build();
 
         metadataRefreshService.updateBookMetadata(context);
+        koboAutoShelfService.autoAddBookToKoboShelves(bookEntity.getId());
 
         cleanupBookdropData(bookdropFile);
 

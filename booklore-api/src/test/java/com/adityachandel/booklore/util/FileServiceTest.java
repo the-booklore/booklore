@@ -59,7 +59,7 @@ class FileServiceTest {
                 .verticalCroppingEnabled(true)
                 .horizontalCroppingEnabled(true)
                 .aspectRatioThreshold(2.5)
-                .build();
+                .smartCroppingEnabled(true).build();
         AppSettings appSettings = AppSettings.builder()
                 .coverCroppingSettings(coverCroppingSettings)
                 .build();
@@ -728,7 +728,7 @@ class FileServiceTest {
                         .verticalCroppingEnabled(false)
                         .horizontalCroppingEnabled(false)
                         .aspectRatioThreshold(2.5)
-                        .build();
+                        .smartCroppingEnabled(true).build();
                 AppSettings appSettings = AppSettings.builder()
                         .coverCroppingSettings(disabledSettings)
                         .build();
@@ -1151,7 +1151,7 @@ class FileServiceTest {
                     .verticalCroppingEnabled(true)
                     .horizontalCroppingEnabled(true)
                     .aspectRatioThreshold(2.5)
-                    .build();
+                    .smartCroppingEnabled(true).build();
             AppSettings appSettings = AppSettings.builder()
                     .coverCroppingSettings(coverCroppingSettings)
                     .build();

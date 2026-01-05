@@ -12,6 +12,7 @@ import com.adityachandel.booklore.model.dto.settings.UserSettingKey;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.UserSettingEntity;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,23 +47,7 @@ public class UserService {
         user.setEmail(updateRequest.getEmail());
 
         if (updateRequest.getPermissions() != null && getMyself().getPermissions().isAdmin()) {
-            user.getPermissions().setPermissionAdmin(updateRequest.getPermissions().isAdmin());
-            user.getPermissions().setPermissionUpload(updateRequest.getPermissions().isCanUpload());
-            user.getPermissions().setPermissionDownload(updateRequest.getPermissions().isCanDownload());
-            user.getPermissions().setPermissionEditMetadata(updateRequest.getPermissions().isCanEditMetadata());
-            user.getPermissions().setPermissionManageLibrary(updateRequest.getPermissions().isCanManageLibrary());
-            user.getPermissions().setPermissionEmailBook(updateRequest.getPermissions().isCanEmailBook());
-            user.getPermissions().setPermissionDeleteBook(updateRequest.getPermissions().isCanDeleteBook());
-            user.getPermissions().setPermissionAccessOpds(updateRequest.getPermissions().isCanAccessOpds());
-            user.getPermissions().setPermissionSyncKoreader(updateRequest.getPermissions().isCanSyncKoReader());
-            user.getPermissions().setPermissionSyncKobo(updateRequest.getPermissions().isCanSyncKobo());
-            user.getPermissions().setPermissionManageMetadataConfig(updateRequest.getPermissions().isCanManageMetadataConfig());
-            user.getPermissions().setPermissionAccessBookdrop(updateRequest.getPermissions().isCanAccessBookdrop());
-            user.getPermissions().setPermissionAccessLibraryStats(updateRequest.getPermissions().isCanAccessLibraryStats());
-            user.getPermissions().setPermissionAccessUserStats(updateRequest.getPermissions().isCanAccessUserStats());
-            user.getPermissions().setPermissionAccessTaskManager(updateRequest.getPermissions().isCanAccessTaskManager());
-            user.getPermissions().setPermissionManageGlobalPreferences(updateRequest.getPermissions().isCanManageGlobalPreferences());
-            user.getPermissions().setPermissionManageIcons(updateRequest.getPermissions().isCanManageIcons());
+            UserPermission.copyFromRequestToEntity(updateRequest.getPermissions(), user.getPermissions());
         }
 
         if (updateRequest.getAssignedLibraries() != null && getMyself().getPermissions().isAdmin()) {
@@ -103,7 +88,7 @@ public class UserService {
         BookLoreUserEntity bookLoreUserEntity = userRepository.findById(bookLoreUser.getId())
                 .orElseThrow(() -> ApiError.USER_NOT_FOUND.createException(bookLoreUser.getId()));
 
-        if(bookLoreUserEntity.getPermissions().isPermissionDemoUser()) {
+        if (bookLoreUserEntity.getPermissions().isPermissionDemoUser()) {
             throw ApiError.DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED.createException();
         }
 

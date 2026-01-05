@@ -15,7 +15,7 @@
       <input
         #patternInput
         pInputText
-        [formControl]="$any(patternForm.get('pattern'))"
+        [formControl]="patternControl"
         [placeholder]="patternPlaceholderText"
         id="pattern-input"
         aria-label="Filename pattern for metadata extraction"

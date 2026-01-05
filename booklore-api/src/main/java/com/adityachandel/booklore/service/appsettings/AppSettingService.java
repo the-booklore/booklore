@@ -95,7 +95,9 @@ public class AppSettingService {
     }
 
     private Map<String, String> getSettingsMap() {
-        return settingPersistenceHelper.appSettingsRepository.findAll().stream().collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
+        return settingPersistenceHelper.appSettingsRepository.findAll().stream()
+                .filter(entity -> entity.getName() != null && entity.getVal() != null)
+                .collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
     }
 
     private PublicAppSetting buildPublicSetting() {
@@ -143,5 +145,21 @@ public class AppSettingService {
         builder.oidcEnabled(finalEnabled);
 
         return builder.build();
+    }
+
+    public String getSettingValue(String key) {
+        var setting = settingPersistenceHelper.appSettingsRepository.findByName(key);
+        return setting != null ? setting.getVal() : null;
+    }
+
+    @Transactional
+    public void saveSetting(String key, String value) {
+        var setting = settingPersistenceHelper.appSettingsRepository.findByName(key);
+        if (setting == null) {
+            setting = new AppSettingEntity();
+            setting.setName(key);
+        }
+        setting.setVal(value);
+        settingPersistenceHelper.appSettingsRepository.save(setting);
     }
 }

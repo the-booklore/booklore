@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
@@ -13,4 +14,6 @@ public interface Task {
     default String getMetadata() {
         return null;
     }
+
+    void validatePermissions(BookLoreUser user, TaskCreateRequest request);
 }

@@ -22,9 +22,9 @@ export class AppLayoutComponent implements OnDestroy {
 
   overlayMenuOpenSubscription: Subscription;
 
-  menuOutsideClickListener: any;
+  menuOutsideClickListener: (() => void) | null = null;
 
-  profileMenuOutsideClickListener: any;
+  profileMenuOutsideClickListener: (() => void) | null = null;
 
   @ViewChild(AppSidebarComponent) appSidebar!: AppSidebarComponent;
 

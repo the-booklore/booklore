@@ -19,7 +19,7 @@ export class BookRuleEvaluatorService {
   private evaluateRule(book: Book, rule: Rule): boolean {
     const rawValue = this.extractBookValue(book, rule.field);
 
-    const normalize = (val: any): any => {
+    const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
       if (typeof val === 'string') {
@@ -188,7 +188,7 @@ export class BookRuleEvaluatorService {
     }
   }
 
-  private extractBookValue(book: Book, field: RuleField): any {
+  private extractBookValue(book: Book, field: RuleField): unknown {
     switch (field) {
       case 'library':
         return book.libraryId;
@@ -245,7 +245,7 @@ export class BookRuleEvaluatorService {
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
       default:
-        return (book as any)[field];
+        return (book as Record<string, unknown>)[field];
     }
   }
 

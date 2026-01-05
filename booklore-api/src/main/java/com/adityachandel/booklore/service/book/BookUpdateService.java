@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import com.adityachandel.booklore.service.user.UserProgressService;
@@ -178,6 +179,11 @@ public class BookUpdateService {
     @Transactional
     public List<BookStatusUpdateResponse> updateReadStatus(List<Long> bookIds, String status) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+
+        if(bookIds.size() > 1 && !UserPermission.CAN_BULK_RESET_BOOK_READ_STATUS.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_BULK_RESET_BOOK_READ_STATUS);
+        }
+
         ReadStatus readStatus = EnumUtils.getEnumIgnoreCase(ReadStatus.class, status);
 
         Set<Long> existingProgressBookIds = validateBooksAndGetExistingProgress(user.getId(), bookIds);
@@ -228,6 +234,14 @@ public class BookUpdateService {
     @Transactional
     public List<BookStatusUpdateResponse> resetProgress(List<Long> bookIds, ResetProgressType type) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+
+        if(bookIds.size() > 1 && type == ResetProgressType.BOOKLORE && !UserPermission.CAN_BULK_RESET_BOOKLORE_READ_PROGRESS.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_BULK_RESET_BOOKLORE_READ_PROGRESS);
+        }
+
+        if(bookIds.size() > 1 && type == ResetProgressType.KOREADER && !UserPermission.CAN_BULK_RESET_KOREADER_READ_PROGRESS.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_BULK_RESET_KOREADER_READ_PROGRESS);
+        }
 
         Set<Long> existingProgressBookIds = validateBooksAndGetExistingProgress(user.getId(), bookIds);
 

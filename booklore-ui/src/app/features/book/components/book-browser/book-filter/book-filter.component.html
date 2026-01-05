@@ -35,10 +35,10 @@
                 <div
                   class="filter-row"
                   [ngClass]="{
-                    'active': activeFilters[filterType]?.includes(filter.value?.id || filter.value)
+                    'active': activeFilters[filterType]?.includes(getFilterValueId(filter))
                   }"
-                  (click)="handleFilterClick(filterType, filter.value?.id || filter.value)">
-                  {{ filter.value.name || filter.value }}
+                  (click)="handleFilterClick(filterType, getFilterValueId(filter))">
+                  {{ getFilterValueDisplay(filter) }}
                   <p-badge class="filter-value-badge" [value]="filter.bookCount"></p-badge>
                 </div>
               }

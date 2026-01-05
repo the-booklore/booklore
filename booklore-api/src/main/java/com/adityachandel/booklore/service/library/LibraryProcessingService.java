@@ -46,7 +46,7 @@ public class LibraryProcessingService {
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         try {
             List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+            processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
         } catch (IOException e) {
             log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
@@ -96,19 +96,37 @@ public class LibraryProcessingService {
     }
 
     protected List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
-        Set<Path> existingFullPaths = libraryEntity.getBookEntities().stream()
-                .map(BookEntity::getFullFilePath)
+        Set<String> existingKeys = libraryEntity.getBookEntities().stream()
+                .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 
-        Set<Path> additionalFilePaths = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId()).stream()
-                .map(BookAdditionalFileEntity::getFullFilePath)
+        Set<String> additionalFileKeys = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId()).stream()
+                .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 
-        existingFullPaths.addAll(additionalFilePaths);
+        existingKeys.addAll(additionalFileKeys);
 
         return libraryFiles.stream()
-                .filter(file -> !existingFullPaths.contains(file.getFullPath()))
+                .filter(file -> !existingKeys.contains(generateUniqueKey(file)))
                 .collect(Collectors.toList());
+    }
+
+    private String generateUniqueKey(BookEntity book) {
+        return generateKey(book.getLibraryPath().getId(), book.getFileSubPath(), book.getFileName());
+    }
+
+    private String generateUniqueKey(BookAdditionalFileEntity file) {
+        // Additional files inherit library path from their parent book
+        return generateKey(file.getBook().getLibraryPath().getId(), file.getFileSubPath(), file.getFileName());
+    }
+
+    private String generateUniqueKey(LibraryFile file) {
+        return generateKey(file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
+    }
+
+    private String generateKey(Long libraryPathId, String subPath, String fileName) {
+        String safeSubPath = (subPath == null) ? "" : subPath;
+        return libraryPathId + ":" + safeSubPath + ":" + fileName;
     }
 
     protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {

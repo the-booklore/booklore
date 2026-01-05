@@ -81,9 +81,9 @@ class MetadataMatchServiceTest {
     @Test
     void calculateMatchScore_shouldScoreLockedNullSeriesNumber() {
          weights = MetadataMatchWeights.builder()
-                .title(10)
-                .seriesNumber(5)
-                .build();
+                 .title(10)
+                 .seriesNumber(5)
+                 .build();
          
          // Total 15
 

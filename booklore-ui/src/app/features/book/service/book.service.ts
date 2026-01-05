@@ -432,7 +432,12 @@ export class BookService {
 
   updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean): Observable<BookMetadata> {
     const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
-    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params});
+    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params}).pipe(
+      map(updatedMetadata => {
+        this.handleBookMetadataUpdate(bookId!, updatedMetadata);
+        return updatedMetadata;
+      })
+    );
   }
 
   updateBooksMetadata(request: BulkMetadataUpdateRequest): Observable<void> {
@@ -479,7 +484,7 @@ export class BookService {
           for (const [field, action] of Object.entries(fieldActions)) {
             const lockField = field.endsWith('Locked') ? field : `${field}Locked`;
             if (lockField in updatedMetadata) {
-              (updatedMetadata as any)[lockField] = action === 'LOCK';
+              (updatedMetadata as Record<string, unknown>)[lockField] = action === 'LOCK';
             }
           }
           return {
@@ -503,7 +508,7 @@ export class BookService {
     );
   }
 
-  consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<any> {
+  consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<unknown> {
     const payload = {metadataType, targetValues, valuesToMerge};
     return this.http.post(`${this.url}/metadata/manage/consolidate`, payload).pipe(
       tap(() => {
@@ -512,7 +517,7 @@ export class BookService {
     );
   }
 
-  deleteMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', valuesToDelete: string[]): Observable<any> {
+  deleteMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', valuesToDelete: string[]): Observable<unknown> {
     const payload = {metadataType, valuesToDelete};
     return this.http.post(`${this.url}/metadata/manage/delete`, payload).pipe(
       tap(() => {
@@ -543,6 +548,10 @@ export class BookService {
 
   regenerateCover(bookId: number): Observable<void> {
     return this.http.post<void>(`${this.url}/${bookId}/regenerate-cover`, {});
+  }
+
+  generateCustomCover(bookId: number): Observable<void> {
+    return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
   }
 
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {
