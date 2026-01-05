@@ -20,31 +20,20 @@ jobs:
       base_ref: 'origin/develop'
       head_ref: 'HEAD'
 
-  build-and-push:
+  backend-tests:
+    name: Backend Tests
     needs: [ migration-check ]
     if: needs.migration-check.result == 'success' || needs.migration-check.result == 'skipped'
     runs-on: ubuntu-latest
 
     permissions:
       contents: read
-      packages: write
       checks: write
       pull-requests: write
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      # ----------------------------------------
-      # Environment setup
-      # ----------------------------------------
-      - name: Set Up QEMU for Multi-Arch Builds
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set Up Docker Buildx
-        uses: docker/setup-buildx-action@v3
 
       - name: Set Up JDK 21
         uses: actions/setup-java@v5
@@ -53,9 +42,6 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # ----------------------------------------
-      # Backend tests
-      # ----------------------------------------
       - name: Execute Backend Tests
         id: backend_tests
         working-directory: ./booklore-api
@@ -75,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v6
         if: always()
         with:
-          name: test-reports
+          name: backend-test-reports
           path: |
             booklore-api/build/reports/tests/
             booklore-api/build/test-results/
@@ -86,6 +72,86 @@ jobs:
         run: |
           echo "❌ Backend tests failed"
           exit 1
+
+  frontend-tests:
+    name: Frontend Tests
+    needs: [ migration-check ]
+    if: needs.migration-check.result == 'success' || needs.migration-check.result == 'skipped'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm ci --force
+
+      - name: Execute Frontend Tests
+        id: frontend_tests
+        working-directory: ./booklore-ui
+        run: |
+          echo "Running frontend tests..."
+          npx ng test
+        continue-on-error: true
+
+      - name: Publish Frontend Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: booklore-ui/test-results/vitest-results.xml
+          check_name: Frontend Test Results
+
+      - name: Upload Frontend Test Reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: frontend-test-reports
+          path: |
+            booklore-ui/test-results/vitest-results.xml
+          retention-days: 30
+
+      - name: Validate Frontend Test Results
+        if: steps.frontend_tests.outcome == 'failure'
+        run: |
+          echo "❌ Frontend tests failed"
+          exit 1
+
+  build-and-push:
+    name: Build and Push Container
+    needs: [ backend-tests, frontend-tests ]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # ----------------------------------------
+      # Environment setup
+      # ----------------------------------------
+      - name: Set Up QEMU for Multi-Arch Builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       # ----------------------------------------
       # Image tagging

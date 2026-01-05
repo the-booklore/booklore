@@ -430,6 +430,22 @@ Join community!
 
 <div align="center">
 
+## 🌟 **Sponsors**
+
+### Thank you to our amazing sponsors!
+
+<a href="https://www.pikapods.com/pods?run=booklore">
+  <img src="https://www.pikapods.com/static/run-button.svg" alt="Run on PikaPods" height="40">
+</a>
+
+*Become a sponsor and get your logo here! [Support us on Open Collective](https://opencollective.com/booklore)*
+
+</div>
+
+---
+
+<div align="center">
+
 ## ⚖️ **License**
 
 **GNU General Public License v3.0**

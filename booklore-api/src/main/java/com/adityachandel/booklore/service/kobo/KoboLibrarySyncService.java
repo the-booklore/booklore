@@ -53,6 +53,7 @@ public class KoboLibrarySyncService {
         if (prevSnapshot.isPresent()) {
             int maxRemaining = 5;
             List<KoboSnapshotBookEntity> removedAll = new ArrayList<>();
+            List<KoboSnapshotBookEntity> changedAll = new ArrayList<>();
 
             koboLibrarySnapshotService.updateSyncedStatusForExistingBooks(prevSnapshot.get().getId(), currSnapshot.getId());
 
@@ -61,35 +62,46 @@ public class KoboLibrarySyncService {
             maxRemaining -= addedPage.getNumberOfElements();
             shouldContinueSync = addedPage.hasNext();
 
-            Page<KoboSnapshotBookEntity> removedPage = Page.empty();
+            Page<KoboSnapshotBookEntity> changedPage = Page.empty();
             if (addedPage.isLast() && maxRemaining > 0) {
+                changedPage = koboLibrarySnapshotService.getChangedBooks(prevSnapshot.get().getId(), currSnapshot.getId(), PageRequest.of(0, maxRemaining));
+                changedAll.addAll(changedPage.getContent());
+                maxRemaining -= changedPage.getNumberOfElements();
+                shouldContinueSync = shouldContinueSync || changedPage.hasNext();
+            }
+
+            Page<KoboSnapshotBookEntity> removedPage = Page.empty();
+            if (changedPage.isLast() && maxRemaining > 0) {
                 removedPage = koboLibrarySnapshotService.getRemovedBooks(prevSnapshot.get().getId(), currSnapshot.getId(), user.getId(), PageRequest.of(0, maxRemaining));
                 removedAll.addAll(removedPage.getContent());
                 shouldContinueSync = shouldContinueSync || removedPage.hasNext();
             }
 
             Set<Long> addedIds = addedAll.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
+            Set<Long> changedIds = changedAll.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
             Set<Long> removedIds = removedAll.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
 
-            entitlements.addAll(entitlementService.generateNewEntitlements(addedIds, token, false));
+            entitlements.addAll(entitlementService.generateNewEntitlements(addedIds, token));
+            entitlements.addAll(entitlementService.generateChangedEntitlements(changedIds, token, false));
             entitlements.addAll(entitlementService.generateChangedEntitlements(removedIds, token, true));
-            
+
+
             if (!shouldContinueSync) {
                 entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
             }
         } else {
             int maxRemaining = 5;
-            List<KoboSnapshotBookEntity> all = new ArrayList<>();
+            List<KoboSnapshotBookEntity> snapshotBookEntities = new ArrayList<>();
             while (maxRemaining > 0) {
-                var page = koboLibrarySnapshotService.getUnsyncedBooks(currSnapshot.getId(), PageRequest.of(0, maxRemaining));
-                all.addAll(page.getContent());
+                Page<KoboSnapshotBookEntity> page = koboLibrarySnapshotService.getUnsyncedBooks(currSnapshot.getId(), PageRequest.of(0, maxRemaining));
+                snapshotBookEntities.addAll(page.getContent());
                 maxRemaining -= page.getNumberOfElements();
                 shouldContinueSync = page.hasNext();
                 if (!shouldContinueSync || page.getNumberOfElements() == 0) break;
             }
-            Set<Long> ids = all.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
-            entitlements.addAll(entitlementService.generateNewEntitlements(ids, token, false));
-            
+            Set<Long> ids = snapshotBookEntities.stream().map(KoboSnapshotBookEntity::getBookId).collect(Collectors.toSet());
+            entitlements.addAll(entitlementService.generateNewEntitlements(ids, token));
+
             if (!shouldContinueSync) {
                 entitlements.addAll(syncReadingStatesToKobo(user.getId(), currSnapshot.getId()));
             }
@@ -146,7 +158,7 @@ public class KoboLibrarySyncService {
     }
 
     private List<ChangedReadingState> syncReadingStatesToKobo(Long userId, String snapshotId) {
-        List<UserBookProgressEntity> booksNeedingSync = 
+        List<UserBookProgressEntity> booksNeedingSync =
                 userBookProgressRepository.findAllBooksNeedingKoboSync(userId, snapshotId);
 
         if (booksNeedingSync.isEmpty()) {

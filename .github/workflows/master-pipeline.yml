@@ -69,6 +69,21 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm ci --force
+
+      - name: Execute Frontend Tests
+        working-directory: ./booklore-ui
+        run: npm run test:ci
+
       - name: Retrieve Latest Master Version Tag
         id: get_version
         run: |
@@ -166,4 +181,3 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh release edit ${{ env.new_tag }} --draft=true
-
