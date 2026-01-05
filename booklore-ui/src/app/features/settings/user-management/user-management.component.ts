@@ -140,7 +140,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
         name: user.name,
         email: user.email,
         permissions: user.permissions,
-        assignedLibraries: this.allLibraries.filter(lib => lib.id && user.selectedLibraryIds?.includes(lib.id)),
+        assignedLibraries: user.selectedLibraryIds || [],
       })
       .subscribe({
         next: () => {
