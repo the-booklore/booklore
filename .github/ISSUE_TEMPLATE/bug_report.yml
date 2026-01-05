@@ -8,14 +8,6 @@ body:
       value: |
         Please fill out the details below so we can investigate and fix the issue.
 
-  - type: checkboxes
-    id: prerequisites
-    attributes:
-      label: Quick Check
-      options:
-        - label: I've searched existing issues and this bug hasn't been reported yet
-          required: true
-
   - type: textarea
     id: description
     attributes:
@@ -77,3 +69,11 @@ body:
     validations:
       required: true
 
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Before Submitting
+      description: Please confirm you've completed this step
+      options:
+        - label: I've searched existing issues and confirmed this bug hasn't been reported yet
+          required: true
