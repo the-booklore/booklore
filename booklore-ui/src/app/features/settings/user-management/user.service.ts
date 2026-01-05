@@ -191,6 +191,13 @@ export interface UserState {
   error: string | null;
 }
 
+export interface UserUpdateRequest {
+  name?: string;
+  email?: string;
+  permissions?: User['permissions'];
+  assignedLibraries?: number[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -277,7 +284,7 @@ export class UserService {
     return this.http.get<User[]>(this.userUrl);
   }
 
-  updateUser(userId: number, updateData: Partial<User>): Observable<User> {
+  updateUser(userId: number, updateData: UserUpdateRequest): Observable<User> {
     return this.http.put<User>(`${this.userUrl}/${userId}`, updateData);
   }
 

@@ -4,7 +4,7 @@ import {Button, ButtonDirective} from 'primeng/button';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {TableModule} from 'primeng/table';
 import {LowerCasePipe, TitleCasePipe} from '@angular/common';
-import {User, UserService} from './user.service';
+import {User, UserService, UserUpdateRequest} from './user.service';
 
 interface UserWithEditing extends User {
   isEditing?: boolean;
@@ -135,13 +135,14 @@ export class UserManagementComponent implements OnInit, OnDestroy {
 
   saveUser(user: UserWithEditing) {
     user.selectedLibraryIds = [...this.editingLibraryIds];
+    const updateRequest: UserUpdateRequest = {
+      name: user.name,
+      email: user.email,
+      permissions: user.permissions,
+      assignedLibraries: user.selectedLibraryIds || [],
+    };
     this.userService
-      .updateUser(user.id, {
-        name: user.name,
-        email: user.email,
-        permissions: user.permissions,
-        assignedLibraries: this.allLibraries.filter(lib => lib.id && user.selectedLibraryIds?.includes(lib.id)),
-      })
+      .updateUser(user.id, updateRequest)
       .subscribe({
         next: () => {
           user.isEditing = false;
