@@ -5,7 +5,7 @@ import {filter, takeUntil} from 'rxjs/operators';
 import {Observable, Subject} from 'rxjs';
 import {TooltipModule} from 'primeng/tooltip';
 import {UserService, UserSettings, UserState} from '../user-management/user.service';
-import {ReaderPreferencesService} from './reader-preferences-service';
+import {ReaderPreferencesService} from './reader-preferences.service';
 import {EpubReaderPreferencesComponent} from './epub-reader-preferences/epub-reader-preferences-component';
 import {PdfReaderPreferencesComponent} from './pdf-reader-preferences/pdf-reader-preferences-component';
 import {CbxReaderPreferencesComponent} from './cbx-reader-preferences/cbx-reader-preferences-component';

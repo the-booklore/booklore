@@ -53,6 +53,8 @@ export class SideBarFilter implements BookFilter {
   filter(bookState: BookState): Observable<BookState> {
     return combineLatest([this.selectedFilter$, this.selectedFilterMode$]).pipe(
       map(([activeFilters, mode]) => {
+        // Return original state if books is null or undefined
+        if (bookState.books == null) return bookState;
         if (!activeFilters) return bookState;
         const filteredBooks = (bookState.books || []).filter(book => {
           const matches = Object.entries(activeFilters).map(([filterType, filterValues]) => {
