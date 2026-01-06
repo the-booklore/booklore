@@ -64,6 +64,24 @@
               </p>
             </div>
           </div>
+          
+          @if (komgaApiEnabled) {
+            <div class="setting-item">
+              <div class="setting-info">
+                <div class="setting-label-row">
+                  <label class="setting-label">Group Unknown Series</label>
+                  <p-toggleswitch
+                    [(ngModel)]="komgaGroupUnknown"
+                    (onChange)="toggleKomgaGroupUnknown()">
+                  </p-toggleswitch>
+                </div>
+                <p class="setting-description">
+                  <i class="pi pi-info-circle"></i>
+                  When enabled, books without a series will be grouped under "Unknown Series". When disabled, each book without a series will appear as its own individual series.
+                </p>
+              </div>
+            </div>
+          }
         </div>
       </div>
 
