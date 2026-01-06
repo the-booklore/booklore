@@ -105,6 +105,7 @@ export interface EpubReaderSetting {
   lineHeight: number;
   margin: number;
   letterSpacing: number;
+  customFontId?: number | null;
 }
 
 export interface CbxReaderSetting {
@@ -189,6 +190,13 @@ export interface UserState {
   user: User | null;
   loaded: boolean;
   error: string | null;
+}
+
+export interface UserUpdateRequest {
+  name?: string;
+  email?: string;
+  permissions?: User['permissions'];
+  assignedLibraries?: number[];
 }
 
 @Injectable({
@@ -277,7 +285,7 @@ export class UserService {
     return this.http.get<User[]>(this.userUrl);
   }
 
-  updateUser(userId: number, updateData: Partial<User>): Observable<User> {
+  updateUser(userId: number, updateData: UserUpdateRequest): Observable<User> {
     return this.http.put<User>(`${this.userUrl}/${userId}`, updateData);
   }
 
@@ -311,7 +319,7 @@ export class UserService {
     );
   }
 
-  updateUserSetting(userId: number, key: string, value: any): void {
+  updateUserSetting(userId: number, key: string, value: unknown): void {
     const payload = {
       key,
       value

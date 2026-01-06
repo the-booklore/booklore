@@ -6,11 +6,11 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.PdfMetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,6 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileService fileService,
-                        BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService,
                         PdfMetadataExtractor pdfMetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
@@ -52,6 +51,7 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.PDF);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
         extractAndSetMetadata(bookEntity);
         return bookEntity;
@@ -127,7 +127,7 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (StringUtils.isNotBlank(extracted.getGoodreadsId())) {
                 bookEntity.getMetadata().setGoodreadsId(extracted.getGoodreadsId());
             }
-            if (StringUtils.isNotBlank(extracted.getComicvineId())){
+            if (StringUtils.isNotBlank(extracted.getComicvineId())) {
                 bookEntity.getMetadata().setComicvineId(extracted.getComicvineId());
             }
             if (StringUtils.isNotBlank(extracted.getIsbn10())) {

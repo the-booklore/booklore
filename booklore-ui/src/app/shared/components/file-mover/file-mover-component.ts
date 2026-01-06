@@ -103,7 +103,7 @@ export class FileMoverComponent implements OnDestroy {
         const libraryId =
           book.libraryId ??
           book.libraryPath?.id ??
-          (book as any).library?.id ??
+          (book as { library?: { id: number } }).library?.id ??
           null;
         if (!booksByLibrary.has(libraryId)) {
           booksByLibrary.set(libraryId, []);
@@ -157,7 +157,7 @@ export class FileMoverComponent implements OnDestroy {
 
       const relativeOriginalPath = `${fileSubPath}${fileName}`;
 
-      const currentLibraryId = book.libraryId ?? book.libraryPath?.id ?? (book as any).library?.id ?? null;
+      const currentLibraryId = book.libraryId ?? book.libraryPath?.id ?? (book as { library?: { id: number } }).library?.id ?? null;
       const currentLibraryName = this.getLibraryNameById(currentLibraryId);
       const currentLibraryPath = this.getLibraryPathById(currentLibraryId);
 

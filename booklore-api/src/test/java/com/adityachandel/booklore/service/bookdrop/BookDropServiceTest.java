@@ -21,6 +21,7 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -84,6 +85,8 @@ class BookDropServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private FileMovingHelper fileMovingHelper;
+    @Mock
+    private KoboAutoShelfService koboAutoShelfService;
 
     @InjectMocks
     private BookDropService bookDropService;

@@ -8,8 +8,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import com.adityachandel.booklore.model.entity.BookEntity;
 
 @UtilityClass
 @Slf4j
@@ -60,12 +63,19 @@ public class FileUtils {
         }
     }
 
+    private List<String> systemDirs = Arrays.asList(
+      // synology
+      "#recycle",
+      "@eaDir",
+      // calibre
+      ".caltrash"
+    );
     public boolean shouldIgnore(Path path) {
         if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
             return true;
         }
         for (Path part : path) {
-            if (".caltrash".equals(part.toString())) {
+            if (systemDirs.contains(part.toString())) {
                 return true;
             }
         }

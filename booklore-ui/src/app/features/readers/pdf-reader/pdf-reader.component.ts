@@ -117,7 +117,7 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     this.bookService.savePdfProgress(this.bookId, this.page, percentage).subscribe();
   }
 
-  onPdfPagesLoaded(event: any): void {
+  onPdfPagesLoaded(event: { pagesCount: number }): void {
     this.totalPages = event.pagesCount;
     const percentage = this.totalPages > 0 ? Math.round((this.page / this.totalPages) * 1000) / 10 : 0;
     this.readingSessionService.startSession(this.bookId, "PDF", this.page.toString(), percentage);

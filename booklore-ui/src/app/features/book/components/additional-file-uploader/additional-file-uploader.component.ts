@@ -90,7 +90,7 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
     return this.files.length > 0;
   }
 
-  choose(_event: any, chooseCallback: () => void): void {
+  choose(_event: unknown, chooseCallback: () => void): void {
     chooseCallback();
   }
 
@@ -111,7 +111,7 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  onRemoveTemplatingFile(_event: any, _file: File, removeFileCallback: (event: any, index: number) => void, index: number): void {
+  onRemoveTemplatingFile(_event: unknown, _file: File, removeFileCallback: (event: unknown, index: number) => void, index: number): void {
     removeFileCallback(_event, index);
   }
 

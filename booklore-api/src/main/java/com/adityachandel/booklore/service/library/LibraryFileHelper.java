@@ -33,7 +33,9 @@ public class LibraryFileHelper {
         boolean supportsSupplementaryFiles = processor.supportsSupplementaryFiles();
 
         try (Stream<Path> stream = Files.walk(libraryPath, FileVisitOption.FOLLOW_LINKS)) {
-            return stream.filter(Files::isRegularFile)
+            return stream
+                    .filter(Files::isReadable)
+                    .filter(Files::isRegularFile)
                     .filter(path -> !FileUtils.shouldIgnore(path))
                     .map(fullPath -> {
                         String fileName = fullPath.getFileName().toString();

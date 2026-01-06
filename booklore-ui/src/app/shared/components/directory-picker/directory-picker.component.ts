@@ -32,7 +32,7 @@ import {Tooltip} from 'primeng/tooltip';
   styleUrls: ['./directory-picker.component.scss']
 })
 export class DirectoryPickerComponent implements OnInit {
-  value: any;
+  value: unknown;
   paths: string[] = [];
   filteredPaths: string[] = [];
   selectedProductName: string = '';

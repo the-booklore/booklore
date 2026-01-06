@@ -42,65 +42,75 @@ public class KoboEntitlementService {
     private final AuthenticationService authenticationService;
     private final KoboReadingStateBuilder readingStateBuilder;
 
-    public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token, boolean removed) {
+    public List<NewEntitlement> generateNewEntitlements(Set<Long> bookIds, String token) {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
 
         return books.stream()
                 .filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(book -> NewEntitlement.builder()
                         .newEntitlement(BookEntitlementContainer.builder()
-                                .bookEntitlement(buildBookEntitlement(book, removed))
+                                .bookEntitlement(buildBookEntitlement(book, false))
                                 .bookMetadata(mapToKoboMetadata(book, token))
-                                .readingState(createInitialReadingState(book))
+                                .readingState(getReadingStateForBook(book))
                                 .build())
                         .build())
                 .collect(Collectors.toList());
     }
 
-    public List<ChangedEntitlement> generateChangedEntitlements(Set<Long> bookIds, String token, boolean removed) {
+    public List<? extends Entitlement> generateChangedEntitlements(Set<Long> bookIds, String token, boolean removed) {
+
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(bookIds);
-        return books.stream()
-                .filter(koboCompatibilityService::isBookSupportedForKobo)
-                .map(book -> {
-                    KoboBookMetadata metadata;
-                    if (removed) {
-                        metadata = KoboBookMetadata.builder()
-                                .coverImageId(String.valueOf(book.getId()))
+
+
+        if (removed) {
+            return books.stream()
+                    .filter(koboCompatibilityService::isBookSupportedForKobo)
+                    .map(book -> {
+                        KoboBookMetadata metadata = KoboBookMetadata.builder()
+                                .coverImageId(book.getBookCoverHash())
                                 .crossRevisionId(String.valueOf(book.getId()))
                                 .entitlementId(String.valueOf(book.getId()))
                                 .revisionId(String.valueOf(book.getId()))
                                 .workId(String.valueOf(book.getId()))
                                 .title(String.valueOf(book.getId()))
                                 .build();
-                    } else {
-                        metadata = mapToKoboMetadata(book, token);
-                    }
-                    return ChangedEntitlement.builder()
-                            .changedEntitlement(BookEntitlementContainer.builder()
-                                    .bookEntitlement(buildBookEntitlement(book, true))
-                                    .bookMetadata(metadata)
-                                    .build())
-                            .build();
-                })
+
+                        return ChangedEntitlement.builder()
+                                .changedEntitlement(BookEntitlementContainer.builder()
+                                        .bookEntitlement(buildBookEntitlement(book, removed))
+                                        .bookMetadata(metadata)
+                                        .build())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+        }
+        return books.stream()
+                .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
+                .map(book -> ChangedProductMetadata.builder()
+                        .changedProductMetadata(BookEntitlementContainer.builder()
+                                .bookEntitlement(buildBookEntitlement(book, false))
+                                .bookMetadata(mapToKoboMetadata(book, token))
+                                .build())
+                        .build())
                 .collect(Collectors.toList());
     }
 
     public List<ChangedReadingState> generateChangedReadingStates(List<UserBookProgressEntity> progressEntries) {
         OffsetDateTime now = getCurrentUtc();
         String timestamp = now.toString();
-        
+
         return progressEntries.stream()
                 .map(progress -> buildChangedReadingState(progress, timestamp, now))
                 .toList();
     }
-    
+
     private ChangedReadingState buildChangedReadingState(UserBookProgressEntity progress, String timestamp, OffsetDateTime now) {
         String entitlementId = String.valueOf(progress.getBook().getId());
-        
+
         KoboReadingState.CurrentBookmark bookmark = progress.getKoboProgressPercent() != null
                 ? readingStateBuilder.buildBookmarkFromProgress(progress, now)
                 : readingStateBuilder.buildEmptyBookmark(now);
-        
+
         KoboReadingState readingState = KoboReadingState.builder()
                 .entitlementId(entitlementId)
                 .created(timestamp)
@@ -110,7 +120,7 @@ public class KoboEntitlementService {
                 .currentBookmark(bookmark)
                 .statistics(KoboReadingState.Statistics.builder().lastModified(timestamp).build())
                 .build();
-        
+
         return ChangedReadingState.builder()
                 .changedReadingState(ChangedReadingState.WrappedReadingState.builder()
                         .readingState(readingState)
@@ -118,24 +128,24 @@ public class KoboEntitlementService {
                 .build();
     }
 
-    private KoboReadingState createInitialReadingState(BookEntity book) {
+    private KoboReadingState getReadingStateForBook(BookEntity book) {
         OffsetDateTime now = getCurrentUtc();
         String entitlementId = String.valueOf(book.getId());
-        
+
         KoboReadingState existingState = readingStateRepository.findByEntitlementId(entitlementId)
                 .map(readingStateMapper::toDto)
                 .orElse(null);
-        
+
         Optional<UserBookProgressEntity> userProgress = progressRepository
                 .findByUserIdAndBookId(authenticationService.getAuthenticatedUser().getId(), book.getId());
-        
+
         KoboReadingState.CurrentBookmark bookmark = existingState != null && existingState.getCurrentBookmark() != null
                 ? existingState.getCurrentBookmark()
                 : userProgress
-                        .filter(progress -> progress.getKoboProgressPercent() != null)
-                        .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
-                        .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
-        
+                .filter(progress -> progress.getKoboProgressPercent() != null)
+                .map(progress -> readingStateBuilder.buildBookmarkFromProgress(progress, now))
+                .orElseGet(() -> readingStateBuilder.buildEmptyBookmark(now));
+
         KoboReadingState.StatusInfo statusInfo = userProgress
                 .map(progress -> readingStateBuilder.buildStatusInfoFromProgress(progress, now.toString()))
                 .orElseGet(() -> KoboReadingState.StatusInfo.builder()
@@ -163,7 +173,7 @@ public class KoboEntitlementService {
                 .activePeriod(BookEntitlement.ActivePeriod.builder()
                         .from(now.toString())
                         .build())
-                .isRemoved(removed)
+                .removed(removed)
                 .status("Active")
                 .crossRevisionId(String.valueOf(book.getId()))
                 .revisionId(String.valueOf(book.getId()))
@@ -211,10 +221,10 @@ public class KoboEntitlementService {
 
         KoboBookFormat bookFormat = KoboBookFormat.EPUB3;
         KoboSettings koboSettings = appSettingService.getAppSettings().getKoboSettings();
-        
+
         boolean isEpubFile = book.getBookType() == BookFileType.EPUB;
         boolean isCbxFile = book.getBookType() == BookFileType.CBX;
-        
+
         if (koboSettings != null) {
             if (isEpubFile && koboSettings.isConvertToKepub()) {
                 bookFormat = KoboBookFormat.KEPUB;
@@ -235,9 +245,9 @@ public class KoboEntitlementService {
                 .slug(metadata.getTitle() != null
                         ? NON_ALPHANUMERIC_LOWERCASE_PATTERN.matcher(metadata.getTitle().toLowerCase()).replaceAll("-")
                         : null)
-                .coverImageId(String.valueOf(metadata.getBookId()))
+                .coverImageId(book.getBookCoverHash())
                 .workId(String.valueOf(book.getId()))
-                .isPreOrder(false)
+                .preOrder(false)
                 .contributorRoles(Collections.emptyList())
                 .entitlementId(String.valueOf(book.getId()))
                 .title(metadata.getTitle())
