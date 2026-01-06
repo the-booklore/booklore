@@ -34,7 +34,6 @@ public class KomgaMapper {
     }
 
     public KomgaBookDto toKomgaBookDto(BookEntity book) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         BookMetadataEntity metadata = book.getMetadata();
         String seriesId = generateSeriesId(book);
         
@@ -64,7 +63,6 @@ public class KomgaMapper {
     }
 
     public KomgaSeriesDto toKomgaSeriesDto(String seriesName, Long libraryId, List<BookEntity> books) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         if (books == null || books.isEmpty()) {
             return null;
         }

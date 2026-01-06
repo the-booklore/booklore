@@ -54,7 +54,6 @@ public class KomgaService {
     }
 
     public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size, boolean unpaged) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         log.debug("Getting all series for libraryId: {}, page: {}, size: {}", libraryId, page, size);
         List<BookEntity> books;
         
@@ -127,7 +126,6 @@ public class KomgaService {
     }
 
     public KomgaSeriesDto getSeriesById(String seriesId) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         // Parse seriesId to extract library and series name
         String[] parts = seriesId.split("-", 2);
         if (parts.length < 2) {
@@ -159,7 +157,6 @@ public class KomgaService {
     }
 
     public KomgaPageableDto<KomgaBookDto> getBooksBySeries(String seriesId, int page, int size, boolean unpaged) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         KomgaSeriesDto series = getSeriesById(seriesId);
         
         // Get all books for the series
@@ -224,7 +221,6 @@ public class KomgaService {
     }
 
     public KomgaPageableDto<KomgaBookDto> getAllBooks(Long libraryId, int page, int size) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         List<BookEntity> books;
         
         if (libraryId != null) {
@@ -257,7 +253,6 @@ public class KomgaService {
     }
 
     public KomgaBookDto getBookById(Long bookId) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         BookEntity book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
         return komgaMapper.toKomgaBookDto(book);
@@ -285,7 +280,6 @@ public class KomgaService {
     }
 
     private Map<String, List<BookEntity>> groupBooksBySeries(List<BookEntity> books) {
-        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         Map<String, List<BookEntity>> seriesMap = new HashMap<>();
         
         for (BookEntity book : books) {
