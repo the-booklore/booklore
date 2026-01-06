@@ -115,11 +115,6 @@ public class LubimyCzytacParser implements BookParser {
     }
 
     private String buildSearchQuery(FetchMetadataRequest request) {
-        String isbn = request.getIsbn();
-        if (isbn != null && !isbn.isEmpty()) {
-            return isbn;
-        }
-
         String title = request.getTitle();
         if (title != null && !title.isEmpty()) {
             return title.trim();
