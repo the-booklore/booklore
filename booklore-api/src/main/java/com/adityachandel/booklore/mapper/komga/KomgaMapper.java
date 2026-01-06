@@ -36,9 +36,7 @@ public class KomgaMapper {
         return KomgaBookDto.builder()
                 .id(book.getId().toString())
                 .seriesId(seriesId)
-                .seriesTitle(metadata != null && metadata.getSeriesName() != null 
-                           ? metadata.getSeriesName() 
-                           : null)
+                .seriesTitle(getBookSeriesName(book))
                 .libraryId(book.getLibrary().getId().toString())
                 .name(metadata != null ? metadata.getTitle() : book.getFileName())
                 .url("/komga/api/v1/books/" + book.getId())
