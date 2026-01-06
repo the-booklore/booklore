@@ -56,18 +56,16 @@ public class KomgaController {
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown) {
-        KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(libraryId, page, size, unpaged, groupUnknown);
+            @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
+        KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(libraryId, page, size, unpaged);
         return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get series details")
     @GetMapping("/v1/series/{seriesId}")
     public ResponseEntity<KomgaSeriesDto> getSeries(
-            @Parameter(description = "Series ID") @PathVariable String seriesId,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown)  {
-        return ResponseEntity.ok(komgaService.getSeriesById(seriesId, groupUnknown));
+            @Parameter(description = "Series ID") @PathVariable String seriesId)  {
+        return ResponseEntity.ok(komgaService.getSeriesById(seriesId));
     }
 
     @Operation(summary = "List books in series")
@@ -76,18 +74,16 @@ public class KomgaController {
             @Parameter(description = "Series ID") @PathVariable String seriesId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown) {
-        return ResponseEntity.ok(komgaService.getBooksBySeries(seriesId, page, size, unpaged, groupUnknown));
+            @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
+        return ResponseEntity.ok(komgaService.getBooksBySeries(seriesId, page, size, unpaged));
     }
 
     @Operation(summary = "Get series thumbnail")
     @GetMapping("/v1/series/{seriesId}/thumbnail")
     public ResponseEntity<Resource> getSeriesThumbnail(
-            @Parameter(description = "Series ID") @PathVariable String seriesId,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown) {
+            @Parameter(description = "Series ID") @PathVariable String seriesId) {
         // Get the first book in the series and return its thumbnail
-        KomgaPageableDto<KomgaBookDto> books = komgaService.getBooksBySeries(seriesId, 0, 1, false, groupUnknown);
+        KomgaPageableDto<KomgaBookDto> books = komgaService.getBooksBySeries(seriesId, 0, 1, false);
         if (books.getContent().isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -106,18 +102,16 @@ public class KomgaController {
     public ResponseEntity<KomgaPageableDto<KomgaBookDto>> getAllBooks(
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown) {
-        KomgaPageableDto<KomgaBookDto> result = komgaService.getAllBooks(libraryId, page, size, groupUnknown);
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
+        KomgaPageableDto<KomgaBookDto> result = komgaService.getAllBooks(libraryId, page, size);
         return ResponseEntity.ok(result);
     }
 
     @Operation(summary = "Get book details")
     @GetMapping("/v1/books/{bookId}")
     public ResponseEntity<KomgaBookDto> getBook(
-            @Parameter(description = "Book ID") @PathVariable Long bookId,
-            @Parameter(description = "Group unknown series") @RequestParam(defaultValue = "true") boolean groupUnknown) {
-        return ResponseEntity.ok(komgaService.getBookById(bookId, groupUnknown));
+            @Parameter(description = "Book ID") @PathVariable Long bookId) {
+        return ResponseEntity.ok(komgaService.getBookById(bookId));
     }
 
     @Operation(summary = "Get book pages metadata")
