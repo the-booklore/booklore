@@ -334,12 +334,14 @@ public class MetadataRefreshService {
             addProviderToSet(fieldOptions.getComicvineId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getHardcoverId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getGoogleId(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getLubimyczytacId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getAmazonRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getAmazonReviewCount(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getGoodreadsRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getGoodreadsReviewCount(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getHardcoverRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getHardcoverReviewCount(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getLubimyczytacRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getMoods(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getTags(), uniqueProviders, appSettings);
         }
@@ -369,6 +371,7 @@ public class MetadataRefreshService {
             case Hardcover -> settings.getHardcover() != null && settings.getHardcover().isEnabled();
             case Comicvine -> settings.getComicvine() != null && settings.getComicvine().isEnabled();
             case Douban -> settings.getDouban() != null && settings.getDouban().isEnabled();
+            case Lubimyczytac -> settings.getLubimyczytac() != null && settings.getLubimyczytac().isEnabled();
             default -> true;
         };
     }
@@ -505,6 +508,16 @@ public class MetadataRefreshService {
         if (enabledFields.isComicvineId()) {
             if (metadataMap.containsKey(Comicvine)) {
                 metadata.setComicvineId(metadataMap.get(Comicvine).getComicvineId());
+            }
+        }
+        if (enabledFields.isLubimyczytacId()) {
+            if (metadataMap.containsKey(Lubimyczytac)) {
+                metadata.setLubimyczytacId(metadataMap.get(Lubimyczytac).getLubimyczytacId());
+            }
+        }
+        if (enabledFields.isLubimyczytacRating()) {
+            if (metadataMap.containsKey(Lubimyczytac)) {
+                metadata.setLubimyczytacRating(metadataMap.get(Lubimyczytac).getLubimyczytacRating());
             }
         }
         if (enabledFields.isMoods()) {
