@@ -47,7 +47,7 @@ class KomgaMapperTest {
         book.setAddedOn(Instant.now());
 
         // When: Converting to DTO
-        KomgaBookDto dto = mapper.toKomgaBookDto(book);
+        KomgaBookDto dto = mapper.toKomgaBookDto(book, true);
 
         // Then: Should not throw NPE and pageCount should default to 0
         assertThat(dto).isNotNull();
@@ -70,7 +70,7 @@ class KomgaMapperTest {
         book.setAddedOn(Instant.now());
 
         // When: Converting to DTO
-        KomgaBookDto dto = mapper.toKomgaBookDto(book);
+        KomgaBookDto dto = mapper.toKomgaBookDto(book, true);
 
         // Then: Should not throw NPE and pageCount should default to 0
         assertThat(dto).isNotNull();
@@ -99,7 +99,7 @@ class KomgaMapperTest {
         book.setAddedOn(Instant.now());
 
         // When: Converting to DTO
-        KomgaBookDto dto = mapper.toKomgaBookDto(book);
+        KomgaBookDto dto = mapper.toKomgaBookDto(book, true);
 
         // Then: Should use the actual pageCount
         assertThat(dto).isNotNull();

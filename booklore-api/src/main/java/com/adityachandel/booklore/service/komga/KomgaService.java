@@ -51,7 +51,7 @@ public class KomgaService {
         return komgaMapper.toKomgaLibraryDto(library);
     }
 
-    public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size) {
+    public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size, boolean unpaged, boolean groupUnknown) {
         log.debug("Getting all series for libraryId: {}, page: {}, size: {}", libraryId, page, size);
         List<BookEntity> books;
         
@@ -64,7 +64,7 @@ public class KomgaService {
         log.debug("Found {} books", books.size());
         
         // Group books by series
-        Map<String, List<BookEntity>> seriesMap = groupBooksBySeries(books);
+        Map<String, List<BookEntity>> seriesMap = groupBooksBySeries(books, groupUnknown);
         
         log.debug("Grouped into {} series", seriesMap.size());
         
@@ -75,7 +75,7 @@ public class KomgaService {
                     List<BookEntity> seriesBooks = entry.getValue();
                     try {
                         Long libId = seriesBooks.get(0).getLibrary().getId();
-                        return komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks);
+                        return komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks, groupUnknown);
                     } catch (Exception e) {
                         log.error("Error mapping series: {}", seriesName, e);
                         return null;
@@ -87,13 +87,28 @@ public class KomgaService {
         
         log.debug("Mapped to {} series DTOs", allSeries.size());
         
-        // Paginate
         int totalElements = allSeries.size();
-        int totalPages = (int) Math.ceil((double) totalElements / size);
-        int fromIndex = Math.min(page * size, totalElements);
-        int toIndex = Math.min(fromIndex + size, totalElements);
-        
-        List<KomgaSeriesDto> content = allSeries.subList(fromIndex, toIndex);
+        List<KomgaSeriesDto> content;
+        int actualPage;
+        int actualSize;
+        int totalPages;
+
+        if (unpaged) {
+            // Return all series without pagination
+            content = allSeries;
+            actualPage = 0;
+            actualSize = totalElements;
+            totalPages = totalElements > 0 ? 1 : 0;
+        } else {
+            // Paginate
+            totalPages = (int) Math.ceil((double) totalElements / size);
+            int fromIndex = Math.min(page * size, totalElements);
+            int toIndex = Math.min(fromIndex + size, totalElements);
+            
+            content = allSeries.subList(fromIndex, toIndex);
+            actualPage = page;
+            actualSize = size;
+        }
         
         return KomgaPageableDto.<KomgaSeriesDto>builder()
                 .content(content)
@@ -108,7 +123,7 @@ public class KomgaService {
                 .build();
     }
 
-    public KomgaSeriesDto getSeriesById(String seriesId) {
+    public KomgaSeriesDto getSeriesById(String seriesId, boolean groupUnknown) {
         // Parse seriesId to extract library and series name
         String[] parts = seriesId.split("-", 2);
         if (parts.length < 2) {
@@ -124,10 +139,7 @@ public class KomgaService {
         // Find books matching the series
         List<BookEntity> seriesBooks = books.stream()
                 .filter(book -> {
-                    BookMetadataEntity metadata = book.getMetadata();
-                    String bookSeriesName = metadata != null && metadata.getSeriesName() != null 
-                                          ? metadata.getSeriesName() 
-                                          : "Unknown Series";
+                    String bookSeriesName = komgaMapper.getBookSeriesName(book, groupUnknown);
                     String bookSeriesSlug = bookSeriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
                     return bookSeriesSlug.equals(seriesSlug);
                 })
@@ -137,15 +149,13 @@ public class KomgaService {
             throw new RuntimeException("Series not found");
         }
         
-        String seriesName = seriesBooks.get(0).getMetadata() != null && seriesBooks.get(0).getMetadata().getSeriesName() != null
-                          ? seriesBooks.get(0).getMetadata().getSeriesName()
-                          : "Unknown Series";
+        String seriesName = komgaMapper.getBookSeriesName(seriesBooks.get(0), groupUnknown);
         
-        return komgaMapper.toKomgaSeriesDto(seriesName, libraryId, seriesBooks);
+        return komgaMapper.toKomgaSeriesDto(seriesName, libraryId, seriesBooks, groupUnknown);
     }
 
-    public KomgaPageableDto<KomgaBookDto> getBooksBySeries(String seriesId, int page, int size, boolean unpaged) {
-        KomgaSeriesDto series = getSeriesById(seriesId);
+    public KomgaPageableDto<KomgaBookDto> getBooksBySeries(String seriesId, int page, int size, boolean unpaged, boolean groupUnknown) {
+        KomgaSeriesDto series = getSeriesById(seriesId, groupUnknown);
         
         // Get all books for the series
         String[] parts = seriesId.split("-", 2);
@@ -155,10 +165,7 @@ public class KomgaService {
         List<BookEntity> allBooks = bookRepository.findAllWithMetadataByLibraryId(libraryId);
         List<BookEntity> seriesBooks = allBooks.stream()
                 .filter(book -> {
-                    BookMetadataEntity metadata = book.getMetadata();
-                    String bookSeriesName = metadata != null && metadata.getSeriesName() != null 
-                                          ? metadata.getSeriesName() 
-                                          : "Unknown Series";
+                    String bookSeriesName = komgaMapper.getBookSeriesName(book, groupUnknown);
                     String bookSeriesSlug = bookSeriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
                     return bookSeriesSlug.equals(seriesSlug);
                 })
@@ -180,7 +187,7 @@ public class KomgaService {
         if (unpaged) {
             // Return all books without pagination
             content = seriesBooks.stream()
-                    .map(komgaMapper::toKomgaBookDto)
+                    .map(book -> komgaMapper.toKomgaBookDto(book, groupUnknown))
                     .collect(Collectors.toList());
             actualPage = 0;
             actualSize = totalElements;
@@ -192,7 +199,7 @@ public class KomgaService {
             int toIndex = Math.min(fromIndex + size, totalElements);
             
             content = seriesBooks.subList(fromIndex, toIndex).stream()
-                    .map(komgaMapper::toKomgaBookDto)
+                    .map(book -> komgaMapper.toKomgaBookDto(book, groupUnknown))
                     .collect(Collectors.toList());
             actualPage = page;
             actualSize = size;
@@ -211,7 +218,7 @@ public class KomgaService {
                 .build();
     }
 
-    public KomgaPageableDto<KomgaBookDto> getAllBooks(Long libraryId, int page, int size) {
+    public KomgaPageableDto<KomgaBookDto> getAllBooks(Long libraryId, int page, int size, boolean groupUnknown) {
         List<BookEntity> books;
         
         if (libraryId != null) {
@@ -227,7 +234,7 @@ public class KomgaService {
         int toIndex = Math.min(fromIndex + size, totalElements);
         
         List<KomgaBookDto> content = books.subList(fromIndex, toIndex).stream()
-                .map(komgaMapper::toKomgaBookDto)
+                .map(book -> komgaMapper.toKomgaBookDto(book, groupUnknown))
                 .collect(Collectors.toList());
         
         return KomgaPageableDto.<KomgaBookDto>builder()
@@ -243,10 +250,10 @@ public class KomgaService {
                 .build();
     }
 
-    public KomgaBookDto getBookById(Long bookId) {
+    public KomgaBookDto getBookById(Long bookId, boolean groupUnknown) {
         BookEntity book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
-        return komgaMapper.toKomgaBookDto(book);
+        return komgaMapper.toKomgaBookDto(book, groupUnknown);
     }
 
     public List<KomgaPageDto> getBookPages(Long bookId) {
@@ -270,15 +277,11 @@ public class KomgaService {
         return pages;
     }
 
-    private Map<String, List<BookEntity>> groupBooksBySeries(List<BookEntity> books) {
+    private Map<String, List<BookEntity>> groupBooksBySeries(List<BookEntity> books, boolean groupUnknown) {
         Map<String, List<BookEntity>> seriesMap = new HashMap<>();
         
         for (BookEntity book : books) {
-            BookMetadataEntity metadata = book.getMetadata();
-            String seriesName = metadata != null && metadata.getSeriesName() != null 
-                              ? metadata.getSeriesName() 
-                              : "Unknown Series";
-            
+            String seriesName = komgaMapper.getBookSeriesName(book, groupUnknown);
             seriesMap.computeIfAbsent(seriesName, k -> new ArrayList<>()).add(book);
         }
         

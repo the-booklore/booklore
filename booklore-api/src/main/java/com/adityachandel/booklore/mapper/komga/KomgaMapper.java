@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 public class KomgaMapper {
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final String UNKNOWN_SERIES = "Unknown Series";
 
     public KomgaLibraryDto toKomgaLibraryDto(LibraryEntity library) {
         return KomgaLibraryDto.builder()
@@ -28,16 +29,16 @@ public class KomgaMapper {
                 .build();
     }
 
-    public KomgaBookDto toKomgaBookDto(BookEntity book) {
+    public KomgaBookDto toKomgaBookDto(BookEntity book, boolean groupUnknown) {
         BookMetadataEntity metadata = book.getMetadata();
-        String seriesId = generateSeriesId(book);
+        String seriesId = generateSeriesId(book, groupUnknown);
         
         return KomgaBookDto.builder()
                 .id(book.getId().toString())
                 .seriesId(seriesId)
                 .seriesTitle(metadata != null && metadata.getSeriesName() != null 
                            ? metadata.getSeriesName() 
-                           : "Unknown Series")
+                           : null)
                 .libraryId(book.getLibrary().getId().toString())
                 .name(metadata != null ? metadata.getTitle() : book.getFileName())
                 .url("/komga/api/v1/books/" + book.getId())
@@ -57,13 +58,13 @@ public class KomgaMapper {
                 .build();
     }
 
-    public KomgaSeriesDto toKomgaSeriesDto(String seriesName, Long libraryId, List<BookEntity> books) {
+    public KomgaSeriesDto toKomgaSeriesDto(String seriesName, Long libraryId, List<BookEntity> books, boolean groupUnknown) {
         if (books == null || books.isEmpty()) {
             return null;
         }
         
         BookEntity firstBook = books.get(0);
-        String seriesId = generateSeriesId(firstBook);
+        String seriesId = generateSeriesId(firstBook, groupUnknown);
         
         // Aggregate metadata from all books
         KomgaSeriesMetadataDto metadata = aggregateSeriesMetadata(seriesName, books);
@@ -237,11 +238,16 @@ public class KomgaMapper {
                 .build();
     }
 
-    private String generateSeriesId(BookEntity book) {
+    public String getBookSeriesName(BookEntity book, boolean groupUnknown) {
         BookMetadataEntity metadata = book.getMetadata();
-        String seriesName = metadata != null && metadata.getSeriesName() != null 
-                          ? metadata.getSeriesName() 
-                          : "Unknown Series";
+        String bookSeriesName = metadata != null && metadata.getSeriesName() != null 
+            ? metadata.getSeriesName() 
+                : (groupUnknown ? UNKNOWN_SERIES : (metadata.getTitle() != null ? metadata.getTitle() : book.getFileName() ));
+        return bookSeriesName;
+    }
+
+    private String generateSeriesId(BookEntity book, boolean groupUnknown) {
+        String seriesName = getBookSeriesName(book, groupUnknown);
         Long libraryId = book.getLibrary().getId();
         
         // Generate a pseudo-ID based on library and series name

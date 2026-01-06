@@ -82,7 +82,7 @@ class KomgaServiceTest {
                     .id(book.getId().toString())
                     .name(book.getMetadata().getTitle())
                     .build();
-            when(komgaMapper.toKomgaBookDto(book)).thenReturn(dto);
+            when(komgaMapper.toKomgaBookDto(book, true)).thenReturn(dto);
         }
 
         // When: Request with unpaged=true
@@ -109,7 +109,7 @@ class KomgaServiceTest {
                     .id(book.getId().toString())
                     .name(book.getMetadata().getTitle())
                     .build();
-            when(komgaMapper.toKomgaBookDto(book)).thenReturn(dto);
+            when(komgaMapper.toKomgaBookDto(book, true)).thenReturn(dto);
         }
 
         // When: Request with unpaged=false and page size 20
