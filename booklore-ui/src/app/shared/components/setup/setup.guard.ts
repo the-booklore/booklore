@@ -20,7 +20,7 @@ export class SetupGuard implements CanActivate {
   private router = inject(Router);
 
   canActivate(): Observable<boolean | UrlTree> {
-    return this.http.get<any>(`${this.url}/status`).pipe(
+    return this.http.get<{ data: boolean }>(`${this.url}/status`).pipe(
       map(response => {
         if (response?.data === true) {
           return this.router.createUrlTree(['/login']);

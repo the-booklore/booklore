@@ -9,15 +9,12 @@ import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings
 import com.adityachandel.booklore.model.entity.*;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
-import com.adityachandel.booklore.repository.AuthorRepository;
-import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.repository.CategoryRepository;
-import com.adityachandel.booklore.repository.MoodRepository;
-import com.adityachandel.booklore.repository.TagRepository;
-import com.adityachandel.booklore.service.file.FileFingerprint;
+import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.file.FileMoveService;
 import com.adityachandel.booklore.service.metadata.writer.MetadataWriterFactory;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.MetadataChangeDetector;
 import lombok.AllArgsConstructor;
@@ -82,7 +79,6 @@ public class BookMetadataUpdater {
             return;
         }
 
-        // If all fields are locked we must allow unlocking, hasValueChanges will be false
         if (metadata.areAllFieldsLocked() && hasValueChanges) {
             log.warn("All fields are locked for book ID {}. Skipping update.", bookId);
             return;
@@ -100,11 +96,11 @@ public class BookMetadataUpdater {
         updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
-        updateThumbnailIfNeeded(bookId, newMetadata, metadata, updateThumbnail);
+        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
         updateLocks(newMetadata, metadata);
 
+        bookEntity.setMetadataUpdatedAt(Instant.now());
         bookRepository.save(bookEntity);
-
         try {
             Float score = metadataMatchService.calculateMatchScore(bookEntity);
             bookEntity.setMetadataMatchScore(score);
@@ -123,7 +119,9 @@ public class BookMetadataUpdater {
                     File file = new File(bookEntity.getFullFilePath().toUri());
                     writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
+                    bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                     bookEntity.setCurrentHash(newHash);
+                    bookRepository.save(bookEntity);
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
                 }
@@ -170,6 +168,8 @@ public class BookMetadataUpdater {
         handleFieldUpdate(e.getGoodreadsReviewCountLocked(), clear.isGoodreadsReviewCount(), m.getGoodreadsReviewCount(), e::setGoodreadsReviewCount, e::getGoodreadsReviewCount, replaceMode);
         handleFieldUpdate(e.getHardcoverRatingLocked(), clear.isHardcoverRating(), m.getHardcoverRating(), e::setHardcoverRating, e::getHardcoverRating, replaceMode);
         handleFieldUpdate(e.getHardcoverReviewCountLocked(), clear.isHardcoverReviewCount(), m.getHardcoverReviewCount(), e::setHardcoverReviewCount, e::getHardcoverReviewCount, replaceMode);
+        handleFieldUpdate(e.getLubimyczytacIdLocked(), clear.isLubimyczytacId(), m.getLubimyczytacId(), v -> e.setLubimyczytacId(nullIfBlank(v)), e::getLubimyczytacId, replaceMode);
+        handleFieldUpdate(e.getLubimyczytacRatingLocked(), clear.isLubimyczytacRating(), m.getLubimyczytacRating(), e::setLubimyczytacRating, e::getLubimyczytacRating, replaceMode);
     }
 
     private <T> void handleFieldUpdate(Boolean locked, boolean shouldClear, T newValue, Consumer<T> setter, Supplier<T> getter, MetadataReplaceMode mode) {
@@ -225,14 +225,14 @@ public class BookMetadataUpdater {
         if (replaceAll) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
-            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
+            e.updateSearchText();
         } else if (replaceMissing && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
-            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
+            e.updateSearchText();
         } else if (replaceMode == null) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
-            e.updateSearchText(); // Manually trigger search text update since collection modification doesn't trigger @PreUpdate
+            e.updateSearchText();
         }
     }
 
@@ -350,17 +350,18 @@ public class BookMetadataUpdater {
         }
     }
 
-    private void updateThumbnailIfNeeded(long bookId, BookMetadata m, BookMetadataEntity e, boolean set) {
+    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
-            return; // Locked — do nothing
+            return;
         }
         if (!set) return;
         if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
         try {
             fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
+            bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
         } catch (Exception ex) {
             log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
-            // Don't rethrow - cover failures shouldn't roll back metadata updates
         }
     }
 

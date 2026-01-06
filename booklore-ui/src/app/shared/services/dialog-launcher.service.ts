@@ -1,4 +1,4 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, Type} from '@angular/core';
 import {DialogService, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {GithubSupportDialog} from '../components/github-support-dialog/github-support-dialog';
 import {LibraryCreatorComponent} from '../../features/library-creator/library-creator.component';
@@ -37,8 +37,8 @@ export class DialogLauncherService {
     maximizable: false,
   }
 
-  openDialog(component: any, options: {}): DynamicDialogRef | null {
-    return this.dialogService.open(component, {
+  openDialog(component: unknown, options: {}): DynamicDialogRef | null {
+    return this.dialogService.open(component as Type<any>, {
       ...this.defaultDialogOptions,
       ...options,
 
@@ -145,7 +145,7 @@ export class DialogLauncherService {
   openVersionChangelogDialog(): DynamicDialogRef | null {
     return this.openDialog(VersionChangelogDialogComponent, {
       header: "What's New",
-      styleClass: 'dialog-maximal',
+      styleClass: 'dialog-medium',
     });
   }
 

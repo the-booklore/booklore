@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.settings.SidebarSortOption;
 import com.adityachandel.booklore.model.dto.settings.UserSettingKey;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.UserSettingEntity;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -25,24 +26,7 @@ public class BookLoreUserTransformer {
 
     public BookLoreUser toDTO(BookLoreUserEntity userEntity) {
         BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
-        permissions.setAdmin(userEntity.getPermissions().isPermissionAdmin());
-        permissions.setCanUpload(userEntity.getPermissions().isPermissionUpload());
-        permissions.setCanDownload(userEntity.getPermissions().isPermissionDownload());
-        permissions.setCanEditMetadata(userEntity.getPermissions().isPermissionEditMetadata());
-        permissions.setCanEmailBook(userEntity.getPermissions().isPermissionEmailBook());
-        permissions.setCanDeleteBook(userEntity.getPermissions().isPermissionDeleteBook());
-        permissions.setCanManageLibrary(userEntity.getPermissions().isPermissionManageLibrary());
-        permissions.setCanAccessOpds(userEntity.getPermissions().isPermissionAccessOpds());
-        permissions.setCanSyncKoReader(userEntity.getPermissions().isPermissionSyncKoreader());
-        permissions.setCanSyncKobo(userEntity.getPermissions().isPermissionSyncKobo());
-        permissions.setCanManageMetadataConfig(userEntity.getPermissions().isPermissionManageMetadataConfig());
-        permissions.setCanAccessBookdrop(userEntity.getPermissions().isPermissionAccessBookdrop());
-        permissions.setCanAccessLibraryStats(userEntity.getPermissions().isPermissionAccessLibraryStats());
-        permissions.setCanAccessUserStats(userEntity.getPermissions().isPermissionAccessUserStats());
-        permissions.setCanAccessTaskManager(userEntity.getPermissions().isPermissionAccessTaskManager());
-        permissions.setCanManageGlobalPreferences(userEntity.getPermissions().isPermissionManageGlobalPreferences());
-        permissions.setCanManageIcons(userEntity.getPermissions().isPermissionManageIcons());
-        permissions.setDemoUser(userEntity.getPermissions().isPermissionDemoUser());
+        UserPermission.copyFromEntityToDto(userEntity.getPermissions(), permissions);
 
         BookLoreUser bookLoreUser = new BookLoreUser();
         bookLoreUser.setId(userEntity.getId());

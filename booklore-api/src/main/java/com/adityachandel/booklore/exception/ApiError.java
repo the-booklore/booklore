@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.exception;
 
+import com.adityachandel.booklore.model.enums.UserPermission;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
@@ -57,7 +58,8 @@ public enum ApiError {
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "Scheduled task not found: %s"),
     TASK_ALREADY_RUNNING(HttpStatus.CONFLICT, "Task is already running: %s"),
     ICON_ALREADY_EXISTS(HttpStatus.CONFLICT, "SVG icon with name '%s' already exists"),
-    DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Demo user password change not allowed.");
+    DEMO_USER_PASSWORD_CHANGE_NOT_ALLOWED(HttpStatus.FORBIDDEN, "Demo user password change not allowed."),
+    PERMISSION_DENIED(HttpStatus.FORBIDDEN, "Permission denied: %s");
 
     private final HttpStatus status;
     private final String message;
@@ -69,6 +71,11 @@ public enum ApiError {
 
     public APIException createException(Object... details) {
         String formattedMessage = (details.length > 0) ? String.format(message, details) : message;
+        return new APIException(formattedMessage, this.status);
+    }
+
+    public APIException createException(UserPermission permission) {
+        String formattedMessage = String.format(message, permission.getDescription());
         return new APIException(formattedMessage, this.status);
     }
 }

@@ -20,7 +20,7 @@
           <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <input
             pInputText
-            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [formControl]="getControl(field.controlName)"
             [attr.id]="field.controlName"
             [attr.aria-label]="field.label"
             class="field-input"/>
@@ -46,7 +46,7 @@
           <input
             pInputText
             type="number"
-            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [formControl]="getControl(field.controlName)"
             [attr.id]="field.controlName"
             [attr.aria-label]="field.label"
             class="field-input field-input-small"/>
@@ -83,7 +83,7 @@
           </p-checkbox>
           <label class="field-label" [attr.for]="field.controlName">{{ field.label }}</label>
           <p-autoComplete
-            [formControl]="$any(bulkEditForm.get(field.controlName))"
+            [formControl]="getControl(field.controlName)"
             [multiple]="true"
             [suggestions]="[]"
             [forceSelection]="false"

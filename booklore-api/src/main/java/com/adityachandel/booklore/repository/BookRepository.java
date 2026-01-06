@@ -2,8 +2,8 @@ package com.adityachandel.booklore.repository;
 
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +20,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     Optional<BookEntity> findBookByIdAndLibraryId(long id, long libraryId);
 
     Optional<BookEntity> findByCurrentHash(String currentHash);
+
+    Optional<BookEntity> findByBookCoverHash(String bookCoverHash);
 
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     Set<Long> findBookIdsByLibraryId(@Param("libraryId") long libraryId);
@@ -89,22 +91,6 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             """)
     List<BookEntity> findBooksWithMetadataAndAuthors(@Param("bookIds") List<Long> bookIds);
 
-    @Query(value = """
-                SELECT DISTINCT b FROM BookEntity b
-                LEFT JOIN b.metadata m
-                WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                      m.searchText LIKE CONCAT('%', :text, '%')
-                )
-            """,
-            countQuery = """
-                        SELECT COUNT(DISTINCT b.id) FROM BookEntity b
-                        LEFT JOIN b.metadata m
-                        WHERE (b.deleted IS NULL OR b.deleted = false) AND (
-                              m.searchText LIKE CONCAT('%', :text, '%')
-                        )
-                    """)
-    Page<BookEntity> searchByMetadata(@Param("text") String text, Pageable pageable);
-
     @Modifying
     @Transactional
     @Query("DELETE FROM BookEntity b WHERE b.deleted IS TRUE")
@@ -135,17 +121,26 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
             @Param("libraryPath") LibraryPathEntity libraryPath);
 
     @Query(value = """
-        SELECT *
-        FROM book
-        WHERE library_id = :libraryId
-          AND library_path_id = :libraryPathId
-          AND file_sub_path = :fileSubPath
-          AND file_name = :fileName
-        LIMIT 1
-    """, nativeQuery = true)
+                SELECT *
+                FROM book
+                WHERE library_id = :libraryId
+                  AND library_path_id = :libraryPathId
+                  AND file_sub_path = :fileSubPath
+                  AND file_name = :fileName
+                LIMIT 1
+            """, nativeQuery = true)
     Optional<BookEntity> findByLibraryIdAndLibraryPathIdAndFileSubPathAndFileName(
             @Param("libraryId") Long libraryId,
             @Param("libraryPathId") Long libraryPathId,
             @Param("fileSubPath") String fileSubPath,
             @Param("fileName") String fileName);
+
+    @Query("SELECT COUNT(b.id) FROM BookEntity b WHERE b.id IN :bookIds AND (b.deleted IS NULL OR b.deleted = false)")
+    long countByIdIn(@Param("bookIds") List<Long> bookIds);
+
+    @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.bookType = :type AND (b.deleted IS NULL OR b.deleted = false)")
+    long countByBookType(@Param("type") BookFileType type);
+
+    @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
+    long countByLibraryId(@Param("libraryId") Long libraryId);
 }

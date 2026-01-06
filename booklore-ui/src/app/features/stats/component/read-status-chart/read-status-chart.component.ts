@@ -3,9 +3,10 @@ import {CommonModule} from '@angular/common';
 import {BaseChartDirective} from 'ng2-charts';
 import {BehaviorSubject, EMPTY, Observable, Subject} from 'rxjs';
 import {catchError, filter, first, takeUntil} from 'rxjs/operators';
-import {ChartConfiguration, ChartData} from 'chart.js';
+import {ChartConfiguration, ChartData, Chart, TooltipItem} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book, ReadStatus} from '../../../book/model/book.model';
+import {BookState} from '../../../book/model/state/book-state.model';
 
 interface ReadingStatusStats {
   status: string;
@@ -13,10 +14,17 @@ interface ReadingStatusStats {
   percentage: number;
 }
 
-const CHART_COLORS = [
-  '#28a745', '#17a2b8', '#ffc107', '#6f42c1',
-  '#fd7e14', '#6c757d', '#dc3545', '#343a40', '#e9ecef'
-] as const;
+const STATUS_COLOR_MAP: Record<string, string> = {
+  'Unread': '#6c757d',           // Gray
+  'Currently Reading': '#17a2b8', // Cyan
+  'Re-reading': '#6f42c1',        // Purple
+  'Read': '#28a745',              // Green
+  'Partially Read': '#ffc107',    // Yellow
+  'Paused': '#fd7e14',            // Orange
+  "Won't Read": '#dc3545',        // Red
+  'Abandoned': '#e74c3c',         // Light Red
+  'No Status': '#343a40'          // Dark Gray
+} as const;
 
 const CHART_DEFAULTS = {
   borderColor: '#ffffff',
@@ -89,7 +97,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     labels: [],
     datasets: [{
       data: [],
-      backgroundColor: [...CHART_COLORS],
+      backgroundColor: [...Object.values(STATUS_COLOR_MAP)],
       ...CHART_DEFAULTS
     }]
   });
@@ -122,7 +130,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     try {
       const labels = stats.map(s => s.status);
       const dataValues = stats.map(s => s.count);
-      const colors = this.getColorsForData(stats.length);
+      const colors = stats.map(s => STATUS_COLOR_MAP[s.status] || '#6c757d');
 
       this.chartDataSubject.next({
         labels,
@@ -137,14 +145,6 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     }
   }
 
-  private getColorsForData(dataLength: number): string[] {
-    const colors = [...CHART_COLORS];
-    while (colors.length < dataLength) {
-      colors.push(...CHART_COLORS);
-    }
-    return colors.slice(0, dataLength);
-  }
-
   private calculateReadingStatusStats(): ReadingStatusStats[] {
     const currentState = this.bookService.getCurrentBookState();
 
@@ -155,8 +155,16 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     return this.processReadingStatusStats(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private processReadingStatusStats(books: Book[]): ReadingStatusStats[] {
@@ -210,7 +218,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     return STATUS_MAPPING[status] ?? 'No Status';
   }
 
-  private generateLegendLabels(chart: any) {
+  private generateLegendLabels(chart: Chart) {
     const data = chart.data;
     if (!data.labels?.length || !data.datasets?.[0]?.data?.length) {
       return [];
@@ -219,13 +227,13 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     const dataset = data.datasets[0];
     const dataValues = dataset.data as number[];
 
-    return data.labels.map((label: string, index: number) => {
+    return data.labels.map((label: unknown, index: number) => {
       const isVisible = typeof chart.getDataVisibility === 'function'
         ? chart.getDataVisibility(index)
-        : !((chart.getDatasetMeta && chart.getDatasetMeta(0)?.data?.[index]?.hidden) || false);
+        : !((chart.getDatasetMeta && (chart.getDatasetMeta(0)?.data?.[index] as any)?.hidden) || false);
 
       return {
-        text: `${label} (${dataValues[index]})`,
+        text: `${String(label)} (${dataValues[index]})`,
         fillStyle: (dataset.backgroundColor as string[])[index],
         strokeStyle: '#ffffff',
         lineWidth: 1,
@@ -236,7 +244,7 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     });
   }
 
-  private formatTooltipLabel(context: any): string {
+  private formatTooltipLabel(context: TooltipItem<any>): string {
     const dataIndex = context.dataIndex;
     const dataset = context.dataset;
     const value = dataset.data[dataIndex] as number;
@@ -246,4 +254,3 @@ export class ReadStatusChartComponent implements OnInit, OnDestroy {
     return `${label}: ${value} books (${percentage}%)`;
   }
 }
-

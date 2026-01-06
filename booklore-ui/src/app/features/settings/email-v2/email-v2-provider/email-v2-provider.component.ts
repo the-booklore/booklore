@@ -35,7 +35,7 @@ export class EmailV2ProviderComponent implements OnInit {
   private emailProvidersService = inject(EmailV2ProviderService);
   private messageService = inject(MessageService);
   private userService = inject(UserService);
-  defaultProviderId: any;
+  defaultProviderId: unknown;
   currentUserId: number | null = null;
   isAdmin: boolean = false;
 

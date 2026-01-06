@@ -48,6 +48,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+  [key: string]: unknown;
 }
 
 export interface EpubProgress {
@@ -101,6 +102,8 @@ export interface BookMetadata {
   goodreadsReviewCount?: number | null;
   hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
+  lubimyczytacId?: string;
+  lubimyczytacRating?: number | null;
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
@@ -134,6 +137,8 @@ export interface BookMetadata {
   goodreadsReviewCountLocked?: boolean;
   hardcoverRatingLocked?: boolean;
   hardcoverReviewCountLocked?: boolean;
+  lubimyczytacIdLocked?: boolean;
+  lubimyczytacRatingLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
@@ -141,7 +146,7 @@ export interface BookMetadata {
   tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface MetadataClearFlags {
@@ -169,6 +174,8 @@ export interface MetadataClearFlags {
   goodreadsReviewCount?: boolean;
   hardcoverRating?: boolean;
   hardcoverReviewCount?: boolean;
+  lubimyczytacId?: boolean;
+  lubimyczytacRating?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;
@@ -194,6 +201,7 @@ export interface EpubViewerSetting {
   lineHeight: number;
   letterSpacing: number;
   spread: string;
+  customFontId?: number | null;
 }
 
 export interface CbxViewerSetting {
@@ -209,7 +217,7 @@ export interface BookSetting {
   epubSettings?: EpubViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface BookRecommendation {

@@ -135,7 +135,7 @@ export class LibraryShelfMenuService {
     ];
   }
 
-  initializeShelfMenuItems(entity: any): MenuItem[] {
+  initializeShelfMenuItems(entity: Shelf | null): MenuItem[] {
     return [
       {
         label: 'Options',
@@ -183,14 +183,14 @@ export class LibraryShelfMenuService {
     ];
   }
 
-  initializeMagicShelfMenuItems(entity: any): MenuItem[] {
+  initializeMagicShelfMenuItems(entity: MagicShelf | null): MenuItem[] {
     const isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const isPublicShelf = entity?.isPublic ?? false;
     const disableOptions = isPublicShelf && !isAdmin;
 
     return [
       {
-        label: (isPublicShelf ? 'Public Shelf - ' : '') + (disableOptions ? 'Read only' : 'Options'),
+        label: 'Options',
         items: [
           {
             label: 'Edit Magic Shelf',

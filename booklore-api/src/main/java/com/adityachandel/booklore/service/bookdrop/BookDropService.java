@@ -28,6 +28,7 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -76,6 +77,7 @@ public class BookDropService {
     private final ObjectMapper objectMapper;
     private final FileMovingHelper fileMovingHelper;
     private final MonitoringRegistrationService monitoringRegistrationService;
+    private final KoboAutoShelfService koboAutoShelfService;
 
     private static final int CHUNK_SIZE = 100;
 
@@ -405,7 +407,13 @@ public class BookDropService {
     private BookdropFileResult performFileMove(BookdropFileEntity bookdropFile, Path source, Path target, LibraryEntity library, LibraryPathEntity path, BookMetadata metadata) {
         Path tempPath = null;
         try {
-            tempPath = Files.createTempFile("bookdrop-finalize-", bookdropFile.getFileName());
+            String suffix = "";
+            String fileName = bookdropFile.getFileName();
+            int lastDotIndex = fileName.lastIndexOf('.');
+            if (lastDotIndex >= 0) {
+                suffix = fileName.substring(lastDotIndex);
+            }
+            tempPath = Files.createTempFile("bookdrop-finalize-", suffix);
             Files.copy(source, tempPath, StandardCopyOption.REPLACE_EXISTING);
 
             Files.createDirectories(target.getParent());
@@ -470,6 +478,7 @@ public class BookDropService {
                 .build();
 
         metadataRefreshService.updateBookMetadata(context);
+        koboAutoShelfService.autoAddBookToKoboShelves(bookEntity.getId());
 
         cleanupBookdropData(bookdropFile);
 

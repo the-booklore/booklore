@@ -22,15 +22,15 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
     void markBooksSynced(@Param("snapshotId") String snapshotId, @Param("bookIds") List<Long> bookIds);
 
     @Query("""
-        SELECT curr
-        FROM KoboSnapshotBookEntity curr
-        WHERE curr.snapshot.id = :currSnapshotId
-          AND curr.bookId IN (
-              SELECT prev.bookId
-              FROM KoboSnapshotBookEntity prev
-              WHERE prev.snapshot.id = :prevSnapshotId
-          )
-    """)
+                SELECT curr
+                FROM KoboSnapshotBookEntity curr
+                WHERE curr.snapshot.id = :currSnapshotId
+                  AND curr.bookId IN (
+                      SELECT prev.bookId
+                      FROM KoboSnapshotBookEntity prev
+                      WHERE prev.snapshot.id = :prevSnapshotId
+                  )
+            """)
     List<KoboSnapshotBookEntity> findExistingBooksBetweenSnapshots(
             @Param("prevSnapshotId") String prevSnapshotId,
             @Param("currSnapshotId") String currSnapshotId
@@ -55,23 +55,59 @@ public interface KoboSnapshotBookRepository extends JpaRepository<KoboSnapshotBo
     );
 
     @Query("""
-        SELECT prev
-        FROM KoboSnapshotBookEntity prev
-        WHERE prev.snapshot.id = :prevSnapshotId
-          AND prev.bookId NOT IN (
-              SELECT curr.bookId
-              FROM KoboSnapshotBookEntity curr
-              WHERE curr.snapshot.id = :currSnapshotId
-          )
-          AND prev.bookId NOT IN (
-              SELECT p.bookIdSynced
-              FROM KoboDeletedBookProgressEntity p
-              WHERE p.snapshotId = :currSnapshotId
-          )
-    """)
+                SELECT prev
+                FROM KoboSnapshotBookEntity prev
+                WHERE prev.snapshot.id = :prevSnapshotId
+                  AND prev.bookId NOT IN (
+                      SELECT curr.bookId
+                      FROM KoboSnapshotBookEntity curr
+                      WHERE curr.snapshot.id = :currSnapshotId
+                  )
+                  AND prev.bookId NOT IN (
+                      SELECT p.bookIdSynced
+                      FROM KoboDeletedBookProgressEntity p
+                      WHERE p.snapshotId = :currSnapshotId
+                  )
+            """)
     Page<KoboSnapshotBookEntity> findRemovedBooks(
             @Param("prevSnapshotId") String prevSnapshotId,
             @Param("currSnapshotId") String currSnapshotId,
             Pageable pageable
     );
+
+    @Query("""
+                SELECT curr
+                FROM KoboSnapshotBookEntity curr
+                JOIN KoboSnapshotBookEntity prev
+                    ON curr.bookId = prev.bookId
+                WHERE curr.snapshot.id = :currSnapshotId
+                  AND prev.snapshot.id = :prevSnapshotId
+                  AND curr.fileHash = prev.fileHash
+                  AND (curr.metadataUpdatedAt = prev.metadataUpdatedAt OR (curr.metadataUpdatedAt IS NULL AND prev.metadataUpdatedAt IS NULL))
+            """)
+    List<KoboSnapshotBookEntity> findUnchangedBooksBetweenSnapshots(
+            @Param("prevSnapshotId") String prevSnapshotId,
+            @Param("currSnapshotId") String currSnapshotId
+    );
+
+    @Query("""
+                SELECT curr
+                FROM KoboSnapshotBookEntity curr
+                JOIN KoboSnapshotBookEntity prev
+                    ON curr.bookId = prev.bookId
+                WHERE curr.snapshot.id = :currSnapshotId
+                  AND prev.snapshot.id = :prevSnapshotId
+                  AND curr.synced = false
+                  AND (
+                      curr.fileHash <> prev.fileHash
+                      OR (curr.metadataUpdatedAt <> prev.metadataUpdatedAt AND curr.metadataUpdatedAt IS NOT NULL AND prev.metadataUpdatedAt IS NOT NULL)
+                      OR (curr.metadataUpdatedAt IS NOT NULL AND prev.metadataUpdatedAt IS NULL)
+                  )
+            """)
+    Page<KoboSnapshotBookEntity> findChangedBooks(
+            @Param("prevSnapshotId") String prevSnapshotId,
+            @Param("currSnapshotId") String currSnapshotId,
+            Pageable pageable
+    );
+
 }

@@ -31,7 +31,7 @@ export class EmailV2RecipientComponent implements OnInit {
   private dialogLauncherService = inject(DialogLauncherService);
   private emailRecipientService = inject(EmailV2RecipientService);
   private messageService = inject(MessageService);
-  defaultRecipientId: any;
+  defaultRecipientId: unknown;
 
   ngOnInit(): void {
     this.loadRecipientEmails();

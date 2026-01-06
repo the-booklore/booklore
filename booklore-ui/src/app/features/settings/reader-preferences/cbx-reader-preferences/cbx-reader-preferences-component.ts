@@ -1,7 +1,7 @@
 import {Component, inject, Input} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, UserSettings} from '../../user-management/user.service';
-import {ReaderPreferencesService} from '../reader-preferences-service';
+import {ReaderPreferencesService} from '../reader-preferences.service';
 import {TooltipModule} from 'primeng/tooltip';
 
 @Component({

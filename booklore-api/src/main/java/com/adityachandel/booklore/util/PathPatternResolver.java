@@ -238,7 +238,7 @@ public class PathPatternResolver {
         return result.toString();
     }
 
-    private String truncatePathComponent(String component, int maxBytes) {
+    public String truncatePathComponent(String component, int maxBytes) {
         if (component == null || component.isEmpty()) {
             return component;
         }
@@ -288,7 +288,7 @@ public class PathPatternResolver {
         return result.toString();
     }
 
-    private String truncateFilenameWithExtension(String filename) {
+    public String truncateFilenameWithExtension(String filename) {
         int lastDotIndex = filename.lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == 0) {
             // No extension or dot is at start (hidden file), treat as normal component

@@ -145,9 +145,13 @@ public class MetadataRefreshService {
                                 return null;
                             }
                         }
-                        BookMetadata fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+                        BookMetadata fetched = null;
+                        boolean bookReviewMode = false;
+                        if (refreshOptions != null) {
+                            fetched = buildFetchMetadata(book.getId(), refreshOptions, metadataMap);
+                            bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
+                        }
 
-                        boolean bookReviewMode = Boolean.TRUE.equals(refreshOptions.getReviewBeforeApply());
                         if (bookReviewMode) {
                             saveProposal(task, book.getId(), fetched);
                         } else {
@@ -394,8 +398,16 @@ public class MetadataRefreshService {
 
     public BookMetadata buildFetchMetadata(Long bookId, MetadataRefreshOptions refreshOptions, Map<MetadataProvider, BookMetadata> metadataMap) {
         BookMetadata metadata = BookMetadata.builder().bookId(bookId).build();
+        
         MetadataRefreshOptions.FieldOptions fieldOptions = refreshOptions.getFieldOptions();
+        if (fieldOptions == null) {
+            fieldOptions = new MetadataRefreshOptions.FieldOptions();
+        }
+
         MetadataRefreshOptions.EnabledFields enabledFields = refreshOptions.getEnabledFields();
+        if (enabledFields == null) {
+            enabledFields = new MetadataRefreshOptions.EnabledFields();
+        }
 
         if (enabledFields.isTitle()) {
             metadata.setTitle(resolveFieldAsString(metadataMap, fieldOptions.getTitle(), BookMetadata::getTitle));

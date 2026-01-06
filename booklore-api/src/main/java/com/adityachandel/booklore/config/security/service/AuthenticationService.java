@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.dto.request.UserLoginRequest;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.RefreshTokenEntity;
 import com.adityachandel.booklore.model.enums.ProvisioningMethod;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.repository.RefreshTokenRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.service.user.DefaultSettingInitializer;
@@ -60,16 +61,9 @@ public class AuthenticationService {
 
     private BookLoreUser createSystemUser() {
         BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
-        permissions.setAdmin(true);
-        permissions.setCanUpload(true);
-        permissions.setCanDownload(true);
-        permissions.setCanEditMetadata(true);
-        permissions.setCanManageLibrary(true);
-        permissions.setCanSyncKoReader(true);
-        permissions.setCanSyncKobo(true);
-        permissions.setCanEmailBook(true);
-        permissions.setCanDeleteBook(true);
-        permissions.setCanAccessOpds(true);
+        for (UserPermission permission : UserPermission.values()) {
+            permission.setInDto(permissions, true);
+        }
 
         return BookLoreUser.builder()
                 .id(-1L)

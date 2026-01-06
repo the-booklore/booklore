@@ -214,7 +214,7 @@ public class HardcoverSyncService {
             List<Map<String, Object>> hits = (List<Map<String, Object>>) results.get("hits");
             if (hits == null || hits.isEmpty()) return null;
 
-            Map<String, Object> document = (Map<String, Object>) hits.get(0).get("document");
+            Map<String, Object> document = (Map<String, Object>) hits.getFirst().get("document");
             if (document == null) return null;
 
             // Extract book info
@@ -305,7 +305,7 @@ public class HardcoverSyncService {
             List<Map<String, Object>> editions = (List<Map<String, Object>>) data.get("editions");
             if (editions == null || editions.isEmpty()) return null;
 
-            Map<String, Object> edition = editions.get(0);
+            Map<String, Object> edition = editions.getFirst();
             EditionInfo info = new EditionInfo();
             
             Object idObj = edition.get("id");
@@ -419,7 +419,7 @@ public class HardcoverSyncService {
             List<Map<String, Object>> userBooks = (List<Map<String, Object>>) me.get("user_books");
             if (userBooks == null || userBooks.isEmpty()) return null;
 
-            Object idObj = userBooks.get(0).get("id");
+            Object idObj = userBooks.getFirst().get("id");
             if (idObj instanceof Number) {
                 return ((Number) idObj).intValue();
             }
@@ -476,7 +476,7 @@ public class HardcoverSyncService {
             List<Map<String, Object>> reads = (List<Map<String, Object>>) data.get("user_book_reads");
             if (reads == null || reads.isEmpty()) return null;
 
-            Object idObj = reads.get(0).get("id");
+            Object idObj = reads.getFirst().get("id");
             if (idObj instanceof Number) {
                 return ((Number) idObj).intValue();
             }

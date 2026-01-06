@@ -244,6 +244,10 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     return placeholderRegex.test(pattern);
   }
 
+  get patternControl(): FormControl {
+    return this.patternForm.get('pattern') as FormControl;
+  }
+
   getPlaceholderLabel(name: string): string {
     return name === '*' ? '*' : `{${name}}`;
   }

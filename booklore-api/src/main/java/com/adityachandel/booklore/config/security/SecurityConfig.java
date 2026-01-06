@@ -2,6 +2,7 @@ package com.adityachandel.booklore.config.security;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.config.security.filter.CoverJwtFilter;
+import com.adityachandel.booklore.config.security.filter.CustomFontJwtFilter;
 import com.adityachandel.booklore.config.security.filter.DualJwtAuthenticationFilter;
 import com.adityachandel.booklore.config.security.filter.KoboAuthFilter;
 import com.adityachandel.booklore.config.security.filter.KoreaderAuthFilter;
@@ -50,7 +51,8 @@ public class SecurityConfig {
             "/kobo/**",                // Kobo API requests (auth handled in KoboAuthFilter)
             "/api/v1/auth/**",         // Login and token refresh endpoints (must remain public)
             "/api/v1/public-settings", // Public endpoint for checking OIDC or other app settings
-            "/api/v1/setup/**"         // Setup wizard endpoints (must remain accessible before initial setup)
+            "/api/v1/setup/**",        // Setup wizard endpoints (must remain accessible before initial setup)
+            "/api/v1/healthcheck/**"   // Healthcheck endpoints (must remain accessible for Docker healthchecks)
     };
 
     private static final String[] COMMON_UNAUTHENTICATED_ENDPOINTS = {
@@ -132,6 +134,21 @@ public class SecurityConfig {
 
     @Bean
     @Order(5)
+    public SecurityFilterChain customFontSecurityChain(HttpSecurity http, CustomFontJwtFilter customFontJwtFilter) throws Exception {
+        http
+                .securityMatcher("/api/v1/custom-fonts/*/file")
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().permitAll()
+                )
+                .addFilterBefore(customFontJwtFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+
+    @Bean
+    @Order(6)
     public SecurityFilterChain jwtApiSecurityChain(HttpSecurity http) throws Exception {
         List<String> publicEndpoints = new ArrayList<>(Arrays.asList(COMMON_PUBLIC_ENDPOINTS));
         if (appProperties.getSwagger().isEnabled()) {

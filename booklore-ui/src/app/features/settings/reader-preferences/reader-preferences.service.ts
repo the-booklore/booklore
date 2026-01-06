@@ -23,7 +23,7 @@ export class ReaderPreferencesService implements OnDestroy {
     this.destroy$.complete();
   }
 
-  updatePreference(path: string[], value: any): void {
+  updatePreference(path: string[], value: unknown): void {
     if (!this.currentUser) return;
 
     let target: any = this.currentUser.userSettings;

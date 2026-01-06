@@ -62,6 +62,15 @@ export class CreateUserDialogComponent implements OnInit {
       permissionManageGlobalPreferences: [false],
       permissionManageIcons: [false],
       permissionAdmin: [false],
+      permissionBulkAutoFetchMetadata: [false],
+      permissionBulkCustomFetchMetadata: [false],
+      permissionBulkEditMetadata: [false],
+      permissionBulkRegenerateCover: [false],
+      permissionMoveOrganizeFiles: [false],
+      permissionBulkLockUnlockMetadata: [false],
+      permissionBulkResetBookloreReadProgress: [false],
+      permissionBulkResetKoReaderReadProgress: [false],
+      permissionBulkResetBookReadStatus: [false],
     });
   }
 

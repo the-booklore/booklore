@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -31,8 +30,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 @Slf4j
 @Service
@@ -233,6 +230,9 @@ public class CbxReaderService {
     }
 
     private boolean isImageFile(String name) {
+        if (!isContentEntry(name)) {
+            return false;
+        }
         String lower = name.toLowerCase().replace("\\", "/");
         for (String extension : SUPPORTED_IMAGE_EXTENSIONS) {
             if (lower.endsWith(extension)) {
@@ -240,6 +240,27 @@ public class CbxReaderService {
             }
         }
         return false;
+    }
+
+    private boolean isContentEntry(String name) {
+        if (name == null) return false;
+        String norm = name.replace('\\', '/');
+        if (norm.startsWith("__MACOSX/") || norm.contains("/__MACOSX/")) return false;
+        String[] parts = norm.split("/");
+        for (String part : parts) {
+            if ("__MACOSX".equalsIgnoreCase(part)) return false;
+        }
+        String base = baseName(norm);
+        if (base.startsWith("._")) return false;
+        if (base.startsWith(".")) return false;
+        if (".ds_store".equalsIgnoreCase(base)) return false;
+        return true;
+    }
+
+    private String baseName(String path) {
+        if (path == null) return null;
+        int slash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+        return slash >= 0 ? path.substring(slash + 1) : path;
     }
 
 

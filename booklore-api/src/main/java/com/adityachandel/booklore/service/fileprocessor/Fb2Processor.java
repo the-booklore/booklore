@@ -7,11 +7,11 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.Fb2MetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,19 +32,16 @@ import static com.adityachandel.booklore.util.FileService.truncate;
 public class Fb2Processor extends AbstractFileProcessor implements BookFileProcessor {
 
     private final Fb2MetadataExtractor fb2MetadataExtractor;
-    private final BookMetadataRepository bookMetadataRepository;
 
     public Fb2Processor(BookRepository bookRepository,
                         BookAdditionalFileRepository bookAdditionalFileRepository,
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileService fileService,
-                        BookMetadataRepository bookMetadataRepository,
                         MetadataMatchService metadataMatchService,
                         Fb2MetadataExtractor fb2MetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
         this.fb2MetadataExtractor = fb2MetadataExtractor;
-        this.bookMetadataRepository = bookMetadataRepository;
     }
 
     @Override
@@ -54,6 +50,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
         return bookEntity;
     }

@@ -59,14 +59,14 @@ export class UserStatsService {
   getHeatmapForYear(year: number): Observable<ReadingSessionHeatmapResponse[]> {
     return this.http.get<ReadingSessionHeatmapResponse[]>(
       `${this.readingSessionsUrl}/heatmap`,
-      { params: { year: year.toString() } }
+      {params: {year: year.toString()}}
     );
   }
 
-  getTimelineForWeek(year: number, month: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
+  getTimelineForWeek(year: number, week: number): Observable<ReadingSessionTimelineResponse[]> {
     return this.http.get<ReadingSessionTimelineResponse[]>(
       `${this.readingSessionsUrl}/timeline`,
-      { params: { year: year.toString(), month: month.toString(), week: week.toString() } }
+      {params: {year: year.toString(), week: week.toString()}}
     );
   }
 
@@ -79,17 +79,17 @@ export class UserStatsService {
   getCompletionTimelineForYear(year: number): Observable<CompletionTimelineResponse[]> {
     return this.http.get<CompletionTimelineResponse[]>(
       `${this.readingSessionsUrl}/completion-timeline`,
-      { params: { year: year.toString() } }
+      {params: {year: year.toString()}}
     );
   }
 
   getFavoriteDays(year?: number, month?: number): Observable<FavoriteDaysResponse[]> {
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<FavoriteDaysResponse[]>(
@@ -99,12 +99,12 @@ export class UserStatsService {
   }
 
   getPeakHours(year?: number, month?: number): Observable<PeakHoursResponse[]> {
-    let params: any = {};
+    let params: Record<string, string> = {};
     if (year !== undefined && year !== null) {
-      params.year = year.toString();
+      params['year'] = year.toString();
     }
     if (month !== undefined && month !== null) {
-      params.month = month.toString();
+      params['month'] = month.toString();
     }
 
     return this.http.get<PeakHoursResponse[]>(

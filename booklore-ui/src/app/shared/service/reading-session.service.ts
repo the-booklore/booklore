@@ -270,7 +270,7 @@ export class ReadingSessionService {
     return this.currentSession !== null;
   }
 
-  private log(message: string, data?: any): void {
+  private log(message: string, data?: unknown): void {
     if (data) {
       console.log(`[ReadingSession] ${message}`, data);
     } else {
@@ -278,7 +278,7 @@ export class ReadingSessionService {
     }
   }
 
-  private logError(message: string, error?: any): void {
+  private logError(message: string, error?: unknown): void {
     if (error) {
       console.error(`[ReadingSession] ${message}`, error);
     } else {

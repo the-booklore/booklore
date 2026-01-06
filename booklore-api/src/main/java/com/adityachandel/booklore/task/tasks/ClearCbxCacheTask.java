@@ -1,8 +1,11 @@
 package com.adityachandel.booklore.task.tasks;
 
+import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.TaskCreateRequest;
 import com.adityachandel.booklore.model.dto.response.TaskCreateResponse;
 import com.adityachandel.booklore.model.enums.TaskType;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.adityachandel.booklore.task.TaskMetadataHelper;
 import com.adityachandel.booklore.task.TaskStatus;
 import com.adityachandel.booklore.util.FileService;
@@ -26,6 +29,13 @@ public class ClearCbxCacheTask implements Task {
     private FileService fileService;
 
     @Override
+    public void validatePermissions(BookLoreUser user, TaskCreateRequest request) {
+        if (!UserPermission.CAN_ACCESS_TASK_MANAGER.isGranted(user.getPermissions())) {
+            throw ApiError.PERMISSION_DENIED.createException(UserPermission.CAN_ACCESS_TASK_MANAGER);
+        }
+    }
+
+    @Override
     public TaskCreateResponse execute(TaskCreateRequest request) {
         TaskCreateResponse.TaskCreateResponseBuilder builder = TaskCreateResponse.builder()
                 .taskId(UUID.randomUUID().toString())
@@ -35,27 +45,8 @@ public class ClearCbxCacheTask implements Task {
         log.info("{}: Task started", getTaskType());
 
         try {
-            String cbxCachePath = fileService.getCbxCachePath();
-            Path cachePath = Paths.get(cbxCachePath);
-
-            if (Files.exists(cachePath) && Files.isDirectory(cachePath)) {
-                try (Stream<Path> walk = Files.walk(cachePath)) {
-                    walk.sorted(Comparator.reverseOrder())
-                            .forEach(path -> {
-                                try {
-                                    Files.delete(path);
-                                } catch (IOException e) {
-                                    log.error("Failed to delete file: {} - {}", path, e.getMessage());
-                                }
-                            });
-                }
-
-                Files.createDirectories(cachePath);
-                log.info("{}: Cache cleared and directory recreated", getTaskType());
-            } else {
-                log.warn("{}: Cache path does not exist or is not a directory: {}", getTaskType(), cbxCachePath);
-            }
-
+            fileService.clearCacheDirectory(fileService.getCbxCachePath());
+            log.info("{}: Cache cleared", getTaskType());
             builder.status(TaskStatus.COMPLETED);
         } catch (Exception e) {
             log.error("{}: Error clearing cache", getTaskType(), e);

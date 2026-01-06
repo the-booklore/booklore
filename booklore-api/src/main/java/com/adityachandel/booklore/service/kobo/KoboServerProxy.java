@@ -16,8 +16,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -26,7 +24,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -95,15 +92,13 @@ public class KoboServerProxy {
             String koboBaseUrl = "https://storeapi.kobo.com";
 
             String queryString = request.getQueryString();
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(koboBaseUrl)
-                    .path(path);
-
+            String uriString = koboBaseUrl + path;
             if (queryString != null && !queryString.isBlank()) {
-                uriBuilder.query(queryString);
+                uriString += "?" + queryString;
             }
 
-            URI uri = uriBuilder.build(true).toUri();
-            log.info("Kobo proxy URL: {}", uri);
+            URI uri = URI.create(uriString);
+            log.debug("Kobo proxy URL: {}", uri);
 
             String bodyString = body != null ? objectMapper.writeValueAsString(body) : "{}";
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -150,7 +145,7 @@ public class KoboServerProxy {
                 }
             }
 
-            log.info("Kobo proxy response status: {}", response.statusCode());
+            log.debug("Kobo proxy response status: {}", response.statusCode());
 
             return new ResponseEntity<>(responseBody, responseHeaders, HttpStatus.valueOf(response.statusCode()));
 

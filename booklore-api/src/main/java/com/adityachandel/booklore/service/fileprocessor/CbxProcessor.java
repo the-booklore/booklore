@@ -7,11 +7,11 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
-import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
+import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import com.github.junrar.Archive;
@@ -25,8 +25,10 @@ import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
-import java.time.Instant;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -41,7 +43,6 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
     private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
-    private final BookMetadataRepository bookMetadataRepository;
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
     public CbxProcessor(BookRepository bookRepository,
@@ -49,12 +50,10 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                         BookCreatorService bookCreatorService,
                         BookMapper bookMapper,
                         FileService fileService,
-                        BookMetadataRepository bookMetadataRepository,
-                        MetadataMatchService metadataMatchService, 
+                        MetadataMatchService metadataMatchService,
                         CbxMetadataExtractor cbxMetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
-        this.bookMetadataRepository = bookMetadataRepository;
-         this.cbxMetadataExtractor = cbxMetadataExtractor;
+        this.cbxMetadataExtractor = cbxMetadataExtractor;
     }
 
     @Override
@@ -62,8 +61,8 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
-        
         extractAndSetMetadata(bookEntity);
         return bookEntity;
     }
@@ -120,8 +119,8 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                 .setUseUnicodeExtraFields(true)
                 .setIgnoreLocalFileHeader(true)
                 .get()) {
-             Optional<BufferedImage> image = findAndReadFirstImage(zipFile);
-             if (image.isPresent()) return image;
+            Optional<BufferedImage> image = findAndReadFirstImage(zipFile);
+            if (image.isPresent()) return image;
         } catch (Exception e) {
             log.debug("Fast path failed for ZIP extraction: {}", e.getMessage());
         }
@@ -239,7 +238,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             // Fallback to filename-derived title
             setMetadata(bookEntity);
         }
-    }    
+    }
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
