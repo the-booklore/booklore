@@ -4,12 +4,16 @@ import com.adityachandel.booklore.mapper.komga.KomgaMapper;
 import com.adityachandel.booklore.model.dto.komga.KomgaBookDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageableDto;
+import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
+import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.reader.CbxReaderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +42,15 @@ class KomgaServiceTest {
 
     @Mock
     private KomgaMapper komgaMapper;
+    
+    @Mock
+    private MagicShelfService magicShelfService;
+    
+    @Mock
+    private CbxReaderService cbxReaderService;
+    
+    @Mock
+    private AppSettingService appSettingService;
 
     @InjectMocks
     private KomgaService komgaService;
@@ -48,6 +62,11 @@ class KomgaServiceTest {
     void setUp() {
         library = new LibraryEntity();
         library.setId(1L);
+        
+        // Mock app settings (lenient because not all tests use this)
+        AppSettings appSettings = new AppSettings();
+        appSettings.setKomgaGroupUnknown(true);
+        lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
         // Create multiple books for testing pagination
         seriesBooks = new ArrayList<>();
@@ -76,13 +95,18 @@ class KomgaServiceTest {
         // Given
         when(bookRepository.findAllWithMetadataByLibraryId(anyLong())).thenReturn(seriesBooks);
         
+        // Mock mapper.getBookSeriesName to return "test-series" for all books
+        for (BookEntity book : seriesBooks) {
+            when(komgaMapper.getBookSeriesName(book)).thenReturn("test-series");
+        }
+        
         // Mock the mapper to return DTOs
         for (BookEntity book : seriesBooks) {
             KomgaBookDto dto = KomgaBookDto.builder()
                     .id(book.getId().toString())
                     .name(book.getMetadata().getTitle())
                     .build();
-            when(komgaMapper.toKomgaBookDto(book, true)).thenReturn(dto);
+            when(komgaMapper.toKomgaBookDto(book)).thenReturn(dto);
         }
 
         // When: Request with unpaged=true
@@ -102,6 +126,11 @@ class KomgaServiceTest {
         // Given
         when(bookRepository.findAllWithMetadataByLibraryId(anyLong())).thenReturn(seriesBooks);
         
+        // Mock mapper.getBookSeriesName to return "test-series" for all books
+        for (BookEntity book : seriesBooks) {
+            when(komgaMapper.getBookSeriesName(book)).thenReturn("test-series");
+        }
+        
         // Mock the mapper to return DTOs (only for the books that will be used)
         for (int i = 0; i < 20; i++) {
             BookEntity book = seriesBooks.get(i);
@@ -109,7 +138,7 @@ class KomgaServiceTest {
                     .id(book.getId().toString())
                     .name(book.getMetadata().getTitle())
                     .build();
-            when(komgaMapper.toKomgaBookDto(book, true)).thenReturn(dto);
+            when(komgaMapper.toKomgaBookDto(book)).thenReturn(dto);
         }
 
         // When: Request with unpaged=false and page size 20
