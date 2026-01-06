@@ -27,6 +27,8 @@ import com.adityachandel.booklore.service.metadata.parser.BookParser;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PreDestroy;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -34,7 +36,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,24 +55,55 @@ public class BookMetadataService {
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final MetadataClearFlagsMapper metadataClearFlagsMapper;
     private final BookCoverService bookCoverService;
+    private final ExecutorService metadataFetchExecutor = new ThreadPoolExecutor(
+            10, 20, 60L, TimeUnit.SECONDS,
+            new ArrayBlockingQueue<>(100),
+            new ThreadPoolExecutor.CallerRunsPolicy()
+    );
+
+    @PreDestroy
+    public void cleanup() {
+        metadataFetchExecutor.shutdown();
+    }
 
     public void generateCustomCover(long bookId) {
         bookCoverService.generateCustomCover(bookId);
     }
 
     public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
+        if (request.getProviders() == null || request.getProviders().isEmpty()) {
+            log.debug("No metadata providers specified for Book ID: {}", bookId);
+            return List.of();
+        }
+
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
-        List<List<BookMetadata>> allMetadata = request.getProviders().stream()
-                .map(provider -> CompletableFuture.supplyAsync(() -> fetchMetadataListFromAProvider(provider, book, request))
+        List<CompletableFuture<List<BookMetadata>>> futures = request.getProviders().stream()
+                .map(provider -> CompletableFuture.supplyAsync(() -> fetchMetadataListFromAProvider(provider, book, request), metadataFetchExecutor)
+                        .orTimeout(30, TimeUnit.SECONDS)
                         .exceptionally(e -> {
-                            log.error("Error fetching metadata from provider: {}", provider, e);
+                            Throwable cause = (e instanceof CompletionException) ? e.getCause() : e;
+                            if (cause instanceof TimeoutException) {
+                                log.warn("Metadata fetch timeout for provider {} after 30s - Book ID: {}", provider, bookId);
+                            } else {
+                                log.error("Error fetching metadata from provider: {}", provider, cause);
+                            }
                             return List.of();
                         }))
-                .toList()
-                .stream()
+                .toList();
+
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .orTimeout(35, TimeUnit.SECONDS)
+                    .join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                log.warn("Overall timeout reached for metadata fetching - Book ID: {}", bookId);
+            }
+        }
+
+        List<List<BookMetadata>> allMetadata = futures.stream()
                 .map(CompletableFuture::join)
-                .filter(Objects::nonNull)
                 .toList();
 
         List<BookMetadata> interleavedMetadata = new ArrayList<>();
@@ -83,6 +116,9 @@ public class BookMetadataService {
                 }
             }
         }
+
+        log.debug("Fetched {} total metadata entries for Book ID: {} from {} providers",
+                interleavedMetadata.size(), bookId, request.getProviders().size());
 
         return interleavedMetadata;
     }
