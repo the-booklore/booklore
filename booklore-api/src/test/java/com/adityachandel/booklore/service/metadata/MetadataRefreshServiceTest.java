@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
@@ -19,6 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 @ExtendWith(MockitoExtension.class)
 class MetadataRefreshServiceTest {
+
+    @Mock
+    private BookMetadataService bookMetadataService;
 
     @InjectMocks
     private MetadataRefreshService metadataRefreshService;

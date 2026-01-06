@@ -228,6 +228,78 @@ class BookMetadataServiceTest {
         verify(notificationService).sendMessage(any(), any());
     }
 
+    @Test
+    void fetchTopMetadataMap_shouldReturnResults_whenProvidersSucceed() {
+        Book book = Book.builder().id(1L).title("Test Book").build();
+        FetchMetadataRequest request = createFetchRequest(MetadataProvider.Google, MetadataProvider.GoodReads);
+
+        BookMetadata gMeta = BookMetadata.builder().provider(MetadataProvider.Google).title("Google Title").build();
+        BookMetadata grMeta = BookMetadata.builder().provider(MetadataProvider.GoodReads).title("GoodReads Title").build();
+
+        when(googleParser.fetchTopMetadata(any(), any())).thenReturn(gMeta);
+        when(goodreadsParser.fetchTopMetadata(any(), any())).thenReturn(grMeta);
+
+        Map<MetadataProvider, BookMetadata> result = bookMetadataService.fetchTopMetadataMap(book, request);
+
+        assertEquals(2, result.size());
+        assertEquals("Google Title", result.get(MetadataProvider.Google).getTitle());
+        assertEquals("GoodReads Title", result.get(MetadataProvider.GoodReads).getTitle());
+    }
+
+    @Test
+    void fetchTopMetadataMap_shouldHandlePartialFailure() {
+        Book book = Book.builder().id(1L).title("Test Book").build();
+        FetchMetadataRequest request = createFetchRequest(MetadataProvider.Google, MetadataProvider.GoodReads);
+
+        when(googleParser.fetchTopMetadata(any(), any())).thenThrow(new RuntimeException("Google Failed"));
+        BookMetadata grMeta = BookMetadata.builder().provider(MetadataProvider.GoodReads).title("GoodReads Title").build();
+        when(goodreadsParser.fetchTopMetadata(any(), any())).thenReturn(grMeta);
+
+        Map<MetadataProvider, BookMetadata> result = bookMetadataService.fetchTopMetadataMap(book, request);
+
+        assertEquals(1, result.size());
+        assertEquals("GoodReads Title", result.get(MetadataProvider.GoodReads).getTitle());
+        assertFalse(result.containsKey(MetadataProvider.Google));
+    }
+
+    @Test
+    void fetchTopMetadataMap_shouldHandleSlowProvider() {
+        Book book = Book.builder().id(1L).title("Test Book").build();
+        FetchMetadataRequest request = createFetchRequest(MetadataProvider.Google, MetadataProvider.GoodReads);
+
+        when(googleParser.fetchTopMetadata(any(), any())).thenAnswer(invocation -> {
+            Thread.sleep(100);
+            return BookMetadata.builder().provider(MetadataProvider.Google).title("Slow Google").build();
+        });
+        BookMetadata grMeta = BookMetadata.builder().provider(MetadataProvider.GoodReads).title("Fast GoodReads").build();
+        when(goodreadsParser.fetchTopMetadata(any(), any())).thenReturn(grMeta);
+
+        Map<MetadataProvider, BookMetadata> result = bookMetadataService.fetchTopMetadataMap(book, request);
+
+        assertEquals(2, result.size());
+        assertEquals("Slow Google", result.get(MetadataProvider.Google).getTitle());
+    }
+
+    @Test
+    void fetchTopMetadataMap_shouldReturnEmptyForEmptyProviders() {
+        Book book = Book.builder().id(1L).build();
+        FetchMetadataRequest request = createFetchRequest(); // No providers
+
+        Map<MetadataProvider, BookMetadata> result = bookMetadataService.fetchTopMetadataMap(book, request);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void fetchTopMetadataMap_shouldReturnEmptyForNullProviders() {
+        Book book = Book.builder().id(1L).build();
+        FetchMetadataRequest request = FetchMetadataRequest.builder().providers(null).build();
+
+        Map<MetadataProvider, BookMetadata> result = bookMetadataService.fetchTopMetadataMap(book, request);
+
+        assertTrue(result.isEmpty());
+    }
+
     private void setupBook(long bookId) {
         BookEntity bookEntity = new BookEntity();
         Book book = Book.builder().build();
@@ -237,7 +309,7 @@ class BookMetadataServiceTest {
 
     private FetchMetadataRequest createFetchRequest(MetadataProvider... providers) {
         return FetchMetadataRequest.builder()
-                .providers(List.of(providers))
+                .providers(providers != null ? List.of(providers) : null)
                 .build();
     }
 }

@@ -123,6 +123,52 @@ public class BookMetadataService {
         return interleavedMetadata;
     }
 
+    public Map<MetadataProvider, BookMetadata> fetchTopMetadataMap(Book book, FetchMetadataRequest request) {
+        if (request.getProviders() == null || request.getProviders().isEmpty()) {
+            return Map.of();
+        }
+
+        List<CompletableFuture<BookMetadata>> futures = request.getProviders().stream()
+                .map(provider -> CompletableFuture.supplyAsync(() -> {
+                            try {
+                                return getParser(provider).fetchTopMetadata(book, request);
+                            } catch (Exception e) {
+                                log.error("Error fetching top metadata from provider: {}", provider, e);
+                                return null;
+                            }
+                        }, metadataFetchExecutor)
+                        .orTimeout(30, TimeUnit.SECONDS)
+                        .exceptionally(e -> {
+                            Throwable cause = (e instanceof CompletionException) ? e.getCause() : e;
+                            if (cause instanceof TimeoutException) {
+                                log.warn("Top metadata fetch timeout for provider {} after 30s - Book ID: {}", provider, book.getId());
+                            } else {
+                                log.error("Error fetching top metadata from provider: {}", provider, cause);
+                            }
+                            return null;
+                        }))
+                .toList();
+
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .orTimeout(35, TimeUnit.SECONDS)
+                    .join();
+        } catch (CompletionException e) {
+            if (e.getCause() instanceof TimeoutException) {
+                log.warn("Overall timeout reached for top metadata fetching - Book ID: {}", book.getId());
+            }
+        }
+
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        BookMetadata::getProvider,
+                        metadata -> metadata,
+                        (existing, replacement) -> existing
+                ));
+    }
+
     public List<BookMetadata> fetchMetadataListFromAProvider(MetadataProvider provider, Book book, FetchMetadataRequest request) {
         return getParser(provider).fetchMetadata(book, request);
     }

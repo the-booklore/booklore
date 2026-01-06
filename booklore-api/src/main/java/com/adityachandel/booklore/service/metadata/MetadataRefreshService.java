@@ -26,6 +26,7 @@ import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.parser.BookParser;
 import com.adityachandel.booklore.task.TaskCancellationManager;
+import com.adityachandel.booklore.model.enums.PermissionType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -60,6 +61,7 @@ public class MetadataRefreshService {
     private final PlatformTransactionManager transactionManager;
     private final AuthenticationService authenticationService;
     private final TaskCancellationManager cancellationManager;
+    private final BookMetadataService bookMetadataService;
 
 
     public void refreshMetadata(MetadataRefreshRequest request, String jobId) {
@@ -212,26 +214,14 @@ public class MetadataRefreshService {
     }
 
     public Map<MetadataProvider, BookMetadata> fetchMetadataForBook(List<MetadataProvider> providers, Book book) {
-        return providers.stream()
-                .map(provider -> fetchTopMetadataFromAProvider(provider, book))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        BookMetadata::getProvider,
-                        metadata -> metadata,
-                        (existing, replacement) -> existing
-                ));
+        FetchMetadataRequest request = buildFetchMetadataRequestFromBook(book);
+        request.setProviders(providers);
+        return bookMetadataService.fetchTopMetadataMap(book, request);
     }
 
     public Map<MetadataProvider, BookMetadata> fetchMetadataForBook(List<MetadataProvider> providers, BookEntity bookEntity) {
         Book book = bookMapper.toBook(bookEntity);
-        return providers.stream()
-                .map(provider -> fetchTopMetadataFromAProvider(provider, book))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toMap(
-                        BookMetadata::getProvider,
-                        metadata -> metadata,
-                        (existing, replacement) -> existing
-                ));
+        return fetchMetadataForBook(providers, book);
     }
 
     private void reportProgressIfNeeded(MetadataFetchJobEntity task, String taskId, int completedCount, int total, BookEntity book, boolean isReviewMode) {
@@ -243,7 +233,7 @@ public class MetadataRefreshService {
     }
 
     private void sendBatchProgressNotification(String taskId, int current, int total, String message, MetadataFetchTaskStatus status, boolean isReview) {
-        notificationService.sendMessage(Topic.BOOK_METADATA_BATCH_PROGRESS, new MetadataBatchProgressNotification(taskId, current, total, message, status.name(), isReview));
+        notificationService.sendMessageToPermissions(Topic.BOOK_METADATA_BATCH_PROGRESS, new MetadataBatchProgressNotification(taskId, current, total, message, status.name(), isReview), Collections.singleton(PermissionType.ACCESS_TASK_MANAGER));
     }
 
     private void completeTask(MetadataFetchJobEntity task, int completed, int total, boolean isReviewMode) {
