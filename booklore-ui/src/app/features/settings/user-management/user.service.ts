@@ -186,6 +186,11 @@ export interface User {
   provisioningMethod?: 'LOCAL' | 'OIDC' | 'REMOTE';
 }
 
+export interface UserUpdateRequest extends Partial<User> {
+  // Extending Partial<User> provides all optional fields from User interface
+  // This ensures compatibility with the updateUser method which takes Partial<User>
+}
+
 export interface UserState {
   user: User | null;
   loaded: boolean;
