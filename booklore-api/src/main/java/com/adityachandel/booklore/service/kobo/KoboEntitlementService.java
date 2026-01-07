@@ -17,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Collections;
@@ -208,12 +209,21 @@ public class KoboEntitlementService {
                 .orElse(Collections.emptyList());
 
         KoboBookMetadata.Series series = null;
-        if (metadata.getSeriesName() != null) {
+        if (metadata.getSeriesName() != null && !metadata.getSeriesName().isBlank()) {
             series = KoboBookMetadata.Series.builder()
                     .id("series_" + metadata.getSeriesName().hashCode())
                     .name(metadata.getSeriesName())
-                    .number(metadata.getSeriesNumber() != null ? metadata.getSeriesNumber().toString() : "1")
+                    .number(metadata.getSeriesNumber() != null 
+                        ? BigDecimal.valueOf(metadata.getSeriesNumber()).stripTrailingZeros().toPlainString() 
+                        : "1")
                     .numberFloat(metadata.getSeriesNumber() != null ? metadata.getSeriesNumber().doubleValue() : 1.0)
+                    .build();
+        } else {
+            series = KoboBookMetadata.Series.builder()
+                    .id("")
+                    .name("")
+                    .number("")
+                    .numberFloat(0.0)
                     .build();
         }
 
