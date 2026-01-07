@@ -113,7 +113,7 @@ public class FileUploadService {
                 finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
                 finalPath = buildAdditionalFilePath(book, finalFileName);
             } else {
-                finalFileName = originalFileName;
+                finalFileName = sanitizedFileName;
                 finalPath = buildAdditionalFilePath(book, sanitizedFileName);
             }
             validateFinalPath(finalPath);
@@ -127,7 +127,7 @@ public class FileUploadService {
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookFileEntity entity = createAdditionalFileEntity(book, sanitizedFileName, isBook, bookType, file.getSize(), fileHash, description);
+            final BookFileEntity entity = createAdditionalFileEntity(book, finalFileName, isBook, bookType, file.getSize(), fileHash, description);
             final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
