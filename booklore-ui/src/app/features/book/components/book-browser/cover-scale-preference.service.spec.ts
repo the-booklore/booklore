@@ -3,7 +3,7 @@ import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {CoverScalePreferenceService} from './cover-scale-preference.service';
 import {MessageService} from 'primeng/api';
-import {LocalStorageService} from '../../../../shared/service/local-storage-service';
+import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 import {take} from 'rxjs/operators';
 
 describe('CoverScalePreferenceService', () => {

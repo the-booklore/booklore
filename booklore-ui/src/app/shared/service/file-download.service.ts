@@ -13,10 +13,10 @@ export class FileDownloadService {
   private downloadProgressService = inject(DownloadProgressService);
   private messageService = inject(MessageService);
 
-  downloadFile(url: string, defaultFilename: string): void {
+  downloadFile(url: string, defaultFilename: string): Observable<any> {
     const cancelSubject = new Subject<void>();
 
-    this.initiateDownload(url)
+    return this.initiateDownload(url)
       .pipe(
         takeUntil(cancelSubject),
         tap(event => this.handleDownloadProgress(event, defaultFilename, cancelSubject)),
@@ -25,8 +25,7 @@ export class FileDownloadService {
           this.handleDownloadError(error);
           return throwError(() => error);
         })
-      )
-      .subscribe();
+      );
   }
 
   private initiateDownload(url: string): Observable<HttpEvent<Blob>> {

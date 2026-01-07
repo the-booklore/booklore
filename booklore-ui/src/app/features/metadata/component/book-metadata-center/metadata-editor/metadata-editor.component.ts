@@ -25,7 +25,7 @@ import {LazyLoadImageModule} from "ng-lazyload-image";
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookDialogHelperService} from "../../../../book/components/book-browser/book-dialog-helper.service";
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {Router} from '@angular/router';
 import {UserService} from '../../../../settings/user-management/user.service';
 
