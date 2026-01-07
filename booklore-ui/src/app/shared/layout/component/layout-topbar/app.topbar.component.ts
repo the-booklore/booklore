@@ -16,7 +16,7 @@ import {ThemeConfiguratorComponent} from '../theme-configurator/theme-configurat
 import {AuthService} from '../../../service/auth.service';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {Popover} from 'primeng/popover';
-import {MetadataProgressService} from '../../../service/metadata-progress-service';
+import {MetadataProgressService} from '../../../service/metadata-progress.service';
 import {takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {MetadataBatchProgressNotification} from '../../../model/metadata-batch-progress.model';

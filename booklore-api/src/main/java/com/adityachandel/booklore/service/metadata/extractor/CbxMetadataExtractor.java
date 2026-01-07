@@ -27,6 +27,8 @@ import javax.imageio.ImageIO;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import org.xml.sax.SAXException;
 
 import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
 import org.apache.commons.compress.archivers.sevenz.SevenZFile;
@@ -132,15 +134,28 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return null;
   }
 
+  /**
+   * Builds a secure XML document parser with protection against XXE attacks.
+   * Configures the DocumentBuilderFactory with security features to prevent:
+   * - External entity injection
+   * - DTD processing vulnerabilities
+   * - Schema injection attacks
+   *
+   * @param is InputStream containing XML data to parse
+   * @return Parsed Document object
+   * @throws Exception if XML parsing fails or security features cannot be configured
+   */
   private Document buildSecureDocument(InputStream is) throws Exception {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+    factory.setNamespaceAware(true);  // Enable namespace awareness
     factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
     try {
       factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
       factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
       factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
     } catch (Exception ex) {
-      log.debug("XML factory secure feature not supported: {}", ex.getMessage());
+      log.warn("XML factory secure features not supported, XXE protection may be compromised: {}", ex.getMessage());
+      throw ex;  // Re-throw to fail fast if security features can't be enabled
     }
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
     factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
@@ -149,6 +164,14 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return builder.parse(is);
   }
 
+  /**
+   * Maps XML document to BookMetadata by extracting all relevant ComicInfo fields.
+   * Handles missing or invalid fields gracefully by using fallback values or null.
+   *
+   * @param document The parsed XML document containing ComicInfo data
+   * @param fallbackTitle Title to use if Title element is missing or blank
+   * @return BookMetadata object populated with extracted values
+   */
   private BookMetadata mapDocumentToMetadata(
     Document document,
     String fallbackTitle
@@ -209,6 +232,13 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     return builder.build();
   }
 
+  /**
+   * Extracts and trims text content from the first element with the given tag name.
+   *
+   * @param document The XML document to search
+   * @param tag The tag name to find
+   * @return Trimmed text content of the first matching element, or null if not found
+   */
   private String getTextContent(Document document, String tag) {
     NodeList nodes = document.getElementsByTagName(tag);
     if (nodes.getLength() == 0) {
@@ -223,6 +253,14 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
       : (b != null && !b.isBlank() ? b : null);
   }
 
+  /**
+   * Splits a delimited string into a set of trimmed values.
+   * Supports both comma (,) and semicolon (;) as delimiters.
+   * Empty values after trimming are excluded from the result.
+   *
+   * @param value The delimited string to split
+   * @return Set of trimmed non-empty values, or empty set if input is null
+   */
   private Set<String> splitValues(String value) {
     if (value == null) {
       return new HashSet<>();
@@ -253,6 +291,15 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
   }
 
+  /**
+   * Parses year, month, and day strings into a LocalDate.
+   * Defaults missing month/day to 1. Returns null if year is missing or invalid.
+   *
+   * @param year Year string (required)
+   * @param month Month string (optional, defaults to 1)
+   * @param day Day string (optional, defaults to 1)
+   * @return LocalDate object, or null if parsing fails or year is null
+   */
   private LocalDate parseDate(String year, String month, String day) {
     Integer y = parseInteger(year);
     Integer m = parseInteger(month);
@@ -273,20 +320,57 @@ public class CbxMetadataExtractor implements FileMetadataExtractor {
     }
   }
 
+  /**
+   * Extracts metadata from a standalone ComicInfo.xml file.
+   * This method is useful for processing ComicInfo.xml files that have been
+   * extracted from comic book archives or exist independently.
+   *
+   * @param xmlFile The ComicInfo.xml file to parse
+   * @return BookMetadata extracted from the XML file, or fallback metadata if parsing fails
+   * @throws IllegalArgumentException if xmlFile is null
+   */
   public BookMetadata extractFromComicInfoXml(File xmlFile) {
+      if (xmlFile == null) {
+          throw new IllegalArgumentException("XML file cannot be null");
+      }
+
+      String fallbackTitle = determineFallbackTitle(xmlFile);
+
       try (InputStream is = new FileInputStream(xmlFile)) {
           Document document = buildSecureDocument(is);
-          String fallbackTitle = xmlFile.getParentFile() != null
-                  ? xmlFile.getParentFile().getName()
-                  : xmlFile.getName();
           return mapDocumentToMetadata(document, fallbackTitle);
+      } catch (IOException e) {
+          log.error("Failed to read ComicInfo.xml file '{}': {}",
+                   xmlFile.getAbsolutePath(), e.getMessage(), e);
+          return BookMetadata.builder().title(fallbackTitle).build();
+      } catch (SAXException | ParserConfigurationException e) {
+          log.warn("Failed to parse ComicInfo.xml from file '{}': {}",
+                   xmlFile.getAbsolutePath(), e.getMessage(), e);
+          return BookMetadata.builder().title(fallbackTitle).build();
       } catch (Exception e) {
-          log.warn("Failed to parse ComicInfo.xml: {}", e.getMessage());
-          String fallbackTitle = xmlFile.getParentFile() != null
-                  ? xmlFile.getParentFile().getName()
-                  : xmlFile.getName();
+          log.error("Unexpected error processing ComicInfo.xml '{}': {}",
+                    xmlFile.getAbsolutePath(), e.getMessage(), e);
           return BookMetadata.builder().title(fallbackTitle).build();
       }
+  }
+
+  /**
+   * Determines the fallback title to use when metadata extraction fails.
+   * Uses the parent directory name if available, otherwise the file name.
+   *
+   * @param file The file to determine the fallback title for
+   * @return A fallback title string
+   */
+  private String determineFallbackTitle(File file) {
+      // Try parent directory first (usually the comic folder/archive name)
+      if (file.getParentFile() != null) {
+          String parentName = file.getParentFile().getName();
+          if (parentName != null && !parentName.isBlank()) {
+              return parentName;
+          }
+      }
+      // Fall back to filename without extension
+      return FilenameUtils.getBaseName(file.getName());
   }  
 
   @Override

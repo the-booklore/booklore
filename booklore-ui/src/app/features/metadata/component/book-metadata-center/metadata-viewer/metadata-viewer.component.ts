@@ -40,7 +40,7 @@ import {
 } from '../../../../book/components/book-browser/book-filter/book-filter.component';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
