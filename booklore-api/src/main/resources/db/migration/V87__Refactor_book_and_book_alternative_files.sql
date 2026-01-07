@@ -100,4 +100,4 @@ ALTER TABLE book DROP COLUMN file_size_kb;
 ALTER TABLE book DROP COLUMN initial_hash;
 ALTER TABLE book DROP COLUMN current_hash;
 
--- DROP TABLE book_file_old;
+DROP TABLE book_file_old;
