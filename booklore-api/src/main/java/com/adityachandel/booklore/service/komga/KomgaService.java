@@ -56,24 +56,30 @@ public class KomgaService {
     public KomgaPageableDto<KomgaSeriesDto> getAllSeries(Long libraryId, int page, int size, boolean unpaged) {
         log.debug("Getting all series for libraryId: {}, page: {}, size: {}", libraryId, page, size);
         
-        // Load all books once
-        List<BookEntity> books;
-        if (libraryId != null) {
-            books = bookRepository.findAllWithMetadataByLibraryId(libraryId);
+        // Check if we should group unknown series
+        boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
+        
+        // Get distinct series names directly from database (MUCH faster than loading all books)
+        List<String> sortedSeriesNames;
+        if (groupUnknown) {
+            // Use optimized query that groups books without series as "Unknown Series"
+            if (libraryId != null) {
+                sortedSeriesNames = bookRepository.findDistinctSeriesNamesGroupedByLibraryId(
+                    libraryId, komgaMapper.getUnknownSeriesName());
+            } else {
+                sortedSeriesNames = bookRepository.findDistinctSeriesNamesGrouped(
+                    komgaMapper.getUnknownSeriesName());
+            }
         } else {
-            books = bookRepository.findAllWithMetadata();
+            // Use query that gives each book without series its own entry
+            if (libraryId != null) {
+                sortedSeriesNames = bookRepository.findDistinctSeriesNamesUngroupedByLibraryId(libraryId);
+            } else {
+                sortedSeriesNames = bookRepository.findDistinctSeriesNamesUngrouped();
+            }
         }
         
-        log.debug("Found {} books", books.size());
-        
-        // Group books by series - this is fast even with many books since it's just in-memory grouping
-        Map<String, List<BookEntity>> seriesMap = groupBooksBySeries(books);
-        
-        log.debug("Grouped into {} series", seriesMap.size());
-        
-        // Sort series names
-        List<String> sortedSeriesNames = new ArrayList<>(seriesMap.keySet());
-        Collections.sort(sortedSeriesNames);
+        log.debug("Found {} distinct series names from database (optimized)", sortedSeriesNames.size());
         
         // Calculate pagination
         int totalElements = sortedSeriesNames.size();
@@ -97,20 +103,37 @@ public class KomgaService {
             actualSize = size;
         }
         
-        // Convert only the series on this page to DTOs (avoids expensive DTO conversion for all series)
+        // Now load books only for the series on this page (optimized - only loads what's needed)
         List<KomgaSeriesDto> content = new ArrayList<>();
         for (String seriesName : pageSeriesNames) {
-            List<BookEntity> seriesBooks = seriesMap.get(seriesName);
-            if (seriesBooks != null && !seriesBooks.isEmpty()) {
-                try {
+            try {
+                // Load only the books for this specific series
+                List<BookEntity> seriesBooks;
+                if (libraryId != null) {
+                    if (groupUnknown) {
+                        seriesBooks = bookRepository.findBooksBySeriesNameGroupedByLibraryId(
+                            seriesName, libraryId, komgaMapper.getUnknownSeriesName());
+                    } else {
+                        seriesBooks = bookRepository.findBooksBySeriesNameUngroupedByLibraryId(
+                            seriesName, libraryId);
+                    }
+                } else {
+                    // For all libraries, need to load all books and filter (less common case)
+                    List<BookEntity> allBooks = bookRepository.findAllWithMetadata();
+                    seriesBooks = allBooks.stream()
+                            .filter(book -> komgaMapper.getBookSeriesName(book).equals(seriesName))
+                            .collect(Collectors.toList());
+                }
+                
+                if (!seriesBooks.isEmpty()) {
                     Long libId = seriesBooks.get(0).getLibrary().getId();
                     KomgaSeriesDto seriesDto = komgaMapper.toKomgaSeriesDto(seriesName, libId, seriesBooks);
                     if (seriesDto != null) {
                         content.add(seriesDto);
                     }
-                } catch (Exception e) {
-                    log.error("Error mapping series: {}", seriesName, e);
                 }
+            } catch (Exception e) {
+                log.error("Error mapping series: {}", seriesName, e);
             }
         }
         

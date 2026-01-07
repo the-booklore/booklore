@@ -141,4 +141,121 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @Query("SELECT COUNT(b) FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     long countByLibraryId(@Param("libraryId") Long libraryId);
+
+    // ==================== Komga API Optimizations ====================
+
+    /**
+     * Get distinct series names for a library when groupUnknown=true.
+     * Books without series name are grouped as "Unknown Series".
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    ELSE :unknownSeriesName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId 
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesGroupedByLibraryId(
+            @Param("libraryId") Long libraryId,
+            @Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Get distinct series names across all libraries when groupUnknown=true.
+     * Books without series name are grouped as "Unknown Series".
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    ELSE :unknownSeriesName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesGrouped(@Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Get distinct series names for a library when groupUnknown=false.
+     * Each book without series gets its own entry (title or filename).
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    WHEN m.title IS NOT NULL THEN m.title
+                    ELSE b.fileName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId 
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesUngroupedByLibraryId(@Param("libraryId") Long libraryId);
+
+    /**
+     * Get distinct series names across all libraries when groupUnknown=false.
+     * Each book without series gets its own entry (title or filename).
+     */
+    @Query("""
+            SELECT DISTINCT 
+                CASE 
+                    WHEN m.seriesName IS NOT NULL THEN m.seriesName
+                    WHEN m.title IS NOT NULL THEN m.title
+                    ELSE b.fileName
+                END as seriesName
+            FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY seriesName
+            """)
+    List<String> findDistinctSeriesNamesUngrouped();
+
+    /**
+     * Find books by series name for a library when groupUnknown=true.
+     */
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query("""
+            SELECT b FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId
+            AND (
+                (m.seriesName = :seriesName)
+                OR (m.seriesName IS NULL AND :seriesName = :unknownSeriesName)
+            )
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 0)
+            """)
+    List<BookEntity> findBooksBySeriesNameGroupedByLibraryId(
+            @Param("seriesName") String seriesName,
+            @Param("libraryId") Long libraryId,
+            @Param("unknownSeriesName") String unknownSeriesName);
+
+    /**
+     * Find books by series name for a library when groupUnknown=false.
+     * Matches by series name, or by title/filename for books without series.
+     */
+    @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
+    @Query("""
+            SELECT b FROM BookEntity b
+            LEFT JOIN b.metadata m
+            WHERE b.library.id = :libraryId
+            AND (
+                (m.seriesName = :seriesName)
+                OR (m.seriesName IS NULL AND m.title = :seriesName)
+                OR (m.seriesName IS NULL AND m.title IS NULL AND b.fileName = :seriesName)
+            )
+            AND (b.deleted IS NULL OR b.deleted = false)
+            ORDER BY COALESCE(m.seriesNumber, 0)
+            """)
+    List<BookEntity> findBooksBySeriesNameUngroupedByLibraryId(
+            @Param("seriesName") String seriesName,
+            @Param("libraryId") Long libraryId);
 }

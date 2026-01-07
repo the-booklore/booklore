@@ -4,6 +4,7 @@ import com.adityachandel.booklore.mapper.komga.KomgaMapper;
 import com.adityachandel.booklore.model.dto.komga.KomgaBookDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaPageableDto;
+import com.adityachandel.booklore.model.dto.komga.KomgaSeriesDto;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
@@ -27,9 +28,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class KomgaServiceTest {
@@ -197,5 +197,44 @@ class KomgaServiceTest {
         assertThat(pages).hasSize(5);
         assertThat(pages.get(0).getNumber()).isEqualTo(1);
         assertThat(pages.get(4).getNumber()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldGetAllSeriesOptimized() {
+        // Given: Mock the optimized repository method
+        List<String> seriesNames = List.of("Series A", "Series B", "Series C");
+        when(bookRepository.findDistinctSeriesNamesGroupedByLibraryId(anyLong(), anyString()))
+                .thenReturn(seriesNames);
+        
+        // Mock books for the first page (Series A and Series B only)
+        List<BookEntity> seriesABooks = List.of(seriesBooks.get(0), seriesBooks.get(1));
+        List<BookEntity> seriesBBooks = List.of(seriesBooks.get(2), seriesBooks.get(3));
+        
+        when(bookRepository.findBooksBySeriesNameGroupedByLibraryId("Series A", 1L, "Unknown Series"))
+                .thenReturn(seriesABooks);
+        when(bookRepository.findBooksBySeriesNameGroupedByLibraryId("Series B", 1L, "Unknown Series"))
+                .thenReturn(seriesBBooks);
+        
+        when(komgaMapper.getUnknownSeriesName()).thenReturn("Unknown Series");
+        when(komgaMapper.toKomgaSeriesDto(eq("Series A"), anyLong(), any()))
+                .thenReturn(KomgaSeriesDto.builder().id("1-series-a").name("Series A").booksCount(2).build());
+        when(komgaMapper.toKomgaSeriesDto(eq("Series B"), anyLong(), any()))
+                .thenReturn(KomgaSeriesDto.builder().id("1-series-b").name("Series B").booksCount(2).build());
+        
+        // When: Request first page with size 2
+        KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(1L, 0, 2, false);
+        
+        // Then: Should return only 2 series (not all 3)
+        assertThat(result).isNotNull();
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getTotalElements()).isEqualTo(3);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.getNumber()).isEqualTo(0);
+        assertThat(result.getFirst()).isTrue();
+        assertThat(result.getLast()).isFalse();
+        
+        // Verify that only books for Series A and B were loaded (optimization check)
+        verify(bookRepository, never()).findAllWithMetadataByLibraryId(anyLong());
+        verify(bookRepository, never()).findAllWithMetadata();
     }
 }
