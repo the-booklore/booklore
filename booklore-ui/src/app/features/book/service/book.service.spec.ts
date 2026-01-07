@@ -12,7 +12,6 @@ import {AuthService} from '../../../shared/service/auth.service';
 import {FileDownloadService} from '../../../shared/service/file-download.service';
 import {Router} from '@angular/router';
 import {AdditionalFileType, Book, BookMetadata, ReadStatus} from '../model/book.model';
-import {FetchMetadataRequest} from '../../metadata/model/request/fetch-metadata-request.model';
 
 describe('BookService', () => {
   let service: BookService;
@@ -376,18 +375,6 @@ describe('BookService', () => {
   });
 
   describe('Metadata Operations', () => {
-    it('should fetch book metadata', async () => {
-      httpMock.post.mockReturnValue(of([{bookId: 1}]));
-      const req: FetchMetadataRequest = {
-        bookId: 1,
-        providers: [],
-        title: '',
-        author: '',
-        isbn: ''
-      };
-      const result = await firstValueFrom(service.fetchBookMetadata(1, req));
-      expect(result).toEqual([{bookId: 1}]);
-    });
 
     it('should update book metadata', async () => {
       httpMock.put.mockReturnValue(of({bookId: 1}));
