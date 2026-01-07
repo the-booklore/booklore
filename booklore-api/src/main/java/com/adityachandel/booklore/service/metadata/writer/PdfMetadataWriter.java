@@ -208,8 +208,8 @@ public class PdfMetadataWriter implements MetadataWriter {
         helper.copyGoogleId(clear != null && clear.isGoogleId(), id -> appendIdentifier(doc, rdfBag, "google", id != null ? id : ""));
         helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), id -> appendIdentifier(doc, rdfBag, "goodreads", id != null ? id : ""));
         helper.copyComicvineId(clear != null && clear.isComicvineId(), id -> appendIdentifier(doc, rdfBag, "comicvine", id != null ? id : ""));
-        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> appendIdentifier(doc, rdfBag, "ranobedb", id != null ? id : ""));
         helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> appendIdentifier(doc, rdfBag, "hardcover", id != null ? id : ""));
+        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> appendIdentifier(doc, rdfBag, "ranobedb", id != null ? id : ""));
         helper.copyAsin(clear != null && clear.isAsin(), id -> appendIdentifier(doc, rdfBag, "amazon", id != null ? id : ""));
         helper.copyIsbn13(clear != null && clear.isIsbn13(), id -> appendIdentifier(doc, rdfBag, "isbn", id != null ? id : ""));
 

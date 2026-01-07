@@ -222,8 +222,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     pageCount: 'Page Count',
     amazonRating: 'Amazon Rating',
     goodreadsRating: 'Goodreads Rating',
-    ranobedbRating: 'Ranobedb Rating',
     hardcoverRating: 'Hardcover Rating',
+    ranobedbRating: 'Ranobedb Rating',
   };
 
   private destroy$ = new Subject<void>();

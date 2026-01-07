@@ -121,8 +121,8 @@ describe('SideBarFilter', () => {
           seriesName: 'S1',
           amazonRating: 4.2,
           goodreadsRating: 3.8,
-          ranobedbRating: 3.5,
           hardcoverRating: 4.0,
+          ranobedbRating: 3.5,
           publishedDate: '2020-01-01',
           pageCount: 150,
           language: 'en'
@@ -148,8 +148,8 @@ describe('SideBarFilter', () => {
           seriesName: 'S2',
           amazonRating: 2.5,
           goodreadsRating: 2.8,
-          ranobedbRating: 2.4,
           hardcoverRating: 2.0,
+          ranobedbRating: 2.4,
           publishedDate: '2019-01-01',
           pageCount: 50,
           language: 'fr'

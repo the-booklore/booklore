@@ -65,10 +65,6 @@ public class RanobeDbParser implements BookParser {
         return metadataList.isEmpty() ? null : metadataList.getFirst();
     }
     
-    /**
-     * Thread-safe rate limiter using token bucket algorithm.
-     * Allows MAX_REQUESTS_PER_SECOND requests per second across all threads.
-     */
     private void waitForRateLimit() {
         while (true) {
             long currentTime = System.currentTimeMillis();
@@ -165,19 +161,19 @@ public class RanobeDbParser implements BookParser {
             return Collections.emptyList();
         }
         return searchResponse.getBooks().stream()
-                .map(this::searchResultToBookMetadata)
+                .map(book -> searchResultToBookMetadata(book.getId()))
                 .collect(Collectors.toList());
     }
 
-    private BookMetadata searchResultToBookMetadata(RanobedbSearchResponse.Book result) {
+    private BookMetadata searchResultToBookMetadata(int bookId) {
 
         try {
             // Apply rate limiting before making the API request
             waitForRateLimit();
             
-            log.info("Ranobedb: Fetching metadata for book id: '{}'", result.getId());
+            log.info("Ranobedb: Fetching metadata for book id: '{}'", bookId);
             URI uri = UriComponentsBuilder.fromUriString(RANOBEDB_URL)
-                    .pathSegment("book", String.valueOf(result.getId()))
+                    .pathSegment("book", String.valueOf(bookId))
                     .build()
                     .toUri();
 
@@ -235,7 +231,6 @@ public class RanobeDbParser implements BookParser {
                 String subtitle = null;
                 if (book.getSeries() != null && book.getSeries().getTitle() != null && title.startsWith(book.getSeries().getTitle())) {
                     String remainingTitle = title.substring(book.getSeries().getTitle().length()).trim();
-                    // Split remaining title into main title and subtitle if possible
                     String[] titleParts = remainingTitle.split(":", 2);
                     if (titleParts.length == 2) {
                         title = title.substring(0, title.indexOf(titleParts[1]) - 1).trim();
@@ -247,7 +242,6 @@ public class RanobeDbParser implements BookParser {
                     .provider(MetadataProvider.Ranobedb)
                     .ranobedbId(String.valueOf(book.getId()))
                     .ranobedbRating(book.getRating() != null ? book.getRating().getScore() / 2.0 : null)
-                    .ranobedbReviewCount(book.getRating() != null ? book.getRating().getCount() : null)
                     .title(title) 
                     .subtitle(subtitle)
                     .authors(authors)

@@ -35,7 +35,6 @@ export class TableColumnPreferenceService {
     {field: 'hardcoverRating', header: 'Hardcover'},
     {field: 'hardcoverReviewCount', header: 'HC #'},
     {field: 'ranobedbRating', header: 'Ranobedb'},
-    {field: 'ranobedbReviewCount', header: 'RD #'},
   ];
 
   private readonly fallbackPreferences: TableColumnPreference[] = this.allAvailableColumns.map((col, index) => ({

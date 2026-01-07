@@ -71,8 +71,8 @@ export class FilterLabelHelper {
         }
       case 'amazonrating':
       case 'goodreadsrating':
-      case 'ranobedbrating':
       case 'hardcoverrating':
+      case 'ranobedbrating':
         {
           const ratingRange = ratingRanges.find(r => r.id === value);
           if (ratingRange) return ratingRange.label;

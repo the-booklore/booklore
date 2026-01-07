@@ -115,7 +115,6 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         metadata.setComicvineId(truncate(fb2Metadata.getComicvineId(), 100));
         metadata.setRanobedbId(truncate(fb2Metadata.getRanobedbId(), 100));
         metadata.setRanobedbRating(fb2Metadata.getRanobedbRating());
-        metadata.setRanobedbReviewCount(fb2Metadata.getRanobedbReviewCount());
 
         bookCreatorService.addAuthorsToBook(fb2Metadata.getAuthors(), bookEntity);
 

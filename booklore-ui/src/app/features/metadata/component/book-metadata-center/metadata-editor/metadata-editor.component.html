@@ -570,18 +570,6 @@
             }
           </div>
         </div>
-        <div class="flex flex-col gap-1 md:w-1/6">
-          <label class="text-sm" for="ranobedbReviewCount">Ranobedb #</label>
-          <div class="flex withbutton">
-            <input pSize="small" pInputText id="ranobedbReviewCount" formControlName="ranobedbReviewCount" class="w-full"/>
-            @if (!book.metadata!['ranobedbReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbReviewCount')" severity="success"></p-button>
-            }
-            @if (book.metadata!['ranobedbReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbReviewCount')" severity="warn"></p-button>
-            }
-          </div>
-        </div>
       </div>
 
       <div class="description-section">

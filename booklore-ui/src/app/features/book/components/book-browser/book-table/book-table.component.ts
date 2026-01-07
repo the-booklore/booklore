@@ -74,7 +74,6 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'hardcoverRating', header: 'Hardcover'},
     {field: 'hardcoverReviewCount', header: 'HC #'},
     {field: 'ranobedbRating', header: 'Ranobedb'},
-    {field: 'ranobedbReviewCount', header: 'RD #'}
   ];
 
   scrollHeight = 'calc(100dvh - 160px)';
@@ -296,15 +295,14 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
       case 'amazonRating':
       case 'goodreadsRating':
-      case 'ranobedbRating':
-      case 'hardcoverRating': {
+      case 'hardcoverRating':
+      case 'ranobedbRating': {
         const rating = metadata[field];
         return typeof rating === 'number' ? rating.toFixed(1) : '';
       }
 
       case 'amazonReviewCount':
       case 'goodreadsReviewCount':
-      case 'ranobedbReviewCount':
       case 'hardcoverReviewCount':
         return metadata[field] ?? '';
 

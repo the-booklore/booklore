@@ -206,7 +206,6 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         pageCount: {p1: null, p2: null, p3: null, p4: null},
         asin: {p1: null, p2: null, p3: null, p4: null},
         goodreadsId: {p1: null, p2: null, p3: null, p4: null},
-        ranobedbId: {p1: null, p2: null, p3: null, p4: null},
         comicvineId: {p1: null, p2: null, p3: null, p4: null},
         hardcoverId: {p1: null, p2: null, p3: null, p4: null},
         googleId: {p1: null, p2: null, p3: null, p4: null},
@@ -214,12 +213,12 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         amazonReviewCount: {p1: null, p2: null, p3: null, p4: null},
         goodreadsRating: {p1: null, p2: null, p3: null, p4: null},
         goodreadsReviewCount: {p1: null, p2: null, p3: null, p4: null},
-        ranobedbRating: {p1: null, p2: null, p3: null, p4: null},
-        ranobedbReviewCount: {p1: null, p2: null, p3: null, p4: null},
         hardcoverRating: {p1: null, p2: null, p3: null, p4: null},
         hardcoverReviewCount: {p1: null, p2: null, p3: null, p4: null},
         lubimyczytacId: {p1: null, p2: null, p3: null, p4: null},
         lubimyczytacRating: {p1: null, p2: null, p3: null, p4: null},
+        ranobedbId: {p1: null, p2: null, p3: null, p4: null},
+        ranobedbRating: {p1: null, p2: null, p3: null, p4: null},
         moods: {p1: null, p2: null, p3: null, p4: null},
         tags: {p1: null, p2: null, p3: null, p4: null}
       }

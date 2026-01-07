@@ -832,7 +832,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           : '';
       case 'ranobedb':
         return meta.ranobedbRating != null
-          ? `★ ${meta.ranobedbRating} | ${meta.ranobedbReviewCount?.toLocaleString() ?? '0'} reviews`
+          ? `★ ${meta.ranobedbRating}`
           : '';
       default:
         return '';

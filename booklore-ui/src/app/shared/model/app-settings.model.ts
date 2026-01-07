@@ -19,13 +19,12 @@ export interface MetadataMatchWeights {
   amazonReviewCount: number;
   goodreadsRating: number;
   goodreadsReviewCount: number;
-  ranobedbRating: number;
-  ranobedbReviewCount: number;
   hardcoverRating: number;
   hardcoverReviewCount: number;
   doubanRating: number;
   doubanReviewCount: number;
   lubimyczytacRating: number;
+  ranobedbRating: number;
   coverImage: number;
 }
 

@@ -34,9 +34,6 @@ public class BookMetadata {
     private Integer amazonReviewCount;
     private String goodreadsId;
     private String comicvineId;
-    private String ranobedbId;
-    private Double ranobedbRating;
-    private Integer ranobedbReviewCount;
     private Double goodreadsRating;
     private Integer goodreadsReviewCount;
     private String hardcoverId;
@@ -49,6 +46,8 @@ public class BookMetadata {
     private Double lubimyczytacRating;
     private String googleId;
     private String lubimyczytacId;
+    private String ranobedbId;
+    private Double ranobedbRating;
     private String externalUrl;
     private Instant coverUpdatedOn;
     private Set<String> authors;
@@ -72,7 +71,6 @@ public class BookMetadata {
     private Boolean asinLocked;
     private Boolean goodreadsIdLocked;
     private Boolean comicvineIdLocked;
-    private Boolean ranobedbIdLocked;
     private Boolean hardcoverIdLocked;
     private Boolean hardcoverBookIdLocked;
     private Boolean doubanIdLocked;
@@ -85,12 +83,12 @@ public class BookMetadata {
     private Boolean goodreadsReviewCountLocked;
     private Boolean hardcoverRatingLocked;
     private Boolean hardcoverReviewCountLocked;
-    private Boolean ranobedbRatingLocked;
-    private Boolean ranobedbReviewCountLocked;
     private Boolean doubanRatingLocked;
     private Boolean doubanReviewCountLocked;
     private Boolean lubimyczytacIdLocked;
     private Boolean lubimyczytacRatingLocked;
+    private Boolean ranobedbIdLocked;
+    private Boolean ranobedbRatingLocked;
     private Boolean externalUrlLocked;
     private Boolean coverLocked;
     private Boolean authorsLocked;

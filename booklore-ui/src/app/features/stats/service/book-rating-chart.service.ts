@@ -245,9 +245,9 @@ export class BookRatingChartService implements OnDestroy {
     const ratings = [];
 
     if (book.metadata?.goodreadsRating) ratings.push(book.metadata.goodreadsRating);
-    if (book.metadata?.ranobedbRating) ratings.push(book.metadata.ranobedbRating);
     if (book.metadata?.amazonRating) ratings.push(book.metadata.amazonRating);
     if (book.metadata?.hardcoverRating) ratings.push(book.metadata.hardcoverRating);
+    if (book.metadata?.ranobedbRating) ratings.push(book.metadata.ranobedbRating);
 
     if (ratings.length > 0) {
       return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;

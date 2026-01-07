@@ -248,14 +248,12 @@ export class BookRuleEvaluatorService {
         return book.metadata?.goodreadsRating;
       case 'goodreadsReviewCount':
         return book.metadata?.goodreadsReviewCount;
-      case 'ranobedbRating':
-        return book.metadata?.ranobedbRating;
-      case 'ranobedbReviewCount':
-        return book.metadata?.ranobedbReviewCount;
       case 'hardcoverRating':
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
+      case 'ranobedbRating':
+        return book.metadata?.ranobedbRating;
       default:
         return (book as Record<string, unknown>)[field];
     }
