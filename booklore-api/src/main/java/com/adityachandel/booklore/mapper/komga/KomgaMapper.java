@@ -249,6 +249,10 @@ public class KomgaMapper {
         return bookSeriesName;
     }
 
+    public String getUnknownSeriesName() {
+        return UNKNOWN_SERIES;
+    }
+
     private String generateSeriesId(BookEntity book) {
         String seriesName = getBookSeriesName(book);
         Long libraryId = book.getLibrary().getId();
