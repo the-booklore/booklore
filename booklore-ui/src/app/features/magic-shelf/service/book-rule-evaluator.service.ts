@@ -61,6 +61,10 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.publisher ?? '').toLowerCase()];
         case 'seriesName':
           return [String(book.metadata?.seriesName ?? '').toLowerCase()];
+        case 'isbn13':
+          return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
+        case 'isbn10':
+          return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
         default:
           return [];
       }
@@ -232,6 +236,10 @@ export class BookRuleEvaluatorService {
         return book.metadata?.pageCount;
       case 'language':
         return book.metadata?.language?.toLowerCase() ?? null;
+      case 'isbn13':
+        return book.metadata?.isbn13?.toLowerCase() ?? null;
+      case 'isbn10':
+        return book.metadata?.isbn10?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
