@@ -17,11 +17,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -42,13 +44,13 @@ public class MetadataController {
 
     @Operation(summary = "Get prospective metadata for a book", description = "Fetch prospective metadata for a book by its ID. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "200", description = "Prospective metadata returned successfully")
-    @PostMapping("/{bookId}/metadata/prospective")
+    @PostMapping(value = "/{bookId}/metadata/prospective", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<List<BookMetadata>> getMetadataList(
+    public Flux<BookMetadata> getMetadataList(
             @Parameter(description = "Fetch metadata request") @RequestBody(required = false) FetchMetadataRequest fetchMetadataRequest,
             @Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return ResponseEntity.ok(bookMetadataService.getProspectiveMetadataListForBookId(bookId, fetchMetadataRequest));
+        return bookMetadataService.getProspectiveMetadataListForBookId(bookId, fetchMetadataRequest);
     }
 
     @Operation(summary = "Update book metadata", description = "Update metadata for a book. Requires metadata edit permission or admin.")
@@ -180,7 +182,7 @@ public class MetadataController {
     @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> bulkUploadCover(
             @Parameter(description = "Cover image file") @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @jakarta.validation.constraints.NotEmpty java.util.Set<Long> bookIds) {
+            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @RequestBody java.util.Set<Long> bookIds) {
         bookMetadataService.updateCoverImageFromFileForBooks(bookIds, file);
         return ResponseEntity.noContent().build();
     }
@@ -222,3 +224,4 @@ public class MetadataController {
         return ResponseEntity.noContent().build();
     }
 }
+

@@ -5,7 +5,6 @@ import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, ta
 import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
 import {BookState} from '../model/state/book-state.model';
 import {API_CONFIG} from '../../../core/config/api-config';
-import {FetchMetadataRequest} from '../../metadata/model/request/fetch-metadata-request.model';
 import {MessageService} from 'primeng/api';
 import {ResetProgressType} from '../../../shared/constants/reset-progress-type';
 import {AuthService} from '../../../shared/service/auth.service';
@@ -426,9 +425,6 @@ export class BookService {
 
   /*------------------ Metadata Operations ------------------*/
 
-  fetchBookMetadata(bookId: number, request: FetchMetadataRequest): Observable<BookMetadata[]> {
-    return this.http.post<BookMetadata[]>(`${this.url}/${bookId}/metadata/prospective`, request);
-  }
 
   updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean): Observable<BookMetadata> {
     const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
