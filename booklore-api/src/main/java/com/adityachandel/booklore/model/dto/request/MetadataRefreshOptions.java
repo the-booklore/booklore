@@ -51,12 +51,14 @@ public class MetadataRefreshOptions {
         private FieldProvider comicvineId;
         private FieldProvider hardcoverId;
         private FieldProvider googleId;
+        private FieldProvider lubimyczytacId;
         private FieldProvider amazonRating;
         private FieldProvider amazonReviewCount;
         private FieldProvider goodreadsRating;
         private FieldProvider goodreadsReviewCount;
         private FieldProvider hardcoverRating;
         private FieldProvider hardcoverReviewCount;
+        private FieldProvider lubimyczytacRating;
         private FieldProvider moods;
         private FieldProvider tags;
     }
@@ -99,12 +101,14 @@ public class MetadataRefreshOptions {
         private boolean comicvineId;
         private boolean hardcoverId;
         private boolean googleId;
+        private boolean lubimyczytacId;
         private boolean amazonRating;
         private boolean amazonReviewCount;
         private boolean goodreadsRating;
         private boolean goodreadsReviewCount;
         private boolean hardcoverRating;
         private boolean hardcoverReviewCount;
+        private boolean lubimyczytacRating;
         private boolean moods;
         private boolean tags;
     }
