@@ -382,6 +382,8 @@ public class BookMetadataUpdater {
                 Pair.of(m.getComicvineIdLocked(), e::setComicvineIdLocked),
                 Pair.of(m.getHardcoverIdLocked(), e::setHardcoverIdLocked),
                 Pair.of(m.getHardcoverBookIdLocked(), e::setHardcoverBookIdLocked),
+                Pair.of(m.getLubimyczytacIdLocked(), e::setLubimyczytacIdLocked),
+                Pair.of(m.getLubimyczytacRatingLocked(), e::setLubimyczytacRatingLocked),
                 Pair.of(m.getGoogleIdLocked(), e::setGoogleIdLocked),
                 Pair.of(m.getPageCountLocked(), e::setPageCountLocked),
                 Pair.of(m.getLanguageLocked(), e::setLanguageLocked),
