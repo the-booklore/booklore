@@ -30,6 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -58,33 +61,20 @@ public class BookMetadataService {
         bookCoverService.generateCustomCover(bookId);
     }
 
-    public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
+    public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
-        List<List<BookMetadata>> allMetadata = request.getProviders().stream()
-                .map(provider -> CompletableFuture.supplyAsync(() -> fetchMetadataListFromAProvider(provider, book, request))
-                        .exceptionally(e -> {
-                            log.error("Error fetching metadata from provider: {}", provider, e);
-                            return List.of();
-                        }))
-                .toList()
-                .stream()
-                .map(CompletableFuture::join)
-                .filter(Objects::nonNull)
-                .toList();
 
-        List<BookMetadata> interleavedMetadata = new ArrayList<>();
-        int maxSize = allMetadata.stream().mapToInt(List::size).max().orElse(0);
-
-        for (int i = 0; i < maxSize; i++) {
-            for (List<BookMetadata> metadataList : allMetadata) {
-                if (i < metadataList.size()) {
-                    interleavedMetadata.add(metadataList.get(i));
-                }
-            }
-        }
-
-        return interleavedMetadata;
+        return Flux.fromIterable(request.getProviders())
+                .flatMap(provider ->
+                    Mono.fromCallable(() -> fetchMetadataListFromAProvider(provider, book, request))
+                            .subscribeOn(Schedulers.boundedElastic())
+                            .flatMapMany(Flux::fromIterable)
+                            .onErrorResume(e -> {
+                                log.error("Error fetching metadata from provider: {}", provider, e);
+                                return Flux.empty();
+                            })
+                );
     }
 
     public List<BookMetadata> fetchMetadataListFromAProvider(MetadataProvider provider, Book book, FetchMetadataRequest request) {
