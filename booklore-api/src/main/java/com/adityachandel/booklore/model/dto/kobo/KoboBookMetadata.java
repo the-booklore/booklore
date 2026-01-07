@@ -28,6 +28,7 @@ public class KoboBookMetadata {
     private String language = "en";
 
     private String isbn;
+    @Builder.Default
     private String genre = "00000000-0000-0000-0000-000000000001";
     private String slug;
     private String coverImageId;

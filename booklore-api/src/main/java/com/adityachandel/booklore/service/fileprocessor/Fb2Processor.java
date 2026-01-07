@@ -125,13 +125,12 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
     }
 
     private boolean saveCoverImage(byte[] coverData, long bookId) throws Exception {
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(coverData));
-        try {
-            return fileService.saveCoverImages(originalImage, bookId);
-        } finally {
-            if (originalImage != null) {
-                originalImage.flush(); // Release resources after processing
-            }
+        BufferedImage originalImage = FileService.readImage(coverData);
+        if (originalImage == null) {
+            log.warn("Failed to decode cover image for FB2");
+            return false;
         }
+
+        return fileService.saveCoverImages(originalImage, bookId);
     }
 }
