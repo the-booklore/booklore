@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {BehaviorSubject} from 'rxjs';
 import {BookState} from '../model/state/book-state.model';
 
 @Injectable({
@@ -20,13 +20,6 @@ export class BookStateService {
 
   updateBookState(state: BookState): void {
     this.bookStateSubject.next(state);
-  }
-
-  updatePartialBookState(partialState: Partial<BookState>): void {
-    this.bookStateSubject.next({
-      ...this.bookStateSubject.value,
-      ...partialState
-    });
   }
 
   resetBookState(): void {

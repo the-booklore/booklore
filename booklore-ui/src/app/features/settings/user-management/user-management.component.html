@@ -61,14 +61,20 @@
               <th style="width: 120px; text-align: center" pTooltip="Book Management permissions" tooltipPosition="top">
                 <i class="pi pi-book"></i>
               </th>
-              <th style="width: 120px; text-align: center" pTooltip="Device Sync permissions" tooltipPosition="top">
-                <i class="pi pi-mobile"></i>
-              </th>
               <th style="width: 120px; text-align: center" pTooltip="System Access permissions" tooltipPosition="top">
                 <i class="pi pi-eye"></i>
               </th>
               <th style="width: 120px; text-align: center" pTooltip="System Configuration permissions" tooltipPosition="top">
                 <i class="pi pi-cog"></i>
+              </th>
+              <th style="width: 120px; text-align: center" pTooltip="Metadata Editing permissions" tooltipPosition="top">
+                <i class="pi pi-pencil"></i>
+              </th>
+              <th style="width: 120px; text-align: center" pTooltip="Device Sync permissions" tooltipPosition="top">
+                <i class="pi pi-mobile"></i>
+              </th>
+              <th style="width: 120px; text-align: center" pTooltip="Bulk Reset permissions" tooltipPosition="top">
+                <i class="pi pi-refresh"></i>
               </th>
               <th style="width: 180px; text-align: center">
                 <div class="header-content" style="justify-content: center">
@@ -131,16 +137,9 @@
                 </div>
               </td>
               <td class="text-center">
-                <div class="permission-summary" [attr.data-count]="getBookManagementPermissionsCount(user)" [attr.data-total]="6">
+                <div class="permission-summary" [attr.data-count]="getBookManagementPermissionsCount(user)" [attr.data-total]="5">
                   <span class="permission-count">
-                    {{ getBookManagementPermissionsCount(user) }}/6
-                  </span>
-                </div>
-              </td>
-              <td class="text-center">
-                <div class="permission-summary" [attr.data-count]="getDeviceSyncPermissionsCount(user)" [attr.data-total]="3">
-                  <span class="permission-count">
-                    {{ getDeviceSyncPermissionsCount(user) }}/3
+                    {{ getBookManagementPermissionsCount(user) }}/5
                   </span>
                 </div>
               </td>
@@ -155,6 +154,27 @@
                 <div class="permission-summary" [attr.data-count]="getSystemConfigPermissionsCount(user)" [attr.data-total]="4">
                   <span class="permission-count">
                     {{ getSystemConfigPermissionsCount(user) }}/4
+                  </span>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="permission-summary" [attr.data-count]="getMetadataEditingPermissionsCount(user)" [attr.data-total]="7">
+                  <span class="permission-count">
+                    {{ getMetadataEditingPermissionsCount(user) }}/7
+                  </span>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="permission-summary" [attr.data-count]="getDeviceSyncPermissionsCount(user)" [attr.data-total]="3">
+                  <span class="permission-count">
+                    {{ getDeviceSyncPermissionsCount(user) }}/3
+                  </span>
+                </div>
+              </td>
+              <td class="text-center">
+                <div class="permission-summary" [attr.data-count]="getBulkResetPermissionsCount(user)" [attr.data-total]="3">
+                  <span class="permission-count">
+                    {{ getBulkResetPermissionsCount(user) }}/3
                   </span>
                 </div>
               </td>
@@ -185,6 +205,7 @@
                       icon="pi pi-times"
                       severity="danger"
                       [rounded]="true"
+                      text
                       (onClick)="toggleEdit(user)"
                       tooltipPosition="top"
                       pTooltip="Cancel">
@@ -216,7 +237,7 @@
             </tr>
             @if (isRowExpanded(user)) {
               <tr>
-                <td colspan="10">
+                <td colspan="12">
                   <div class="expanded-content">
                     <div class="expanded-section">
                       <h4 class="expanded-title">
@@ -265,34 +286,12 @@
                               <label [for]="'delete-'+user.id">Delete Books</label>
                             </div>
                             <div class="permission-item">
-                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEditMetadata" [disabled]="isPermissionDisabled(user)" inputId="metadata-{{user.id}}"></p-checkbox>
-                              <label [for]="'metadata-'+user.id">Edit Metadata</label>
-                            </div>
-                            <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageLibrary" [disabled]="isPermissionDisabled(user)" inputId="library-{{user.id}}"></p-checkbox>
                               <label [for]="'library-'+user.id">Manage Library</label>
                             </div>
                             <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEmailBook" [disabled]="isPermissionDisabled(user)" inputId="email-{{user.id}}"></p-checkbox>
                               <label [for]="'email-'+user.id">Email Books</label>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div class="permission-group">
-                          <h5><i class="pi pi-mobile"></i> Device Sync</h5>
-                          <div class="permission-items">
-                            <div class="permission-item">
-                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKoReader" [disabled]="isPermissionDisabled(user)" inputId="koreader-{{user.id}}"></p-checkbox>
-                              <label [for]="'koreader-'+user.id">KOReader Sync</label>
-                            </div>
-                            <div class="permission-item">
-                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="isPermissionDisabled(user)" inputId="kobo-{{user.id}}"></p-checkbox>
-                              <label [for]="'kobo-'+user.id">Kobo Sync</label>
-                            </div>
-                            <div class="permission-item">
-                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessOpds" [disabled]="isPermissionDisabled(user)" inputId="opds-{{user.id}}"></p-checkbox>
-                              <label [for]="'opds-'+user.id">OPDS Feed Access</label>
                             </div>
                           </div>
                         </div>
@@ -333,6 +332,76 @@
                             <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageIcons" [disabled]="isPermissionDisabled(user)" inputId="icons-{{user.id}}"></p-checkbox>
                               <label [for]="'icons-'+user.id">Manage Icons</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-pencil"></i> Metadata Editing</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canEditMetadata" [disabled]="isPermissionDisabled(user)" inputId="metadata-{{user.id}}"></p-checkbox>
+                              <label [for]="'metadata-'+user.id">Edit Single Metadata</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkAutoFetchMetadata" [disabled]="isPermissionDisabled(user)" inputId="bulkautofetch-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkautofetch-'+user.id">Bulk Auto Fetch Metadata</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkCustomFetchMetadata" [disabled]="isPermissionDisabled(user)" inputId="bulkcustomfetch-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkcustomfetch-'+user.id">Bulk Custom Fetch Metadata</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkEditMetadata" [disabled]="isPermissionDisabled(user)" inputId="bulkmetadataeditor-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkmetadataeditor-'+user.id">Access Bulk Metadata Editor</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkRegenerateCover" [disabled]="isPermissionDisabled(user)" inputId="bulkregeneratecover-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkregeneratecover-'+user.id">Bulk Regenerate Cover</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canMoveOrganizeFiles" [disabled]="isPermissionDisabled(user)" inputId="moveorganizefiles-{{user.id}}"></p-checkbox>
+                              <label [for]="'moveorganizefiles-'+user.id">Move/Organize Files</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkLockUnlockMetadata" [disabled]="isPermissionDisabled(user)" inputId="bulklockunlock-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulklockunlock-'+user.id">Bulk Lock/Unlock Metadata</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-mobile"></i> Device Sync</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKoReader" [disabled]="isPermissionDisabled(user)" inputId="koreader-{{user.id}}"></p-checkbox>
+                              <label [for]="'koreader-'+user.id">KOReader Sync</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canSyncKobo" [disabled]="isPermissionDisabled(user)" inputId="kobo-{{user.id}}"></p-checkbox>
+                              <label [for]="'kobo-'+user.id">Kobo Sync</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canAccessOpds" [disabled]="isPermissionDisabled(user)" inputId="opds-{{user.id}}"></p-checkbox>
+                              <label [for]="'opds-'+user.id">OPDS Feed Access</label>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="permission-group">
+                          <h5><i class="pi pi-refresh"></i> Bulk Reset</h5>
+                          <div class="permission-items">
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkResetBookloreReadProgress" [disabled]="isPermissionDisabled(user)" inputId="bulkresetbooklore-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkresetbooklore-'+user.id">Bulk Reset Booklore Read Progress</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkResetKoReaderReadProgress" [disabled]="isPermissionDisabled(user)" inputId="bulkresetkoreader-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkresetkoreader-'+user.id">Bulk Reset KoReader Read Progress</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canBulkResetBookReadStatus" [disabled]="isPermissionDisabled(user)" inputId="bulkresetreadstatus-{{user.id}}"></p-checkbox>
+                              <label [for]="'bulkresetreadstatus-'+user.id">Bulk Reset Book Read Status</label>
                             </div>
                           </div>
                         </div>

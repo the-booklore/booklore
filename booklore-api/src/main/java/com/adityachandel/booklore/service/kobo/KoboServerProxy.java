@@ -92,15 +92,13 @@ public class KoboServerProxy {
             String koboBaseUrl = "https://storeapi.kobo.com";
 
             String queryString = request.getQueryString();
-            UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(koboBaseUrl)
-                    .path(path);
-
+            String uriString = koboBaseUrl + path;
             if (queryString != null && !queryString.isBlank()) {
-                uriBuilder.query(queryString);
+                uriString += "?" + queryString;
             }
 
-            URI uri = uriBuilder.build(true).toUri();
-            log.info("Kobo proxy URL: {}", uri);
+            URI uri = URI.create(uriString);
+            log.debug("Kobo proxy URL: {}", uri);
 
             String bodyString = body != null ? objectMapper.writeValueAsString(body) : "{}";
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -147,7 +145,7 @@ public class KoboServerProxy {
                 }
             }
 
-            log.info("Kobo proxy response status: {}", response.statusCode());
+            log.debug("Kobo proxy response status: {}", response.statusCode());
 
             return new ResponseEntity<>(responseBody, responseHeaders, HttpStatus.valueOf(response.statusCode()));
 

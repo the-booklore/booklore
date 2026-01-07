@@ -56,6 +56,8 @@ public enum RuleField {
     @JsonProperty("moods")
     MOODS,
     @JsonProperty("tags")
-    TAGS
+    TAGS,
+    @JsonProperty("genre")
+    GENRE
 }
 

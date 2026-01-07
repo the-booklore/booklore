@@ -12,7 +12,7 @@ import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
-import {BookDialogHelperService} from '../book-browser/BookDialogHelperService';
+import {BookDialogHelperService} from '../book-browser/book-dialog-helper.service';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
 import {IconSelection} from '../../../../shared/service/icon-picker.service';
@@ -74,11 +74,11 @@ export class ShelfAssignerComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book shelves updated'});
-          this.dynamicDialogRef.close();
+          this.dynamicDialogRef.close({assigned: true});
         },
         error: () => {
           this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book shelves'});
-          this.dynamicDialogRef.close();
+          this.dynamicDialogRef.close({assigned: false});
         }
       });
   }
@@ -104,7 +104,7 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   closeDialog(): void {
-    this.dynamicDialogRef.close();
+    this.dynamicDialogRef.close({assigned: false});
   }
 
   isShelfSelected(shelf: Shelf): boolean {

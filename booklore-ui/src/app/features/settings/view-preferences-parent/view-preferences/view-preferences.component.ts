@@ -7,6 +7,7 @@ import {TableModule} from 'primeng/table';
 import {User, UserService} from '../../user-management/user.service';
 import {LibraryService} from '../../../book/service/library.service';
 import {ShelfService} from '../../../book/service/shelf.service';
+import {MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {combineLatest, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
 import {ToastModule} from 'primeng/toast';
@@ -52,7 +53,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
 
   entityTypeOptions = [
     {label: 'Library', value: 'LIBRARY'},
-    {label: 'Shelf', value: 'SHELF'}
+    {label: 'Shelf', value: 'SHELF'},
+    {label: 'Magic Shelf', value: 'MAGIC_SHELF'}
   ];
 
   sortDirectionOptions = [
@@ -67,13 +69,14 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
 
   libraryOptions: { label: string; value: number }[] = [];
   shelfOptions: { label: string; value: number }[] = [];
+  magicShelfOptions: { label: string; value: number }[] = [];
 
   selectedSort: string = 'title';
   selectedSortDir: 'ASC' | 'DESC' = 'ASC';
   selectedView: 'GRID' | 'TABLE' = 'GRID';
 
   overrides: {
-    entityType: 'LIBRARY' | 'SHELF';
+    entityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
     library: number;
     sort: string;
     sortDir: 'ASC' | 'DESC';
@@ -85,6 +88,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
 
   private libraryService = inject(LibraryService);
   private shelfService = inject(ShelfService);
+  private magicShelfService = inject(MagicShelfService);
   private userService = inject(UserService);
   private messageService = inject(MessageService);
 
@@ -93,9 +97,10 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
       this.userService.userState$.pipe(filter(userState => !!userState?.user && userState.loaded), take(1)),
       this.libraryService.libraryState$.pipe(filter(libraryState => !!libraryState?.libraries && libraryState.loaded), take(1)),
       this.shelfService.shelfState$.pipe(filter(shelfState => !!shelfState?.shelves && shelfState.loaded), take(1)),
+      this.magicShelfService.shelvesState$.pipe(filter(magicState => !!magicState?.shelves && magicState.loaded), take(1))
     ]).pipe(
       takeUntil(this.destroy$)
-    ).subscribe(([userState, librariesState, shelfState]) => {
+    ).subscribe(([userState, librariesState, shelfState, magicState]) => {
 
       this.user = userState.user;
       const prefs = userState.user?.userSettings?.entityViewPreferences;
@@ -121,6 +126,11 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
         label: s.name,
         value: s.id!
       }));
+
+      this.magicShelfOptions = (magicState?.shelves ?? []).filter(s => s.id !== undefined).map(s => ({
+        label: s.name,
+        value: s.id!
+      }));
     });
   }
 
@@ -129,19 +139,34 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  getAvailableEntities(index: number, type: 'LIBRARY' | 'SHELF') {
+  getAvailableEntities(index: number, type: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF') {
     const selected = this.overrides.map((o, i) => i !== index ? o.library : null);
-    const source = type === 'LIBRARY' ? this.libraryOptions : this.shelfOptions;
+    let source: { label: string; value: number }[];
+    switch (type) {
+      case 'LIBRARY':
+        source = this.libraryOptions;
+        break;
+      case 'SHELF':
+        source = this.shelfOptions;
+        break;
+      case 'MAGIC_SHELF':
+        source = this.magicShelfOptions;
+        break;
+      default:
+        source = [];
+    }
     return source.filter(opt => !selected.includes(opt.value) || this.overrides[index]?.library === opt.value);
   }
 
   get availableLibraries() {
     const used = new Set(this.overrides.map(o => `${o.entityType}_${o.library}`));
 
-    const withEntityType = (options: { label: string; value: number }[], entityType: 'LIBRARY' | 'SHELF') =>
+    const withEntityType = (options: { label: string; value: number }[], entityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF') =>
       options.map(opt => ({...opt, entityType}));
 
-    return [...withEntityType(this.libraryOptions, 'LIBRARY'), ...withEntityType(this.shelfOptions, 'SHELF')]
+    return [...withEntityType(this.libraryOptions, 'LIBRARY'),
+            ...withEntityType(this.shelfOptions, 'SHELF'),
+            ...withEntityType(this.magicShelfOptions, 'MAGIC_SHELF')]
       .filter(opt => !used.has(`${opt.entityType}_${opt.value}`));
   }
 

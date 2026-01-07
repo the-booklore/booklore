@@ -35,9 +35,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -140,6 +138,9 @@ public class LibraryService {
     }
 
     public Library createLibrary(CreateLibraryRequest request) {
+        BookLoreUser bookLoreUser = authenticationService.getAuthenticatedUser();
+        Optional<BookLoreUserEntity> user = userRepository.findById(bookLoreUser.getId());
+
         LibraryEntity libraryEntity = LibraryEntity.builder()
                 .name(request.getName())
                 .libraryPaths(
@@ -154,6 +155,7 @@ public class LibraryService {
                 .watch(request.isWatch())
                 .scanMode(request.getScanMode() != null ? request.getScanMode() : LibraryScanMode.FILE_AS_BOOK)
                 .defaultBookFormat(request.getDefaultBookFormat())
+                .users(List.of(user.get()))
                 .build();
 
         libraryEntity = libraryRepository.save(libraryEntity);

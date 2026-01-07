@@ -8,7 +8,9 @@
   border: 1px solid var(--p-content-border-color);
 
   @media (max-width: 768px) {
-    height: calc(100dvh - 4.9rem);
+    height: calc(100dvh - 4.4rem);
+    border-radius: 0;
+    border-width: 1px 0 0;
   }
 }
 
@@ -157,9 +159,10 @@
 
 .default-controls {
   display: flex;
+  flex-grow: 1;
   gap: 1rem;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 
   p-select {
     width: 8rem;
@@ -174,7 +177,6 @@
 
     p-select {
       flex-basis: 50%;
-      max-width: 250px;
     }
   }
 }
@@ -271,6 +273,9 @@ p-inputgroup.disabled {
   padding: 1rem;
   flex-wrap: wrap;
 }
+.file-row.expanded {
+  border-bottom-style: dotted;
+}
 
 .status-indicator {
   font-size: 0.75rem;
@@ -331,7 +336,7 @@ div.cover-image {
 .file-library {
   display: flex;
   gap: 1rem;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 
   @media (max-width: 768px) {
@@ -345,7 +350,6 @@ div.cover-image {
 
   @media (max-width: 768px) {
     flex-basis: 50%;
-    max-width: 250px;
   }
 }
 
@@ -387,10 +391,18 @@ div.cover-image {
 
 .footer-left {
   justify-content: flex-start;
+
+  @media (max-width: 540px) {
+    order: 2;
+  }
 }
 
 .footer-right {
   justify-content: flex-end;
+
+  @media (max-width: 540px) {
+    order: 3;
+  }
 }
 
 .footer-center {
@@ -398,13 +410,24 @@ div.cover-image {
   display: flex;
   justify-content: center;
 
+  .p-paginator {
+    flex-wrap: nowrap;
+    padding: 0;
+  }
+
   @media (max-width: 768px) {
+    ::ng-deep .p-paginator .p-paginator-jtp-dropdown span {
+      font-size: var(--p-select-sm-font-size);
+      padding-block: var(--p-select-sm-padding-y);
+      padding-inline: var(--p-select-sm-padding-x);
+    }
+  }
+  
+  @media (max-width: 540px) {
+    order: 1;
     width: 100%;
   }
-}
 
-.p-paginator {
-  flex-wrap: nowrap;
 }
 
 .spacer {

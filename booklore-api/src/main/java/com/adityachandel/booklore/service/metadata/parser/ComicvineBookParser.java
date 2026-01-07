@@ -19,12 +19,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -34,10 +38,14 @@ public class ComicvineBookParser implements BookParser {
 
     private static final String COMICVINE_URL = "https://comicvine.gamespot.com/api/";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
+
+    private final AtomicBoolean rateLimited = new AtomicBoolean(false);
+    private final AtomicLong rateLimitResetTime = new AtomicLong(0);
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
@@ -58,6 +66,18 @@ public class ComicvineBookParser implements BookParser {
     public List<BookMetadata> getMetadataListByTerm(String term) {
         String apiToken = getApiToken();
         if (apiToken == null) return Collections.emptyList();
+
+        if (rateLimited.get()) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime < rateLimitResetTime.get()) {
+                log.warn("ComicVine API is currently rate limited. Skipping request for term: '{}'. Rate limit resets at: {}",
+                         term, Instant.ofEpochMilli(rateLimitResetTime.get()));
+                return Collections.emptyList();
+            } else {
+                // Rate limit has expired, reset the flag
+                rateLimited.compareAndSet(true, false);
+            }
+        }
 
         log.info("Comicvine: Fetching metadata for term: '{}'", term);
         try {
@@ -85,6 +105,34 @@ public class ComicvineBookParser implements BookParser {
 
             if (response.statusCode() == 200) {
                 return parseComicvineApiResponse(response.body());
+            } else if (response.statusCode() == 420 || response.statusCode() == 429) {
+                log.error("ComicVine API rate limit exceeded (Error {}). Setting rate limit flag.", response.statusCode());
+
+                long resetDelayMs = 3600000; // Default to 1 hour
+                List<String> retryAfterHeaders = response.headers().allValues("Retry-After");
+                if (!retryAfterHeaders.isEmpty()) {
+                    try {
+                        String retryAfter = retryAfterHeaders.getFirst();
+                        if (DIGIT_PATTERN.matcher(retryAfter).matches()) {
+                            resetDelayMs = Long.parseLong(retryAfter) * 1000;
+                        } else {
+                            Instant instant = Instant.parse(retryAfter);
+                            resetDelayMs = instant.toEpochMilli() - System.currentTimeMillis();
+                            if (resetDelayMs <= 0) {
+                                resetDelayMs = 3600000; // Default to 1 hour if date is in the past
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Could not parse Retry-After header '{}', using default 1 hour delay", retryAfterHeaders.getFirst());
+                    }
+                }
+
+                if (rateLimited.compareAndSet(false, true)) {
+                    rateLimitResetTime.set(System.currentTimeMillis() + resetDelayMs);
+                    log.info("Rate limit will reset at: {}", Instant.ofEpochMilli(rateLimitResetTime.get()));
+                }
+
+                return Collections.emptyList();
             } else {
                 log.error("Comicvine Search API returned status code {}", response.statusCode());
             }

@@ -6,6 +6,7 @@ import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book} from '../../../book/model/book.model';
+import {BookState} from '../../../book/model/state/book-state.model';
 
 interface MatrixDataPoint {
   x: number; // month (0-11)
@@ -44,7 +45,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     maintainAspectRatio: false,
     layout: {
       padding: {
-        top: 30
+        top: 20
       }
     },
     plugins: {
@@ -102,6 +103,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
       },
       y: {
         type: 'linear',
+        offset: true,
         ticks: {
           stepSize: 1,
           callback: (value) => this.yearLabels[value as number] || '',
@@ -150,7 +152,6 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
 
   private updateChartData(yearMonthData: YearMonthData[]): void {
     const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
     const years = Array.from({length: 10}, (_, i) => currentYear - 9 + i);
 
     this.yearLabels = years.map(String);
@@ -159,9 +160,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     const heatmapData: MatrixDataPoint[] = [];
 
     years.forEach((year, yearIndex) => {
-      const maxMonth = year === currentYear ? currentMonth : 11;
-
-      for (let month = 0; month <= maxMonth; month++) {
+      for (let month = 0; month <= 11; month++) {
         const dataPoint = yearMonthData.find(d => d.year === year && d.month === month + 1);
         heatmapData.push({
           x: month,
@@ -172,7 +171,7 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     });
 
     if (this.chartOptions?.scales?.['y']) {
-      (this.chartOptions.scales['y'] as any).max = years.length - 0.5;
+      (this.chartOptions.scales['y'] as any).max = years.length - 1;
     }
 
     this.chartDataSubject.next({
@@ -206,8 +205,16 @@ export class ReadingHeatmapChartComponent implements OnInit, OnDestroy {
     return this.processHeatmapData(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private processHeatmapData(books: Book[]): YearMonthData[] {

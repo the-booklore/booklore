@@ -15,7 +15,7 @@ import {OpdsSettings} from './opds-settings/opds-settings';
 import {MetadataSettingsComponent} from './metadata-settings/metadata-settings-component';
 import {DeviceSettingsComponent} from './device-settings/device-settings-component';
 import {LibraryMetadataSettingsComponent} from './library-metadata-settings/library-metadata-settings.component';
-import { PageTitleService } from "../../shared/service/page-title.service";
+import {PageTitleService} from "../../shared/service/page-title.service";
 import {EmailV2Component} from './email-v2/email-v2.component';
 
 export enum SettingsTab {

@@ -147,7 +147,7 @@ class LubimyCzytacParserTest {
         assertNotNull(results);
         assertFalse(results.isEmpty(), "Should return results for real book");
 
-        BookMetadata firstResult = results.get(0);
+        BookMetadata firstResult = results.getFirst();
         assertNotNull(firstResult.getTitle(), "Title should be present");
         assertNotNull(firstResult.getLubimyczytacId(), "LubimyCzytac ID should be present");
         assertTrue(firstResult.getAuthors() != null && !firstResult.getAuthors().isEmpty(),

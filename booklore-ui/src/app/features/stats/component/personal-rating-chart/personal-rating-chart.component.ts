@@ -6,6 +6,7 @@ import {catchError, filter, first, takeUntil} from 'rxjs/operators';
 import {ChartConfiguration, ChartData} from 'chart.js';
 import {BookService} from '../../../book/service/book.service';
 import {Book} from '../../../book/model/book.model';
+import {BookState} from '../../../book/model/state/book-state.model';
 
 interface RatingStats {
   ratingRange: string;
@@ -212,8 +213,16 @@ export class PersonalRatingChartComponent implements OnInit, OnDestroy {
     return this.processPersonalRatingStats(currentState.books!);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private processPersonalRatingStats(books: Book[]): RatingStats[] {

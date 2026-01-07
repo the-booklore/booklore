@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -45,7 +46,8 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
     @Override
     public byte[] extractCover(File file) {
         BufferedImage coverImage = null;
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             coverImage = new PDFRenderer(pdf).renderImageWithDPI(0, 300, ImageType.RGB);
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 ImageIO.write(coverImage, "jpg", baos);
@@ -70,7 +72,8 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         BookMetadata.BookMetadataBuilder metadataBuilder = BookMetadata.builder();
 
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             PDDocumentInformation info = pdf.getDocumentInformation();
 
             if (info != null) {

@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {MessageService} from 'primeng/api';
-import {LocalStorageService} from '../../../../../shared/service/local-storage-service';
+import {LocalStorageService} from '../../../../../shared/service/local-storage.service';
 
 @Injectable({
   providedIn: 'root'

@@ -53,6 +53,14 @@
   border-left: 0px !important;
 }
 
+::ng-deep p-fileupload .p-button-label {
+  display: none;
+}
+
+::ng-deep p-fileupload .p-button {
+  padding: 0.6rem 0.5rem;
+}
+
 label {
   color: var(--text-color-secondary);
   white-space: nowrap;

@@ -179,7 +179,6 @@ class BookMetadataUpdaterTest {
         MetadataUpdateContext context = MetadataUpdateContext.builder()
                 .bookEntity(bookEntity)
                 .metadataUpdateWrapper(wrapper)
-                .mergeMoods(false)
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .build();
 
@@ -215,7 +214,6 @@ class BookMetadataUpdaterTest {
         MetadataUpdateContext context = MetadataUpdateContext.builder()
                 .bookEntity(bookEntity)
                 .metadataUpdateWrapper(wrapper)
-                .mergeMoods(false)
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .build();
 

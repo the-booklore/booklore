@@ -3,7 +3,7 @@ import {Button} from 'primeng/button';
 import {AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
 import {Password} from 'primeng/password';
-import {User, UserService} from '../user-management/user.service';
+import {User, UserService, UserUpdateRequest} from '../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Subject} from 'rxjs';
 import {filter, takeUntil} from 'rxjs/operators';
@@ -105,7 +105,11 @@ export class UserProfileDialogComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.userService.updateUser(this.currentUser.id, this.editUserData).subscribe({
+    const updateRequest: UserUpdateRequest = {
+      name: this.editUserData.name,
+      email: this.editUserData.email,
+    };
+    this.userService.updateUser(this.currentUser.id, updateRequest).subscribe({
       next: () => {
         this.messageService.add({severity: 'success', summary: 'Success', detail: 'Profile updated successfully'});
         this.isEditing = false;

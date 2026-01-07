@@ -43,6 +43,12 @@ public class BookEntity {
     @OneToOne(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private BookMetadataEntity metadata;
 
+    @Column(name = "metadata_updated_at")
+    private Instant metadataUpdatedAt;
+
+    @Column(name = "metadata_for_write_updated_at")
+    private Instant metadataForWriteUpdatedAt;
+
     @ManyToOne
     @JoinColumn(name = "library_id", nullable = false)
     private LibraryEntity library;
@@ -59,6 +65,9 @@ public class BookEntity {
 
     @Column(name = "current_hash", length = 128)
     private String currentHash;
+
+    @Column(name = "book_cover_hash", length = 20)
+    private String bookCoverHash;
 
     @Column(name = "deleted")
     @Builder.Default

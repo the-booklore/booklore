@@ -338,7 +338,8 @@ public class BookRuleEvaluatorService {
 
     private boolean isArrayField(RuleField field) {
         return field == RuleField.AUTHORS || field == RuleField.CATEGORIES ||
-               field == RuleField.MOODS || field == RuleField.TAGS;
+               field == RuleField.MOODS || field == RuleField.TAGS ||
+               field == RuleField.GENRE;
     }
 
     private Join<?, ?> createArrayFieldJoin(RuleField field, Root<BookEntity> root) {
@@ -356,6 +357,7 @@ public class BookRuleEvaluatorService {
             case CATEGORIES -> metadataJoin.join("categories", JoinType.INNER);
             case MOODS -> metadataJoin.join("moods", JoinType.INNER);
             case TAGS -> metadataJoin.join("tags", JoinType.INNER);
+            case GENRE -> metadataJoin.join("categories", JoinType.INNER);
             default -> throw new IllegalArgumentException("Not an array field: " + field);
         };
     }

@@ -43,10 +43,10 @@ public class KoboUrlBuilder {
             log.info("Applied X-Forwarded-Port: {}", port);
         } catch (NumberFormatException e) {
             builder.port(serverPort);
-            log.warn("Invalid X-Forwarded-Port header: {}", xfPort);
+            log.debug("Invalid X-Forwarded-Port header: {}", xfPort);
         }
 
-        log.info("Final base URL: {}", builder.build().toUriString());
+        log.debug("Final base URL: {}", builder.build().toUriString());
         return builder;
     }
 

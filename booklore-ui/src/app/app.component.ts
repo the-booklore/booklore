@@ -9,7 +9,7 @@ import {RouterOutlet} from '@angular/router';
 import {AuthInitializationService} from './core/security/auth-initialization-service';
 import {AppConfigService} from './shared/service/app-config.service';
 import {MetadataBatchProgressNotification} from './shared/model/metadata-batch-progress.model';
-import {MetadataProgressService} from './shared/service/metadata-progress-service';
+import {MetadataProgressService} from './shared/service/metadata-progress.service';
 import {BookdropFileNotification, BookdropFileService} from './features/bookdrop/service/bookdrop-file.service';
 import {Subscription} from 'rxjs';
 import {DownloadProgressDialogComponent} from './shared/components/download-progress-dialog/download-progress-dialog.component';

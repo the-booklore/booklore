@@ -8,14 +8,6 @@ body:
       value: |
         Please share as much detail as you can to help us understand your suggestion.
 
-  - type: checkboxes
-    id: prerequisites
-    attributes:
-      label: Quick Check
-      options:
-        - label: I've searched existing issues and this feature hasn't been requested yet
-          required: true
-
   - type: textarea
     id: description
     attributes:
@@ -57,3 +49,18 @@ body:
         - "Just sharing the idea for now"
     validations:
       required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Have You Considered Any Alternatives? (Optional)
+      description: Are there other ways to achieve what you want? Tell us about them
+
+  - type: checkboxes
+    id: prerequisites
+    attributes:
+      label: Before Submitting
+      description: Please confirm you've completed this step
+      options:
+        - label: I've searched existing issues and confirmed this feature hasn't been requested yet
+          required: true

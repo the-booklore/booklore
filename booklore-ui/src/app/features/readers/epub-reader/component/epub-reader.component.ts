@@ -1,7 +1,7 @@
 import {Component, ElementRef, inject, NgZone, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import ePub from 'epubjs';
 import {Drawer} from 'primeng/drawer';
-import {forkJoin, Subscription} from 'rxjs';
+import {firstValueFrom, forkJoin, Subscription} from 'rxjs';
 import {Button} from 'primeng/button';
 import {InputText} from 'primeng/inputtext';
 import {CommonModule, Location} from '@angular/common';
@@ -25,6 +25,9 @@ import {IconField} from 'primeng/iconfield';
 import {InputIcon} from 'primeng/inputicon';
 import {BookmarkEditDialogComponent} from './bookmark-edit-dialog.component';
 import {BookmarkViewDialogComponent} from './bookmark-view-dialog.component';
+import {CustomFontService} from '../../../../shared/service/custom-font.service';
+import {CustomFont} from '../../../../shared/model/custom-font.model';
+import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
 
 @Component({
   selector: 'app-epub-reader',
@@ -65,11 +68,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private hideHeaderTimeout?: number;
   private isMouseInTopRegion = false;
   private headerShownByMobileTouch = false;
+  private currentIframe: HTMLIFrameElement | null = null;
+  private iframeTouchHandler: ((event: TouchEvent) => void) | null = null;
+  private iframeClickHandler: ((event: MouseEvent) => void) | null = null;
 
   editingBookmark: BookMark | null = null;
   showEditBookmarkDialog = false;
 
   private book: any;
+  private epubArrayBuffer: ArrayBuffer | null = null;
   private rendition: any;
   private keyListener: (e: KeyboardEvent) => void = () => {
   };
@@ -81,6 +88,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   selectedSpread?: string = 'double';
   lineHeight?: number;
   letterSpacing?: number;
+  selectedCustomFontId?: number | null = null;
+  customFonts: CustomFont[] = [];
+  customFontsReady = false;
 
   fontTypes: any[] = [
     {label: "Publisher's Default", value: null},
@@ -118,13 +128,29 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private pageTitle = inject(PageTitleService);
   private bookMarkService = inject(BookMarkService);
   private readingSessionService = inject(ReadingSessionService);
+  private customFontService = inject(CustomFontService);
 
   epub!: Book;
 
   ngOnInit(): void {
-    this.routeSubscription = this.route.paramMap.subscribe((params) => {
+    this.routeSubscription = this.route.paramMap.subscribe(async (params) => {
       this.isLoading = true;
       const bookId = +params.get('bookId')!;
+
+      // Load custom fonts FIRST and wait for them
+      try {
+        const fonts = await firstValueFrom(this.customFontService.getUserFonts());
+        this.customFonts = fonts;
+        // Wait for all fonts to load into the browser
+        await this.customFontService.loadAllFonts(fonts);
+        // Add custom fonts to dropdown
+        addCustomFontsToDropdown(fonts, this.fontTypes, 'select');
+      } catch (err) {
+        console.error('Failed to load custom fonts:', err);
+      } finally {
+        // Mark fonts as ready even if loading fails (allows UI to proceed)
+        this.customFontsReady = true;
+      }
 
       const myself$ = this.userService.getMyself();
       const epub$ = this.bookService.getBookByIdFromAPI(bookId, false);
@@ -143,11 +169,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
           this.pageTitle.setBookPageTitle(epub);
 
           fileReader.onload = () => {
-            this.book = ePub(fileReader.result as ArrayBuffer);
-
-            this.book.loaded.navigation.then((nav: any) => {
-              this.chapters = this.extractChapters(nav.toc, 0);
-            });
+            this.epubArrayBuffer = fileReader.result as ArrayBuffer;
 
             const settingScope = myself.userSettings.perBookSetting.epub;
             const globalSettings = myself.userSettings.epubReaderSetting;
@@ -159,6 +181,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             const resolvedLineHeight = settingScope === 'Global' ? globalSettings.lineHeight : individualSetting?.lineHeight;
             const resolvedLetterSpacing = settingScope === 'Global' ? globalSettings.letterSpacing : individualSetting?.letterSpacing;
             const resolvedSpread = settingScope === 'Global' ? globalSettings.spread || 'double' : individualSetting?.spread || 'double';
+            const resolvedCustomFontId = settingScope === 'Global' ? globalSettings.customFontId : individualSetting?.customFontId;
 
             if (resolvedTheme != null) this.selectedTheme = resolvedTheme;
             if (resolvedFontFamily != null) this.selectedFontType = resolvedFontFamily;
@@ -168,48 +191,14 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
             if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
-            this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
-              flow: this.selectedFlow ?? 'paginated',
-              manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
-              width: '100%',
-              height: '100%',
-              spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
-              allowScriptedContent: true,
-            });
+            // Set font type from settings (including custom font format)
+            // Don't set selectedCustomFontId yet - let applyEpubTheme() set it after verification
+            if (resolvedCustomFontId != null) {
+              this.selectedFontType = `custom:${resolvedCustomFontId}`;
+            }
 
-            const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') || {};
-            const combinedTheme = {
-              ...baseTheme,
-              body: {
-                ...baseTheme.body,
-                ...(this.selectedFontType ? {'font-family': this.selectedFontType} : {}),
-                ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
-                ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
-              },
-              '*': {
-                ...baseTheme['*'],
-                ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
-                ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
-              },
-            };
-
-            this.rendition.themes.override('font-size', `${this.fontSize}%`);
-            this.rendition.themes.register('custom', combinedTheme);
-            this.rendition.themes.select('custom');
-
-            const displayPromise = this.epub?.epubProgress?.cfi
-              ? this.rendition.display(this.epub.epubProgress.cfi)
-              : this.rendition.display();
-
-            displayPromise.then(() => {
-              this.updateCurrentChapter(this.rendition.currentLocation());
-              this.setupKeyListener();
-              this.trackProgress();
-              this.setupTouchListener();
-              this.isLoading = false;
-              this.startHeaderAutoHide();
-            });
-
+            this.initBook();
+            this.initRendition();
           };
 
           fileReader.readAsArrayBuffer(epubData);
@@ -266,21 +255,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (!this.rendition || !this.book) return;
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
-    this.rendition.destroy();
+    const locations = this.book.locations.save();
 
-    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
-      flow: this.selectedFlow,
-      manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
-      width: '100%',
-      height: '100%',
-      spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
-      allowScriptedContent: true,
-    });
-
-    this.rendition.themes.override('font-size', `${this.fontSize}%`);
-    this.applyCombinedTheme();
-    this.setupKeyListener();
-    this.rendition.display(cfi || undefined);
+    this.initBook(locations);
+    this.initRendition(cfi);
     this.updateViewerSetting();
   }
 
@@ -288,21 +266,10 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (!this.rendition || !this.book || this.selectedFlow === 'scrolled' || this.isMobileDevice()) return;
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
-    this.rendition.destroy();
+    const locations = this.book.locations.save();
 
-    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
-      flow: this.selectedFlow,
-      manager: 'default',
-      width: '100%',
-      height: '100%',
-      spread: this.selectedSpread === 'single' ? 'none' : this.selectedSpread,
-      allowScriptedContent: true,
-    });
-
-    this.rendition.themes.override('font-size', `${this.fontSize}%`);
-    this.applyCombinedTheme();
-    this.setupKeyListener();
-    this.rendition.display(cfi || undefined);
+    this.initBook(locations);
+    this.initRendition(cfi);
     this.updateViewerSetting();
   }
 
@@ -329,15 +296,103 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  changeFontType(): void {
-    if (this.rendition) {
-      if (this.selectedFontType) {
-        this.rendition.themes.font(this.selectedFontType);
-      } else {
-        this.rendition.themes.font('');
-      }
-      this.updateViewerSetting();
+  async changeFontType(): Promise<void> {
+    const result = await this.applyEpubTheme();
+
+    // Update state based on result
+    if (!result.success) {
+      // Font loading failed, clear the selection
+      this.selectedFontType = null;
+      this.selectedCustomFontId = null;
+    } else if (result.customFontId !== undefined) {
+      // Custom font loaded successfully or cleared
+      this.selectedCustomFontId = result.customFontId;
     }
+
+    this.updateViewerSetting();
+  }
+
+  private async applyEpubTheme(): Promise<{ success: boolean, customFontId?: number | null }> {
+    if (!this.rendition) return { success: false };
+
+    // Determine font family - handle custom fonts
+    let fontFamily = this.selectedFontType;
+    let customFontToInject: CustomFont | null = null;
+    let customFontId: number | null = null;
+
+    if (this.selectedFontType?.startsWith('custom:')) {
+      const fontId = parseInt(this.selectedFontType.split(':')[1]);
+      const customFont = this.customFonts.find(f => f.id === fontId);
+      if (customFont) {
+        try {
+          await this.customFontService.loadFontFace(customFont);
+          if (this.customFontService.isFontLoaded(customFont.fontName)) {
+            fontFamily = customFont.fontName;
+            customFontId = fontId;
+            customFontToInject = customFont;
+          } else {
+            // Font didn't load properly
+            return { success: false };
+          }
+        } catch (error) {
+          // Font loading failed
+          console.error('Failed to load custom font:', error);
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Custom fonts not loaded',
+            detail: 'Your custom fonts could not be loaded. The reader will use default fonts instead.',
+          });
+          return { success: false };
+        }
+      }
+    } else {
+      customFontId = null;
+    }
+
+    // Inject or clear @font-face rules
+    if (customFontToInject) {
+      const fontUrl = this.customFontService.getFontUrl(customFontToInject.id);
+      const fontUrlWithToken = this.customFontService.appendToken(fontUrl);
+      this.rendition.themes.default({
+        '@font-face': [{
+          'font-family': `"${customFontToInject.fontName}"`,
+          'src': `url(${fontUrlWithToken})`,
+          'font-weight': 'normal',
+          'font-style': 'normal'
+        }]
+      });
+    } else {
+      this.rendition.themes.default({});
+    }
+
+    // Apply font using EPUB.js font() method
+    if (fontFamily) {
+      this.rendition.themes.font(customFontToInject ? `"${fontFamily}"` : fontFamily);
+    } else {
+      this.rendition.themes.font('');
+    }
+
+    // Apply theme with other settings
+    const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') || {};
+    const combinedTheme = {
+      ...baseTheme,
+      body: {
+        ...baseTheme.body,
+        ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
+        ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
+      },
+      '*': {
+        ...baseTheme['*'],
+        ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
+        ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
+      },
+    };
+
+    this.rendition.themes.override('font-size', `${this.fontSize}%`);
+    this.rendition.themes.register('custom', combinedTheme);
+    this.rendition.themes.select('custom');
+
+    return { success: true, customFontId };
   }
 
   increaseFontSize(): void {
@@ -360,6 +415,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     if (this.selectedSpread === 'single' || this.selectedSpread === 'double') epubSettings.spread = this.selectedSpread;
     if (this.lineHeight) epubSettings.lineHeight = this.lineHeight;
     if (this.letterSpacing) epubSettings.letterSpacing = this.letterSpacing;
+    if (this.selectedCustomFontId != null) epubSettings.customFontId = this.selectedCustomFontId;
 
     const bookSetting: BookSetting = {
       epubSettings: epubSettings
@@ -388,65 +444,183 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   private setupTouchListener(): void {
-    if (!this.isMobileDevice() || !this.rendition) return;
+    if (!this.isMobileDevice()) return;
+
+    const container = this.epubContainer.nativeElement;
+
+    container.addEventListener('touchend', (event: TouchEvent) => {
+      event.stopPropagation();
+      this.ngZone.run(() => {
+        this.handleTouchEnd(event);
+      });
+    }, { passive: false });
+
+    container.addEventListener('click', (event: MouseEvent) => {
+      event.stopPropagation();
+      this.ngZone.run(() => {
+        this.handleClickAsTap(event);
+      });
+    }, { capture: true });
 
     this.rendition.on('rendered', () => {
       const iframe = this.epubContainer.nativeElement.querySelector('iframe');
-      if (iframe && iframe.contentDocument) {
-        iframe.contentDocument.addEventListener('touchstart', () => {
-          this.ngZone.run(() => {
-            this.onBookTouch();
-          });
-        });
+
+      if (iframe && iframe !== this.currentIframe) {
+        if (this.currentIframe && this.currentIframe.contentDocument) {
+          if (this.iframeTouchHandler) {
+            this.currentIframe.contentDocument.removeEventListener('touchend', this.iframeTouchHandler, true);
+          }
+          if (this.iframeClickHandler) {
+            this.currentIframe.contentDocument.removeEventListener('click', this.iframeClickHandler, true);
+          }
+        }
+
+        this.currentIframe = iframe;
+
+        if (iframe.contentDocument) {
+          this.iframeTouchHandler = (event: TouchEvent) => {
+            event.stopPropagation();
+            event.preventDefault();
+            this.ngZone.run(() => {
+              this.handleTouchEnd(event);
+            });
+          };
+
+          this.iframeClickHandler = (event: MouseEvent) => {
+            event.stopPropagation();
+            event.preventDefault();
+            this.ngZone.run(() => {
+              this.handleClickAsTap(event);
+            });
+          };
+
+          iframe.contentDocument.addEventListener('touchend', this.iframeTouchHandler, { passive: false, capture: true });
+          iframe.contentDocument.addEventListener('click', this.iframeClickHandler, { capture: true });
+        }
       }
     });
   }
 
-  public isMobileDevice(): boolean {
-    return window.innerWidth <= 768;
-  }
+  public handleTouchEnd(event: TouchEvent): void {
+    if (!this.isMobileDevice()) return;
 
-  prevPage(): void {
-    if (this.rendition) {
-      this.rendition.prev().then(() => {
-        const location = this.rendition.currentLocation();
-        this.readingSessionService.updateProgress(
-          location?.start?.cfi,
-          this.progressPercentage
-        );
-      });
+    const touch = event.changedTouches[0];
+    let touchX = touch.clientX;
+    let touchY = touch.clientY;
+
+    if (event.target && (event.target as HTMLElement).ownerDocument !== document) {
+      const iframe = this.currentIframe;
+      if (iframe) {
+        const iframeRect = iframe.getBoundingClientRect();
+        touchX = touch.clientX + iframeRect.left;
+        touchY = touch.clientY + iframeRect.top;
+      }
+    }
+
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    const isTopTouch = touchY < screenHeight * 0.2;
+    const isInTapZoneVertically = touchY >= screenHeight * 0.2;
+
+    if (isTopTouch) {
+      if (!this.showHeader) {
+        this.showHeader = true;
+        this.headerShownByMobileTouch = true;
+        this.clearHeaderTimeout();
+        this.startHeaderAutoHide();
+      } else if (this.headerShownByMobileTouch) {
+        this.showHeader = false;
+        this.headerShownByMobileTouch = false;
+        this.clearHeaderTimeout();
+      }
+      return;
+    }
+
+    if (isInTapZoneVertically) {
+      const leftZoneEnd = screenWidth / 3;
+      const rightZoneStart = screenWidth * (2 / 3);
+
+      if (touchX < leftZoneEnd) {
+        this.prevPage();
+        return;
+      }
+
+      if (touchX > rightZoneStart) {
+        this.nextPage();
+        return;
+      }
+
+      this.showControlsTemporarily();
     }
   }
 
-  nextPage(): void {
-    if (this.rendition) {
-      this.rendition.next().then(() => {
-        const location = this.rendition.currentLocation();
-        this.readingSessionService.updateProgress(
-          location?.start?.cfi,
-          this.progressPercentage
-        );
-      });
+  private handleClickAsTap(event: MouseEvent): void {
+    if (!this.isMobileDevice()) return;
+
+    let clickX = event.clientX;
+    let clickY = event.clientY;
+
+    if (event.target && (event.target as HTMLElement).ownerDocument !== document) {
+      const iframe = this.currentIframe;
+      if (iframe) {
+        const iframeRect = iframe.getBoundingClientRect();
+        clickX = event.clientX + iframeRect.left;
+        clickY = event.clientY + iframeRect.top;
+      }
+    }
+
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    const isTopClick = clickY < screenHeight * 0.2;
+    const isInTapZoneVertically = clickY >= screenHeight * 0.2;
+
+    if (isTopClick) {
+      if (!this.showHeader) {
+        this.showHeader = true;
+        this.headerShownByMobileTouch = true;
+        this.clearHeaderTimeout();
+        this.startHeaderAutoHide();
+      } else if (this.headerShownByMobileTouch) {
+        this.showHeader = false;
+        this.headerShownByMobileTouch = false;
+        this.clearHeaderTimeout();
+      }
+      return;
+    }
+
+    if (isInTapZoneVertically) {
+      const leftZoneEnd = screenWidth / 3;
+      const rightZoneStart = screenWidth * (2 / 3);
+
+      if (clickX < leftZoneEnd) {
+        this.prevPage();
+        return;
+      }
+
+      if (clickX > rightZoneStart) {
+        this.nextPage();
+        return;
+      }
+
+      this.showControlsTemporarily();
     }
   }
 
-  navigateToChapter(chapter: { label: string; href: string; level: number }): void {
-    if (this.book && chapter.href) {
-      this.book.rendition.display(chapter.href).then(() => {
-        const location = this.rendition.currentLocation();
-        this.readingSessionService.updateProgress(
-          location?.start?.cfi,
-          this.progressPercentage
-        );
-      });
+  closeReader(): void {
+    if (this.readingSessionService.isSessionActive()) {
+      this.readingSessionService.endSession(
+        this.currentCfi || undefined,
+        this.progressPercentage
+      );
     }
+    this.location.back();
   }
 
   toggleDrawer(): void {
     this.isDrawerVisible = !this.isDrawerVisible;
     if (this.isDrawerVisible) {
-      this.showHeader = true;
-      this.headerShownByMobileTouch = false;
       this.clearHeaderTimeout();
     } else {
       this.startHeaderAutoHide();
@@ -456,12 +630,38 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   toggleSettingsDrawer(): void {
     this.isSettingsDrawerVisible = !this.isSettingsDrawerVisible;
     if (this.isSettingsDrawerVisible) {
-      this.showHeader = true;
-      this.headerShownByMobileTouch = false;
       this.clearHeaderTimeout();
     } else {
       this.startHeaderAutoHide();
     }
+  }
+
+  navigateToChapter(chapter: { label: string; href: string; level: number }): void {
+    if (this.rendition) {
+      this.rendition.display(chapter.href).then(() => {
+        const location = this.rendition.currentLocation();
+        this.readingSessionService.updateProgress(
+          location?.start?.cfi,
+          this.progressPercentage
+        );
+      });
+    }
+  }
+
+  prevPage(): void {
+    if (this.rendition) {
+      this.rendition.prev();
+    }
+  }
+
+  nextPage(): void {
+    if (this.rendition) {
+      this.rendition.next();
+    }
+  }
+
+  isMobileDevice(): boolean {
+    return window.innerWidth <= 768;
   }
 
   private trackProgress(): void {
@@ -498,6 +698,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     });
 
     this.book.ready.then(() => {
+      if (this.locationsReady && this.book.locations.total > 0) {
+        return Promise.resolve();
+      }
       return this.book.locations.generate(1600);
     }).then(() => {
       this.locationsReady = true;
@@ -518,6 +721,93 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  private initBook(restoreLocations?: string): void {
+    if (!this.epubArrayBuffer) return;
+
+    if (this.book) {
+      this.book.destroy();
+    }
+
+    this.book = ePub(this.epubArrayBuffer);
+
+    this.book.loaded.navigation.then((nav: any) => {
+      this.chapters = this.extractChapters(nav.toc, 0);
+    });
+
+    if (restoreLocations) {
+      this.book.ready.then(() => {
+        this.book.locations.load(restoreLocations);
+        this.locationsReady = true;
+      });
+    } else {
+      this.locationsReady = false;
+    }
+  }
+
+  private initRendition(targetCfi?: string): void {
+    if (!this.book) return;
+
+    if (this.rendition) {
+      try {
+        this.rendition.destroy();
+      } catch (e) {
+        console.warn('Error destroying rendition', e);
+      }
+    }
+
+    this.rendition = this.book.renderTo(this.epubContainer.nativeElement, {
+      flow: this.selectedFlow ?? 'paginated',
+      manager: this.selectedFlow === 'scrolled' ? 'continuous' : 'default',
+      width: '100%',
+      height: '100%',
+      spread: this.selectedFlow === 'paginated' && !this.isMobileDevice() ? (this.selectedSpread === 'single' ? 'none' : this.selectedSpread) : 'none',
+      allowScriptedContent: true,
+    });
+
+    const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') || {};
+    const combinedTheme = {
+      ...baseTheme,
+      body: {
+        ...(baseTheme.body || {}),
+        ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
+        ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
+      },
+      '*': {
+        ...(baseTheme['*'] || {}),
+        ...(this.lineHeight != null ? {'line-height': this.lineHeight} : {}),
+        ...(this.letterSpacing != null ? {'letter-spacing': `${this.letterSpacing}em`} : {}),
+      },
+    };
+
+    this.rendition.themes.override('font-size', `${this.fontSize}%`);
+    this.rendition.themes.register('custom', combinedTheme);
+    this.rendition.themes.select('custom');
+
+    const displayPromise = targetCfi
+      ? this.rendition.display(targetCfi)
+      : (this.epub?.epubProgress?.cfi ? this.rendition.display(this.epub.epubProgress.cfi) : this.rendition.display());
+
+    displayPromise.then(async () => {
+      // Apply custom font after rendition is displayed
+      const result = await this.applyEpubTheme();
+
+      // If font loading failed during initialization, clear the selection
+      if (!result.success) {
+        this.selectedFontType = null;
+        this.selectedCustomFontId = null;
+      } else if (result.customFontId !== undefined) {
+        this.selectedCustomFontId = result.customFontId;
+      }
+
+      this.updateCurrentChapter(this.rendition.currentLocation());
+      this.setupKeyListener();
+      this.trackProgress();
+      this.setupTouchListener();
+      this.isLoading = false;
+      this.startHeaderAutoHide();
+    });
+  }
+
   ngOnDestroy(): void {
     if (this.readingSessionService.isSessionActive()) {
       this.readingSessionService.endSession(
@@ -527,6 +817,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
 
     this.routeSubscription?.unsubscribe();
+
+    if (this.currentIframe && this.currentIframe.contentDocument) {
+      if (this.iframeTouchHandler) {
+        this.currentIframe.contentDocument.removeEventListener('touchend', this.iframeTouchHandler, true);
+      }
+      if (this.iframeClickHandler) {
+        this.currentIframe.contentDocument.removeEventListener('click', this.iframeClickHandler, true);
+      }
+    }
 
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
@@ -550,23 +849,14 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   onBookClick(event: MouseEvent): void {
+
+    const clickX = event.clientX;
     const clickY = event.clientY;
+    const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
 
     if (this.isMobileDevice()) {
-      const isTopClick = clickY < screenHeight * 0.2;
-      const isBottomClick = clickY > screenHeight * 0.2;
-
-      if (isTopClick && !this.showHeader) {
-        this.showHeader = true;
-        this.headerShownByMobileTouch = true;
-        this.clearHeaderTimeout();
-        this.startHeaderAutoHide();
-      } else if (isBottomClick && this.showHeader && this.headerShownByMobileTouch) {
-        this.showHeader = false;
-        this.headerShownByMobileTouch = false;
-        this.clearHeaderTimeout();
-      }
+      this.handleClickAsTap(event);
     } else {
       const isTopClick = clickY < screenHeight * 0.1;
       if (isTopClick) {
@@ -615,26 +905,34 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  onBookTouch(): void {
+  onBookTouch(event?: TouchEvent): void {
     if (this.isMobileDevice()) {
-      this.showControls = true;
-      this.showHeader = true;
-      this.headerShownByMobileTouch = false;
-      this.clearHeaderTimeout();
-
-      if (this.hideControlsTimeout) {
-        window.clearTimeout(this.hideControlsTimeout);
+      if (event) {
+        this.handleTouchEnd(event);
+      } else {
+        this.showControlsTemporarily();
       }
-
-      this.hideControlsTimeout = window.setTimeout(() => {
-        this.ngZone.run(() => {
-          this.showControls = false;
-          if (!this.isDrawerVisible && !this.isSettingsDrawerVisible) {
-            this.showHeader = false;
-          }
-        });
-      }, 2000);
     }
+  }
+
+  private showControlsTemporarily(): void {
+    this.showControls = true;
+    this.showHeader = true;
+    this.headerShownByMobileTouch = false;
+    this.clearHeaderTimeout();
+
+    if (this.hideControlsTimeout) {
+      window.clearTimeout(this.hideControlsTimeout);
+    }
+
+    this.hideControlsTimeout = window.setTimeout(() => {
+      this.ngZone.run(() => {
+        this.showControls = false;
+        if (!this.isDrawerVisible && !this.isSettingsDrawerVisible) {
+          this.showHeader = false;
+        }
+      });
+    }, 2000);
   }
 
   startHeaderAutoHide(): void {
@@ -833,15 +1131,5 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   onBookmarkCancel(): void {
     this.showEditBookmarkDialog = false;
     this.editingBookmark = null;
-  }
-
-  closeReader(): void {
-    if (this.readingSessionService.isSessionActive()) {
-      this.readingSessionService.endSession(
-        this.currentCfi || undefined,
-        this.progressPercentage
-      );
-    }
-    this.location.back();
   }
 }

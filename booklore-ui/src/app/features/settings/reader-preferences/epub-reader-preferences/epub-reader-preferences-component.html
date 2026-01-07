@@ -37,12 +37,21 @@
               type="button"
               class="option-button font-button"
               [class.selected]="selectedFont === font.key"
+              [class.separator]="font.key === 'separator'"
               [attr.data-font]="font.key"
+              [disabled]="font.key === 'separator'"
               (click)="selectedFont = font.key"
               [pTooltip]="font.name"
               tooltipPosition="bottom">
-              <span class="option-text">{{ font.displayName }}</span>
+              <span class="option-text"
+                    [style.font-family]="font.key && font.key.startsWith('custom:') ? getCustomFontName(font.key) : null">
+                {{ font.displayName }}
+              </span>
             </button>
+          }
+
+          @if (!customFontsReady) {
+            <p-skeleton width="3.5rem" height="2.5rem" borderRadius="6px"></p-skeleton>
           }
         </div>
       </div>

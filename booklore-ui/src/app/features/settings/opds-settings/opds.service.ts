@@ -11,10 +11,6 @@ export interface OpdsUserV2CreateRequest {
   sortOrder?: OpdsSortOrder;
 }
 
-export interface OpdsUserV2UpdateRequest {
-  sortOrder: OpdsSortOrder;
-}
-
 export interface OpdsUserV2 {
   id: number;
   userId: number;
@@ -39,7 +35,7 @@ export class OpdsService {
   }
 
   updateUser(id: number, sortOrder: OpdsSortOrder): Observable<OpdsUserV2> {
-    return this.http.patch<OpdsUserV2>(`${this.baseUrl}/${id}`, { sortOrder });
+    return this.http.patch<OpdsUserV2>(`${this.baseUrl}/${id}`, {sortOrder});
   }
 
   deleteCredential(id: number): Observable<void> {

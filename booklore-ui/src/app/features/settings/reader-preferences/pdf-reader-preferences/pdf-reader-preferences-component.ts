@@ -1,6 +1,6 @@
 import {Component, inject, Input} from '@angular/core';
 import {FormsModule} from '@angular/forms';
-import {ReaderPreferencesService} from '../reader-preferences-service';
+import {ReaderPreferencesService} from '../reader-preferences.service';
 import {PageSpread, UserSettings} from '../../user-management/user.service';
 import {TooltipModule} from 'primeng/tooltip';
 

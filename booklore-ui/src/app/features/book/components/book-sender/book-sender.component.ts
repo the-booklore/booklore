@@ -33,8 +33,8 @@ export class BookSenderComponent implements OnInit {
 
   emailProviders: { label: string, value: EmailProvider }[] = [];
   emailRecipients: { label: string, value: EmailRecipient }[] = [];
-  selectedProvider?: any;
-  selectedRecipient?: any;
+  selectedProvider?: { label: string; value: EmailProvider };
+  selectedRecipient?: { label: string; value: EmailRecipient };
 
   ngOnInit(): void {
     this.emailProviderService.getEmailProviders().subscribe({

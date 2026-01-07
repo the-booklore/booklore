@@ -54,11 +54,11 @@ class KoboAutoShelfServiceTest {
 
         testUser1 = BookLoreUserEntity.builder()
                 .id(100L)
-                .build();
+                .isDefaultPassword(false).build();
 
         testUser2 = BookLoreUserEntity.builder()
                 .id(200L)
-                .build();
+                .isDefaultPassword(false).build();
 
         koboShelf1 = ShelfEntity.builder()
                 .id(10L)
@@ -259,9 +259,11 @@ class KoboAutoShelfServiceTest {
         when(shelfRepository.findByUserIdInAndName(List.of(100L), ShelfType.KOBO.getName()))
                 .thenReturn(List.of(koboShelf1));
 
-        try {
-            koboAutoShelfService.autoAddBookToKoboShelves(1L);
-        } catch (NullPointerException e) {
-        }
+        koboAutoShelfService.autoAddBookToKoboShelves(1L);
+
+        verify(bookRepository).save(testBook);
+        assert testBook.getShelves() != null;
+        assert testBook.getShelves().contains(koboShelf1);
+        assert testBook.getShelves().size() == 1;
     }
 }

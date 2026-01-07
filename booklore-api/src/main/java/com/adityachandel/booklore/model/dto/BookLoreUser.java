@@ -2,6 +2,7 @@ package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.dto.settings.SidebarSortOption;
 import com.adityachandel.booklore.model.enums.*;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -44,6 +45,15 @@ public class BookLoreUser {
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
         private boolean isDemoUser;
+        private boolean canBulkAutoFetchMetadata;
+        private boolean canBulkCustomFetchMetadata;
+        private boolean canBulkEditMetadata;
+        private boolean canBulkRegenerateCover;
+        private boolean canMoveOrganizeFiles;
+        private boolean canBulkLockUnlockMetadata;
+        private boolean canBulkResetBookloreReadProgress;
+        private boolean canBulkResetKoReaderReadProgress;
+        private boolean canBulkResetBookReadStatus;
     }
 
     @Data
@@ -93,6 +103,7 @@ public class BookLoreUser {
             private String sortDir;
             private String view;
             private Float coverSize;
+            @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
         }
 
@@ -114,7 +125,8 @@ public class BookLoreUser {
             private String sortKey;
             private String sortDir;
             private String view;
-            private Boolean seriesCollapse;
+            @JsonAlias("seriesCollapse")
+            private Boolean seriesCollapsed;
         }
 
         @Data

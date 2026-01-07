@@ -65,6 +65,21 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanEditMetadata();
     }
 
+    public boolean canBulkEditMetadata() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkEditMetadata();
+    }
+
+    public boolean canBulkLockUnlockMetadata() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkLockUnlockMetadata();
+    }
+
+    public boolean canBulkRegenerateCover() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkRegenerateCover();
+    }
+
     public boolean canEmailBook() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanEmailBook();

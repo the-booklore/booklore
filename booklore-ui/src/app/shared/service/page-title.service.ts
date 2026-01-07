@@ -4,7 +4,7 @@ import {Book} from "../../features/book/model/book.model";
 
 @Injectable({providedIn: 'root'})
 export class PageTitleService {
-    private titleService = inject(Title)
+    protected titleService = inject(Title)
 
     private appName = 'BookLore'
 

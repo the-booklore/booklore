@@ -6,6 +6,7 @@ import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
+import {BookState} from '../../book/model/state/book-state.model';
 
 interface PageCountStats {
   category: string;
@@ -179,8 +180,16 @@ export class PageCountChartService implements OnDestroy {
     return this.processPageCountStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
