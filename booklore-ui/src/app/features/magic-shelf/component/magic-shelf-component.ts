@@ -52,6 +52,8 @@ export type RuleField =
   | 'seriesTotal'
   | 'pageCount'
   | 'language'
+  | 'isbn13'
+  | 'isbn10'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
@@ -127,6 +129,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
   pageCount: {label: 'Page Count', type: 'number'},
   language: {label: 'Language'},
+  isbn13: {label: 'ISBN-13'},
+  isbn10: {label: 'ISBN-10'},
   seriesName: {label: 'Series Name'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
@@ -349,7 +353,7 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
+    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {

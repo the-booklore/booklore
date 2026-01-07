@@ -324,6 +324,8 @@ public class BookRuleEvaluatorService {
             case SERIES_NAME -> root.get("metadata").get("seriesName");
             case SERIES_NUMBER -> root.get("metadata").get("seriesNumber");
             case SERIES_TOTAL -> root.get("metadata").get("seriesTotal");
+            case ISBN13 -> root.get("metadata").get("isbn13");
+            case ISBN10 -> root.get("metadata").get("isbn10");
             case AMAZON_RATING -> root.get("metadata").get("amazonRating");
             case AMAZON_REVIEW_COUNT -> root.get("metadata").get("amazonReviewCount");
             case GOODREADS_RATING -> root.get("metadata").get("goodreadsRating");
