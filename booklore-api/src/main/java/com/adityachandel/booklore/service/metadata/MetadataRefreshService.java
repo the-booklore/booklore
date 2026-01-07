@@ -521,7 +521,8 @@ public class MetadataRefreshService {
         if (enabledFields.isLubimyczytacRating()) {
             if (metadataMap.containsKey(Lubimyczytac)) {
                 metadata.setLubimyczytacRating(metadataMap.get(Lubimyczytac).getLubimyczytacRating());
-        }      
+            }
+        }
         if (enabledFields.isRanobedbId()) {
             if (metadataMap.containsKey(Ranobedb)) {
                 metadata.setRanobedbId(metadataMap.get(Ranobedb).getRanobedbId());
