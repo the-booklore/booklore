@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -212,6 +212,20 @@
                 >
                   <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.ranobedbRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://ranobedb.org/book/' + (book.metadata?.ranobedbId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'ranobedb')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://www.ranobedb.org/favicon.png" alt="Ranobedb" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
                 </a>
               }
 

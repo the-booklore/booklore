@@ -95,6 +95,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
         )
         .subscribe(([book, settings]) => {
           const providerSettings = settings?.metadataProviderSettings ?? {};
+          console.log(providerSettings);
           this.providers = Object.entries(providerSettings)
             .filter(([_, value]) => !!value && typeof value === 'object' && 'enabled' in value && (value as any).enabled)
             .map(([key]) => key.charAt(0).toUpperCase() + key.slice(1));
@@ -362,6 +363,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       }
       const name = metadata.seriesName;
       return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+    } else if (metadata.ranobedbId) {
+      return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">Ranobedb</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }

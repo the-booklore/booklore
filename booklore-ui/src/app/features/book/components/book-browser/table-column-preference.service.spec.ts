@@ -31,6 +31,8 @@ describe('TableColumnPreferenceService', () => {
     {field: 'goodreadsReviewCount', header: 'GR #'},
     {field: 'hardcoverRating', header: 'Hardcover'},
     {field: 'hardcoverReviewCount', header: 'HC #'},
+    {field: 'ranobedbRating', header: 'Ranobedb'},
+    {field: 'ranobedbReviewCount', header: 'RD #'},
   ];
 
   const fallbackPreferences: TableColumnPreference[] = allColumns.map((col, index) => ({

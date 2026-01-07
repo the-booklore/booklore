@@ -318,6 +318,9 @@ export class BookdropFileReviewComponent implements OnInit {
         goodreadsId: original?.goodreadsId ?? null,
         goodreadsRating: original?.goodreadsRating ?? null,
         goodreadsReviewCount: original?.goodreadsReviewCount ?? null,
+        ranobedbId: original?.ranobedbId ?? null,
+        ranobedbRating: original?.ranobedbRating ?? null,
+        ranobedbReviewCount: original?.ranobedbReviewCount ?? null,
         hardcoverId: original?.hardcoverId ?? null,
         hardcoverBookId: original?.hardcoverBookId ?? null,
         hardcoverRating: original?.hardcoverRating ?? null,
@@ -567,6 +570,9 @@ export class BookdropFileReviewComponent implements OnInit {
       goodreadsId: new FormControl(original?.goodreadsId ?? ''),
       goodreadsRating: new FormControl(original?.goodreadsRating ?? ''),
       goodreadsReviewCount: new FormControl(original?.goodreadsReviewCount ?? ''),
+      ranobedbId: new FormControl(original?.ranobedbId ?? ''),
+      ranobedbRating: new FormControl(original?.ranobedbRating ?? ''),
+      ranobedbReviewCount: new FormControl(original?.ranobedbReviewCount ?? ''),
       hardcoverId: new FormControl(original?.hardcoverId ?? ''),
       hardcoverBookId: new FormControl(original?.hardcoverBookId ?? ''),
       hardcoverRating: new FormControl(original?.hardcoverRating ?? ''),
@@ -617,10 +623,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openBulkEditDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',
@@ -647,10 +653,10 @@ export class BookdropFileReviewComponent implements OnInit {
 
   openPatternExtractDialog(): void {
     const selectedFiles = this.getSelectedFiles();
-    const totalCount = this.selectAllAcrossPages 
-      ? this.totalRecords - this.excludedFiles.size 
+    const totalCount = this.selectAllAcrossPages
+      ? this.totalRecords - this.excludedFiles.size
       : selectedFiles.length;
-      
+
     if (totalCount === 0) {
       this.messageService.add({
         severity: 'warn',

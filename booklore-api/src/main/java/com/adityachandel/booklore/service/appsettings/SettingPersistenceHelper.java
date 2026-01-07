@@ -102,11 +102,15 @@ public class SettingPersistenceHelper {
         MetadataProviderSettings.Douban defaultDouban = new MetadataProviderSettings.Douban();
         defaultDouban.setEnabled(false);
 
+        MetadataProviderSettings.Ranobedb defaultRanobedb = new MetadataProviderSettings.Ranobedb();
+        defaultRanobedb.setEnabled(false);
+
         defaultMetadataProviderSettings.setAmazon(defaultAmazon);
         defaultMetadataProviderSettings.setGoogle(defaultGoogle);
         defaultMetadataProviderSettings.setGoodReads(defaultGoodreads);
         defaultMetadataProviderSettings.setHardcover(defaultHardcover);
         defaultMetadataProviderSettings.setComicvine(defaultComicvine);
+        defaultMetadataProviderSettings.setRanobedb(defaultRanobedb);
         defaultMetadataProviderSettings.setDouban(defaultDouban);
 
         return defaultMetadataProviderSettings;
@@ -139,6 +143,9 @@ public class SettingPersistenceHelper {
                 .asin(nullProvider)
                 .goodreadsId(nullProvider)
                 .comicvineId(nullProvider)
+                .ranobedbId(nullProvider)
+                .ranobedbRating(nullProvider)
+                .ranobedbReviewCount(nullProvider)
                 .hardcoverId(nullProvider)
                 .googleId(nullProvider)
                 .amazonRating(nullProvider)
@@ -170,6 +177,9 @@ public class SettingPersistenceHelper {
                 .asin(true)
                 .goodreadsId(true)
                 .comicvineId(true)
+                .ranobedbId(true)
+                .ranobedbRating(true)
+                .ranobedbReviewCount(true)
                 .hardcoverId(true)
                 .googleId(true)
                 .amazonRating(true)

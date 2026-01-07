@@ -332,6 +332,9 @@ public class MetadataRefreshService {
             addProviderToSet(fieldOptions.getAsin(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getGoodreadsId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getComicvineId(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getRanobedbId(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getRanobedbRating(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getRanobedbReviewCount(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getHardcoverId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getGoogleId(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getAmazonRating(), uniqueProviders, appSettings);
@@ -368,6 +371,7 @@ public class MetadataRefreshService {
             case GoodReads -> settings.getGoodReads() != null && settings.getGoodReads().isEnabled();
             case Hardcover -> settings.getHardcover() != null && settings.getHardcover().isEnabled();
             case Comicvine -> settings.getComicvine() != null && settings.getComicvine().isEnabled();
+            case Ranobedb -> settings.getRanobedb() != null && settings.getRanobedb().isEnabled();
             case Douban -> settings.getDouban() != null && settings.getDouban().isEnabled();
             default -> true;
         };
@@ -505,6 +509,21 @@ public class MetadataRefreshService {
         if (enabledFields.isComicvineId()) {
             if (metadataMap.containsKey(Comicvine)) {
                 metadata.setComicvineId(metadataMap.get(Comicvine).getComicvineId());
+            }
+        }
+        if (enabledFields.isRanobedbId()) {
+            if (metadataMap.containsKey(Ranobedb)) {
+                metadata.setRanobedbId(metadataMap.get(Ranobedb).getRanobedbId());
+            }
+        }
+        if (enabledFields.isRanobedbRating()) {
+            if (metadataMap.containsKey(Ranobedb)) {
+                metadata.setRanobedbRating(metadataMap.get(Ranobedb).getRanobedbRating());
+            }
+        }
+        if (enabledFields.isRanobedbReviewCount()) {
+            if (metadataMap.containsKey(Ranobedb)) {
+                metadata.setRanobedbReviewCount(metadataMap.get(Ranobedb).getRanobedbReviewCount());
             }
         }
         if (enabledFields.isMoods()) {

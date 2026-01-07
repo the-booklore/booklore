@@ -121,6 +121,7 @@ describe('SideBarFilter', () => {
           seriesName: 'S1',
           amazonRating: 4.2,
           goodreadsRating: 3.8,
+          ranobedbRating: 3.5,
           hardcoverRating: 4.0,
           publishedDate: '2020-01-01',
           pageCount: 150,
@@ -147,6 +148,7 @@ describe('SideBarFilter', () => {
           seriesName: 'S2',
           amazonRating: 2.5,
           goodreadsRating: 2.8,
+          ranobedbRating: 2.4,
           hardcoverRating: 2.0,
           publishedDate: '2019-01-01',
           pageCount: 50,
@@ -233,6 +235,12 @@ describe('SideBarFilter', () => {
     const result = await firstValueFrom(filterWith({hardcoverRating: ['2to3']}, 'and'));
     expect(result?.books?.length).toBe(1);
     expect(result?.books?.[0]?.metadata?.hardcoverRating).toBeGreaterThanOrEqual(2);
+  });
+
+  it('filters by ranobedbRating', async () => {
+    const result = await firstValueFrom(filterWith({ranobedbRating: ['3to4']}, 'and'));
+    expect(result?.books?.length).toBe(1);
+    expect(result?.books?.[0]?.metadata?.ranobedbRating).toBeGreaterThanOrEqual(3);
   });
 
   it('filters by personalRating', async () => {

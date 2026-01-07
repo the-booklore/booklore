@@ -85,6 +85,8 @@ export class SortService {
     amazonReviewCount: (book) => book.metadata?.amazonReviewCount || null,
     goodreadsRating: (book) => book.metadata?.goodreadsRating || null,
     goodreadsReviewCount: (book) => book.metadata?.goodreadsReviewCount || null,
+    ranobedbRating: (book) => book.metadata?.ranobedbRating || null,
+    ranobedbReviewCount: (book) => book.metadata?.ranobedbReviewCount || null,
     hardcoverRating: (book) => book.metadata?.hardcoverRating || null,
     hardcoverReviewCount: (book) => book.metadata?.hardcoverReviewCount || null,
     locked: (book) =>

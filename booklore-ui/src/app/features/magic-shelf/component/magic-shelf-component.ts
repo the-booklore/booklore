@@ -58,6 +58,8 @@ export type RuleField =
   | 'amazonReviewCount'
   | 'goodreadsRating'
   | 'goodreadsReviewCount'
+  | 'ranobedbRating'
+  | 'ranobedbReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
   | 'personalRating'
@@ -141,6 +143,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   amazonReviewCount: {label: 'Amazon Review Count', type: 'number'},
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5},
+  ranobedbReviewCount: {label: 'Ranobedb Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
   hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'}
 };

@@ -34,6 +34,9 @@ public class MetadataChangeDetector {
         compare(changes, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()), newMeta.getAsinLocked(), existingMeta.getAsinLocked());
         compare(changes, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()), newMeta.getGoodreadsIdLocked(), existingMeta.getGoodreadsIdLocked());
         compare(changes, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()), newMeta.getComicvineIdLocked(), existingMeta.getComicvineIdLocked());
+        compare(changes, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()), newMeta.getRanobedbIdLocked(), existingMeta.getRanobedbIdLocked());
+        compare(changes, "ranobedbRating", clear.isRanobedbRating(), newMeta.getRanobedbRating(), existingMeta.getRanobedbRating(), () -> !isTrue(existingMeta.getRanobedbRatingLocked()), newMeta.getRanobedbRatingLocked(), existingMeta.getRanobedbRatingLocked());
+        compare(changes, "ranobedbReviewCount", clear.isRanobedbReviewCount(), newMeta.getRanobedbReviewCount(), existingMeta.getRanobedbReviewCount(), () -> !isTrue(existingMeta.getRanobedbReviewCountLocked()), newMeta.getRanobedbReviewCountLocked(), existingMeta.getRanobedbReviewCountLocked());
         compare(changes, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()), newMeta.getHardcoverIdLocked(), existingMeta.getHardcoverIdLocked());
         compare(changes, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()), newMeta.getHardcoverBookIdLocked(), existingMeta.getHardcoverBookIdLocked());
         compare(changes, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()), newMeta.getGoogleIdLocked(), existingMeta.getGoogleIdLocked());
@@ -77,6 +80,9 @@ public class MetadataChangeDetector {
         compareValue(diffs, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()));
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
+        compareValue(diffs, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()));
+        compareValue(diffs, "ranobedbRating", clear.isRanobedbRating(), newMeta.getRanobedbRating(), existingMeta.getRanobedbRating(), () -> !isTrue(existingMeta.getRanobedbRatingLocked()));
+        compareValue(diffs, "ranobedbReviewCount", clear.isRanobedbReviewCount(), newMeta.getRanobedbReviewCount(), existingMeta.getRanobedbReviewCount(), () -> !isTrue(existingMeta.getRanobedbReviewCountLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
@@ -112,6 +118,7 @@ public class MetadataChangeDetector {
         compareValue(diffs, "asin", clear.isAsin(), newMeta.getAsin(), existingMeta.getAsin(), () -> !isTrue(existingMeta.getAsinLocked()));
         compareValue(diffs, "goodreadsId", clear.isGoodreadsId(), newMeta.getGoodreadsId(), existingMeta.getGoodreadsId(), () -> !isTrue(existingMeta.getGoodreadsIdLocked()));
         compareValue(diffs, "comicvineId", clear.isComicvineId(), newMeta.getComicvineId(), existingMeta.getComicvineId(), () -> !isTrue(existingMeta.getComicvineIdLocked()));
+        compareValue(diffs, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()));
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));

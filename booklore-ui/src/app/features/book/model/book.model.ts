@@ -88,6 +88,7 @@ export interface BookMetadata {
   isbn10?: string;
   asin?: string;
   goodreadsId?: string;
+  ranobedbId?: string;
   comicvineId?: string;
   hardcoverId?: string;
   hardcoverBookId?: number | null;
@@ -100,6 +101,8 @@ export interface BookMetadata {
   amazonReviewCount?: number | null;
   goodreadsRating?: number | null;
   goodreadsReviewCount?: number | null;
+  ranobedbRating?: number | null;
+  ranobedbReviewCount?: number | null;
   hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
   lubimyczytacId?: string;
@@ -126,6 +129,7 @@ export interface BookMetadata {
   asinLocked?: boolean;
   comicvineIdLocked?: boolean;
   goodreadsIdLocked?: boolean;
+  ranobedbIdLocked?: boolean;
   hardcoverIdLocked?: boolean;
   hardcoverBookIdLocked?: boolean;
   googleIdLocked?: boolean;
@@ -135,6 +139,8 @@ export interface BookMetadata {
   amazonReviewCountLocked?: boolean;
   goodreadsRatingLocked?: boolean;
   goodreadsReviewCountLocked?: boolean;
+  ranobedbRatingLocked?: boolean;
+  ranobedbReviewCountLocked?: boolean;
   hardcoverRatingLocked?: boolean;
   hardcoverReviewCountLocked?: boolean;
   lubimyczytacIdLocked?: boolean;
@@ -162,6 +168,7 @@ export interface MetadataClearFlags {
   isbn10?: boolean;
   asin?: boolean;
   goodreadsId?: boolean;
+  ranobedbId?: boolean;
   comicvineId?: boolean;
   hardcoverId?: boolean;
   hardcoverBookId?: boolean;
@@ -172,6 +179,8 @@ export interface MetadataClearFlags {
   amazonReviewCount?: boolean;
   goodreadsRating?: boolean;
   goodreadsReviewCount?: boolean;
+  ranobedbRating?: boolean;
+  ranobedbReviewCount?: boolean;
   hardcoverRating?: boolean;
   hardcoverReviewCount?: boolean;
   lubimyczytacId?: boolean;

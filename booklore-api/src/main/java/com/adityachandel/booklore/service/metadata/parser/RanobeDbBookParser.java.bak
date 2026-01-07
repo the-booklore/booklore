@@ -1,0 +1,204 @@
+package com.adityachandel.booklore.service.metadata.parser;
+
+import com.adityachandel.booklore.model.dto.Book;
+import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.request.FetchMetadataRequest;
+import com.adityachandel.booklore.model.dto.response.ranobedbapi.RanobedbSearchResponse;
+import com.adityachandel.booklore.model.dto.response.ranobedbapi.RanobedbBookResponse;
+import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.BookUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@AllArgsConstructor
+public class RanobeDbParser implements BookParser {
+    private static final String RANOBEDB_URL = "https://ranobedb.org/api/v0/";
+    private static final String RANOBEDB_IMAGE_URL = "https://images.ranobedb.org/";
+
+    @Override
+    public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
+        String searchTerm = getSearchTerm(book, fetchMetadataRequest);
+        if (searchTerm == null) {
+            log.warn("No valid search term provided for metadata fetch.");
+            return Collections.emptyList();
+        }
+        return getMetadataListByTerm(searchTerm);
+    }
+
+    public List<BookMetadata> getMetadataListByTerm(String term) {
+      // TODO: Implement rate limiting to 1 reques tper second
+      log.info("Ranobedb: Fetching metadata for term: '{}'", term);
+
+      try {
+          URI uri = UriComponentsBuilder.fromUriString(RANOBEDB_URL)
+                  .path("/books")
+                  .queryParam("q", term)
+                  .queryParam("query", term)
+                  .queryParam("limit", 10)
+                  .queryParam("rl", "en")
+                  .queryParam("rll", "or")
+                  .queryParam("rf", "digital,print")
+                  .queryParam("rfl", "or")
+                  .build()
+                  .toUri();
+
+          HttpRequest request = HttpRequest.newBuilder()
+                  .uri(uri)
+                  .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)")
+                  .GET()
+                  .build();
+
+          HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+          if (response.statusCode() == 200) {
+              return parseRanobeDbApiResponse(response.body());
+          } else {
+              log.error("Ranobedb Search API returned status code {}", response.statusCode());
+          }
+      } catch (IOException | InterruptedException e) {
+          log.error("Error fetching metadata from Ranobedb Search API", e);
+      }
+      return Collections.emptyList();
+    }
+
+    private String getSearchTerm(Book book, FetchMetadataRequest request) {
+        if (request.getTitle() != null && !request.getTitle().isEmpty()) {
+            return request.getTitle();
+        } else if (book.getFileName() != null && !book.getFileName().isEmpty()) {
+            return BookUtils.cleanFileName(book.getFileName());
+        }
+        return null;
+    }
+
+    private List<BookMetadata> parseRanobeDbApiResponse(String responseBody) throws IOException {
+        RanobedbSearchResponse searchResponse = objectMapper.readValue(responseBody, RanobedbSearchResponse.class);
+        if (apiResponse.getResults() == null) {
+            return Collections.emptyList();
+        }
+        return apiResponse.getBooks().stream()
+                .map(this::searchResultToBookMetadata)
+                .collect(Collectors.toList());
+    }
+
+    private BookMetadata searchResultToBookMetadata(RanobedbSearchResponse.Book result) {
+
+        try {
+            URI uri = UriComponentsBuilder.fromUriString(RANOBEDB_URL)
+                    .pathSegment("book", result.getId().toString())
+                    .build()
+                    .toUri();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .header("User-Agent", "BookLore/1.0 (Book and Comic Metadata Fetcher; +https://github.com/booklore-app/booklore)")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                RanobedbBookResponse book = objectMapper.readValue(response.body(), RanobedbBookResponse.class);
+
+                RanobedbBookResponse.TitleEntry englishTitleEntry = book.getTitles().stream()
+                        .filter(titleEntry -> "en".equalsIgnoreCase(titleEntry.getLang()))
+                        .filter(titleEntry -> titleEntry.getOfficial())
+                        .findFirst()
+                        .orElse(null);
+
+                RanobedbBookResponse.Release englishRelease = book.getReleases().stream()
+                        .filter(release -> "en".equalsIgnoreCase(release.getLang()))
+                        .findFirst()
+                        .orElse(null);
+
+                RanobedbBookResponse.Publisher englishPublisher = book.getPublishers().stream()
+                        .filter(publisher -> "en".equalsIgnoreCase(publisher.getLang()))
+                        .filter(publisher -> RanobedbBookResponse.PublisherType.PUBLISHER.equals(publisher.getPublisherType()))
+                        .findFirst()
+                        .orElse(null);
+
+                List<RanobedbBookResponse.SeriesBook> seriesBooks = book.getSeries() != null ? book.getSeries().getBooks() : List.of();
+                int seriesIndex = IntStream.range(0, seriesBooks.size())
+                        .filter(i -> seriesName.get(i).getId().equals(book.getId()))
+                        .findFirst()
+                        .orElse(-1);
+
+                HashSet<String> authors = book.getEditions().stream()
+                        .flatMap(edition -> edition.getStaff().stream())
+                        .filter(staff -> "author".equalsIgnoreCase(staff.getRole()))
+                        .map(RanobedbBookResponse.Staff::getName)
+                        .collect(Collectors.toCollection(HashSet::new));
+
+                HashSet<String> genres = book.getSeries() != null ? book.getSeries().getTags().stream()
+                        .filter(tag -> RanobedbBookResponse.TagType.GENRE.equals(tag.getTtype()))
+                        .map(RanobedbBookResponse.Tag::getName)
+                        .collect(Collectors.toCollection(HashSet::new)) : new HashSet<>();
+
+                return BookMetadata.builder()
+                    .provider(MetadataProvider.Ranobedb)
+                    .randobeDbId(String.valueOf(result.getId()))
+                    .title(englishTitleEntry != null ? englishTitleEntry.getTitle() : result.getTitle()) 
+                    .authors(authors)
+                    .categories(genres)
+                    .publisher(englishPublisher != null ? englishPublisher.getName() : null)
+                    .thumbnailUrl(result.getImage() != null ? RANOBEDB_IMAGE_URL + result.getImage().getFilename() : null)
+                    .description(result.getDescription())
+                    .language(englishRelease != null ? englishRelease.getLang() : book.getLang())
+                    .seriesName(result.getSeries() != null ? result.getSeries().getTitle() : null)
+                    .seriesNumber(seriesIndex != -1 ? seriesIndex + 1.0f : null)
+                    .publishedDate(englishRelease != null ? parseDate(englishRelease.getReleaseDate()) : parseDate(book.GetCReleaseDate()))
+                    .build();
+                metadata.SetRanobeDbId(result.getId());
+                metadata.setTitle(result.getTitle());
+
+                
+                return parseRanobeDbApiResponse(response.body());
+            } else {
+                log.error("Ranobedb Get Book API returned status code {}", response.statusCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            log.error("Error fetching metadata from Ranobedb Search API", e);
+        }
+        
+        return null;
+    }
+
+    private LocalDate parseDate(Long dateInt) {
+        if (dateString == null || dateString == 0) {
+            return null;
+        }
+        try {
+            // Parse date from integer of the format (YYYYMMDD)
+            return LocalDate.of(
+                    dateInt / 10000,
+                    (dateInt / 100) % 100,
+                    dateInt % 100
+            );
+        } catch (DateTimeParseException e) {
+            log.debug("Could not parse date: {}", dateString);
+            return null;
+        }
+    }
+}

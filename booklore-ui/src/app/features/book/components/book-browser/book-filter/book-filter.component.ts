@@ -45,6 +45,7 @@ export type FilterType =
   | 'pageCount'
   | 'amazonRating'
   | 'goodreadsRating'
+  | 'ranobedbRating'
   | 'hardcoverRating';
 
 export const ratingRanges = [
@@ -221,6 +222,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     pageCount: 'Page Count',
     amazonRating: 'Amazon Rating',
     goodreadsRating: 'Goodreads Rating',
+    ranobedbRating: 'Ranobedb Rating',
     hardcoverRating: 'Hardcover Rating',
   };
 
@@ -289,6 +291,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
           amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating ?? undefined), 'id', 'name', 'sortIndex'),
           goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex'),
           hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating ?? undefined), 'id', 'name', 'sortIndex'),
+          ranobedbRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.ranobedbRating ?? undefined), 'id', 'name', 'sortIndex'),
         };
 
         this.filterTypes = Object.keys(this.filterStreams) as FilterType[];

@@ -44,7 +44,9 @@ export class MetadataMatchWeightsComponent implements OnInit {
     goodreadsRating: 'Goodreads Rating',
     goodreadsReviewCount: 'Goodreads Rating #',
     hardcoverRating: 'Hardcover Rating',
-    hardcoverReviewCount: 'Hardcover Rating #'
+    hardcoverReviewCount: 'Hardcover Rating #',
+    ranobedbRating: 'Ranobedb Rating',
+    ranobedbReviewCount: 'Ranobedb Rating #',
   };
 
   form!: FormGroup;
@@ -79,6 +81,8 @@ export class MetadataMatchWeightsComponent implements OnInit {
       goodreadsReviewCount: [0, [Validators.required, Validators.min(0)]],
       hardcoverRating: [0, [Validators.required, Validators.min(0)]],
       hardcoverReviewCount: [0, [Validators.required, Validators.min(0)]],
+      ranobedbRating: [0, [Validators.required, Validators.min(0)]],
+      ranobedbReviewCount: [0, [Validators.required, Validators.min(0)]],
       coverImage: [0, [Validators.required, Validators.min(0)]],
     });
     this.appSettings$
