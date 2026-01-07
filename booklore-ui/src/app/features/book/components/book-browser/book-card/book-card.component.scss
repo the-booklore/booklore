@@ -3,7 +3,6 @@
   border-radius: 8px 8px 8px 8px;
   position: relative;
   overflow: hidden;
-  transition: border 0.2s;
 
   &.selected {
     border: 2px solid var(--primary-color);
@@ -20,7 +19,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.3s ease;
 }
 
 .cover-container.loaded {
@@ -32,11 +30,11 @@
   height: 100%;
   object-fit: cover;
   border-radius: 8px 8px 0 0;
-  transition: opacity 0.3s ease-in;
   opacity: 0;
+  transition: opacity 0.2s ease-in;
 }
 
-.cover-container img.loaded {
+.book-cover.loaded {
   opacity: 1;
 }
 
@@ -49,7 +47,7 @@
   height: 100%;
   background: radial-gradient(circle, rgba(0, 0, 0, 0) 25%, rgba(0, 0, 0, 0.6) 100%);
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.15s ease-in-out;
   pointer-events: none;
 }
 
@@ -80,8 +78,9 @@
   transform: translateX(-50%);
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
   z-index: 2;
+  will-change: opacity, visibility;
 }
 
 .info-btn {
@@ -109,8 +108,9 @@
   right: 8px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
   z-index: 2;
+  will-change: opacity, visibility;
 }
 
 .select-checkbox .p-checkbox {
