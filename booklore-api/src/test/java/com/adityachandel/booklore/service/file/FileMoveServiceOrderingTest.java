@@ -89,14 +89,17 @@ class FileMoveServiceOrderingTest {
         bookEntity.setId(999L);
         bookEntity.setLibrary(library);
         bookEntity.setLibraryPath(libraryPath);
-        bookEntity.setFileSubPath("SciFi");
-        bookEntity.setFileName("Original.epub");
+        var primaryFile = new com.adityachandel.booklore.model.entity.BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setFileSubPath("SciFi");
+        primaryFile.setFileName("Original.epub");
+        bookEntity.setBookFiles(java.util.List.of(primaryFile));
 
-        expectedFilePath = Paths.get(libraryPath.getPath(), bookEntity.getFileSubPath(), "Renamed.epub");
+        expectedFilePath = Paths.get(libraryPath.getPath(), primaryFile.getFileSubPath(), "Renamed.epub");
 
         when(fileMoveHelper.getFileNamingPattern(library)).thenReturn("{title}");
         when(fileMoveHelper.generateNewFilePath(bookEntity, libraryPath, "{title}")).thenReturn(expectedFilePath);
-        when(fileMoveHelper.extractSubPath(expectedFilePath, libraryPath)).thenReturn(bookEntity.getFileSubPath());
+        when(fileMoveHelper.extractSubPath(expectedFilePath, libraryPath)).thenReturn(primaryFile.getFileSubPath());
         doNothing().when(fileMoveHelper).moveFile(any(Path.class), any(Path.class));
         doNothing().when(fileMoveHelper).deleteEmptyParentDirsUpToLibraryFolders(any(Path.class), anySet());
     }

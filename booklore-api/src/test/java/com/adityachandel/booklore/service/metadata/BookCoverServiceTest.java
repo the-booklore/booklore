@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -65,7 +66,10 @@ class BookCoverServiceTest {
         BookEntity book = new BookEntity();
         book.setId(id);
         book.setMetadata(metadata);
-        book.setBookType(BookFileType.EPUB);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        book.setBookFiles(List.of(primaryFile));
+        book.getPrimaryBookFile().setBookType(BookFileType.EPUB);
         return book;
     }
 

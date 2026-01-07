@@ -80,13 +80,13 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     if (saved) {
                         return true;
                     } else {
-                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getFileName());
+                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getPrimaryBookFile().getFileName());
                     }
                 } finally {
                     image.flush(); // Release resources after processing
                 }
             } else {
-                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getFileName());
+                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getPrimaryBookFile().getFileName());
             }
         } catch (Exception e) {
             log.error("Error generating cover for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());

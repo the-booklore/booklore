@@ -36,7 +36,7 @@ public class PopulateMissingFileSizesMigration implements Migration {
         for (BookEntity book : books) {
             Long sizeInKb = FileUtils.getFileSizeInKb(book);
             if (sizeInKb != null) {
-                book.setFileSizeKb(sizeInKb);
+                book.getPrimaryBookFile().setFileSizeKb(sizeInKb);
             }
         }
 

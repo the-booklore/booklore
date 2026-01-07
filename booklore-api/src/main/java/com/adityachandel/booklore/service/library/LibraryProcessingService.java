@@ -112,10 +112,10 @@ public class LibraryProcessingService {
     }
 
     private String generateUniqueKey(BookEntity book) {
-        return generateKey(book.getLibraryPath().getId(), book.getFileSubPath(), book.getFileName());
+        return generateKey(book.getLibraryPath().getId(), book.getPrimaryBookFile().getFileSubPath(), book.getPrimaryBookFile().getFileName());
     }
 
-    private String generateUniqueKey(BookAdditionalFileEntity file) {
+    private String generateUniqueKey(BookFileEntity file) {
         // Additional files inherit library path from their parent book
         return generateKey(file.getBook().getLibraryPath().getId(), file.getFileSubPath(), file.getFileName());
     }

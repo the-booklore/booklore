@@ -329,9 +329,9 @@ public class BookService {
                 try {
                     if (Files.exists(fullFilePath)) {
                         try {
-                        monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
+                            monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
                         } catch (Exception ex) {
-                        log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
+                            log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
                         }
                         Files.delete(fullFilePath);
                         log.info("Deleted book file: {}", fullFilePath);
@@ -342,13 +342,14 @@ public class BookService {
                                 .map(Path::normalize)
                                 .collect(Collectors.toSet());
 
-                    deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
+                        deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
+                    }
+                } catch (IOException e) {
+                    log.warn("Failed to delete book file: {}", fullFilePath, e);
+                    failedFileDeletions.add(book.getId());
+                } finally {
+                    monitoringRegistrationService.registerSpecificPath(fullFilePath.getParent(), book.getLibrary().getId());
                 }
-            } catch (IOException e) {
-                log.warn("Failed to delete book file: {}", fullFilePath, e);
-                failedFileDeletions.add(book.getId());
-            } finally {
-                monitoringRegistrationService.registerSpecificPath(fullFilePath.getParent(), book.getLibrary().getId());
             }
         }
 

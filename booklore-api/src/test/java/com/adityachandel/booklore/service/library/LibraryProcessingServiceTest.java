@@ -1,8 +1,8 @@
 package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,8 +78,11 @@ class LibraryProcessingServiceTest {
 
         BookEntity existingBook = new BookEntity();
         existingBook.setLibraryPath(pathEntity);
-        existingBook.setFileSubPath("");
-        existingBook.setFileName("book1.epub");
+        BookFileEntity existingBookFile = new BookFileEntity();
+        existingBookFile.setBook(existingBook);
+        existingBook.setBookFiles(List.of(existingBookFile));
+        existingBook.getPrimaryBookFile().setFileSubPath("");
+        existingBook.getPrimaryBookFile().setFileName("book1.epub");
         libraryEntity.setBookEntities(List.of(existingBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
@@ -127,8 +131,11 @@ class LibraryProcessingServiceTest {
 
         BookEntity existingBook = new BookEntity();
         existingBook.setLibraryPath(pathEntity);
-        existingBook.setFileSubPath("");
-        existingBook.setFileName("book1.epub");
+        BookFileEntity existingBookFile = new BookFileEntity();
+        existingBookFile.setBook(existingBook);
+        existingBook.setBookFiles(List.of(existingBookFile));
+        existingBook.getPrimaryBookFile().setFileSubPath("");
+        existingBook.getPrimaryBookFile().setFileName("book1.epub");
         libraryEntity.setBookEntities(List.of(existingBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
@@ -256,7 +263,7 @@ class LibraryProcessingServiceTest {
         BookEntity parentBook = new BookEntity();
         parentBook.setLibraryPath(pathEntity);
         
-        BookAdditionalFileEntity additionalFileEntity = new BookAdditionalFileEntity();
+        BookFileEntity additionalFileEntity = new BookFileEntity();
         additionalFileEntity.setBook(parentBook); // Links to library path
         additionalFileEntity.setFileSubPath("");
         additionalFileEntity.setFileName("extra.pdf");

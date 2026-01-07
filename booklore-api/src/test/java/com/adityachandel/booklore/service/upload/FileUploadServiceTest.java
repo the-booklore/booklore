@@ -355,16 +355,19 @@ class FileUploadServiceTest {
         BookEntity book = new BookEntity();
         book.setId(bookId);
         book.setLibraryPath(libPath);
-        book.setFileSubPath(".");
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
+        book.getPrimaryBookFile().setFileSubPath(".");
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
-        when(bookAdditionalFileRepository.save(any(BookAdditionalFileEntity.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(additionalFileMapper.toAdditionalFile(any(BookAdditionalFileEntity.class))).thenReturn(mock(AdditionalFile.class));
+        when(bookAdditionalFileRepository.save(any(BookFileEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(additionalFileMapper.toAdditionalFile(any(BookFileEntity.class))).thenReturn(mock(BookFile.class));
 
         try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
              fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("hash");
 
-             service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+             service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, "desc");
 
              File[] files = tempDir.toFile().listFiles();
              assertThat(files).isNotNull();

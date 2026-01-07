@@ -86,7 +86,7 @@ public class KoboEntitlementService {
                     .collect(Collectors.toList());
         }
         return books.stream()
-                .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
+                .filter(bookEntity -> bookEntity.getPrimaryBookFile().getBookType() == BookFileType.EPUB)
                 .map(book -> ChangedProductMetadata.builder()
                         .changedProductMetadata(BookEntitlementContainer.builder()
                                 .bookEntitlement(buildBookEntitlement(book, false))

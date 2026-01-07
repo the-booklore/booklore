@@ -10,6 +10,7 @@ import lombok.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -74,7 +75,8 @@ public class BookEntity {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @OrderBy("id ASC")
-    private List<BookFileEntity> bookFiles;
+    @Builder.Default
+    private List<BookFileEntity> bookFiles = new ArrayList<>();
 
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
     private List<UserBookProgressEntity> userBookProgress;
@@ -101,8 +103,12 @@ public class BookEntity {
 
     // TODO: Add support for specifying the preferred format
     public BookFileEntity getPrimaryBookFile() {
-        return bookFiles.stream()
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Book file not found"));
+        if (bookFiles == null) {
+            bookFiles = new ArrayList<>();
+        }
+        if (bookFiles.isEmpty()) {
+            throw new IllegalStateException("Book file not found");
+        }
+        return bookFiles.getFirst();
     }
 }
