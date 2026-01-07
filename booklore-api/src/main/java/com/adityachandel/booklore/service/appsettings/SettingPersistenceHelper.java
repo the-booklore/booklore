@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SettingPersistenceHelper {
 
     public final AppSettingsRepository appSettingsRepository;
@@ -52,14 +54,15 @@ public class SettingPersistenceHelper {
             try {
                 return deserializer.deserialize(json);
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to parse " + key, e);
+                log.error("Failed to parse JSON for setting key '{}'. Using default value. Error: {}", key, e.getMessage());
+                return defaultValue;
             }
         }
         if (defaultValue != null && persistDefault) {
             try {
                 saveDefaultSetting(key, objectMapper.writeValueAsString(defaultValue));
             } catch (JsonProcessingException e) {
-                throw new RuntimeException("Failed to persist default for " + key, e);
+                log.error("Failed to persist default value for setting key '{}'. Error: {}", key, e.getMessage());
             }
         }
         return defaultValue;
@@ -218,8 +221,29 @@ public class SettingPersistenceHelper {
     }
 
     public MetadataPersistenceSettings getDefaultMetadataPersistenceSettings() {
+        MetadataPersistenceSettings.FormatSettings epubSettings = MetadataPersistenceSettings.FormatSettings.builder()
+                .enabled(false)
+                .maxFileSizeInMb(250)
+                .build();
+
+        MetadataPersistenceSettings.FormatSettings pdfSettings = MetadataPersistenceSettings.FormatSettings.builder()
+                .enabled(false)
+                .maxFileSizeInMb(250)
+                .build();
+
+        MetadataPersistenceSettings.FormatSettings cbxSettings = MetadataPersistenceSettings.FormatSettings.builder()
+                .enabled(false)
+                .maxFileSizeInMb(250)
+                .build();
+
+        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = MetadataPersistenceSettings.SaveToOriginalFile.builder()
+                .epub(epubSettings)
+                .pdf(pdfSettings)
+                .cbx(cbxSettings)
+                .build();
+
         return MetadataPersistenceSettings.builder()
-                .saveToOriginalFile(false)
+                .saveToOriginalFile(saveToOriginalFile)
                 .convertCbrCb7ToCbz(false)
                 .moveFilesToLibraryPattern(false)
                 .build();

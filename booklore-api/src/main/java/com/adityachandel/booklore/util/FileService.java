@@ -281,7 +281,7 @@ public class FileService {
             if (!success) {
                 throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
             }
-            originalImage.flush(); // Release resources after processing
+            originalImage.flush();
             log.info("Cover images created and saved from URL for book ID: {}", bookId);
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
@@ -487,87 +487,6 @@ public class FileService {
             }
         }
         log.info("Deleted {} book covers", bookIds.size());
-    }
-
-    // ========================================
-    // BACKGROUND OPERATIONS
-    // ========================================
-
-    public void saveBackgroundImage(BufferedImage image, String filename, Long userId) throws IOException {
-        String backgroundsFolder = getBackgroundsFolder(userId);
-        File folder = new File(backgroundsFolder);
-        if (!folder.exists() && !folder.mkdirs()) {
-            throw new IOException("Failed to create backgrounds directory: " + folder.getAbsolutePath());
-        }
-
-        File outputFile = new File(folder, filename);
-        boolean saved = ImageIO.write(image, IMAGE_FORMAT, outputFile);
-        if (!saved) {
-            throw new IOException("Failed to save background image: " + filename);
-        }
-
-        log.info("Background image saved successfully for user {}: {}", userId, filename);
-        // Note: input image is not flushed here - caller is responsible for its lifecycle
-    }    public void deleteBackgroundFile(String filename, Long userId) {
-        try {
-            String backgroundsFolder = getBackgroundsFolder(userId);
-            File file = new File(backgroundsFolder, filename);
-            if (file.exists() && file.isFile()) {
-                boolean deleted = file.delete();
-                if (deleted) {
-                    if (userId != null) {
-                        deleteEmptyUserBackgroundFolder(userId);
-                    }
-                } else {
-                    log.warn("Failed to delete background file for user {}: {}", userId, filename);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error deleting background file {} for user {}: {}", filename, userId, e.getMessage());
-        }
-    }
-
-    private void deleteEmptyUserBackgroundFolder(Long userId) {
-        try {
-            String userBackgroundsFolder = getBackgroundsFolder(userId);
-            File folder = new File(userBackgroundsFolder);
-
-            if (folder.exists() && folder.isDirectory()) {
-                File[] files = folder.listFiles();
-                if (files != null && files.length == 0) {
-                    boolean deleted = folder.delete();
-                    if (deleted) {
-                        log.info("Deleted empty background folder for user: {}", userId);
-                    } else {
-                        log.warn("Failed to delete empty background folder for user: {}", userId);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error checking/deleting empty background folder for user {}: {}", userId, e.getMessage());
-        }
-    }
-
-    public Resource getBackgroundResource(Long userId) {
-        String[] possibleFiles = {"1.jpg", "1.jpeg", "1.png"};
-
-        if (userId != null) {
-            String userBackgroundsFolder = getBackgroundsFolder(userId);
-            for (String filename : possibleFiles) {
-                File customFile = new File(userBackgroundsFolder, filename);
-                if (customFile.exists() && customFile.isFile()) {
-                    return new FileSystemResource(customFile);
-                }
-            }
-        }
-        String globalBackgroundsFolder = getBackgroundsFolder();
-        for (String filename : possibleFiles) {
-            File customFile = new File(globalBackgroundsFolder, filename);
-            if (customFile.exists() && customFile.isFile()) {
-                return new FileSystemResource(customFile);
-            }
-        }
-        return new ClassPathResource("static/images/background.jpg");
     }
 
     public String getIconsSvgFolder() {

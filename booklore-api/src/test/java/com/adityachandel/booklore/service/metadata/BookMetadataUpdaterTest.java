@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
@@ -33,17 +34,28 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class BookMetadataUpdaterTest {
 
-    @Mock private AuthorRepository authorRepository;
-    @Mock private CategoryRepository categoryRepository;
-    @Mock private MoodRepository moodRepository;
-    @Mock private TagRepository tagRepository;
-    @Mock private BookRepository bookRepository;
-    @Mock private FileService fileService;
-    @Mock private MetadataMatchService metadataMatchService;
-    @Mock private AppSettingService appSettingService;
-    @Mock private MetadataWriterFactory metadataWriterFactory;
-    @Mock private BookReviewUpdateService bookReviewUpdateService;
-    @Mock private FileMoveService fileMoveService;
+    @Mock
+    private AuthorRepository authorRepository;
+    @Mock
+    private CategoryRepository categoryRepository;
+    @Mock
+    private MoodRepository moodRepository;
+    @Mock
+    private TagRepository tagRepository;
+    @Mock
+    private BookRepository bookRepository;
+    @Mock
+    private FileService fileService;
+    @Mock
+    private MetadataMatchService metadataMatchService;
+    @Mock
+    private AppSettingService appSettingService;
+    @Mock
+    private MetadataWriterFactory metadataWriterFactory;
+    @Mock
+    private BookReviewUpdateService bookReviewUpdateService;
+    @Mock
+    private FileMoveService fileMoveService;
 
     @InjectMocks
     private BookMetadataUpdater bookMetadataUpdater;
@@ -51,7 +63,13 @@ class BookMetadataUpdaterTest {
     @BeforeEach
     void setUp() {
         AppSettings appSettings = new AppSettings();
-        appSettings.setMetadataPersistenceSettings(new MetadataPersistenceSettings());
+        MetadataPersistenceSettings persistenceSettings = new MetadataPersistenceSettings();
+
+        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = Mockito.mock(MetadataPersistenceSettings.SaveToOriginalFile.class);
+        when(saveToOriginalFile.isAnyFormatEnabled()).thenReturn(false);
+        persistenceSettings.setSaveToOriginalFile(saveToOriginalFile);
+
+        appSettings.setMetadataPersistenceSettings(persistenceSettings);
         when(appSettingService.getAppSettings()).thenReturn(appSettings);
     }
 
@@ -60,7 +78,7 @@ class BookMetadataUpdaterTest {
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
-        
+
         Set<TagEntity> existingTags = new HashSet<>();
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
@@ -120,12 +138,13 @@ class BookMetadataUpdaterTest {
 
         assertTrue(bookEntity.getMetadata().getTags().isEmpty(), "All tags should be cleared when incoming set is empty");
     }
+
     @Test
     void setBookMetadata_withMergeTagsTrue_shouldMergeTags() {
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
-        
+
         Set<TagEntity> existingTags = new HashSet<>();
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
@@ -157,6 +176,7 @@ class BookMetadataUpdaterTest {
         assertTrue(bookEntity.getMetadata().getTags().stream().anyMatch(t -> t.getName().equals("Tag2")));
         assertTrue(bookEntity.getMetadata().getTags().stream().anyMatch(t -> t.getName().equals("Tag3")));
     }
+
     @Test
     void setBookMetadata_withMergeMoodsFalse_shouldReplaceMoods() {
         BookEntity bookEntity = new BookEntity();

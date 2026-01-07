@@ -87,9 +87,20 @@ export interface Lubimyczytac {
   enabled: boolean;
 }
 
+export interface FormatWriteSettings {
+  enabled: boolean;
+  maxFileSizeInMb: number;
+}
+
+export interface SaveToOriginalFileSettings {
+  epub: FormatWriteSettings;
+  pdf: FormatWriteSettings;
+  cbx: FormatWriteSettings;
+}
+
 export interface MetadataPersistenceSettings {
   moveFilesToLibraryPattern: boolean;
-  saveToOriginalFile: boolean;
+  saveToOriginalFile: SaveToOriginalFileSettings;
   convertCbrCb7ToCbz: boolean;
 }
 

@@ -13,11 +13,10 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, take, finalize} from "rxjs/operators";
+import {filter, finalize, take} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
-import {AutoComplete} from "primeng/autocomplete";
-import {AutoCompleteSelectEvent} from "primeng/autocomplete";
+import {AutoComplete, AutoCompleteSelectEvent} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
@@ -640,11 +639,6 @@ export class MetadataEditorComponent implements OnInit {
     const response: HttpResponse<unknown> =
       event.originalEvent as HttpResponse<unknown>;
     if (response && response.status === 200) {
-      const bookMetadata: BookMetadata = response.body as BookMetadata;
-      this.bookService.handleBookMetadataUpdate(
-        this.currentBookId,
-        bookMetadata
-      );
       this.isUploading = false;
     } else {
       this.isUploading = false;

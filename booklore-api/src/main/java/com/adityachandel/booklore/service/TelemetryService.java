@@ -104,7 +104,7 @@ public class TelemetryService {
                 .metadataStatistics(BookloreTelemetry.MetadataStatistics.builder()
                         .enabledMetadataProviders(enabledMetadataProviders)
                         .enabledReviewMetadataProviders(enabledReviewMetadataProviders)
-                        .saveMetadataToFile(settings.getMetadataPersistenceSettings().isSaveToOriginalFile())
+                        .saveMetadataToFile(settings.getMetadataPersistenceSettings().getSaveToOriginalFile().isAnyFormatEnabled())
                         .moveFileViaPattern(settings.getMetadataPersistenceSettings().isMoveFilesToLibraryPattern())
                         .autoBookSearchEnabled(settings.isAutoBookSearch())
                         .similarBookRecommendationsEnabled(settings.isSimilarBookRecommendation())
