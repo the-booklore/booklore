@@ -417,11 +417,12 @@ public class ComicvineBookParser implements BookParser {
         }
 
         Set<String> authors = extractAuthors(comic.getPersonCredits());
+        String formattedTitle = formatTitle(comic.getVolume() != null ? comic.getVolume().getName() : null, comic.getIssueNumber(), comic.getName());
 
         BookMetadata metadata = BookMetadata.builder()
                 .provider(MetadataProvider.Comicvine)
                 .comicvineId(String.valueOf(comic.getId()))
-                .title(comic.getName())
+                .title(formattedTitle)
                 .authors(authors)
                 .thumbnailUrl(comic.getImage() != null ? comic.getImage().getMediumUrl() : null)
                 .description(comic.getDescription())
@@ -443,6 +444,7 @@ public class ComicvineBookParser implements BookParser {
     }
 
     private BookMetadata convertToBookMetadata(ComicvineIssueResponse.IssueResults issue) {
+        // Extract ID from api_detail_url: "https://comicvine.gamespot.com/api/issue/4000-12345/"
         String comicvineId = null;
         if (issue.getApiDetailUrl() != null) {
             Matcher matcher = Pattern.compile("/(\\d+)/?$").matcher(issue.getApiDetailUrl());
@@ -452,12 +454,12 @@ public class ComicvineBookParser implements BookParser {
         }
 
         Set<String> authors = extractAuthors(issue.getPersonCredits());
+        String formattedTitle = formatTitle(issue.getVolume() != null ? issue.getVolume().getName() : null, issue.getIssueNumber(), issue.getName());
 
         BookMetadata metadata = BookMetadata.builder()
                 .provider(MetadataProvider.Comicvine)
                 .comicvineId(comicvineId)
-                .title(issue.getName() != null ? issue.getName() :
-                       (issue.getVolume() != null ? issue.getVolume().getName() + " #" + issue.getIssueNumber() : null))
+                .title(formattedTitle)
                 .authors(authors)
                 .thumbnailUrl(issue.getImage() != null ? issue.getImage().getMediumUrl() : null)
                 .description(issue.getDescription())
@@ -478,13 +480,32 @@ public class ComicvineBookParser implements BookParser {
         return metadata;
     }
     
+    private String formatTitle(String seriesName, String issueNumber, String issueName) {
+        if (seriesName == null) return issueName;
+        
+        String normalizedIssue = normalizeIssueNumber(issueNumber);
+        String title = seriesName + " #" + (normalizedIssue != null ? normalizedIssue : "");
+        
+        // Append issue title if it exists and isn't just "Issue #X" or identical to series
+        if (issueName != null && !issueName.isBlank()) {
+            String lowerName = issueName.toLowerCase();
+            boolean isGeneric = lowerName.matches("issue\\s*#?\\d+") || lowerName.equals(seriesName.toLowerCase());
+            if (!isGeneric) {
+                title += " - " + issueName;
+            }
+        }
+        return title;
+    }
+    
     private Set<String> extractAuthors(List<Comic.PersonCredit> personCredits) {
         if (personCredits == null || personCredits.isEmpty()) {
             return Collections.emptySet();
         }
         
+        // Primary writer roles
         Set<String> writerRoles = Set.of("writer", "script", "story", "plotter", "plot");
         
+        // Collect writers
         Set<String> authors = personCredits.stream()
                 .filter(pc -> {
                     if (pc.getRole() == null) return false;
@@ -495,6 +516,7 @@ public class ComicvineBookParser implements BookParser {
                 .filter(name -> name != null && !name.isEmpty())
                 .collect(Collectors.toSet());
         
+        // Fallback: If no writers found, check for "creator" role
         if (authors.isEmpty()) {
             // DEBUG: Log all roles if we missed them
             List<String> allRoles = personCredits.stream()
@@ -516,12 +538,20 @@ public class ComicvineBookParser implements BookParser {
         if (request.getTitle() != null && !request.getTitle().isEmpty()) {
             return request.getTitle();
         } else if (book.getFileName() != null && !book.getFileName().isEmpty()) {
-            return BookUtils.cleanFileName(book.getFileName());
+            // Use filename but preserve parentheses for year extraction
+            String name = book.getFileName();
+            // Remove extension only
+            int dotIndex = name.lastIndexOf('.');
+            if (dotIndex > 0) {
+                name = name.substring(0, dotIndex);
+            }
+            return name.trim();
         }
         return null;
     }
 
     private SeriesAndIssue extractSeriesAndIssue(String term) {
+        // 1. Extract Year
         Integer year = null;
         Matcher yearMatcher = YEAR_PATTERN.matcher(term);
         String yearString = null;
@@ -535,6 +565,7 @@ public class ComicvineBookParser implements BookParser {
             } catch (NumberFormatException ignored) {}
         }
 
+        // 2. Remove ONLY the found year and noise from the term
         String cleaned = term;
         if (yearString != null) {
             cleaned = cleaned.replace(yearString, "");
@@ -547,29 +578,34 @@ public class ComicvineBookParser implements BookParser {
 
         log.debug("Cleaned filename: '{}'", cleaned);
 
+        // 3. Check for special issue keywords BEFORE extracting issue number
         String lowerCleaned = cleaned.toLowerCase();
         if (lowerCleaned.contains("annual") || 
             lowerCleaned.contains("special") || 
             lowerCleaned.contains("one-shot") ||
             lowerCleaned.contains("one shot")) {
             
+            // Try to extract number from "Annual 2" or "Special 3"
             Matcher specialMatcher = SPECIAL_ISSUE_PATTERN.matcher(cleaned);
             if (specialMatcher.find()) {
                 String type = specialMatcher.group(1);
                 String num = specialMatcher.group(2);
+                // Return series name before the special keyword
                 String series = cleaned.substring(0, specialMatcher.start()).trim();
                 return new SeriesAndIssue(series, num, year, type);
             } else {
+                // "Batman Annual" without number - search for all annuals
                 return new SeriesAndIssue(cleaned, null, year, "annual");
             }
         }
 
+        // 4. Standard issue extraction with IMPROVED PATTERN
         Matcher matcher = SERIES_ISSUE_PATTERN.matcher(cleaned);
         if (matcher.find()) {
             String series = matcher.group(1).trim();
             String issueNum = matcher.group(2);
             
-            if (!series.isEmpty() && series.charAt(series.length() - 1) == '#') {
+            if (series.endsWith("#")) {
                 series = series.substring(0, series.length() - 1).trim();
             }
 
