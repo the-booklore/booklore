@@ -57,7 +57,14 @@ public class CbxReaderService {
         try {
             long maxCacheSizeBytes = mbToBytes(appSettingService.getAppSettings().getCbxCacheSizeInMb());
             long estimatedSize = estimateArchiveSize(cbzPath);
-            if (estimatedSize > maxCacheSizeBytes) {
+
+            if (estimatedSize == -1) {
+                long fileSize = Files.size(cbzPath);
+                if (fileSize > maxCacheSizeBytes) {
+                    log.warn("Cache skipped: Physical file size {} exceeds max cache size {} (Estimation failed)", fileSize, maxCacheSizeBytes);
+                    throw ApiError.CACHE_TOO_LARGE.createException();
+                }
+            } else if (estimatedSize > maxCacheSizeBytes) {
                 log.warn("Cache skipped: Estimated archive size {} exceeds max cache size {}", estimatedSize, maxCacheSizeBytes);
                 throw ApiError.CACHE_TOO_LARGE.createException();
             }
@@ -78,7 +85,7 @@ public class CbxReaderService {
             }
         } catch (IOException e) {
             log.error("Failed to cache CBZ for book {}", bookId, e);
-            return List.of();
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read archive: " + e.getMessage());
         }
 
         try (var stream = Files.list(cacheDir)) {
@@ -360,7 +367,7 @@ public class CbxReaderService {
         } catch (Exception e) {
             log.warn("Failed to estimate archive size for {}", cbxPath, e);
         }
-        return Long.MAX_VALUE;
+        return -1;
     }
 
     private long estimateCbzArchiveSize(Path cbxPath) throws IOException {
@@ -384,7 +391,7 @@ public class CbxReaderService {
         }
 
         log.warn("Unable to estimate archive size for {} with any supported encoding", cbxPath);
-        return Long.MAX_VALUE;
+        return -1;
     }
 
     private long estimateCbzWithEncoding(Path cbxPath, Charset charset, boolean useFastPath) throws IOException {
@@ -405,7 +412,7 @@ public class CbxReaderService {
                     total += (size >= 0) ? size : entry.getCompressedSize();
                 }
             }
-            return total > 0 ? total : Long.MAX_VALUE;
+            return total > 0 ? total : -1;
         }
     }
 
