@@ -37,7 +37,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   // State
   taskInfos: TaskInfo[] = [];
-  taskHistories: Map<string, TaskHistory> = new Map();
+  taskHistories = new Map<string, TaskHistory>();
   loading = false;
   executingTasks = new Set<string>();
   private subscription?: Subscription;

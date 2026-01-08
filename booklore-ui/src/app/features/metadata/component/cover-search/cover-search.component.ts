@@ -47,7 +47,7 @@ export class CoverSearchComponent implements OnInit {
 
   ngOnInit() {
     this.bookId = this.dynamicDialogConfig.data.bookId;
-    let book = this.bookService.getBookByIdFromState(this.bookId);
+    const book = this.bookService.getBookByIdFromState(this.bookId);
 
     if (book) {
       this.searchForm.patchValue({

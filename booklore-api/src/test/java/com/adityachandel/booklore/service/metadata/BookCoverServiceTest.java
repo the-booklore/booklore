@@ -2,15 +2,14 @@ package com.adityachandel.booklore.service.metadata;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMetadataMapper;
-import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.repository.projection.BookCoverUpdateProjection;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.book.BookQueryService;
@@ -71,93 +70,114 @@ class BookCoverServiceTest {
     }
 
     @Test
-    void generateCustomCover_success() {
-        BookEntity book = mockBookEntity(1L, false);
-        when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
-        when(coverImageGenerator.generateCover(any(), any())).thenReturn(new byte[]{1,2,3});
-        doNothing().when(fileService).createThumbnailFromBytes(eq(1L), any());
-        when(bookRepository.save(any())).thenReturn(book);
-
-        bookCoverService.generateCustomCover(1L);
-
-        verify(fileService).createThumbnailFromBytes(eq(1L), any());
-        verify(bookRepository).save(book);
-        verify(notificationService).sendMessage(eq(Topic.BOOKS_COVER_UPDATE), any());
-    }
-
-    @Test
     void generateCustomCover_coverLocked_throws() {
         BookEntity book = mockBookEntity(2L, true);
         when(bookRepository.findById(2L)).thenReturn(Optional.of(book));
+        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
+        when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
         assertThatThrownBy(() -> bookCoverService.generateCustomCover(2L))
                 .isInstanceOf(ApiError.METADATA_LOCKED.createException().getClass());
     }
 
     @Test
-    void updateCoverImageFromFile_success() {
+    void updateCoverFromFile_success() {
         MultipartFile file = mock(MultipartFile.class);
-        BookEntity book = mockBookEntity(3L, false);
-        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
+        BookEntity book = spy(mockBookEntity(3L, false));
+        doReturn(Path.of("/dummy/path")).when(book).getFullFilePath();
+        when(bookRepository.findById(3L)).thenReturn(Optional.of(book));
         when(bookRepository.save(any())).thenReturn(book);
         when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
-        when(bookMetadataMapper.toBookMetadata(any(), eq(true))).thenReturn(new BookMetadata());
 
-        BookMetadata result = bookCoverService.updateCoverImageFromFile(3L, file);
+        MetadataWriter writer = mock(MetadataWriter.class);
+        when(metadataWriterFactory.getWriter(any())).thenReturn(Optional.of(writer));
 
-        verify(fileService).createThumbnailFromFile(3L, file);
-        assertThat(result).isNotNull();
+        BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+        when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
+
+        try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
+            fingerprintMock.when(() -> FileFingerprint.generateHash(any())).thenReturn("dummyhash");
+            bookCoverService.updateCoverFromFile(3L, file);
+
+            verify(fileService).createThumbnailFromFile(3L, file);
+        }
     }
 
     @Test
-    void updateCoverImageFromUrl_success() {
+    void updateCoverFromUrl_success() {
         String url = "http://test.com/cover.jpg";
-        BookEntity book = mockBookEntity(4L, false);
-        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
+        BookEntity book = spy(mockBookEntity(4L, false));
+        doReturn(Path.of("/dummy/path")).when(book).getFullFilePath();
+        when(bookRepository.findById(4L)).thenReturn(Optional.of(book));
         when(bookRepository.save(any())).thenReturn(book);
         when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
-        when(bookMetadataMapper.toBookMetadata(any(), eq(true))).thenReturn(new BookMetadata());
 
-        BookMetadata result = bookCoverService.updateCoverImageFromUrl(4L, url);
+        MetadataWriter writer = mock(MetadataWriter.class);
+        when(metadataWriterFactory.getWriter(any())).thenReturn(Optional.of(writer));
 
-        verify(fileService).createThumbnailFromUrl(4L, url);
-        assertThat(result).isNotNull();
+        BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+        when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
+
+        try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
+            fingerprintMock.when(() -> FileFingerprint.generateHash(any())).thenReturn("dummyhash");
+            bookCoverService.updateCoverFromUrl(4L, url);
+
+            verify(fileService).createThumbnailFromUrl(4L, url);
+        }
     }
 
     @Test
-    void updateCoverImageFromFileForBooks_success() throws Exception {
+    void updateCoverFromFileForBooks_success() throws Exception {
         try (MockedStatic<SecurityContextVirtualThread> ignored = mockStatic(SecurityContextVirtualThread.class)) {
             MultipartFile file = mock(MultipartFile.class);
             when(file.isEmpty()).thenReturn(false);
             when(file.getContentType()).thenReturn("image/jpeg");
             doReturn(new byte[]{1,2,3}).when(file).getBytes();
-            BookEntity book = mockBookEntity(5L, false);
+            BookEntity book = spy(mockBookEntity(5L, false));
+            doReturn(Path.of("/dummy/path")).when(book).getFullFilePath();
             when(bookQueryService.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
             when(bookRepository.findById(5L)).thenReturn(Optional.of(book));
             when(bookRepository.save(any())).thenReturn(book);
-
+            when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
             doNothing().when(fileService).createThumbnailFromBytes(eq(5L), any());
+            doNothing().when(notificationService).sendMessage(any(), any());
 
-            ignored.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
-                    .thenAnswer(invocation -> {
-                        Runnable runnable = invocation.getArgument(0);
-                        runnable.run();
-                        return null;
-                    });
+            MetadataWriter writer = mock(MetadataWriter.class);
+            when(metadataWriterFactory.getWriter(any())).thenReturn(Optional.of(writer));
 
-            bookCoverService.updateCoverImageFromFileForBooks(Set.of(5L), file);
+            BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+            when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
 
-            ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
-            verify(fileService).createThumbnailFromBytes(idCaptor.capture(), any());
-            assertThat(idCaptor.getValue()).isEqualTo(5L);
-            verify(bookRepository).save(any(BookEntity.class));
+            when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+                org.springframework.transaction.support.TransactionCallback<?> callback = invocation.getArgument(0);
+                return callback.doInTransaction(null);
+            });
+
+            try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
+                fingerprintMock.when(() -> FileFingerprint.generateHash(any())).thenReturn("dummyhash");
+
+                ignored.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                        .thenAnswer(invocation -> {
+                            Runnable runnable = invocation.getArgument(0);
+                            runnable.run();
+                            return null;
+                        });
+
+                bookCoverService.updateCoverFromFileForBooks(Set.of(5L), file);
+
+                ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
+                verify(fileService).createThumbnailFromBytes(idCaptor.capture(), any());
+                assertThat(idCaptor.getValue()).isEqualTo(5L);
+                verify(bookRepository).save(any(BookEntity.class));
+                verify(notificationService, atLeastOnce()).sendMessage(any(), any());
+            }
         }
     }
 
     @Test
-    void updateCoverImageFromFileForBooks_invalidFile_throws() {
+    void updateCoverFromFileForBooks_invalidFile_throws() {
         MultipartFile file = mock(MultipartFile.class);
         when(file.isEmpty()).thenReturn(true);
-        assertThatThrownBy(() -> bookCoverService.updateCoverImageFromFileForBooks(Set.of(6L), file))
+        assertThatThrownBy(() -> bookCoverService.updateCoverFromFileForBooks(Set.of(6L), file))
                 .isInstanceOf(ApiError.INVALID_INPUT.createException("dummy").getClass());
     }
 
@@ -165,6 +185,7 @@ class BookCoverServiceTest {
     void regenerateCover_success() {
         BookEntity book = mockBookEntity(7L, false);
         when(bookRepository.findById(7L)).thenReturn(Optional.of(book));
+        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
         BookFileProcessor processor = mock(BookFileProcessor.class);
         when(processorRegistry.getProcessorOrThrow(any())).thenReturn(processor);
         when(processor.generateCover(any())).thenReturn(true);
@@ -180,6 +201,7 @@ class BookCoverServiceTest {
     void regenerateCover_coverLocked_throws() {
         BookEntity book = mockBookEntity(8L, true);
         when(bookRepository.findById(8L)).thenReturn(Optional.of(book));
+        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
         assertThatThrownBy(() -> bookCoverService.regenerateCover(8L))
                 .isInstanceOf(ApiError.METADATA_LOCKED.createException().getClass());
     }
@@ -189,11 +211,21 @@ class BookCoverServiceTest {
         try (MockedStatic<SecurityContextVirtualThread> ignored = mockStatic(SecurityContextVirtualThread.class)) {
             BookEntity book = mockBookEntity(9L, false);
             when(bookQueryService.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
+            when(bookRepository.findById(9L)).thenReturn(Optional.of(book));
+            when(bookRepository.save(any())).thenReturn(book);
+
             BookFileProcessor processor = mock(BookFileProcessor.class);
             when(processorRegistry.getProcessorOrThrow(any())).thenReturn(processor);
             when(processor.generateCover(any())).thenReturn(true);
-            when(bookRepository.findById(9L)).thenReturn(Optional.of(book));
-            when(bookRepository.save(any())).thenReturn(book);
+
+            BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+            when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
+            doNothing().when(notificationService).sendMessage(any(), any());
+
+            when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+                org.springframework.transaction.support.TransactionCallback<?> callback = invocation.getArgument(0);
+                return callback.doInTransaction(null);
+            });
 
             ignored.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
                     .thenAnswer(invocation -> {
@@ -207,6 +239,7 @@ class BookCoverServiceTest {
             ArgumentCaptor<BookEntity> bookCaptor = ArgumentCaptor.forClass(BookEntity.class);
             verify(processor).generateCover(bookCaptor.capture());
             assertThat(bookCaptor.getValue().getId()).isEqualTo(9L);
+            verify(notificationService, atLeastOnce()).sendMessage(any(), any());
         }
     }
 
@@ -215,40 +248,34 @@ class BookCoverServiceTest {
         MultipartFile file = mock(MultipartFile.class);
         BookEntity book = spy(mockBookEntity(10L, false));
         doReturn(Path.of("/dummy/path")).when(book).getFullFilePath();
-        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
+        when(bookRepository.findById(10L)).thenReturn(Optional.of(book));
         when(bookRepository.save(any())).thenReturn(book);
         when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
+
         MetadataWriter writer = mock(MetadataWriter.class);
         when(metadataWriterFactory.getWriter(any())).thenReturn(Optional.of(writer));
-        when(bookMetadataMapper.toBookMetadata(any(), eq(true))).thenReturn(new BookMetadata());
+
+        BookCoverUpdateProjection projection = mock(BookCoverUpdateProjection.class);
+        when(bookRepository.findCoverUpdateInfoByIds(any())).thenReturn(List.of(projection));
 
         try (MockedStatic<FileFingerprint> fingerprintMock = mockStatic(FileFingerprint.class)) {
             fingerprintMock.when(() -> FileFingerprint.generateHash(any())).thenReturn("dummyhash");
-            BookMetadata result = bookCoverService.updateCoverImageFromFile(10L, file);
+            bookCoverService.updateCoverFromFile(10L, file);
 
             verify(writer).replaceCoverImageFromUpload(book, file);
-            assertThat(result).isNotNull();
         }
     }
 
-    @Test
-    void updateCover_metadataPersistenceSettings_noSaveToOriginalFile() {
-        MultipartFile file = mock(MultipartFile.class);
-        BookEntity book = mockBookEntity(11L, false);
-        when(bookRepository.findAllWithMetadataByIds(any())).thenReturn(List.of(book));
-        when(bookRepository.save(any())).thenReturn(book);
-        when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(false, false));
-        when(bookMetadataMapper.toBookMetadata(any(), eq(true))).thenReturn(new BookMetadata());
-
-        BookMetadata result = bookCoverService.updateCoverImageFromFile(11L, file);
-
-        verify(metadataWriterFactory, never()).getWriter(any());
-        assertThat(result).isNotNull();
-    }
-
     private AppSettings mockAppSettings(boolean saveToOriginalFile, boolean convertCbrCb7ToCbz) {
+        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFileObj =
+            MetadataPersistenceSettings.SaveToOriginalFile.builder()
+                .epub(MetadataPersistenceSettings.FormatSettings.builder().enabled(saveToOriginalFile).build())
+                .pdf(MetadataPersistenceSettings.FormatSettings.builder().enabled(saveToOriginalFile).build())
+                .cbx(MetadataPersistenceSettings.FormatSettings.builder().enabled(saveToOriginalFile).build())
+                .build();
+
         MetadataPersistenceSettings settings = new MetadataPersistenceSettings();
-        settings.setSaveToOriginalFile(saveToOriginalFile);
+        settings.setSaveToOriginalFile(saveToOriginalFileObj);
         settings.setConvertCbrCb7ToCbz(convertCbrCb7ToCbz);
         return new com.adityachandel.booklore.model.dto.settings.AppSettings() {
             @Override
