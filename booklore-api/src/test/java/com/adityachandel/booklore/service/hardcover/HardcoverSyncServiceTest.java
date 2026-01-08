@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.dto.HardcoverSyncSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.hardcover.HardcoverSyncSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.web.client.RestClient;
+import org.mockito.ArgumentMatchers;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ class HardcoverSyncServiceTest {
         when(restClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
         when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any())).thenReturn(requestBodySpec);
+        doReturn(requestBodySpec).when(requestBodySpec).body(ArgumentMatchers.any(Object.class));
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);
     }
 
@@ -444,5 +445,90 @@ class HardcoverSyncServiceTest {
         response.put("data", data);
 
         return response;
+    }
+
+    @Test
+    @DisplayName("findEditionById should return null on null response")
+    void findEditionById_nullResponse_shouldReturnNull() throws Exception {
+        when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class))).thenReturn(null);
+
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class);
+        method.setAccessible(true);
+
+        Object result = method.invoke(service, 123);
+        assertNull(result);
+    }
+
+    @Test
+    @DisplayName("findEditionById should parse edition info when present")
+    void findEditionById_withData_shouldParse() throws Exception {
+        Map<String, Object> response = new HashMap<>();
+        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> edition = new HashMap<>();
+        edition.put("id", 77);
+        edition.put("pages", 250);
+        data.put("editions", List.of(edition));
+        response.put("data", data);
+
+        when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class))).thenReturn(response);
+
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findEditionById", Integer.class);
+        method.setAccessible(true);
+
+        Object result = method.invoke(service, 77);
+        assertNotNull(result);
+        assertEquals(77, readPrivateField(result, "id"));
+        assertEquals(250, readPrivateField(result, "pages"));
+    }
+
+    @Test
+    @DisplayName("findHardcoverBookById should return null on empty response")
+    void findHardcoverBookById_emptyResponse_shouldReturnNull() throws Exception {
+        when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class)))
+                .thenReturn(Map.of("data", Map.of("books", List.of())));
+
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class);
+        method.setAccessible(true);
+
+        Object result = method.invoke(service, 123);
+        assertNull(result);
+    }
+
+    @Test
+    @DisplayName("findHardcoverBookById should use default edition and edition pages")
+    void findHardcoverBookById_withDefaultEdition_shouldUseEditionPages() throws Exception {
+        Map<String, Object> bookResponse = new HashMap<>();
+        Map<String, Object> bookData = new HashMap<>();
+        Map<String, Object> book = new HashMap<>();
+        book.put("default_edition_id", "88");
+        bookData.put("books", List.of(book));
+        bookResponse.put("data", bookData);
+
+        Map<String, Object> editionResponse = new HashMap<>();
+        Map<String, Object> editionData = new HashMap<>();
+        Map<String, Object> edition = new HashMap<>();
+        edition.put("id", 88);
+        edition.put("pages", 320);
+        editionData.put("editions", List.of(edition));
+        editionResponse.put("data", editionData);
+
+        when(responseSpec.body(ArgumentMatchers.<Class<Map>>eq(Map.class)))
+                .thenReturn(bookResponse)
+                .thenReturn(editionResponse);
+
+        Method method = HardcoverSyncService.class.getDeclaredMethod("findHardcoverBookById", Integer.class);
+        method.setAccessible(true);
+
+        Object result = method.invoke(service, 123);
+        assertNotNull(result);
+        assertEquals(123, readPrivateField(result, "bookId"));
+        assertEquals(88, readPrivateField(result, "editionId"));
+        assertEquals(320, readPrivateField(result, "pages"));
+    }
+
+    private Integer readPrivateField(Object target, String fieldName) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (Integer) field.get(target);
     }
 }

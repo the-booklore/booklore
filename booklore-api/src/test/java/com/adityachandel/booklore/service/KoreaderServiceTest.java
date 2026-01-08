@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.*;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -234,5 +235,16 @@ class KoreaderServiceTest {
         when(details.isSyncEnabled()).thenReturn(false);
         var dto = KoreaderProgress.builder().document("h").build();
         assertThrows(APIException.class, () -> service.saveProgress("h", dto));
+    }
+
+    @Test
+    void normalizeProgressPercent_handlesNullAndRanges() throws Exception {
+        Method method = KoreaderService.class.getDeclaredMethod("normalizeProgressPercent", Float.class);
+        method.setAccessible(true);
+
+        assertNull(method.invoke(service, new Object[]{null}));
+        assertEquals(50.0f, (Float) method.invoke(service, 0.5f));
+        assertEquals(100.0f, (Float) method.invoke(service, 1.0f));
+        assertEquals(42.0f, (Float) method.invoke(service, 42.0f));
     }
 }
