@@ -128,9 +128,9 @@ export class LibraryCreatorComponent implements OnInit {
   }
 
   validateLibraryNameAndProceed(activateCallback: Function): void {
-    let trimmedLibraryName = this.chosenLibraryName.trim();
+    const trimmedLibraryName = this.chosenLibraryName.trim();
     if (trimmedLibraryName && trimmedLibraryName != this.editModeLibraryName) {
-      let exists = this.libraryService.doesLibraryExistByName(trimmedLibraryName);
+      const exists = this.libraryService.doesLibraryExistByName(trimmedLibraryName);
       if (exists) {
         this.messageService.add({
           severity: 'error',

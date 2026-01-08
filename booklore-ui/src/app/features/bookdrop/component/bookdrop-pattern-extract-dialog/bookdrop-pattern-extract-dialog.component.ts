@@ -267,7 +267,7 @@ export class BookdropPatternExtractDialogComponent implements OnInit {
     return preview.success ? 'pi-check-circle' : 'pi-times-circle';
   }
 
-  getPreviewEntries(preview: PreviewResult): Array<{key: string; value: string}> {
+  getPreviewEntries(preview: PreviewResult): {key: string; value: string}[] {
     return Object.entries(preview.preview).map(([key, value]) => ({key, value}));
   }
 

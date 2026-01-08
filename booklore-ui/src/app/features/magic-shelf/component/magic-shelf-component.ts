@@ -383,7 +383,7 @@ export class MagicShelfComponent implements OnInit {
 
   createGroup(): GroupFormGroup {
     return new FormGroup({
-      type: new FormControl<'group'>('group' as 'group'),
+      type: new FormControl<'group'>('group' as const),
       join: new FormControl<'and' | 'or'>('and' as 'and' | 'or'),
       rules: new FormArray([] as (GroupFormGroup | RuleFormGroup)[]),
     }) as GroupFormGroup;

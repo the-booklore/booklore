@@ -529,13 +529,7 @@ export class BookService {
   }
 
   uploadCoverFromUrl(bookId: number, url: string): Observable<BookMetadata> {
-    return this.http
-      .post<BookMetadata>(`${this.url}/${bookId}/metadata/cover/from-url`, {url})
-      .pipe(
-        tap(updatedMetadata =>
-          this.handleBookMetadataUpdate(bookId, updatedMetadata)
-        )
-      );
+    return this.http.post<BookMetadata>(`${this.url}/${bookId}/metadata/cover/from-url`, {url});
   }
 
   regenerateCovers(): Observable<void> {

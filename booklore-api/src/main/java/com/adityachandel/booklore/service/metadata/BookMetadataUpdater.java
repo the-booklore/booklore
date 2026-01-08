@@ -85,7 +85,7 @@ public class BookMetadataUpdater {
         }
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
-        boolean writeToFile = settings.isSaveToOriginalFile();
+        MetadataPersistenceSettings.SaveToOriginalFile writeToFile = settings.getSaveToOriginalFile();
         BookFileType bookType = bookEntity.getBookType();
 
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
@@ -108,7 +108,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if ((writeToFile && hasValueChangesForFileWrite) || thumbnailRequiresUpdate) {
+        if ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = updateThumbnail ? newMetadata.getThumbnailUrl() : null;
@@ -117,7 +117,7 @@ public class BookMetadataUpdater {
                         thumbnailUrl = null;
                     }
                     File file = new File(bookEntity.getFullFilePath().toUri());
-                    writer.writeMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
+                    writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
                     bookEntity.setCurrentHash(newHash);

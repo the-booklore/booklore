@@ -57,3 +57,7 @@
 ::ng-deep .p-inputchips {
   width: 100% !important;
 }
+
+.flex.flex-col.h-full.w-full {
+  animation: fadeIn 0.3s ease-in;
+}

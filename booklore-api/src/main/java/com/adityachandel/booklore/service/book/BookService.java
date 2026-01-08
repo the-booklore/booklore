@@ -293,16 +293,6 @@ public class BookService {
         return getBookCover(bookEntity.getId());
     }
 
-    public Resource getBackgroundImage() {
-        try {
-            BookLoreUser user = authenticationService.getAuthenticatedUser();
-            return fileService.getBackgroundResource(user.getId());
-        } catch (Exception e) {
-            log.error("Failed to get background image: {}", e.getMessage(), e);
-            return fileService.getBackgroundResource(null);
-        }
-    }
-
     public ResponseEntity<Resource> downloadBook(Long bookId) {
         return bookDownloadService.downloadBook(bookId);
     }

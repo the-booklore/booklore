@@ -20,7 +20,7 @@ public enum AppSettingKey {
     LIBRARY_METADATA_REFRESH_OPTIONS    ("library_metadata_refresh_options",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_PROVIDER_SETTINGS          ("metadata_provider_settings",           true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_MATCH_WEIGHTS              ("metadata_match_weights",               true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
-    METADATA_PERSISTENCE_SETTINGS       ("metadata_persistence_settings",        true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
+    METADATA_PERSISTENCE_SETTINGS       ("metadata_persistence_settings_v2",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_PUBLIC_REVIEWS_SETTINGS    ("metadata_public_reviews_settings",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     UPLOAD_FILE_PATTERN                 ("upload_file_pattern",                  false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     MOVE_FILE_PATTERN                   ("move_file_pattern",                    false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),

@@ -1,13 +1,17 @@
 package com.adityachandel.booklore.service.metadata.writer;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.dto.settings.AppSettings;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.CategoryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.w3c.dom.Document;
 
 import javax.xml.XMLConstants;
@@ -36,7 +40,19 @@ class CbxMetadataWriterTest {
 
     @BeforeEach
     void setup() throws Exception {
-        writer = new CbxMetadataWriter();
+        AppSettingService appSettingService = Mockito.mock(AppSettingService.class);
+        AppSettings settings = new AppSettings();
+        MetadataPersistenceSettings persistence = new MetadataPersistenceSettings();
+        MetadataPersistenceSettings.SaveToOriginalFile save = new MetadataPersistenceSettings.SaveToOriginalFile();
+        MetadataPersistenceSettings.FormatSettings cbx = new MetadataPersistenceSettings.FormatSettings();
+        cbx.setEnabled(true);
+        cbx.setMaxFileSizeInMb(100);
+        save.setCbx(cbx);
+        persistence.setSaveToOriginalFile(save);
+        settings.setMetadataPersistenceSettings(persistence);
+        Mockito.when(appSettingService.getAppSettings()).thenReturn(settings);
+
+        writer = new CbxMetadataWriter(appSettingService);
         tempDir = Files.createTempDirectory("cbx_writer_test_");
     }
 
@@ -45,7 +61,12 @@ class CbxMetadataWriterTest {
         if (tempDir != null) {
             Files.walk(tempDir)
                     .sorted(Comparator.reverseOrder())
-                    .forEach(p -> { try { Files.deleteIfExists(p); } catch (Exception ignore) {} });
+                    .forEach(p -> {
+                        try {
+                            Files.deleteIfExists(p);
+                        } catch (Exception ignore) {
+                        }
+                    });
         }
     }
 
@@ -55,7 +76,7 @@ class CbxMetadataWriterTest {
     }
 
     @Test
-    void writeMetadataToFile_cbz_updatesOrCreatesComicInfo_andPreservesOtherFiles() throws Exception {
+    void saveMetadataToFile_cbz_updatesOrCreatesComicInfo_andPreservesOtherFiles() throws Exception {
         // Create a CBZ without ComicInfo.xml and with a couple of images
         File cbz = createCbz(tempDir.resolve("sample.cbz"), new String[]{
                 "images/002.jpg", "images/001.jpg"
@@ -69,7 +90,7 @@ class CbxMetadataWriterTest {
         meta.setSeriesName("Series X");
         meta.setSeriesNumber(2.5f);
         meta.setSeriesTotal(12);
-        meta.setPublishedDate(LocalDate.of(2020,7,14));
+        meta.setPublishedDate(LocalDate.of(2020, 7, 14));
         meta.setPageCount(42);
         meta.setLanguage("en");
 
@@ -95,7 +116,7 @@ class CbxMetadataWriterTest {
         meta.setCategories(cats);
 
         // Execute
-        writer.writeMetadataToFile(cbz, meta, null, new MetadataClearFlags());
+        writer.saveMetadataToFile(cbz, meta, null, new MetadataClearFlags());
 
         // Assert ComicInfo.xml exists and contains our fields
         try (ZipFile zip = new ZipFile(cbz)) {
@@ -144,7 +165,7 @@ class CbxMetadataWriterTest {
     }
 
     @Test
-    void writeMetadataToFile_cbz_updatesExistingComicInfo() throws Exception {
+    void saveMetadataToFile_cbz_updatesExistingComicInfo() throws Exception {
         // Create a CBZ *with* an existing ComicInfo.xml
         Path out = tempDir.resolve("with_meta.cbz");
         String xml = """
@@ -161,7 +182,7 @@ class CbxMetadataWriterTest {
         meta.setTitle("New Title");
         meta.setDescription("New Summary");
 
-        writer.writeMetadataToFile(out.toFile(), meta, null, new MetadataClearFlags());
+        writer.saveMetadataToFile(out.toFile(), meta, null, new MetadataClearFlags());
 
         try (ZipFile zip = new ZipFile(out.toFile())) {
             ZipEntry ci = zip.getEntry("ComicInfo.xml");
@@ -178,7 +199,7 @@ class CbxMetadataWriterTest {
     private static File createCbz(Path path, String[] imageNames) throws Exception {
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(path.toFile()))) {
             for (String name : imageNames) {
-                put(zos, name, new byte[]{1,2,3});
+                put(zos, name, new byte[]{1, 2, 3});
             }
         }
         return path.toFile();

@@ -91,36 +91,4 @@ public class BookMediaController {
                 .body(file)
                 : ResponseEntity.noContent().build();
     }
-
-    @Operation(summary = "Get background image", description = "Retrieve the current background image for the authenticated user.")
-    @ApiResponse(responseCode = "200", description = "Background image returned successfully")
-    @GetMapping("/background")
-    public ResponseEntity<Resource> getBackgroundImage() {
-        try {
-            Resource file = bookService.getBackgroundImage();
-            if (file == null || !file.exists()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            String filename = file.getFilename();
-            MediaType mediaType = filename != null && filename.endsWith(".png")
-                    ? MediaType.IMAGE_PNG
-                    : MediaType.IMAGE_JPEG;
-
-            if (filename == null) {
-                return ResponseEntity.badRequest().build();
-            }
-
-            String encodedFilename = URLEncoder.encode(filename, StandardCharsets.UTF_8).replace("+", "%20");
-            String fallbackFilename = NON_ASCII_PATTERN.matcher(filename).replaceAll("_");
-            String contentDisposition = String.format("inline; filename=\"%s\"; filename*=UTF-8''%s",
-                    fallbackFilename, encodedFilename);
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-                    .contentType(mediaType)
-                    .body(file);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-    }
 }

@@ -257,6 +257,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
 
+    if (this.rendition) {
+      this.rendition.destroy();
+      this.rendition = null;
+    }
+
     this.initBook(locations);
     this.initRendition(cfi);
     this.updateViewerSetting();
@@ -267,6 +272,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
+
+    if (this.rendition) {
+      this.rendition.destroy();
+      this.rendition = null;
+    }
 
     this.initBook(locations);
     this.initRendition(cfi);
@@ -829,7 +839,23 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
+      try {
+        this.rendition.destroy();
+      } catch (e) {
+        console.warn('Error destroying rendition in ngOnDestroy', e);
+      }
+      this.rendition = null;
     }
+    
+    if (this.book) {
+      try {
+        this.book.destroy();
+      } catch (e) {
+        console.warn('Error destroying book in ngOnDestroy', e);
+      }
+      this.book = null;
+    }
+
     document.removeEventListener('keyup', this.keyListener);
 
     if (this.hideControlsTimeout) {
