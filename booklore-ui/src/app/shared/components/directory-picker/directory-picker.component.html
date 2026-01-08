@@ -91,7 +91,7 @@
           </span>
         </div>
 
-        <div class="directories-grid">
+        <div class="directories-grid" [class.fade-in]="!isLoading && filteredPaths.length > 0">
           @for (folder of filteredPaths; track folder) {
             <div
               class="directory-item"

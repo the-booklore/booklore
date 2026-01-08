@@ -15,6 +15,8 @@ import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
 import {IconDisplayComponent} from '../../shared/components/icon-display/icon-display.component';
 import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
+import {switchMap} from 'rxjs/operators';
+import {map, of} from 'rxjs';
 
 @Component({
   selector: 'app-library-creator',
@@ -147,16 +149,17 @@ export class LibraryCreatorComponent implements OnInit {
     const iconValue = this.selectedIcon?.value || 'heart';
     const iconType = this.selectedIcon?.type || 'PRIME_NG';
 
+    const library: Library = {
+      name: this.chosenLibraryName,
+      icon: iconValue,
+      iconType: iconType,
+      paths: this.folders.map(folder => ({path: folder})),
+      watch: this.watch,
+      scanMode: this.scanMode,
+      defaultBookFormat: this.defaultBookFormat
+    };
+
     if (this.mode === 'edit') {
-      const library: Library = {
-        name: this.chosenLibraryName,
-        icon: iconValue,
-        iconType: iconType,
-        paths: this.folders.map(folder => ({path: folder})),
-        watch: this.watch,
-        scanMode: this.scanMode,
-        defaultBookFormat: this.defaultBookFormat
-      };
       this.libraryService.updateLibrary(library, this.library?.id).subscribe({
         next: () => {
           this.messageService.add({severity: 'success', summary: 'Library Updated', detail: 'The library was updated successfully.'});
@@ -168,22 +171,36 @@ export class LibraryCreatorComponent implements OnInit {
         }
       });
     } else {
-      const library: Library = {
-        name: this.chosenLibraryName,
-        icon: iconValue,
-        iconType: iconType,
-        paths: this.folders.map(folder => ({path: folder})),
-        watch: this.watch,
-        scanMode: this.scanMode,
-        defaultBookFormat: this.defaultBookFormat
-      };
-      this.libraryService.createLibrary(library).subscribe({
-        next: (createdLibrary) => {
-          this.router.navigate(['/library', createdLibrary.id, 'books']);
-          this.messageService.add({severity: 'success', summary: 'Library Created', detail: 'The library was created successfully.'});
-          this.dynamicDialogRef.close();
+      this.libraryService.scanLibraryPaths(library).pipe(
+        switchMap(count => {
+          if (count < 500) {
+            return this.libraryService.createLibrary(library).pipe(
+              map(createdLibrary => ({ createdLibrary, count }))
+            );
+          } else {
+            console.warn(`Library has ${count} processable files (>500). Will use buffered loading.`);
+            this.libraryService.setLargeLibraryLoading(true, count);
+            return this.libraryService.createLibrary(library).pipe(
+              map(createdLibrary => ({ createdLibrary, count }))
+            );
+          }
+        })
+      ).subscribe({
+        next: ({ createdLibrary, count }) => {
+          if (createdLibrary) {
+            this.router.navigate(['/library', createdLibrary.id, 'books']);
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Library Created',
+              detail: count >= 500
+                ? `Library created with ${count} files. Loading in progress...`
+                : 'The library was created successfully.'
+            });
+            this.dynamicDialogRef.close();
+          }
         },
         error: (e) => {
+          this.libraryService.setLargeLibraryLoading(false, 0);
           this.messageService.add({severity: 'error', summary: 'Creation Failed', detail: 'An error occurred while creating the library. Please try again.'});
           console.error(e);
         }

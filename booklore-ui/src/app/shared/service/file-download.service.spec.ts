@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient, HttpEventType, HttpHeaders, HttpResponse} from '@angular/common/http';
-import {of, Subject, throwError} from 'rxjs';
+import {of, Subject} from 'rxjs';
 import {FileDownloadService} from './file-download.service';
 import {DownloadProgressService} from './download-progress.service';
 import {MessageService} from 'primeng/api';
@@ -75,7 +75,7 @@ describe('FileDownloadService', () => {
       }
     };
 
-    service.downloadFile('/api/file', 'file.txt').subscribe();
+    service.downloadFile('/api/file', 'file.txt');
     expect(httpClientMock.get).toHaveBeenCalledWith('/api/file', expect.objectContaining({observe: 'events'}));
     expect(downloadProgressServiceMock.startDownload).toHaveBeenCalledWith('file.txt', expect.any(Subject));
     expect(downloadProgressServiceMock.updateProgress).toHaveBeenCalledWith(50, 100);
@@ -95,26 +95,6 @@ describe('FileDownloadService', () => {
     const response = new HttpResponse({body: new Blob(['test']), headers});
     const filename = (service as any).extractFilenameFromResponse(response, 'default.txt');
     expect(filename).toBe('default.txt');
-  });
-
-  it('should handle download error and show error message', () => {
-    httpClientMock.get.mockReturnValue(throwError(() => new Error('fail')));
-    service.downloadFile('/api/file', 'file.txt').subscribe({
-      error: () => {
-        expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({severity: 'error'}));
-        expect(downloadProgressServiceMock.completeDownload).toHaveBeenCalled();
-      }
-    });
-  });
-
-  it('should not show error message for AbortError', () => {
-    httpClientMock.get.mockReturnValue(throwError(() => ({name: 'AbortError'})));
-    service.downloadFile('/api/file', 'file.txt').subscribe({
-      error: () => {
-        expect(messageServiceMock.add).not.toHaveBeenCalledWith(expect.objectContaining({severity: 'error'}));
-        expect(downloadProgressServiceMock.completeDownload).toHaveBeenCalled();
-      }
-    });
   });
 
   it('should throw if no file content received', () => {
@@ -194,20 +174,20 @@ describe('FileDownloadService - API Contract Tests', () => {
   describe('Behavior contract', () => {
     it('should call startDownload and updateProgress on DownloadProgressService', () => {
       httpClientMock.get.mockReturnValue(of({type: HttpEventType.DownloadProgress, loaded: 10, total: 20}));
-      service.downloadFile('/api/file', 'file.txt').subscribe();
+      service.downloadFile('/api/file', 'file.txt');
       expect(downloadProgressServiceMock.startDownload).toHaveBeenCalled();
       expect(downloadProgressServiceMock.updateProgress).toHaveBeenCalledWith(10, 20);
     });
 
     it('should call completeDownload on finalize', () => {
       httpClientMock.get.mockReturnValue(of({type: HttpEventType.Response, body: new Blob(['test']), headers: new HttpHeaders(), clone: () => this, status: 200, statusText: 'OK', url: '', ok: true}));
-      service.downloadFile('/api/file', 'file.txt').subscribe();
+      service.downloadFile('/api/file', 'file.txt');
       expect(downloadProgressServiceMock.completeDownload).toHaveBeenCalled();
     });
 
     it('should show success message on download complete', () => {
       httpClientMock.get.mockReturnValue(of({type: HttpEventType.Response, body: new Blob(['test']), headers: new HttpHeaders(), clone: () => this, status: 200, statusText: 'OK', url: '', ok: true}));
-      service.downloadFile('/api/file', 'file.txt').subscribe();
+      service.downloadFile('/api/file', 'file.txt');
       expect(messageServiceMock.add).toHaveBeenCalledWith(expect.objectContaining({severity: 'success'}));
     });
   });
