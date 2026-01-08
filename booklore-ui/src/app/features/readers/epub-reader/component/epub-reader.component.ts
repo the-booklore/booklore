@@ -257,11 +257,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
 
-    if (this.rendition) {
-      this.rendition.destroy();
-      this.rendition = null;
-    }
-
     this.initBook(locations);
     this.initRendition(cfi);
     this.updateViewerSetting();
@@ -272,11 +267,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     const cfi = this.rendition.currentLocation()?.start?.cfi;
     const locations = this.book.locations.save();
-
-    if (this.rendition) {
-      this.rendition.destroy();
-      this.rendition = null;
-    }
 
     this.initBook(locations);
     this.initRendition(cfi);
@@ -323,7 +313,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   }
 
   private async applyEpubTheme(): Promise<{ success: boolean, customFontId?: number | null }> {
-    if (!this.rendition) return { success: false };
+    if (!this.rendition) return {success: false};
 
     // Determine font family - handle custom fonts
     let fontFamily = this.selectedFontType;
@@ -342,7 +332,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             customFontToInject = customFont;
           } else {
             // Font didn't load properly
-            return { success: false };
+            return {success: false};
           }
         } catch (error) {
           // Font loading failed
@@ -352,7 +342,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             summary: 'Custom fonts not loaded',
             detail: 'Your custom fonts could not be loaded. The reader will use default fonts instead.',
           });
-          return { success: false };
+          return {success: false};
         }
       }
     } else {
@@ -402,7 +392,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.rendition.themes.register('custom', combinedTheme);
     this.rendition.themes.select('custom');
 
-    return { success: true, customFontId };
+    return {success: true, customFontId};
   }
 
   increaseFontSize(): void {
@@ -463,14 +453,14 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         this.handleTouchEnd(event);
       });
-    }, { passive: false });
+    }, {passive: false});
 
     container.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
       this.ngZone.run(() => {
         this.handleClickAsTap(event);
       });
-    }, { capture: true });
+    }, {capture: true});
 
     this.rendition.on('rendered', () => {
       const iframe = this.epubContainer.nativeElement.querySelector('iframe');
@@ -504,8 +494,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             });
           };
 
-          iframe.contentDocument.addEventListener('touchend', this.iframeTouchHandler, { passive: false, capture: true });
-          iframe.contentDocument.addEventListener('click', this.iframeClickHandler, { capture: true });
+          iframe.contentDocument.addEventListener('touchend', this.iframeTouchHandler, {passive: false, capture: true});
+          iframe.contentDocument.addEventListener('click', this.iframeClickHandler, {capture: true});
         }
       }
     });
@@ -839,23 +829,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
 
     if (this.rendition) {
       this.rendition.off('keyup', this.keyListener);
-      try {
-        this.rendition.destroy();
-      } catch (e) {
-        console.warn('Error destroying rendition in ngOnDestroy', e);
-      }
-      this.rendition = null;
     }
-    
-    if (this.book) {
-      try {
-        this.book.destroy();
-      } catch (e) {
-        console.warn('Error destroying book in ngOnDestroy', e);
-      }
-      this.book = null;
-    }
-
     document.removeEventListener('keyup', this.keyListener);
 
     if (this.hideControlsTimeout) {

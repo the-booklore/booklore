@@ -1,4 +1,4 @@
-import {Component, inject, Input, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef} from '@angular/core';
+import {Component, inject, Input, OnInit, OnChanges, SimpleChanges} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {ReadingSessionApiService, ReadingSessionResponse} from '../../../../../shared/service/reading-session-api.service';
 import {TableModule} from 'primeng/table';
@@ -16,7 +16,6 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   @Input() bookId!: number;
 
   private readonly readingSessionService = inject(ReadingSessionApiService);
-  private readonly cdr = inject(ChangeDetectorRef);
 
   sessions: ReadingSessionResponse[] = [];
   totalRecords = 0;
@@ -25,7 +24,7 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   loading = false;
 
   ngOnInit() {
-    // Rely on p-table onLazyLoad to trigger the initial load
+    this.loadSessions();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -36,23 +35,16 @@ export class BookReadingSessionsComponent implements OnInit, OnChanges {
   }
 
   loadSessions(page: number = 0) {
-    // Prevent ExpressionChangedAfterItHasBeenCheckedError
-    setTimeout(() => {
-      this.loading = true;
-      this.cdr.markForCheck();
-    });
-    
+    this.loading = true;
     this.readingSessionService.getSessionsByBookId(this.bookId, page, this.rows)
       .subscribe({
         next: (response) => {
           this.sessions = response.content;
           this.totalRecords = response.totalElements;
           this.loading = false;
-          this.cdr.markForCheck();
         },
         error: () => {
           this.loading = false;
-          this.cdr.markForCheck();
         }
       });
   }
