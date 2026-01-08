@@ -356,6 +356,40 @@ class FileServiceTest {
     class ImageOperationsTests {
 
         @Nested
+        @DisplayName("readImage")
+        class ReadImageTests {
+            @Test
+            void validData_returnsImage() throws IOException {
+                BufferedImage image = createTestImage(100, 100);
+                byte[] imageData = imageToBytes(image);
+                
+                BufferedImage result = FileService.readImage(imageData);
+                
+                assertNotNull(result);
+                assertEquals(100, result.getWidth());
+                assertEquals(100, result.getHeight());
+            }
+
+            @Test
+            void nullData_throwsException() {
+                IOException ex = assertThrows(IOException.class, () -> FileService.readImage((byte[]) null));
+                assertEquals("Image data is null or empty", ex.getMessage());
+            }
+
+            @Test
+            void emptyData_throwsException() {
+                IOException ex = assertThrows(IOException.class, () -> FileService.readImage(new byte[0]));
+                assertEquals("Image data is null or empty", ex.getMessage());
+            }
+
+            @Test
+            void invalidData_returnsNull() throws IOException {
+                byte[] invalidData = "not an image".getBytes();
+                assertNull(FileService.readImage(invalidData));
+            }
+        }
+
+        @Nested
         @DisplayName("resizeImage")
         class ResizeImageTests {
 
@@ -460,12 +494,13 @@ class FileServiceTest {
             }
 
             @Test
-            void invalidImageData_throwsException() {
+            void invalidImageData_skipsSave() {
                 byte[] invalidData = "not an image".getBytes();
                 Path outputPath = tempDir.resolve("invalid.jpg");
 
-                assertThrows(IOException.class, () ->
+                assertDoesNotThrow(() ->
                     FileService.saveImage(invalidData, outputPath.toString()));
+                assertFalse(Files.exists(outputPath));
             }
 
             @Test
@@ -473,8 +508,9 @@ class FileServiceTest {
                 byte[] emptyData = new byte[0];
                 Path outputPath = tempDir.resolve("empty.jpg");
 
-                assertThrows(IOException.class, () ->
+                IOException ex = assertThrows(IOException.class, () ->
                     FileService.saveImage(emptyData, outputPath.toString()));
+                assertEquals("Image data is null or empty", ex.getMessage());
             }
 
             @Test
@@ -506,8 +542,9 @@ class FileServiceTest {
             @Test
             void nullImageData_throwsException() {
                 Path outputPath = tempDir.resolve("null.jpg");
-                assertThrows(NullPointerException.class, () ->
+                IOException ex = assertThrows(IOException.class, () ->
                     FileService.saveImage(null, outputPath.toString()));
+                assertEquals("Image data is null or empty", ex.getMessage());
             }
         }
     }
@@ -885,34 +922,28 @@ class FileServiceTest {
             }
 
             @Test
-            void invalidImageBytes_throwsRuntimeException() {
+            void invalidImageBytes_skipsThumbnail() {
                 byte[] invalidData = "not an image".getBytes();
                 
-                RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                assertDoesNotThrow(() ->
                     fileService.createThumbnailFromBytes(16L, invalidData));
-                assertTrue(exception.getMessage().contains("Image not found") || 
-                          exception.getMessage().contains("Failed"),
-                    "Exception message should indicate image processing failure");
+                assertFalse(Files.exists(Path.of(fileService.getCoverFile(16L))));
             }
 
             @Test
             void emptyImageBytes_throwsRuntimeException() {
                 byte[] emptyData = new byte[0];
                 
-                // FileService wraps ImageIO exceptions in RuntimeException via ApiError
                 RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromBytes(17L, emptyData));
-                assertTrue(exception.getMessage().contains("Image not found") || 
-                          exception.getMessage().contains("Failed"),
-                    "Exception message should indicate image processing failure");
+                assertEquals("Error reading files from path: Image data is null or empty", exception.getMessage());
             }
 
             @Test
             void nullImageBytes_throwsRuntimeException() {
-                // Null input causes NPE in ByteArrayInputStream constructor, which is caught and wrapped
                 RuntimeException exception = assertThrows(RuntimeException.class, () ->
                     fileService.createThumbnailFromBytes(18L, null));
-                assertNotNull(exception.getMessage(), "Exception should have a message");
+                assertEquals("Error reading files from path: Image data is null or empty", exception.getMessage());
             }
         }
 
@@ -1009,18 +1040,15 @@ class FileServiceTest {
             }
 
             @Test
-            void corruptImageData_throwsRuntimeException() {
+            void corruptImageData_skipsThumbnail() {
                 // Valid MIME type but corrupt image data
                 byte[] corruptData = ("not an image but has jpeg mime type").getBytes();
                 MockMultipartFile corruptFile = new MockMultipartFile(
                     "file", "corrupt.jpg", "image/jpeg", corruptData);
 
-                // FileService wraps exceptions in RuntimeException via ApiError
-                RuntimeException exception = assertThrows(RuntimeException.class, () ->
+                assertDoesNotThrow(() ->
                     fileService.createThumbnailFromFile(12L, corruptFile));
-                assertTrue(exception.getMessage().contains("Image not found") || 
-                          exception.getMessage().contains("not readable"),
-                    "Exception message should indicate image processing failure");
+                assertFalse(Files.exists(Path.of(fileService.getCoverFile(12L))));
             }
 
             @Test
@@ -1209,9 +1237,9 @@ class FileServiceTest {
             }
 
             @Test
-            @DisplayName("throws exception when ImageIO cannot read bytes")
+            @DisplayName("returns null when ImageIO cannot read bytes")
             @Timeout(5)
-            void downloadImageFromUrl_invalidImageData_throwsException() {
+            void downloadImageFromUrl_invalidImageData_returnsNull() throws IOException {
                 String imageUrl = "http://example.com/image.jpg";
                 byte[] invalidBytes = "not an image".getBytes();
                 ResponseEntity<byte[]> responseEntity = ResponseEntity.ok(invalidBytes);
@@ -1222,8 +1250,8 @@ class FileServiceTest {
                     eq(byte[].class)
                 )).thenReturn(responseEntity);
 
-                assertThrows(IOException.class, () ->
-                    fileService.downloadImageFromUrl(imageUrl));
+                BufferedImage result = fileService.downloadImageFromUrl(imageUrl);
+                assertNull(result);
             }
 
             @Test

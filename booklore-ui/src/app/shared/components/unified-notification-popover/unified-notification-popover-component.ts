@@ -1,6 +1,6 @@
 import {Component, inject} from '@angular/core';
 import {LiveNotificationBoxComponent} from '../live-notification-box/live-notification-box.component';
-import {MetadataProgressService} from '../../service/metadata-progress-service';
+import {MetadataProgressService} from '../../service/metadata-progress.service';
 import {map} from 'rxjs/operators';
 import {AsyncPipe} from '@angular/common';
 import {BookdropFileService} from '../../../features/bookdrop/service/bookdrop-file.service';

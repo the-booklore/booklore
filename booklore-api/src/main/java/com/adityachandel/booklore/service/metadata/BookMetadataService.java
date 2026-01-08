@@ -32,6 +32,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
 import java.lang.reflect.Method;
@@ -70,12 +73,11 @@ public class BookMetadataService {
         bookCoverService.generateCustomCover(bookId);
     }
 
-    public List<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
+    public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         if (request.getProviders() == null || request.getProviders().isEmpty()) {
             log.debug("No metadata providers specified for Book ID: {}", bookId);
             return List.of();
         }
-
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
         List<CompletableFuture<List<BookMetadata>>> futures = request.getProviders().stream()

@@ -144,6 +144,28 @@ public class FileService {
     // IMAGE OPERATIONS
     // ========================================
 
+    public static BufferedImage readImage(InputStream inputStream) throws IOException {
+        return readImage(inputStream.readAllBytes());
+    }
+
+    public static BufferedImage readImage(byte[] imageData) throws IOException {
+        if (imageData == null || imageData.length == 0) {
+            throw new IOException("Image data is null or empty");
+        }
+        try (InputStream is = new ByteArrayInputStream(imageData)) {
+            BufferedImage image = ImageIO.read(is);
+            if (image != null) {
+                return image;
+            }
+        } catch (Exception e) {
+            log.warn("ImageIO/TwelveMonkeys decode failed (possibly unsupported format like AVIF/HEIC): {}", e.getMessage());
+            return null;
+        }
+        
+        log.warn("Unable to decode image - likely unsupported format (AVIF, HEIC, or SVG)");
+        return null;
+    }
+
     public static BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
         Image tmp = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -156,9 +178,10 @@ public class FileService {
     public static void saveImage(byte[] imageData, String filePath) throws IOException {
         BufferedImage originalImage = null;
         try {
-            originalImage = ImageIO.read(new ByteArrayInputStream(imageData));
+            originalImage = readImage(imageData);
             if (originalImage == null) {
-                throw new IOException("Invalid image data: unable to decode image");
+                log.warn("Skipping saveImage for {}: decoded image is null", filePath);
+                return;
             }
             File outputFile = new File(filePath);
             File parentDir = outputFile.getParentFile();
@@ -191,13 +214,7 @@ public class FileService {
 
             // Validate and convert
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                try (ByteArrayInputStream inputStream = new ByteArrayInputStream(response.getBody())) {
-                    BufferedImage image = ImageIO.read(inputStream);
-                    if (image == null) {
-                        throw new IOException("Downloaded content is not a supported image format.");
-                    }
-                    return image;
-                }
+                return readImage(response.getBody());
             } else {
                 throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
             }
@@ -216,10 +233,11 @@ public class FileService {
             validateCoverFile(file);
             BufferedImage originalImage;
             try (InputStream inputStream = file.getInputStream()) {
-                originalImage = ImageIO.read(inputStream);
+                originalImage = readImage(inputStream);
             }
             if (originalImage == null) {
-                throw ApiError.IMAGE_NOT_FOUND.createException();
+                log.warn("Could not decode image from file, skipping thumbnail creation for book: {}", bookId);
+                return;
             }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
@@ -235,12 +253,10 @@ public class FileService {
 
     public void createThumbnailFromBytes(long bookId, byte[] imageBytes) {
         try {
-            BufferedImage originalImage;
-            try (InputStream inputStream = new java.io.ByteArrayInputStream(imageBytes)) {
-                originalImage = ImageIO.read(inputStream);
-            }
+            BufferedImage originalImage = readImage(imageBytes);
             if (originalImage == null) {
-                throw ApiError.IMAGE_NOT_FOUND.createException();
+                log.warn("Skipping thumbnail creation for book {}: image decode failed", bookId);
+                return;
             }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
@@ -257,6 +273,10 @@ public class FileService {
     public void createThumbnailFromUrl(long bookId, String imageUrl) {
         try {
             BufferedImage originalImage = downloadImageFromUrl(imageUrl);
+            if (originalImage == null) {
+                log.warn("Skipping thumbnail creation for book {}: download/decode failed", bookId);
+                return;
+            }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
                 throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");

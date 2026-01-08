@@ -46,6 +46,7 @@ public class BookMetadata {
     private Double lubimyczytacRating;
     private String googleId;
     private String lubimyczytacId;
+    private String externalUrl;
     private Instant coverUpdatedOn;
     private Set<String> authors;
     private Set<String> categories;
@@ -84,6 +85,7 @@ public class BookMetadata {
     private Boolean doubanReviewCountLocked;
     private Boolean lubimyczytacIdLocked;
     private Boolean lubimyczytacRatingLocked;
+    private Boolean externalUrlLocked;
     private Boolean coverLocked;
     private Boolean authorsLocked;
     private Boolean categoriesLocked;

@@ -41,8 +41,7 @@ public class LibraryController {
     })
     @GetMapping("/{libraryId}")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    public ResponseEntity<Library> getLibrary(
-            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+    public ResponseEntity<Library> getLibrary(@Parameter(description = "ID of the library") @PathVariable long libraryId) {
         return ResponseEntity.ok(libraryService.getLibrary(libraryId));
     }
 
@@ -50,8 +49,7 @@ public class LibraryController {
     @ApiResponse(responseCode = "200", description = "Library created successfully")
     @PostMapping
     @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
-    public ResponseEntity<Library> createLibrary(
-            @Parameter(description = "Library creation request") @Validated @RequestBody CreateLibraryRequest request) {
+    public ResponseEntity<Library> createLibrary(@Parameter(description = "Library creation request") @Validated @RequestBody CreateLibraryRequest request) {
         return ResponseEntity.ok(libraryService.createLibrary(request));
     }
 
@@ -71,8 +69,7 @@ public class LibraryController {
     @DeleteMapping("/{libraryId}")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
     @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
-    public ResponseEntity<?> deleteLibrary(
-            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+    public ResponseEntity<?> deleteLibrary(@Parameter(description = "ID of the library") @PathVariable long libraryId) {
         libraryService.deleteLibrary(libraryId);
         return ResponseEntity.noContent().build();
     }
@@ -91,8 +88,7 @@ public class LibraryController {
     @ApiResponse(responseCode = "200", description = "Books returned successfully")
     @GetMapping("/{libraryId}/book")
     @CheckLibraryAccess(libraryIdParam = "libraryId")
-    public ResponseEntity<List<Book>> getBooks(
-            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+    public ResponseEntity<List<Book>> getBooks(@Parameter(description = "ID of the library") @PathVariable long libraryId) {
         List<Book> books = libraryService.getBooks(libraryId);
         return ResponseEntity.ok(books);
     }
@@ -118,5 +114,16 @@ public class LibraryController {
         String pattern = body.get("fileNamingPattern");
         Library updated = libraryService.setFileNamingPattern(libraryId, pattern);
         return ResponseEntity.ok(updated);
+    }
+
+    @Operation(summary = "Scan library paths", description = "Scan the provided library paths and return a count of processable files. Requires admin or manipulation permission.")
+    @ApiResponse(responseCode = "200", description = "Processable files count returned successfully")
+    @PostMapping("/scan")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Integer> scanLibraryPaths(
+            @Parameter(description = "Library creation request with paths to scan")
+            @Validated @RequestBody CreateLibraryRequest request) {
+        int processableFilesCount = libraryService.scanLibraryPaths(request);
+        return ResponseEntity.ok(processableFilesCount);
     }
 }

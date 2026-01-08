@@ -37,6 +37,7 @@
     "ng2-charts": "^8.0.0",
     "ngx-extended-pdf-viewer": "^25.6.4",
     "ngx-infinite-scroll": "^21.0.0",
+    "ngx-sse-client": "^20.0.1",
     "primeicons": "^7.0.0",
     "primeng": "^21.0.2",
     "quill": "^2.0.3",

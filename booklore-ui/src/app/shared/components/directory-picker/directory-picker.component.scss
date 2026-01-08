@@ -8,8 +8,8 @@
 }
 
 .directory-picker {
-  width: 650px;
-  max-width: 650px;
+  width: 700px;
+  max-width: 700px;
   display: flex;
   flex-direction: column;
 
@@ -206,8 +206,8 @@
   border: 1px solid var(--border-color);
   border-top: none;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  min-height: 350px;
-  max-height: 450px;
+  min-height: 500px;
+  max-height: 500px;
   overflow: hidden;
 
   @media (max-width: 480px) {
@@ -342,6 +342,16 @@
   flex: 1;
   padding-right: 0.25rem;
   min-height: 0;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+
+  &.loading {
+    opacity: 0;
+  }
+
+  &.fade-in {
+    animation: fadeInUp 0.4s ease-out;
+  }
 
   &::-webkit-scrollbar {
     width: 6px;
@@ -366,6 +376,17 @@
   scrollbar-color: var(--border-color) var(--overlay-background);
 }
 
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .directory-item {
   display: flex;
   align-items: center;
@@ -376,10 +397,18 @@
   border-radius: 8px;
   transition: all 0.3s ease;
   cursor: pointer;
+  opacity: 0;
+  animation: fadeInItem 0.3s ease-out forwards;
+
+  @for $i from 1 through 20 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 0.03}s;
+    }
+  }
 
   &:hover {
     border-color: var(--primary-color);
-    transform: translateX(3px);
+    transform: translateY(3px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
 
     .directory-icon {
@@ -389,7 +418,7 @@
 
     .navigate-icon {
       opacity: 1;
-      transform: translateX(2px);
+      transform: translateY(2px);
     }
   }
 
@@ -495,6 +524,17 @@
         }
       }
     }
+  }
+}
+
+@keyframes fadeInItem {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

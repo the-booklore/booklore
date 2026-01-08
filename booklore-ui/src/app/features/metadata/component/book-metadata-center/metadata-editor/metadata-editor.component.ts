@@ -25,7 +25,7 @@ import {LazyLoadImageModule} from "ng-lazyload-image";
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookDialogHelperService} from "../../../../book/components/book-browser/book-dialog-helper.service";
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {Router} from '@angular/router';
 import {UserService} from '../../../../settings/user-management/user.service';
 
@@ -365,6 +365,8 @@ export class MetadataEditorComponent implements OnInit {
       {key: "hardcoverBookIdLocked", control: "hardcoverBookId"},
       {key: "hardcoverReviewCountLocked", control: "hardcoverReviewCount"},
       {key: "hardcoverRatingLocked", control: "hardcoverRating"},
+      {key: "lubimyczytacIdLocked", control: "lubimyczytacId"},
+      {key: "lubimyczytacRatingLocked", control: "lubimyczytacRating"},
       {key: "googleIdLocked", control: "googleId"},
       {key: "pageCountLocked", control: "pageCount"},
       {key: "descriptionLocked", control: "description"},
@@ -504,6 +506,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: form.get("hardcoverBookId")?.value,
       hardcoverRating: form.get("hardcoverRating")?.value,
       hardcoverReviewCount: form.get("hardcoverReviewCount")?.value,
+      lubimyczytacId: form.get("lubimyczytacId")?.value,
+      lubimyczytacRating: form.get("lubimyczytacRating")?.value,
       googleId: form.get("googleId")?.value,
       language: form.get("language")?.value,
       seriesName: form.get("seriesName")?.value,
@@ -536,6 +540,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: form.get("hardcoverBookIdLocked")?.value,
       hardcoverRatingLocked: form.get("hardcoverRatingLocked")?.value,
       hardcoverReviewCountLocked: form.get("hardcoverReviewCountLocked")?.value,
+      lubimyczytacIdLocked: form.get("lubimyczytacIdLocked")?.value,
+      lubimyczytacRatingLocked: form.get("lubimyczytacRatingLocked")?.value,
       googleIdLocked: form.get("googleIdLocked")?.value,
       seriesNameLocked: form.get("seriesNameLocked")?.value,
       seriesNumberLocked: form.get("seriesNumberLocked")?.value,

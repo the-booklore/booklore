@@ -37,6 +37,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 
+    // --- Reactive Streams ---
+    implementation 'io.projectreactor:reactor-core'
+
     // --- Database & Migration ---
     implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.6'
     implementation 'org.flywaydb:flyway-mysql:11.19.0'
@@ -55,8 +58,13 @@ dependencies {
     implementation 'org.apache.pdfbox:pdfbox-io:3.0.6'
     implementation 'org.apache.pdfbox:xmpbox:3.0.6'
     implementation 'org.apache.pdfbox:jbig2-imageio:3.0.4'
-    implementation 'com.github.jai-imageio:jai-imageio-core:1.4.0'
-    implementation 'com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0'
+    
+    // --- TwelveMonkeys ImageIO ---
+    implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.13.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-tiff:3.13.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-webp:3.13.0'
+    implementation 'com.twelvemonkeys.imageio:imageio-bmp:3.13.0'
+    
     implementation 'io.documentnode:epub4j-core:4.2.2'
 
     // --- UNRAR Support ---

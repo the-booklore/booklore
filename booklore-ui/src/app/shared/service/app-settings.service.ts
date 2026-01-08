@@ -131,8 +131,8 @@ export class AppSettingsService {
           this.syncPublicSettings(current);
         }
         if (!enabled) {
+          const authService = this.injector.get(AuthService);
           setTimeout(() => {
-            const authService = this.injector.get(AuthService);
             authService.clearOIDCTokens();
           });
         }

@@ -9,11 +9,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Objects;
+
+import static net.lingala.zip4j.util.FileUtils.getFileExtension;
 
 @Slf4j
 @Service
@@ -34,13 +37,18 @@ public class BackgroundUploadService {
             String extension = getFileExtension(originalFilename);
             String filename = "1." + extension;
 
+        try (InputStream inputStream = file.getInputStream()) {
             BufferedImage originalImage;
-            try (InputStream inputStream = file.getInputStream()) {
-                originalImage = ImageIO.read(inputStream);
+            try {
+                originalImage = FileService.readImage(inputStream);
+            } catch (IOException e) {
+                originalImage = null;
             }
+            
             if (originalImage == null) {
                 throw new IllegalArgumentException("Invalid image file");
             }
+
 
             deleteExistingBackgroundFiles(userId);
             fileService.saveBackgroundImage(originalImage, filename, userId);
@@ -48,6 +56,7 @@ public class BackgroundUploadService {
 
             String fileUrl = FileService.getBackgroundUrl(filename, userId);
             return new UploadResponse(fileUrl);
+        }
         } catch (Exception e) {
             log.error("Failed to upload background file: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to upload file: " + e.getMessage(), e);
@@ -62,6 +71,9 @@ public class BackgroundUploadService {
             String filename = "1." + extension;
 
             BufferedImage originalImage = fileService.downloadImageFromUrl(imageUrl);
+            if (originalImage == null) {
+                throw new IllegalArgumentException("Failed to download or decode image from URL");
+            }
             deleteExistingBackgroundFiles(userId);
 
             fileService.saveBackgroundImage(originalImage, filename, userId);

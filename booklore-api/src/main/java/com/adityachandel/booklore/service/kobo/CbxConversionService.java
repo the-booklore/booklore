@@ -21,6 +21,8 @@ import com.github.junrar.exception.RarException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
+import com.adityachandel.booklore.util.FileService;
+
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
@@ -314,7 +316,8 @@ public class CbxConversionService {
 
         return lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") ||
                lowerName.endsWith(".png") || lowerName.endsWith(".webp") ||
-               lowerName.endsWith(".gif") || lowerName.endsWith(".bmp");
+               lowerName.endsWith(".gif") || lowerName.endsWith(".bmp") ||
+               lowerName.endsWith(".avif") || lowerName.endsWith(".heic");
     }
 
     private boolean isJpegFile(Path path) {
@@ -404,7 +407,13 @@ public class CbxConversionService {
             }
         } else {
             try (InputStream fis = Files.newInputStream(sourceImagePath)) {
-                BufferedImage image = ImageIO.read(fis);
+                BufferedImage image = null;
+                try {
+                    image = FileService.readImage(fis);
+                } catch (Exception e) {
+                    log.debug("Failed to decode image {} with FileService: {}", sourceImagePath, e.getMessage());
+                }
+
                 if (image != null) {
                     writeJpegImage(image, zipOut, compressionPercentage/100f);
                 } else {
