@@ -66,7 +66,7 @@ export class MetadataProgressService implements OnDestroy {
     return result;
   }
 
-  private hasMetadataPermissions(user: any): boolean {
+  private hasMetadataPermissions(user: { permissions: { admin: boolean; canEditMetadata: boolean } } | null): boolean {
     return !!(user?.permissions?.admin || user?.permissions?.canEditMetadata);
   }
 

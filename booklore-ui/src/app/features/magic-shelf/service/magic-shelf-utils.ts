@@ -11,49 +11,51 @@ export const EMPTY_CHECK_OPERATORS: RuleOperator[] = [
   'is_not_empty'
 ];
 
-export function parseValue(val: any, type: 'string' | 'number' | 'decimal' | 'date' | undefined): any {
+export function parseValue(val: unknown, type: 'string' | 'number' | 'decimal' | 'date' | undefined): unknown {
   if (val == null) return null;
   if (type === 'number' || type === 'decimal') {
     const num = Number(val);
     return isNaN(num) ? null : num;
   }
   if (type === 'date') {
-    const d = new Date(val);
+    const d = new Date(val as string | number | Date);
     return isNaN(d.getTime()) ? null : d;
   }
   return val;
 }
 
-export function removeNulls(obj: any): any {
+export function removeNulls(obj: unknown): unknown {
   if (Array.isArray(obj)) {
     return obj.map(removeNulls);
   } else if (typeof obj === 'object' && obj !== null) {
-    return Object.entries(obj).reduce((acc, [key, value]) => {
+    return Object.entries(obj).reduce((acc: Record<string, unknown>, [key, value]) => {
       const cleanedValue = removeNulls(value);
       if (cleanedValue !== null && cleanedValue !== undefined) {
         acc[key] = cleanedValue;
       }
       return acc;
-    }, {} as any);
+    }, {});
   }
   return obj;
 }
 
-export function serializeDateRules(ruleOrGroup: any): any {
-  if ('rules' in ruleOrGroup) {
+export function serializeDateRules(ruleOrGroup: unknown): unknown {
+  if (ruleOrGroup !== null && typeof ruleOrGroup === 'object' && 'rules' in ruleOrGroup) {
+    const group = ruleOrGroup as { rules: unknown[] };
     return {
-      ...ruleOrGroup,
-      rules: ruleOrGroup.rules.map(serializeDateRules)
+      ...(ruleOrGroup as Record<string, unknown>),
+      rules: group.rules.map(serializeDateRules)
     };
   }
 
-  const isDateField = ruleOrGroup.field === 'publishedDate' || ruleOrGroup.field === 'dateFinished';
-  const serialize = (val: any) => (val instanceof Date ? val.toISOString().split('T')[0] : val);
+  const rule = ruleOrGroup as { field?: string; value?: unknown; valueStart?: unknown; valueEnd?: unknown; [key: string]: unknown };
+  const isDateField = rule.field === 'publishedDate' || rule.field === 'dateFinished';
+  const serialize = (val: unknown) => (val instanceof Date ? val.toISOString().split('T')[0] : val);
 
   return {
-    ...ruleOrGroup,
-    value: isDateField ? serialize(ruleOrGroup.value) : ruleOrGroup.value,
-    valueStart: isDateField ? serialize(ruleOrGroup.valueStart) : ruleOrGroup.valueStart,
-    valueEnd: isDateField ? serialize(ruleOrGroup.valueEnd) : ruleOrGroup.valueEnd
+    ...(ruleOrGroup as Record<string, unknown>),
+    value: isDateField ? serialize(rule.value) : rule.value,
+    valueStart: isDateField ? serialize(rule.valueStart) : rule.valueStart,
+    valueEnd: isDateField ? serialize(rule.valueEnd) : rule.valueEnd
   };
 }

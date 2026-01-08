@@ -644,7 +644,9 @@ public class DoubanBookParser implements BookParser {
     private String getThumbnail(Document doc) {
         try {
             Element imageElement = doc.selectFirst("#mainpic a");
-            log.debug(imageElement.toString());
+            if (imageElement != null) {
+                log.debug(imageElement.toString());
+            }
             if (imageElement != null) {
                 return imageElement.attr("href");
             }

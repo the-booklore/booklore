@@ -14,6 +14,7 @@ import {Textarea} from 'primeng/textarea';
 import {filter, map, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {AutoComplete} from 'primeng/autocomplete';
+import {AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
 
@@ -349,10 +350,10 @@ export class MetadataPickerComponent implements OnInit {
     });
   }
 
-  onAutoCompleteSelect(fieldName: string, event: any) {
-    const values = this.metadataForm.get(fieldName)?.value || [];
-    if (!values.includes(event.value)) {
-      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+  onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
+    const values = (this.metadataForm.get(fieldName)?.value as string[]) || [];
+    if (!values.includes(event.value as string)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value as string]);
     }
     (event.originalEvent.target as HTMLInputElement).value = '';
   }
@@ -604,7 +605,7 @@ export class MetadataPickerComponent implements OnInit {
     const formValue = this.metadataForm.get(field)?.value;
     if (formValue === '' || formValue === null || isNaN(formValue)) {
       this.copiedFields[field] = true;
-      return this.fetchedMetadata[field] || null;
+      return (this.fetchedMetadata[field as keyof BookMetadata] as number | null) || null;
     }
     return Number(formValue);
   }
@@ -613,7 +614,7 @@ export class MetadataPickerComponent implements OnInit {
     const formValue = this.metadataForm.get('pageCount')?.value;
     if (formValue === '' || formValue === null || isNaN(formValue)) {
       this.copiedFields['pageCount'] = true;
-      return this.fetchedMetadata.pageCount || null;
+      return (this.fetchedMetadata.pageCount as number | null) || null;
     }
     return Number(formValue);
   }
@@ -622,20 +623,20 @@ export class MetadataPickerComponent implements OnInit {
     const formValue = this.metadataForm.get(field)?.value;
     if (!formValue || formValue === '') {
       this.copiedFields[field] = true;
-      return this.fetchedMetadata[field] || '';
+      return (this.fetchedMetadata[field as keyof BookMetadata] as string) || '';
     }
     return formValue;
   }
 
-  getArrayFromFormField(field: string, fallbackValue: any): any[] {
+  getArrayFromFormField(field: string, fallbackValue: unknown): string[] {
     const fieldValue = this.metadataForm.get(field)?.value;
     if (!fieldValue) {
-      return fallbackValue ? (Array.isArray(fallbackValue) ? fallbackValue : [fallbackValue]) : [];
+      return fallbackValue ? (Array.isArray(fallbackValue) ? fallbackValue as string[] : [fallbackValue as string]) : [];
     }
     if (typeof fieldValue === 'string') {
       return fieldValue.split(',').map(item => item.trim());
     }
-    return Array.isArray(fieldValue) ? fieldValue : [];
+    return Array.isArray(fieldValue) ? fieldValue as string[] : [];
   }
 
   lockAll(): void {

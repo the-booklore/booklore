@@ -29,7 +29,7 @@ import {BookReviewsComponent} from '../../../../book/components/book-reviews/boo
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {Image} from 'primeng/image';
-import {BookDialogHelperService} from '../../../../book/components/book-browser/BookDialogHelperService';
+import {BookDialogHelperService} from '../../../../book/components/book-browser/book-dialog-helper.service';
 import {TagColor, TagComponent} from '../../../../../shared/components/tag/tag.component';
 import {BookNotesComponent} from '../../../../book/components/book-notes/book-notes-component';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
@@ -40,7 +40,7 @@ import {
 } from '../../../../book/components/book-browser/book-filter/book-filter.component';
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
 import {Divider} from 'primeng/divider';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import { BookReadingSessionsComponent } from '../book-reading-sessions/book-reading-sessions.component';
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 
@@ -174,7 +174,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
           take(1),
           map(userState => {
             const items: MenuItem[] = [];
-            
+
             // Add allowed submenus based on user permissions
 
             if (userState?.user?.permissions.canUpload || userState?.user?.permissions.admin) {

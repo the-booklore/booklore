@@ -556,8 +556,11 @@ export class MetadataManagerComponent implements OnInit, OnDestroy {
     });
   }
 
-  filterGlobal(event: any, dt: any) {
-    dt.filterGlobal(event.target.value, 'contains');
+  filterGlobal(event: Event, dt: { filterGlobal: (value: string, matchMode: string) => void }): void {
+    const target = event.target as HTMLInputElement;
+    if (target) {
+      dt.filterGlobal(target.value, 'contains');
+    }
   }
 
   onMetadataClick(type: MetadataType, value: string): void {

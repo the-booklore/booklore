@@ -16,7 +16,7 @@ import {ThemeConfiguratorComponent} from '../theme-configurator/theme-configurat
 import {AuthService} from '../../../service/auth.service';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {Popover} from 'primeng/popover';
-import {MetadataProgressService} from '../../../service/metadata-progress-service';
+import {MetadataProgressService} from '../../../service/metadata-progress.service';
 import {takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {MetadataBatchProgressNotification} from '../../../model/metadata-batch-progress.model';
@@ -68,7 +68,7 @@ export class AppTopBarComponent implements OnDestroy {
   hasAnyTasks = false;
   hasPendingBookdropFiles = false;
 
-  private eventTimer: any;
+  private eventTimer: number | undefined;
   private destroy$ = new Subject<void>();
 
   private latestTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
@@ -197,7 +197,7 @@ export class AppTopBarComponent implements OnDestroy {
     clearTimeout(this.eventTimer);
     this.eventTimer = setTimeout(() => {
       this.showPulse = false;
-    }, 4000);
+    }, 4000) as unknown as number;
   }
 
   private updateCompletedTaskCount() {

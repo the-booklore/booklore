@@ -261,6 +261,11 @@ public class TaskService {
     }
 
     private String initializeTask(TaskCreateRequest request, BookLoreUser user, TaskType taskType) {
+        Task task = taskRegistry.get(taskType);
+        if (task != null) {
+            task.validatePermissions(user, request);
+        }
+
         if (!taskType.isParallel()) {
             String existingTaskId = runningTasks.putIfAbsent(taskType, "");
             if (existingTaskId != null) {

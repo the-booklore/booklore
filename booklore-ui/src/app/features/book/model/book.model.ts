@@ -48,6 +48,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+  [key: string]: unknown;
 }
 
 export interface EpubProgress {
@@ -145,7 +146,7 @@ export interface BookMetadata {
   tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface MetadataClearFlags {
@@ -200,6 +201,7 @@ export interface EpubViewerSetting {
   lineHeight: number;
   letterSpacing: number;
   spread: string;
+  customFontId?: number | null;
 }
 
 export interface CbxViewerSetting {
@@ -215,7 +217,7 @@ export interface BookSetting {
   epubSettings?: EpubViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface BookRecommendation {

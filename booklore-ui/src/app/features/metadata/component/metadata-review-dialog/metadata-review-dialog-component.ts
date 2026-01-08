@@ -11,7 +11,7 @@ import {Button} from 'primeng/button';
 import {Divider} from 'primeng/divider';
 import {ProgressBar} from 'primeng/progressbar';
 import {Tooltip} from 'primeng/tooltip';
-import {MetadataProgressService} from '../../../../shared/service/metadata-progress-service';
+import {MetadataProgressService} from '../../../../shared/service/metadata-progress.service';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
 import {MetadataPickerComponent} from '../book-metadata-center/metadata-picker/metadata-picker.component';
 

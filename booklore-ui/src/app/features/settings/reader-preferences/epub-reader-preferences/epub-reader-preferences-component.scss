@@ -194,6 +194,28 @@
       &[data-font="monospace"] .option-text {
         font-family: 'Courier New', monospace;
       }
+
+      // Custom font buttons use the loaded font
+      &[data-font^="custom:"] .option-text {
+        font-size: 0.875rem;
+      }
+    }
+
+    &.separator {
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.6;
+      background: transparent;
+      border-color: transparent;
+      font-weight: 600;
+      color: var(--p-text-muted-color);
+      min-width: auto;
+      padding: 0.25rem 0.5rem;
+
+      &:hover {
+        transform: none;
+        box-shadow: none;
+      }
     }
   }
 }

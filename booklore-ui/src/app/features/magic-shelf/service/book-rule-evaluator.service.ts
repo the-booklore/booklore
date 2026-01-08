@@ -19,7 +19,7 @@ export class BookRuleEvaluatorService {
   private evaluateRule(book: Book, rule: Rule): boolean {
     const rawValue = this.extractBookValue(book, rule.field);
 
-    const normalize = (val: any): any => {
+    const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
       if (val instanceof Date) return val;
       if (typeof val === 'string') {
@@ -61,6 +61,10 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.publisher ?? '').toLowerCase()];
         case 'seriesName':
           return [String(book.metadata?.seriesName ?? '').toLowerCase()];
+        case 'isbn13':
+          return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
+        case 'isbn10':
+          return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
         default:
           return [];
       }
@@ -188,7 +192,7 @@ export class BookRuleEvaluatorService {
     }
   }
 
-  private extractBookValue(book: Book, field: RuleField): any {
+  private extractBookValue(book: Book, field: RuleField): unknown {
     switch (field) {
       case 'library':
         return book.libraryId;
@@ -232,6 +236,10 @@ export class BookRuleEvaluatorService {
         return book.metadata?.pageCount;
       case 'language':
         return book.metadata?.language?.toLowerCase() ?? null;
+      case 'isbn13':
+        return book.metadata?.isbn13?.toLowerCase() ?? null;
+      case 'isbn10':
+        return book.metadata?.isbn10?.toLowerCase() ?? null;
       case 'amazonRating':
         return book.metadata?.amazonRating;
       case 'amazonReviewCount':
@@ -245,7 +253,7 @@ export class BookRuleEvaluatorService {
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
       default:
-        return (book as any)[field];
+        return (book as Record<string, unknown>)[field];
     }
   }
 

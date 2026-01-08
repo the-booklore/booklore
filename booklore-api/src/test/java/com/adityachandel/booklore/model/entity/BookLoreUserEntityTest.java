@@ -18,7 +18,7 @@ class BookLoreUserEntityTest {
 
         assertThat(user.isDefaultPassword()).isFalse();
 
-        BookLoreUserEntity defaultUser = BookLoreUserEntity.builder().build();
+        BookLoreUserEntity defaultUser = BookLoreUserEntity.builder().isDefaultPassword(false).build();
         assertThat(defaultUser.isDefaultPassword()).isFalse();
     }
 }

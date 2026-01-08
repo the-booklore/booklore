@@ -1,4 +1,4 @@
-import {Injectable, inject} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType, HttpResponse} from '@angular/common/http';
 import {MessageService} from 'primeng/api';
 import {DownloadProgressService} from './download-progress.service';
@@ -99,8 +99,8 @@ export class FileDownloadService {
     }, 100);
   }
 
-  private handleDownloadError(error: any): void {
-    if (error?.name !== 'AbortError') {
+  private handleDownloadError(error: unknown): void {
+    if ((error as { name?: string })?.name !== 'AbortError') {
       this.messageService.add({
         severity: 'error',
         summary: 'Download Failed',

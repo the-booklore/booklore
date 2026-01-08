@@ -17,11 +17,13 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
 import java.util.Map;
@@ -42,13 +44,13 @@ public class MetadataController {
 
     @Operation(summary = "Get prospective metadata for a book", description = "Fetch prospective metadata for a book by its ID. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "200", description = "Prospective metadata returned successfully")
-    @PostMapping("/{bookId}/metadata/prospective")
+    @PostMapping(value = "/{bookId}/metadata/prospective", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<List<BookMetadata>> getMetadataList(
+    public Flux<BookMetadata> getMetadataList(
             @Parameter(description = "Fetch metadata request") @RequestBody(required = false) FetchMetadataRequest fetchMetadataRequest,
             @Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return ResponseEntity.ok(bookMetadataService.getProspectiveMetadataListForBookId(bookId, fetchMetadataRequest));
+        return bookMetadataService.getProspectiveMetadataListForBookId(bookId, fetchMetadataRequest);
     }
 
     @Operation(summary = "Update book metadata", description = "Update metadata for a book. Requires metadata edit permission or admin.")
@@ -83,7 +85,7 @@ public class MetadataController {
     @Operation(summary = "Bulk edit book metadata", description = "Bulk update metadata for multiple books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Bulk metadata updated successfully")
     @PutMapping("/bulk-edit-metadata")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> bulkEditMetadata(
             @Parameter(description = "Bulk metadata update request") @RequestBody BulkMetadataUpdateRequest bulkMetadataUpdateRequest) {
         boolean mergeCategories = bulkMetadataUpdateRequest.isMergeCategories();
@@ -120,7 +122,7 @@ public class MetadataController {
     @Operation(summary = "Toggle all metadata locks", description = "Toggle all metadata locks for books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "200", description = "Metadata locks toggled successfully")
     @PutMapping("/metadata/toggle-all-lock")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkLockUnlockMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<List<BookMetadata>> toggleAllMetadata(
             @Parameter(description = "Toggle all lock request") @RequestBody ToggleAllLockRequest request) {
         return ResponseEntity.ok(bookMetadataService.toggleAllLock(request));
@@ -139,7 +141,7 @@ public class MetadataController {
     @Operation(summary = "Regenerate all covers", description = "Regenerate covers for all books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Covers regenerated successfully")
     @PostMapping("/regenerate-covers")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkRegenerateCover() or @securityUtil.isAdmin()")
     public void regenerateCovers() {
         bookMetadataService.regenerateCovers();
     }
@@ -154,10 +156,20 @@ public class MetadataController {
         bookMetadataService.regenerateCover(bookId);
     }
 
+    @Operation(summary = "Generate custom cover for a book", description = "Generate a custom cover for a specific book based on its metadata. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Custom cover generated successfully")
+    @PostMapping("/{bookId}/generate-custom-cover")
+    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @CheckBookAccess(bookIdParam = "bookId")
+    public void generateCustomCover(
+            @Parameter(description = "ID of the book") @PathVariable Long bookId) {
+        bookMetadataService.generateCustomCover(bookId);
+    }
+
     @Operation(summary = "Regenerate covers for selected books", description = "Regenerate covers for a list of books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Cover regeneration started successfully")
     @PostMapping("/bulk-regenerate-covers")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkRegenerateCover() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> regenerateCoversForBooks(
             @Parameter(description = "List of book IDs") @Validated @RequestBody BulkBookIdsRequest request) {
         bookMetadataService.regenerateCoversForBooks(request.getBookIds());
@@ -167,10 +179,10 @@ public class MetadataController {
     @Operation(summary = "Upload cover image for multiple books", description = "Upload a cover image to apply to multiple books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Cover upload started successfully")
     @PostMapping("/bulk-upload-cover")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> bulkUploadCover(
             @Parameter(description = "Cover image file") @RequestParam("file") MultipartFile file,
-            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @jakarta.validation.constraints.NotEmpty java.util.Set<Long> bookIds) {
+            @Parameter(description = "Comma-separated book IDs") @RequestParam("bookIds") @RequestBody java.util.Set<Long> bookIds) {
         bookMetadataService.updateCoverImageFromFileForBooks(bookIds, file);
         return ResponseEntity.noContent().build();
     }
@@ -195,7 +207,7 @@ public class MetadataController {
     @Operation(summary = "Consolidate metadata", description = "Merge metadata values. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Metadata consolidated successfully")
     @PostMapping("/metadata/manage/consolidate")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> mergeMetadata(
             @Parameter(description = "Merge metadata request") @Validated @RequestBody MergeMetadataRequest request) {
         metadataManagementService.consolidateMetadata(request.getMetadataType(), request.getTargetValues(), request.getValuesToMerge());
@@ -205,10 +217,11 @@ public class MetadataController {
     @Operation(summary = "Delete metadata values", description = "Delete metadata values. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Metadata deleted successfully")
     @PostMapping("/metadata/manage/delete")
-    @PreAuthorize("@securityUtil.canEditMetadata() or @securityUtil.isAdmin()")
+    @PreAuthorize("@securityUtil.canBulkEditMetadata() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> deleteMetadata(
             @Parameter(description = "Delete metadata request") @Validated @RequestBody DeleteMetadataRequest request) {
         metadataManagementService.deleteMetadata(request.getMetadataType(), request.getValuesToDelete());
         return ResponseEntity.noContent().build();
     }
 }
+

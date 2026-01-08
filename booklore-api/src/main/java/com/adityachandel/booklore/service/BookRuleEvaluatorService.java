@@ -324,6 +324,8 @@ public class BookRuleEvaluatorService {
             case SERIES_NAME -> root.get("metadata").get("seriesName");
             case SERIES_NUMBER -> root.get("metadata").get("seriesNumber");
             case SERIES_TOTAL -> root.get("metadata").get("seriesTotal");
+            case ISBN13 -> root.get("metadata").get("isbn13");
+            case ISBN10 -> root.get("metadata").get("isbn10");
             case AMAZON_RATING -> root.get("metadata").get("amazonRating");
             case AMAZON_REVIEW_COUNT -> root.get("metadata").get("amazonReviewCount");
             case GOODREADS_RATING -> root.get("metadata").get("goodreadsRating");
@@ -338,7 +340,8 @@ public class BookRuleEvaluatorService {
 
     private boolean isArrayField(RuleField field) {
         return field == RuleField.AUTHORS || field == RuleField.CATEGORIES ||
-               field == RuleField.MOODS || field == RuleField.TAGS;
+               field == RuleField.MOODS || field == RuleField.TAGS ||
+               field == RuleField.GENRE;
     }
 
     private Join<?, ?> createArrayFieldJoin(RuleField field, Root<BookEntity> root) {
@@ -356,6 +359,7 @@ public class BookRuleEvaluatorService {
             case CATEGORIES -> metadataJoin.join("categories", JoinType.INNER);
             case MOODS -> metadataJoin.join("moods", JoinType.INNER);
             case TAGS -> metadataJoin.join("tags", JoinType.INNER);
+            case GENRE -> metadataJoin.join("categories", JoinType.INNER);
             default -> throw new IllegalArgumentException("Not an array field: " + field);
         };
     }

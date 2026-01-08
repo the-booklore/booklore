@@ -354,7 +354,7 @@ services:
 
 Found an issue?
 
-[![Open Issue](https://img.shields.io/badge/Report-ff6b6b?style=for-the-badge)](https://github.com/booklore-app/booklore/issues)
+[![Open Issue](https://img.shields.io/badge/Report-ff6b6b?style=for-the-badge)](https://github.com/booklore-app/booklore/issues/new?template=bug_report.yml)
 
 </td>
 <td align="center">
@@ -363,7 +363,7 @@ Found an issue?
 
 Have an idea?
 
-[![Request Feature](https://img.shields.io/badge/Suggest-4ecdc4?style=for-the-badge)](https://github.com/booklore-app/booklore/issues/new?template=feature_request.md)
+[![Request Feature](https://img.shields.io/badge/Suggest-4ecdc4?style=for-the-badge)](https://github.com/booklore-app/booklore/issues/new?template=feature_request.yml)
 
 </td>
 <td align="center">
@@ -423,6 +423,22 @@ Join community!
 [![Contributors](https://contrib.rocks/image?repo=adityachandelgit/BookLore)](https://github.com/booklore-app/booklore/graphs/contributors)
 
 **Want to see your face here?** [Start contributing today!](CONTRIBUTING.md)
+
+</div>
+
+---
+
+<div align="center">
+
+## 🌟 **Sponsors**
+
+### Thank you to our amazing sponsors!
+
+<a href="https://www.pikapods.com/pods?run=booklore">
+  <img src="https://www.pikapods.com/static/run-button.svg" alt="Run on PikaPods" height="40">
+</a>
+
+*Become a sponsor and get your logo here! [Support us on Open Collective](https://opencollective.com/booklore)*
 
 </div>
 

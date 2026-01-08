@@ -261,7 +261,7 @@
                   class="grid"
                   #container
                   [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
-                  @for (book of scroll.viewPortItems; let i = $index; track book) {
+                  @for (book of scroll.viewPortItems; let i = $index; track book.id) {
                     <div
                       class="virtual-scroller-item relative"
                       [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
@@ -295,7 +295,7 @@
                   <div class="flex justify-center w-2/4">
                     @if (entityType$ | async; as entityType) {
                       <div class="flex gap-2 md:gap-6">
-                        @if (userState.user!.permissions.canEditMetadata) {
+                        @if (hasMetadataMenuItems) {
                           <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                           <p-button
                             (click)="menu.toggle($event)"
@@ -324,7 +324,7 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        @if (userState.user!.permissions.canEditMetadata) {
+                        @if (userState.user!.permissions.canBulkLockUnlockMetadata) {
                           <p-button
                             outlined="true"
                             icon="pi pi-lock"
@@ -333,6 +333,8 @@
                             pTooltip="Lock/Unlock metadata"
                             tooltipPosition="top">
                           </p-button>
+                        }
+                        @if (userState.user!.permissions.canMoveOrganizeFiles) {
                           <p-button
                             outlined="true"
                             icon="pi pi-arrows-h"
@@ -342,17 +344,19 @@
                             tooltipPosition="top">
                           </p-button>
                         }
-                        <div class="card flex justify-center">
-                          <p-button
-                            (click)="menu.toggle($event)"
-                            pTooltip="More actions"
-                            tooltipPosition="top"
-                            outlined="true"
-                            severity="info"
-                            icon="pi pi-ellipsis-v">
-                          </p-button>
-                          <p-tieredMenu #menu [model]="tieredMenuItems" [popup]="true" appendTo="body"/>
-                        </div>
+                        @if (hasBulkReadActionsItems) {
+                          <div class="card flex justify-center">
+                            <p-button
+                              (click)="menu.toggle($event)"
+                              pTooltip="More actions"
+                              tooltipPosition="top"
+                              outlined="true"
+                              severity="info"
+                              icon="pi pi-ellipsis-v">
+                            </p-button>
+                            <p-tieredMenu #menu [model]="bulkReadActionsMenuItems" [popup]="true" appendTo="body"/>
+                          </div>
+                        }
                       </div>
                     }
                     <p-divider layout="vertical"></p-divider>

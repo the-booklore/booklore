@@ -21,6 +21,8 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     Optional<BookEntity> findByCurrentHash(String currentHash);
 
+    Optional<BookEntity> findByBookCoverHash(String bookCoverHash);
+
     @Query("SELECT b.id FROM BookEntity b WHERE b.library.id = :libraryId AND (b.deleted IS NULL OR b.deleted = false)")
     Set<Long> findBookIdsByLibraryId(@Param("libraryId") long libraryId);
 

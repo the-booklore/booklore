@@ -1,33 +1,43 @@
-import {Component, inject, Input} from '@angular/core';
+import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule} from '@angular/forms';
-import {ReaderPreferencesService} from '../reader-preferences-service';
+import {ReaderPreferencesService} from '../reader-preferences.service';
 import {UserSettings} from '../../user-management/user.service';
 import {Tooltip} from 'primeng/tooltip';
+import {CustomFontService} from '../../../../shared/service/custom-font.service';
+import {CustomFont} from '../../../../shared/model/custom-font.model';
+import {skip, Subject, takeUntil} from 'rxjs';
+import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
+import {Skeleton} from 'primeng/skeleton';
 
 @Component({
   selector: 'app-epub-reader-preferences-component',
   imports: [
     Button,
     FormsModule,
-    Tooltip
+    Tooltip,
+    Skeleton
   ],
   templateUrl: './epub-reader-preferences-component.html',
   styleUrl: './epub-reader-preferences-component.scss'
 })
-export class EpubReaderPreferencesComponent {
+export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
 
   @Input() userSettings!: UserSettings;
 
   private readonly readerPreferencesService = inject(ReaderPreferencesService);
+  private readonly customFontService = inject(CustomFontService);
+  private readonly destroy$ = new Subject<void>();
 
-  readonly fonts = [
+  customFonts: CustomFont[] = [];
+
+  fonts = [
     {name: 'Book Default', displayName: 'Default', key: null},
-    {name: 'Serif', displayName: 'Aa', key: 'serif'},
-    {name: 'Sans Serif', displayName: 'Aa', key: 'sans-serif'},
-    {name: 'Roboto', displayName: 'Aa', key: 'roboto'},
-    {name: 'Cursive', displayName: 'Aa', key: 'cursive'},
-    {name: 'Monospace', displayName: 'Aa', key: 'monospace'}
+    {name: 'Serif', displayName: 'Serif', key: 'serif'},
+    {name: 'Sans Serif', displayName: 'Sans Serif', key: 'sans-serif'},
+    {name: 'Roboto', displayName: 'Roboto', key: 'roboto'},
+    {name: 'Cursive', displayName: 'Cursive', key: 'cursive'},
+    {name: 'Monospace', displayName: 'Monospace', key: 'monospace'}
   ];
 
   readonly flowOptions = [
@@ -58,6 +68,81 @@ export class EpubReaderPreferencesComponent {
     {name: 'Dark Brown', key: 'dark-brown', color: '#3E2723'}
   ];
 
+  customFontsReady = false;
+
+  ngOnInit(): void {
+    this.subscribeToFontUpdates();
+
+    this.customFontService.getUserFonts().subscribe({
+      next: () => {
+        this.customFontsReady = true;
+      },
+      error: (err) => {
+        console.error('Failed to load custom fonts:', err);
+        this.customFontsReady = true;
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private subscribeToFontUpdates(): void {
+    this.customFontService.fonts$
+      .pipe(
+        skip(1),
+        takeUntil(this.destroy$)
+      )
+      .subscribe(async fonts => {
+        try {
+          const selectedFontDeleted = this.isCurrentlySelectedFontDeleted(fonts);
+
+          if (this.hasCustomFontsChanged(fonts)) {
+            this.customFonts = fonts;
+            await this.customFontService.loadAllFonts(fonts);
+            this.updateFontsDropdown(fonts);
+          }
+
+          if (selectedFontDeleted) {
+            this.resetToDefaultFont();
+          }
+        } catch (err) {
+          console.error('Failed to process custom fonts:', err);
+        }
+      });
+  }
+
+  private hasCustomFontsChanged(newFonts: CustomFont[]): boolean {
+    if (newFonts.length !== this.customFonts.length) {
+      return true;
+    }
+    const newIds = new Set(newFonts.map(f => f.id));
+    const currentIds = new Set(this.customFonts.map(f => f.id));
+    return newFonts.some(f => !currentIds.has(f.id)) || this.customFonts.some(f => !newIds.has(f.id));
+  }
+
+  private updateFontsDropdown(fonts: CustomFont[]): void {
+    this.fonts = this.fonts.filter(font => !font.key || !font.key.startsWith('custom:'));
+    addCustomFontsToDropdown(fonts, this.fonts, 'preference');
+  }
+
+  private isCurrentlySelectedFontDeleted(newFonts: CustomFont[]): boolean {
+    const customFontId = this.userSettings.epubReaderSetting.customFontId;
+    if (!customFontId) {
+      return false;
+    }
+
+    const fontStillExists = newFonts.some(font => font.id === customFontId);
+    return !fontStillExists;
+  }
+
+  private resetToDefaultFont(): void {
+    console.log('Selected custom font was deleted, resetting to default font');
+    this.selectedFont = null;
+  }
+
   get selectedTheme(): string | null {
     return this.userSettings.epubReaderSetting.theme;
   }
@@ -70,14 +155,40 @@ export class EpubReaderPreferencesComponent {
   }
 
   get selectedFont(): string | null {
+    // If customFontId is set, return the custom font key
+    if (this.userSettings.epubReaderSetting.customFontId) {
+      return `custom:${this.userSettings.epubReaderSetting.customFontId}`;
+    }
     return this.userSettings.epubReaderSetting.font;
   }
 
   set selectedFont(value: string | null) {
-    if (typeof value === "string") {
+    // Handle custom fonts
+    if (value && value.startsWith('custom:')) {
+      const fontIdStr = value.split(':')[1];
+      const fontId = parseInt(fontIdStr, 10);
+
+      if (isNaN(fontId)) {
+        console.error('Invalid custom font ID:', value);
+        return;
+      }
+
+      // Update both fields in local state
+      this.userSettings.epubReaderSetting.customFontId = fontId;
       this.userSettings.epubReaderSetting.font = value;
+    } else {
+      // Clear customFontId and set font in local state
+      this.userSettings.epubReaderSetting.customFontId = null;
+      if (typeof value === "string") {
+        this.userSettings.epubReaderSetting.font = value;
+      } else {
+        // value is null - set to default font
+        this.userSettings.epubReaderSetting.font = null as any;
+      }
     }
-    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'font'], value);
+
+    // Single API call with entire epubReaderSetting object
+    this.readerPreferencesService.updatePreference(['epubReaderSetting'], this.userSettings.epubReaderSetting);
   }
 
   get selectedFlow(): string | null {
@@ -121,5 +232,14 @@ export class EpubReaderPreferencesComponent {
     if (this.fontSize > 50) {
       this.fontSize -= 10;
     }
+  }
+
+  getCustomFontName(fontKey: string): string | null {
+    if (!fontKey || !fontKey.startsWith('custom:')) {
+      return null;
+    }
+    const fontId = parseInt(fontKey.split(':')[1]);
+    const customFont = this.customFonts.find(f => f.id === fontId);
+    return customFont ? customFont.fontName : null;
   }
 }

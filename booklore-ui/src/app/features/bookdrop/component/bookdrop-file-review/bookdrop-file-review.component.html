@@ -155,12 +155,12 @@
       } @else {
         @for (file of bookdropFileUis; track file) {
 
-          <div class="file-item" 
+          <div class="file-item"
                [attr.id]="'file-' + file.file.id"
-               [attr.data-file-id]="file.file.id" 
-               role="option" 
+               [attr.data-file-id]="file.file.id"
+               role="option"
                [attr.aria-selected]="file.selected">
-            <div class="file-row">
+            <div class="file-row" [ngClass]="file.showDetails ? ' expanded' : ''">
               <p-checkbox
                 [binary]="true"
                 [ngModel]="file.selected"
