@@ -19,6 +19,7 @@ import {IconPickerService, IconSelection} from '../../../shared/service/icon-pic
 import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
+import {BookService} from '../../book/service/book.service';
 
 export type RuleOperator =
   | 'equals'
@@ -51,6 +52,8 @@ export type RuleField =
   | 'seriesTotal'
   | 'pageCount'
   | 'language'
+  | 'isbn13'
+  | 'isbn10'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
@@ -126,6 +129,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
   pageCount: {label: 'Page Count', type: 'number'},
   language: {label: 'Language'},
+  isbn13: {label: 'ISBN-13'},
+  isbn10: {label: 'ISBN-10'},
   seriesName: {label: 'Series Name'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
@@ -172,10 +177,14 @@ export class MagicShelfComponent implements OnInit {
     {label: 'OR', value: 'or'},
   ];
 
-  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => ({
-    label: config.label,
-    value: key as RuleField
-  }));
+  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => {
+    // Use "Genre" instead of "Categories" for user-facing label
+    const label = key === 'categories' ? 'Genre' : config.label;
+    return {
+      label: label,
+      value: key as RuleField
+    };
+  });
 
   fileType: { label: string; value: string }[] = [
     {label: 'PDF', value: 'pdf'},
@@ -192,6 +201,7 @@ export class MagicShelfComponent implements OnInit {
 
   libraries: Library[] = [];
   libraryOptions: { label: string; value: number }[] = [];
+  categoryOptions: { label: string; value: string }[] = [];
 
   form = new FormGroup({
     name: new FormControl<string | null>(null),
@@ -205,6 +215,7 @@ export class MagicShelfComponent implements OnInit {
   editMode!: boolean;
 
   libraryService = inject(LibraryService);
+  bookService = inject(BookService);
   magicShelfService = inject(MagicShelfService);
   ref = inject(DynamicDialogRef);
   messageService = inject(MessageService);
@@ -222,6 +233,24 @@ export class MagicShelfComponent implements OnInit {
     this.isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const id = this.config?.data?.id;
     this.editMode = !!this.config?.data?.editMode;
+
+    // Load available categories from book metadata
+    this.bookService.bookState$.subscribe(state => {
+      if (state.loaded && state.books) {
+        // Extract unique categories from all books
+        const categoriesSet = new Set<string>();
+        state.books.forEach(book => {
+          if (book.metadata?.categories) {
+            book.metadata.categories.forEach(cat => categoriesSet.add(cat));
+          }
+        });
+
+        this.categoryOptions = Array.from(categoriesSet).map(cat => ({
+          label: cat,
+          value: cat
+        })).sort((a, b) => a.label.localeCompare(b.label));
+      }
+    });
 
     if (id) {
       this.shelfId = id;
@@ -324,7 +353,7 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
+    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {

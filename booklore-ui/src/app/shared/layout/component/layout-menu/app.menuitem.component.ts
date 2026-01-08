@@ -10,7 +10,7 @@ import {Button} from 'primeng/button';
 import {Menu} from 'primeng/menu';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {DialogLauncherService} from '../../../services/dialog-launcher.service';
-import {BookDialogHelperService} from '../../../../features/book/components/book-browser/BookDialogHelperService';
+import {BookDialogHelperService} from '../../../../features/book/components/book-browser/book-dialog-helper.service';
 import {IconDisplayComponent} from '../../../components/icon-display/icon-display.component';
 import {MenuItem} from 'primeng/api';
 import {IconSelection} from '../../../service/icon-picker.service';

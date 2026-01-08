@@ -28,7 +28,7 @@ import {Tooltip} from 'primeng/tooltip';
     InputIcon,
     IconField,
     Tooltip
-],
+  ],
   styleUrls: ['./directory-picker.component.scss']
 })
 export class DirectoryPickerComponent implements OnInit {
@@ -53,15 +53,18 @@ export class DirectoryPickerComponent implements OnInit {
 
   getFolders(path: string): void {
     this.isLoading = true;
+    this.filteredPaths = [];
     this.utilityService.getFolders(path).subscribe({
       next: (folders: string[]) => {
-        this.paths = folders;
-        this.filteredPaths = folders;
-        this.isLoading = false;
-        this.updateBreadcrumb(path);
-        folders.forEach(folder => {
-          this.selectedFoldersMap[folder] = this.selectedFolders.includes(folder);
-        });
+        setTimeout(() => {
+          this.paths = folders;
+          this.filteredPaths = folders;
+          this.isLoading = false;
+          this.updateBreadcrumb(path);
+          folders.forEach(folder => {
+            this.selectedFoldersMap[folder] = this.selectedFolders.includes(folder);
+          });
+        }, 100);
       },
       error: (error) => {
         console.error('Error fetching folders:', error);
@@ -102,21 +105,6 @@ export class DirectoryPickerComponent implements OnInit {
     this.selectedProductName = path;
     this.getFolders(path);
     this.searchQuery = '';
-  }
-
-  toggleFolderSelection(path: string, event?: Event): void {
-    if (event) {
-      event.stopPropagation();
-    }
-
-    const index = this.selectedFolders.indexOf(path);
-    if (index > -1) {
-      this.selectedFolders.splice(index, 1);
-      this.selectedFoldersMap[path] = false;
-    } else {
-      this.selectedFolders.push(path);
-      this.selectedFoldersMap[path] = true;
-    }
   }
 
   onCheckboxChange(path: string, checked: boolean): void {

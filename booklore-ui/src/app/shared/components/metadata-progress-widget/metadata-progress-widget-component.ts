@@ -9,7 +9,7 @@ import {Tooltip} from 'primeng/tooltip';
 import {MessageService} from 'primeng/api';
 
 import {MetadataBatchProgressNotification, MetadataBatchStatus, MetadataBatchStatusLabels} from '../../model/metadata-batch-progress.model';
-import {MetadataProgressService} from '../../service/metadata-progress-service';
+import {MetadataProgressService} from '../../service/metadata-progress.service';
 import {MetadataTaskService} from '../../../features/book/service/metadata-task';
 import {Tag} from 'primeng/tag';
 import {TaskService} from '../../../features/settings/task-management/task.service';

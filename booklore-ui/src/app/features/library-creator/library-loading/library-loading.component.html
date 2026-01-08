@@ -1,0 +1,50 @@
+<div class="fullscreen-loader">
+  <div class="library-loader-content">
+    <div class="library-loader-header">
+      <i class="pi pi-book"></i>
+      <h2>Loading Library</h2>
+    </div>
+
+    <div class="library-loader-body">
+      <div class="book-title">
+        @if (!isComplete) {
+          <ng-container>
+            Processing: <strong>{{ truncatedTitle }}</strong>
+          </ng-container>
+        }
+        @if (isComplete) {
+          <strong class="complete-message">
+            <i class="pi pi-check-circle"></i>
+            Library Loading Complete!
+          </strong>
+        }
+      </div>
+
+      <div class="progress-info">
+        <span>{{ current }} / {{ total }}</span>
+        <span>{{ percentage }}%</span>
+      </div>
+
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" [style.width.%]="percentage"></div>
+      </div>
+
+      @if (!isComplete) {
+        <div class="loader-animation">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      }
+    </div>
+
+    @if (isComplete) {
+      <div class="library-loader-footer">
+        <button class="reload-button" (click)="onReload()">
+          <i class="pi pi-bookmark"></i>
+          Open Library
+        </button>
+      </div>
+    }
+  </div>
+</div>

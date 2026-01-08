@@ -201,6 +201,7 @@ export interface EpubViewerSetting {
   lineHeight: number;
   letterSpacing: number;
   spread: string;
+  customFontId?: number | null;
 }
 
 export interface CbxViewerSetting {

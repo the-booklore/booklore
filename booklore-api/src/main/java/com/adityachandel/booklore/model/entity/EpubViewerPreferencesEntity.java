@@ -44,4 +44,7 @@ public class EpubViewerPreferencesEntity {
 
     @Column(name = "spread")
     private String spread;
+
+    @Column(name = "custom_font_id")
+    private Long customFontId;
 }
