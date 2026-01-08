@@ -76,7 +76,7 @@ public class BookMetadataService {
     public Flux<BookMetadata> getProspectiveMetadataListForBookId(long bookId, FetchMetadataRequest request) {
         if (request.getProviders() == null || request.getProviders().isEmpty()) {
             log.debug("No metadata providers specified for Book ID: {}", bookId);
-            return List.of();
+            return Flux.empty();
         }
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         Book book = bookMapper.toBook(bookEntity);
@@ -122,7 +122,7 @@ public class BookMetadataService {
         log.debug("Fetched {} total metadata entries for Book ID: {} from {} providers",
                 interleavedMetadata.size(), bookId, request.getProviders().size());
 
-        return interleavedMetadata;
+        return Flux.fromIterable(interleavedMetadata);
     }
 
     public Map<MetadataProvider, BookMetadata> fetchTopMetadataMap(Book book, FetchMetadataRequest request) {

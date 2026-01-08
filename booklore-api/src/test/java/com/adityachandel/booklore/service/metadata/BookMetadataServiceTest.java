@@ -84,7 +84,7 @@ class BookMetadataServiceTest {
         BookMetadata result = BookMetadata.builder().title("GoodReads Title").build();
         when(goodreadsParser.fetchMetadata(any(), any())).thenReturn(List.of(result));
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(1, results.size());
         assertEquals("GoodReads Title", results.get(0).getTitle());
@@ -104,7 +104,7 @@ class BookMetadataServiceTest {
         BookMetadata gr2 = BookMetadata.builder().title("GoodReads 2").build();
         when(goodreadsParser.fetchMetadata(any(), any())).thenReturn(List.of(gr1, gr2));
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(4, results.size());
         assertEquals("Google 1", results.get(0).getTitle());
@@ -128,7 +128,7 @@ class BookMetadataServiceTest {
         BookMetadata fastResult = BookMetadata.builder().title("Fast Result").build();
         when(goodreadsParser.fetchMetadata(any(), any())).thenReturn(List.of(fastResult));
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(2, results.size());
     }
@@ -140,7 +140,7 @@ class BookMetadataServiceTest {
                 .providers(List.of())
                 .build();
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(0, results.size());
         verify(bookRepository, never()).findById(anyLong());
@@ -153,7 +153,7 @@ class BookMetadataServiceTest {
                 .providers(null)
                 .build();
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(0, results.size());
         verify(bookRepository, never()).findById(anyLong());
@@ -168,7 +168,7 @@ class BookMetadataServiceTest {
         when(googleParser.fetchMetadata(any(), any())).thenThrow(new RuntimeException("Google Failed"));
         when(goodreadsParser.fetchMetadata(any(), any())).thenThrow(new RuntimeException("GoodReads Failed"));
 
-        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request);
+        List<BookMetadata> results = bookMetadataService.getProspectiveMetadataListForBookId(bookId, request).collectList().block();
 
         assertEquals(0, results.size());
     }
