@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.InstallationPing;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataProviderSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPublicReviewsSettings;
+import com.adityachandel.booklore.model.dto.settings.UserSettingKey;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
@@ -42,6 +43,7 @@ public class TelemetryService {
     private final EmailRecipientV2Repository emailRecipientV2Repository;
     private final AppSettingService appSettingService;
     private final KoboUserSettingsRepository koboUserSettingsRepository;
+    private final UserSettingRepository userSettingRepository;
     private final KoreaderUserRepository koreaderUserRepository;
     private final OpdsUserV2Repository opdsUserV2Repository;
     private final InstallationService installationService;
@@ -121,7 +123,8 @@ public class TelemetryService {
                 .koboStatistics(BookloreTelemetry.KoboStatistics.builder()
                         .convertToKepubEnabled(settings.getKoboSettings().isConvertToKepub())
                         .totalKoboUsers((int) koboUserSettingsRepository.count())
-                        .totalHardcoverSyncEnabled((int) koboUserSettingsRepository.countByHardcoverSyncEnabledTrue())
+                        .totalHardcoverSyncEnabled((int) userSettingRepository.countBySettingKeyAndSettingValue(
+                                UserSettingKey.HARDCOVER_SYNC_ENABLED.getDbKey(), "true"))
                         .totalAutoAddToShelf((int) koboUserSettingsRepository.countByAutoAddToShelfTrue())
                         .build())
                 .bookStatistics(bookStatistics)

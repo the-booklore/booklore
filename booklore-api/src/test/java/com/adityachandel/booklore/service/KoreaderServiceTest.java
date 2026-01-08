@@ -13,6 +13,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.repository.KoreaderUserRepository;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import com.adityachandel.booklore.service.koreader.KoreaderService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +41,8 @@ class KoreaderServiceTest {
     UserRepository userRepo;
     @Mock
     KoreaderUserRepository koreaderUserRepo;
+    @Mock
+    HardcoverSyncService hardcoverSyncService;
 
     @InjectMocks
     KoreaderService service;

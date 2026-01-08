@@ -1,10 +1,10 @@
 package com.adityachandel.booklore.service.hardcover;
 
-import com.adityachandel.booklore.model.dto.KoboSyncSettings;
+import com.adityachandel.booklore.model.dto.HardcoverSyncSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.kobo.KoboSettingsService;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
 class HardcoverSyncServiceTest {
 
     @Mock
-    private KoboSettingsService koboSettingsService;
+    private HardcoverSyncSettingsService hardcoverSyncSettingsService;
 
     @Mock
     private BookRepository bookRepository;
@@ -50,7 +50,7 @@ class HardcoverSyncServiceTest {
 
     private BookEntity testBook;
     private BookMetadataEntity testMetadata;
-    private KoboSyncSettings koboSyncSettings;
+    private HardcoverSyncSettings hardcoverSyncSettings;
 
     private static final Long TEST_BOOK_ID = 100L;
     private static final Long TEST_USER_ID = 1L;
@@ -58,7 +58,7 @@ class HardcoverSyncServiceTest {
     @BeforeEach
     void setUp() throws Exception {
         // Create service with mocked dependencies
-        service = new HardcoverSyncService(koboSettingsService, bookRepository);
+        service = new HardcoverSyncService(hardcoverSyncSettingsService, bookRepository);
         
         // Inject our mocked restClient using reflection
         Field restClientField = HardcoverSyncService.class.getDeclaredField("restClient");
@@ -73,12 +73,12 @@ class HardcoverSyncServiceTest {
         testMetadata.setPageCount(300);
         testBook.setMetadata(testMetadata);
 
-        // Setup Kobo sync settings with Hardcover enabled
-        koboSyncSettings = new KoboSyncSettings();
-        koboSyncSettings.setHardcoverSyncEnabled(true);
-        koboSyncSettings.setHardcoverApiKey("test-api-key");
+        // Setup Hardcover sync settings
+        hardcoverSyncSettings = new HardcoverSyncSettings();
+        hardcoverSyncSettings.setHardcoverSyncEnabled(true);
+        hardcoverSyncSettings.setHardcoverApiKey("test-api-key");
 
-        when(koboSettingsService.getSettingsByUserId(TEST_USER_ID)).thenReturn(koboSyncSettings);
+        when(hardcoverSyncSettingsService.getSettingsForUserId(TEST_USER_ID)).thenReturn(hardcoverSyncSettings);
         when(bookRepository.findById(TEST_BOOK_ID)).thenReturn(Optional.of(testBook));
         
         // Setup RestClient mock chain - handles multiple calls
@@ -94,7 +94,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when Hardcover sync is not enabled for user")
     void syncProgressToHardcover_whenHardcoverDisabled_shouldSkip() {
-        koboSyncSettings.setHardcoverSyncEnabled(false);
+        hardcoverSyncSettings.setHardcoverSyncEnabled(false);
 
         service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f, TEST_USER_ID);
 
@@ -104,7 +104,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when API key is missing")
     void syncProgressToHardcover_whenApiKeyMissing_shouldSkip() {
-        koboSyncSettings.setHardcoverApiKey(null);
+        hardcoverSyncSettings.setHardcoverApiKey(null);
 
         service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f, TEST_USER_ID);
 
@@ -114,7 +114,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when API key is blank")
     void syncProgressToHardcover_whenApiKeyBlank_shouldSkip() {
-        koboSyncSettings.setHardcoverApiKey("   ");
+        hardcoverSyncSettings.setHardcoverApiKey("   ");
 
         service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f, TEST_USER_ID);
 
@@ -244,6 +244,7 @@ class HardcoverSyncServiceTest {
     @DisplayName("Should handle existing user_book gracefully")
     void syncProgressToHardcover_whenUserBookExists_shouldFindExisting() {
         testMetadata.setHardcoverBookId(12345);
+        testMetadata.setPageCount(300);
 
         // Mock: insert_user_book returns error, then find existing, then create progress
         when(responseSpec.body(Map.class))
@@ -261,6 +262,7 @@ class HardcoverSyncServiceTest {
     @DisplayName("Should update existing reading progress")
     void syncProgressToHardcover_whenProgressExists_shouldUpdate() {
         testMetadata.setHardcoverBookId(12345);
+        testMetadata.setPageCount(300);
 
         // Mock: insert_user_book -> find existing read -> update read
         when(responseSpec.body(Map.class))
@@ -296,6 +298,7 @@ class HardcoverSyncServiceTest {
     @DisplayName("Should handle API errors gracefully")
     void syncProgressToHardcover_whenApiError_shouldNotThrow() {
         testMetadata.setHardcoverBookId(12345);
+        testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class)).thenReturn(Map.of("errors", List.of(Map.of("message", "Unauthorized"))));
 
@@ -306,6 +309,7 @@ class HardcoverSyncServiceTest {
     @DisplayName("Should handle null response gracefully")
     void syncProgressToHardcover_whenResponseNull_shouldNotThrow() {
         testMetadata.setHardcoverBookId(12345);
+        testMetadata.setPageCount(300);
 
         when(responseSpec.body(Map.class)).thenReturn(null);
 
@@ -315,7 +319,7 @@ class HardcoverSyncServiceTest {
     @Test
     @DisplayName("Should skip sync when user settings not found")
     void syncProgressToHardcover_whenUserSettingsNotFound_shouldSkip() {
-        when(koboSettingsService.getSettingsByUserId(TEST_USER_ID)).thenReturn(null);
+        when(hardcoverSyncSettingsService.getSettingsForUserId(TEST_USER_ID)).thenReturn(null);
 
         service.syncProgressToHardcover(TEST_BOOK_ID, 50.0f, TEST_USER_ID);
 
