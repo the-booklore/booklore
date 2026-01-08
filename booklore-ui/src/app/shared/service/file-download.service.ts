@@ -1,4 +1,4 @@
-import {Injectable, inject} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpEvent, HttpEventType, HttpResponse} from '@angular/common/http';
 import {MessageService} from 'primeng/api';
 import {DownloadProgressService} from './download-progress.service';
@@ -13,10 +13,10 @@ export class FileDownloadService {
   private downloadProgressService = inject(DownloadProgressService);
   private messageService = inject(MessageService);
 
-  downloadFile(url: string, defaultFilename: string): Observable<any> {
+  downloadFile(url: string, defaultFilename: string): void {
     const cancelSubject = new Subject<void>();
 
-    return this.initiateDownload(url)
+    this.initiateDownload(url)
       .pipe(
         takeUntil(cancelSubject),
         tap(event => this.handleDownloadProgress(event, defaultFilename, cancelSubject)),
@@ -25,7 +25,8 @@ export class FileDownloadService {
           this.handleDownloadError(error);
           return throwError(() => error);
         })
-      );
+      )
+      .subscribe();
   }
 
   private initiateDownload(url: string): Observable<HttpEvent<Blob>> {

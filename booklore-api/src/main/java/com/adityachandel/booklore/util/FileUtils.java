@@ -63,6 +63,17 @@ public class FileUtils {
         }
     }
 
+    public String getExtension(String fileName) {
+        if (fileName == null) {
+            return "";
+        }
+        int i = fileName.lastIndexOf('.');
+        if (i >= 0 && i < fileName.length() - 1) {
+            return fileName.substring(i + 1);
+        }
+        return "";
+    }
+
     private List<String> systemDirs = Arrays.asList(
       // synology
       "#recycle",

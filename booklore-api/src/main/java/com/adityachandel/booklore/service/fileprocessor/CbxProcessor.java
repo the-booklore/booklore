@@ -42,7 +42,6 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern UNDERSCORE_HYPHEN_PATTERN = Pattern.compile("[_\\-]");
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
-    private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
     public CbxProcessor(BookRepository bookRepository,
@@ -99,17 +98,20 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractImagesFromArchive(File file) {
-        String name = file.getName().toLowerCase();
-        if (name.endsWith(".cbz")) {
-            return extractFirstImageFromZip(file);
-        } else if (name.endsWith(".cb7")) {
-            return extractFirstImageFrom7z(file);
-        } else if (name.endsWith(".cbr")) {
-            return extractFirstImageFromRar(file);
-        } else {
+        String name = file.getName();
+        String extension = FileUtils.getExtension(name).toLowerCase();
+
+        if (!BookFileType.CBX.supports(extension)) {
             log.warn("Unsupported CBX format: {}", name);
             return Optional.empty();
         }
+
+        return switch (extension) {
+            case "cbz" -> extractFirstImageFromZip(file);
+            case "cb7" -> extractFirstImageFrom7z(file);
+            case "cbr" -> extractFirstImageFromRar(file);
+            default -> Optional.empty();
+        };
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
@@ -242,8 +244,12 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
-        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(CBX_FILE_EXTENSION_PATTERN.matcher(baseName).replaceAll("")).replaceAll(" ")
-                .trim();
+        String extension = FileUtils.getExtension(baseName);
+        if (BookFileType.CBX.supports(extension)) {
+            baseName = baseName.substring(0, baseName.length() - extension.length() - 1);
+        }
+        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(baseName).replaceAll(" ").trim();
         bookEntity.getMetadata().setTitle(truncate(title, 1000));
     }
 }
+
