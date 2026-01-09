@@ -261,6 +261,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
     if (permissions.canManageGlobalPreferences) count++;
     if (permissions.canManageMetadataConfig) count++;
     if (permissions.canManageIcons) count++;
+    if (permissions.canManageFonts) count++;
     return count;
   }
 
@@ -317,6 +318,7 @@ export class UserManagementComponent implements OnInit, OnDestroy {
       user.permissions.canAccessTaskManager = true;
       user.permissions.canManageEmailConfig = true;
       user.permissions.canManageIcons = true;
+      user.permissions.canManageFonts = true;
       user.permissions.canBulkAutoFetchMetadata = true;
       user.permissions.canBulkCustomFetchMetadata = true;
       user.permissions.canBulkEditMetadata = true;

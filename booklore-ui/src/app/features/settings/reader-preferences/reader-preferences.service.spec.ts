@@ -31,6 +31,7 @@ const mockUser: User = {
     canManageEmailConfig: true,
     canManageGlobalPreferences: true,
     canManageIcons: true,
+    canManageFonts: true,
     demoUser: false,
     canBulkAutoFetchMetadata: true,
     canBulkCustomFetchMetadata: true,

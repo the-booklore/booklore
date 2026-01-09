@@ -1,7 +1,14 @@
 <div>
-
-  <div class="settings-content">
-
+  <div class="settings-content" style="position: relative;">
+    <div class="float-top-right">
+      <p-button
+        icon="pi pi-upload"
+        rounded
+        size="large"
+        (click)="openUploadDialog()"
+        [disabled]="customFonts.length >= maxFonts"
+      ></p-button>
+    </div>
     @if (customFonts.length === 0 && !isLoading) {
       <div class="preferences-section">
         <div class="empty-state">
@@ -28,12 +35,6 @@
               <span class="font-count">({{ customFonts.length }})</span>
             </h3>
           </div>
-          <p-button
-            label="Add New Font"
-            icon="pi pi-plus"
-            (click)="openUploadDialog()"
-            [disabled]="customFonts.length >= maxFonts"
-          ></p-button>
         </div>
 
         <div class="fonts-grid">

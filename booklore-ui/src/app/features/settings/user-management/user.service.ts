@@ -171,6 +171,7 @@ export interface User {
     canManageEmailConfig: boolean;
     canManageGlobalPreferences: boolean;
     canManageIcons: boolean;
+    canManageFonts: boolean;
     demoUser: boolean;
     canBulkAutoFetchMetadata: boolean;
     canBulkCustomFetchMetadata: boolean;
