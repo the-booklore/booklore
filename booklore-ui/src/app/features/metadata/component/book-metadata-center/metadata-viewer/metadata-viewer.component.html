@@ -633,7 +633,7 @@
                 @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
                   @if (bookInSeriesItem.id !== book.id) {
                     <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id" [showSeriesNumber]="true"></app-book-card-lite-component>
                     </div>
                   }
                 }
