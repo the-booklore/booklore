@@ -5,7 +5,7 @@ import {PageTitleService} from "../../../../shared/service/page-title.service";
 import {LibraryService} from '../../service/library.service';
 import {BookService} from '../../service/book.service';
 import {catchError, debounceTime, filter, map, switchMap, take} from 'rxjs/operators';
-import {BehaviorSubject, combineLatest, finalize, forkJoin, Observable, of, Subject} from 'rxjs';
+import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
 import {ShelfService} from '../../service/shelf.service';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -129,7 +129,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   entityType$: Observable<EntityType> | undefined;
   searchTerm$ = new BehaviorSubject<string>('');
   parsedFilters: Record<string, string[]> = {};
-  selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
+  selectedFilter = new BehaviorSubject<Record<string, string[]> | null>(null);
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
@@ -272,7 +272,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.activatedRoute.paramMap,
       this.activatedRoute.queryParamMap,
       this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
-    ]).subscribe(([paramMap, queryParamMap, user]) => {
+    ]).subscribe(([_, queryParamMap, user]) => {
 
       const viewParam = queryParamMap.get(QUERY_PARAMS.VIEW);
       const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
@@ -281,9 +281,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const filterMode = queryParamMap.get(QUERY_PARAMS.FMODE) || user.user?.userSettings?.filterMode;
 
       if (filterMode && filterMode !== this.selectedFilterMode.getValue()) {
-        this.selectedFilterMode.next(<BookFilterMode>filterMode);
+        this.selectedFilterMode.next((filterMode as BookFilterMode));
         if (this.bookFilterComponent) {
-          this.bookFilterComponent.selectedFilterMode = <BookFilterMode>filterMode;
+          this.bookFilterComponent.selectedFilterMode = filterMode as BookFilterMode;
         }
       }
 
@@ -379,7 +379,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.applySortOption(this.bookSorter.selectedSort);
       }
 
-      const queryParams: any = {
+      const queryParams: Record<string, string | number | null | undefined> = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
         [QUERY_PARAMS.SORT]: this.bookSorter.selectedSort.field,
         [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING,
@@ -465,7 +465,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.coverScalePreferenceService.setScale(this.coverScalePreferenceService.scaleFactor);
   }
 
-  onVisibleColumnsChange(selected: any[]) {
+  onVisibleColumnsChange(selected: { field: string; header: string }[]) {
     const allFields = this.bookTableComponent.allColumns.map(col => col.field);
     this.visibleColumns = selected.sort(
       (a, b) => allFields.indexOf(a.field) - allFields.indexOf(b.field)
@@ -556,8 +556,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           .subscribe(() => {
             this.selectedBooks.clear();
           });
-      },
-      reject: () => {
       }
     });
   }
@@ -754,8 +752,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     return (entity as Library).paths !== undefined;
   }
 
-  private isMagicShelf(entity: any): entity is MagicShelf {
-    return entity && 'filterJson' in entity;
+  private isMagicShelf(entity: Library | Shelf | MagicShelf | null): entity is MagicShelf {
+    return !!entity && 'filterJson' in entity;
   }
 
   private getEntityInfoFromRoute(): Observable<{ entityId: number; entityType: EntityType }> {

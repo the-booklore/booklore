@@ -31,7 +31,7 @@ export class LibraryMetadataSettingsComponent implements OnInit {
   );
 
   defaultMetadataOptions: MetadataRefreshOptions = this.getDefaultMetadataOptions();
-  libraryMetadataOptions: { [libraryId: number]: MetadataRefreshOptions } = {};
+  libraryMetadataOptions: Record<number, MetadataRefreshOptions> = {};
 
   ngOnInit() {
     this.appSettingsService.appSettings$.subscribe(appSettings => {

@@ -121,7 +121,8 @@
                     placeholder="Select Libraries"
                     appendTo="body"
                     [style]="{'width': '100%'}"
-                    size="small">
+                    size="small"
+                    [disabled]="user.permissions.admin">
                   </p-multiSelect>
                 } @else {
                   <span class="library-names">{{ user.libraryNames || 'None' }}</span>
@@ -151,9 +152,9 @@
                 </div>
               </td>
               <td class="text-center">
-                <div class="permission-summary" [attr.data-count]="getSystemConfigPermissionsCount(user)" [attr.data-total]="4">
+                <div class="permission-summary" [attr.data-count]="getSystemConfigPermissionsCount(user)" [attr.data-total]="5">
                   <span class="permission-count">
-                    {{ getSystemConfigPermissionsCount(user) }}/4
+                    {{ getSystemConfigPermissionsCount(user) }}/5
                   </span>
                 </div>
               </td>
@@ -332,6 +333,10 @@
                             <div class="permission-item">
                               <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageIcons" [disabled]="isPermissionDisabled(user)" inputId="icons-{{user.id}}"></p-checkbox>
                               <label [for]="'icons-'+user.id">Manage Icons</label>
+                            </div>
+                            <div class="permission-item">
+                              <p-checkbox [binary]="true" [(ngModel)]="user.permissions.canManageFonts" [disabled]="isPermissionDisabled(user)" inputId="fonts-{{user.id}}"></p-checkbox>
+                              <label [for]="'fonts-'+user.id">Manage Fonts</label>
                             </div>
                           </div>
                         </div>

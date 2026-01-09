@@ -24,9 +24,7 @@ interface SvgIconBatchResponse {
   results: IconSaveResult[];
 }
 
-interface IconContentMap {
-  [iconName: string]: string;
-}
+type IconContentMap = Record<string, string>;
 
 @Injectable({
   providedIn: 'root'

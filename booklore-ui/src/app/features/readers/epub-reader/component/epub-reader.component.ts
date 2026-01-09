@@ -91,6 +91,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   selectedCustomFontId?: number | null = null;
   customFonts: CustomFont[] = [];
   customFontsReady = false;
+  private customFontBlobUrls = new Map<number, string>();
 
   fontTypes: any[] = [
     {label: "Publisher's Default", value: null},
@@ -137,18 +138,15 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.isLoading = true;
       const bookId = +params.get('bookId')!;
 
-      // Load custom fonts FIRST and wait for them
       try {
         const fonts = await firstValueFrom(this.customFontService.getUserFonts());
         this.customFonts = fonts;
-        // Wait for all fonts to load into the browser
         await this.customFontService.loadAllFonts(fonts);
-        // Add custom fonts to dropdown
+        await this.cacheCustomFontsAsBlobs(fonts);
         addCustomFontsToDropdown(fonts, this.fontTypes, 'select');
       } catch (err) {
         console.error('Failed to load custom fonts:', err);
       } finally {
-        // Mark fonts as ready even if loading fails (allows UI to proceed)
         this.customFontsReady = true;
       }
 
@@ -191,8 +189,6 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             if (resolvedFlow != null) this.selectedFlow = resolvedFlow;
             if (resolvedSpread != null) this.selectedSpread = resolvedSpread;
 
-            // Set font type from settings (including custom font format)
-            // Don't set selectedCustomFontId yet - let applyEpubTheme() set it after verification
             if (resolvedCustomFontId != null) {
               this.selectedFontType = `custom:${resolvedCustomFontId}`;
             }
@@ -299,23 +295,35 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   async changeFontType(): Promise<void> {
     const result = await this.applyEpubTheme();
 
-    // Update state based on result
     if (!result.success) {
-      // Font loading failed, clear the selection
       this.selectedFontType = null;
       this.selectedCustomFontId = null;
     } else if (result.customFontId !== undefined) {
-      // Custom font loaded successfully or cleared
       this.selectedCustomFontId = result.customFontId;
     }
 
     this.updateViewerSetting();
   }
 
-  private async applyEpubTheme(): Promise<{ success: boolean, customFontId?: number | null }> {
-    if (!this.rendition) return { success: false };
+  private async cacheCustomFontsAsBlobs(fonts: CustomFont[]): Promise<void> {
+    const promises = fonts.map(async (font) => {
+      try {
+        const fontUrl = this.customFontService.getFontUrl(font.id);
+        const fontUrlWithToken = this.customFontService.appendToken(fontUrl);
+        const response = await fetch(fontUrlWithToken);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        this.customFontBlobUrls.set(font.id, blobUrl);
+      } catch (error) {
+        console.error(`Failed to cache font ${font.fontName}:`, error);
+      }
+    });
+    await Promise.all(promises);
+  }
 
-    // Determine font family - handle custom fonts
+  private async applyEpubTheme(): Promise<{ success: boolean, customFontId?: number | null }> {
+    if (!this.rendition) return {success: false};
+
     let fontFamily = this.selectedFontType;
     let customFontToInject: CustomFont | null = null;
     let customFontId: number | null = null;
@@ -331,32 +339,32 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             customFontId = fontId;
             customFontToInject = customFont;
           } else {
-            // Font didn't load properly
-            return { success: false };
+            return {success: false};
           }
         } catch (error) {
-          // Font loading failed
           console.error('Failed to load custom font:', error);
           this.messageService.add({
             severity: 'warn',
             summary: 'Custom fonts not loaded',
             detail: 'Your custom fonts could not be loaded. The reader will use default fonts instead.',
           });
-          return { success: false };
+          return {success: false};
         }
       }
     } else {
       customFontId = null;
     }
 
-    // Inject or clear @font-face rules
     if (customFontToInject) {
-      const fontUrl = this.customFontService.getFontUrl(customFontToInject.id);
-      const fontUrlWithToken = this.customFontService.appendToken(fontUrl);
+      const blobUrl = this.customFontBlobUrls.get(customFontToInject.id);
+      if (!blobUrl) {
+        console.error('Blob URL not found for custom font');
+        return {success: false};
+      }
       this.rendition.themes.default({
         '@font-face': [{
           'font-family': `"${customFontToInject.fontName}"`,
-          'src': `url(${fontUrlWithToken})`,
+          'src': `url(${blobUrl})`,
           'font-weight': 'normal',
           'font-style': 'normal'
         }]
@@ -365,14 +373,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.rendition.themes.default({});
     }
 
-    // Apply font using EPUB.js font() method
     if (fontFamily) {
       this.rendition.themes.font(customFontToInject ? `"${fontFamily}"` : fontFamily);
     } else {
       this.rendition.themes.font('');
     }
 
-    // Apply theme with other settings
     const baseTheme = EpubThemeUtil.themesMap.get(this.selectedTheme ?? 'black') || {};
     const combinedTheme = {
       ...baseTheme,
@@ -392,7 +398,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.rendition.themes.register('custom', combinedTheme);
     this.rendition.themes.select('custom');
 
-    return { success: true, customFontId };
+    return {success: true, customFontId};
   }
 
   increaseFontSize(): void {
@@ -453,14 +459,14 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => {
         this.handleTouchEnd(event);
       });
-    }, { passive: false });
+    }, {passive: false});
 
     container.addEventListener('click', (event: MouseEvent) => {
       event.stopPropagation();
       this.ngZone.run(() => {
         this.handleClickAsTap(event);
       });
-    }, { capture: true });
+    }, {capture: true});
 
     this.rendition.on('rendered', () => {
       const iframe = this.epubContainer.nativeElement.querySelector('iframe');
@@ -494,8 +500,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
             });
           };
 
-          iframe.contentDocument.addEventListener('touchend', this.iframeTouchHandler, { passive: false, capture: true });
-          iframe.contentDocument.addEventListener('click', this.iframeClickHandler, { capture: true });
+          iframe.contentDocument.addEventListener('touchend', this.iframeTouchHandler, {passive: false, capture: true});
+          iframe.contentDocument.addEventListener('click', this.iframeClickHandler, {capture: true});
         }
       }
     });
@@ -788,10 +794,8 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
       : (this.epub?.epubProgress?.cfi ? this.rendition.display(this.epub.epubProgress.cfi) : this.rendition.display());
 
     displayPromise.then(async () => {
-      // Apply custom font after rendition is displayed
       const result = await this.applyEpubTheme();
 
-      // If font loading failed during initialization, clear the selection
       if (!result.success) {
         this.selectedFontType = null;
         this.selectedCustomFontId = null;
@@ -815,6 +819,9 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.progressPercentage
       );
     }
+
+    this.customFontBlobUrls.forEach(url => URL.revokeObjectURL(url));
+    this.customFontBlobUrls.clear();
 
     this.routeSubscription?.unsubscribe();
 

@@ -174,7 +174,7 @@ export class ReadingSessionHeatmapComponent implements OnInit, OnDestroy {
     firstMonday.setDate(firstMonday.getDate() - daysToMonday);
 
     let weekIndex = 0;
-    let currentDate = new Date(firstMonday);
+    const currentDate = new Date(firstMonday);
 
     while (currentDate <= endDate || weekIndex === 0) {
       for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {

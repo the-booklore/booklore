@@ -12,7 +12,7 @@ export class MetadataProgressService implements OnDestroy {
   private progressUpdatesSubject = new Subject<MetadataBatchProgressNotification>();
   progressUpdates$ = this.progressUpdatesSubject.asObservable();
 
-  private activeTasksSubject = new BehaviorSubject<{ [taskId: string]: MetadataBatchProgressNotification }>({});
+  private activeTasksSubject = new BehaviorSubject<Record<string, MetadataBatchProgressNotification>>({});
   activeTasks$ = this.activeTasksSubject.asObservable();
 
   private metadataTaskService = inject(MetadataTaskService);
@@ -58,8 +58,8 @@ export class MetadataProgressService implements OnDestroy {
     this.activeTasksSubject.next(this.getActiveTasks());
   }
 
-  getActiveTasks(): { [taskId: string]: MetadataBatchProgressNotification } {
-    const result: { [taskId: string]: MetadataBatchProgressNotification } = {};
+  getActiveTasks(): Record<string, MetadataBatchProgressNotification> {
+    const result: Record<string, MetadataBatchProgressNotification> = {};
     this.progressMap.forEach((subject, taskId) => {
       result[taskId] = subject.getValue();
     });

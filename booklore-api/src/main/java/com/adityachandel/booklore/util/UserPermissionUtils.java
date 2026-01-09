@@ -26,6 +26,7 @@ public class UserPermissionUtils {
             case ACCESS_USER_STATS -> perms.isPermissionAccessUserStats();
             case ACCESS_TASK_MANAGER -> perms.isPermissionAccessTaskManager();
             case MANAGE_ICONS -> perms.isPermissionManageIcons();
+            case MANAGE_FONTS -> perms.isPermissionManageFonts();
             case MANAGE_GLOBAL_PREFERENCES -> perms.isPermissionManageGlobalPreferences();
             case DEMO_USER -> perms.isPermissionDemoUser();
         };
@@ -49,6 +50,7 @@ public class UserPermissionUtils {
             case ACCESS_USER_STATS -> perms.isCanAccessUserStats();
             case ACCESS_TASK_MANAGER -> perms.isCanAccessTaskManager();
             case MANAGE_ICONS -> perms.isCanManageIcons();
+            case MANAGE_FONTS -> perms.isCanManageFonts();
             case MANAGE_GLOBAL_PREFERENCES -> perms.isCanManageGlobalPreferences();
             case DEMO_USER -> perms.isDemoUser();
         };

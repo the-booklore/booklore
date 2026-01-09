@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.entity.ShelfEntity;
 import com.adityachandel.booklore.model.enums.ShelfType;
 import com.adityachandel.booklore.repository.KoboUserSettingsRepository;
 import com.adityachandel.booklore.service.ShelfService;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncSettingsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,8 @@ class KoboSettingsServiceTest {
     private AuthenticationService authenticationService;
     @Mock
     private ShelfService shelfService;
+    @Mock
+    private HardcoverSyncSettingsService hardcoverSyncSettingsService;
 
     @InjectMocks
     private KoboSettingsService service;

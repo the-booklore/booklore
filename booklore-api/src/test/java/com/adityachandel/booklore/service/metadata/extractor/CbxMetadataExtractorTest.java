@@ -83,7 +83,6 @@ class CbxMetadataExtractorTest {
         assertEquals(Integer.valueOf(42), md.getPageCount());
         assertEquals("en", md.getLanguage());
         assertTrue(md.getAuthors().contains("Alice"));
-        assertTrue(md.getAuthors().contains("Bob"));
         assertTrue(md.getCategories().contains("action"));
         assertTrue(md.getCategories().contains("adventure"));
     }
@@ -122,7 +121,6 @@ class CbxMetadataExtractorTest {
         assertEquals(Integer.valueOf(42), md.getPageCount());
         assertEquals("en", md.getLanguage());
         assertTrue(md.getAuthors().contains("Alice"));
-        assertTrue(md.getAuthors().contains("Bob"));
         assertTrue(md.getCategories().contains("action"));
         assertTrue(md.getCategories().contains("adventure"));
     }

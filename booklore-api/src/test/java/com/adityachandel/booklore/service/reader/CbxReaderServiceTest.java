@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.service.reader;
 
+import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
+import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -171,14 +173,29 @@ class CbxReaderServiceTest {
     void getAvailablePages_ZipWithCbrExtension_shouldWork() throws IOException {
         Path zipAsCbrFile = tempDir.resolve("misnamed.cbr");
         createTestCbzWithMacOsFiles(zipAsCbrFile.toFile());
-        
+
         testBook.setFileName(zipAsCbrFile.getFileName().toString());
 
         List<Integer> pages = service.getAvailablePages(bookId);
-        
+
         assertEquals(130, pages.size(), "Should correctly detect and extract misnamed ZIP as CBR");
     }
 
+    @Test
+    void getAvailablePages_whenArchiveIsCorrupt_shouldThrowFileReadError() throws IOException {
+        Path corruptCbz = tempDir.resolve("corrupt.cbz");
+        Files.writeString(corruptCbz, "This is not a zip file");
+
+        testBook.setFileName(corruptCbz.getFileName().toString());
+        testBook.getLibraryPath().setPath(tempDir.toString());
+
+        APIException exception = assertThrows(APIException.class, () -> service.getAvailablePages(bookId));
+
+        assertNotEquals(ApiError.CACHE_TOO_LARGE.getMessage(), exception.getMessage(),
+             "Should not throw CACHE_TOO_LARGE for a corrupt file");
+        assertTrue(exception.getMessage().startsWith("Error reading files from path"),
+            "Should throw FILE_READ_ERROR (message starts with 'Error reading files from path'), actual: '" + exception.getMessage() + "'");
+    }
     private void createTestCbzWithMacOsFiles(File cbzFile) throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(cbzFile))) {
             for (int i = 1; i <= 130; i++) {

@@ -1,10 +1,13 @@
 package com.adityachandel.booklore.service.metadata.writer;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.dto.settings.AppSettings;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -13,33 +16,48 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.zip.ZipFile;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class EpubMetadataWriterTest {
 
     private EpubMetadataWriter writer;
     private BookMetadataEntity metadata;
     private BookEntity bookEntity;
+    private AppSettingService appSettingService;
 
     @TempDir
     Path tempDir;
 
     @BeforeEach
     void setUp() {
-        writer = new EpubMetadataWriter();
+        appSettingService = mock(AppSettingService.class);
+        MetadataPersistenceSettings.FormatSettings epubFormatSettings = MetadataPersistenceSettings.FormatSettings.builder()
+                .enabled(true)
+                .maxFileSizeInMb(100)
+                .build();
+        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = MetadataPersistenceSettings.SaveToOriginalFile.builder()
+                .epub(epubFormatSettings)
+                .build();
+        MetadataPersistenceSettings metadataPersistenceSettings = new MetadataPersistenceSettings();
+        metadataPersistenceSettings.setSaveToOriginalFile(saveToOriginalFile);
+
+        AppSettings appSettings = mock(AppSettings.class);
+        when(appSettings.getMetadataPersistenceSettings()).thenReturn(metadataPersistenceSettings);
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        writer = new EpubMetadataWriter(appSettingService);
         metadata = new BookMetadataEntity();
         metadata.setTitle("Test Book");
         AuthorEntity author = new AuthorEntity();
@@ -66,14 +84,14 @@ class EpubMetadataWriterTest {
             existingMetadata.append("<meta property=\"role\" refines=\"#creator02\">ill</meta>");
             existingMetadata.append("</metadata>");
             String opfContent = String.format("""
-                <?xml version="1.0" encoding="UTF-8"?>
-                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
-                    %s
-                </package>
-                """, existingMetadata);
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        %s
+                    </package>
+                    """, existingMetadata);
             File epubFile = createEpubWithOpf(opfContent, "test-metadata-" + System.nanoTime() + ".epub");
 
-            assertDoesNotThrow(() -> writer.writeMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
+            assertDoesNotThrow(() -> writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
 
             assertTrue(epubFile.exists());
             assertTrue(epubFile.length() > 0);
@@ -99,7 +117,7 @@ class EpubMetadataWriterTest {
             File epubFile = tempDir.resolve("test_unicode.epub").toFile();
             Files.write(epubFile.toPath(), epubContent);
 
-            assertDoesNotThrow(() -> writer.writeMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
+            assertDoesNotThrow(() -> writer.saveMetadataToFile(epubFile, metadata, null, new MetadataClearFlags()));
 
             assertTrue(epubFile.exists());
             assertTrue(epubFile.length() > 0);
@@ -114,10 +132,10 @@ class EpubMetadataWriterTest {
 
             byte[] imageBytes = createMinimalPngImage();
             MultipartFile coverFile = new MockMultipartFile(
-                "cover.png",
-                "cover.png",
-                "image/png",
-                imageBytes
+                    "cover.png",
+                    "cover.png",
+                    "image/png",
+                    imageBytes
             );
 
             assertDoesNotThrow(() -> writer.replaceCoverImageFromUpload(bookEntity, coverFile));
@@ -128,13 +146,13 @@ class EpubMetadataWriterTest {
         File epubFile = tempDir.resolve(filename).toFile();
 
         String containerXml = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-                <rootfiles>
-                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-                </rootfiles>
-            </container>
-            """;
+                <?xml version="1.0" encoding="UTF-8"?>
+                <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                    <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                    </rootfiles>
+                </container>
+                """;
 
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(epubFile))) {
             zos.putNextEntry(new ZipEntry("mimetype"));
@@ -155,67 +173,67 @@ class EpubMetadataWriterTest {
 
     private byte[] createEpubWithUnicodeCoverHref() throws IOException {
         String opfContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
-                <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
-                    <dc:title>Test Book with Unicode Cover</dc:title>
-                    <dc:creator>Test Author</dc:creator>
-                    <meta name="cover" content="cover-image"/>
-                </metadata>
-                <manifest>
-                    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
-                    <item id="cover-image" href="cover%C3%A1.png" media-type="image/png" properties="cover-image"/>
-                    <item id="text" href="index.html" media-type="application/xhtml+xml"/>
-                </manifest>
-                <spine toc="ncx">
-                    <itemref idref="text"/>
-                </spine>
-            </package>
-            """;
+                <?xml version="1.0" encoding="UTF-8"?>
+                <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                        <dc:title>Test Book with Unicode Cover</dc:title>
+                        <dc:creator>Test Author</dc:creator>
+                        <meta name="cover" content="cover-image"/>
+                    </metadata>
+                    <manifest>
+                        <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+                        <item id="cover-image" href="cover%C3%A1.png" media-type="image/png" properties="cover-image"/>
+                        <item id="text" href="index.html" media-type="application/xhtml+xml"/>
+                    </manifest>
+                    <spine toc="ncx">
+                        <itemref idref="text"/>
+                    </spine>
+                </package>
+                """;
 
         String containerXml = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
-                <rootfiles>
-                    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
-                </rootfiles>
-            </container>
-            """;
+                <?xml version="1.0" encoding="UTF-8"?>
+                <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+                    <rootfiles>
+                        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+                    </rootfiles>
+                </container>
+                """;
 
         String htmlContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE html>
-            <html xmlns="http://www.w3.org/1999/xhtml">
-            <head>
-                <title>Test</title>
-            </head>
-            <body>
-                <h1>Test Content</h1>
-            </body>
-            </html>
-            """;
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE html>
+                <html xmlns="http://www.w3.org/1999/xhtml">
+                <head>
+                    <title>Test</title>
+                </head>
+                <body>
+                    <h1>Test Content</h1>
+                </body>
+                </html>
+                """;
 
         String ncxContent = """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
-                "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
-            <ncx version="2005-1" xml:lang="en">
-                <head>
-                    <meta name="dtb:uid" content="test-book"/>
-                </head>
-                <docTitle>
-                    <text>Test Book</text>
-                </docTitle>
-                <navMap>
-                    <navPoint id="navpoint-1" playOrder="1">
-                        <navLabel>
-                            <text>Test</text>
-                        </navLabel>
-                        <content src="index.html"/>
-                    </navPoint>
-                </navMap>
-            </ncx>
-            """;
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN"
+                    "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+                <ncx version="2005-1" xml:lang="en">
+                    <head>
+                        <meta name="dtb:uid" content="test-book"/>
+                    </head>
+                    <docTitle>
+                        <text>Test Book</text>
+                    </docTitle>
+                    <navMap>
+                        <navPoint id="navpoint-1" playOrder="1">
+                            <navLabel>
+                                <text>Test</text>
+                            </navLabel>
+                            <content src="index.html"/>
+                        </navPoint>
+                    </navMap>
+                </ncx>
+                """;
 
         byte[] coverImage = createMinimalPngImage();
 
@@ -253,22 +271,23 @@ class EpubMetadataWriterTest {
 
     private byte[] createMinimalPngImage() {
         return new byte[]{
-            (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-            0x00, 0x00, 0x00, 0x0D,
-            0x49, 0x48, 0x44, 0x52,
-            0x00, 0x00, 0x00, 0x01,
-            0x00, 0x00, 0x00, 0x01,
-            0x08, 0x06,
-            0x00, 0x00, 0x00,
-            (byte) 0x90, (byte) 0x77, (byte) 0x53, (byte) 0xDE,
-            0x00, 0x00, 0x00, 0x0A,
-            0x49, 0x44, 0x41, 0x54,
-            0x78, (byte) 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05,
-            0x00, 0x01,
-            0x0D, (byte) 0x0A, 0x2D, (byte) 0xB4,
-            0x00, 0x00, 0x00, 0x00,
-            0x49, 0x45, 0x4E, 0x44,
-            (byte) 0xAE, 0x42, 0x60, (byte) 0x82
+                (byte) 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+                0x00, 0x00, 0x00, 0x0D,
+                0x49, 0x48, 0x44, 0x52,
+                0x00, 0x00, 0x00, 0x01,
+                0x00, 0x00, 0x00, 0x01,
+                0x08, 0x06,
+                0x00, 0x00, 0x00,
+                (byte) 0x90, (byte) 0x77, (byte) 0x53, (byte) 0xDE,
+                0x00, 0x00, 0x00, 0x0A,
+                0x49, 0x44, 0x41, 0x54,
+                0x78, (byte) 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05,
+                0x00, 0x01,
+                0x0D, (byte) 0x0A, 0x2D, (byte) 0xB4,
+                0x00, 0x00, 0x00, 0x00,
+                0x49, 0x45, 0x4E, 0x44,
+                (byte) 0xAE, 0x42, 0x60, (byte) 0x82
         };
     }
 }
+

@@ -44,6 +44,7 @@ public class BookLoreUser {
         private boolean canAccessTaskManager;
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
+        private boolean canManageFonts;
         private boolean isDemoUser;
         private boolean canBulkAutoFetchMetadata;
         private boolean canBulkCustomFetchMetadata;
