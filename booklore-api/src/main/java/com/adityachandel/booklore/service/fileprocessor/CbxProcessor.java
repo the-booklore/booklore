@@ -11,6 +11,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -58,6 +59,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     @Override
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
+        bookEntity.setArchiveType(ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(bookEntity))));
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
@@ -98,18 +100,12 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractImagesFromArchive(File file) {
-        String name = file.getName();
-        String extension = FileUtils.getExtension(name).toLowerCase();
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(file);
 
-        if (!BookFileType.CBX.supports(extension)) {
-            log.warn("Unsupported CBX format: {}", name);
-            return Optional.empty();
-        }
-
-        return switch (extension) {
-            case "cbz" -> extractFirstImageFromZip(file);
-            case "cb7" -> extractFirstImageFrom7z(file);
-            case "cbr" -> extractFirstImageFromRar(file);
+        return switch (type) {
+            case ZIP -> extractFirstImageFromZip(file);
+            case SEVEN_ZIP -> extractFirstImageFrom7z(file);
+            case RAR -> extractFirstImageFromRar(file);
             default -> Optional.empty();
         };
     }

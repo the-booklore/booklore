@@ -167,6 +167,18 @@ class CbxReaderServiceTest {
             "Page count should be exactly 130 (actual comic pages only)");
     }
 
+    @Test
+    void getAvailablePages_ZipWithCbrExtension_shouldWork() throws IOException {
+        Path zipAsCbrFile = tempDir.resolve("misnamed.cbr");
+        createTestCbzWithMacOsFiles(zipAsCbrFile.toFile());
+        
+        testBook.setFileName(zipAsCbrFile.getFileName().toString());
+
+        List<Integer> pages = service.getAvailablePages(bookId);
+        
+        assertEquals(130, pages.size(), "Should correctly detect and extract misnamed ZIP as CBR");
+    }
+
     private void createTestCbzWithMacOsFiles(File cbzFile) throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(cbzFile))) {
             for (int i = 1; i <= 130; i++) {
