@@ -146,6 +146,14 @@ public enum UserPermission {
             UserPermissionsEntity::isPermissionManageIcons,
             UserPermissionsEntity::setPermissionManageIcons
     ),
+    CAN_MANAGE_FONTS(
+            "Manage fonts",
+            BookLoreUser.UserPermissions::isCanManageFonts,
+            BookLoreUser.UserPermissions::setCanManageFonts,
+            UserUpdateRequest.Permissions::isCanManageFonts,
+            UserPermissionsEntity::isPermissionManageFonts,
+            UserPermissionsEntity::setPermissionManageFonts
+    ),
     CAN_BULK_AUTO_FETCH_METADATA(
             "Bulk auto fetch metadata",
             BookLoreUser.UserPermissions::isCanBulkAutoFetchMetadata,

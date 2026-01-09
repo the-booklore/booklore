@@ -605,7 +605,7 @@
       }
     </div>
 
-    <p-tabs lazy="true" class="custom-p-tabs" [value]="defaultTabValue" scrollable>
+    <p-tabs lazy class="custom-p-tabs" [value]="defaultTabValue" scrollable>
       <p-tablist>
         @if (bookInSeries.length > 1) {
           <p-tab [value]="1">
@@ -627,41 +627,51 @@
       </p-tablist>
       <p-tabpanels>
         <p-tabpanel [value]="1">
-          <div class="tab-content">
-            @if (bookInSeries.length > 1) {
-              <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
-                  @if (bookInSeriesItem.id !== book.id) {
-                    <div class="dashboard-scroller-card">
-                      <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
-                    </div>
+          <ng-template #content>
+            <div class="tab-content">
+              @if (bookInSeries.length > 1) {
+                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+                  @for (bookInSeriesItem of bookInSeries; track bookInSeriesItem) {
+                    @if (bookInSeriesItem.id !== book.id) {
+                      <div class="dashboard-scroller-card">
+                        <app-book-card-lite-component [book]="bookInSeriesItem" [isActive]="bookInSeriesItem.id === book.id"></app-book-card-lite-component>
+                      </div>
+                    }
                   }
-                }
-              </div>
-            }
-          </div>
+                </div>
+              }
+            </div>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="2">
-          <div class="tab-content">
-            @if (recommendedBooks.length > 0) {
-              <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
-                @for (book of recommendedBooks; track book.book.id) {
-                  <div class="dashboard-scroller-card">
-                    <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
-                  </div>
-                }
-              </div>
-            }
-          </div>
+          <ng-template #content>
+            <div class="tab-content">
+              @if (recommendedBooks.length > 0) {
+                <div class="dashboard-scroller-infinite" infiniteScroll [infiniteScrollDistance]="2" [infiniteScrollThrottle]="50" [horizontal]="true">
+                  @for (book of recommendedBooks; track book.book.id) {
+                    <div class="dashboard-scroller-card">
+                      <app-book-card-lite-component [book]="book.book"></app-book-card-lite-component>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="3">
-          <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+          <ng-template #content>
+            <app-book-notes-component [bookId]="book.id"></app-book-notes-component>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="4">
-          <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+          <ng-template #content>
+            <app-book-reading-sessions [bookId]="book.id"></app-book-reading-sessions>
+          </ng-template>
         </p-tabpanel>
         <p-tabpanel [value]="5">
-          <app-book-reviews [bookId]="book.id"></app-book-reviews>
+          <ng-template #content>
+            <app-book-reviews [bookId]="book.id"></app-book-reviews>
+          </ng-template>
         </p-tabpanel>
       </p-tabpanels>
     </p-tabs>

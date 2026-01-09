@@ -61,6 +61,7 @@ export class CreateUserDialogComponent implements OnInit {
       permissionManageEmailConfig: [false],
       permissionManageGlobalPreferences: [false],
       permissionManageIcons: [false],
+      permissionManageFonts: [false],
       permissionAdmin: [false],
       permissionBulkAutoFetchMetadata: [false],
       permissionBulkCustomFetchMetadata: [false],
@@ -71,6 +72,15 @@ export class CreateUserDialogComponent implements OnInit {
       permissionBulkResetBookloreReadProgress: [false],
       permissionBulkResetKoReaderReadProgress: [false],
       permissionBulkResetBookReadStatus: [false],
+    });
+
+    this.userForm.get('permissionAdmin')?.valueChanges.subscribe((isAdmin: boolean) => {
+      const controls = this.userForm.controls;
+      Object.keys(controls).forEach(key => {
+        if (key !== 'permissionAdmin' && key.startsWith('permission')) {
+          controls[key].setValue(isAdmin, {emitEvent: false});
+        }
+      });
     });
   }
 
