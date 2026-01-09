@@ -14,6 +14,7 @@ public class RanobedbBookResponse {
     private Book book;
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Book {
         private String description;
         private String lang;
@@ -52,12 +53,14 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Rating {
         private Double score;
         private Integer count;
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Image {
         private Long id;
         private String filename;
@@ -68,6 +71,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class TitleEntry {
         private String lang;
         private String romaji;
@@ -78,6 +82,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Edition {
         @JsonProperty("book_id")
         private Long bookId;
@@ -88,6 +93,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Staff {
         private String note;
         @JsonProperty("role_type")
@@ -101,6 +107,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Release {
         private String lang;
         private Long id;
@@ -121,6 +128,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Publisher {
         private String lang;
         private Long id;
@@ -131,6 +139,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Series {
         private List<SeriesBook> books;
         private List<Tag> tags;
@@ -145,6 +154,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SeriesBook {
         private Long id;
         private String lang;
@@ -158,6 +168,7 @@ public class RanobedbBookResponse {
     }
 
     @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Tag {
         private Long id;
         private String name;

@@ -252,6 +252,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata['doubanId']) return 'douban';
     if (metadata['lubimyczytacId']) return 'lubimyczytac';
     if (metadata.comicvineId) return 'comicvine';
+    if (metadata.ranobedbId) return 'ranobedb';
     return null;
   }
 

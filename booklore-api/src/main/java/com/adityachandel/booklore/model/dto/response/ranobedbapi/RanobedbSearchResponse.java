@@ -14,6 +14,7 @@ public class RanobedbSearchResponse{
   private int totalPages;
 
   @Data
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Book {
     private int id;
   }

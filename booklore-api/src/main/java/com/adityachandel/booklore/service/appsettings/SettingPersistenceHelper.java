@@ -184,8 +184,8 @@ public class SettingPersistenceHelper {
                 .goodreadsReviewCount(true)
                 .hardcoverRating(true)
                 .hardcoverReviewCount(true)
-                .ranobedbId(true)
-                .ranobedbRating(true)
+                .ranobedbId(false)
+                .ranobedbRating(false)
                 .moods(true)
                 .tags(true)
                 .build();
@@ -224,6 +224,7 @@ public class SettingPersistenceHelper {
                 .hardcoverReviewCount(1)
                 .doubanRating(3)
                 .doubanReviewCount(2)
+                .ranobedbRating(2)
                 .coverImage(5)
                 .build();
     }

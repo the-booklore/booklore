@@ -47,7 +47,8 @@ describe('AppSettingsService', () => {
       hardcover: {enabled: false, apiKey: ''},
       comicvine: {enabled: false, apiKey: ''},
       douban: {enabled: false},
-      lubimyczytac: {enabled: false}
+      lubimyczytac: {enabled: false},
+      ranobedb: {enabled: false}
     },
     metadataMatchWeights: {
       title: 0,
@@ -73,6 +74,7 @@ describe('AppSettingsService', () => {
       doubanRating: 0,
       doubanReviewCount: 0,
       lubimyczytacRating: 0,
+      ranobedbRating: 0,
       coverImage: 0
     },
     metadataPersistenceSettings: {
@@ -398,7 +400,8 @@ describe('AppSettingsService - API Contract Tests', () => {
           hardcover: {enabled: false, apiKey: ''},
           comicvine: {enabled: false, apiKey: ''},
           douban: {enabled: false},
-          lubimyczytac: {enabled: false}
+          lubimyczytac: {enabled: false},
+          ranobedb: {enabled: false}
         },
         metadataMatchWeights: {
           title: 0,
@@ -424,6 +427,7 @@ describe('AppSettingsService - API Contract Tests', () => {
           doubanRating: 0,
           doubanReviewCount: 0,
           lubimyczytacRating: 0,
+          ranobedbRating: 0,
           coverImage: 0
         },
         metadataPersistenceSettings: {

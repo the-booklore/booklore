@@ -39,29 +39,35 @@ public class RanobeDbParser implements BookParser {
     private static final String RANOBEDB_URL = "https://ranobedb.org/api/v0/";
     private static final String RANOBEDB_IMAGE_URL = "https://images.ranobedb.org/";
 
-    private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     
     // Rate limiter: 2 requests per second
     private static final int MAX_REQUESTS_PER_SECOND = 2;
     private static final long RATE_LIMIT_WINDOW_MS = 1000; // 1 second in milliseconds
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final AtomicLong lastRequestTime = new AtomicLong(0);
     private final AtomicLong tokenCount = new AtomicLong(MAX_REQUESTS_PER_SECOND);
 
     @Override
     public List<BookMetadata> fetchMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
+
         String searchTerm = getSearchTerm(book, fetchMetadataRequest);
         if (searchTerm == null) {
             log.warn("No valid search term provided for metadata fetch.");
             return Collections.emptyList();
         }
-        return getMetadataListByTerm(searchTerm);
+        return getMetadataListByTerm(searchTerm, false);
     }
 
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
-        List<BookMetadata> metadataList = fetchMetadata(book, fetchMetadataRequest);
+        String searchTerm = getSearchTerm(book, fetchMetadataRequest);
+        if (searchTerm == null) {
+            log.warn("No valid search term provided for metadata fetch.");
+            return null;
+        }
+        List<BookMetadata> metadataList = getMetadataListByTerm(searchTerm, true);
         return metadataList.isEmpty() ? null : metadataList.getFirst();
     }
     
@@ -108,7 +114,7 @@ public class RanobeDbParser implements BookParser {
         }
     }
 
-    public List<BookMetadata> getMetadataListByTerm(String term) {
+    public List<BookMetadata> getMetadataListByTerm(String term, Boolean fetchTop) {
       log.info("Ranobedb: Fetching metadata for term: '{}'", term);
 
       try {
@@ -136,7 +142,9 @@ public class RanobeDbParser implements BookParser {
           HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
           if (response.statusCode() == 200) {
-              return parseRanobeDbApiResponse(response.body());
+              List<BookMetadata> metadataList = parseRanobeDbApiResponse(response.body(), fetchTop);
+              log.error("Ranobedb: Found {} results for term: '{}'", metadataList.size(), term);
+              return metadataList;
           } else {
               log.error("Ranobedb Search API returned status code {}", response.statusCode());
           }
@@ -155,14 +163,19 @@ public class RanobeDbParser implements BookParser {
         return null;
     }
 
-    private List<BookMetadata> parseRanobeDbApiResponse(String responseBody) throws IOException {
-        RanobedbSearchResponse searchResponse = objectMapper.readValue(responseBody, RanobedbSearchResponse.class);
+    private List<BookMetadata> parseRanobeDbApiResponse(String responseBody, Boolean fetchTop) throws IOException {
+        RanobedbSearchResponse searchResponse = OBJECT_MAPPER.readValue(responseBody, RanobedbSearchResponse.class);
         if (searchResponse.getBooks() == null) {
             return Collections.emptyList();
         }
-        return searchResponse.getBooks().stream()
-                .map(book -> searchResultToBookMetadata(book.getId()))
-                .collect(Collectors.toList());
+        if (fetchTop && !searchResponse.getBooks().isEmpty()) {
+            BookMetadata topMetadata = searchResultToBookMetadata(searchResponse.getBooks().getFirst().getId());
+            return topMetadata != null ? List.of(topMetadata) : Collections.emptyList();
+        } else {
+            return searchResponse.getBooks().stream()
+                    .map(book -> searchResultToBookMetadata(book.getId()))
+                    .collect(Collectors.toList());
+        }
     }
 
     private BookMetadata searchResultToBookMetadata(int bookId) {
@@ -186,7 +199,7 @@ public class RanobeDbParser implements BookParser {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                RanobedbBookResponse responstObj = objectMapper.readValue(response.body(), RanobedbBookResponse.class);
+                RanobedbBookResponse responstObj = OBJECT_MAPPER.readValue(response.body(), RanobedbBookResponse.class);
                 RanobedbBookResponse.Book book = responstObj.getBook();
                 if (book == null) {
                     return null;
