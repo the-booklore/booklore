@@ -6,7 +6,9 @@ import com.adityachandel.booklore.model.enums.PermissionType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class UserPermissionUtilsTest {
 
@@ -57,6 +59,7 @@ class UserPermissionUtilsTest {
                 .permissionAccessTaskManager(false)
                 .permissionManageGlobalPreferences(false)
                 .permissionManageIcons(false)
+                .permissionManageFonts(false)
                 .permissionDemoUser(false)
                 .permissionAdmin(false)
                 .build();
@@ -85,6 +88,7 @@ class UserPermissionUtilsTest {
                 .permissionAccessTaskManager(true)
                 .permissionManageGlobalPreferences(true)
                 .permissionManageIcons(true)
+                .permissionManageFonts(true)
                 .permissionDemoUser(true)
                 .permissionAdmin(true)
                 .build();
@@ -112,6 +116,7 @@ class UserPermissionUtilsTest {
                 .permissionAccessTaskManager(false)
                 .permissionManageGlobalPreferences(false)
                 .permissionManageIcons(false)
+                .permissionManageFonts(false)
                 .permissionDemoUser(false)
                 .permissionAdmin(false);
 
@@ -132,6 +137,7 @@ class UserPermissionUtilsTest {
             case ACCESS_TASK_MANAGER -> builder.permissionAccessTaskManager(value);
             case MANAGE_GLOBAL_PREFERENCES -> builder.permissionManageGlobalPreferences(value);
             case MANAGE_ICONS -> builder.permissionManageIcons(value);
+            case MANAGE_FONTS -> builder.permissionManageFonts(value);
             case DEMO_USER -> builder.permissionDemoUser(value);
             case ADMIN -> builder.permissionAdmin(value);
             default -> throw new IllegalArgumentException("Test helper missing mapping for PermissionType: " + permissionType);
@@ -158,6 +164,7 @@ class UserPermissionUtilsTest {
         perms.setCanAccessUserStats(false);
         perms.setCanAccessTaskManager(false);
         perms.setCanManageIcons(false);
+        perms.setCanManageFonts(false);
         perms.setCanManageGlobalPreferences(false);
         perms.setDemoUser(false);
 
@@ -178,6 +185,7 @@ class UserPermissionUtilsTest {
             case ACCESS_TASK_MANAGER -> perms.setCanAccessTaskManager(value);
             case MANAGE_GLOBAL_PREFERENCES -> perms.setCanManageGlobalPreferences(value);
             case MANAGE_ICONS -> perms.setCanManageIcons(value);
+            case MANAGE_FONTS -> perms.setCanManageFonts(value);
             case DEMO_USER -> perms.setDemoUser(value);
             case ADMIN -> perms.setAdmin(value);
             default -> throw new IllegalArgumentException("Test helper missing mapping for PermissionType: " + permissionType);

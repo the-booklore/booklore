@@ -15,13 +15,13 @@ export function getCfiFromHref(book: Book, href: string): string | null {
   const section = book.spine.get(href);
 
   if (!section || !section.document) {
-    console.warn('Section or section.document is undefined for href:', href);
+    console.debug('Section or section.document is undefined for href:', href);
     return null;
   }
 
   const el = id ? section.document.getElementById(id) : section.document.body;
   if (!el) {
-    console.warn('Element not found in section.document for href:', href);
+    console.debug('Element not found in section.document for href:', href);
     return null;
   }
 

@@ -28,6 +28,7 @@ public class UserCreateRequest {
     private boolean permissionAccessTaskManager;
     private boolean permissionManageGlobalPreferences;
     private boolean permissionManageIcons;
+    private boolean permissionManageFonts;
     private boolean permissionBulkAutoFetchMetadata;
     private boolean permissionBulkCustomFetchMetadata;
     private boolean permissionBulkEditMetadata;

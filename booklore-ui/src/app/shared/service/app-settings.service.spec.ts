@@ -77,7 +77,11 @@ describe('AppSettingsService', () => {
     },
     metadataPersistenceSettings: {
       moveFilesToLibraryPattern: false,
-      saveToOriginalFile: false,
+      saveToOriginalFile: {
+        epub: {enabled: false, maxFileSizeInMb: 0},
+        pdf: {enabled: false, maxFileSizeInMb: 0},
+        cbx: {enabled: false, maxFileSizeInMb: 0}
+      },
       convertCbrCb7ToCbz: false
     },
     metadataPublicReviewsSettings: {
@@ -424,7 +428,11 @@ describe('AppSettingsService - API Contract Tests', () => {
         },
         metadataPersistenceSettings: {
           moveFilesToLibraryPattern: false,
-          saveToOriginalFile: false,
+          saveToOriginalFile: {
+            epub: {enabled: false, maxFileSizeInMb: 0},
+            pdf: {enabled: false, maxFileSizeInMb: 0},
+            cbx: {enabled: false, maxFileSizeInMb: 0}
+          },
           convertCbrCb7ToCbz: false
         },
         metadataPublicReviewsSettings: {

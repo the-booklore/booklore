@@ -13,11 +13,10 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, take, finalize} from "rxjs/operators";
+import {filter, finalize, take} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
-import {AutoComplete} from "primeng/autocomplete";
-import {AutoCompleteSelectEvent} from "primeng/autocomplete";
+import {AutoComplete, AutoCompleteSelectEvent} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
@@ -365,6 +364,8 @@ export class MetadataEditorComponent implements OnInit {
       {key: "hardcoverBookIdLocked", control: "hardcoverBookId"},
       {key: "hardcoverReviewCountLocked", control: "hardcoverReviewCount"},
       {key: "hardcoverRatingLocked", control: "hardcoverRating"},
+      {key: "lubimyczytacIdLocked", control: "lubimyczytacId"},
+      {key: "lubimyczytacRatingLocked", control: "lubimyczytacRating"},
       {key: "googleIdLocked", control: "googleId"},
       {key: "pageCountLocked", control: "pageCount"},
       {key: "descriptionLocked", control: "description"},
@@ -504,6 +505,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: form.get("hardcoverBookId")?.value,
       hardcoverRating: form.get("hardcoverRating")?.value,
       hardcoverReviewCount: form.get("hardcoverReviewCount")?.value,
+      lubimyczytacId: form.get("lubimyczytacId")?.value,
+      lubimyczytacRating: form.get("lubimyczytacRating")?.value,
       googleId: form.get("googleId")?.value,
       language: form.get("language")?.value,
       seriesName: form.get("seriesName")?.value,
@@ -536,6 +539,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: form.get("hardcoverBookIdLocked")?.value,
       hardcoverRatingLocked: form.get("hardcoverRatingLocked")?.value,
       hardcoverReviewCountLocked: form.get("hardcoverReviewCountLocked")?.value,
+      lubimyczytacIdLocked: form.get("lubimyczytacIdLocked")?.value,
+      lubimyczytacRatingLocked: form.get("lubimyczytacRatingLocked")?.value,
       googleIdLocked: form.get("googleIdLocked")?.value,
       seriesNameLocked: form.get("seriesNameLocked")?.value,
       seriesNumberLocked: form.get("seriesNumberLocked")?.value,
@@ -595,7 +600,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    let metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
+    const metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
     this.bookService
       .updateBookMetadata(this.currentBookId, metadataUpdateWrapper, false)
       .subscribe({
@@ -634,11 +639,6 @@ export class MetadataEditorComponent implements OnInit {
     const response: HttpResponse<unknown> =
       event.originalEvent as HttpResponse<unknown>;
     if (response && response.status === 200) {
-      const bookMetadata: BookMetadata = response.body as BookMetadata;
-      this.bookService.handleBookMetadataUpdate(
-        this.currentBookId,
-        bookMetadata
-      );
       this.isUploading = false;
     } else {
       this.isUploading = false;

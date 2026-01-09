@@ -22,14 +22,26 @@ public class ComicvineIssueResponse {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class IssueResults {
         @JsonProperty("person_credits")
-        private List<PersonCredit> personCredits;
-    }
+        private List<Comic.PersonCredit> personCredits;
 
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class PersonCredit {
-        private long id;
+        private String description;
+
         private String name;
-        private String role;
+
+        @JsonProperty("issue_number")
+        private String issueNumber;
+
+        @JsonProperty("cover_date")
+        private String coverDate;
+
+        private Comic.Image image;
+
+        private Comic.Volume volume;
+
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+
+        @JsonProperty("site_detail_url")
+        private String siteDetailUrl;
     }
 }

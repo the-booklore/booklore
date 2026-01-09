@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,6 +33,30 @@ public class Comic {
 
     @JsonProperty("resource_type")
     private String resourceType;
+
+    @JsonProperty("person_credits")
+    private List<PersonCredit> personCredits;
+
+    @JsonProperty("start_year")
+    private String startYear;
+
+    @JsonProperty("count_of_issues")
+    private Integer countOfIssues;
+
+    @JsonProperty("site_detail_url")
+    private String siteDetailUrl;
+
+    private Publisher publisher;
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Publisher {
+        private int id;
+        private String name;
+        @JsonProperty("api_detail_url")
+        private String apiDetailUrl;
+    }
 
     @Data
     @NoArgsConstructor
@@ -79,5 +105,20 @@ public class Comic {
 
         @JsonProperty("site_detail_url")
         private String siteDetailUrl;
+
+        @JsonProperty("start_year")
+        private String startYear;
+
+        @JsonProperty("count_of_issues")
+        private Integer countOfIssues;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class PersonCredit {
+        private long id;
+        private String name;
+        private String role;
     }
 }

@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.kobo;
 
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
+import com.adityachandel.booklore.model.dto.HardcoverSyncSettings;
 import com.adityachandel.booklore.model.dto.KoboSyncSettings;
 import com.adityachandel.booklore.model.dto.Shelf;
 import com.adityachandel.booklore.model.dto.request.ShelfCreateRequest;
@@ -11,6 +12,7 @@ import com.adityachandel.booklore.model.enums.IconType;
 import com.adityachandel.booklore.model.enums.ShelfType;
 import com.adityachandel.booklore.repository.KoboUserSettingsRepository;
 import com.adityachandel.booklore.service.ShelfService;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +27,7 @@ public class KoboSettingsService {
     private final KoboUserSettingsRepository repository;
     private final AuthenticationService authenticationService;
     private final ShelfService shelfService;
+    private final HardcoverSyncSettingsService hardcoverSyncSettingsService;
 
     @Transactional(readOnly = true)
     public KoboSyncSettings getCurrentUserSettings() {
@@ -82,12 +85,8 @@ public class KoboSettingsService {
 
         entity.setAutoAddToShelf(settings.isAutoAddToShelf());
 
-        // Update Hardcover settings
-        entity.setHardcoverApiKey(settings.getHardcoverApiKey());
-        entity.setHardcoverSyncEnabled(settings.isHardcoverSyncEnabled());
-
         repository.save(entity);
-        return mapToDto(entity);
+        return mapToDto(entity, hardcoverSyncSettingsService.getSettingsForUserId(user.getId()));
     }
 
     private KoboUserSettingsEntity initDefaultSettings(Long userId) {
@@ -118,6 +117,11 @@ public class KoboSettingsService {
     }
 
     private KoboSyncSettings mapToDto(KoboUserSettingsEntity entity) {
+        HardcoverSyncSettings hardcoverSettings = hardcoverSyncSettingsService.getSettingsForUserId(entity.getUserId());
+        return mapToDto(entity, hardcoverSettings);
+    }
+
+    private KoboSyncSettings mapToDto(KoboUserSettingsEntity entity, HardcoverSyncSettings hardcoverSettings) {
         KoboSyncSettings dto = new KoboSyncSettings();
         dto.setId(entity.getId());
         dto.setUserId(entity.getUserId().toString());
@@ -126,14 +130,17 @@ public class KoboSettingsService {
         dto.setProgressMarkAsReadingThreshold(entity.getProgressMarkAsReadingThreshold());
         dto.setProgressMarkAsFinishedThreshold(entity.getProgressMarkAsFinishedThreshold());
         dto.setAutoAddToShelf(entity.isAutoAddToShelf());
-        dto.setHardcoverApiKey(entity.getHardcoverApiKey());
-        dto.setHardcoverSyncEnabled(entity.isHardcoverSyncEnabled());
+        if (hardcoverSettings != null) {
+            dto.setHardcoverApiKey(hardcoverSettings.getHardcoverApiKey());
+            dto.setHardcoverSyncEnabled(hardcoverSettings.isHardcoverSyncEnabled());
+        } else {
+            dto.setHardcoverSyncEnabled(false);
+        }
         return dto;
     }
 
     /**
-     * Get Hardcover settings for a specific user by ID.
-     * Used by HardcoverSyncService to get user-specific API key.
+     * Get Kobo settings for a specific user by ID.
      */
     @Transactional(readOnly = true)
     public KoboSyncSettings getSettingsByUserId(Long userId) {
@@ -141,4 +148,5 @@ public class KoboSettingsService {
                 .map(this::mapToDto)
                 .orElse(null);
     }
+
 }

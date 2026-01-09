@@ -78,6 +78,7 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
     });
   }
 
+
   get canSave(): boolean {
     const u = this.koReaderUsername?.trim() ?? '';
     const p = this.koReaderPassword ?? '';
@@ -107,6 +108,7 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 
+
   saveCredentials() {
     this.koreaderService.createUser(this.koReaderUsername, this.koReaderPassword)
       .subscribe({
@@ -118,6 +120,7 @@ export class KoreaderSettingsComponent implements OnInit, OnDestroy {
           this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to save KOReader credentials. Please try again.'})
       });
   }
+
 
   copyText(text: string, label: string = 'Text') {
     if (!text) {

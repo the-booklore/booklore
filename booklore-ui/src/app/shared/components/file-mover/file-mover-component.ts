@@ -61,7 +61,7 @@ export class FileMoverComponent implements OnDestroy {
   loading = false;
   patternsCollapsed = true;
 
-  bookIds: Set<number> = new Set();
+  bookIds = new Set<number>();
   books: Book[] = [];
   availableLibraries: { id: number | null; name: string }[] = [];
   filePreviews: FilePreview[] = [];

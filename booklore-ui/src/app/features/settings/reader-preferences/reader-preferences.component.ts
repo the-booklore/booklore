@@ -35,12 +35,16 @@ export class ReaderPreferences implements OnInit, OnDestroy {
   userData$: Observable<UserState> = this.userService.userState$;
   userSettings!: UserSettings;
 
+  hasFontManagementPermission = false;
+
   ngOnInit(): void {
     this.userData$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
       this.userSettings = userState.user!.userSettings;
+      const perms = userState.user!.permissions;
+      this.hasFontManagementPermission = (perms.admin || perms.canManageFonts);
       this.loadPreferences(userState.user!.userSettings);
     });
   }

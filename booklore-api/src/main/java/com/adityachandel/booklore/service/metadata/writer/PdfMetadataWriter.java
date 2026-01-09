@@ -3,6 +3,9 @@ package com.adityachandel.booklore.service.metadata.writer;
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
@@ -41,10 +44,17 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PdfMetadataWriter implements MetadataWriter {
 
+    private final AppSettingService appSettingService;
+
     @Override
-    public void writeMetadataToFile(File file, BookMetadataEntity metadataEntity, String thumbnailUrl, MetadataClearFlags clear) {
+    public void saveMetadataToFile(File file, BookMetadataEntity metadataEntity, String thumbnailUrl, MetadataClearFlags clear) {
+        if (!shouldSaveMetadataToFile(file)) {
+            return;
+        }
+
         if (!file.exists() || !file.getName().toLowerCase().endsWith(".pdf")) {
             log.warn("Invalid PDF file: {}", file.getAbsolutePath());
             return;
@@ -102,6 +112,24 @@ public class PdfMetadataWriter implements MetadataWriter {
         return BookFileType.PDF;
     }
 
+    public boolean shouldSaveMetadataToFile(File pdfFile) {
+        MetadataPersistenceSettings.SaveToOriginalFile settings = appSettingService.getAppSettings().getMetadataPersistenceSettings().getSaveToOriginalFile();
+
+        MetadataPersistenceSettings.FormatSettings pdfSettings = settings.getPdf();
+        if (pdfSettings == null || !pdfSettings.isEnabled()) {
+            log.debug("PDF metadata writing is disabled. Skipping: {}", pdfFile.getName());
+            return false;
+        }
+
+        long fileSizeInMb = pdfFile.length() / (1024 * 1024);
+        if (fileSizeInMb > pdfSettings.getMaxFileSizeInMb()) {
+            log.info("PDF file {} ({} MB) exceeds max size limit ({} MB). Skipping metadata write.", pdfFile.getName(), fileSizeInMb, pdfSettings.getMaxFileSizeInMb());
+            return false;
+        }
+
+        return true;
+    }
+
     private void applyMetadataToDocument(PDDocument pdf, BookMetadataEntity entity, MetadataClearFlags clear) {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
@@ -122,7 +150,7 @@ public class PdfMetadataWriter implements MetadataWriter {
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
                 Calendar cal = Calendar.getInstance();
                 cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
-                                .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
+                        .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
                 dc.addDate(cal);
             });
 

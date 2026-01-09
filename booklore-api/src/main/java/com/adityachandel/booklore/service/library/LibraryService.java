@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -33,9 +34,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -250,4 +256,51 @@ public class LibraryService {
         library.setFileNamingPattern(pattern);
         return libraryMapper.toLibrary(libraryRepository.save(library));
     }
+
+    public int scanLibraryPaths(CreateLibraryRequest request) {
+        int count = 0;
+        if (request.getPaths() == null || request.getPaths().isEmpty()) {
+            return count;
+        }
+        for (LibraryPath libraryPath : request.getPaths()) {
+            Path path = Paths.get(libraryPath.getPath());
+            if (!Files.exists(path)) {
+                log.warn("Path does not exist: {}", path);
+                continue;
+            }
+            if (Files.isDirectory(path)) {
+                count += scanDirectory(path);
+            } else if (Files.isRegularFile(path) && isProcessableFile(path)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private int scanDirectory(Path directory) {
+        int count = 0;
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(directory)) {
+            for (Path entry : stream) {
+                if (Files.isDirectory(entry)) {
+                    count += scanDirectory(entry);
+                } else if (Files.isRegularFile(entry) && isProcessableFile(entry)) {
+                    count++;
+                }
+            }
+        } catch (IOException e) {
+            log.error("Error scanning directory: {}", directory, e);
+        }
+        return count;
+    }
+
+    private boolean isProcessableFile(Path file) {
+        String fileName = file.getFileName().toString().toLowerCase();
+        for (BookFileType fileType : BookFileType.values()) {
+            if (fileName.endsWith("." + fileType.name().toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
+

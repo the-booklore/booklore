@@ -677,7 +677,7 @@ export class MetadataPickerComponent implements OnInit {
     this.goBack.emit(true);
   }
 
-  hoveredFields: { [key: string]: boolean } = {};
+  hoveredFields: Record<string, boolean> = {};
 
   onMouseEnter(controlName: string): void {
     if (this.isValueCopied(controlName) && !this.isValueSaved(controlName)) {

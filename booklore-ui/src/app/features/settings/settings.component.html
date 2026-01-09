@@ -1,7 +1,7 @@
 @if (userService.userState$ | async; as userState) {
   @if (userState.user) {
     <div class="rounded-xl overflow-hidden border-[1px] border-solid border-[var(--p-content-border-color)]">
-      <p-tabs [(value)]="activeTab" scrollable>
+      <p-tabs [(value)]="activeTab" lazy scrollable>
         <p-tablist>
           <p-tab [value]="SettingsTab.ReaderSettings">
             <i class="pi pi-book"></i> Reader
@@ -54,52 +54,76 @@
         </p-tablist>
         <p-tabpanels>
           <p-tabpanel [value]="SettingsTab.ReaderSettings">
-            <app-reader-preferences></app-reader-preferences>
+            <ng-template #content>
+              <app-reader-preferences></app-reader-preferences>
+            </ng-template>
           </p-tabpanel>
           <p-tabpanel [value]="SettingsTab.ViewPreferences">
-            <app-view-preferences-parent></app-view-preferences-parent>
+            <ng-template #content>
+              <app-view-preferences-parent></app-view-preferences-parent>
+            </ng-template>
           </p-tabpanel>
           @if (userState.user.permissions.admin || userState.user.permissions.canManageMetadataConfig) {
             <p-tabpanel [value]="SettingsTab.MetadataSettings">
-              <app-metadata-settings-component></app-metadata-settings-component>
+              <ng-template #content>
+                <app-metadata-settings-component></app-metadata-settings-component>
+              </ng-template>
             </p-tabpanel>
             <p-tabpanel [value]="SettingsTab.LibraryMetadataSettings">
-              <app-library-metadata-settings-component></app-library-metadata-settings-component>
+              <ng-template #content>
+                <app-library-metadata-settings-component></app-library-metadata-settings-component>
+              </ng-template>
             </p-tabpanel>
           }
           @if (userState.user.permissions.admin || userState.user.permissions.canManageGlobalPreferences) {
             <p-tabpanel [value]="SettingsTab.ApplicationSettings">
-              <app-global-preferences></app-global-preferences>
+              <ng-template #content>
+                <app-global-preferences></app-global-preferences>
+              </ng-template>
             </p-tabpanel>
           }
           @if (userState.user.permissions.admin) {
             <p-tabpanel [value]="SettingsTab.UserManagement">
-              <app-user-management></app-user-management>
+              <ng-template #content>
+                <app-user-management></app-user-management>
+              </ng-template>
             </p-tabpanel>
           }
           <p-tabpanel [value]="SettingsTab.EmailSettingsV2">
-            <app-email-v2></app-email-v2>
+            <ng-template #content>
+              <app-email-v2></app-email-v2>
+            </ng-template>
           </p-tabpanel>
           @if (userState.user.permissions.admin || userState.user.permissions.canManageMetadataConfig) {
             <p-tabpanel [value]="SettingsTab.NamingPattern">
-              <app-file-naming-pattern></app-file-naming-pattern>
+              <ng-template #content>
+                <app-file-naming-pattern></app-file-naming-pattern>
+              </ng-template>
             </p-tabpanel>
           }
           @if (userState.user.permissions.admin) {
             <p-tabpanel [value]="SettingsTab.AuthenticationSettings">
-              <app-authentication-settings></app-authentication-settings>
+              <ng-template #content>
+                <app-authentication-settings></app-authentication-settings>
+              </ng-template>
             </p-tabpanel>
           }
           @if (userState.user.permissions.admin || userState.user.permissions.canAccessTaskManager) {
             <p-tabpanel [value]="SettingsTab.Tasks">
-              <app-task-management></app-task-management>
+              <ng-template #content>
+                <app-task-management></app-task-management>
+              </ng-template>
             </p-tabpanel>
           }
           <p-tabpanel [value]="SettingsTab.OpdsV2">
-            <app-opds-settings></app-opds-settings>
+            <ng-template #content>
+              <app-opds-settings></app-opds-settings>
+            </ng-template>
           </p-tabpanel>
           <p-tabpanel [value]="SettingsTab.DeviceSettings">
-            <app-device-settings-component></app-device-settings-component>
+            <ng-template #content>
+              <app-device-settings-component></app-device-settings-component>
+            </ng-template>
           </p-tabpanel>
         </p-tabpanels>
       </p-tabs>

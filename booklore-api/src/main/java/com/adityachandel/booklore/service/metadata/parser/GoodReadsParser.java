@@ -478,10 +478,15 @@ public class GoodReadsParser implements BookParser {
 
         try {
             String searchUrl = generateSearchUrl(searchTerm);
-            Elements previewBooks = fetchDoc(searchUrl)
-                    .select("table.tableList")
-                    .first()
-                    .select("tr[itemtype=http://schema.org/Book]");
+            Document doc = fetchDoc(searchUrl);
+            Element tableList = doc.select("table.tableList").first();
+
+            if (tableList == null) {
+                log.warn("GoodReads: No results table found for search term: {}", searchTerm);
+                return Collections.emptyList();
+            }
+
+            Elements previewBooks = tableList.select("tr[itemtype=http://schema.org/Book]");
 
             List<BookMetadata> metadataPreviews = new ArrayList<>();
             FuzzyScore fuzzyScore = new FuzzyScore(Locale.ENGLISH);
