@@ -71,6 +71,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   private currentIframe: HTMLIFrameElement | null = null;
   private iframeTouchHandler: ((event: TouchEvent) => void) | null = null;
   private iframeClickHandler: ((event: MouseEvent) => void) | null = null;
+  private isFullscreen = false;
 
   editingBookmark: BookMark | null = null;
   showEditBookmarkDialog = false;
@@ -137,6 +138,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
     this.routeSubscription = this.route.paramMap.subscribe(async (params) => {
       this.isLoading = true;
       const bookId = +params.get('bookId')!;
+
+      // Request fullscreen on mobile devices
+      if (this.isMobileDevice()) {
+        this.requestFullscreen();
+      }
 
       try {
         const fonts = await firstValueFrom(this.customFontService.getUserFonts());
@@ -621,6 +627,12 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.progressPercentage
       );
     }
+
+    // Exit fullscreen when closing reader
+    if (this.isFullscreen) {
+      this.exitFullscreen();
+    }
+
     this.location.back();
   }
 
@@ -818,6 +830,11 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.currentCfi || undefined,
         this.progressPercentage
       );
+    }
+
+    // Exit fullscreen on destroy
+    if (this.isFullscreen) {
+      this.exitFullscreen();
     }
 
     this.customFontBlobUrls.forEach(url => URL.revokeObjectURL(url));
@@ -1138,5 +1155,52 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
   onBookmarkCancel(): void {
     this.showEditBookmarkDialog = false;
     this.editingBookmark = null;
+  }
+
+  private requestFullscreen(): void {
+    const elem = document.documentElement;
+
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().then(() => {
+        this.isFullscreen = true;
+      }).catch(err => {
+        console.warn('Failed to enter fullscreen:', err);
+      });
+    } else if ((elem as any).webkitRequestFullscreen) {
+      // Safari
+      (elem as any).webkitRequestFullscreen();
+      this.isFullscreen = true;
+    } else if ((elem as any).mozRequestFullScreen) {
+      // Firefox
+      (elem as any).mozRequestFullScreen();
+      this.isFullscreen = true;
+    } else if ((elem as any).msRequestFullscreen) {
+      // IE/Edge
+      (elem as any).msRequestFullscreen();
+      this.isFullscreen = true;
+    }
+  }
+
+  private exitFullscreen(): void {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(err => {
+        console.warn('Failed to exit fullscreen:', err);
+      });
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen();
+    } else if ((document as any).mozCancelFullScreen) {
+      (document as any).mozCancelFullScreen();
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen();
+    }
+    this.isFullscreen = false;
+  }
+
+  toggleFullscreen(): void {
+    if (this.isFullscreen) {
+      this.exitFullscreen();
+    } else {
+      this.requestFullscreen();
+    }
   }
 }
