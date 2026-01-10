@@ -17,12 +17,13 @@ import java.util.stream.Collectors;
 @Configuration
 public class JacksonConfig {
 
-    @Bean
-    @Primary
-    public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
+    public static final String KOMGA_CLEAN_OBJECT_MAPPER = "komgaCleanObjectMapper";
+
+    @Bean(name = KOMGA_CLEAN_OBJECT_MAPPER)
+    public ObjectMapper komgaCleanObjectMapper(Jackson2ObjectMapperBuilder builder) {
         ObjectMapper mapper = builder.build();
-        
-        // Register the custom serializer modifier
+
+        // Register the custom serializer modifier on this dedicated mapper only
         mapper.setSerializerFactory(
             mapper.getSerializerFactory().withSerializerModifier(new BeanSerializerModifier() {
                 @Override
@@ -30,15 +31,14 @@ public class JacksonConfig {
                         com.fasterxml.jackson.databind.SerializationConfig config,
                         com.fasterxml.jackson.databind.BeanDescription beanDesc,
                         List<BeanPropertyWriter> beanProperties) {
-                    
-                    // Wrap each property writer with our custom logic
+
                     return beanProperties.stream()
                         .map(KomgaCleanBeanPropertyWriter::new)
                         .collect(Collectors.toList());
                 }
             })
         );
-        
+
         return mapper;
     }
 }

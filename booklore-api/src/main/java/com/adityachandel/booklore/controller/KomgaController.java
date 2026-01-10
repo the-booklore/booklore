@@ -1,16 +1,20 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.config.JacksonConfig;
 import com.adityachandel.booklore.mapper.komga.KomgaMapper;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.komga.KomgaService;
 import com.adityachandel.booklore.service.opds.OpdsUserV2Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -32,57 +36,70 @@ public class KomgaController {
     private final OpdsUserV2Service opdsUserV2Service;
     private final KomgaMapper komgaMapper;
 
+    // Inject the dedicated komga mapper bean
+    private final @Qualifier(JacksonConfig.KOMGA_CLEAN_OBJECT_MAPPER) ObjectMapper komgaCleanObjectMapper;
+
+    // Helper to serialize using the komga-clean mapper
+    private ResponseEntity<String> writeJson(Object body) {
+        try {
+            String json = komgaCleanObjectMapper.writeValueAsString(body);
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(json);
+        } catch (Exception e) {
+            log.error("Failed to serialize Komga response", e);
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     // ==================== Libraries ====================
     
     @Operation(summary = "List all libraries")
     @GetMapping("/v1/libraries")
-    public ResponseEntity<List<KomgaLibraryDto>> getAllLibraries() {
+    public ResponseEntity<String> getAllLibraries() {
         List<KomgaLibraryDto> libraries = komgaService.getAllLibraries();
-        return ResponseEntity.ok(libraries);
+        return writeJson(libraries);
     }
 
     @Operation(summary = "Get library details")
     @GetMapping("/v1/libraries/{libraryId}")
-    public ResponseEntity<KomgaLibraryDto> getLibrary(
+    public ResponseEntity<String> getLibrary(
             @Parameter(description = "Library ID") @PathVariable Long libraryId) {
-        return ResponseEntity.ok(komgaService.getLibraryById(libraryId));
+        return writeJson(komgaService.getLibraryById(libraryId));
     }
 
     // ==================== Series ====================
     
     @Operation(summary = "List series")
     @GetMapping("/v1/series")
-    public ResponseEntity<KomgaPageableDto<KomgaSeriesDto>> getAllSeries(
+    public ResponseEntity<String> getAllSeries(
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
         KomgaPageableDto<KomgaSeriesDto> result = komgaService.getAllSeries(libraryId, page, size, unpaged);
-        return ResponseEntity.ok(result);
+        return writeJson(result);
     }
 
     @Operation(summary = "Get series details")
     @GetMapping("/v1/series/{seriesId}")
-    public ResponseEntity<KomgaSeriesDto> getSeries(
+    public ResponseEntity<String> getSeries(
             @Parameter(description = "Series ID") @PathVariable String seriesId)  {
-        return ResponseEntity.ok(komgaService.getSeriesById(seriesId));
+        return writeJson(komgaService.getSeriesById(seriesId));
     }
 
     @Operation(summary = "List books in series")
     @GetMapping("/v1/series/{seriesId}/books")
-    public ResponseEntity<KomgaPageableDto<KomgaBookDto>> getSeriesBooks(
+    public ResponseEntity<String> getSeriesBooks(
             @Parameter(description = "Series ID") @PathVariable String seriesId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Return all books without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
-        return ResponseEntity.ok(komgaService.getBooksBySeries(seriesId, page, size, unpaged));
+        return writeJson(komgaService.getBooksBySeries(seriesId, page, size, unpaged));
     }
 
     @Operation(summary = "Get series thumbnail")
     @GetMapping("/v1/series/{seriesId}/thumbnail")
     public ResponseEntity<Resource> getSeriesThumbnail(
             @Parameter(description = "Series ID") @PathVariable String seriesId) {
-        // Get the first book in the series and return its thumbnail
         KomgaPageableDto<KomgaBookDto> books = komgaService.getBooksBySeries(seriesId, 0, 1, false);
         if (books.getContent().isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -99,26 +116,26 @@ public class KomgaController {
     
     @Operation(summary = "List books")
     @GetMapping("/v1/books")
-    public ResponseEntity<KomgaPageableDto<KomgaBookDto>> getAllBooks(
+    public ResponseEntity<String> getAllBooks(
             @Parameter(description = "Library ID filter") @RequestParam(required = false, name = "library_id") Long libraryId,
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
         KomgaPageableDto<KomgaBookDto> result = komgaService.getAllBooks(libraryId, page, size);
-        return ResponseEntity.ok(result);
+        return writeJson(result);
     }
 
     @Operation(summary = "Get book details")
     @GetMapping("/v1/books/{bookId}")
-    public ResponseEntity<KomgaBookDto> getBook(
+    public ResponseEntity<String> getBook(
             @Parameter(description = "Book ID") @PathVariable Long bookId) {
-        return ResponseEntity.ok(komgaService.getBookById(bookId));
+        return writeJson(komgaService.getBookById(bookId));
     }
 
     @Operation(summary = "Get book pages metadata")
     @GetMapping("/v1/books/{bookId}/pages")
-    public ResponseEntity<List<KomgaPageDto>> getBookPages(
+    public ResponseEntity<String> getBookPages(
             @Parameter(description = "Book ID") @PathVariable Long bookId) {
-        return ResponseEntity.ok(komgaService.getBookPages(bookId));
+        return writeJson(komgaService.getBookPages(bookId));
     }
 
     @Operation(summary = "Get book page image")
@@ -163,7 +180,7 @@ public class KomgaController {
     
     @Operation(summary = "Get current user details")
     @GetMapping("/v2/users/me")
-    public ResponseEntity<KomgaUserDto> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<String> getCurrentUser(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             return ResponseEntity.status(401).build();
         }
@@ -175,17 +192,17 @@ public class KomgaController {
             return ResponseEntity.notFound().build();
         }
         
-        return ResponseEntity.ok(komgaMapper.toKomgaUserDto(opdsUser));
+        return writeJson(komgaMapper.toKomgaUserDto(opdsUser));
     }
     
     // ==================== Collections ====================
     
     @Operation(summary = "List collections")
     @GetMapping("/v1/collections")
-    public ResponseEntity<KomgaPageableDto<KomgaCollectionDto>> getCollections(
+    public ResponseEntity<String> getCollections(
             @Parameter(description = "Page number") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
             @Parameter(description = "Return all collections without paging") @RequestParam(defaultValue = "false") boolean unpaged) {
-        return ResponseEntity.ok(komgaService.getCollections(page, size, unpaged));
+        return writeJson(komgaService.getCollections(page, size, unpaged));
     }
 }
