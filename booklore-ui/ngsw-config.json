@@ -26,5 +26,45 @@
         ]
       }
     }
+  ],
+  "dataGroups": [
+    {
+      "name": "books-api",
+      "urls": [
+        "/api/v1/books",
+        "/api/v1/books/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 100,
+        "maxAge": "1h",
+        "timeout": "10s"
+      }
+    },
+    {
+      "name": "book-content",
+      "urls": [
+        "/api/v1/books/*/content",
+        "/api/v1/books/*/download"
+      ],
+      "cacheConfig": {
+        "strategy": "performance",
+        "maxSize": 50,
+        "maxAge": "7d"
+      }
+    },
+    {
+      "name": "metadata-api",
+      "urls": [
+        "/api/v1/books/*/metadata/**",
+        "/api/v1/books/metadata/**"
+      ],
+      "cacheConfig": {
+        "strategy": "freshness",
+        "maxSize": 50,
+        "maxAge": "30m",
+        "timeout": "5s"
+      }
+    }
   ]
 }
