@@ -8,9 +8,6 @@ import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -103,10 +100,6 @@ public class FileService {
         return Paths.get(appProperties.getPathConfig(), "metadata_backup", String.valueOf(bookId)).toString();
     }
 
-    public String getCbxCachePath() {
-        return Paths.get(appProperties.getPathConfig(), "cbx_cache").toString();
-    }
-
     public String getPdfCachePath() {
         return Paths.get(appProperties.getPathConfig(), "pdf_cache").toString();
     }
@@ -161,7 +154,7 @@ public class FileService {
             log.warn("ImageIO/TwelveMonkeys decode failed (possibly unsupported format like AVIF/HEIC): {}", e.getMessage());
             return null;
         }
-        
+
         log.warn("Unable to decode image - likely unsupported format (AVIF, HEIC, or SVG)");
         return null;
     }
@@ -373,7 +366,7 @@ public class FileService {
         boolean isExtremelyTall = settings.isVerticalCroppingEnabled() && heightToWidthRatio > threshold;
         if (isExtremelyTall) {
             int croppedHeight = (int) (width * TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}, smartCrop={}",
                     width, height, String.format("%.2f", heightToWidthRatio), width, croppedHeight, smartCrop);
             return cropFromTop(image, width, croppedHeight, smartCrop);
         }
@@ -381,7 +374,7 @@ public class FileService {
         boolean isExtremelyWide = settings.isHorizontalCroppingEnabled() && widthToHeightRatio > threshold;
         if (isExtremelyWide) {
             int croppedWidth = (int) (height / TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}, smartCrop={}",
                     width, height, String.format("%.2f", widthToHeightRatio), croppedWidth, height, smartCrop);
             return cropFromLeft(image, croppedWidth, height, smartCrop);
         }
@@ -395,7 +388,7 @@ public class FileService {
             int contentStartY = findContentStartY(image);
             int margin = (int) (targetHeight * SMART_CROP_MARGIN_PERCENT);
             startY = Math.max(0, contentStartY - margin);
-            
+
             int maxStartY = image.getHeight() - targetHeight;
             startY = Math.min(startY, maxStartY);
         }
@@ -408,7 +401,7 @@ public class FileService {
             int contentStartX = findContentStartX(image);
             int margin = (int) (targetWidth * SMART_CROP_MARGIN_PERCENT);
             startX = Math.max(0, contentStartX - margin);
-            
+
             int maxStartX = image.getWidth() - targetWidth;
             startX = Math.min(startX, maxStartX);
         }
@@ -457,8 +450,8 @@ public class FileService {
         int r1 = (rgb1 >> 16) & 0xFF, g1 = (rgb1 >> 8) & 0xFF, b1 = rgb1 & 0xFF;
         int r2 = (rgb2 >> 16) & 0xFF, g2 = (rgb2 >> 8) & 0xFF, b2 = rgb2 & 0xFF;
         return Math.abs(r1 - r2) <= SMART_CROP_COLOR_TOLERANCE
-            && Math.abs(g1 - g2) <= SMART_CROP_COLOR_TOLERANCE
-            && Math.abs(b1 - b2) <= SMART_CROP_COLOR_TOLERANCE;
+                && Math.abs(g1 - g2) <= SMART_CROP_COLOR_TOLERANCE
+                && Math.abs(b1 - b2) <= SMART_CROP_COLOR_TOLERANCE;
     }
 
     public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {

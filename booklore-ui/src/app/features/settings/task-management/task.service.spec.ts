@@ -197,7 +197,7 @@ describe('TaskService - API Contract Tests', () => {
   describe('Enum value contract', () => {
     it('should validate TaskType enum values', () => {
       const values = Object.values(TaskType);
-      expect(values).toContain('CLEAR_CBX_CACHE');
+      expect(values).toContain('CLEAR_PDF_CACHE');
       expect(values).toContain('REFRESH_LIBRARY_METADATA');
       expect(values).toContain('REFRESH_METADATA_MANUAL');
     });
@@ -228,7 +228,7 @@ describe('TaskService - API Contract Tests', () => {
 
     it('should call correct endpoint for startTask', () => {
       httpClientMock.post.mockReturnValue(of({}));
-      const req: TaskCreateRequest = {taskType: TaskType.CLEAR_CBX_CACHE};
+      const req: TaskCreateRequest = {taskType: TaskType.CLEAR_PDF_CACHE};
       service.startTask(req).subscribe();
       expect(httpClientMock.post).toHaveBeenCalledWith(expect.stringMatching(/\/api\/v1\/tasks\/start$/), req);
     });
@@ -256,7 +256,7 @@ describe('TaskService - API Contract Tests', () => {
   describe('Request payload contract', () => {
     it('should send TaskCreateRequest with correct structure', () => {
       httpClientMock.post.mockReturnValue(of({}));
-      const req: TaskCreateRequest = {taskType: TaskType.CLEAR_CBX_CACHE, options: {metadataReplaceMode: MetadataReplaceMode.REPLACE_ALL}};
+      const req: TaskCreateRequest = {taskType: TaskType.CLEAR_PDF_CACHE, options: {metadataReplaceMode: MetadataReplaceMode.REPLACE_ALL}};
       service.startTask(req).subscribe();
       expect(httpClientMock.post).toHaveBeenCalledWith(expect.any(String), req);
     });
@@ -264,7 +264,7 @@ describe('TaskService - API Contract Tests', () => {
     it('should send TaskCronConfigRequest with correct structure', () => {
       httpClientMock.patch.mockReturnValue(of({}));
       const req: TaskCronConfigRequest = {cronExpression: '0 0 * * *', enabled: false};
-      service.updateCronConfig(TaskType.CLEAR_CBX_CACHE, req).subscribe();
+      service.updateCronConfig(TaskType.CLEAR_PDF_CACHE, req).subscribe();
       expect(httpClientMock.patch).toHaveBeenCalledWith(expect.any(String), req);
     });
   });
@@ -272,7 +272,7 @@ describe('TaskService - API Contract Tests', () => {
   describe('Response type contract', () => {
     it('should expect TaskInfo[] from getAvailableTasks', () => {
       const mock: TaskInfo[] = [{
-        taskType: TaskType.CLEAR_CBX_CACHE,
+        taskType: TaskType.CLEAR_PDF_CACHE,
         name: 'Clear CBX',
         description: 'desc',
         parallel: false,
@@ -288,9 +288,9 @@ describe('TaskService - API Contract Tests', () => {
     });
 
     it('should expect TaskCreateResponse from startTask', () => {
-      const resp: TaskCreateResponse = {id: '1', type: TaskType.CLEAR_CBX_CACHE, status: TaskStatus.ACCEPTED};
+      const resp: TaskCreateResponse = {id: '1', type: TaskType.CLEAR_PDF_CACHE, status: TaskStatus.ACCEPTED};
       httpClientMock.post.mockReturnValue(of(resp));
-      service.startTask({taskType: TaskType.CLEAR_CBX_CACHE}).subscribe(result => {
+      service.startTask({taskType: TaskType.CLEAR_PDF_CACHE}).subscribe(result => {
         expect(result).toHaveProperty('id');
         expect(result).toHaveProperty('type');
         expect(result).toHaveProperty('status');
@@ -319,7 +319,7 @@ describe('TaskService - API Contract Tests', () => {
     it('should expect CronConfig from updateCronConfig', () => {
       const resp: CronConfig = {
         id: 1,
-        taskType: TaskType.CLEAR_CBX_CACHE,
+        taskType: TaskType.CLEAR_PDF_CACHE,
         cronExpression: '* * * * *',
         enabled: true,
         options: null,
@@ -327,7 +327,7 @@ describe('TaskService - API Contract Tests', () => {
         updatedAt: null
       };
       httpClientMock.patch.mockReturnValue(of(resp));
-      service.updateCronConfig(TaskType.CLEAR_CBX_CACHE, {enabled: true}).subscribe(result => {
+      service.updateCronConfig(TaskType.CLEAR_PDF_CACHE, {enabled: true}).subscribe(result => {
         expect(result).toHaveProperty('id');
         expect(result).toHaveProperty('taskType');
         expect(result).toHaveProperty('enabled');

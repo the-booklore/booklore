@@ -317,11 +317,6 @@ class FileServiceTest {
             }
 
             @Test
-            void getCbxCachePath_returnsCorrectPath() {
-                assertTrue(fileService.getCbxCachePath().contains("cbx_cache"));
-            }
-
-            @Test
             void getPdfCachePath_returnsCorrectPath() {
                 assertTrue(fileService.getPdfCachePath().contains("pdf_cache"));
             }
