@@ -4,6 +4,7 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import com.github.junrar.Archive;
@@ -125,15 +126,12 @@ public class CbxReaderService {
     }
 
     private void extractCbxArchive(Path cbxPath, Path targetDir) throws IOException {
-        String filename = cbxPath.getFileName().toString().toLowerCase();
-        if (filename.endsWith(CBZ_EXTENSION)) {
-            extractZipArchive(cbxPath, targetDir);
-        } else if (filename.endsWith(CB7_EXTENSION)) {
-            extract7zArchive(cbxPath, targetDir);
-        } else if (filename.endsWith(CBR_EXTENSION)) {
-            extractRarArchive(cbxPath, targetDir);
-        } else {
-            throw new IOException("Unsupported archive format: " + cbxPath.getFileName());
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(cbxPath.toFile());
+        switch (type) {
+            case ZIP -> extractZipArchive(cbxPath, targetDir);
+            case SEVEN_ZIP -> extract7zArchive(cbxPath, targetDir);
+            case RAR -> extractRarArchive(cbxPath, targetDir);
+            default -> throw new IOException("Unsupported archive format: " + cbxPath.getFileName());
         }
     }
 
@@ -356,14 +354,13 @@ public class CbxReaderService {
 
     private long estimateArchiveSize(Path cbxPath) {
         try {
-            String name = cbxPath.getFileName().toString().toLowerCase();
-            if (name.endsWith(CBZ_EXTENSION)) {
-                return estimateCbzArchiveSize(cbxPath);
-            } else if (name.endsWith(CB7_EXTENSION)) {
-                return estimateCb7ArchiveSize(cbxPath);
-            } else if (name.endsWith(CBR_EXTENSION)) {
-                return estimateCbrArchiveSize(cbxPath);
-            }
+            ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(cbxPath.toFile());
+            return switch (type) {
+                case ZIP -> estimateCbzArchiveSize(cbxPath);
+                case SEVEN_ZIP -> estimateCb7ArchiveSize(cbxPath);
+                case RAR -> estimateCbrArchiveSize(cbxPath);
+                default -> Long.MAX_VALUE;
+            };
         } catch (Exception e) {
             log.warn("Failed to estimate archive size for {}", cbxPath, e);
         }

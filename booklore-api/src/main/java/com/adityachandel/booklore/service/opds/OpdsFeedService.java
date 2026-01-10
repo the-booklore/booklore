@@ -6,6 +6,13 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.ArchiveUtils;
+import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.RequestUtils;
+
+import java.io.File;
+import java.net.URLEncoder;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -602,12 +609,30 @@ public class OpdsFeedService {
             case EPUB -> "application/epub+zip";
             case FB2 -> "application/x-fictionbook+xml";
             case CBX -> {
+                if (book.getArchiveType() != null) {
+                    yield switch (book.getArchiveType()) {
+                        case RAR -> "application/vnd.comicbook-rar";
+                        case ZIP -> "application/vnd.comicbook+zip";
+                        case SEVEN_ZIP -> "application/x-7z-compressed";
+                        default -> "application/vnd.comicbook+zip";
+                    };
+                }
+
                 if (book.getFileName() != null) {
-                    String lower = book.getFileName().toLowerCase();
-                    if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
-                    if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
-                    if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
-                    if (lower.endsWith(".cbt")) yield "application/x-tar";
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                    yield switch (type) {
+                        case RAR -> "application/vnd.comicbook-rar";
+                        case ZIP -> "application/vnd.comicbook+zip";
+                        case SEVEN_ZIP -> "application/x-7z-compressed";
+                        default -> {
+                            String lower = book.getFileName().toLowerCase();
+                            if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
+                            if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
+                            if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
+                            if (lower.endsWith(".cbt")) yield "application/x-tar";
+                            yield "application/vnd.comicbook+zip";
+                        }
+                    };
                 }
                 yield "application/vnd.comicbook+zip";
             }

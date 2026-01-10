@@ -162,6 +162,18 @@ class FileUtilsTest {
     }
 
     @Test
+    void testShouldIgnore_pathWithRecycle_returnsTrue() {
+        Path caltrashPath = tempDir.resolve("#recycle").resolve("file.txt");
+        assertTrue(FileUtils.shouldIgnore(caltrashPath));
+    }
+
+    @Test
+    void testShouldIgnore_pathWithRecycleInSubdirectory_returnsTrue() {
+        Path caltrashPath = tempDir.resolve("subdir").resolve("#recycle").resolve("file.txt");
+        assertTrue(FileUtils.shouldIgnore(caltrashPath));
+    }
+
+    @Test
     void testShouldIgnore_emptyFileName_returnsFalse() {
         Path emptyPath = tempDir.resolve("");
         assertFalse(FileUtils.shouldIgnore(emptyPath));

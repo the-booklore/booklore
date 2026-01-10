@@ -1,0 +1,1 @@
+ALTER TABLE book ADD COLUMN archive_type VARCHAR(255);
