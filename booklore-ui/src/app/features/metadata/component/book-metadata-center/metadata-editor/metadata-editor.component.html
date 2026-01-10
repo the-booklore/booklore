@@ -507,6 +507,9 @@
             }
           </div>
         </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row w-full gap-4 mt-2 pb-1">
         <div class="field-group metadata-id-field">
           <label for="lubimyczytacId">LC ID</label>
           <div class="field-with-lock">
@@ -540,6 +543,30 @@
             }
             @if (book.metadata!['comicvineIdLocked']) {
               <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('comicvineId')" severity="warn"></p-button>
+            }
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 md:w-1/6">
+          <label class="text-sm" for="ranobedbId">Ranobedb ID</label>
+          <div class="flex withbutton">
+            <input pSize="small" pInputText id="ranobedbId" formControlName="ranobedbId" class="w-full"/>
+            @if (!book.metadata!['ranobedbIdLocked']) {
+              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="success"></p-button>
+            }
+            @if (book.metadata!['ranobedbIdLocked']) {
+              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="warn"></p-button>
+            }
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 md:w-1/6">
+          <label class="text-sm" for="ranobedbRating">Ranobedb ★</label>
+          <div class="flex withbutton">
+            <input pSize="small" pInputText id="ranobedbRating" formControlName="ranobedbRating" class="w-full"/>
+            @if (!book.metadata!['ranobedbRatingLocked']) {
+              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="success"></p-button>
+            }
+            @if (book.metadata!['ranobedbRatingLocked']) {
+              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="warn"></p-button>
             }
           </div>
         </div>

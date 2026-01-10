@@ -194,6 +194,24 @@ class CbxMetadataWriterTest {
         }
     }
 
+    @Test
+    void saveMetadataToFile_ZipNamedAsCbr_ShouldUpdateMetadata() throws Exception {
+        File zipAsCbr = createCbz(tempDir.resolve("mismatched.cbr"), new String[]{"page1.jpg"});
+
+        BookMetadataEntity meta = new BookMetadataEntity();
+        meta.setTitle("Mismatched Title");
+
+        writer.saveMetadataToFile(zipAsCbr, meta, null, new MetadataClearFlags());
+
+        try (ZipFile zip = new ZipFile(zipAsCbr)) {
+            ZipEntry ci = zip.getEntry("ComicInfo.xml");
+            assertNotNull(ci, "ComicInfo.xml should be present");
+            Document doc = parseXml(zip.getInputStream(ci));
+            assertEquals("Mismatched Title", text(doc, "Title"));
+            assertNotNull(zip.getEntry("page1.jpg"));
+        }
+    }
+
     // ------------- helpers -------------
 
     private static File createCbz(Path path, String[] imageNames) throws Exception {

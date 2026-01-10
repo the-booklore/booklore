@@ -140,6 +140,13 @@ public class MetadataCopyHelper {
         }
     }
 
+    public void copyRanobedbId(boolean clear, Consumer<String> consumer) {
+        if (!isLocked(metadata.getRanobedbIdLocked())) {
+            if (clear) consumer.accept(null);
+            else if (metadata.getRanobedbId() != null) consumer.accept(metadata.getRanobedbId());
+        }
+    }
+
     public void copyAuthors(boolean clear, Consumer<Set<String>> consumer) {
         if (!isLocked(metadata.getAuthorsLocked())) {
             if (clear) {

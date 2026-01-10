@@ -1,4 +1,4 @@
-import {MetadataRefreshOptions} from '../../features/metadata/model/request/metadata-refresh-options.model';
+import { MetadataRefreshOptions } from '../../features/metadata/model/request/metadata-refresh-options.model';
 
 export interface MetadataMatchWeights {
   title: number;
@@ -24,6 +24,7 @@ export interface MetadataMatchWeights {
   doubanRating: number;
   doubanReviewCount: number;
   lubimyczytacRating: number;
+  ranobedbRating: number;
   coverImage: number;
 }
 
@@ -48,6 +49,7 @@ export interface MetadataProviderSettings {
   amazon: Amazon;
   google: Google;
   goodReads: Goodreads;
+  ranobedb: Ranobedb;
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
@@ -66,6 +68,10 @@ export interface Google {
 }
 
 export interface Goodreads {
+  enabled: boolean;
+}
+
+export interface Ranobedb {
   enabled: boolean;
 }
 

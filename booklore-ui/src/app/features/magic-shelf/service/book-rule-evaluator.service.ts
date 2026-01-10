@@ -1,8 +1,8 @@
-import {Injectable} from '@angular/core';
-import {Book} from '../../book/model/book.model';
-import {GroupRule, Rule, RuleField} from '../component/magic-shelf-component';
+import { Injectable } from '@angular/core';
+import { Book } from '../../book/model/book.model';
+import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
 
   evaluateGroup(book: Book, group: GroupRule): boolean {
@@ -252,6 +252,8 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverRating;
       case 'hardcoverReviewCount':
         return book.metadata?.hardcoverReviewCount;
+      case 'ranobedbRating':
+        return book.metadata?.ranobedbRating;
       default:
         return (book as Record<string, unknown>)[field];
     }

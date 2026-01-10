@@ -60,6 +60,7 @@ export type RuleField =
   | 'goodreadsReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
+  | 'ranobedbRating'
   | 'personalRating'
   | 'fileType'
   | 'fileSize'
@@ -142,7 +143,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
-  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'}
+  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
 };
 
 @Component({

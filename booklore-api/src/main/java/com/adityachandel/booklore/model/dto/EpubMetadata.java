@@ -35,6 +35,8 @@ public class EpubMetadata {
     private Double hardcoverRating;
     private Integer hardcoverReviewCount;
     private String googleId;
+    private String ranobedbId;
+    private Double ranobedbRating;
     private Set<String> authors;
     private Set<String> categories;
 }

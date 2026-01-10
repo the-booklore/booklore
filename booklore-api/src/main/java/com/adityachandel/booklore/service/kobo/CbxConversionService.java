@@ -21,6 +21,7 @@ import com.github.junrar.exception.RarException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.FileService;
 
 import javax.imageio.ImageIO;
@@ -184,17 +185,14 @@ public class CbxConversionService {
     }
 
     private List<Path> extractImagesFromCbx(File cbxFile, Path extractedImagesDir) throws IOException, RarException {
-        String fileName = cbxFile.getName().toLowerCase();
-        
-        if (fileName.endsWith(".cbz")) {
-            return extractImagesFromZip(cbxFile, extractedImagesDir);
-        } else if (fileName.endsWith(".cbr")) {
-            return extractImagesFromRar(cbxFile, extractedImagesDir);
-        } else if (fileName.endsWith(".cb7")) {
-            return extractImagesFrom7z(cbxFile, extractedImagesDir);
-        } else {
-            throw new IllegalArgumentException("Unsupported archive format: " + fileName);
-        }
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(cbxFile);
+
+        return switch (type) {
+            case ZIP -> extractImagesFromZip(cbxFile, extractedImagesDir);
+            case RAR -> extractImagesFromRar(cbxFile, extractedImagesDir);
+            case SEVEN_ZIP -> extractImagesFrom7z(cbxFile, extractedImagesDir);
+            default -> throw new IllegalArgumentException("Unsupported archive format: " + cbxFile.getName());
+        };
     }
     
     private List<Path> extractImagesFromZip(File cbzFile, Path extractedImagesDir) throws IOException {

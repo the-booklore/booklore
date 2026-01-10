@@ -94,6 +94,8 @@ export class SideBarFilter implements BookFilter {
                 return filterValues.some(range => isRatingInRange(book.metadata?.goodreadsRating, range));
               case 'hardcoverRating':
                 return filterValues.some(range => isRatingInRange(book.metadata?.hardcoverRating, range));
+              case 'ranobedbRating':
+                return filterValues.some(range => isRatingInRange(book.metadata?.ranobedbRating, range));
               case 'personalRating':
                 return filterValues.some(range => isRatingInRange10(book.personalRating, range));
               case 'publishedDate':

@@ -27,6 +27,9 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -159,6 +162,7 @@ public class EpubMetadataWriter implements MetadataWriter {
             }
 
             if (hasChanges[0]) {
+                removeEmptyTextNodes(opfDoc);
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -318,6 +322,7 @@ public class EpubMetadataWriter implements MetadataWriter {
 
             applyCoverImageToEpub(tempDir, opfDoc, coverData);
 
+            removeEmptyTextNodes(opfDoc);
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -624,5 +629,19 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         return true;
+    }
+
+    private void removeEmptyTextNodes(Document doc) {
+        try {
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            NodeList emptyTextNodes = (NodeList) xpath.evaluate("//text()[normalize-space(.)='']", doc, XPathConstants.NODESET);
+
+            for (int i = 0; i < emptyTextNodes.getLength(); i++) {
+                Node emptyTextNode = emptyTextNodes.item(i);
+                emptyTextNode.getParentNode().removeChild(emptyTextNode);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to remove empty text nodes", e);
+        }
     }
 }

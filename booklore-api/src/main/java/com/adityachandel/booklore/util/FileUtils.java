@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,13 @@ public class FileUtils {
 
     public String getBookFullPath(BookEntity bookEntity) {
         return Path.of(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath(), bookEntity.getFileName())
+                .normalize()
+                .toString()
+                .replace("\\", "/");
+    }
+
+    public String getBookFullPath(Book book) {
+        return Path.of(book.getLibraryPath().getPath(), book.getFileSubPath(), book.getFileName())
                 .normalize()
                 .toString()
                 .replace("\\", "/");

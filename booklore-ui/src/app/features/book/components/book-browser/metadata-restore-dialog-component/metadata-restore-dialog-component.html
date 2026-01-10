@@ -89,6 +89,12 @@
             @if (backupMetadata.hardcoverReviewCount !== null) {
               <div><strong>Hardcover Review Count:</strong> {{ backupMetadata.hardcoverReviewCount }}</div>
             }
+            @if (backupMetadata.ranobedbId) {
+              <div><strong>Ranobedb ID:</strong> {{ backupMetadata.ranobedbId }}</div>
+            }
+            @if (backupMetadata.ranobedbRating !== null) {
+              <div><strong>Ranobedb Rating:</strong> {{ backupMetadata.ranobedbRating }}</div>
+            }
             @if (backupMetadata.googleId) {
               <div><strong>Google Books ID:</strong> {{ backupMetadata.googleId }}</div>
             }
