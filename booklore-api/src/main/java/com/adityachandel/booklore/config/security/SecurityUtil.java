@@ -50,6 +50,11 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanManageIcons();
     }
 
+    public boolean canManageFonts() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanManageFonts();
+    }
+
     public boolean canSyncKoReader() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanSyncKoReader();

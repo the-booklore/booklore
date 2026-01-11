@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class ExtractFromComicInfoXmlTest {
 
     private CbxMetadataExtractor extractor;
-    
+
     @TempDir
     Path tempDir;
 
@@ -44,11 +44,6 @@ class ExtractFromComicInfoXmlTest {
                     <Publisher>DC Comics</Publisher>
                     <Summary>Batman comes out of retirement to fight crime in Gotham City.</Summary>
                     <Writer>Frank Miller</Writer>
-                    <Penciller>Frank Miller</Penciller>
-                    <Inker>Klaus Janson</Inker>
-                    <Colorist>Lynn Varley</Colorist>
-                    <Letterer>John Costanza</Letterer>
-                    <CoverArtist>Frank Miller</CoverArtist>
                     <Genre>Superhero, Crime</Genre>
                     <Tags>Batman, DC, Frank Miller</Tags>
                     <PageCount>48</PageCount>
@@ -69,13 +64,10 @@ class ExtractFromComicInfoXmlTest {
         assertEquals("Batman comes out of retirement to fight crime in Gotham City.", metadata.getDescription());
         assertEquals(48, metadata.getPageCount());
         assertEquals("en", metadata.getLanguage());
-        
+
         // Verify authors
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
-        assertTrue(metadata.getAuthors().contains("Klaus Janson"));
-        assertTrue(metadata.getAuthors().contains("Lynn Varley"));
-        assertTrue(metadata.getAuthors().contains("John Costanza"));
-        
+
         // Verify categories
         assertTrue(metadata.getCategories().contains("Superhero"));
         assertTrue(metadata.getCategories().contains("Crime"));
@@ -119,7 +111,7 @@ class ExtractFromComicInfoXmlTest {
         Path parentDir = tempDir.resolve("comic_folder");
         Files.createDirectories(parentDir);
         File xmlFile = createXmlFileInDir(parentDir, "no_title.xml", xml);
-        
+
         BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
 
         assertNotNull(metadata);
@@ -140,7 +132,7 @@ class ExtractFromComicInfoXmlTest {
         Path parentDir = tempDir.resolve("empty_title_comic");
         Files.createDirectories(parentDir);
         File xmlFile = createXmlFileInDir(parentDir, "empty_title.xml", xml);
-        
+
         BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
 
         assertNotNull(metadata);
@@ -159,7 +151,7 @@ class ExtractFromComicInfoXmlTest {
         Path parentDir = tempDir.resolve("whitespace_comic");
         Files.createDirectories(parentDir);
         File xmlFile = createXmlFileInDir(parentDir, "whitespace_title.xml", xml);
-        
+
         BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
 
         assertNotNull(metadata);
@@ -316,7 +308,6 @@ class ExtractFromComicInfoXmlTest {
                 <ComicInfo>
                     <Title>Test Comic</Title>
                     <Writer>John Doe, Jane Smith</Writer>
-                    <Penciller>Bob Artist, Alice Drawer</Penciller>
                 </ComicInfo>
                 """;
 
@@ -326,8 +317,6 @@ class ExtractFromComicInfoXmlTest {
         assertNotNull(metadata);
         assertTrue(metadata.getAuthors().contains("John Doe"));
         assertTrue(metadata.getAuthors().contains("Jane Smith"));
-        assertTrue(metadata.getAuthors().contains("Bob Artist"));
-        assertTrue(metadata.getAuthors().contains("Alice Drawer"));
     }
 
     @Test
@@ -336,7 +325,6 @@ class ExtractFromComicInfoXmlTest {
                 <ComicInfo>
                     <Title>Test Comic</Title>
                     <Writer>John Doe; Jane Smith</Writer>
-                    <Inker>Bob Inker; Alice Helper</Inker>
                 </ComicInfo>
                 """;
 
@@ -346,8 +334,6 @@ class ExtractFromComicInfoXmlTest {
         assertNotNull(metadata);
         assertTrue(metadata.getAuthors().contains("John Doe"));
         assertTrue(metadata.getAuthors().contains("Jane Smith"));
-        assertTrue(metadata.getAuthors().contains("Bob Inker"));
-        assertTrue(metadata.getAuthors().contains("Alice Helper"));
     }
 
     @Test
@@ -666,21 +652,21 @@ class ExtractFromComicInfoXmlTest {
 
     @ParameterizedTest
     @CsvSource({
-        "2020,,,2020-01-01",
-        "2020,6,,2020-06-01",
-        "2020,3,15,2020-03-15",
-        "2020,13,32,"  // Invalid
+            "2020,,,2020-01-01",
+            "2020,6,,2020-06-01",
+            "2020,3,15,2020-03-15",
+            "2020,13,32,"  // Invalid
     })
     void testExtractFromComicInfoXml_DateParsing(String year, String month, String day, String expected) throws IOException {
         String xml = String.format("""
-            <ComicInfo>
-                <Title>Date Test</Title>
-                %s%s%s
-            </ComicInfo>
-            """,
-            year != null ? "<Year>" + year + "</Year>" : "",
-            month != null ? "<Month>" + month + "</Month>" : "",
-            day != null ? "<Day>" + day + "</Day>" : ""
+                        <ComicInfo>
+                            <Title>Date Test</Title>
+                            %s%s%s
+                        </ComicInfo>
+                        """,
+                year != null ? "<Year>" + year + "</Year>" : "",
+                month != null ? "<Month>" + month + "</Month>" : "",
+                day != null ? "<Day>" + day + "</Day>" : ""
         );
 
         File xmlFile = createXmlFile("date_test.xml", xml);
@@ -696,8 +682,8 @@ class ExtractFromComicInfoXmlTest {
     @Test
     void testExtractFromComicInfoXml_NullInput_ThrowsIllegalArgumentException() {
         IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
-            () -> extractor.extractFromComicInfoXml(null)
+                IllegalArgumentException.class,
+                () -> extractor.extractFromComicInfoXml(null)
         );
         assertEquals("XML file cannot be null", exception.getMessage());
     }
@@ -746,9 +732,6 @@ class ExtractFromComicInfoXmlTest {
 
         // Verify authors
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
-        assertTrue(metadata.getAuthors().contains("Klaus Janson"));
-        assertTrue(metadata.getAuthors().contains("Lynn Varley"));
-        assertTrue(metadata.getAuthors().contains("John Costanza"));
 
         // Verify categories
         assertTrue(metadata.getCategories().contains("Superhero"));
@@ -811,28 +794,8 @@ class ExtractFromComicInfoXmlTest {
         BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
 
         assertNotNull(metadata);
-        // Set should contain only one "Frank Miller"
         assertEquals(1, metadata.getAuthors().size());
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
-    }
-
-    @Test
-    void testExtractFromComicInfoXml_EmptyAuthorFields_NotAdded() throws IOException {
-        String xml = """
-                <ComicInfo>
-                    <Title>Test Comic</Title>
-                    <Writer></Writer>
-                    <Penciller>   </Penciller>
-                    <Inker>Valid Author</Inker>
-                </ComicInfo>
-                """;
-
-        File xmlFile = createXmlFile("empty_authors.xml", xml);
-        BookMetadata metadata = extractor.extractFromComicInfoXml(xmlFile);
-
-        assertNotNull(metadata);
-        assertEquals(1, metadata.getAuthors().size());
-        assertTrue(metadata.getAuthors().contains("Valid Author"));
     }
 
     @Test

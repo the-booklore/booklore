@@ -39,15 +39,19 @@
 }
 
 ::ng-deep .withbutton input,
-::ng-deep .withbutton ul {
+::ng-deep .withbutton ul,
+::ng-deep .field-with-lock input,
+::ng-deep .field-with-lock ul {
   border-radius: 6px 0 0 6px;
 }
 
-.withbutton textarea {
+.withbutton textarea,
+.field-with-lock textarea {
   border-radius: 6px 0 6px 6px;
 }
 
-::ng-deep .withbutton button {
+::ng-deep .withbutton button,
+::ng-deep .field-with-lock button {
   border-color: var(--p-inputtext-border-color) !important;
   border-radius: 0 6px 6px 0 !important;
   border-left: 0px !important;
@@ -64,4 +68,323 @@
 label {
   color: var(--text-color-secondary);
   white-space: nowrap;
+}
+
+.metadata-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  animation: fadeIn 0.3s ease-in;
+
+  @media (min-width: 768px) {
+    min-width: 60rem;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background-color: black;
+  opacity: 0.25;
+  z-index: 10;
+}
+
+.loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: auto;
+
+  @media (min-width: 768px) {
+    padding: 0.5rem;
+  }
+}
+
+.main-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.cover-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  width: 250px;
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+.upload-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.cover-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.fields-section {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+
+  @media (min-width: 768px) {
+    padding-left: 0.5rem;
+  }
+}
+
+.field-row {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding-bottom: 0.25rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  label {
+    font-size: 0.875rem;
+  }
+}
+
+.title-field {
+  @media (min-width: 768px) {
+    flex-basis: 45%;
+    flex-shrink: 0;
+  }
+}
+
+.subtitle-field {
+  @media (min-width: 768px) {
+    flex-basis: 40%;
+  }
+}
+
+.language-field {
+  @media (min-width: 768px) {
+    width: 9rem;
+  }
+}
+
+.authors-field {
+  @media (min-width: 768px) {
+    flex-basis: 45%;
+    flex-shrink: 0;
+  }
+}
+
+.publisher-field {
+  @media (min-width: 768px) {
+    flex-basis: 35%;
+  }
+}
+
+.date-field {
+  @media (min-width: 768px) {
+    flex-basis: 20%;
+
+    p-datepicker {
+      width: 100%;
+      min-width: 7.5rem;
+    }
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.series-name-field {
+  @media (min-width: 768px) {
+    flex-basis: 75%;
+  }
+}
+
+.small-field {
+  @media (min-width: 768px) {
+    width: 9rem;
+  }
+}
+
+.metadata-ids-row {
+  @media (min-width: 768px) {
+    .field-group {
+      width: calc(100% / 6);
+    }
+  }
+}
+
+.metadata-id-field {
+  @media (min-width: 768px) {
+    width: calc(100% / 6);
+  }
+}
+
+.description-section {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  width: 100%;
+  gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.description-field {
+  width: 100%;
+  height: 100%;
+}
+
+.description-with-lock {
+  display: flex;
+  flex-grow: 1;
+  width: 100%;
+
+  textarea {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.field-with-lock {
+  display: flex;
+
+  input,
+  p-autocomplete,
+  p-datepicker {
+    width: 100%;
+  }
+}
+
+.autocomplete-wrapper {
+  width: 100%;
+
+  p-autocomplete {
+    width: 100%;
+  }
+}
+
+.form-footer {
+  margin-top: auto;
+}
+
+.footer-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0;
+  padding-top: 1rem;
+  z-index: 10;
+
+  @media (min-width: 768px) {
+    padding: 0.5rem;
+    padding-bottom: 1rem;
+  }
+}
+
+.desktop-actions {
+  display: none;
+  justify-content: space-between;
+  width: 100%;
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    display: flex;
+  }
+}
+
+.navigation-left {
+  display: flex;
+  gap: 1rem;
+}
+
+.navigation-center {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.navigation-position {
+  font-size: 0.875rem;
+  color: var(--surface-600);
+
+  :host-context(.dark) & {
+    color: var(--surface-400);
+  }
+}
+
+.actions-right {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-left: auto;
+}
+
+.mobile-actions {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  flex-wrap: wrap;
+
+  @media (min-width: 640px) {
+    display: none;
+  }
+}
+
+.mobile-nav-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.mobile-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.mobile-lock-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.mobile-save-action {
+  display: flex;
 }

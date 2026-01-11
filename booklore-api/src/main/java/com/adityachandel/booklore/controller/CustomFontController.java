@@ -3,6 +3,7 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.CustomFontDto;
+import com.adityachandel.booklore.model.enums.FontFormat;
 import com.adityachandel.booklore.service.customfont.CustomFontService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -32,7 +33,7 @@ public class CustomFontController {
     @ApiResponse(responseCode = "200", description = "Font uploaded successfully")
     @ApiResponse(responseCode = "400", description = "Invalid file or quota exceeded")
     @PostMapping("/upload")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@securityUtil.canManageFonts() or @securityUtil.isAdmin()")
     public ResponseEntity<CustomFontDto> uploadFont(
             @Parameter(description = "Font file (.ttf, .otf, .woff, .woff2)") @RequestParam("file") MultipartFile file,
             @Parameter(description = "Font display name") @RequestParam(value = "fontName", required = false) String fontName) {
@@ -44,7 +45,7 @@ public class CustomFontController {
     @Operation(summary = "Get all user's custom fonts", description = "Retrieve all custom fonts for the authenticated user")
     @ApiResponse(responseCode = "200", description = "Fonts retrieved successfully")
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@securityUtil.canManageFonts() or @securityUtil.isAdmin()")
     public ResponseEntity<List<CustomFontDto>> getUserFonts() {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         List<CustomFontDto> fonts = customFontService.getUserFonts(user.getId());
@@ -55,7 +56,7 @@ public class CustomFontController {
     @ApiResponse(responseCode = "200", description = "Font deleted successfully")
     @ApiResponse(responseCode = "404", description = "Font not found or access denied")
     @DeleteMapping("/{fontId}")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@securityUtil.canManageFonts() or @securityUtil.isAdmin()")
     public ResponseEntity<Void> deleteFont(@PathVariable Long fontId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         customFontService.deleteFont(fontId, user.getId());
@@ -66,14 +67,11 @@ public class CustomFontController {
     @ApiResponse(responseCode = "200", description = "Font file retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Font not found or access denied")
     @GetMapping("/{fontId}/file")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("@securityUtil.canManageFonts() or @securityUtil.isAdmin()")
     public ResponseEntity<Resource> getFontFile(@PathVariable Long fontId) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
         Resource resource = customFontService.getFontFile(fontId, user.getId());
-
-        // Get font format to set correct content type
-        var format = customFontService.getFontFormat(fontId, user.getId());
-
+        FontFormat format = customFontService.getFontFormat(fontId, user.getId());
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(format.getMimeType()))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline")

@@ -17,7 +17,7 @@ jobs:
     name: Flyway Migration Check
     uses: ./.github/workflows/migrations-check.yml
     with:
-      base_ref: 'origin/develop'
+      base_ref: 'develop'
       head_ref: 'HEAD'
 
   backend-tests:

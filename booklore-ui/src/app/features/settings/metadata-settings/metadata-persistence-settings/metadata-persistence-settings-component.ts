@@ -1,17 +1,19 @@
 import {Component, inject, OnInit} from '@angular/core';
 import {ToggleSwitch} from 'primeng/toggleswitch';
 import {FormsModule} from '@angular/forms';
-import {AppSettingKey, AppSettings, MetadataPersistenceSettings} from '../../../../shared/model/app-settings.model';
+import {AppSettingKey, AppSettings, MetadataPersistenceSettings, SaveToOriginalFileSettings} from '../../../../shared/model/app-settings.model';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {SettingsHelperService} from '../../../../shared/service/settings-helper.service';
 import {Observable} from 'rxjs';
 import {filter, take} from 'rxjs/operators';
+import {Tooltip} from 'primeng/tooltip';
 
 @Component({
   selector: 'app-metadata-persistence-settings-component',
   imports: [
     ToggleSwitch,
-    FormsModule
+    FormsModule,
+    Tooltip
   ],
   templateUrl: './metadata-persistence-settings-component.html',
   styleUrl: './metadata-persistence-settings-component.scss'
@@ -19,7 +21,20 @@ import {filter, take} from 'rxjs/operators';
 export class MetadataPersistenceSettingsComponent implements OnInit {
 
   metadataPersistence: MetadataPersistenceSettings = {
-    saveToOriginalFile: false,
+    saveToOriginalFile: {
+      epub: {
+        enabled: false,
+        maxFileSizeInMb: 250
+      },
+      pdf: {
+        enabled: false,
+        maxFileSizeInMb: 250
+      },
+      cbx: {
+        enabled: false,
+        maxFileSizeInMb: 250
+      }
+    },
     convertCbrCb7ToCbz: false,
     moveFilesToLibraryPattern: false
   };
@@ -34,7 +49,19 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
   }
 
   onPersistenceToggle(key: keyof MetadataPersistenceSettings): void {
-    this.updatePersistenceSettings(key);
+    if (key !== 'saveToOriginalFile') {
+      this.metadataPersistence[key] = !this.metadataPersistence[key];
+      this.settingsHelper.saveSetting(AppSettingKey.METADATA_PERSISTENCE_SETTINGS, this.metadataPersistence);
+    }
+  }
+
+  onSaveToOriginalFileToggle(format: keyof SaveToOriginalFileSettings): void {
+    this.metadataPersistence.saveToOriginalFile[format].enabled =
+      !this.metadataPersistence.saveToOriginalFile[format].enabled;
+    this.settingsHelper.saveSetting(AppSettingKey.METADATA_PERSISTENCE_SETTINGS, this.metadataPersistence);
+  }
+
+  onFilesizeChange(format: keyof SaveToOriginalFileSettings): void {
     this.settingsHelper.saveSetting(AppSettingKey.METADATA_PERSISTENCE_SETTINGS, this.metadataPersistence);
   }
 
@@ -53,19 +80,25 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
 
   private initializeSettings(settings: AppSettings): void {
     if (settings.metadataPersistenceSettings) {
-      this.metadataPersistence = {...settings.metadataPersistenceSettings};
-    }
-  }
+      const persistenceSettings = settings.metadataPersistenceSettings;
 
-  private updatePersistenceSettings(key: keyof MetadataPersistenceSettings): void {
-    if (key === 'saveToOriginalFile') {
-      this.metadataPersistence.saveToOriginalFile = !this.metadataPersistence.saveToOriginalFile;
-
-      if (!this.metadataPersistence.saveToOriginalFile) {
-        this.metadataPersistence.convertCbrCb7ToCbz = false;
-      }
-    } else {
-      this.metadataPersistence[key] = !this.metadataPersistence[key];
+      this.metadataPersistence = {
+        ...persistenceSettings,
+        saveToOriginalFile: {
+          epub: {
+            enabled: persistenceSettings.saveToOriginalFile?.epub?.enabled ?? false,
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.epub?.maxFileSizeInMb ?? 100
+          },
+          pdf: {
+            enabled: persistenceSettings.saveToOriginalFile?.pdf?.enabled ?? false,
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.pdf?.maxFileSizeInMb ?? 100
+          },
+          cbx: {
+            enabled: persistenceSettings.saveToOriginalFile?.cbx?.enabled ?? false,
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.cbx?.maxFileSizeInMb ?? 250
+          }
+        }
+      };
     }
   }
 }

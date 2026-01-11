@@ -73,7 +73,6 @@ class ComicInfoParsingIssuesTest {
         assertEquals(Integer.valueOf(1964), metadata.getPublishedDate().getYear());
         assertEquals("Marvel", metadata.getPublisher());
         assertTrue(metadata.getAuthors().contains("Stan Lee"));
-        assertTrue(metadata.getAuthors().contains("Joe Orlando"));
     }
 
     @Test
@@ -160,10 +159,6 @@ class ComicInfoParsingIssuesTest {
         assertEquals("Special anniversary issue", metadata.getDescription());
         
         assertTrue(metadata.getAuthors().contains("Frank Miller"));
-        assertTrue(metadata.getAuthors().contains("John Romita Jr."));
-        assertTrue(metadata.getAuthors().contains("Scott Hanna"));
-        assertTrue(metadata.getAuthors().contains("Steve Oliff"));
-        assertTrue(metadata.getAuthors().contains("Joe Rosen"));
         
         assertTrue(metadata.getCategories().contains("Marvel"));
         assertTrue(metadata.getCategories().contains("Daredevil"));

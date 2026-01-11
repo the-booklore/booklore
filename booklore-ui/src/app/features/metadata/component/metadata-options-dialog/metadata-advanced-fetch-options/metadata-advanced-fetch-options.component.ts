@@ -25,16 +25,16 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'title', 'subtitle', 'description', 'authors', 'publisher', 'publishedDate',
     'seriesName', 'seriesNumber', 'seriesTotal', 'isbn13', 'isbn10',
     'language', 'categories', 'cover', 'pageCount',
-    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId',
+    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
     'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating',
+    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
     'moods', 'tags'
   ];
 
   providerSpecificFields: (keyof FieldOptions)[] = [
-    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId',
+    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
     'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating',
+    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
     'moods', 'tags'
   ];
 
@@ -44,8 +44,8 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'language', 'categories', 'cover', 'pageCount',
   ];
 
-  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac'];
-  providersWithClear: string[] = ['Clear All', 'Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac'];
+  providers: string[] = ['Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb'];
+  providersWithClear: string[] = ['Clear All', 'Amazon', 'Google', 'GoodReads', 'Hardcover', 'Comicvine', 'Douban', 'Lubimyczytac', 'Ranobedb'];
 
   refreshCovers: boolean = false;
   mergeCategories: boolean = false;
@@ -64,9 +64,9 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   private justSubmitted = false;
 
   private providerSpecificFieldsList = [
-    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId',
+    'asin', 'goodreadsId','comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
     'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating',
+    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
     'moods', 'tags'
   ];
 
@@ -233,6 +233,8 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       'hardcoverReviewCount': 'Hardcover Review Count',
       'lubimyczytacId': 'LC ID',
       'lubimyczytacRating': 'Lubimyczytac Rating',
+      'ranobedbId': 'Ranobedb ID',
+      'ranobedbRating': 'Ranobedb Rating',
       'moods': 'Moods (Hardcover)',
       'tags': 'Tags (Hardcover)'
     };

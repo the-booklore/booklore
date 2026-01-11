@@ -60,6 +60,7 @@ export type RuleField =
   | 'goodreadsReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
+  | 'ranobedbRating'
   | 'personalRating'
   | 'fileType'
   | 'fileSize'
@@ -142,7 +143,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
-  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'}
+  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
 };
 
 @Component({
@@ -383,7 +385,7 @@ export class MagicShelfComponent implements OnInit {
 
   createGroup(): GroupFormGroup {
     return new FormGroup({
-      type: new FormControl<'group'>('group' as 'group'),
+      type: new FormControl<'group'>('group' as const),
       join: new FormControl<'and' | 'or'>('and' as 'and' | 'or'),
       rules: new FormArray([] as (GroupFormGroup | RuleFormGroup)[]),
     }) as GroupFormGroup;

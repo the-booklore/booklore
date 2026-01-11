@@ -59,6 +59,8 @@ public class MetadataRefreshOptions {
         private FieldProvider hardcoverRating;
         private FieldProvider hardcoverReviewCount;
         private FieldProvider lubimyczytacRating;
+        private FieldProvider ranobedbId;
+        private FieldProvider ranobedbRating;
         private FieldProvider moods;
         private FieldProvider tags;
     }
@@ -109,6 +111,8 @@ public class MetadataRefreshOptions {
         private boolean hardcoverRating;
         private boolean hardcoverReviewCount;
         private boolean lubimyczytacRating;
+        private boolean ranobedbId;
+        private boolean ranobedbRating;
         private boolean moods;
         private boolean tags;
     }

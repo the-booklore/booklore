@@ -24,8 +24,7 @@ public class CbxReaderController {
     @Operation(summary = "List pages in a CBX book", description = "Retrieve a list of available page numbers for a CBX book.")
     @ApiResponse(responseCode = "200", description = "Page numbers returned successfully")
     @GetMapping("/{bookId}/pages")
-    public List<Integer> listPages(
-            @Parameter(description = "ID of the book") @PathVariable Long bookId) {
+    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
         return cbxReaderService.getAvailablePages(bookId);
     }
 }

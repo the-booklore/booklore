@@ -46,6 +46,7 @@ describe('UserService', () => {
       canManageEmailConfig: true,
       canManageGlobalPreferences: true,
       canManageIcons: true,
+      canManageFonts: true,
       demoUser: false,
       canBulkAutoFetchMetadata: true,
       canBulkCustomFetchMetadata: true,
@@ -295,6 +296,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,
@@ -338,6 +340,7 @@ describe('UserService - API Contract Tests', () => {
         'canSyncKoReader', 'canSyncKobo', 'canAccessOpds', 'canAccessBookdrop',
         'canAccessLibraryStats', 'canAccessUserStats', 'canAccessTaskManager',
         'canManageEmailConfig', 'canManageGlobalPreferences', 'canManageIcons',
+        'canManageFonts', // <-- Added test for canManageFonts
         'demoUser', 'canBulkAutoFetchMetadata', 'canBulkCustomFetchMetadata',
         'canBulkEditMetadata', 'canBulkRegenerateCover', 'canMoveOrganizeFiles',
         'canBulkLockUnlockMetadata'
@@ -368,6 +371,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: true,
           canManageGlobalPreferences: true,
           canManageIcons: true,
+          canManageFonts: true, // <-- Added to mock
           demoUser: false,
           canBulkAutoFetchMetadata: true,
           canBulkCustomFetchMetadata: true,
@@ -401,6 +405,8 @@ describe('UserService - API Contract Tests', () => {
           expect(user.permissions).toHaveProperty(permission);
           expect(typeof user.permissions[permission as keyof typeof user.permissions]).toBe('boolean');
         });
+        // Explicit test for canManageFonts
+        expect(user.permissions.canManageFonts).toBe(true);
       });
     });
 
@@ -437,6 +443,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,
@@ -608,6 +615,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,
@@ -709,6 +717,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: true,
           canManageGlobalPreferences: true,
           canManageIcons: true,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: true,
           canBulkCustomFetchMetadata: true,
@@ -782,6 +791,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,
@@ -842,6 +852,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,
@@ -903,6 +914,7 @@ describe('UserService - API Contract Tests', () => {
           canManageEmailConfig: false,
           canManageGlobalPreferences: false,
           canManageIcons: false,
+          canManageFonts: false,
           demoUser: false,
           canBulkAutoFetchMetadata: false,
           canBulkCustomFetchMetadata: false,

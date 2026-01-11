@@ -5,6 +5,7 @@
   padding: 0;
   width: 100%;
   min-height: 100%;
+  animation: fadeIn 0.3s ease-in;
 
   @media (min-width: 768px) {
     padding: 0.5rem;

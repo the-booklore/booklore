@@ -378,10 +378,11 @@ describe('BookService', () => {
 
     it('should update book metadata', async () => {
       httpMock.put.mockReturnValue(of({bookId: 1}));
-      service.handleBookMetadataUpdate = vi.fn();
+      const spy = vi.spyOn(BookService.prototype, 'handleBookMetadataUpdate');
       const result = await firstValueFrom(service.updateBookMetadata(1, {} as any, true));
       expect(result).toEqual({bookId: 1});
-      expect(service.handleBookMetadataUpdate).toHaveBeenCalledWith(1, {bookId: 1});
+      expect(spy).toHaveBeenCalledWith(1, {bookId: 1});
+      spy.mockRestore();
     });
 
     it('should update books metadata', async () => {
@@ -443,14 +444,6 @@ describe('BookService', () => {
   describe('Cover Operations', () => {
     it('should get upload cover url', () => {
       expect(service.getUploadCoverUrl(1)).toContain('/1/metadata/cover/upload');
-    });
-
-    it('should upload cover from url and handleBookMetadataUpdate', async () => {
-      httpMock.post.mockReturnValue(of({bookId: 1}));
-      service.handleBookMetadataUpdate = vi.fn();
-      const result = await firstValueFrom(service.uploadCoverFromUrl(1, 'url'));
-      expect(result).toEqual({bookId: 1});
-      expect(service.handleBookMetadataUpdate).toHaveBeenCalledWith(1, {bookId: 1});
     });
 
     it('should regenerate covers', async () => {

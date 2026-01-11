@@ -3,6 +3,7 @@ package com.adityachandel.booklore.model.entity;
 import com.adityachandel.booklore.convertor.BookRecommendationIdsListConverter;
 import com.adityachandel.booklore.model.dto.BookRecommendationLite;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,6 +34,10 @@ public class BookEntity {
 
     @Column(name = "book_type")
     private BookFileType bookType;
+
+    @Column(name = "archive_type")
+    @Enumerated(EnumType.STRING)
+    private ArchiveUtils.ArchiveType archiveType;
 
     @Column(name = "file_size_kb")
     private Long fileSizeKb;

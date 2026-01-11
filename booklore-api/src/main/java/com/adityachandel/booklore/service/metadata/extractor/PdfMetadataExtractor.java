@@ -181,6 +181,11 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                     metadataBuilder.comicvineId(comicvine);
                                 }
 
+                                String ranobedb = identifiers.get("ranobedb");
+                                if (StringUtils.isNotBlank(ranobedb)) {
+                                    metadataBuilder.ranobedbId(ranobedb);
+                                }
+
                                 String hardcover = identifiers.get("hardcover");
                                 if (StringUtils.isNotBlank(hardcover)) {
                                     metadataBuilder.hardcoverId(hardcover);

@@ -23,7 +23,7 @@ import {DialogLauncherService} from '../../services/dialog-launcher.service';
   imports: [KeyValuePipe, ProgressBarModule, ButtonModule, Divider, Tooltip, Tag]
 })
 export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
-  activeTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
+  activeTasks: Record<string, MetadataBatchProgressNotification> = {};
 
   private destroy$ = new Subject<void>();
   private dialogLauncherService = inject(DialogLauncherService);
@@ -45,7 +45,7 @@ export class MetadataProgressWidgetComponent implements OnInit, OnDestroy {
       });
   }
 
-  private checkForStalledTasks(tasks: { [taskId: string]: MetadataBatchProgressNotification }): void {
+  private checkForStalledTasks(tasks: Record<string, MetadataBatchProgressNotification>): void {
     const now = Date.now();
 
     for (const taskId of this.timeoutHandles.keys()) {

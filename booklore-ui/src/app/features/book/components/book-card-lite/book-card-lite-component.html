@@ -4,6 +4,12 @@
     class="book-cover"
     alt="Cover of {{ book.metadata?.title }}"
     loading="lazy"/>
+    
+  @if (showSeriesNumber && !book.seriesCount && book.metadata?.seriesNumber != null) {
+    <div class="series-number-overlay">
+      #{{ book.metadata?.seriesNumber }}
+    </div>
+  }
 
   @if (!this.isActive) {
     <p-button

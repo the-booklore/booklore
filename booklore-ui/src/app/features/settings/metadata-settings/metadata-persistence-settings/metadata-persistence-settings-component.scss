@@ -40,6 +40,7 @@
   display: flex;
   align-items: flex-start;
   gap: 2rem;
+  flex-wrap: wrap;
 
   &:last-child {
     border-bottom: none;
@@ -47,9 +48,10 @@
   }
 
   &.setting-item-indented {
+    margin-top: 1rem;
     margin-left: 1.5rem;
     padding-left: 1rem;
-    border-left: 2px solid var(--p-content-border-color);
+    border-left: 2px solid var(--p-border-color);
     position: relative;
 
     &::before {
@@ -140,19 +142,74 @@
 .warning-notice {
   display: flex;
   align-items: flex-start;
-  gap: 0.5rem;
-  color: var(--p-red-400);
-  font-size: 0.875rem;
-  line-height: 1.5;
+  gap: 0.75rem;
+
+  font-size: 0.9rem;
+  line-height: 1.55;
+
+  padding: 0.875rem 1rem;
+  border-radius: 10px;
+
+  background: color-mix(
+      in srgb,
+      var(--p-surface-900) 85%,
+      var(--p-red-600) 15%
+  );
+
+  border-left: 4px solid var(--p-red-500);
+
+  color: var(--p-text-color);
 
   .pi-exclamation-triangle {
-    color: var(--p-red-500);
-    margin-top: 0.125rem;
+    color: var(--p-red-400);
+    margin-top: 0.15rem;
     flex-shrink: 0;
   }
 
   strong {
+    font-weight: 700;
+    color: var(--p-red-300);
+  }
+}
+
+.nested-settings {
+  margin-top: 1rem;
+  margin-left: 1.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--surface-border);
+}
+
+.format-setting {
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.filesize-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  label {
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--p-red-500);
+    white-space: nowrap;
+  }
+
+  .filesize-field {
+    width: 100px;
+    padding: 0.5rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 6px;
+    background: var(--p-content-background);
+    color: var(--p-text-color);
+
+    &:focus {
+      outline: none;
+      border-color: var(--p-primary-color);
+      box-shadow: 0 0 0 2px var(--p-primary-color-transparent);
+    }
   }
 }

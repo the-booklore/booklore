@@ -252,6 +252,7 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
     if (metadata['doubanId']) return 'douban';
     if (metadata['lubimyczytacId']) return 'lubimyczytac';
     if (metadata.comicvineId) return 'comicvine';
+    if (metadata.ranobedbId) return 'ranobedb';
     return null;
   }
 
@@ -362,6 +363,8 @@ export class MetadataSearcherComponent implements OnInit, OnDestroy {
       }
       const name = metadata.seriesName;
       return `<a href="https://comicvine.gamespot.com/volume/${metadata.comicvineId}" target="_blank">Comicvine</a>`;
+    } else if (metadata.ranobedbId) {
+      return `<a href="https://ranobedb.org/book/${metadata.ranobedbId}" target="_blank">RanobeDB</a>`;
     }
     throw new Error("No provider ID found in metadata.");
   }
