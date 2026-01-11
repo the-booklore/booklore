@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import com.adityachandel.booklore.config.security.userdetails.KoreaderUserDetails;
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.progress.KoreaderProgress;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
@@ -42,6 +43,31 @@ public class KoreaderService {
 
         log.info("User '{}' authorized", authDetails.getUsername());
         return ResponseEntity.ok(Map.of("username", authDetails.getUsername()));
+    }
+
+    public ResponseEntity<?> getBookByHash(String bookHash) {
+        // Handle both KoreaderUserDetails and BookLoreUser principals
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String username = null;
+        
+        if (principal instanceof KoreaderUserDetails details) {
+            username = details.getUsername();
+        } else if (principal instanceof BookLoreUser user) {
+            username = user.getUsername();
+        } else {
+            log.warn("getBookByHash: invalid principal type");
+            throw ApiError.GENERIC_UNAUTHORIZED.createException("User not authenticated");
+        }
+        
+        BookEntity book = findBookByHash(bookHash);
+        
+        log.info("getBookByHash: fetched book id={} for hash={} by user={}", 
+                book.getId(), bookHash, username);
+        
+        return ResponseEntity.ok(Map.of(
+            "id", book.getId(),
+            "currentHash", book.getCurrentHash() != null ? book.getCurrentHash() : ""
+        ));
     }
 
     public KoreaderProgress getProgress(String bookHash) {
