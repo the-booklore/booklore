@@ -18,7 +18,6 @@ import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.opds.MagicShelfBookService;
 import com.adityachandel.booklore.util.kobo.KoboUrlBuilder;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -114,18 +113,16 @@ public class KoboEntitlementService {
     public List<KoboTagWrapper> generateTags() {
         Long userId = authenticationService.getAuthenticatedUser().getId();
         List<Long> koboBookIDs = shelfRepository.findByUserIdAndName(userId, ShelfType.KOBO.getName())
-                .orElseThrow(() -> new EntityNotFoundException("Kobo shelf not found for user: " + userId))
+                .orElseThrow(() -> new NoSuchElementException("Kobo shelf not found for user: " + userId))
                 .getBookEntities().stream().filter(koboCompatibilityService::isBookSupportedForKobo)
                 .map(BookEntity::getId)
                 .toList();
 
         List<KoboTagWrapper> tags = new ArrayList<>();
-        String now = OffsetDateTime.now(ZoneOffset.UTC).toString();
-
         // Shelves
         shelfRepository.findByUserId(userId).stream()
                 .filter(shelf -> !Objects.equals(shelf.getName(), ShelfType.KOBO.getName()))
-                .map(shelf -> buildKoboTag("BL-S-" + shelf.getId(), shelf.getName(), now, now,
+                .map(shelf -> buildKoboTag("BL-S-" + shelf.getId(), shelf.getName(), null, null,
                         shelf.getBookEntities().stream().map(BookEntity::getId).toList(), koboBookIDs))
                 .forEach(tags::add);
 
@@ -135,7 +132,7 @@ public class KoboEntitlementService {
                     List<Long> bookIds = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelf.getId(), 0, Integer.MAX_VALUE)
                             .stream().map(Book::getId).toList();
                     return buildKoboTag("BL-MS-" + magicShelf.getId(), magicShelf.getName(),
-                            magicShelf.getCreatedAt().toString(), magicShelf.getUpdatedAt().toString(),
+                            magicShelf.getCreatedAt().atOffset(ZoneOffset.UTC).toString(), magicShelf.getUpdatedAt().atOffset(ZoneOffset.UTC).toString(),
                             bookIds, koboBookIDs);
                 })
                 .forEach(tags::add);
