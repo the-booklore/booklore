@@ -1,5 +1,5 @@
 package com.adityachandel.booklore.model.entity;
-
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import jakarta.persistence.*;
 import lombok.*;
