@@ -177,13 +177,6 @@ public class EpubMetadataWriter implements MetadataWriter {
                 }
                 hasChanges[0] = true;
             });
-            helper.copyDoubanId(clear != null && clear.isDoubanId(), val -> {
-                removeIdentifierByUrn(metadataElement, "douban");
-                if (val != null && !val.isBlank()) {
-                    metadataElement.appendChild(createIdentifierElement(opfDoc, "douban", val));
-                }
-                hasChanges[0] = true;
-            });
 
             if (StringUtils.isNotBlank(thumbnailUrl)) {
                 byte[] coverData = loadImage(thumbnailUrl);
