@@ -27,6 +27,8 @@ SET book_type = CASE
     WHEN LOWER(file_name) LIKE '%.pdf'  THEN 'PDF'
     WHEN LOWER(file_name) LIKE '%.cbz'  THEN 'CBX'
     WHEN LOWER(file_name) LIKE '%.cbr'  THEN 'CBX'
+    WHEN LOWER(file_name) LIKE '%.cb7'  THEN 'CBX'
+    WHEN LOWER(file_name) LIKE '%.fb2'  THEN 'FB2'
     ELSE book_type
 END
 WHERE is_book = 1
