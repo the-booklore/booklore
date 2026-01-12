@@ -10,7 +10,7 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
 import {MessageService} from 'primeng/api';
-import {Router, RouterLink} from '@angular/router';
+import {RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {take, takeUntil} from 'rxjs/operators';
@@ -72,7 +72,8 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'goodreadsRating', header: 'Goodreads'},
     {field: 'goodreadsReviewCount', header: 'GR #'},
     {field: 'hardcoverRating', header: 'Hardcover'},
-    {field: 'hardcoverReviewCount', header: 'HC #'}
+    {field: 'hardcoverReviewCount', header: 'HC #'},
+    {field: 'ranobedbRating', header: 'Ranobedb'},
   ];
 
   scrollHeight = 'calc(100dvh - 160px)';
@@ -294,7 +295,8 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
       case 'amazonRating':
       case 'goodreadsRating':
-      case 'hardcoverRating': {
+      case 'hardcoverRating':
+      case 'ranobedbRating': {
         const rating = metadata[field];
         return typeof rating === 'number' ? rating.toFixed(1) : '';
       }

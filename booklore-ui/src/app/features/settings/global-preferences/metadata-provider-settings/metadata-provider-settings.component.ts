@@ -77,6 +77,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
   comicvineToken: string = '';
   doubanEnabled: boolean = false;
   lubimyCzytacEnabled: boolean = false;
+  ranobedbEnabled: boolean = false;
 
   private appSettingsService = inject(AppSettingsService);
   private messageService = inject(MessageService);
@@ -103,6 +104,7 @@ export class MetadataProviderSettingsComponent implements OnInit {
         this.comicvineToken = metadataProviderSettings?.comicvine?.apiKey ?? '';
         this.doubanEnabled = metadataProviderSettings?.douban?.enabled ?? false;
         this.lubimyCzytacEnabled = metadataProviderSettings?.lubimyczytac?.enabled ?? false;
+        this.ranobedbEnabled = metadataProviderSettings?.ranobedb?.enabled ?? false;
       });
   }
 
@@ -146,7 +148,8 @@ export class MetadataProviderSettingsComponent implements OnInit {
             apiKey: this.hardcoverToken.trim()
           },
           douban: {enabled: this.doubanEnabled},
-          lubimyczytac: {enabled: this.lubimyCzytacEnabled}
+          lubimyczytac: {enabled: this.lubimyCzytacEnabled},
+          ranobedb: {enabled: this.ranobedbEnabled}
         }
       }
     ];

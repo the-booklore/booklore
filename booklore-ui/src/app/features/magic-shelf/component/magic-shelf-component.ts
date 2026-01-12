@@ -52,12 +52,15 @@ export type RuleField =
   | 'seriesTotal'
   | 'pageCount'
   | 'language'
+  | 'isbn13'
+  | 'isbn10'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
   | 'goodreadsReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
+  | 'ranobedbRating'
   | 'personalRating'
   | 'fileType'
   | 'fileSize'
@@ -127,6 +130,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
   pageCount: {label: 'Page Count', type: 'number'},
   language: {label: 'Language'},
+  isbn13: {label: 'ISBN-13'},
+  isbn10: {label: 'ISBN-10'},
   seriesName: {label: 'Series Name'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
@@ -138,7 +143,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
-  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'}
+  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
 };
 
 @Component({
@@ -349,7 +355,7 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
+    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
@@ -379,7 +385,7 @@ export class MagicShelfComponent implements OnInit {
 
   createGroup(): GroupFormGroup {
     return new FormGroup({
-      type: new FormControl<'group'>('group' as 'group'),
+      type: new FormControl<'group'>('group' as const),
       join: new FormControl<'and' | 'or'>('and' as 'and' | 'or'),
       rules: new FormArray([] as (GroupFormGroup | RuleFormGroup)[]),
     }) as GroupFormGroup;

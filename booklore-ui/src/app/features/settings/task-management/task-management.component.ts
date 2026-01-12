@@ -37,7 +37,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   // State
   taskInfos: TaskInfo[] = [];
-  taskHistories: Map<string, TaskHistory> = new Map();
+  taskHistories = new Map<string, TaskHistory>();
   loading = false;
   executingTasks = new Set<string>();
   private subscription?: Subscription;
@@ -448,7 +448,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   getTaskIcon(taskType: string): string {
     const icons: Record<string, string> = {
-      [TaskType.CLEAR_CBX_CACHE]: 'pi-database',
       [TaskType.CLEAR_PDF_CACHE]: 'pi-database',
       [TaskType.REFRESH_LIBRARY_METADATA]: 'pi-refresh',
       [TaskType.UPDATE_BOOK_RECOMMENDATIONS]: 'pi-sparkles',
@@ -471,7 +470,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   getMetadataIcon(taskType: string): string {
     const icons: Record<string, string> = {
-      [TaskType.CLEAR_CBX_CACHE]: 'pi-database',
       [TaskType.CLEAR_PDF_CACHE]: 'pi-database',
       [TaskType.CLEANUP_DELETED_BOOKS]: 'pi-trash',
       [TaskType.CLEANUP_TEMP_METADATA]: 'pi-file'

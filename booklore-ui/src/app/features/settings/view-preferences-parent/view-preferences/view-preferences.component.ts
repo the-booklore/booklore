@@ -47,6 +47,7 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
     {label: 'Goodreads #', field: 'goodreadsReviewCount'},
     {label: 'Hardcover Rating', field: 'hardcoverRating'},
     {label: 'Hardcover #', field: 'hardcoverReviewCount'},
+    {label: 'Ranobedb Rating', field: 'ranobedbRating'},
     {label: 'Pages', field: 'pageCount'},
     {label: 'Random', field: 'random'},
   ];

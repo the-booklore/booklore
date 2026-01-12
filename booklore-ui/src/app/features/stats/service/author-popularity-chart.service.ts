@@ -280,6 +280,7 @@ export class AuthorPopularityChartService implements OnDestroy {
         if (book.metadata?.goodreadsRating) ratings.push(book.metadata.goodreadsRating);
         if (book.metadata?.amazonRating) ratings.push(book.metadata.amazonRating);
         if (book.metadata?.hardcoverRating) ratings.push(book.metadata.hardcoverRating);
+        if (book.metadata?.ranobedbRating) ratings.push(book.metadata.ranobedbRating);
         if (book.personalRating) ratings.push(book.personalRating);
 
         if (ratings.length > 0) {

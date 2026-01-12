@@ -87,6 +87,10 @@ public class UserPermissionsEntity {
     @Builder.Default
     private boolean permissionManageIcons = false;
 
+    @Column(name = "permission_manage_fonts", nullable = false)
+    @Builder.Default
+    private boolean permissionManageFonts = false;
+
     @Column(name = "permission_demo_user", nullable = false)
     @Builder.Default
     private boolean permissionDemoUser = false;

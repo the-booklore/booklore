@@ -188,29 +188,6 @@
             </div>
           </div>
         </div>
-
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">CBX Cache Size</label>
-              <div class="input-group">
-                <div class="input-with-unit">
-                  <input
-                    type="text"
-                    pInputText
-                    [(ngModel)]="cbxCacheValue"
-                    placeholder="Cache size"/>
-                  <span class="unit">MB</span>
-                </div>
-                <p-button label="Save" severity="success" outlined (onClick)="saveCacheSize()"></p-button>
-              </div>
-            </div>
-            <p class="setting-description">
-              <i class="pi pi-info-circle"></i>
-              Limits the total size (in MB) of the CBX image cache. If exceeded, older cache entries are removed automatically.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
 

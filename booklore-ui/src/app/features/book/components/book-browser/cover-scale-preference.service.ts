@@ -2,7 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {Subject} from 'rxjs';
 import {debounceTime} from 'rxjs/operators';
 import {MessageService} from 'primeng/api';
-import {LocalStorageService} from '../../../../shared/service/local-storage-service';
+import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 
 @Injectable({
   providedIn: 'root'

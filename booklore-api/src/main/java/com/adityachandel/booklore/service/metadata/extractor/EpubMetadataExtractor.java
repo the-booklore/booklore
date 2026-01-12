@@ -193,6 +193,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:asin" -> builderMeta.asin(content);
                                     case "booklore:goodreads_id" -> builderMeta.goodreadsId(content);
                                     case "booklore:comicvine_id" -> builderMeta.comicvineId(content);
+                                    case "booklore:ranobedb_id" -> builderMeta.ranobedbId(content);
                                     case "booklore:hardcover_id" -> builderMeta.hardcoverId(content);
                                     case "booklore:google_books_id" -> builderMeta.googleId(content);
                                     case "booklore:page_count" -> safeParseInt(content, builderMeta::pageCount);
@@ -227,6 +228,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                         }
                                         case "GOODREADS" -> builderMeta.goodreadsId(value);
                                         case "COMICVINE" -> builderMeta.comicvineId(value);
+                                        case "RANOBEDB" -> builderMeta.ranobedbId(value);
                                         case "GOOGLE" -> builderMeta.googleId(value);
                                         case "AMAZON" -> builderMeta.asin(value);
                                         case "HARDCOVER" -> builderMeta.hardcoverId(value);

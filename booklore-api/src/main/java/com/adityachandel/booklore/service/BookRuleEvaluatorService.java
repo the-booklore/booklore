@@ -324,12 +324,15 @@ public class BookRuleEvaluatorService {
             case SERIES_NAME -> root.get("metadata").get("seriesName");
             case SERIES_NUMBER -> root.get("metadata").get("seriesNumber");
             case SERIES_TOTAL -> root.get("metadata").get("seriesTotal");
+            case ISBN13 -> root.get("metadata").get("isbn13");
+            case ISBN10 -> root.get("metadata").get("isbn10");
             case AMAZON_RATING -> root.get("metadata").get("amazonRating");
             case AMAZON_REVIEW_COUNT -> root.get("metadata").get("amazonReviewCount");
             case GOODREADS_RATING -> root.get("metadata").get("goodreadsRating");
             case GOODREADS_REVIEW_COUNT -> root.get("metadata").get("goodreadsReviewCount");
             case HARDCOVER_RATING -> root.get("metadata").get("hardcoverRating");
             case HARDCOVER_REVIEW_COUNT -> root.get("metadata").get("hardcoverReviewCount");
+            case RANOBEDB_RATING -> root.get("metadata").get("ranobedbRating");
             case FILE_TYPE -> cb.function("SUBSTRING_INDEX", String.class,
                     root.get("fileName"), cb.literal("."), cb.literal(-1));
             default -> null;

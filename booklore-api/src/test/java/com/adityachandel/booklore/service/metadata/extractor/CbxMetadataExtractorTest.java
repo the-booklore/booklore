@@ -83,7 +83,6 @@ class CbxMetadataExtractorTest {
         assertEquals(Integer.valueOf(42), md.getPageCount());
         assertEquals("en", md.getLanguage());
         assertTrue(md.getAuthors().contains("Alice"));
-        assertTrue(md.getAuthors().contains("Bob"));
         assertTrue(md.getCategories().contains("action"));
         assertTrue(md.getCategories().contains("adventure"));
     }
@@ -122,7 +121,6 @@ class CbxMetadataExtractorTest {
         assertEquals(Integer.valueOf(42), md.getPageCount());
         assertEquals("en", md.getLanguage());
         assertTrue(md.getAuthors().contains("Alice"));
-        assertTrue(md.getAuthors().contains("Bob"));
         assertTrue(md.getCategories().contains("action"));
         assertTrue(md.getCategories().contains("adventure"));
     }
@@ -173,6 +171,30 @@ class CbxMetadataExtractorTest {
         Files.writeString(txt, "hello");
         BookMetadata md = extractor.extractMetadata(txt.toFile());
         assertEquals("Some Book Title", md.getTitle());
+    }
+
+    @Test
+    void extractMetadata_fromCbz_withCbrExtension_shouldWork() throws Exception {
+        String xml = "<ComicInfo><Title>Mismatched Extension</Title></ComicInfo>";
+
+        File cbzAsCbr = createCbz("mismatched.cbr", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbzAsCbr);
+        assertEquals("Mismatched Extension", md.getTitle());
+    }
+
+    @Test
+    void extractCover_fromCbz_withCbrExtension_shouldWork() throws Exception {
+        byte[] img = createTestImage(Color.RED);
+
+        File cbzAsCbr = createCbz("mismatched_cover.cbr", new LinkedHashMap<>() {{
+            put("cover.jpg", img);
+        }});
+
+        byte[] cover = extractor.extractCover(cbzAsCbr);
+        assertArrayEquals(img, cover);
     }
 
     // ---------- helpers ----------

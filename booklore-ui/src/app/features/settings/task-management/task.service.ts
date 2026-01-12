@@ -5,7 +5,6 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 
 export enum TaskType {
-  CLEAR_CBX_CACHE = 'CLEAR_CBX_CACHE',
   CLEAR_PDF_CACHE = 'CLEAR_PDF_CACHE',
   REFRESH_LIBRARY_METADATA = 'REFRESH_LIBRARY_METADATA',
   UPDATE_BOOK_RECOMMENDATIONS = 'UPDATE_BOOK_RECOMMENDATIONS',
@@ -22,8 +21,7 @@ export const TASK_TYPE_CONFIG: Record<TaskType, { parallel: boolean; async: bool
   [TaskType.CLEANUP_DELETED_BOOKS]: {parallel: false, async: false, displayOrder: 4},
   [TaskType.CLEANUP_TEMP_METADATA]: {parallel: false, async: false, displayOrder: 5},
   [TaskType.REFRESH_METADATA_MANUAL]: {parallel: false, async: false, displayOrder: 6},
-  [TaskType.CLEAR_CBX_CACHE]: {parallel: false, async: false, displayOrder: 7},
-  [TaskType.CLEAR_PDF_CACHE]: {parallel: false, async: false, displayOrder: 8},
+  [TaskType.CLEAR_PDF_CACHE]: {parallel: false, async: false, displayOrder: 7},
 };
 
 export enum MetadataReplaceMode {

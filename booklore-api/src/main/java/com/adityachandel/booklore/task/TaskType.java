@@ -4,14 +4,6 @@ import lombok.Getter;
 
 public enum TaskType {
 
-    CLEAR_CBX_CACHE(
-            false,
-            false,
-            true,
-            false,
-            "Clear CBX Cache",
-            "Clears temporarily extracted comic book files used by the reader."
-    ),
     CLEAR_PDF_CACHE(
             false,
             false,

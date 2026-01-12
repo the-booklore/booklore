@@ -27,6 +27,10 @@ public enum RuleField {
     PAGE_COUNT,
     @JsonProperty("language")
     LANGUAGE,
+    @JsonProperty("isbn13")
+    ISBN13,
+    @JsonProperty("isbn10")
+    ISBN10,
     @JsonProperty("amazonRating")
     AMAZON_RATING,
     @JsonProperty("amazonReviewCount")
@@ -39,6 +43,8 @@ public enum RuleField {
     HARDCOVER_RATING,
     @JsonProperty("hardcoverReviewCount")
     HARDCOVER_REVIEW_COUNT,
+    @JsonProperty("ranobedbRating")
+    RANOBEDB_RATING,
     @JsonProperty("personalRating")
     PERSONAL_RATING,
     @JsonProperty("fileType")

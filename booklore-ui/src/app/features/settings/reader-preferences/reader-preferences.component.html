@@ -153,19 +153,21 @@
       </div>
     </div>
 
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-palette"></i>
-          Custom Fonts Management
-        </h3>
-        <p class="section-description">
-          Upload and manage up to 10 custom fonts for a personalized reading experience in the EPUB reader. Each font can then be selected in the EPUB reader settings.
-        </p>
+    @if (hasFontManagementPermission) {
+      <div class="preferences-section">
+        <div class="section-header">
+          <h3 class="section-title">
+            <i class="pi pi-palette"></i>
+            Custom Fonts Management
+          </h3>
+          <p class="section-description">
+            Upload and manage up to 10 custom fonts for a personalized reading experience in the EPUB reader. Each font can then be selected in the EPUB reader settings.
+          </p>
+        </div>
+        <div class="settings-card">
+          <app-custom-fonts></app-custom-fonts>
+        </div>
       </div>
-      <div class="settings-card">
-        <app-custom-fonts></app-custom-fonts>
-      </div>
-    </div>
+    }
   </div>
 </div>

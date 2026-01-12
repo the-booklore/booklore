@@ -16,7 +16,7 @@ import {ThemeConfiguratorComponent} from '../theme-configurator/theme-configurat
 import {AuthService} from '../../../service/auth.service';
 import {UserService} from '../../../../features/settings/user-management/user.service';
 import {Popover} from 'primeng/popover';
-import {MetadataProgressService} from '../../../service/metadata-progress-service';
+import {MetadataProgressService} from '../../../service/metadata-progress.service';
 import {takeUntil} from 'rxjs/operators';
 import {Subject} from 'rxjs';
 import {MetadataBatchProgressNotification} from '../../../model/metadata-batch-progress.model';
@@ -71,7 +71,7 @@ export class AppTopBarComponent implements OnDestroy {
   private eventTimer: number | undefined;
   private destroy$ = new Subject<void>();
 
-  private latestTasks: { [taskId: string]: MetadataBatchProgressNotification } = {};
+  private latestTasks: Record<string, MetadataBatchProgressNotification> = {};
   private latestHasPendingFiles = false;
   private latestNotificationSeverity?: Severity;
 
@@ -206,7 +206,7 @@ export class AppTopBarComponent implements OnDestroy {
     this.completedTaskCount = completedMetadataTasks + bookdropFileTaskCount;
   }
 
-  private updateTaskVisibility(tasks: { [taskId: string]: MetadataBatchProgressNotification }) {
+  private updateTaskVisibility(tasks: Record<string, MetadataBatchProgressNotification>) {
     this.hasActiveOrCompletedTasks =
       this.progressHighlight || this.completedTaskCount > 0 || Object.keys(tasks).length > 0;
     this.updateTaskVisibilityWithBookdrop();

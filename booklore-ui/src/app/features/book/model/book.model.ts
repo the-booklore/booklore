@@ -100,10 +100,12 @@ export interface BookMetadata {
   amazonReviewCount?: number | null;
   goodreadsRating?: number | null;
   goodreadsReviewCount?: number | null;
-  hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
   lubimyczytacId?: string;
   lubimyczytacRating?: number | null;
+  ranobedbId?: string;
+  ranobedbRating?: number | null;
+  hardcoverRating?: number | null;
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
@@ -139,6 +141,8 @@ export interface BookMetadata {
   hardcoverReviewCountLocked?: boolean;
   lubimyczytacIdLocked?: boolean;
   lubimyczytacRatingLocked?: boolean;
+  ranobedbIdLocked?: boolean;
+  ranobedbRatingLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
@@ -176,6 +180,8 @@ export interface MetadataClearFlags {
   hardcoverReviewCount?: boolean;
   lubimyczytacId?: boolean;
   lubimyczytacRating?: boolean;
+  ranobedbId?: boolean;
+  ranobedbRating?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;

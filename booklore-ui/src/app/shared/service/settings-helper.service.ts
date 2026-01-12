@@ -25,18 +25,6 @@ export class SettingsHelperService {
     return observable;
   }
 
-  saveMultipleSettings(settings: { key: string, newValue: unknown }[]): Observable<void> {
-    const observable = this.appSettingsService.saveSettings(settings);
-    observable.subscribe({
-      next: () => this.showSuccessMessage(),
-      error: (error) => {
-        console.error('Failed to save settings:', error);
-        this.showErrorMessage();
-      }
-    });
-    return observable;
-  }
-
   private showSuccessMessage(): void {
     this.messageService.add({
       severity: 'success',

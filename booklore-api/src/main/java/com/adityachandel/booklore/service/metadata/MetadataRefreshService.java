@@ -342,6 +342,8 @@ public class MetadataRefreshService {
             addProviderToSet(fieldOptions.getHardcoverRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getHardcoverReviewCount(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getLubimyczytacRating(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getRanobedbId(), uniqueProviders, appSettings);
+            addProviderToSet(fieldOptions.getRanobedbRating(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getMoods(), uniqueProviders, appSettings);
             addProviderToSet(fieldOptions.getTags(), uniqueProviders, appSettings);
         }
@@ -370,6 +372,7 @@ public class MetadataRefreshService {
             case GoodReads -> settings.getGoodReads() != null && settings.getGoodReads().isEnabled();
             case Hardcover -> settings.getHardcover() != null && settings.getHardcover().isEnabled();
             case Comicvine -> settings.getComicvine() != null && settings.getComicvine().isEnabled();
+            case Ranobedb -> settings.getRanobedb() != null && settings.getRanobedb().isEnabled();
             case Douban -> settings.getDouban() != null && settings.getDouban().isEnabled();
             case Lubimyczytac -> settings.getLubimyczytac() != null && settings.getLubimyczytac().isEnabled();
             default -> true;
@@ -518,6 +521,15 @@ public class MetadataRefreshService {
         if (enabledFields.isLubimyczytacRating()) {
             if (metadataMap.containsKey(Lubimyczytac)) {
                 metadata.setLubimyczytacRating(metadataMap.get(Lubimyczytac).getLubimyczytacRating());
+        }      
+        if (enabledFields.isRanobedbId()) {
+            if (metadataMap.containsKey(Ranobedb)) {
+                metadata.setRanobedbId(metadataMap.get(Ranobedb).getRanobedbId());
+            }
+        }
+        if (enabledFields.isRanobedbRating()) {
+            if (metadataMap.containsKey(Ranobedb)) {
+                metadata.setRanobedbRating(metadataMap.get(Ranobedb).getRanobedbRating());
             }
         }
         if (enabledFields.isMoods()) {

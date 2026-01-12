@@ -47,6 +47,8 @@ public class MetadataChangeDetector {
         compare(changes, "hardcoverReviewCount", clear.isHardcoverReviewCount(), newMeta.getHardcoverReviewCount(), existingMeta.getHardcoverReviewCount(), () -> !isTrue(existingMeta.getHardcoverReviewCountLocked()), newMeta.getHardcoverReviewCountLocked(), existingMeta.getHardcoverReviewCountLocked());
         compare(changes, "lubimyczytacId", clear.isLubimyczytacId(), newMeta.getLubimyczytacId(), existingMeta.getLubimyczytacId(), () -> !isTrue(existingMeta.getLubimyczytacIdLocked()), newMeta.getLubimyczytacIdLocked(), existingMeta.getLubimyczytacIdLocked());
         compare(changes, "lubimyczytacRating", clear.isLubimyczytacRating(), newMeta.getLubimyczytacRating(), existingMeta.getLubimyczytacRating(), () -> !isTrue(existingMeta.getLubimyczytacRatingLocked()), newMeta.getLubimyczytacRatingLocked(), existingMeta.getLubimyczytacRatingLocked());
+        compare(changes, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()), newMeta.getRanobedbIdLocked(), existingMeta.getRanobedbIdLocked());
+        compare(changes, "ranobedbRating", clear.isRanobedbRating(), newMeta.getRanobedbRating(), existingMeta.getRanobedbRating(), () -> !isTrue(existingMeta.getRanobedbRatingLocked()), newMeta.getRanobedbRatingLocked(), existingMeta.getRanobedbRatingLocked());
         compare(changes, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()), newMeta.getAuthorsLocked(), existingMeta.getAuthorsLocked());
         compare(changes, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()), newMeta.getCategoriesLocked(), existingMeta.getCategoriesLocked());
         compare(changes, "moods", clear.isMoods(), newMeta.getMoods(), toNameSet(existingMeta.getMoods()), () -> !isTrue(existingMeta.getMoodsLocked()), newMeta.getMoodsLocked(), existingMeta.getMoodsLocked());
@@ -90,6 +92,8 @@ public class MetadataChangeDetector {
         compareValue(diffs, "hardcoverReviewCount", clear.isHardcoverReviewCount(), newMeta.getHardcoverReviewCount(), existingMeta.getHardcoverReviewCount(), () -> !isTrue(existingMeta.getHardcoverReviewCountLocked()));
         compareValue(diffs, "lubimyczytacId", clear.isLubimyczytacId(), newMeta.getLubimyczytacId(), existingMeta.getLubimyczytacId(), () -> !isTrue(existingMeta.getLubimyczytacIdLocked()));
         compareValue(diffs, "lubimyczytacRating", clear.isLubimyczytacRating(), newMeta.getLubimyczytacRating(), existingMeta.getLubimyczytacRating(), () -> !isTrue(existingMeta.getLubimyczytacRatingLocked()));
+        compareValue(diffs, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()));
+        compareValue(diffs, "ranobedbRating", clear.isRanobedbRating(), newMeta.getRanobedbRating(), existingMeta.getRanobedbRating(), () -> !isTrue(existingMeta.getRanobedbRatingLocked()));
         compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));
         compareValue(diffs, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()));
         compareValue(diffs, "moods", clear.isMoods(), newMeta.getMoods(), toNameSet(existingMeta.getMoods()), () -> !isTrue(existingMeta.getMoodsLocked()));
@@ -115,6 +119,7 @@ public class MetadataChangeDetector {
         compareValue(diffs, "hardcoverId", clear.isHardcoverId(), newMeta.getHardcoverId(), existingMeta.getHardcoverId(), () -> !isTrue(existingMeta.getHardcoverIdLocked()));
         compareValue(diffs, "hardcoverBookId", clear.isHardcoverBookId(), newMeta.getHardcoverBookId(), existingMeta.getHardcoverBookId(), () -> !isTrue(existingMeta.getHardcoverBookIdLocked()));
         compareValue(diffs, "googleId", clear.isGoogleId(), newMeta.getGoogleId(), existingMeta.getGoogleId(), () -> !isTrue(existingMeta.getGoogleIdLocked()));
+        compareValue(diffs, "ranobedbId", clear.isRanobedbId(), newMeta.getRanobedbId(), existingMeta.getRanobedbId(), () -> !isTrue(existingMeta.getRanobedbIdLocked()));
         compareValue(diffs, "language", clear.isLanguage(), newMeta.getLanguage(), existingMeta.getLanguage(), () -> !isTrue(existingMeta.getLanguageLocked()));
         compareValue(diffs, "authors", clear.isAuthors(), newMeta.getAuthors(), toNameSet(existingMeta.getAuthors()), () -> !isTrue(existingMeta.getAuthorsLocked()));
         compareValue(diffs, "categories", clear.isCategories(), newMeta.getCategories(), toNameSet(existingMeta.getCategories()), () -> !isTrue(existingMeta.getCategoriesLocked()));

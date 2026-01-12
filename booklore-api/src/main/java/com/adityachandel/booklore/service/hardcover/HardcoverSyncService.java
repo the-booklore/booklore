@@ -1,14 +1,12 @@
 package com.adityachandel.booklore.service.hardcover;
 
-import com.adityachandel.booklore.model.dto.KoboSyncSettings;
+import com.adityachandel.booklore.model.dto.HardcoverSyncSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.kobo.KoboSettingsService;
 import com.adityachandel.booklore.service.metadata.parser.hardcover.GraphQLRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
@@ -25,7 +23,7 @@ import java.util.Map;
 /**
  * Service to sync reading progress to Hardcover.
  * Uses per-user Hardcover API tokens for reading progress sync.
- * Each user can configure their own Hardcover API key in Kobo settings.
+ * Each user can configure their own Hardcover API key in their sync settings.
  */
 @Slf4j
 @Service
@@ -36,15 +34,15 @@ public class HardcoverSyncService {
     private static final int STATUS_READ = 3;
 
     private final RestClient restClient;
-    private final KoboSettingsService koboSettingsService;
+    private final HardcoverSyncSettingsService hardcoverSyncSettingsService;
     private final BookRepository bookRepository;
 
     // Thread-local to hold the current API token for GraphQL requests
     private final ThreadLocal<String> currentApiToken = new ThreadLocal<>();
 
     @Autowired
-    public HardcoverSyncService(@Lazy KoboSettingsService koboSettingsService, BookRepository bookRepository) {
-        this.koboSettingsService = koboSettingsService;
+    public HardcoverSyncService(HardcoverSyncSettingsService hardcoverSyncSettingsService, BookRepository bookRepository) {
+        this.hardcoverSyncSettingsService = hardcoverSyncSettingsService;
         this.bookRepository = bookRepository;
         this.restClient = RestClient.builder()
                 .baseUrl(HARDCOVER_API_URL)
@@ -65,7 +63,7 @@ public class HardcoverSyncService {
     public void syncProgressToHardcover(Long bookId, Float progressPercent, Long userId) {
         try {
             // Get user's Hardcover settings
-            KoboSyncSettings userSettings = koboSettingsService.getSettingsByUserId(userId);
+            HardcoverSyncSettings userSettings = hardcoverSyncSettingsService.getSettingsForUserId(userId);
             
             if (!isHardcoverSyncEnabledForUser(userSettings)) {
                 log.trace("Hardcover sync skipped for user {}: not enabled or no API token configured", userId);
@@ -102,6 +100,18 @@ public class HardcoverSyncService {
                     hardcoverBook.bookId = metadata.getHardcoverBookId();
                     hardcoverBook.pages = metadata.getPageCount();
                     log.debug("Using stored Hardcover book ID: {}", hardcoverBook.bookId);
+
+                    if (hardcoverBook.bookId != null && (hardcoverBook.pages == null || hardcoverBook.pages <= 0 || hardcoverBook.editionId == null)) {
+                        HardcoverBookInfo fetched = findHardcoverBookById(hardcoverBook.bookId);
+                        if (fetched != null) {
+                            if (hardcoverBook.editionId == null) {
+                                hardcoverBook.editionId = fetched.editionId;
+                            }
+                            if ((hardcoverBook.pages == null || hardcoverBook.pages <= 0) && fetched.pages != null) {
+                                hardcoverBook.pages = fetched.pages;
+                            }
+                        }
+                    }
                 } else {
                     // Search by ISBN
                     hardcoverBook = findHardcoverBook(metadata);
@@ -152,7 +162,7 @@ public class HardcoverSyncService {
     /**
      * Check if Hardcover sync is enabled for a specific user.
      */
-    private boolean isHardcoverSyncEnabledForUser(KoboSyncSettings userSettings) {
+    private boolean isHardcoverSyncEnabledForUser(HardcoverSyncSettings userSettings) {
         if (userSettings == null) {
             return false;
         }
@@ -247,15 +257,17 @@ public class HardcoverSyncService {
             }
 
             // If no default edition, try to look up edition by ISBN
-            // This also gets the page count from the specific edition
-            if (info.bookId != null) {
+            if (info.bookId != null && info.editionId == null) {
                 EditionInfo edition = findEditionByIsbn(info.bookId, isbn);
                 if (edition != null) {
                     info.editionId = edition.id;
-                    // Prefer edition page count over book page count
-                    if (edition.pages != null && edition.pages > 0) {
-                        info.pages = edition.pages;
-                    }
+                }
+            }
+
+            if (info.editionId != null && (info.pages == null || info.pages <= 0)) {
+                EditionInfo edition = findEditionById(info.editionId);
+                if (edition != null && edition.pages != null && edition.pages > 0) {
+                    info.pages = edition.pages;
                 }
             }
 
@@ -322,6 +334,111 @@ public class HardcoverSyncService {
 
         } catch (Exception e) {
             log.debug("Failed to find edition by ISBN: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private EditionInfo findEditionById(Integer editionId) {
+        String query = """
+            query FindEditionById($editionId: Int!) {
+              editions(where: {id: {_eq: $editionId}}, limit: 1) {
+                id
+                pages
+              }
+            }
+            """;
+
+        GraphQLRequest request = new GraphQLRequest();
+        request.setQuery(query);
+        request.setVariables(Map.of("editionId", editionId));
+
+        try {
+            Map<String, Object> response = executeGraphQL(request);
+            if (response == null) return null;
+
+            Map<String, Object> data = (Map<String, Object>) response.get("data");
+            if (data == null) return null;
+
+            List<Map<String, Object>> editions = (List<Map<String, Object>>) data.get("editions");
+            if (editions == null || editions.isEmpty()) return null;
+
+            Map<String, Object> edition = editions.getFirst();
+            EditionInfo info = new EditionInfo();
+
+            Object idObj = edition.get("id");
+            if (idObj instanceof Number) {
+                info.id = ((Number) idObj).intValue();
+            }
+
+            Object pagesObj = edition.get("pages");
+            if (pagesObj instanceof Number) {
+                info.pages = ((Number) pagesObj).intValue();
+            }
+
+            return info.id != null ? info : null;
+
+        } catch (Exception e) {
+            log.debug("Failed to find edition by ID: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private HardcoverBookInfo findHardcoverBookById(Integer bookId) {
+        String query = """
+            query FindBookById($bookId: Int!) {
+              books(where: {id: {_eq: $bookId}}, limit: 1) {
+                id
+                default_edition_id
+                pages
+              }
+            }
+            """;
+
+        GraphQLRequest request = new GraphQLRequest();
+        request.setQuery(query);
+        request.setVariables(Map.of("bookId", bookId));
+
+        try {
+            Map<String, Object> response = executeGraphQL(request);
+            if (response == null) return null;
+
+            Map<String, Object> data = (Map<String, Object>) response.get("data");
+            if (data == null) return null;
+
+            List<Map<String, Object>> books = (List<Map<String, Object>>) data.get("books");
+            if (books == null || books.isEmpty()) return null;
+
+            Map<String, Object> book = books.getFirst();
+            HardcoverBookInfo info = new HardcoverBookInfo();
+            info.bookId = bookId;
+
+            Object defaultEditionObj = book.get("default_edition_id");
+            if (defaultEditionObj instanceof Number) {
+                info.editionId = ((Number) defaultEditionObj).intValue();
+            } else if (defaultEditionObj instanceof String) {
+                try {
+                    info.editionId = Integer.parseInt((String) defaultEditionObj);
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+
+            Object pagesObj = book.get("pages");
+            if (pagesObj instanceof Number) {
+                info.pages = ((Number) pagesObj).intValue();
+            }
+
+            if (info.editionId != null && (info.pages == null || info.pages <= 0)) {
+                EditionInfo edition = findEditionById(info.editionId);
+                if (edition != null && edition.pages != null && edition.pages > 0) {
+                    info.pages = edition.pages;
+                }
+            }
+
+            return info.editionId != null || info.pages != null ? info : null;
+
+        } catch (Exception e) {
+            log.debug("Failed to find Hardcover book by ID {}: {}", bookId, e.getMessage());
             return null;
         }
     }

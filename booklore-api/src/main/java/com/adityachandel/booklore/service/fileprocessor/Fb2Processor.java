@@ -113,6 +113,8 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         metadata.setHardcoverReviewCount(fb2Metadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(fb2Metadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(fb2Metadata.getComicvineId(), 100));
+        metadata.setRanobedbId(truncate(fb2Metadata.getRanobedbId(), 100));
+        metadata.setRanobedbRating(fb2Metadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(fb2Metadata.getAuthors(), bookEntity);
 
@@ -125,13 +127,12 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
     }
 
     private boolean saveCoverImage(byte[] coverData, long bookId) throws Exception {
-        BufferedImage originalImage = ImageIO.read(new ByteArrayInputStream(coverData));
-        try {
-            return fileService.saveCoverImages(originalImage, bookId);
-        } finally {
-            if (originalImage != null) {
-                originalImage.flush(); // Release resources after processing
-            }
+        BufferedImage originalImage = FileService.readImage(coverData);
+        if (originalImage == null) {
+            log.warn("Failed to decode cover image for FB2");
+            return false;
         }
+
+        return fileService.saveCoverImages(originalImage, bookId);
     }
 }

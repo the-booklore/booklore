@@ -11,6 +11,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -42,7 +43,6 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern UNDERSCORE_HYPHEN_PATTERN = Pattern.compile("[_\\-]");
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
-    private static final Pattern CBX_FILE_EXTENSION_PATTERN = Pattern.compile("(?i)\\.cb[rz7]$");
     private final CbxMetadataExtractor cbxMetadataExtractor;
 
     public CbxProcessor(BookRepository bookRepository,
@@ -59,6 +59,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     @Override
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
+        bookEntity.setArchiveType(ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(bookEntity))));
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
@@ -99,17 +100,14 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractImagesFromArchive(File file) {
-        String name = file.getName().toLowerCase();
-        if (name.endsWith(".cbz")) {
-            return extractFirstImageFromZip(file);
-        } else if (name.endsWith(".cb7")) {
-            return extractFirstImageFrom7z(file);
-        } else if (name.endsWith(".cbr")) {
-            return extractFirstImageFromRar(file);
-        } else {
-            log.warn("Unsupported CBX format: {}", name);
-            return Optional.empty();
-        }
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(file);
+
+        return switch (type) {
+            case ZIP -> extractFirstImageFromZip(file);
+            case SEVEN_ZIP -> extractFirstImageFrom7z(file);
+            case RAR -> extractFirstImageFromRar(file);
+            default -> Optional.empty();
+        };
     }
 
     private Optional<BufferedImage> extractFirstImageFromZip(File file) {
@@ -144,7 +142,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                 .min(Comparator.comparing(ZipArchiveEntry::getName))
                 .map(entry -> {
                     try (InputStream is = zipFile.getInputStream(entry)) {
-                        return ImageIO.read(is);
+                        return FileService.readImage(is);
                     } catch (Exception e) {
                         log.warn("Failed to read image from ZIP entry {}: {}", entry.getName(), e.getMessage());
                         return null;
@@ -175,7 +173,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                                 if (bytesRead < 0) break;
                                 offset += bytesRead;
                             }
-                            return Optional.ofNullable(ImageIO.read(new ByteArrayInputStream(content)));
+                            return Optional.ofNullable(FileService.readImage(new ByteArrayInputStream(content)));
                         }
                     }
                 }
@@ -196,7 +194,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
             for (FileHeader header : imageHeaders) {
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                     archive.extractFile(header, baos);
-                    return Optional.ofNullable(ImageIO.read(new ByteArrayInputStream(baos.toByteArray())));
+                    return Optional.ofNullable(FileService.readImage(new ByteArrayInputStream(baos.toByteArray())));
                 } catch (Exception e) {
                     log.warn("Error reading RAR entry {}: {}", header.getFileName(), e.getMessage());
                 }
@@ -242,8 +240,12 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
 
     private void setMetadata(BookEntity bookEntity) {
         String baseName = new File(bookEntity.getFileName()).getName();
-        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(CBX_FILE_EXTENSION_PATTERN.matcher(baseName).replaceAll("")).replaceAll(" ")
-                .trim();
+        String extension = FileUtils.getExtension(baseName);
+        if (BookFileType.CBX.supports(extension)) {
+            baseName = baseName.substring(0, baseName.length() - extension.length() - 1);
+        }
+        String title = UNDERSCORE_HYPHEN_PATTERN.matcher(baseName).replaceAll(" ").trim();
         bookEntity.getMetadata().setTitle(truncate(title, 1000));
     }
 }
+

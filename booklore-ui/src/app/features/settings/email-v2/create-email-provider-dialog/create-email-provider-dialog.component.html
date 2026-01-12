@@ -35,7 +35,7 @@
             class="input-full"
             placeholder="e.g., Gmail SMTP, SendGrid"
             [class.filled]="emailProviderForm.get('name')?.value"
-            autofocus
+           
           />
           @if (emailProviderForm.get('name')?.value && emailProviderForm.get('name')?.valid) {
             <i class="pi pi-check-circle input-icon success"></i>

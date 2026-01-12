@@ -34,7 +34,7 @@ import {DatePicker} from 'primeng/datepicker';
 export class BookdropFileMetadataPickerComponent {
 
   private readonly confirmationService = inject(ConfirmationService);
-  
+
   @Input() fetchedMetadata!: BookMetadata;
   @Input() originalMetadata?: BookMetadata;
   @Input() metadataForm!: FormGroup;
@@ -85,6 +85,8 @@ export class BookdropFileMetadataPickerComponent {
     {label: 'Hardcover ★', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
     {label: 'Google ID', controlName: 'googleId', lockedKey: 'googleIdLocked', fetchedKey: 'googleId'},
     {label: 'Comicvine ID', controlName: 'comicvineId', lockedKey: 'comicvineIdLocked', fetchedKey: 'comicvineId'},
+    {label: 'Ranobedb ID', controlName: 'ranobedbId', lockedKey: 'ranobedbIdLocked', fetchedKey: 'ranobedbId'},
+    {label: 'Ranobedb ★', controlName: 'ranobedbRating', lockedKey: 'ranobedbRatingLocked', fetchedKey: 'ranobedbRating'},
     {label: 'Pages', controlName: 'pageCount', lockedKey: 'pageCountLocked', fetchedKey: 'pageCount'}
   ];
 
@@ -129,12 +131,12 @@ export class BookdropFileMetadataPickerComponent {
     const [value, original] = this.prepFieldComparison(this.metadataForm.get(field)?.value, this.originalMetadata?.[field]);
     return (value && value != original) || (!value && original);
   }
-  
+
   isFetchedDifferent(field: string): boolean {
     const [value, fetched] = this.prepFieldComparison(this.metadataForm.get(field)?.value, this.fetchedMetadata[field]);
     return (fetched && fetched != value);
   }
-  
+
   private prepFieldComparison(field1: any, field2: any) {
     if (Array.isArray(field1)) {
       field1 = field1.length > 0 ? JSON.stringify(field1.sort()) : undefined;
@@ -216,6 +218,8 @@ export class BookdropFileMetadataPickerComponent {
         hardcoverReviewCount: this.originalMetadata.hardcoverReviewCount || null,
         googleId: this.originalMetadata.googleId || null,
         comicvineId: this.originalMetadata.comicvineId || null,
+        ranobedbId: this.originalMetadata.ranobedbId || null,
+        ranobedbRating: this.originalMetadata.ranobedbRating || null,
         seriesName: this.originalMetadata.seriesName || null,
         seriesNumber: this.originalMetadata.seriesNumber || null,
         seriesTotal: this.originalMetadata.seriesTotal || null,
