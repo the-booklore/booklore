@@ -166,8 +166,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
       options.map(opt => ({...opt, entityType}));
 
     return [...withEntityType(this.libraryOptions, 'LIBRARY'),
-            ...withEntityType(this.shelfOptions, 'SHELF'),
-            ...withEntityType(this.magicShelfOptions, 'MAGIC_SHELF')]
+      ...withEntityType(this.shelfOptions, 'SHELF'),
+      ...withEntityType(this.magicShelfOptions, 'MAGIC_SHELF')]
       .filter(opt => !used.has(`${opt.entityType}_${opt.value}`));
   }
 
@@ -213,7 +213,8 @@ export class ViewPreferencesComponent implements OnInit, OnDestroy {
           sortDir: o.sortDir,
           view: o.view,
           coverSize: existing?.coverSize ?? 1.0,
-          seriesCollapsed: existing?.seriesCollapsed ?? false
+          seriesCollapsed: existing?.seriesCollapsed ?? false,
+          overlayBookType: existing?.overlayBookType ?? true
         }
       };
     });

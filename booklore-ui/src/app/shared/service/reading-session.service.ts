@@ -181,9 +181,9 @@ export class ReadingSessionService {
       endTime: endTime.toISOString(),
       durationSeconds,
       durationFormatted: this.formatDuration(durationSeconds),
-      startProgress: session.startProgress,
-      endProgress: session.endProgress,
-      progressDelta: session.progressDelta,
+      startProgress: session.startProgress != null ? Math.round(session.startProgress * 100) / 100 : undefined,
+      endProgress: session.endProgress != null ? Math.round(session.endProgress * 100) / 100 : undefined,
+      progressDelta: session.progressDelta != null ? Math.round(session.progressDelta * 100) / 100 : undefined,
       startLocation: session.startLocation,
       endLocation: session.endLocation
     };

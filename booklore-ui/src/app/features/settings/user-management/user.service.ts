@@ -18,6 +18,7 @@ export interface EntityViewPreference {
   view: 'GRID' | 'TABLE';
   coverSize: number;
   seriesCollapsed: boolean;
+  overlayBookType: boolean;
 }
 
 export interface EntityViewPreferenceOverride {
@@ -96,7 +97,7 @@ export enum CbxScrollMode {
   INFINITE = 'INFINITE'
 }
 
-export interface EpubReaderSettingV2 {
+export interface EbookReaderSetting {
   lineHeight: number;
   justify: boolean;
   hyphenate: boolean;
@@ -145,7 +146,7 @@ export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
   epubReaderSetting: EpubReaderSetting;
-  epubReaderSettingV2: EpubReaderSettingV2;
+  ebookReaderSetting: EbookReaderSetting;
   cbxReaderSetting: CbxReaderSetting;
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;

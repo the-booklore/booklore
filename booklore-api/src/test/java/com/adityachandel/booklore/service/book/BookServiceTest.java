@@ -46,7 +46,7 @@ class BookServiceTest {
     @Mock
     private PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     @Mock
-    private EpubViewerPreferenceV2Repository epubViewerPreferenceV2Repository;
+    private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
     @Mock
     private CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     @Mock
@@ -161,7 +161,7 @@ class BookServiceTest {
         entity.setId(4L);
         entity.setBookType(BookFileType.EPUB);
         when(bookRepository.findById(4L)).thenReturn(Optional.of(entity));
-        EpubViewerPreferenceV2Entity epubPref = new EpubViewerPreferenceV2Entity();
+        EbookViewerPreferenceEntity epubPref = new EbookViewerPreferenceEntity();
         epubPref.setFontFamily("Arial");
         epubPref.setFontSize(16);
         epubPref.setGap(0.2f);
@@ -173,23 +173,23 @@ class BookServiceTest {
         epubPref.setMaxColumnCount(2);
         epubPref.setMaxInlineSize(1200);
         epubPref.setTheme("light");
-        when(epubViewerPreferenceV2Repository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
+        when(ebookViewerPreferenceRepository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         BookViewerSettings settings = bookService.getBookViewerSetting(4L);
 
-        assertNotNull(settings.getEpubSettingsV2());
-        assertEquals("Arial", settings.getEpubSettingsV2().getFontFamily());
-        assertEquals(16, settings.getEpubSettingsV2().getFontSize());
-        assertEquals(0.2f, settings.getEpubSettingsV2().getGap());
-        assertTrue(settings.getEpubSettingsV2().getHyphenate());
-        assertFalse(settings.getEpubSettingsV2().getIsDark());
-        assertTrue(settings.getEpubSettingsV2().getJustify());
-        assertEquals(1.5f, settings.getEpubSettingsV2().getLineHeight());
-        assertEquals(800, settings.getEpubSettingsV2().getMaxBlockSize());
-        assertEquals(2, settings.getEpubSettingsV2().getMaxColumnCount());
-        assertEquals(1200, settings.getEpubSettingsV2().getMaxInlineSize());
-        assertEquals("light", settings.getEpubSettingsV2().getTheme());
+        assertNotNull(settings.getEbookSettings());
+        assertEquals("Arial", settings.getEbookSettings().getFontFamily());
+        assertEquals(16, settings.getEbookSettings().getFontSize());
+        assertEquals(0.2f, settings.getEbookSettings().getGap());
+        assertTrue(settings.getEbookSettings().getHyphenate());
+        assertFalse(settings.getEbookSettings().getIsDark());
+        assertTrue(settings.getEbookSettings().getJustify());
+        assertEquals(1.5f, settings.getEbookSettings().getLineHeight());
+        assertEquals(800, settings.getEbookSettings().getMaxBlockSize());
+        assertEquals(2, settings.getEbookSettings().getMaxColumnCount());
+        assertEquals(1200, settings.getEbookSettings().getMaxInlineSize());
+        assertEquals("light", settings.getEbookSettings().getTheme());
     }
 
     @Test

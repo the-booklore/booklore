@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class EpubViewerPreferencesV2 {
+public class EbookViewerPreferences {
     private Long bookId;
     private Long userId;
     private String fontFamily;

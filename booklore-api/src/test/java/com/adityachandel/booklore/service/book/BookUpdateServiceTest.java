@@ -54,7 +54,7 @@ class BookUpdateServiceTest {
     @Mock
     private KoboReadingStateService koboReadingStateService;
     @Mock
-    private EpubViewerPreferenceV2Repository epubViewerPreferenceV2Repository;
+    private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -75,7 +75,7 @@ class BookUpdateServiceTest {
                 bookQueryService,
                 userProgressService,
                 koboReadingStateService,
-                epubViewerPreferenceV2Repository
+                ebookViewerPreferenceRepository
         );
     }
 
@@ -117,10 +117,10 @@ class BookUpdateServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
-        EpubViewerPreferenceV2Entity epubPrefs = new EpubViewerPreferenceV2Entity();
-        when(epubViewerPreferenceV2Repository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
+        EbookViewerPreferenceEntity epubPrefs = new EbookViewerPreferenceEntity();
+        when(ebookViewerPreferenceRepository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
         BookViewerSettings settings = BookViewerSettings.builder()
-                .epubSettingsV2(EpubViewerPreferencesV2.builder()
+                .ebookSettings(EbookViewerPreferences.builder()
                         .fontFamily("serif")
                         .fontSize(18)
                         .gap(0.1f)
@@ -138,7 +138,7 @@ class BookUpdateServiceTest {
 
         bookUpdateService.updateBookViewerSetting(bookId, settings);
 
-        verify(epubViewerPreferenceV2Repository).save(epubPrefs);
+        verify(ebookViewerPreferenceRepository).save(epubPrefs);
         assertEquals("serif", epubPrefs.getFontFamily());
         assertEquals(18, epubPrefs.getFontSize());
         assertEquals(0.1f, epubPrefs.getGap());

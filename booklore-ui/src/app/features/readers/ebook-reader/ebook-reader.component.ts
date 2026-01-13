@@ -12,15 +12,16 @@ import {ActivatedRoute} from '@angular/router';
 import {BookMark, BookMarkService} from '../../../shared/service/book-mark.service';
 import {BookPatchService} from '../../book/service/book-patch.service';
 import {EpubCustomFontService} from '../epub-reader/service/epub-custom-font.service';
-import {Book, EpubViewerSettingV2} from '../../book/model/book.model';
+import {Book, EbookViewerSetting} from '../../book/model/book.model';
 import {ReaderHeaderComponent} from './reader-layout/header/reader-header.component';
 import {ReaderSidebarComponent} from './reader-layout/sidebar/reader-sidebar.component';
 import {ReaderNavbarComponent} from './reader-layout/navbar/reader-navbar.component';
 import {ReaderSettingsDialogComponent} from './reader-layout/header/reader-settings-dialog.component';
 import {ReaderBookMetadataDialogComponent} from './reader-layout/sidebar/reader-book-metadata-dialog.component';
+import {ReadingSessionService} from '../../../shared/service/reading-session.service';
 
 @Component({
-  selector: 'app-book-reader',
+  selector: 'app-ebook-reader',
   standalone: true,
   imports: [
     CommonModule,
@@ -38,41 +39,43 @@ import {ReaderBookMetadataDialogComponent} from './reader-layout/sidebar/reader-
     ReaderStyleService,
     ReaderBookmarkService
   ],
-  templateUrl: './book-reader.component.html',
-  styleUrls: ['./book-reader.component.scss']
+  templateUrl: './ebook-reader.component.html',
+  styleUrls: ['./ebook-reader.component.scss']
 })
-export class BookReaderComponent implements OnInit, OnDestroy {
+export class EbookReaderComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
-  private hasLoadedOnce = false;
+  private loaderService = inject(ReaderLoaderService);
+  private styleService = inject(ReaderStyleService);
+  private bookService = inject(BookService);
+  private route = inject(ActivatedRoute);
+  private bookMarkService = inject(BookMarkService);
+  private bookPatchService = inject(BookPatchService);
+  private epubCustomFontService = inject(EpubCustomFontService);
+  private bookmarkService = inject(ReaderBookmarkService);
+  private readingSessionService = inject(ReadingSessionService);
+
+  public viewManager = inject(ReaderViewManagerService);
+  public stateService = inject(ReaderStateService);
+  protected location = inject(Location);
   protected bookId!: number;
+
+  private hasLoadedOnce = false;
+  private hasStartedSession = false;
+  private _fileUrl: string | null = null;
+  private currentCfi: string | null = null;
 
   isLoading = true;
   showControls = false;
   showChapters = false;
   showMetadata = false;
+  isCurrentCfiBookmarked = false;
+
   chapters: { label: string; href: string }[] = [];
-
-  currentChapterName: string | null = null;
-  currentProgressData: any = null;
-
   bookmarks: BookMark[] = [];
   book: Book | null = null;
   coverUpdatedOn: string | undefined;
-
-  isCurrentCfiBookmarked = false;
-  private currentCfi: string | null = null;
-
-  private loaderService = inject(ReaderLoaderService);
-  public viewManager = inject(ReaderViewManagerService);
-  public stateService = inject(ReaderStateService);
-  private styleService = inject(ReaderStyleService);
-  private bookService = inject(BookService);
-  private route = inject(ActivatedRoute);
-  private bookmarkService = inject(ReaderBookmarkService);
-  private bookMarkService = inject(BookMarkService);
-  private bookPatchService = inject(BookPatchService);
-  private epubCustomFontService = inject(EpubCustomFontService);
-  protected location = inject(Location);
+  currentChapterName: string | null = null;
+  currentProgressData: any = null;
 
   ngOnInit() {
     this.isLoading = true;
@@ -94,6 +97,26 @@ export class BookReaderComponent implements OnInit, OnDestroy {
       }),
       takeUntil(this.destroy$)
     ).subscribe();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+    this.viewManager.destroy();
+    this.bookmarkService.reset();
+    this.epubCustomFontService.cleanup();
+
+    if (this.readingSessionService.isSessionActive()) {
+      const progress = typeof this.currentProgressData?.fraction === 'number'
+        ? Math.round(this.currentProgressData.fraction * 100 * 100) / 100
+        : undefined;
+      this.readingSessionService.endSession(this.currentCfi || undefined, progress);
+    }
+
+    if (this._fileUrl) {
+      URL.revokeObjectURL(this._fileUrl);
+      this._fileUrl = null;
+    }
   }
 
   private initializeFoliate(): Observable<void> {
@@ -145,8 +168,6 @@ export class BookReaderComponent implements OnInit, OnDestroy {
     );
   }
 
-  private _fileUrl: string | null = null;
-
   private loadBookmarks(): void {
     this.bookMarkService.getBookmarksForBook(this.bookId)
       .pipe(takeUntil(this.destroy$))
@@ -159,9 +180,7 @@ export class BookReaderComponent implements OnInit, OnDestroy {
   private subscribeToStateChanges(): void {
     this.stateService.state$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.applyStyles();
-      });
+      .subscribe(() => this.applyStyles());
   }
 
   private subscribeToViewEvents(): void {
@@ -173,37 +192,43 @@ export class BookReaderComponent implements OnInit, OnDestroy {
             this.applyStyles();
             this.chapters = this.viewManager.getChapters();
             break;
-
-          case 'relocate': {
-            const detail = event.detail;
-            this.currentProgressData = detail;
-
-            const cfi = detail?.cfi ?? null;
-            const href = detail?.pageItem?.href ?? detail?.tocItem?.href ?? null;
-            const percentage = typeof detail?.fraction === 'number' ? detail.fraction * 100 : null;
-
-            if (cfi && percentage !== null) {
-              this.bookPatchService.saveEpubProgress(this.bookId, cfi, href, percentage);
-            }
-
-            const chapterLabel = detail?.tocItem?.label;
-            if (chapterLabel && chapterLabel !== this.currentChapterName) {
-              this.currentChapterName = chapterLabel;
-            }
-
-            if (cfi) {
-              this.currentCfi = cfi;
-              this.updateIsCurrentCfiBookmarked();
-              this.bookmarkService.updateCurrentPosition(cfi, chapterLabel);
-            }
-
+          case 'relocate':
+            this.handleRelocateEvent(event.detail);
             break;
-          }
         }
       });
   }
 
-  private updateIsCurrentCfiBookmarked() {
+  private handleRelocateEvent(detail: any): void {
+    this.currentProgressData = detail;
+
+    const cfi = detail?.cfi ?? null;
+    const href = detail?.pageItem?.href ?? detail?.tocItem?.href ?? null;
+    const percentage = typeof detail?.fraction === 'number' ? detail.fraction * 100 : null;
+
+    if (!this.hasStartedSession && cfi && percentage !== null) {
+      this.hasStartedSession = true;
+      this.readingSessionService.startSession(this.book!.id, this.book?.bookType!, cfi, percentage);
+    }
+
+    if (cfi && percentage !== null) {
+      this.bookPatchService.saveEpubProgress(this.bookId, cfi, href, percentage);
+      this.readingSessionService.updateProgress(cfi, percentage);
+    }
+
+    const chapterLabel = detail?.tocItem?.label;
+    if (chapterLabel && chapterLabel !== this.currentChapterName) {
+      this.currentChapterName = chapterLabel;
+    }
+
+    if (cfi) {
+      this.currentCfi = cfi;
+      this.updateIsCurrentCfiBookmarked();
+      this.bookmarkService.updateCurrentPosition(cfi, chapterLabel);
+    }
+  }
+
+  private updateIsCurrentCfiBookmarked(): void {
     if (!this.currentCfi || !this.bookmarks?.length) {
       this.isCurrentCfiBookmarked = false;
       return;
@@ -218,79 +243,8 @@ export class BookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  onChapterClick(href: string) {
-    this.viewManager.goTo(href).pipe(
-      tap(() => this.showChapters = false),
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
-
-  onBookmarkClick(cfi: string) {
-    this.viewManager.goTo(cfi).pipe(
-      tap(() => {
-        this.showChapters = false;
-        this.currentCfi = cfi;
-        this.updateIsCurrentCfiBookmarked();
-      }),
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
-
-  onCreateBookmark() {
-    this.bookmarkService.createBookmarkAtCurrentPosition(this.bookId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(success => {
-        if (success) {
-          this.loadBookmarks();
-        }
-      });
-  }
-
-  onDeleteBookmark(bookmarkId: number) {
-    this.bookMarkService.deleteBookmark(bookmarkId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          this.loadBookmarks();
-        },
-        error: () => {
-        }
-      });
-  }
-
-  onProgressChange(fraction: number) {
-    this.viewManager.goToFraction(fraction)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe();
-  }
-
-  onToggleDarkMode() {
-    this.stateService.toggleDarkMode();
-    this.syncSettingsToBackend();
-  }
-
-  onIncreaseFontSize() {
-    this.stateService.updateFontSize(1);
-    this.syncSettingsToBackend();
-  }
-
-  onDecreaseFontSize() {
-    this.stateService.updateFontSize(-1);
-    this.syncSettingsToBackend();
-  }
-
-  onIncreaseLineHeight() {
-    this.stateService.updateLineHeight(0.1);
-    this.syncSettingsToBackend();
-  }
-
-  onDecreaseLineHeight() {
-    this.stateService.updateLineHeight(-0.1);
-    this.syncSettingsToBackend();
-  }
-
-  private syncSettingsToBackend() {
-    const setting: EpubViewerSettingV2 = {
+  private syncSettingsToBackend(): void {
+    const setting: EbookViewerSetting = {
       lineHeight: this.stateService.currentState.lineHeight,
       justify: this.stateService.currentState.justify,
       hyphenate: this.stateService.currentState.hyphenate,
@@ -305,18 +259,77 @@ export class BookReaderComponent implements OnInit, OnDestroy {
       fontFamily: this.stateService.currentState.fontFamily,
       isDark: this.stateService.currentState.isDark,
     };
-    this.bookService.updateViewerSetting({epubSettingsV2: setting}, this.bookId).subscribe();
+    this.bookService.updateViewerSetting({ebookSettings: setting}, this.bookId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe();
   }
 
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
-    this.viewManager.destroy();
-    this.bookmarkService.reset();
-    this.epubCustomFontService.cleanup();
-    if (this._fileUrl) {
-      URL.revokeObjectURL(this._fileUrl);
-      this._fileUrl = null;
-    }
+  onChapterClick(href: string): void {
+    this.viewManager.goTo(href).pipe(
+      tap(() => this.showChapters = false),
+      takeUntil(this.destroy$)
+    ).subscribe();
+  }
+
+  onBookmarkClick(cfi: string): void {
+    this.viewManager.goTo(cfi).pipe(
+      tap(() => {
+        this.showChapters = false;
+        this.currentCfi = cfi;
+        this.updateIsCurrentCfiBookmarked();
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe();
+  }
+
+  onCreateBookmark(): void {
+    this.bookmarkService.createBookmarkAtCurrentPosition(this.bookId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(success => {
+        if (success) {
+          this.loadBookmarks();
+        }
+      });
+  }
+
+  onDeleteBookmark(bookmarkId: number): void {
+    this.bookMarkService.deleteBookmark(bookmarkId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => this.loadBookmarks(),
+        error: () => {
+        }
+      });
+  }
+
+  onProgressChange(fraction: number): void {
+    this.viewManager.goToFraction(fraction)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe();
+  }
+
+  onToggleDarkMode(): void {
+    this.stateService.toggleDarkMode();
+    this.syncSettingsToBackend();
+  }
+
+  onIncreaseFontSize(): void {
+    this.stateService.updateFontSize(1);
+    this.syncSettingsToBackend();
+  }
+
+  onDecreaseFontSize(): void {
+    this.stateService.updateFontSize(-1);
+    this.syncSettingsToBackend();
+  }
+
+  onIncreaseLineHeight(): void {
+    this.stateService.updateLineHeight(0.1);
+    this.syncSettingsToBackend();
+  }
+
+  onDecreaseLineHeight(): void {
+    this.stateService.updateLineHeight(-0.1);
+    this.syncSettingsToBackend();
   }
 }

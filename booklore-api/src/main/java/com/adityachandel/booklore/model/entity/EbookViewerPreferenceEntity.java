@@ -9,10 +9,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "epub_viewer_preference_v2", uniqueConstraints = {
+@Table(name = "ebook_viewer_preference", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"user_id", "book_id"})
 })
-public class EpubViewerPreferenceV2Entity {
+public class EbookViewerPreferenceEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

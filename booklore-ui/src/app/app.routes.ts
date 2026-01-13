@@ -25,7 +25,7 @@ import {BookdropGuard} from './core/security/guards/bookdrop.guard';
 import {LibraryStatsGuard} from './core/security/guards/library-stats.guard';
 import {UserStatsGuard} from './core/security/guards/user-stats.guard';
 import {EditMetadataGuard} from './core/security/guards/edit-metdata.guard';
-import {BookReaderComponent} from './features/readers/book-reader/book-reader.component';
+import {EbookReaderComponent} from './features/readers/ebook-reader/ebook-reader.component';
 
 export const routes: Routes = [
   {
@@ -70,8 +70,8 @@ export const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
-    path: 'book-reader/book/:bookId',
-    component: BookReaderComponent,
+    path: 'ebook-reader/book/:bookId',
+    component: EbookReaderComponent,
     canActivate: [AuthGuard]
   },
   {

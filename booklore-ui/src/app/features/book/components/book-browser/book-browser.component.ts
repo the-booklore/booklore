@@ -51,6 +51,7 @@ import {TaskHelperService} from '../../../settings/task-management/task-helper.s
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {BookNavigationService} from '../../service/book-navigation.service';
+import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -123,6 +124,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private pageTitle = inject(PageTitleService);
   private loadingService = inject(LoadingService);
   private bookNavigationService = inject(BookNavigationService);
+  protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;

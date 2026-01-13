@@ -21,10 +21,6 @@
   justify-content: center;
 }
 
-.cover-container.loaded {
-  background-color: transparent;
-}
-
 .book-cover {
   width: 100%;
   height: 100%;
@@ -157,13 +153,11 @@
 
 .series-items-count-overlay {
   position: absolute;
-  top: 8px;
-  left: 8px;
   background-color: var(--primary-color);
   color: var(--primary-text-color-dark);
-  font-size: 0.75rem;
-  padding: 3px 8px;
-  border-radius: 4px;
+  font-size: 0.7rem;
+  padding: 0 5px;
+  border-radius: 6px;
   z-index: 3;
   white-space: nowrap;
   user-select: none;
@@ -174,6 +168,76 @@
   display: flex;
   align-items: center;
   gap: 2px;
+}
+
+.series-items-count-icon {
+  font-size: 0.6rem;
+  margin-right: 2px;
+}
+
+.book-type-pill-overlay {
+  position: absolute;
+  background: var(--primary-color, #6366f1);
+  color: var(--primary-text-color-dark, #fff);
+  font-size: 0.675rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  z-index: 3;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.03em;
+  user-select: none;
+  pointer-events: none;
+  text-transform: uppercase;
+  transition: background 0.2s;
+}
+
+.top-left-overlay-stack {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  z-index: 4;
+}
+
+.book-type-pill-overlay,
+.series-number-overlay,
+.series-items-count-overlay {
+  position: static;
+  margin: 0;
+}
+
+.book-type-epub {
+  background: #16a34a; /* medium green */
+  color: #fff;
+}
+
+.book-type-pdf {
+  background: #dc2626; /* medium red */
+  color: #fff;
+}
+
+.book-type-cbx {
+  background: #d97706; /* amber/orange */
+  color: #fff;
+}
+
+.book-type-mobi {
+  background: #2563eb; /* medium blue */
+  color: #fff;
+}
+
+.book-type-azw3 {
+  background: #0891b2; /* cyan/teal */
+  color: #fff;
+}
+
+.book-type-fb2 {
+  background: #7c3aed; /* vibrant purple */
+  color: #fff;
 }
 
 .read-status-indicator {

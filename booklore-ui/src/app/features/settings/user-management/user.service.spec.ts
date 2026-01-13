@@ -59,7 +59,7 @@ describe('UserService', () => {
       perBookSetting: {pdf: '', epub: '', cbx: ''},
       pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
       epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-      epubReaderSettingV2: {
+      ebookReaderSetting: {
         lineHeight: 1,
         justify: false,
         hyphenate: false,
@@ -89,7 +89,7 @@ describe('UserService', () => {
       metadataCenterViewMode: 'route',
       enableSeriesView: true,
       entityViewPreferences: {
-        global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false},
+        global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
         overrides: []
       },
       koReaderEnabled: false
@@ -322,7 +322,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -344,7 +344,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical',
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };
@@ -410,7 +413,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -432,7 +435,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical',
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };
@@ -495,7 +501,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -517,7 +523,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical',
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };
@@ -680,7 +689,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off' as const, pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -702,7 +711,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical' as const,
           metadataCenterViewMode: 'route' as const,
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };
@@ -869,7 +881,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -891,7 +903,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical',
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       }];
@@ -943,7 +958,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -965,7 +980,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical',
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };
@@ -1018,7 +1036,7 @@ describe('UserService - API Contract Tests', () => {
           perBookSetting: {pdf: '', epub: '', cbx: ''},
           pdfReaderSetting: {pageSpread: 'off' as const, pageZoom: '', showSidebar: false},
           epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
-          epubReaderSettingV2: {
+          ebookReaderSetting: {
             lineHeight: 1,
             justify: false,
             hyphenate: false,
@@ -1040,7 +1058,10 @@ describe('UserService - API Contract Tests', () => {
           filterSortingMode: 'alphabetical' as const,
           metadataCenterViewMode: 'route' as const,
           enableSeriesView: true,
-          entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
+          entityViewPreferences: {
+            global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false, overlayBookType: false},
+            overrides: []
+          },
           koReaderEnabled: false
         }
       };

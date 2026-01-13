@@ -9,7 +9,7 @@ import {CustomFont} from '../../../../shared/model/custom-font.model';
 import {skip, Subject, takeUntil} from 'rxjs';
 import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
 import {Skeleton} from 'primeng/skeleton';
-import {themes} from '../../../readers/book-reader/services/reader-themes';
+import {themes} from '../../../readers/ebook-reader/services/reader-themes';
 
 @Component({
   selector: 'app-epub-reader-preferences-component',
@@ -104,7 +104,7 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
   }
 
   private isCurrentlySelectedFontDeleted(newFonts: CustomFont[]): boolean {
-    const fontFamily = this.userSettings.epubReaderSettingV2.fontFamily;
+    const fontFamily = this.userSettings.ebookReaderSetting.fontFamily;
     if (!fontFamily || !fontFamily.startsWith('custom:')) {
       return false;
     }
@@ -120,119 +120,119 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
   }
 
   get selectedTheme(): string | null {
-    return this.userSettings.epubReaderSettingV2.theme;
+    return this.userSettings.ebookReaderSetting.theme;
   }
 
   set selectedTheme(value: string | null) {
     if (typeof value === "string") {
-      this.userSettings.epubReaderSettingV2.theme = value;
+      this.userSettings.ebookReaderSetting.theme = value;
     }
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'theme'], value);
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'theme'], value);
   }
 
   get selectedFont(): string | null {
-    return this.userSettings.epubReaderSettingV2.fontFamily;
+    return this.userSettings.ebookReaderSetting.fontFamily;
   }
 
   set selectedFont(value: string | null) {
     if (typeof value === "string") {
-      this.userSettings.epubReaderSettingV2.fontFamily = value;
+      this.userSettings.ebookReaderSetting.fontFamily = value;
     } else {
-      this.userSettings.epubReaderSettingV2.fontFamily = null as any;
+      this.userSettings.ebookReaderSetting.fontFamily = null as any;
     }
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'fontFamily'], value);
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'fontFamily'], value);
   }
 
   get fontSize(): number {
-    return this.userSettings.epubReaderSettingV2.fontSize;
+    return this.userSettings.ebookReaderSetting.fontSize;
   }
 
   set fontSize(value: number) {
-    this.userSettings.epubReaderSettingV2.fontSize = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'fontSize'], value);
+    this.userSettings.ebookReaderSetting.fontSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'fontSize'], value);
   }
 
   get lineHeight(): number {
-    return this.userSettings.epubReaderSettingV2.lineHeight;
+    return this.userSettings.ebookReaderSetting.lineHeight;
   }
 
   set lineHeight(value: number) {
-    this.userSettings.epubReaderSettingV2.lineHeight = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'lineHeight'], value);
+    this.userSettings.ebookReaderSetting.lineHeight = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'lineHeight'], value);
   }
 
   get justify(): boolean {
-    return this.userSettings.epubReaderSettingV2.justify;
+    return this.userSettings.ebookReaderSetting.justify;
   }
 
   set justify(value: boolean) {
-    this.userSettings.epubReaderSettingV2.justify = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'justify'], value);
+    this.userSettings.ebookReaderSetting.justify = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'justify'], value);
   }
 
   get hyphenate(): boolean {
-    return this.userSettings.epubReaderSettingV2.hyphenate;
+    return this.userSettings.ebookReaderSetting.hyphenate;
   }
 
   set hyphenate(value: boolean) {
-    this.userSettings.epubReaderSettingV2.hyphenate = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'hyphenate'], value);
+    this.userSettings.ebookReaderSetting.hyphenate = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'hyphenate'], value);
   }
 
   get maxColumnCount(): number {
-    return this.userSettings.epubReaderSettingV2.maxColumnCount;
+    return this.userSettings.ebookReaderSetting.maxColumnCount;
   }
 
   set maxColumnCount(value: number) {
-    this.userSettings.epubReaderSettingV2.maxColumnCount = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'maxColumnCount'], value);
+    this.userSettings.ebookReaderSetting.maxColumnCount = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxColumnCount'], value);
   }
 
   get gap(): number {
-    return this.userSettings.epubReaderSettingV2.gap;
+    return this.userSettings.ebookReaderSetting.gap;
   }
 
   set gap(value: number) {
-    this.userSettings.epubReaderSettingV2.gap = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'gap'], value);
+    this.userSettings.ebookReaderSetting.gap = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'gap'], value);
   }
 
   get maxInlineSize(): number {
-    return this.userSettings.epubReaderSettingV2.maxInlineSize;
+    return this.userSettings.ebookReaderSetting.maxInlineSize;
   }
 
   set maxInlineSize(value: number) {
-    this.userSettings.epubReaderSettingV2.maxInlineSize = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'maxInlineSize'], value);
+    this.userSettings.ebookReaderSetting.maxInlineSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxInlineSize'], value);
   }
 
   get maxBlockSize(): number {
-    return this.userSettings.epubReaderSettingV2.maxBlockSize;
+    return this.userSettings.ebookReaderSetting.maxBlockSize;
   }
 
   set maxBlockSize(value: number) {
-    this.userSettings.epubReaderSettingV2.maxBlockSize = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'maxBlockSize'], value);
+    this.userSettings.ebookReaderSetting.maxBlockSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxBlockSize'], value);
   }
 
   get isDark(): boolean {
-    return this.userSettings.epubReaderSettingV2.isDark;
+    return this.userSettings.ebookReaderSetting.isDark;
   }
 
   set isDark(value: boolean) {
-    this.userSettings.epubReaderSettingV2.isDark = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSettingV2', 'isDark'], value);
+    this.userSettings.ebookReaderSetting.isDark = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'isDark'], value);
   }
 
   increaseFontSize() {
-    if (this.fontSize < 250) {
-      this.fontSize += 10;
+    if (this.fontSize < 72) {
+      this.fontSize += 1;
     }
   }
 
   decreaseFontSize() {
-    if (this.fontSize > 50) {
-      this.fontSize -= 10;
+    if (this.fontSize > 8) {
+      this.fontSize -= 1;
     }
   }
 

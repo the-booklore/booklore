@@ -23,6 +23,7 @@ import {ReadStatusHelper} from '../../../helpers/read-status.helper';
 import {BookDialogHelperService} from '../book-dialog-helper.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 import {BookNavigationService} from '../../../service/book-navigation.service';
+import {BookCardOverlayPreferenceService} from '../book-card-overlay-preference.service';
 
 @Component({
   selector: 'app-book-card',
@@ -45,6 +46,7 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   @Input() bottomBarHidden: boolean = false;
   @Input() seriesViewEnabled: boolean = false;
   @Input() isSeriesCollapsed: boolean = false;
+  @Input() overlayPreferenceService?: BookCardOverlayPreferenceService;
 
   @ViewChild('checkboxElem') checkboxElem!: ElementRef<HTMLInputElement>;
 
@@ -85,6 +87,10 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   private user: User | null = null;
   private menuInitialized = false;
 
+  showBookTypePill = true;
+
+  private overlayPrefSub?: any;
+
   ngOnInit(): void {
     this.computeAllMemoizedValues();
     this.userService.userState$
@@ -97,6 +103,13 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
         this.user = userState.user;
         this.metadataCenterViewMode = userState.user?.userSettings?.metadataCenterViewMode ?? 'route';
       });
+
+    if (this.overlayPreferenceService) {
+      this.overlayPrefSub = this.overlayPreferenceService.showBookTypePill$.subscribe(val => {
+        this.showBookTypePill = val;
+        this.cdr.markForCheck();
+      });
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -768,5 +781,8 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    if (this.overlayPrefSub) {
+      this.overlayPrefSub.unsubscribe();
+    }
   }
 }

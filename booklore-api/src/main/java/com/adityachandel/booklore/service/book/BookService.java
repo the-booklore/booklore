@@ -4,7 +4,6 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.dto.*;
-import com.adityachandel.booklore.model.dto.progress.*;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
@@ -12,10 +11,10 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.model.enums.ReadStatus;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.user.UserProgressService;
+import com.adityachandel.booklore.util.BookProgressUtil;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
@@ -58,52 +57,8 @@ public class BookService {
     private final BookDownloadService bookDownloadService;
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final BookUpdateService bookUpdateService;
-    private final EpubViewerPreferenceV2Repository epubViewerPreferencesV2Repository;
+    private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
 
-
-    private void setBookProgress(Book book, UserBookProgressEntity progress) {
-        if (progress.getKoboProgressPercent() != null) {
-            book.setKoboProgress(KoboProgress.builder()
-                    .percentage(progress.getKoboProgressPercent())
-                    .build());
-        }
-
-        switch (book.getBookType()) {
-            case EPUB -> {
-                book.setEpubProgress(EpubProgress.builder()
-                        .cfi(progress.getEpubProgress())
-                        .href(progress.getEpubProgressHref())
-                        .percentage(progress.getEpubProgressPercent())
-                        .build());
-                book.setKoreaderProgress(KoProgress.builder()
-                        .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
-                        .build());
-            }
-            case FB2, MOBI, AZW3 -> book.setEpubProgress(EpubProgress.builder()
-                    .cfi(progress.getEpubProgress())
-                    .href(progress.getEpubProgressHref())
-                    .percentage(progress.getEpubProgressPercent())
-                    .build());
-            case PDF -> book.setPdfProgress(PdfProgress.builder()
-                    .page(progress.getPdfProgress())
-                    .percentage(progress.getPdfProgressPercent())
-                    .build());
-            case CBX -> book.setCbxProgress(CbxProgress.builder()
-                    .page(progress.getCbxProgress())
-                    .percentage(progress.getCbxProgressPercent())
-                    .build());
-        }
-    }
-
-    private void enrichBookWithProgress(Book book, UserBookProgressEntity progress) {
-        if (progress != null) {
-            setBookProgress(book, progress);
-            book.setLastReadTime(progress.getLastReadTime());
-            book.setReadStatus(progress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(progress.getReadStatus()));
-            book.setDateFinished(progress.getDateFinished());
-            book.setPersonalRating(progress.getPersonalRating());
-        }
-    }
 
     public List<Book> getBookDTOs(boolean includeDescription) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
@@ -126,7 +81,7 @@ public class BookService {
                 );
 
         books.forEach(book -> {
-            enrichBookWithProgress(book, progressMap.get(book.getId()));
+            BookProgressUtil.enrichBookWithProgress(book, progressMap.get(book.getId()));
             book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         });
 
@@ -145,7 +100,7 @@ public class BookService {
             Book book = bookMapper.toBook(bookEntity);
             book.setFilePath(FileUtils.getBookFullPath(bookEntity));
             if (!withDescription) book.getMetadata().setDescription(null);
-            enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
+            BookProgressUtil.enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
             return book;
         }).collect(Collectors.toList());
     }
@@ -160,50 +115,8 @@ public class BookService {
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
 
-        if (userProgress.getKoboProgressPercent() != null) {
-            book.setKoboProgress(KoboProgress.builder()
-                    .percentage(userProgress.getKoboProgressPercent())
-                    .build());
-        }
-        if (bookEntity.getBookType() == BookFileType.PDF) {
-            book.setPdfProgress(PdfProgress.builder()
-                    .page(userProgress.getPdfProgress())
-                    .percentage(userProgress.getPdfProgressPercent())
-                    .build());
-        }
-        if (bookEntity.getBookType() == BookFileType.EPUB) {
-            book.setEpubProgress(EpubProgress.builder()
-                    .cfi(userProgress.getEpubProgress())
-                    .href(userProgress.getEpubProgressHref())
-                    .percentage(userProgress.getEpubProgressPercent())
-                    .build());
-            if (userProgress.getKoreaderProgressPercent() != null) {
-                if (book.getKoreaderProgress() == null) {
-                    book.setKoreaderProgress(KoProgress.builder().build());
-                }
-                book.getKoreaderProgress().setPercentage(userProgress.getKoreaderProgressPercent() * 100);
-            }
-        }
-        if (bookEntity.getBookType() == BookFileType.FB2
-                || bookEntity.getBookType() == BookFileType.MOBI
-                || bookEntity.getBookType() == BookFileType.AZW3
-        ) {
-            book.setEpubProgress(EpubProgress.builder()
-                    .cfi(userProgress.getEpubProgress())
-                    .href(userProgress.getEpubProgressHref())
-                    .percentage(userProgress.getEpubProgressPercent())
-                    .build());
-        }
-        if (bookEntity.getBookType() == BookFileType.CBX) {
-            book.setCbxProgress(CbxProgress.builder()
-                    .page(userProgress.getCbxProgress())
-                    .percentage(userProgress.getCbxProgressPercent())
-                    .build());
-        }
+        BookProgressUtil.enrichBookWithProgress(book, userProgress);
         book.setFilePath(FileUtils.getBookFullPath(bookEntity));
-        book.setReadStatus(userProgress.getReadStatus() == null ? String.valueOf(ReadStatus.UNSET) : String.valueOf(userProgress.getReadStatus()));
-        book.setDateFinished(userProgress.getDateFinished());
-        book.setPersonalRating(userProgress.getPersonalRating());
 
         if (!withDescription) {
             book.getMetadata().setDescription(null);
@@ -212,14 +125,19 @@ public class BookService {
         return book;
     }
 
+
     public BookViewerSettings getBookViewerSetting(long bookId) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
-        if (bookEntity.getBookType() == BookFileType.EPUB) {
-            epubViewerPreferencesV2Repository.findByBookIdAndUserId(bookId, user.getId())
-                    .ifPresent(epubPref -> settingsBuilder.epubSettingsV2(EpubViewerPreferencesV2.builder()
+
+        BookFileType bookType = bookEntity.getBookType();
+        if (bookType == BookFileType.EPUB || bookType == BookFileType.FB2
+                || bookType == BookFileType.MOBI
+                || bookType == BookFileType.AZW3) {
+            ebookViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
+                    .ifPresent(epubPref -> settingsBuilder.ebookSettings(EbookViewerPreferences.builder()
                             .bookId(bookId)
                             .userId(user.getId())
                             .fontFamily(epubPref.getFontFamily())
@@ -235,7 +153,7 @@ public class BookService {
                             .theme(epubPref.getTheme())
                             .flow("paginated")
                             .build()));
-        } else if (bookEntity.getBookType() == BookFileType.PDF) {
+        } else if (bookType == BookFileType.PDF) {
             pdfViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
                     .ifPresent(pdfPref -> settingsBuilder.pdfSettings(PdfViewerPreferences.builder()
                             .bookId(bookId)
@@ -248,7 +166,7 @@ public class BookService {
                             .pageViewMode(pdfPref.getPageViewMode())
                             .pageSpread(pdfPref.getPageSpread())
                             .build()));
-        } else if (bookEntity.getBookType() == BookFileType.CBX) {
+        } else if (bookType == BookFileType.CBX) {
             cbxViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
                     .ifPresent(cbxPref -> settingsBuilder.cbxSettings(CbxViewerPreferences.builder()
                             .bookId(bookId)
@@ -258,11 +176,6 @@ public class BookService {
                             .scrollMode(cbxPref.getScrollMode())
                             .backgroundColor(cbxPref.getBackgroundColor())
                             .build()));
-        } else if (bookEntity.getBookType() == BookFileType.FB2
-                || bookEntity.getBookType() == BookFileType.MOBI
-                || bookEntity.getBookType() == BookFileType.AZW3
-        ) {
-            return BookViewerSettings.builder().build();
         } else {
             throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
         }

@@ -63,7 +63,7 @@ public class BookLoreUser {
         public PdfReaderSetting pdfReaderSetting;
         public NewPdfReaderSetting newPdfReaderSetting;
         public EpubReaderSetting epubReaderSetting;
-        public EpubReaderSettingV2 epubReaderSettingV2;
+        public EbookReaderSetting ebookReaderSetting;
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
@@ -107,6 +107,7 @@ public class BookLoreUser {
             private Float coverSize;
             @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -129,6 +130,7 @@ public class BookLoreUser {
             private String view;
             @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -149,7 +151,7 @@ public class BookLoreUser {
         @Builder
         @AllArgsConstructor
         @NoArgsConstructor
-        public static class EpubReaderSettingV2 {
+        public static class EbookReaderSetting {
             private String fontFamily;
             private Integer fontSize;
             private Float gap;

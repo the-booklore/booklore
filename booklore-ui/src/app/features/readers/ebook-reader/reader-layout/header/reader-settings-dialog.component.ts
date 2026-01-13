@@ -4,7 +4,7 @@ import {ReaderStateService} from '../../services/reader-state.service';
 import {ReaderViewManagerService} from '../../services/reader-view-manager.service';
 import {BookService} from '../../../../book/service/book.service';
 import {EpubCustomFontService} from '../../../epub-reader/service/epub-custom-font.service';
-import {EpubViewerSettingV2} from '../../../../book/model/book.model';
+import {EbookViewerSetting} from '../../../../book/model/book.model';
 
 @Component({
   selector: 'app-settings-dialog',
@@ -51,7 +51,7 @@ export class ReaderSettingsDialogComponent implements OnInit {
   }
 
   private syncSettingsToBackend() {
-    const setting: EpubViewerSettingV2 = {
+    const setting: EbookViewerSetting = {
       lineHeight: this.state.lineHeight,
       justify: this.state.justify,
       hyphenate: this.state.hyphenate,
@@ -64,7 +64,7 @@ export class ReaderSettingsDialogComponent implements OnInit {
       fontFamily: this.state.fontFamily,
       isDark: this.state.isDark,
     };
-    this.bookService.updateViewerSetting({epubSettingsV2: setting}, this.bookId).subscribe();
+    this.bookService.updateViewerSetting({ebookSettings: setting}, this.bookId).subscribe();
   }
 
   setFontFamily(value: string | null) {

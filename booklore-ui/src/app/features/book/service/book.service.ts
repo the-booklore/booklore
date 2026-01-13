@@ -260,7 +260,7 @@ export class BookService {
           ? 'pdf-reader'
           : 'cbx-reader'
         : book.bookType === 'EPUB' || book.bookType === 'FB2' || book.bookType === 'MOBI' || book.bookType === 'AZW3'
-          ? 'book-reader'
+          ? 'ebook-reader'
           : book.bookType === 'CBX'
             ? 'cbx-reader'
             : null;

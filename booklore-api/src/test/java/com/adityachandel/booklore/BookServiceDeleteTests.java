@@ -38,7 +38,7 @@ class BookServiceDeleteTests {
     void setUp() {
         BookRepository bookRepository = Mockito.mock(BookRepository.class);
         PdfViewerPreferencesRepository pdfViewerPreferencesRepository = Mockito.mock(PdfViewerPreferencesRepository.class);
-        EpubViewerPreferenceV2Repository epubViewerPreferenceV2Repository = Mockito.mock(EpubViewerPreferenceV2Repository.class);
+        EbookViewerPreferenceRepository ebookViewerPreferenceRepository = Mockito.mock(EbookViewerPreferenceRepository.class);
         CbxViewerPreferencesRepository cbxViewerPreferencesRepository = Mockito.mock(CbxViewerPreferencesRepository.class);
         NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository = Mockito.mock(NewPdfViewerPreferencesRepository.class);
         FileService fileService = Mockito.mock(FileService.class);
@@ -65,7 +65,7 @@ class BookServiceDeleteTests {
                 bookDownloadService,
                 monitoringRegistrationService,
                 bookUpdateService,
-                epubViewerPreferenceV2Repository
+                ebookViewerPreferenceRepository
         );
     }
 

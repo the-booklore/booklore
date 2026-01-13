@@ -22,7 +22,10 @@ const BOOK_TYPE_COLORS = {
   'CBZ': '#27a153',
   'CBX': '#d4b50f',
   'CBR': '#e67e22',
-  'CB7': '#9b59b6'
+  'CB7': '#9b59b6',
+  'FB2': '#1abc9c',
+  'MOBI': '#f39c12',
+  'AZW3': '#2ecc71'
 } as const;
 
 const CHART_DEFAULTS = {

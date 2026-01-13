@@ -98,8 +98,8 @@ export class ReaderStateService {
     ]).pipe(
       tap(([myself, bookSetting]) => {
         const settingScope = myself.userSettings.perBookSetting.epub;
-        const globalSettings = myself.userSettings.epubReaderSettingV2;
-        const individualSetting = bookSetting?.epubSettingsV2;
+        const globalSettings = myself.userSettings.ebookReaderSetting;
+        const individualSetting = bookSetting?.ebookSettings;
         const settings = settingScope === 'Global' ? globalSettings : (individualSetting || globalSettings);
         const newState: Partial<ReaderState> = {};
         if (settings.fontSize != null) newState.fontSize = settings.fontSize;

@@ -212,7 +212,7 @@ export interface EpubViewerSetting {
   customFontId?: number | null;
 }
 
-export interface EpubViewerSettingV2 {
+export interface EbookViewerSetting {
   lineHeight: number;
   justify: boolean;
   hyphenate: boolean;
@@ -237,7 +237,7 @@ export interface CbxViewerSetting {
 export interface BookSetting {
   pdfSettings?: PdfViewerSetting;
   epubSettings?: EpubViewerSetting;
-  epubSettingsV2?: EpubViewerSettingV2;
+  ebookSettings?: EbookViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
 
