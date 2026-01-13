@@ -210,7 +210,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     } catch (NumberFormatException ignored) {
                                     }
                                 }
-                                
 
                                 switch (prop) {
                                     case "booklore:asin" -> builderMeta.asin(content);
