@@ -68,9 +68,9 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
 
             boolean saved;
             try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
-                BufferedImage originalImage = FileService.readImage(bais);
+                BufferedImage originalImage = ImageIO.read(bais);
                 if (originalImage == null) {
-                    log.warn("Failed to decode cover image for EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
+                    log.warn("Cover image found but could not be decoded (possibly SVG or unsupported format) in EPUB '{}'", bookEntity.getFileName());
                     return false;
                 }
                 saved = fileService.saveCoverImages(originalImage, bookEntity.getId());
@@ -123,8 +123,6 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setHardcoverReviewCount(epubMetadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(epubMetadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(epubMetadata.getComicvineId(), 100));
-        metadata.setRanobedbId(truncate(epubMetadata.getRanobedbId(), 100));
-        metadata.setRanobedbRating(epubMetadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(epubMetadata.getAuthors(), bookEntity);
 
@@ -133,6 +131,20 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
                     .filter(s -> s != null && !s.isBlank() && s.length() <= 100 && !s.contains("\n") && !s.contains("\r") && !s.contains("  "))
                     .collect(Collectors.toSet());
             bookCreatorService.addCategoriesToBook(validSubjects, bookEntity);
+        }
+
+        if (epubMetadata.getMoods() != null && !epubMetadata.getMoods().isEmpty()) {
+            Set<String> validMoods = epubMetadata.getMoods().stream()
+                    .filter(s -> s != null && !s.isBlank() && s.length() <= 255)
+                    .collect(Collectors.toSet());
+            bookCreatorService.addMoodsToBook(validMoods, bookEntity);
+        }
+
+        if (epubMetadata.getTags() != null && !epubMetadata.getTags().isEmpty()) {
+            Set<String> validTags = epubMetadata.getTags().stream()
+                    .filter(s -> s != null && !s.isBlank() && s.length() <= 255)
+                    .collect(Collectors.toSet());
+            bookCreatorService.addTagsToBook(validTags, bookEntity);
         }
     }
 }
