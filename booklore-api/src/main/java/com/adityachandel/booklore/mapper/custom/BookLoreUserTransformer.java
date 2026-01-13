@@ -49,6 +49,7 @@ public class BookLoreUserTransformer {
                         case PER_BOOK_SETTING -> userSettings.setPerBookSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PerBookSetting.class));
                         case PDF_READER_SETTING -> userSettings.setPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PdfReaderSetting.class));
                         case EPUB_READER_SETTING -> userSettings.setEpubReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.EpubReaderSetting.class));
+                        case EPUB_READER_SETTING_V2 -> userSettings.setEpubReaderSettingV2(objectMapper.readValue(value, BookLoreUser.UserSettings.EpubReaderSettingV2.class));
                         case CBX_READER_SETTING -> userSettings.setCbxReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.CbxReaderSetting.class));
                         case NEW_PDF_READER_SETTING -> userSettings.setNewPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.NewPdfReaderSetting.class));
                         case SIDEBAR_LIBRARY_SORTING -> userSettings.setSidebarLibrarySorting(objectMapper.readValue(value, SidebarSortOption.class));

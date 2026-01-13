@@ -34,8 +34,6 @@ class BookUpdateServiceTest {
     @Mock
     private PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     @Mock
-    private EpubViewerPreferencesRepository epubViewerPreferencesRepository;
-    @Mock
     private CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     @Mock
     private NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository;
@@ -55,6 +53,8 @@ class BookUpdateServiceTest {
     private UserProgressService userProgressService;
     @Mock
     private KoboReadingStateService koboReadingStateService;
+    @Mock
+    private EpubViewerPreferenceV2Repository epubViewerPreferenceV2Repository;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -65,7 +65,6 @@ class BookUpdateServiceTest {
         bookUpdateService = new BookUpdateService(
                 bookRepository,
                 pdfViewerPreferencesRepository,
-                epubViewerPreferencesRepository,
                 cbxViewerPreferencesRepository,
                 newPdfViewerPreferencesRepository,
                 shelfRepository,
@@ -75,7 +74,8 @@ class BookUpdateServiceTest {
                 authenticationService,
                 bookQueryService,
                 userProgressService,
-                koboReadingStateService
+                koboReadingStateService,
+                epubViewerPreferenceV2Repository
         );
     }
 
@@ -107,7 +107,7 @@ class BookUpdateServiceTest {
     }
 
     @Test
-    void updateBookViewerSetting_epub_shouldUpdateEpubPrefs() {
+    void updateBookViewerSetting_epub_shouldUpdateEpubPrefsV2() {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
@@ -117,30 +117,40 @@ class BookUpdateServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
-        EpubViewerPreferencesEntity epubPrefs = new EpubViewerPreferencesEntity();
-        when(epubViewerPreferencesRepository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
+        EpubViewerPreferenceV2Entity epubPrefs = new EpubViewerPreferenceV2Entity();
+        when(epubViewerPreferenceV2Repository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
         BookViewerSettings settings = BookViewerSettings.builder()
-                .epubSettings(EpubViewerPreferences.builder()
-                        .font("font")
-                        .fontSize(12)
-                        .theme("theme")
-                        .flow("flow")
-                        .spread("spread")
-                        .letterSpacing(1.2f)
-                        .lineHeight(1.3f)
+                .epubSettingsV2(EpubViewerPreferencesV2.builder()
+                        .fontFamily("serif")
+                        .fontSize(18)
+                        .gap(0.1f)
+                        .hyphenate(true)
+                        .isDark(true)
+                        .justify(true)
+                        .lineHeight(1.7f)
+                        .maxBlockSize(800)
+                        .maxColumnCount(3)
+                        .maxInlineSize(1200)
+                        .theme("dark")
+                        .flow("paginated")
                         .build())
                 .build();
 
         bookUpdateService.updateBookViewerSetting(bookId, settings);
 
-        verify(epubViewerPreferencesRepository).save(epubPrefs);
-        assertEquals("font", epubPrefs.getFont());
-        assertEquals(12, epubPrefs.getFontSize());
-        assertEquals("theme", epubPrefs.getTheme());
-        assertEquals("flow", epubPrefs.getFlow());
-        assertEquals("spread", epubPrefs.getSpread());
-        assertEquals(1.2f, epubPrefs.getLetterSpacing());
-        assertEquals(1.3f, epubPrefs.getLineHeight());
+        verify(epubViewerPreferenceV2Repository).save(epubPrefs);
+        assertEquals("serif", epubPrefs.getFontFamily());
+        assertEquals(18, epubPrefs.getFontSize());
+        assertEquals(0.1f, epubPrefs.getGap());
+        assertTrue(epubPrefs.getHyphenate());
+        assertTrue(epubPrefs.getIsDark());
+        assertTrue(epubPrefs.getJustify());
+        assertEquals(1.7f, epubPrefs.getLineHeight());
+        assertEquals(800, epubPrefs.getMaxBlockSize());
+        assertEquals(3, epubPrefs.getMaxColumnCount());
+        assertEquals(1200, epubPrefs.getMaxInlineSize());
+        assertEquals("dark", epubPrefs.getTheme());
+        assertEquals("paginated", epubPrefs.getFlow());
     }
 
     @Test

@@ -1,0 +1,58 @@
+<div
+  class="reader-header"
+  [style.color]="currentTheme?.fg ?? ''"
+  [style.background]="currentTheme?.bg ?? ''"
+  [class.visible]="headerVisible"
+  (mouseenter)="onHeaderMouseEnter()"
+  (mouseleave)="onHeaderMouseLeave()">
+  <button class="icon-btn" (click)="showChapters.emit()" title="Chapters">
+    <i class="pi pi-bars" aria-label="Chapters"></i>
+  </button>
+  <button class="icon-btn" (click)="createBookmark.emit()" title="Create Bookmark">
+    <i class="pi pi-bookmark" aria-label="Create Bookmark"></i>
+  </button>
+  <span class="chapter-title">{{ currentChapterName || '' }}</span>
+  <div class="dropdown-container">
+    <button class="icon-btn" (click)="toggleDropdown()" title="Quick Settings">
+      <i class="pi pi-ellipsis-v" aria-label="Quick Settings"></i>
+    </button>
+    @if (dropdownVisible) {
+      <div class="dropdown-menu" (mousedown)="$event.preventDefault()">
+        <div class="dropdown-item dark-mode-item">
+          <span>Dark Mode</span>
+          <button class="switch" [class.active]="isDark" (click)="toggleDarkMode.emit()">
+            <span class="slider"></span>
+          </button>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item stepper-item">
+          <span>Font Size</span>
+          <div class="stepper">
+            <button (click)="decreaseFontSize.emit()">−</button>
+            <span>{{ fontSize }}</span>
+            <button (click)="increaseFontSize.emit()">+</button>
+          </div>
+        </div>
+        <div class="dropdown-item stepper-item">
+          <span>Line Height</span>
+          <div class="stepper">
+            <button (click)="decreaseLineHeight.emit()">−</button>
+            <span>{{ lineHeight.toFixed(1) }}</span>
+            <button (click)="increaseLineHeight.emit()">+</button>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item dropdown-button" (click)="showControls.emit(); dropdownVisible = false">
+          <span>All Settings</span>
+          <i class="pi pi-cog"></i>
+        </button>
+      </div>
+    }
+  </div>
+  <button class="icon-btn" (click)="showControls.emit()" title="Settings">
+    <i class="pi pi-cog" aria-label="Settings"></i>
+  </button>
+  <button class="icon-btn" (click)="close.emit(); $event.stopPropagation()" title="Close Reader">
+    <i class="pi pi-times" aria-label="Close Reader"></i>
+  </button>
+</div>

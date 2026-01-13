@@ -1,0 +1,83 @@
+<div class="dialog-overlay"
+     (click)="onOverlayClick()"
+     [class.closing]="closing">
+  <div class="sidebar"
+       (click)="$event.stopPropagation()"
+       [class.closing]="closing">
+    <div class="sidebar-header">
+      <div class="sidebar-header-book">
+        @if (bookCoverUrl) {
+          <img
+            [src]="bookCoverUrl"
+            alt="Book cover"
+            class="sidebar-book-cover clickable"
+            (click)="onCoverClick()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="onCoverClick()"
+            (keydown.space)="onCoverClick()"
+            title="View book details"
+          />
+        }
+        <div class="sidebar-book-meta">
+          <div class="sidebar-book-title ellipsis">{{ bookTitle }}</div>
+          @if (bookAuthors) {
+            <div class="sidebar-book-authors ellipsis">{{ bookAuthors }}</div>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'chapters'"
+        (click)="activeTab = 'chapters'"
+        aria-label="Chapters"
+      >
+        <i class="pi pi-book tab-icon"></i>
+        <span class="tab-label">Chapters</span>
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'bookmarks'"
+        (click)="activeTab = 'bookmarks'"
+        aria-label="Bookmarks"
+      >
+        <i class="pi pi-bookmark tab-icon"></i>
+        <span class="tab-label">Bookmarks</span>
+      </button>
+    </div>
+    <div class="sidebar-body">
+      @switch (activeTab) {
+        @case ('chapters') {
+          <ul>
+            @for (chapter of chapters; track chapter.href) {
+              <li (click)="onChapterClick(chapter.href)">
+                <span class="chapter-label ellipsis">{{ chapter.label }}</span>
+              </li>
+            }
+          </ul>
+        }
+        @case ('bookmarks') {
+          @if (bookmarks.length > 0) {
+            <ul>
+              @for (bookmark of bookmarks; track bookmark.id) {
+                <li class="bookmark-item" (click)="onBookmarkClick(bookmark.cfi)">
+                  <div class="bookmark-info">
+                    <div class="bookmark-title ellipsis">{{ bookmark.title }}</div>
+                    <div class="bookmark-date">{{ bookmark.createdAt | date: 'short' }}</div>
+                  </div>
+                  <button class="bookmark-delete-btn" (click)="onDeleteBookmark($event, bookmark.id)" aria-label="Delete bookmark">
+                    &times;
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="empty-tab">No bookmarks yet.</div>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

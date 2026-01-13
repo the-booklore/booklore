@@ -96,6 +96,20 @@ export enum CbxScrollMode {
   INFINITE = 'INFINITE'
 }
 
+export interface EpubReaderSettingV2 {
+  lineHeight: number;
+  justify: boolean;
+  hyphenate: boolean;
+  maxColumnCount: number;
+  gap: number;
+  fontSize: number;
+  theme: string
+  maxInlineSize: number;
+  maxBlockSize: number;
+  fontFamily: string;
+  isDark: boolean;
+}
+
 export interface EpubReaderSetting {
   theme: string;
   font: string;
@@ -131,6 +145,7 @@ export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
   epubReaderSetting: EpubReaderSetting;
+  epubReaderSettingV2: EpubReaderSettingV2;
   cbxReaderSetting: CbxReaderSetting;
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;

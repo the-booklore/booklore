@@ -695,7 +695,7 @@ export class EpubReaderComponent implements OnInit, OnDestroy {
         this.progressPercentage = Math.round(percentage * 1000) / 10;
       }
 
-      this.bookService.saveEpubProgress(this.epub.id, cfi, Math.round(percentage * 1000) / 10).subscribe();
+      //this.bookService.saveEpubProgress(this.epub.id, cfi, '', Math.round(percentage * 1000) / 10).subscribe();
 
       this.readingSessionService.updateProgress(
         location.start.cfi,

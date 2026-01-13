@@ -44,6 +44,19 @@ const mockUser: User = {
     perBookSetting: {pdf: '', epub: '', cbx: ''},
     pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
     epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
+    epubReaderSettingV2: {
+      lineHeight: 1,
+      justify: false,
+      hyphenate: false,
+      maxColumnCount: 1,
+      gap: 0,
+      fontSize: 1,
+      theme: '',
+      maxInlineSize: 0,
+      maxBlockSize: 0,
+      fontFamily: '',
+      isDark: false
+    },
     cbxReaderSetting: {
       pageSpread: CbxPageSpread.EVEN,
       pageViewMode: CbxPageViewMode.SINGLE_PAGE,

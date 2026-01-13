@@ -63,6 +63,7 @@ public class BookLoreUser {
         public PdfReaderSetting pdfReaderSetting;
         public NewPdfReaderSetting newPdfReaderSetting;
         public EpubReaderSetting epubReaderSetting;
+        public EpubReaderSettingV2 epubReaderSettingV2;
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
@@ -142,6 +143,25 @@ public class BookLoreUser {
             private Float lineHeight;
             private String flow;
             private String spread;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class EpubReaderSettingV2 {
+            private String fontFamily;
+            private Integer fontSize;
+            private Float gap;
+            private Boolean hyphenate;
+            private Boolean isDark;
+            private Boolean justify;
+            private Float lineHeight;
+            private Integer maxBlockSize;
+            private Integer maxColumnCount;
+            private Integer maxInlineSize;
+            private String theme;
+            private String flow;
         }
 
         @Data

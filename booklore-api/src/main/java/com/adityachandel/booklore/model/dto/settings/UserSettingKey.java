@@ -8,6 +8,7 @@ public enum UserSettingKey {
     PDF_READER_SETTING("pdfReaderSetting", true),
     NEW_PDF_READER_SETTING("newPdfReaderSetting", true),
     EPUB_READER_SETTING("epubReaderSetting", true),
+    EPUB_READER_SETTING_V2("epubReaderSettingV2", true),
     CBX_READER_SETTING("cbxReaderSetting", true),
     SIDEBAR_LIBRARY_SORTING("sidebarLibrarySorting", true),
     SIDEBAR_SHELF_SORTING("sidebarShelfSorting", true),

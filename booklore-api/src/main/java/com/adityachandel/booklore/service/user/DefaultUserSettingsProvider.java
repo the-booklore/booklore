@@ -24,6 +24,7 @@ public class DefaultUserSettingsProvider {
         defaultSettings.put(UserSettingKey.PER_BOOK_SETTING, this::buildDefaultPerBookSetting);
         defaultSettings.put(UserSettingKey.PDF_READER_SETTING, this::buildDefaultPdfReaderSetting);
         defaultSettings.put(UserSettingKey.EPUB_READER_SETTING, this::buildDefaultEpubReaderSetting);
+        defaultSettings.put(UserSettingKey.EPUB_READER_SETTING_V2, this::buildDefaultEpubReaderSettingV2);
         defaultSettings.put(UserSettingKey.CBX_READER_SETTING, this::buildDefaultCbxReaderSetting);
         defaultSettings.put(UserSettingKey.NEW_PDF_READER_SETTING, this::buildDefaultNewPdfReaderSetting);
         defaultSettings.put(UserSettingKey.SIDEBAR_LIBRARY_SORTING, this::buildDefaultSidebarLibrarySorting);
@@ -72,6 +73,23 @@ public class DefaultUserSettingsProvider {
                 .lineHeight(null)
                 .flow("paginated")
                 .spread("double")
+                .build();
+    }
+
+    private BookLoreUser.UserSettings.EpubReaderSettingV2 buildDefaultEpubReaderSettingV2() {
+        return BookLoreUser.UserSettings.EpubReaderSettingV2.builder()
+                .fontFamily("serif")
+                .fontSize(16)
+                .gap(0.05f)
+                .hyphenate(false)
+                .isDark(false)
+                .justify(false)
+                .lineHeight(1.5f)
+                .maxBlockSize(1440)
+                .maxColumnCount(2)
+                .maxInlineSize(720)
+                .theme("gray")
+                .flow("paginated")
                 .build();
     }
 

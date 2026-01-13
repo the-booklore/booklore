@@ -16,6 +16,8 @@ public class MetadataExtractorFactory {
     private final PdfMetadataExtractor pdfMetadataExtractor;
     private final CbxMetadataExtractor cbxMetadataExtractor;
     private final Fb2MetadataExtractor fb2MetadataExtractor;
+    private final MobiMetadataExtractor mobiMetadataExtractor;
+    private final Azw3MetadataExtractor azw3MetadataExtractor;
 
     public BookMetadata extractMetadata(BookFileType bookFileType, File file) {
         return switch (bookFileType) {
@@ -23,6 +25,8 @@ public class MetadataExtractorFactory {
             case EPUB -> epubMetadataExtractor.extractMetadata(file);
             case CBX -> cbxMetadataExtractor.extractMetadata(file);
             case FB2 -> fb2MetadataExtractor.extractMetadata(file);
+            case MOBI -> mobiMetadataExtractor.extractMetadata(file);
+            case AZW3 -> azw3MetadataExtractor.extractMetadata(file);
         };
     }
 
@@ -32,6 +36,8 @@ public class MetadataExtractorFactory {
             case EPUB -> epubMetadataExtractor.extractMetadata(file);
             case CBZ, CBR, CB7 -> cbxMetadataExtractor.extractMetadata(file);
             case FB2 -> fb2MetadataExtractor.extractMetadata(file);
+            case MOBI -> mobiMetadataExtractor.extractMetadata(file);
+            case AZW3, AZW -> azw3MetadataExtractor.extractMetadata(file);
         };
     }
 
@@ -41,6 +47,8 @@ public class MetadataExtractorFactory {
             case PDF -> pdfMetadataExtractor.extractCover(file);
             case CBZ, CBR, CB7 -> cbxMetadataExtractor.extractCover(file);
             case FB2 -> fb2MetadataExtractor.extractCover(file);
+            case MOBI -> mobiMetadataExtractor.extractCover(file);
+            case AZW3, AZW -> azw3MetadataExtractor.extractCover(file);
         };
     }
 }

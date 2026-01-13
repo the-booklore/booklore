@@ -69,7 +69,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
   protected _koProgressPercentage: number | null = null;
   protected _koboProgressPercentage: number | null = null;
   protected _displayTitle: string | undefined = undefined;
-  protected _canReadBook: boolean = true;
   protected _isSeriesViewActive: boolean = false;
   protected _coverImageUrl: string = '';
   protected _readStatusIcon: string = '';
@@ -131,7 +130,6 @@ export class BookCardComponent implements OnInit, OnChanges, OnDestroy {
     this._displayTitle = (this.isSeriesCollapsed && this.book.metadata?.seriesName)
       ? this.book.metadata?.seriesName
       : this.book.metadata?.title;
-    this._canReadBook = this.book?.bookType !== 'FB2';
     this._coverImageUrl = this.urlHelper.getThumbnailUrl(this.book.id, this.book.metadata?.coverUpdatedOn);
 
     this._readStatusIcon = this.readStatusHelper.getReadStatusIcon(this.book.readStatus);

@@ -47,7 +47,6 @@ public class BookService {
 
     private final BookRepository bookRepository;
     private final PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
-    private final EpubViewerPreferencesRepository epubViewerPreferencesRepository;
     private final CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     private final NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository;
     private final FileService fileService;
@@ -59,6 +58,7 @@ public class BookService {
     private final BookDownloadService bookDownloadService;
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final BookUpdateService bookUpdateService;
+    private final EpubViewerPreferenceV2Repository epubViewerPreferencesV2Repository;
 
 
     private void setBookProgress(Book book, UserBookProgressEntity progress) {
@@ -72,12 +72,18 @@ public class BookService {
             case EPUB -> {
                 book.setEpubProgress(EpubProgress.builder()
                         .cfi(progress.getEpubProgress())
+                        .href(progress.getEpubProgressHref())
                         .percentage(progress.getEpubProgressPercent())
                         .build());
                 book.setKoreaderProgress(KoProgress.builder()
                         .percentage(progress.getKoreaderProgressPercent() != null ? progress.getKoreaderProgressPercent() * 100 : null)
                         .build());
             }
+            case FB2, MOBI, AZW3 -> book.setEpubProgress(EpubProgress.builder()
+                    .cfi(progress.getEpubProgress())
+                    .href(progress.getEpubProgressHref())
+                    .percentage(progress.getEpubProgressPercent())
+                    .build());
             case PDF -> book.setPdfProgress(PdfProgress.builder()
                     .page(progress.getPdfProgress())
                     .percentage(progress.getPdfProgressPercent())
@@ -159,7 +165,6 @@ public class BookService {
                     .percentage(userProgress.getKoboProgressPercent())
                     .build());
         }
-
         if (bookEntity.getBookType() == BookFileType.PDF) {
             book.setPdfProgress(PdfProgress.builder()
                     .page(userProgress.getPdfProgress())
@@ -169,6 +174,7 @@ public class BookService {
         if (bookEntity.getBookType() == BookFileType.EPUB) {
             book.setEpubProgress(EpubProgress.builder()
                     .cfi(userProgress.getEpubProgress())
+                    .href(userProgress.getEpubProgressHref())
                     .percentage(userProgress.getEpubProgressPercent())
                     .build());
             if (userProgress.getKoreaderProgressPercent() != null) {
@@ -177,6 +183,16 @@ public class BookService {
                 }
                 book.getKoreaderProgress().setPercentage(userProgress.getKoreaderProgressPercent() * 100);
             }
+        }
+        if (bookEntity.getBookType() == BookFileType.FB2
+                || bookEntity.getBookType() == BookFileType.MOBI
+                || bookEntity.getBookType() == BookFileType.AZW3
+        ) {
+            book.setEpubProgress(EpubProgress.builder()
+                    .cfi(userProgress.getEpubProgress())
+                    .href(userProgress.getEpubProgressHref())
+                    .percentage(userProgress.getEpubProgressPercent())
+                    .build());
         }
         if (bookEntity.getBookType() == BookFileType.CBX) {
             book.setCbxProgress(CbxProgress.builder()
@@ -202,16 +218,22 @@ public class BookService {
 
         BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
         if (bookEntity.getBookType() == BookFileType.EPUB) {
-            epubViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
-                    .ifPresent(epubPref -> settingsBuilder.epubSettings(EpubViewerPreferences.builder()
+            epubViewerPreferencesV2Repository.findByBookIdAndUserId(bookId, user.getId())
+                    .ifPresent(epubPref -> settingsBuilder.epubSettingsV2(EpubViewerPreferencesV2.builder()
                             .bookId(bookId)
-                            .font(epubPref.getFont())
+                            .userId(user.getId())
+                            .fontFamily(epubPref.getFontFamily())
                             .fontSize(epubPref.getFontSize())
-                            .theme(epubPref.getTheme())
-                            .flow(epubPref.getFlow())
-                            .spread(epubPref.getSpread())
-                            .letterSpacing(epubPref.getLetterSpacing())
+                            .gap(epubPref.getGap())
+                            .hyphenate(epubPref.getHyphenate())
+                            .isDark(epubPref.getIsDark())
+                            .justify(epubPref.getJustify())
                             .lineHeight(epubPref.getLineHeight())
+                            .maxBlockSize(epubPref.getMaxBlockSize())
+                            .maxColumnCount(epubPref.getMaxColumnCount())
+                            .maxInlineSize(epubPref.getMaxInlineSize())
+                            .theme(epubPref.getTheme())
+                            .flow("paginated")
                             .build()));
         } else if (bookEntity.getBookType() == BookFileType.PDF) {
             pdfViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())
@@ -236,6 +258,11 @@ public class BookService {
                             .scrollMode(cbxPref.getScrollMode())
                             .backgroundColor(cbxPref.getBackgroundColor())
                             .build()));
+        } else if (bookEntity.getBookType() == BookFileType.FB2
+                || bookEntity.getBookType() == BookFileType.MOBI
+                || bookEntity.getBookType() == BookFileType.AZW3
+        ) {
+            return BookViewerSettings.builder().build();
         } else {
             throw ApiError.UNSUPPORTED_BOOK_TYPE.createException();
         }
@@ -305,7 +332,6 @@ public class BookService {
                     .body(new ByteArrayResource(inputStream.readAllBytes()));
         }
     }
-
 
     @Transactional
     public ResponseEntity<BookDeletionResponse> deleteBooks(Set<Long> ids) {
