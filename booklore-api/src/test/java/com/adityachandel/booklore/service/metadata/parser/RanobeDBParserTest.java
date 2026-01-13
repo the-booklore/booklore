@@ -42,6 +42,16 @@ class RanobeDbParserTest {
             .build();
         // Empty query - no title
 
+        // Mock enabled provider
+        AppSettings appSettings = new AppSettings();
+        MetadataProviderSettings providerSettings = new MetadataProviderSettings();
+        MetadataProviderSettings.Ranobedb ranobedb = new MetadataProviderSettings.Ranobedb();
+        ranobedb.setEnabled(true);
+        providerSettings.setRanobedb(ranobedb);
+        appSettings.setMetadataProviderSettings(providerSettings);
+
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
         // When
         List<BookMetadata> results = parser.fetchMetadata(book, request);
 
@@ -62,6 +72,16 @@ class RanobeDbParserTest {
             .title("That Time I Got Reincarnated as a Slime, Vol. 1")
             .author("Fuse")
             .build();
+
+        // Mock enabled provider
+        AppSettings appSettings = new AppSettings();
+        MetadataProviderSettings providerSettings = new MetadataProviderSettings();
+        MetadataProviderSettings.Ranobedb ranobedb = new MetadataProviderSettings.Ranobedb();
+        ranobedb.setEnabled(true);
+        providerSettings.setRanobedb(ranobedb);
+        appSettings.setMetadataProviderSettings(providerSettings);
+
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
         // When
         List<BookMetadata> results = parser.fetchMetadata(book, request);
