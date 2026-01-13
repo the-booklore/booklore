@@ -361,6 +361,28 @@ function BookloreSync:onSuspend()
     self:endSession()
 end
 
+function BookloreSync:onResume()
+    if not self.is_enabled or self.server_url == "" then
+        return
+    end
+    
+    logger.info("BookloreSync: Device resuming from sleep")
+    
+    -- Try to sync pending sessions when device wakes up (might have network now)
+    if #self.pending_sessions > 0 then
+        logger.info("BookloreSync: Attempting to sync pending sessions on resume")
+        self:syncPendingSessions()
+    end
+    
+    -- If a book is currently open, start a new session
+    if self.ui and self.ui.document then
+        logger.info("BookloreSync: Book is open, starting new session after wake")
+        self:startSession()
+    else
+        logger.info("BookloreSync: No book open after resume")
+    end
+end
+
 function BookloreSync:startSession()
     logger.info("BookloreSync: ========== Starting session ==========")
     
