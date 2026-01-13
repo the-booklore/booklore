@@ -3,6 +3,7 @@ package com.adityachandel.booklore.repository;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -45,4 +46,16 @@ public interface BookAdditionalFileRepository extends JpaRepository<BookFileEnti
 
     @Query("SELECT bf FROM BookFileEntity bf WHERE bf.book.library.id = :libraryId")
     List<BookFileEntity> findByLibraryId(@Param("libraryId") Long libraryId);
+
+    @Modifying
+    @Query("""
+            UPDATE BookFileEntity bf SET
+                bf.fileName = :fileName,
+                bf.fileSubPath = :fileSubPath
+            WHERE bf.id = :bookFileId
+            """)
+    void updateFileNameAndSubPath(
+            @Param("bookFileId") Long bookFileId,
+            @Param("fileName") String fileName,
+            @Param("fileSubPath") String fileSubPath);
 }

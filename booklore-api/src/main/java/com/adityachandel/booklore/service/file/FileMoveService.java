@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -31,6 +32,7 @@ public class FileMoveService {
     private static final long EVENT_DRAIN_TIMEOUT_MS = 300;
 
     private final BookRepository bookRepository;
+    private final BookAdditionalFileRepository bookFileRepository;
     private final LibraryRepository libraryRepository;
     private final FileMoveHelper fileMoveHelper;
     private final MonitoringRegistrationService monitoringRegistrationService;
@@ -156,23 +158,24 @@ public class FileMoveService {
             }
 
             for (var bookFile : bookEntity.getBookFiles()) {
+                String newFileName;
                 if (bookFile.isBook()) {
                     Path targetPath = fileMoveHelper.generateNewFilePath(bookEntity, bookFile, libraryPathEntity, pattern);
-                    bookFile.setFileName(targetPath.getFileName().toString());
+                    newFileName = targetPath.getFileName().toString();
+                } else {
+                    newFileName = bookFile.getFileName();
                 }
-                bookFile.setFileSubPath(newFileSubPath);
+                bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
             }
 
-            bookEntity.setLibrary(targetLibrary);
-            bookEntity.setLibraryPath(libraryPathEntity);
-            bookRepository.saveAndFlush(bookEntity);
+            bookRepository.updateLibrary(bookEntity.getId(), targetLibrary.getId(), libraryPathEntity);
 
             for (PlannedMove planned : plannedMovesByBookFileId.values()) {
                 fileMoveHelper.commitMove(planned.temp(), planned.target());
             }
             plannedMovesByBookFileId.clear();
 
-            Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
+            Path libraryRoot = Paths.get(libraryPathEntity.getPath()).toAbsolutePath().normalize();
             for (Path sourceParent : sourceParentsToCleanup) {
                 fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(sourceParent, Set.of(libraryRoot));
             }

@@ -11,6 +11,7 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -53,6 +54,8 @@ class FileMoveServiceTest {
     @Mock
     private BookRepository bookRepository;
     @Mock
+    private BookAdditionalFileRepository bookFileRepository;
+    @Mock
     private LibraryRepository libraryRepository;
     @Mock
     private FileMoveHelper fileMoveHelper;
@@ -74,8 +77,8 @@ class FileMoveServiceTest {
 
     // Subclass to mock sleep for tests
     static class TestableFileMoveService extends FileMoveService {
-        public TestableFileMoveService(BookRepository bookRepository, LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper, MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper, BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
-            super(bookRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
+        public TestableFileMoveService(BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository, LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper, MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper, BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
+            super(bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
         }
 
         @Override
@@ -88,7 +91,7 @@ class FileMoveServiceTest {
     void setUp() throws Exception {
         // Use spy/subclass to avoid actual sleep
         fileMoveService = spy(new TestableFileMoveService(
-                bookRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
+                bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
 
         LibraryEntity library = new LibraryEntity();
         library.setId(42L);
@@ -251,7 +254,10 @@ class FileMoveServiceTest {
         verify(fileMoveHelper).commitMove(any(Path.class), eq(targetPdfAlt));
         verify(fileMoveHelper).commitMove(any(Path.class), eq(targetCover));
 
-        verify(bookRepository).saveAndFlush(bookEntity);
+        verify(bookFileRepository).updateFileNameAndSubPath(eq(primary.getId()), any(String.class), any(String.class));
+        verify(bookFileRepository).updateFileNameAndSubPath(eq(pdfAlt.getId()), any(String.class), any(String.class));
+        verify(bookFileRepository).updateFileNameAndSubPath(eq(cover.getId()), any(String.class), any(String.class));
+        verify(bookRepository).updateLibrary(eq(bookEntity.getId()), eq(targetLibrary.getId()), eq(targetLibraryPath));
         verify(entityManager).clear();
 
         verify(notificationService).sendMessage(eq(Topic.BOOK_UPDATE), any());

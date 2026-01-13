@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -41,6 +42,8 @@ class FileMoveServiceOrderingTest {
     @Mock
     private BookRepository bookRepository;
     @Mock
+    private BookAdditionalFileRepository bookFileRepository;
+    @Mock
     private LibraryRepository libraryRepository;
     @Mock
     private FileMoveHelper fileMoveHelper;
@@ -62,8 +65,8 @@ class FileMoveServiceOrderingTest {
 
     // Subclass to mock sleep
     static class TestableFileMoveService extends FileMoveService {
-        public TestableFileMoveService(BookRepository bookRepository, LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper, MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper, BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
-            super(bookRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
+        public TestableFileMoveService(BookRepository bookRepository, BookAdditionalFileRepository bookFileRepository, LibraryRepository libraryRepository, FileMoveHelper fileMoveHelper, MonitoringRegistrationService monitoringRegistrationService, LibraryMapper libraryMapper, BookMapper bookMapper, NotificationService notificationService, EntityManager entityManager) {
+            super(bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager);
         }
 
         @Override
@@ -75,7 +78,7 @@ class FileMoveServiceOrderingTest {
     @BeforeEach
     void setUp() throws Exception {
         fileMoveService = spy(new TestableFileMoveService(
-                bookRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
+                bookRepository, bookFileRepository, libraryRepository, fileMoveHelper, monitoringRegistrationService, libraryMapper, bookMapper, notificationService, entityManager));
 
         LibraryEntity library = new LibraryEntity();
         library.setId(42L);

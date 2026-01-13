@@ -145,4 +145,16 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     @Query("SELECT b.id as id, m.coverUpdatedOn as coverUpdatedOn FROM BookEntity b LEFT JOIN b.metadata m WHERE b.id IN :bookIds")
     List<BookCoverUpdateProjection> findCoverUpdateInfoByIds(@Param("bookIds") Collection<Long> bookIds);
+
+    @Modifying
+    @Query("""
+            UPDATE BookEntity b SET
+                b.library.id = :libraryId,
+                b.libraryPath = :libraryPath
+            WHERE b.id = :bookId
+            """)
+    void updateLibrary(
+            @Param("bookId") Long bookId,
+            @Param("libraryId") Long libraryId,
+            @Param("libraryPath") LibraryPathEntity libraryPath);
 }
