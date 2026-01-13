@@ -59,6 +59,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("urn:hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
         new IdentifierMapping("urn:hardcover_book:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
         new IdentifierMapping("urn:comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
+        new IdentifierMapping("urn:lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
+        new IdentifierMapping("urn:ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId),
         new IdentifierMapping("asin:", "asin", BookMetadata.BookMetadataBuilder::asin),
         new IdentifierMapping("amazon:", "asin", BookMetadata.BookMetadataBuilder::asin),
         new IdentifierMapping("mobi-asin:", "asin", BookMetadata.BookMetadataBuilder::asin),
@@ -66,7 +68,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         new IdentifierMapping("google:", "googleId", BookMetadata.BookMetadataBuilder::googleId),
         new IdentifierMapping("hardcover:", "hardcoverId", BookMetadata.BookMetadataBuilder::hardcoverId),
         new IdentifierMapping("hardcover_book:", "hardcoverBookId", (builder, value) -> safeParseInt(value, builder::hardcoverBookId)),
-        new IdentifierMapping("comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId)
+        new IdentifierMapping("comicvine:", "comicvineId", BookMetadata.BookMetadataBuilder::comicvineId),
+        new IdentifierMapping("lubimyczytac:", "lubimyczytacId", (builder, value) -> builder.lubimyczytacId(value)),
+        new IdentifierMapping("ranobedb:", "ranobedbId", BookMetadata.BookMetadataBuilder::ranobedbId)
     );
 
     private static final Map<String, BiConsumer<BookMetadata.BookMetadataBuilder, String>> SCHEME_MAPPINGS = Map.of(
@@ -86,7 +90,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         Map.entry("#goodreads_rating", (builder, value) -> safeParseDouble(value, builder::goodreadsRating)),
         Map.entry("#goodreads_review_count", (builder, value) -> safeParseInt(value, builder::goodreadsReviewCount)),
         Map.entry("#hardcover_rating", (builder, value) -> safeParseDouble(value, builder::hardcoverRating)),
-        Map.entry("#hardcover_review_count", (builder, value) -> safeParseInt(value, builder::hardcoverReviewCount))
+        Map.entry("#hardcover_review_count", (builder, value) -> safeParseInt(value, builder::hardcoverReviewCount)),
+        Map.entry("#lubimyczytac_rating", (builder, value) -> safeParseDouble(value, builder::lubimyczytacRating)),
+        Map.entry("#ranobedb_rating", (builder, value) -> safeParseDouble(value, builder::ranobedbRating))
     );
 
     @Override
@@ -228,6 +234,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:hardcover_book_id" -> safeParseInt(content, builderMeta::hardcoverBookId);
                                     case "booklore:hardcover_rating" -> safeParseDouble(content, builderMeta::hardcoverRating);
                                     case "booklore:hardcover_review_count" -> safeParseInt(content, builderMeta::hardcoverReviewCount);
+                                    case "booklore:lubimyczytac_rating" -> safeParseDouble(content, value -> builderMeta.lubimyczytacRating(value));
+                                    case "booklore:ranobedb_rating" -> safeParseDouble(content, builderMeta::ranobedbRating);
                                 }
 
                                 if ("calibre:user_metadata".equals(prop)) {
@@ -349,7 +357,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 if (!processedFields.contains(mapping.fieldName)) {
                     mapping.setter.accept(builder, extractedValue);
                     processedFields.add(mapping.fieldName);
-                    log.debug("IDENTIFIER: Set {} from '{}' prefix: '{}'", mapping.fieldName, mapping.prefix, extractedValue);
                 }
                 return true;
             }
@@ -368,7 +375,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 if (!processedFields.contains(fieldName)) {
                     setter.accept(builder, value);
                     processedFields.add(fieldName);
-                    log.debug("IDENTIFIER: Set {} from {} scheme: '{}'", fieldName, scheme, value);
                 }
             }
         }
@@ -382,13 +388,11 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             if (!processedFields.contains("isbn13")) {
                 builder.isbn13(cleanIsbn);
                 processedFields.add("isbn13");
-                log.debug("IDENTIFIER: Set ISBN-13: '{}'", cleanIsbn);
             }
         } else if (cleanIsbn.length() == 10 && ISBN_10_PATTERN.matcher(cleanIsbn).matches()) {
             if (!processedFields.contains("isbn10")) {
                 builder.isbn10(cleanIsbn);
                 processedFields.add("isbn10");
-                log.debug("IDENTIFIER: Set ISBN-10: '{}'", cleanIsbn);
             }
         }
     }
@@ -400,7 +404,6 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
             case "GOOGLE" -> "googleId";
             case "AMAZON" -> "asin";
             case "HARDCOVER" -> "hardcoverId";
-            case "DOUBAN" -> "doubanId";
             default -> scheme.toLowerCase();
         };
     }

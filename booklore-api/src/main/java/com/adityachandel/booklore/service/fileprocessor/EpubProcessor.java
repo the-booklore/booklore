@@ -119,10 +119,15 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setGoodreadsRating(epubMetadata.getGoodreadsRating());
         metadata.setGoodreadsReviewCount(epubMetadata.getGoodreadsReviewCount());
         metadata.setHardcoverId(truncate(epubMetadata.getHardcoverId(), 100));
+        metadata.setHardcoverBookId(epubMetadata.getHardcoverBookId());
         metadata.setHardcoverRating(epubMetadata.getHardcoverRating());
         metadata.setHardcoverReviewCount(epubMetadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(epubMetadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(epubMetadata.getComicvineId(), 100));
+        metadata.setLubimyczytacId(truncate(epubMetadata.getLubimyczytacId(), 100));
+        metadata.setLubimyczytacRating(epubMetadata.getLubimyczytacRating());
+        metadata.setRanobedbId(truncate(epubMetadata.getRanobedbId(), 100));
+        metadata.setRanobedbRating(epubMetadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(epubMetadata.getAuthors(), bookEntity);
 
