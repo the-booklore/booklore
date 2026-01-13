@@ -58,6 +58,9 @@ dependencies {
     implementation 'org.apache.pdfbox:pdfbox-io:3.0.6'
     implementation 'org.apache.pdfbox:xmpbox:3.0.6'
     implementation 'org.apache.pdfbox:jbig2-imageio:3.0.4'
+    // Required for JPEG2000 support in PDFBox (not covered by TwelveMonkeys)
+    implementation 'com.github.jai-imageio:jai-imageio-core:1.4.0'
+    implementation 'com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0'
     
     // --- TwelveMonkeys ImageIO ---
     implementation 'com.twelvemonkeys.imageio:imageio-jpeg:3.13.0'

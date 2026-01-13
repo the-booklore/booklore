@@ -223,8 +223,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 if (!scheme.isEmpty()) {
                                     switch (scheme) {
                                         case "ISBN" -> {
-                                            if (value.length() == 13) builderMeta.isbn13(value);
-                                            else if (value.length() == 10) builderMeta.isbn10(value);
+                                            String cleanValue = value.replaceAll("[- ]", "");
+                                            if (cleanValue.length() == 13) builderMeta.isbn13(value);
+                                            else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                         }
                                         case "GOODREADS" -> builderMeta.goodreadsId(value);
                                         case "COMICVINE" -> builderMeta.comicvineId(value);
@@ -235,8 +236,9 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 } else {
                                     if (text.toLowerCase().startsWith("isbn:")) {
-                                        if (value.length() == 13) builderMeta.isbn13(value);
-                                        else if (value.length() == 10) builderMeta.isbn10(value);
+                                        String cleanValue = value.replaceAll("[- ]", "");
+                                        if (cleanValue.length() == 13) builderMeta.isbn13(value);
+                                        else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                     }
                                 }
                             }

@@ -607,7 +607,15 @@ public class OpdsFeedService {
         return switch (book.getBookType()) {
             case PDF -> "application/pdf";
             case EPUB -> "application/epub+zip";
-            case FB2 -> "application/x-fictionbook+xml";
+            case FB2 -> {
+                if (book.getFileName() != null) {
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                    if (type == ArchiveUtils.ArchiveType.ZIP) {
+                        yield "application/zip";
+                    }
+                }
+                yield "application/x-fictionbook+xml";
+            }
             case CBX -> {
                 if (book.getArchiveType() != null) {
                     yield switch (book.getArchiveType()) {
