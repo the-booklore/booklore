@@ -29,6 +29,7 @@ function BookloreSync:init()
     self.username = self.settings:readSetting("username") or ""
     self.password = self.settings:readSetting("password") or ""
     self.is_enabled = self.settings:readSetting("is_enabled") or false
+    self.min_duration = self.settings:readSetting("min_duration") or 5
     
     -- Persistent local database for offline support
     self.local_db = LuaSettings:open(DataStorage:getSettingsDir() .. "/booklore_db.lua")
@@ -94,6 +95,13 @@ function BookloreSync:addToMainMenu(menu_items)
                 end,
                 callback = function()
                     self:testConnection()
+                end,
+            },
+            {
+                text = _("Minimum Session Duration"),
+                keep_menu_open = true,
+                callback = function()
+                    self:configureMinDuration()
                 end,
             },
             {
@@ -245,12 +253,12 @@ function BookloreSync:configureUsername()
     input_dialog:onShowKeyboard()
 end
 
-function BookloreSync:configurePassword()
+function BookloreSync:configureMinDuration()
     local input_dialog
     input_dialog = InputDialog:new{
-        title = _("Booklore Password"),
-        input = self.password,
-        text_type = "password",
+        title = _("Minimum Session Duration (seconds)"),
+        input = tostring(self.min_duration),
+        input_hint = "5",
         buttons = {
             {
                 {
@@ -263,14 +271,22 @@ function BookloreSync:configurePassword()
                     text = _("Save"),
                     is_enter_default = true,
                     callback = function()
-                        self.password = input_dialog:getInputText()
-                        self.settings:saveSetting("password", self.password)
-                        self.settings:flush()
-                        UIManager:close(input_dialog)
-                        UIManager:show(InfoMessage:new{
-                            text = _("Password saved"),
-                            timeout = 1,
-                        })
+                        local input_value = tonumber(input_dialog:getInputText())
+                        if input_value and input_value > 0 then
+                            self.min_duration = input_value
+                            self.settings:saveSetting("min_duration", self.min_duration)
+                            self.settings:flush()
+                            UIManager:close(input_dialog)
+                            UIManager:show(InfoMessage:new{
+                                text = T(_("Minimum duration set to %1 seconds"), tostring(self.min_duration)),
+                                timeout = 2,
+                            })
+                        else
+                            UIManager:show(InfoMessage:new{
+                                text = _("Please enter a valid number greater than 0"),
+                                timeout = 2,
+                            })
+                        end
                     end,
                 },
             },
@@ -412,14 +428,11 @@ function BookloreSync:startSession()
     local book_id = self:getBookIdByHash(book_hash)
     if not book_id then
         logger.warn("BookloreSync: Failed to get book ID (offline and not in cache)")
-        UIManager:show(InfoMessage:new{
-            text = _("Book not in cache - open while online first"),
-            timeout = 3,
-        })
-        return
+        logger.info("BookloreSync: Will track session with hash for later resolution")
+        -- Don't return - continue with nil book_id, we'll store the hash
+    else
+        logger.info("BookloreSync: Book ID:", book_id)
     end
-    
-    logger.info("BookloreSync: Book ID:", book_id)
     
     -- Get current reading position
     local start_progress = 0
@@ -441,7 +454,7 @@ function BookloreSync:startSession()
         end
     end
     
-    -- Store session info
+    -- Store session info (book_id may be nil if offline)
     self.current_session = {
         book_id = book_id,
         book_hash = book_hash,
@@ -451,7 +464,15 @@ function BookloreSync:startSession()
         start_location = start_location,
     }
     
-    logger.info("BookloreSync: Session started successfully at progress:", start_progress)
+    if book_id then
+        logger.info("BookloreSync: Session started successfully at progress:", start_progress)
+    else
+        logger.info("BookloreSync: Session started (offline mode) at progress:", start_progress)
+        UIManager:show(InfoMessage:new{
+            text = _("Tracking offline - will sync when online"),
+            timeout = 2,
+        })
+    end
 end
 
 function BookloreSync:calculateBookHash(file_path)
@@ -602,9 +623,9 @@ function BookloreSync:endSession()
     local end_time = os.time()
     local duration_seconds = end_time - self.current_session.start_time
     
-    -- Don't record sessions shorter than 5 seconds (likely false triggers)
-    if duration_seconds < 5 then
-        logger.info("BookloreSync: Session too short, not recording (", duration_seconds, "s)")
+    -- Don't record sessions shorter than minimum duration (likely false triggers)
+    if duration_seconds < self.min_duration then
+        logger.info("BookloreSync: Session too short, not recording (", duration_seconds, "s, minimum is ", self.min_duration, "s)")
         self.current_session = nil
         return
     end
@@ -626,6 +647,7 @@ function BookloreSync:endSession()
     -- Prepare session data
     local session_data = {
         bookId = self.current_session.book_id,
+        bookHash = self.current_session.book_hash,  -- Store hash for offline resolution
         bookType = book_type,
         startTime = self:formatTimestamp(self.current_session.start_time),
         endTime = self:formatTimestamp(end_time),
@@ -638,6 +660,20 @@ function BookloreSync:endSession()
     }
     
     logger.info("BookloreSync: Session data prepared - duration:", duration_seconds, "s, progress:", progress_delta)
+    
+    -- If we don't have a book ID, queue immediately for later resolution
+    if not self.current_session.book_id then
+        logger.info("BookloreSync: No book ID - queuing session for offline sync")
+        table.insert(self.pending_sessions, session_data)
+        self.local_db:saveSetting("pending_sessions", self.pending_sessions)
+        self.local_db:flush()
+        UIManager:show(InfoMessage:new{
+            text = T(_("Session saved offline (%1 pending)"), #self.pending_sessions),
+            timeout = 3,
+        })
+        self.current_session = nil
+        return
+    end
     
     -- Send session to server
     self:sendSessionToServer(session_data)
@@ -988,7 +1024,36 @@ function BookloreSync:syncPendingSessions()
     for i, session_data in ipairs(self.pending_sessions) do
         logger.info("BookloreSync: Syncing pending session", i, "of", #self.pending_sessions)
         
-        local json_data = json.encode(session_data)
+        -- If session has hash but no bookId, try to resolve it now
+        if session_data.bookHash and not session_data.bookId then
+            logger.info("BookloreSync: Resolving book ID for hash:", session_data.bookHash)
+            local book_id = self:getBookIdByHash(session_data.bookHash)
+            if book_id then
+                session_data.bookId = book_id
+                logger.info("BookloreSync: Resolved book ID:", book_id)
+            else
+                logger.warn("BookloreSync: Failed to resolve book ID, will retry later")
+                table.insert(failed_sessions, session_data)
+                -- Skip to next session
+                goto continue
+            end
+        end
+        
+        -- Remove bookHash from payload (server doesn't need it)
+        local send_data = {
+            bookId = session_data.bookId,
+            bookType = session_data.bookType,
+            startTime = session_data.startTime,
+            endTime = session_data.endTime,
+            durationSeconds = session_data.durationSeconds,
+            startProgress = session_data.startProgress,
+            endProgress = session_data.endProgress,
+            progressDelta = session_data.progressDelta,
+            startLocation = session_data.startLocation,
+            endLocation = session_data.endLocation,
+        }
+        
+        local json_data = json.encode(send_data)
         local response_body = {}
         
         local res, code, response_headers = http.request{
@@ -1011,6 +1076,8 @@ function BookloreSync:syncPendingSessions()
             logger.warn("BookloreSync: Session", i, "failed to sync, code:", tostring(code))
             table.insert(failed_sessions, session_data)
         end
+        
+        ::continue::
     end
     
     -- Update pending sessions with only the failed ones
