@@ -3,8 +3,8 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 38px;
-  padding: 0 12px;
+  height: 44px;
+  padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -28,13 +28,10 @@
     background: none;
     border: none;
     color: inherit;
-    font-size: 20px;
     cursor: pointer;
-    padding: 6px;
+    padding: 12px;
     border-radius: 50%;
     transition: background 0.15s, box-shadow 0.15s;
-    width: 36px;
-    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,6 +39,10 @@
     &:hover {
       background: rgba(255, 255, 255, 0.14);
       box-shadow: 0 2px 8px 0 rgba(0,0,0,0.10);
+    }
+
+    .pi {
+      font-size: 16px;
     }
   }
 
@@ -227,6 +228,16 @@
         color: #fff;
         border-color: rgba(255, 255, 255, 0.28);
       }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .reader-header {
+    padding: 0 6px;
+
+    .icon-btn {
+      padding: 10px;
     }
   }
 }

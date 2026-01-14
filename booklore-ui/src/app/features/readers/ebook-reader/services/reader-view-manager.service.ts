@@ -3,7 +3,7 @@ import {defer, from, Observable, of, Subject, throwError, timer} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
 
 export interface ViewEvent {
-  type: 'load' | 'relocate' | 'error' | 'middle-double-tap';
+  type: 'load' | 'relocate' | 'error' | 'middle-single-tap';
   detail?: any;
 }
 
@@ -272,10 +272,7 @@ export class ReaderViewManagerService {
       this.lastClickTime = now;
       this.lastClickZone = currentZone;
 
-      if (currentZone === 'middle') {
-        console.log('Double-tap detected in middle zone');
-        this.eventSubject.next({type: 'middle-double-tap'});
-      } else {
+      if (currentZone !== 'middle') {
         console.log(`Double-click detected in ${currentZone} zone`);
       }
       return;
@@ -322,7 +319,8 @@ export class ReaderViewManagerService {
       this.next();
       setTimeout(() => this.isNavigating = false, 300);
     } else {
-      console.log('Middle zone - no navigation');
+      console.log('Middle zone - single tap detected');
+      this.eventSubject.next({type: 'middle-single-tap'});
     }
   }
 }

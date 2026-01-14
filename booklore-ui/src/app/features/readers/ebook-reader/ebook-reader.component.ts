@@ -209,7 +209,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           case 'relocate':
             this.handleRelocateEvent(event.detail);
             break;
-          case 'middle-double-tap':
+          case 'middle-single-tap':
             this.toggleHeaderAndNavbar();
             break;
         }
