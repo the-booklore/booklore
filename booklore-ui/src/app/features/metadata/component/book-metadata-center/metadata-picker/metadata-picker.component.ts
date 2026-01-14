@@ -578,9 +578,11 @@ export class MetadataPickerComponent implements OnInit {
 
       const isEmpty = Array.isArray(currentValue)
         ? currentValue.length === 0
-        : !currentValue;
+        : (currentValue === null || currentValue === undefined || currentValue === '');
 
-      if (!isLocked && isEmpty && fetchedValue) {
+      const hasFetchedValue = fetchedValue !== null && fetchedValue !== undefined && fetchedValue !== '';
+
+      if (!isLocked && isEmpty && hasFetchedValue) {
         this.copyFetchedToCurrent(field);
       }
     });
@@ -589,7 +591,8 @@ export class MetadataPickerComponent implements OnInit {
   copyAll() {
     Object.keys(this.fetchedMetadata).forEach((field) => {
       const isLocked = this.metadataForm.get(`${field}Locked`)?.value;
-      if (!isLocked && this.fetchedMetadata[field] && field !== 'thumbnailUrl') {
+      const fetchedValue = this.fetchedMetadata[field];
+      if (!isLocked && fetchedValue !== null && fetchedValue !== undefined && fetchedValue !== '' && field !== 'thumbnailUrl') {
         this.copyFetchedToCurrent(field);
       }
     });
@@ -612,7 +615,7 @@ export class MetadataPickerComponent implements OnInit {
       field = 'thumbnailUrl';
     }
     const value = this.fetchedMetadata[field];
-    if (value) {
+    if (value !== null && value !== undefined && value !== '') {
       this.metadataForm.get(field)?.setValue(value);
       this.copiedFields[field] = true;
       this.highlightCopiedInput(field);
