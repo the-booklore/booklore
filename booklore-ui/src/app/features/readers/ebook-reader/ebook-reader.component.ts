@@ -209,6 +209,9 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           case 'relocate':
             this.handleRelocateEvent(event.detail);
             break;
+          case 'middle-double-tap':
+            this.toggleHeaderAndNavbar();
+            break;
         }
       });
   }
@@ -403,5 +406,39 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.navbarHideTimer = setTimeout(() => {
       this.forceNavbarVisible = false;
     }, 3000);
+  }
+
+  private toggleHeaderAndNavbar(): void {
+    const shouldShow = !this.forceHeaderVisible || !this.forceNavbarVisible;
+
+    if (shouldShow) {
+      this.forceHeaderVisible = true;
+      this.forceNavbarVisible = true;
+
+      if (this.headerHideTimer) {
+        clearTimeout(this.headerHideTimer);
+      }
+      if (this.navbarHideTimer) {
+        clearTimeout(this.navbarHideTimer);
+      }
+
+      this.headerHideTimer = setTimeout(() => {
+        this.forceHeaderVisible = false;
+      }, 3000);
+
+      this.navbarHideTimer = setTimeout(() => {
+        this.forceNavbarVisible = false;
+      }, 3000);
+    } else {
+      this.forceHeaderVisible = false;
+      this.forceNavbarVisible = false;
+
+      if (this.headerHideTimer) {
+        clearTimeout(this.headerHideTimer);
+      }
+      if (this.navbarHideTimer) {
+        clearTimeout(this.navbarHideTimer);
+      }
+    }
   }
 }

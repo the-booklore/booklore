@@ -3,7 +3,7 @@ import {defer, from, Observable, of, Subject, throwError, timer} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
 
 export interface ViewEvent {
-  type: 'load' | 'relocate' | 'error';
+  type: 'load' | 'relocate' | 'error' | 'middle-double-tap';
   detail?: any;
 }
 
@@ -29,10 +29,20 @@ export interface BookMetadata {
   providedIn: 'root'
 })
 export class ReaderViewManagerService {
-  private view: any;
-  private eventSubject = new Subject<ViewEvent>();
-  private keydownHandler?: (event: KeyboardEvent) => void;
+  private readonly DOUBLE_CLICK_INTERVAL_MS = 300;
+  private readonly LONG_HOLD_THRESHOLD_MS = 500;
+  private readonly LEFT_ZONE_PERCENT = 0.3;
+  private readonly RIGHT_ZONE_PERCENT = 0.7;
 
+  private view: any;
+  private isNavigating = false;
+  private lastClickTime = 0;
+  private lastClickZone: 'left' | 'middle' | 'right' | null = null;
+  private longHoldTimeout: ReturnType<typeof setTimeout> | null = null;
+  private keydownHandler?: (event: KeyboardEvent) => void;
+  private clickedDocs = new WeakSet<Document>();
+
+  private eventSubject = new Subject<ViewEvent>();
   public events$ = this.eventSubject.asObservable();
 
   createView(container: HTMLElement): void {
@@ -169,8 +179,11 @@ export class ReaderViewManagerService {
   private attachEventListeners(): void {
     this.view.addEventListener('load', (e: any) => {
       this.eventSubject.next({type: 'load', detail: e.detail});
-      if (e.detail?.doc && this.keydownHandler) {
-        e.detail.doc.addEventListener('keydown', this.keydownHandler);
+      if (e.detail?.doc) {
+        if (this.keydownHandler) {
+          e.detail.doc.addEventListener('keydown', this.keydownHandler);
+        }
+        this.attachIframeEventHandlers(e.detail.doc);
       }
     });
 
@@ -180,6 +193,12 @@ export class ReaderViewManagerService {
 
     this.view.addEventListener('error', (e: any) => {
       this.eventSubject.next({type: 'error', detail: e.detail});
+    });
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'iframe-click') {
+        this.handleIframeClickMessage(event.data);
+      }
     });
   }
 
@@ -195,5 +214,115 @@ export class ReaderViewManagerService {
       }
     };
     document.addEventListener('keydown', this.keydownHandler);
+  }
+
+  private attachIframeEventHandlers(doc: Document): void {
+    if (this.clickedDocs.has(doc)) {
+      return;
+    }
+    this.clickedDocs.add(doc);
+
+    doc.addEventListener('mousedown', (event: MouseEvent) => {
+      this.longHoldTimeout = setTimeout(() => {
+        this.longHoldTimeout = null;
+      }, this.LONG_HOLD_THRESHOLD_MS);
+    }, true);
+
+    doc.addEventListener('click', (event: MouseEvent) => {
+      const iframe = doc.defaultView?.frameElement as HTMLIFrameElement | null;
+      if (!iframe) return;
+
+      const iframeRect = iframe.getBoundingClientRect();
+      const viewportX = iframeRect.left + event.clientX;
+      const viewportY = iframeRect.top + event.clientY;
+
+      window.postMessage({
+        type: 'iframe-click',
+        clientX: viewportX,
+        clientY: viewportY,
+        iframeLeft: iframeRect.left,
+        iframeWidth: iframeRect.width,
+        eventClientX: event.clientX,
+        target: (event.target as HTMLElement)?.tagName
+      }, '*');
+    }, true);
+  }
+
+  private handleIframeClickMessage(data: any): void {
+    const now = Date.now();
+    const timeSinceLastClick = now - this.lastClickTime;
+
+    const viewRect = this.view.getBoundingClientRect();
+    const x = data.clientX - viewRect.left;
+    const width = viewRect.width;
+
+    const leftThreshold = width * this.LEFT_ZONE_PERCENT;
+    const rightThreshold = width * this.RIGHT_ZONE_PERCENT;
+
+    let currentZone: 'left' | 'middle' | 'right';
+    if (x < leftThreshold) {
+      currentZone = 'left';
+    } else if (x > rightThreshold) {
+      currentZone = 'right';
+    } else {
+      currentZone = 'middle';
+    }
+
+    if (timeSinceLastClick < this.DOUBLE_CLICK_INTERVAL_MS && this.lastClickZone === currentZone) {
+      this.lastClickTime = now;
+      this.lastClickZone = currentZone;
+
+      if (currentZone === 'middle') {
+        console.log('Double-tap detected in middle zone');
+        this.eventSubject.next({type: 'middle-double-tap'});
+      } else {
+        console.log(`Double-click detected in ${currentZone} zone`);
+      }
+      return;
+    }
+
+    this.lastClickTime = now;
+    this.lastClickZone = currentZone;
+
+    setTimeout(() => {
+      if (Date.now() - this.lastClickTime >= this.DOUBLE_CLICK_INTERVAL_MS) {
+        this.processIframeClick(data);
+      }
+    }, this.DOUBLE_CLICK_INTERVAL_MS);
+  }
+
+  private processIframeClick(data: any): void {
+    if (!this.longHoldTimeout) {
+      console.log('Long hold detected, skipping navigation');
+      return;
+    }
+
+    if (this.isNavigating) {
+      return;
+    }
+
+    const viewRect = this.view.getBoundingClientRect();
+    const x = data.clientX - viewRect.left;
+    const width = viewRect.width;
+
+    const leftThreshold = width * this.LEFT_ZONE_PERCENT;
+    const rightThreshold = width * this.RIGHT_ZONE_PERCENT;
+
+    console.log(`Iframe click at x=${x}, width=${width}, left=${leftThreshold}, right=${rightThreshold}, raw clientX=${data.clientX}, viewRect.left=${viewRect.left}`);
+    console.log(`Debug info: iframeLeft=${data.iframeLeft}, iframeWidth=${data.iframeWidth}, eventClientX=${data.eventClientX}`);
+
+    if (x < leftThreshold) {
+      console.log('Left zone - going to previous page');
+      this.isNavigating = true;
+      this.prev();
+      setTimeout(() => this.isNavigating = false, 300);
+    } else if (x > rightThreshold) {
+      console.log('Right zone - going to next page');
+      this.isNavigating = true;
+      this.next();
+      setTimeout(() => this.isNavigating = false, 300);
+    } else {
+      console.log('Middle zone - no navigation');
+    }
   }
 }
