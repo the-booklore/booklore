@@ -55,7 +55,8 @@ const mockUser: User = {
       maxInlineSize: 0,
       maxBlockSize: 0,
       fontFamily: '',
-      isDark: false
+      isDark: false,
+      flow: 'paginated'
     },
     cbxReaderSetting: {
       pageSpread: CbxPageSpread.EVEN,

@@ -224,6 +224,15 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
     this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'isDark'], value);
   }
 
+  get flow(): 'paginated' | 'scrolled' {
+    return this.userSettings.ebookReaderSetting.flow;
+  }
+
+  set flow(value: 'paginated' | 'scrolled') {
+    this.userSettings.ebookReaderSetting.flow = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'flow'], value);
+  }
+
   increaseFontSize() {
     if (this.fontSize < 72) {
       this.fontSize += 1;

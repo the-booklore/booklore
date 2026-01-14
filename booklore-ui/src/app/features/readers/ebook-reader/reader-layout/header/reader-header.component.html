@@ -42,6 +42,22 @@
           </div>
         </div>
         <div class="dropdown-divider"></div>
+        <div class="dropdown-item flow-item">
+          <span>Flow</span>
+          <div class="flow-toggle">
+            <button
+              [class.active]="flow === 'paginated'"
+              (click)="onSetFlow('paginated')"
+              title="Paginated">Paged
+            </button>
+            <button
+              [class.active]="flow === 'scrolled'"
+              (click)="onSetFlow('scrolled')"
+              title="Scrolled">Scrolled
+            </button>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
         <button class="dropdown-item dropdown-button" (click)="showControls.emit(); dropdownVisible = false">
           <span>All Settings</span>
           <i class="pi pi-cog"></i>

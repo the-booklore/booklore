@@ -50,13 +50,34 @@
     <div class="sidebar-body">
       @switch (activeTab) {
         @case ('chapters') {
-          <ul>
+          <ul class="chapter-list">
             @for (chapter of chapters; track chapter.href) {
-              <li (click)="onChapterClick(chapter.href)">
-                <span class="chapter-label ellipsis">{{ chapter.label }}</span>
-              </li>
+              <ng-container *ngTemplateOutlet="chapterNode; context: { $implicit: chapter, level: 0 }"></ng-container>
             }
           </ul>
+          <ng-template #chapterNode let-chapter let-level="level">
+            <li>
+              <div class="chapter-row"
+                   [class.has-subchapters]="chapter.subitems?.length"
+                   [class.active]="isChapterActive(chapter.href)"
+                   [style.paddingLeft.px]="12 + (level * 16)"
+                   (click)="chapter.subitems?.length ? toggleChapterExpand(chapter.href) : onChapterClick(chapter.href)">
+                <span class="chapter-label ellipsis">{{ chapter.label }}</span>
+                @if (chapter.subitems?.length) {
+                  <span class="accordion-icon" [class.expanded]="isChapterExpanded(chapter.href)">
+                    <i class="pi" [ngClass]="isChapterExpanded(chapter.href) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+                  </span>
+                }
+              </div>
+              @if (chapter.subitems?.length && isChapterExpanded(chapter.href)) {
+                <ul class="subchapter-list">
+                  @for (sub of chapter.subitems; track sub.href) {
+                    <ng-container *ngTemplateOutlet="chapterNode; context: { $implicit: sub, level: level + 1 }"></ng-container>
+                  }
+                </ul>
+              }
+            </li>
+          </ng-template>
         }
         @case ('bookmarks') {
           @if (bookmarks.length > 0) {

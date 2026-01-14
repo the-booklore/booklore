@@ -33,26 +33,26 @@ interface RelocateEventDetail {
   styleUrls: ['./reader-navbar.component.scss']
 })
 export class ReaderNavbarComponent {
-  navbarVisible = false;
-  showLocationPopover = false;
-  private isNavbarHovered = false;
-
   @Input() progressData: RelocateEventDetail | null = null;
+  @Input() forceVisible = false;
   @Output() progressChange = new EventEmitter<number>();
 
   private managerService = inject(ReaderViewManagerService);
+  private _navbarVisible = false;
+  private isNavbarHovered = false;
+  showLocationPopover = false;
 
   @HostListener('document:mousemove', ['$event'])
   onDocumentMouseMove(event: MouseEvent) {
     const windowHeight = window.innerHeight;
     if (this.showLocationPopover) {
-      this.navbarVisible = true;
+      this._navbarVisible = true;
       return;
     }
     if (event.clientY >= windowHeight - 60) {
-      this.navbarVisible = true;
+      this._navbarVisible = true;
     } else if (!this.isNavbarHovered) {
-      this.navbarVisible = false;
+      this._navbarVisible = false;
       this.showLocationPopover = false;
     }
   }
@@ -65,7 +65,7 @@ export class ReaderNavbarComponent {
       this.showLocationPopover = false;
       const windowHeight = window.innerHeight;
       if (event.clientY < windowHeight - 60 && !this.isNavbarHovered) {
-        this.navbarVisible = false;
+        this._navbarVisible = false;
       }
     }
   }
@@ -76,7 +76,7 @@ export class ReaderNavbarComponent {
       if (this.showLocationPopover) {
         this.showLocationPopover = false;
         if (!this.isNavbarHovered) {
-          this.navbarVisible = false;
+          this._navbarVisible = false;
         }
       }
     }, 200);
@@ -84,13 +84,13 @@ export class ReaderNavbarComponent {
 
   onNavbarMouseEnter() {
     this.isNavbarHovered = true;
-    this.navbarVisible = true;
+    this._navbarVisible = true;
   }
 
   onNavbarMouseLeave() {
     this.isNavbarHovered = false;
     if (!this.showLocationPopover) {
-      this.navbarVisible = false;
+      this._navbarVisible = false;
       this.showLocationPopover = false;
     }
   }
@@ -133,6 +133,10 @@ export class ReaderNavbarComponent {
 
   get currentPage(): string {
     return this.progressData?.pageItem?.label ?? 'N/A';
+  }
+
+  get navbarVisible(): boolean {
+    return this.forceVisible || this._navbarVisible;
   }
 
   onProgressChange(event: Event) {

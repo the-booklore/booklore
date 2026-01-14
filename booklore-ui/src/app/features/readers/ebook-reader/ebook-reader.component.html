@@ -1,6 +1,7 @@
 <div
   class="reader"
-  [style.background-color]="stateService.currentState.theme.bg ?? ''">
+  [style.background-color]="stateService.currentState.theme.bg ?? ''"
+  (mousemove)="onMouseMove($event)">
 
   @if (isLoading) {
     <div class="loader-overlay">
@@ -17,6 +18,9 @@
     [isDark]="stateService.currentState.isDark"
     [fontSize]="stateService.currentState.fontSize"
     [lineHeight]="stateService.currentState.lineHeight"
+    [forceVisible]="forceHeaderVisible"
+    [flow]="stateService.currentState.flow"
+    (setFlow)="onSetFlow($event)"
     (showChapters)="showChapters = true"
     (showControls)="showControls = true"
     (showMetadata)="showMetadata = true"
@@ -28,6 +32,10 @@
     (increaseLineHeight)="onIncreaseLineHeight()"
     (decreaseLineHeight)="onDecreaseLineHeight()"
   ></app-reader-header>
+
+  <div class="header-detection-zone" (mouseenter)="onHeaderZoneEnter()"></div>
+  <div class="footer-detection-zone" (mouseenter)="onFooterZoneEnter()"></div>
+
   <div class="reader-content" style="position: relative;">
     @if (isCurrentCfiBookmarked) {
       <div
@@ -51,6 +59,7 @@
 
   <app-reader-navbar
     [progressData]="currentProgressData"
+    [forceVisible]="forceNavbarVisible"
     (progressChange)="onProgressChange($event)">
   </app-reader-navbar>
 
@@ -62,6 +71,7 @@
       [bookAuthors]="(book?.metadata?.authors ?? []).join(', ')"
       [chapters]="chapters"
       [bookmarks]="bookmarks"
+      [currentChapterHref]="currentChapterHref"
       (close)="showChapters = false"
       (chapterClick)="onChapterClick($event)"
       (bookmarkClick)="onBookmarkClick($event)"

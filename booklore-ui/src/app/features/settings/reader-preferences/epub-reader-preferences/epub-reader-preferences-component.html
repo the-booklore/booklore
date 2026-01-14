@@ -1,5 +1,5 @@
 <div class="epub-preferences-container">
-  <!-- Appearance Settings -->
+
   <div class="settings-group">
     <h3 class="group-title">Appearance</h3>
 
@@ -190,9 +190,37 @@
     </div>
   </div>
 
-  <!-- Layout Settings -->
   <div class="settings-group">
     <h3 class="group-title">Layout</h3>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-label-row">
+          <label class="setting-label">Flow</label>
+          <div class="button-group">
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="flow === 'paginated'"
+              (click)="flow = 'paginated'">
+              <i class="pi pi-clone"></i>
+              <span class="option-text">Paginated</span>
+            </button>
+            <button
+              type="button"
+              class="option-button"
+              [class.selected]="flow === 'scrolled'"
+              (click)="flow = 'scrolled'">
+              <i class="pi pi-arrows-v"></i>
+              <span class="option-text">Scrolled</span>
+            </button>
+          </div>
+        </div>
+        <p class="setting-description">
+          Choose between paginated (page-by-page) or continuous scrolling flow.
+        </p>
+      </div>
+    </div>
 
     <div class="setting-item">
       <div class="setting-info">

@@ -18,6 +18,7 @@ export interface ReaderState {
   maxBlockSize: number;
   fontFamily: string | null;
   isDark: boolean;
+  flow: 'paginated' | 'scrolled';
 }
 
 @Injectable({
@@ -51,6 +52,7 @@ export class ReaderStateService {
     maxBlockSize: 1440,
     fontFamily: null,
     isDark: true,
+    flow: 'paginated',
   };
 
   private stateSubject = new BehaviorSubject<ReaderState>(this.defaultState);
@@ -127,6 +129,7 @@ export class ReaderStateService {
         if (settings.maxInlineSize != null) newState.maxInlineSize = settings.maxInlineSize;
         if (settings.maxBlockSize != null) newState.maxBlockSize = settings.maxBlockSize;
         if (settings.isDark != null) newState.isDark = settings.isDark;
+        if (settings.flow) newState.flow = settings.flow;
         if (settings.theme) {
           const theme = this.themes.find(t => t.name === settings.theme);
           if (theme) {
@@ -224,6 +227,10 @@ export class ReaderStateService {
       };
       this.setTheme(newTheme);
     }
+  }
+
+  setFlow(flow: 'paginated' | 'scrolled'): void {
+    this.updateState({ flow });
   }
 
   private updateState(partial: Partial<ReaderState>): void {

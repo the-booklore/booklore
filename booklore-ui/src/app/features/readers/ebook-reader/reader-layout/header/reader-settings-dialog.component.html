@@ -108,6 +108,34 @@
           <div class="section-header">Layout</div>
 
           <div class="control">
+            <label>Reading Flow</label>
+            <div class="control-right">
+              <div class="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    name="flow"
+                    value="paginated"
+                    [checked]="state.flow === 'paginated'"
+                    (change)="setFlow('paginated')"
+                  />
+                  Paginated
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="flow"
+                    value="scrolled"
+                    [checked]="state.flow === 'scrolled'"
+                    (change)="setFlow('scrolled')"
+                  />
+                  Scrolled
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
             <label>Max Columns</label>
             <div class="control-right">
               <div class="stepper">

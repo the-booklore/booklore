@@ -7,6 +7,12 @@ export interface ViewEvent {
   detail?: any;
 }
 
+interface TocItem {
+  label: string;
+  href: string;
+  subitems?: TocItem[];
+}
+
 export interface BookMetadata {
   title?: string;
   authors?: string[];
@@ -110,25 +116,17 @@ export class ReaderViewManagerService {
     return this.view?.renderer;
   }
 
-  getChapters(): { label: string; href: string }[] {
+  getChapters(): TocItem[] {
     if (!this.view?.book?.toc) return [];
 
-    const flattenToc = (items: any[], result: any[] = []): any[] => {
-      for (const item of items) {
-        result.push(item);
-        if (item.subitems?.length) {
-          flattenToc(item.subitems, result);
-        }
-      }
-      return result;
-    };
+    const mapToc = (items: any[]): TocItem[] =>
+      items.map(item => ({
+        label: item.label,
+        href: item.href,
+        subitems: item.subitems?.length ? mapToc(item.subitems) : undefined
+      }));
 
-    const flattened = flattenToc(this.view.book.toc);
-
-    return flattened.map(item => ({
-      label: item.label,
-      href: item.href
-    }));
+    return mapToc(this.view.book.toc);
   }
 
   getMetadata(): Observable<BookMetadata> {

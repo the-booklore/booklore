@@ -109,6 +109,7 @@ export interface EbookReaderSetting {
   maxBlockSize: number;
   fontFamily: string;
   isDark: boolean;
+  flow: 'paginated' | 'scrolled';
 }
 
 export interface EpubReaderSetting {

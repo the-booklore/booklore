@@ -1,6 +1,6 @@
 .reader {
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: fixed;
   top: 0;
@@ -91,4 +91,26 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.header-detection-zone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 5;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.footer-detection-zone {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 5;
+  pointer-events: auto;
+  background: transparent;
 }

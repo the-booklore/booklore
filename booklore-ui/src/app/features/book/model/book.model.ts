@@ -224,6 +224,7 @@ export interface EbookViewerSetting {
   maxBlockSize: number;
   fontFamily: string | null;
   isDark: boolean;
+  flow: 'paginated' | 'scrolled';
 }
 
 export interface CbxViewerSetting {

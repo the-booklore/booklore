@@ -8,10 +8,12 @@ import {Component, EventEmitter, HostListener, Input, Output} from '@angular/cor
 })
 export class ReaderHeaderComponent {
   @Input() currentChapterName: string | null = null;
-  @Input() currentTheme: any;
-  @Input() isDark: boolean = false;
-  @Input() fontSize: number = 100;
-  @Input() lineHeight: number = 1.4;
+  @Input() currentTheme: any = null;
+  @Input() isDark = false;
+  @Input() fontSize = 16;
+  @Input() lineHeight = 1.5;
+  @Input() forceVisible = false;
+  @Input() flow: 'paginated' | 'scrolled' = 'paginated';
   @Output() showChapters = new EventEmitter<void>();
   @Output() showControls = new EventEmitter<void>();
   @Output() showMetadata = new EventEmitter<void>();
@@ -22,21 +24,22 @@ export class ReaderHeaderComponent {
   @Output() decreaseFontSize = new EventEmitter<void>();
   @Output() increaseLineHeight = new EventEmitter<void>();
   @Output() decreaseLineHeight = new EventEmitter<void>();
+  @Output() setFlow = new EventEmitter<'paginated' | 'scrolled'>();
 
-  headerVisible = false;
+  private _headerVisible = false;
   dropdownVisible = false;
   private isHeaderHovered = false;
 
   @HostListener('document:mousemove', ['$event'])
   onDocumentMouseMove(event: MouseEvent) {
     if (this.dropdownVisible) {
-      this.headerVisible = true;
+      this._headerVisible = true;
       return;
     }
     if (event.clientY <= 40) {
-      this.headerVisible = true;
+      this._headerVisible = true;
     } else if (!this.isHeaderHovered) {
-      this.headerVisible = false;
+      this._headerVisible = false;
     }
   }
 
@@ -47,7 +50,7 @@ export class ReaderHeaderComponent {
     if (!clickedInside && this.dropdownVisible) {
       this.dropdownVisible = false;
       if (event.clientY > 40 && !this.isHeaderHovered) {
-        this.headerVisible = false;
+        this._headerVisible = false;
       }
     }
   }
@@ -58,7 +61,7 @@ export class ReaderHeaderComponent {
       if (this.dropdownVisible) {
         this.dropdownVisible = false;
         if (!this.isHeaderHovered) {
-          this.headerVisible = false;
+          this._headerVisible = false;
         }
       }
     }, 200);
@@ -66,17 +69,27 @@ export class ReaderHeaderComponent {
 
   onHeaderMouseEnter() {
     this.isHeaderHovered = true;
-    this.headerVisible = true;
+    this._headerVisible = true;
   }
 
   onHeaderMouseLeave() {
     this.isHeaderHovered = false;
     if (!this.dropdownVisible) {
-      this.headerVisible = false;
+      this._headerVisible = false;
     }
   }
 
   toggleDropdown() {
     this.dropdownVisible = !this.dropdownVisible;
+  }
+
+  onSetFlow(flow: 'paginated' | 'scrolled') {
+    if (this.flow !== flow) {
+      this.setFlow.emit(flow);
+    }
+  }
+
+  get headerVisible(): boolean {
+    return this.forceVisible || this._headerVisible;
   }
 }

@@ -202,7 +202,7 @@ public class BookUpdateService {
         prefs.setMaxColumnCount(epubSettings.getMaxColumnCount());
         prefs.setMaxInlineSize(epubSettings.getMaxInlineSize());
         prefs.setTheme(epubSettings.getTheme());
-        prefs.setFlow("paginated");
+        prefs.setFlow(epubSettings.getFlow());
 
         ebookViewerPreferenceRepository.save(prefs);
     }

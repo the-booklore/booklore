@@ -151,7 +151,7 @@ public class BookService {
                             .maxColumnCount(epubPref.getMaxColumnCount())
                             .maxInlineSize(epubPref.getMaxInlineSize())
                             .theme(epubPref.getTheme())
-                            .flow("paginated")
+                            .flow(epubPref.getFlow())
                             .build()));
         } else if (bookType == BookFileType.PDF) {
             pdfViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())

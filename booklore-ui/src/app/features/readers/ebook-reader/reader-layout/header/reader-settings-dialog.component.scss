@@ -25,7 +25,7 @@
   border-radius: 12px;
   width: 90%;
   max-width: 520px;
-  height: 600px; // Fixed height
+  height: 600px;
   max-height: 85vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
@@ -623,5 +623,44 @@
     padding-bottom: 8px;
     margin-bottom: 30px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+.radio-group {
+  display: flex;
+  gap: 18px;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 500;
+    position: relative;
+    user-select: none;
+
+    input[type="radio"] {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #4a9eff;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      margin: 0 6px 0 0;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+
+      &:checked {
+        background: #4a9eff;
+        box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.15);
+        border-color: #4a9eff;
+      }
+
+      &:focus {
+        box-shadow: 0 0 0 2px #4a9eff;
+      }
+    }
   }
 }

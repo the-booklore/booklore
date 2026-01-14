@@ -357,3 +357,60 @@
   text-align: center;
   margin-top: 24px;
 }
+
+.chapter-list > li {
+  padding: 0;
+  margin: 0 8px;
+  border-radius: 8px;
+}
+
+.chapter-row {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  color: rgba(255, 255, 255, 0.9);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  &.has-subchapters {
+    font-weight: 600;
+  }
+
+  &.active {
+    background: rgba(74, 144, 226, 0.3);
+    color: #ffffff;
+    font-weight: 600;
+
+    &:hover {
+      background: rgba(74, 144, 226, 0.4);
+    }
+  }
+}
+
+.accordion-icon {
+  margin-left: auto;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+
+  i {
+    font-size: 13px;
+  }
+}
+
+.subchapter-list {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+
+  li {
+    padding: 0;
+    margin: 0;
+  }
+}

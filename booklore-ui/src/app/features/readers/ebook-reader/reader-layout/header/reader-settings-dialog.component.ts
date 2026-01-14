@@ -63,6 +63,7 @@ export class ReaderSettingsDialogComponent implements OnInit {
       maxBlockSize: this.state.maxBlockSize,
       fontFamily: this.state.fontFamily,
       isDark: this.state.isDark,
+      flow: this.state.flow,
     };
     this.bookService.updateViewerSetting({ebookSettings: setting}, this.bookId).subscribe();
   }
@@ -145,6 +146,12 @@ export class ReaderSettingsDialogComponent implements OnInit {
 
   onThemeChange(themeName: string) {
     this.stateService.setThemeByName(themeName);
+    this.syncSettingsToBackend();
+  }
+
+  setFlow(flow: 'paginated' | 'scrolled') {
+    this.stateService.setFlow(flow);
+    this.viewManager.getRenderer()?.setAttribute?.('flow', flow);
     this.syncSettingsToBackend();
   }
 }

@@ -10,7 +10,7 @@
   justify-content: space-between;
   font-size: 14px;
   z-index: 1000;
-  background: inherit; // Use the same color as the BG
+  background: inherit;
   border-bottom: 1px solid rgba(0,0,0,0.13);
   box-shadow: 0 2px 8px 0 rgba(0,0,0,0.13);
   opacity: 0;
@@ -56,7 +56,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-height: 1.2em; // Maintain height even when empty
+    min-height: 1.2em;
   }
 }
 
@@ -193,5 +193,40 @@
 
   &.active .slider {
     transform: translateX(20px);
+  }
+}
+
+.flow-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  .flow-toggle {
+    display: flex;
+    gap: 6px;
+
+    button {
+      padding: 4px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 5px;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.13s, color 0.13s, border-color 0.13s;
+
+      &.active {
+        background: #4a9eff;
+        color: #fff;
+        border-color: #4a9eff;
+      }
+
+      &:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.08);
+        color: #fff;
+        border-color: rgba(255, 255, 255, 0.28);
+      }
+    }
   }
 }
