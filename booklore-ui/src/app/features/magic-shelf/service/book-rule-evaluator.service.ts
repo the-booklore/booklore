@@ -79,7 +79,7 @@ export class BookRuleEvaluatorService {
     switch (rule.operator) {
       case 'equals':
         if (Array.isArray(value)) {
-          return value.some(v => ruleList.includes(v));
+          return value.some(v => ruleList.includes(String(v).toLowerCase()));
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() === ruleVal.getTime();
@@ -88,7 +88,7 @@ export class BookRuleEvaluatorService {
 
       case 'not_equals':
         if (Array.isArray(value)) {
-          return value.every(v => !ruleList.includes(v));
+          return value.every(v => !ruleList.includes(String(v).toLowerCase()));
         }
         if (value instanceof Date && ruleVal instanceof Date) {
           return value.getTime() !== ruleVal.getTime();
