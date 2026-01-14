@@ -106,7 +106,9 @@ export class SideBarFilter implements BookFilter {
               case 'fileSize':
                 return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range));
               case 'library':
-                return filterValues.some(val => val == book.libraryId);
+                return mode === 'or'
+                  ? filterValues.some(val => val == book.libraryId)
+                  : filterValues.every(val => val == book.libraryId);
               case 'shelf':
                 return mode === 'or'
                   ? filterValues.some(val => book.shelves?.some(s => s.id == val))
