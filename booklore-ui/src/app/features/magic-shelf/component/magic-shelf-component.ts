@@ -20,6 +20,8 @@ import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
 import {BookService} from '../../book/service/book.service';
+import {ShelfService} from '../../book/service/shelf.service';
+import {Shelf} from '../../book/model/shelf.model';
 
 export type RuleOperator =
   | 'equals'
@@ -41,6 +43,7 @@ export type RuleOperator =
 
 export type RuleField =
   | 'library'
+  | 'shelf'
   | 'title'
   | 'subtitle'
   | 'authors'
@@ -116,6 +119,7 @@ export type GroupFormGroup = FormGroup<{
 
 const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   library: {label: 'Library'},
+  shelf: {label: 'Shelf'},
   readStatus: {label: 'Read Status'},
   dateFinished: {label: 'Date Finished', type: 'date'},
   lastReadTime: {label: 'Last Read Time', type: 'date'},
@@ -203,6 +207,8 @@ export class MagicShelfComponent implements OnInit {
 
   libraries: Library[] = [];
   libraryOptions: { label: string; value: number }[] = [];
+  shelves: Shelf[] = [];
+  shelfOptions: { label: string; value: number }[] = [];
   categoryOptions: { label: string; value: string }[] = [];
 
   form = new FormGroup({
@@ -217,6 +223,7 @@ export class MagicShelfComponent implements OnInit {
   editMode!: boolean;
 
   libraryService = inject(LibraryService);
+  shelfService = inject(ShelfService);
   bookService = inject(BookService);
   magicShelfService = inject(MagicShelfService);
   ref = inject(DynamicDialogRef);
@@ -285,6 +292,12 @@ export class MagicShelfComponent implements OnInit {
     this.libraryOptions = this.libraries.map(lib => ({
       label: lib.name,
       value: lib.id!
+    }));
+
+    this.shelves = this.shelfService.getShelvesFromState();
+    this.shelfOptions = this.shelves.map(shelf => ({
+      label: shelf.name,
+      value: shelf.id!
     }));
   }
 
@@ -355,14 +368,14 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);

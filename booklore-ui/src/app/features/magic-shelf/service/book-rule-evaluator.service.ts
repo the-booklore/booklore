@@ -51,6 +51,8 @@ export class BookRuleEvaluatorService {
           return [String(this.getFileExtension(book.fileName) ?? '').toLowerCase()];
         case 'library':
           return [String(book.libraryId)];
+        case 'shelf':
+          return (book.shelves ?? []).map(s => String(s.id));
         case 'language':
           return [String(book.metadata?.language ?? '').toLowerCase()];
         case 'title':
@@ -196,6 +198,8 @@ export class BookRuleEvaluatorService {
     switch (field) {
       case 'library':
         return book.libraryId;
+      case 'shelf':
+        return (book.shelves ?? []).map(s => s.id);
       case 'readStatus':
         return book.readStatus ?? 'UNSET';
       case 'fileType':
