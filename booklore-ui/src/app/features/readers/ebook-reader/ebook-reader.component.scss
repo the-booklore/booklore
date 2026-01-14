@@ -98,9 +98,9 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
-  z-index: 5;
-  pointer-events: auto;
+  height: 60px;
+  z-index: 999;
+  pointer-events: none;
   background: transparent;
 }
 
@@ -109,8 +109,34 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 80px;
-  z-index: 5;
-  pointer-events: auto;
+  height: 60px;
+  z-index: 999;
+  pointer-events: none;
   background: transparent;
+}
+
+foliate-view::part(head) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  font-family: inherit;
+  min-height: 32px;
+  box-sizing: border-box;
+}
+
+foliate-view::part(foot) {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+  border-top: 1px solid var(--border-color, #e0e0e0);
+  font-family: inherit;
+  min-height: 32px;
+  box-sizing: border-box;
 }

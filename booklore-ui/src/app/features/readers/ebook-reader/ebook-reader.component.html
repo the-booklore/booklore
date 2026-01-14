@@ -1,7 +1,6 @@
 <div
   class="reader"
-  [style.background-color]="stateService.currentState.theme.bg ?? ''"
-  (mousemove)="onMouseMove($event)">
+  [style.background-color]="stateService.currentState.theme.bg ?? ''">
 
   @if (isLoading) {
     <div class="loader-overlay">
@@ -33,8 +32,8 @@
     (decreaseLineHeight)="onDecreaseLineHeight()"
   ></app-reader-header>
 
-  <div class="header-detection-zone" (mouseenter)="onHeaderZoneEnter()"></div>
-  <div class="footer-detection-zone" (mouseenter)="onFooterZoneEnter()"></div>
+  <div class="header-detection-zone"></div>
+  <div class="footer-detection-zone"></div>
 
   <div class="reader-content" style="position: relative;">
     @if (isCurrentCfiBookmarked) {

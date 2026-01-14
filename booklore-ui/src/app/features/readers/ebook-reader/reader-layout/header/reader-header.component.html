@@ -2,9 +2,7 @@
   class="reader-header"
   [style.color]="currentTheme?.fg ?? ''"
   [style.background]="currentTheme?.bg ?? ''"
-  [class.visible]="headerVisible"
-  (mouseenter)="onHeaderMouseEnter()"
-  (mouseleave)="onHeaderMouseLeave()">
+  [class.visible]="headerVisible">
   <button class="icon-btn" (click)="showChapters.emit()" title="Chapters">
     <i class="pi pi-bars" aria-label="Chapters"></i>
   </button>

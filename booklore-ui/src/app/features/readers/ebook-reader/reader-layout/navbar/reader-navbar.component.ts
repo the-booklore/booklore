@@ -38,24 +38,7 @@ export class ReaderNavbarComponent {
   @Output() progressChange = new EventEmitter<number>();
 
   private managerService = inject(ReaderViewManagerService);
-  private _navbarVisible = false;
-  private isNavbarHovered = false;
   showLocationPopover = false;
-
-  @HostListener('document:mousemove', ['$event'])
-  onDocumentMouseMove(event: MouseEvent) {
-    const windowHeight = window.innerHeight;
-    if (this.showLocationPopover) {
-      this._navbarVisible = true;
-      return;
-    }
-    if (event.clientY >= windowHeight - 60) {
-      this._navbarVisible = true;
-    } else if (!this.isNavbarHovered) {
-      this._navbarVisible = false;
-      this.showLocationPopover = false;
-    }
-  }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
@@ -63,10 +46,6 @@ export class ReaderNavbarComponent {
     const clickedInside = target.closest('.location-popover') || target.closest('.location-btn');
     if (!clickedInside && this.showLocationPopover) {
       this.showLocationPopover = false;
-      const windowHeight = window.innerHeight;
-      if (event.clientY < windowHeight - 60 && !this.isNavbarHovered) {
-        this._navbarVisible = false;
-      }
     }
   }
 
@@ -75,24 +54,8 @@ export class ReaderNavbarComponent {
     setTimeout(() => {
       if (this.showLocationPopover) {
         this.showLocationPopover = false;
-        if (!this.isNavbarHovered) {
-          this._navbarVisible = false;
-        }
       }
     }, 200);
-  }
-
-  onNavbarMouseEnter() {
-    this.isNavbarHovered = true;
-    this._navbarVisible = true;
-  }
-
-  onNavbarMouseLeave() {
-    this.isNavbarHovered = false;
-    if (!this.showLocationPopover) {
-      this._navbarVisible = false;
-      this.showLocationPopover = false;
-    }
   }
 
   toggleLocationPopover() {
@@ -136,7 +99,7 @@ export class ReaderNavbarComponent {
   }
 
   get navbarVisible(): boolean {
-    return this.forceVisible || this._navbarVisible;
+    return this.forceVisible;
   }
 
   onProgressChange(event: Event) {

@@ -26,22 +26,7 @@ export class ReaderHeaderComponent {
   @Output() decreaseLineHeight = new EventEmitter<void>();
   @Output() setFlow = new EventEmitter<'paginated' | 'scrolled'>();
 
-  private _headerVisible = false;
   dropdownVisible = false;
-  private isHeaderHovered = false;
-
-  @HostListener('document:mousemove', ['$event'])
-  onDocumentMouseMove(event: MouseEvent) {
-    if (this.dropdownVisible) {
-      this._headerVisible = true;
-      return;
-    }
-    if (event.clientY <= 40) {
-      this._headerVisible = true;
-    } else if (!this.isHeaderHovered) {
-      this._headerVisible = false;
-    }
-  }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
@@ -49,9 +34,6 @@ export class ReaderHeaderComponent {
     const clickedInside = target.closest('.dropdown-container');
     if (!clickedInside && this.dropdownVisible) {
       this.dropdownVisible = false;
-      if (event.clientY > 40 && !this.isHeaderHovered) {
-        this._headerVisible = false;
-      }
     }
   }
 
@@ -60,23 +42,8 @@ export class ReaderHeaderComponent {
     setTimeout(() => {
       if (this.dropdownVisible) {
         this.dropdownVisible = false;
-        if (!this.isHeaderHovered) {
-          this._headerVisible = false;
-        }
       }
     }, 200);
-  }
-
-  onHeaderMouseEnter() {
-    this.isHeaderHovered = true;
-    this._headerVisible = true;
-  }
-
-  onHeaderMouseLeave() {
-    this.isHeaderHovered = false;
-    if (!this.dropdownVisible) {
-      this._headerVisible = false;
-    }
   }
 
   toggleDropdown() {
@@ -90,6 +57,6 @@ export class ReaderHeaderComponent {
   }
 
   get headerVisible(): boolean {
-    return this.forceVisible || this._headerVisible;
+    return this.forceVisible;
   }
 }

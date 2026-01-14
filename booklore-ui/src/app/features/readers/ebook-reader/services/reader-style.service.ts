@@ -170,9 +170,8 @@ export class ReaderStyleService {
   }
 
   applyStylesToRenderer(renderer: any, state: ReaderState): void {
-    if (!renderer) {
-      return;
-    }
+    if (!renderer) return;
+
     renderer.setAttribute('max-column-count', state.maxColumnCount);
     renderer.setAttribute('gap', `${state.gap * 100}%`);
     renderer.setAttribute('max-inline-size', `${state.maxInlineSize}px`);
@@ -180,6 +179,12 @@ export class ReaderStyleService {
     if (typeof renderer.setStyles === 'function') {
       const css = this.generateCSS(state);
       renderer.setStyles(css);
+    }
+
+    if (state.flow === 'paginated') {
+      renderer.setAttribute('margin', '40px');
+    } else {
+      renderer.removeAttribute('margin');
     }
   }
 }

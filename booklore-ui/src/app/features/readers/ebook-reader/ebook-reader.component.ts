@@ -20,6 +20,7 @@ import {ReaderSettingsDialogComponent} from './reader-layout/header/reader-setti
 import {ReaderBookMetadataDialogComponent} from './reader-layout/sidebar/reader-book-metadata-dialog.component';
 import {ReadingSessionService} from '../../../shared/service/reading-session.service';
 import {TocItem} from 'epubjs';
+import {PageInfo, ThemeInfo} from './utils/reader-header-footer.util';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -65,8 +66,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private _fileUrl: string | null = null;
   private currentCfi: string | null = null;
 
-  private headerHideTimer: any = null;
-  private navbarHideTimer: any = null;
+  private isHeaderNavbarPinned = false;
 
   isLoading = true;
   showControls = false;
@@ -83,6 +83,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   currentChapterName: string | null = null;
   currentChapterHref: string | null = null;
   currentProgressData: any = null;
+  private currentPageInfo: PageInfo | undefined;
 
   ngOnInit() {
     this.isLoading = true;
@@ -123,13 +124,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     if (this._fileUrl) {
       URL.revokeObjectURL(this._fileUrl);
       this._fileUrl = null;
-    }
-
-    if (this.headerHideTimer) {
-      clearTimeout(this.headerHideTimer);
-    }
-    if (this.navbarHideTimer) {
-      clearTimeout(this.navbarHideTimer);
     }
   }
 
@@ -210,7 +204,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
             this.handleRelocateEvent(event.detail);
             break;
           case 'middle-single-tap':
-            this.toggleHeaderAndNavbar();
+            this.toggleHeaderNavbarPinned();
             break;
         }
       });
@@ -220,7 +214,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.currentProgressData = detail;
 
     const cfi = detail?.cfi ?? null;
-    const href = detail?.tocItem?.href ?? detail?.pageItem?.href ?? null;
+    const href = detail?.pageItem?.href ?? detail?.tocItem?.href ?? null;
     const percentage = typeof detail?.fraction === 'number' ? detail.fraction * 100 : null;
 
     if (!this.hasStartedSession && cfi && percentage !== null) {
@@ -240,6 +234,46 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
     if (href && href !== this.currentChapterHref) {
       this.currentChapterHref = href;
+    }
+
+    if (detail?.section && detail?.fraction !== undefined) {
+      const totalPages = detail?.section?.size ?? 100;
+      const currentPage = Math.floor(detail.fraction * totalPages) + 1;
+      const remaining = Math.max(0, totalPages - currentPage);
+      const progressPercent = Math.round(detail.fraction * 100);
+
+      this.currentPageInfo = {
+        current: currentPage,
+        total: totalPages,
+        remaining: remaining,
+        progressPercent: progressPercent
+      };
+    }
+
+    if (this.stateService.currentState.flow === 'paginated') {
+      setTimeout(() => {
+        const renderer = this.viewManager.getRenderer();
+        const theme: ThemeInfo = {
+          fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
+          bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
+        };
+
+        if (renderer && renderer.heads && renderer.feet) {
+          this.viewManager.updateHeadersAndFooters(
+            this.currentChapterName || '',
+            this.currentPageInfo,
+            theme
+          );
+        } else {
+          setTimeout(() => {
+            this.viewManager.updateHeadersAndFooters(
+              this.currentChapterName || '',
+              this.currentPageInfo,
+              theme
+            );
+          }, 200);
+        }
+      }, 100);
     }
 
     if (cfi) {
@@ -361,84 +395,38 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   onSetFlow(flow: 'paginated' | 'scrolled'): void {
     this.stateService.setFlow(flow);
     this.syncSettingsToBackend();
-  }
 
-  onMouseMove(event: MouseEvent): void {
-    const threshold = 100;
-    const windowHeight = window.innerHeight;
+    if (flow === 'paginated' && this.currentChapterName) {
+      setTimeout(() => {
+        const renderer = this.viewManager.getRenderer();
 
-    if (event.clientY < threshold) {
-      this.showHeaderTemporarily();
+        if (renderer && renderer.heads && renderer.feet) {
+          const theme: ThemeInfo = {
+            fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
+            bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
+          };
+
+          this.viewManager.updateHeadersAndFooters(
+            this.currentChapterName || '',
+            this.currentPageInfo,
+            theme
+          );
+        }
+      }, 300);
     }
-
-    if (event.clientY > windowHeight - threshold) {
-      this.showNavbarTemporarily();
-    }
   }
 
-  onHeaderZoneEnter(): void {
-    this.showHeaderTemporarily();
+  private updateHeaderVisibility(): void {
+    this.forceHeaderVisible = this.isHeaderNavbarPinned;
   }
 
-  onFooterZoneEnter(): void {
-    this.showNavbarTemporarily();
+  private updateNavbarVisibility(): void {
+    this.forceNavbarVisible = this.isHeaderNavbarPinned;
   }
 
-  private showHeaderTemporarily(): void {
-    this.forceHeaderVisible = true;
-
-    if (this.headerHideTimer) {
-      clearTimeout(this.headerHideTimer);
-    }
-
-    this.headerHideTimer = setTimeout(() => {
-      this.forceHeaderVisible = false;
-    }, 3000);
-  }
-
-  private showNavbarTemporarily(): void {
-    this.forceNavbarVisible = true;
-
-    if (this.navbarHideTimer) {
-      clearTimeout(this.navbarHideTimer);
-    }
-
-    this.navbarHideTimer = setTimeout(() => {
-      this.forceNavbarVisible = false;
-    }, 3000);
-  }
-
-  private toggleHeaderAndNavbar(): void {
-    const shouldShow = !this.forceHeaderVisible || !this.forceNavbarVisible;
-
-    if (shouldShow) {
-      this.forceHeaderVisible = true;
-      this.forceNavbarVisible = true;
-
-      if (this.headerHideTimer) {
-        clearTimeout(this.headerHideTimer);
-      }
-      if (this.navbarHideTimer) {
-        clearTimeout(this.navbarHideTimer);
-      }
-
-      this.headerHideTimer = setTimeout(() => {
-        this.forceHeaderVisible = false;
-      }, 3000);
-
-      this.navbarHideTimer = setTimeout(() => {
-        this.forceNavbarVisible = false;
-      }, 3000);
-    } else {
-      this.forceHeaderVisible = false;
-      this.forceNavbarVisible = false;
-
-      if (this.headerHideTimer) {
-        clearTimeout(this.headerHideTimer);
-      }
-      if (this.navbarHideTimer) {
-        clearTimeout(this.navbarHideTimer);
-      }
-    }
+  private toggleHeaderNavbarPinned(): void {
+    this.isHeaderNavbarPinned = !this.isHeaderNavbarPinned;
+    this.updateHeaderVisibility();
+    this.updateNavbarVisibility();
   }
 }

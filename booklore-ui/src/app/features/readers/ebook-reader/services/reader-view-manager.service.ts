@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {defer, from, Observable, of, Subject, throwError, timer} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
+import {ReaderHeaderFooterUtil, PageInfo, ThemeInfo} from '../utils/reader-header-footer.util';
 
 export interface ViewEvent {
   type: 'load' | 'relocate' | 'error' | 'middle-single-tap';
@@ -124,6 +125,15 @@ export class ReaderViewManagerService {
 
   getRenderer(): any {
     return this.view?.renderer;
+  }
+
+  updateHeadersAndFooters(
+    chapterName: string,
+    pageInfo?: PageInfo,
+    theme?: ThemeInfo
+  ): void {
+    const renderer = this.getRenderer();
+    ReaderHeaderFooterUtil.updateHeadersAndFooters(renderer, chapterName, pageInfo, theme);
   }
 
   getChapters(): TocItem[] {
@@ -273,7 +283,6 @@ export class ReaderViewManagerService {
       this.lastClickZone = currentZone;
 
       if (currentZone !== 'middle') {
-        console.log(`Double-click detected in ${currentZone} zone`);
       }
       return;
     }
@@ -290,7 +299,6 @@ export class ReaderViewManagerService {
 
   private processIframeClick(data: any): void {
     if (!this.longHoldTimeout) {
-      console.log('Long hold detected, skipping navigation');
       return;
     }
 
@@ -305,21 +313,15 @@ export class ReaderViewManagerService {
     const leftThreshold = width * this.LEFT_ZONE_PERCENT;
     const rightThreshold = width * this.RIGHT_ZONE_PERCENT;
 
-    console.log(`Iframe click at x=${x}, width=${width}, left=${leftThreshold}, right=${rightThreshold}, raw clientX=${data.clientX}, viewRect.left=${viewRect.left}`);
-    console.log(`Debug info: iframeLeft=${data.iframeLeft}, iframeWidth=${data.iframeWidth}, eventClientX=${data.eventClientX}`);
-
     if (x < leftThreshold) {
-      console.log('Left zone - going to previous page');
       this.isNavigating = true;
       this.prev();
       setTimeout(() => this.isNavigating = false, 300);
     } else if (x > rightThreshold) {
-      console.log('Right zone - going to next page');
       this.isNavigating = true;
       this.next();
       setTimeout(() => this.isNavigating = false, 300);
     } else {
-      console.log('Middle zone - single tap detected');
       this.eventSubject.next({type: 'middle-single-tap'});
     }
   }
