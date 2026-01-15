@@ -9,7 +9,7 @@
   <button class="icon-btn" (click)="createBookmark.emit()" title="Create Bookmark">
     <i class="pi pi-bookmark" aria-label="Create Bookmark"></i>
   </button>
-  <span class="chapter-title">{{ currentChapterName || '' }}</span>
+  <span class="chapter-title">{{ bookTitle || '' }}</span>
   <div class="dropdown-container">
     <button class="icon-btn" (click)="toggleDropdown()" title="Quick Settings">
       <i class="pi pi-ellipsis-v" aria-label="Quick Settings"></i>

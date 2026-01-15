@@ -12,7 +12,7 @@
   }
 
   <app-reader-header
-    [currentChapterName]="currentChapterName"
+    [bookTitle]="book?.metadata?.title!"
     [currentTheme]="stateService.currentState.theme"
     [isDark]="stateService.currentState.isDark"
     [fontSize]="stateService.currentState.fontSize"

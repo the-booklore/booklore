@@ -7,7 +7,7 @@ import {Component, EventEmitter, HostListener, Input, Output} from '@angular/cor
   styleUrls: ['./reader-header.component.scss']
 })
 export class ReaderHeaderComponent {
-  @Input() currentChapterName: string | null = null;
+  @Input() bookTitle: string | null = null;
   @Input() currentTheme: any = null;
   @Input() isDark = false;
   @Input() fontSize = 16;
