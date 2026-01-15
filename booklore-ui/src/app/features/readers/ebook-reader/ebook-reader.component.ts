@@ -1,4 +1,4 @@
-import {Component, CUSTOM_ELEMENTS_SCHEMA, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule, Location} from '@angular/common';
 import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
 import {catchError, switchMap, takeUntil, tap} from 'rxjs/operators';
@@ -67,6 +67,12 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private currentCfi: string | null = null;
 
   private isHeaderNavbarPinned = false;
+  private mouseY = 0;
+  private hideHeaderTimeout: any;
+  private hideNavbarTimeout: any;
+  private readonly HEADER_HEIGHT = 36;
+  private readonly NAVBAR_HEIGHT = 36;
+  private readonly TRIGGER_ZONE = 20;
 
   isLoading = true;
   showControls = false;
@@ -99,7 +105,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         this.isLoading = false;
       }),
       catchError(err => {
-        console.error(err);
         this.isLoading = false;
         return of(null);
       }),
@@ -125,6 +130,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(this._fileUrl);
       this._fileUrl = null;
     }
+    if (this.hideHeaderTimeout) clearTimeout(this.hideHeaderTimeout);
+    if (this.hideNavbarTimeout) clearTimeout(this.hideNavbarTimeout);
   }
 
   private initializeFoliate(): Observable<void> {
@@ -216,7 +223,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   }
 
   private handleRelocateEvent(detail: any): void {
-    console.log('relocate event', detail);
     this.currentProgressData = detail;
 
     const cfi = detail?.cfi ?? null;
@@ -404,17 +410,42 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateHeaderVisibility(): void {
-    this.forceHeaderVisible = this.isHeaderNavbarPinned;
-  }
+  private updateHeaderNavbarVisibility(): void {
+    const windowHeight = window.innerHeight;
 
-  private updateNavbarVisibility(): void {
-    this.forceNavbarVisible = this.isHeaderNavbarPinned;
+    if (this.hideHeaderTimeout) clearTimeout(this.hideHeaderTimeout);
+    if (this.hideNavbarTimeout) clearTimeout(this.hideNavbarTimeout);
+
+    if (
+      this.mouseY <= this.TRIGGER_ZONE ||
+      (this.mouseY <= this.HEADER_HEIGHT && this.forceHeaderVisible) ||
+      this.isHeaderNavbarPinned
+    ) {
+      this.forceHeaderVisible = true;
+    } else if (this.mouseY > this.HEADER_HEIGHT) {
+      this.forceHeaderVisible = this.isHeaderNavbarPinned;
+    }
+
+    const navbarTop = windowHeight - this.NAVBAR_HEIGHT;
+    if (
+      this.mouseY >= windowHeight - this.TRIGGER_ZONE ||
+      (this.mouseY >= navbarTop && this.forceNavbarVisible) ||
+      this.isHeaderNavbarPinned
+    ) {
+      this.forceNavbarVisible = true;
+    } else if (this.mouseY < navbarTop) {
+      this.forceNavbarVisible = this.isHeaderNavbarPinned;
+    }
   }
 
   private toggleHeaderNavbarPinned(): void {
     this.isHeaderNavbarPinned = !this.isHeaderNavbarPinned;
-    this.updateHeaderVisibility();
-    this.updateNavbarVisibility();
+    this.updateHeaderNavbarVisibility();
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onMouseMove(event: MouseEvent): void {
+    this.mouseY = event.clientY;
+    this.updateHeaderNavbarVisibility();
   }
 }

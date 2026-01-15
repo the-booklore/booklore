@@ -93,28 +93,6 @@
   }
 }
 
-.header-detection-zone {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  z-index: 999;
-  pointer-events: none;
-  background: transparent;
-}
-
-.footer-detection-zone {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  z-index: 999;
-  pointer-events: none;
-  background: transparent;
-}
-
 foliate-view::part(head) {
   display: flex;
   justify-content: space-between;

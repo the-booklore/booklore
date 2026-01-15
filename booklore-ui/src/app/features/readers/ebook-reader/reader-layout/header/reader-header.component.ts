@@ -1,4 +1,4 @@
-import {Component, EventEmitter, HostListener, Input, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 
 @Component({
   selector: 'app-reader-header',
@@ -25,36 +25,6 @@ export class ReaderHeaderComponent {
   @Output() increaseLineHeight = new EventEmitter<void>();
   @Output() decreaseLineHeight = new EventEmitter<void>();
   @Output() setFlow = new EventEmitter<'paginated' | 'scrolled'>();
-
-  dropdownVisible = false;
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    const clickedInside = target.closest('.dropdown-container');
-    if (!clickedInside && this.dropdownVisible) {
-      this.dropdownVisible = false;
-    }
-  }
-
-  @HostListener('window:blur')
-  onWindowBlur() {
-    setTimeout(() => {
-      if (this.dropdownVisible) {
-        this.dropdownVisible = false;
-      }
-    }, 200);
-  }
-
-  toggleDropdown() {
-    this.dropdownVisible = !this.dropdownVisible;
-  }
-
-  onSetFlow(flow: 'paginated' | 'scrolled') {
-    if (this.flow !== flow) {
-      this.setFlow.emit(flow);
-    }
-  }
 
   get headerVisible(): boolean {
     return this.forceVisible;

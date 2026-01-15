@@ -288,6 +288,12 @@
   margin-bottom: 16px;
 }
 
+@media (max-width: 768px) {
+  .theme-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
 .theme-option {
   cursor: pointer;
 

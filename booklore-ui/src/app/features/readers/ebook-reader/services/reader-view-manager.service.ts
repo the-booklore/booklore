@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {defer, from, Observable, of, Subject, throwError, timer} from 'rxjs';
 import {catchError, map, switchMap} from 'rxjs/operators';
-import {ReaderHeaderFooterUtil, PageInfo, ThemeInfo} from '../utils/reader-header-footer.util';
+import {PageInfo, ReaderHeaderFooterUtil, ThemeInfo} from '../utils/reader-header-footer.util';
 
 export interface ViewEvent {
   type: 'load' | 'relocate' | 'error' | 'middle-single-tap';

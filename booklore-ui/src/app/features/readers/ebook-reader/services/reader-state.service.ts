@@ -28,7 +28,7 @@ export class ReaderStateService {
   private epubCustomFontService = inject(EpubCustomFontService);
 
   private readonly BASE_FONTS = [
-    {name: 'Publisher Default', value: null},
+    {name: 'Publisher\'s', value: null},
     {name: 'Serif', value: 'serif'},
     {name: 'Sans-Serif', value: 'sans-serif'},
     {name: 'Monospace', value: 'monospace'},
