@@ -34,12 +34,8 @@ export class ReaderHeaderFooterUtil {
 
     renderer.heads.forEach((headElement: HTMLElement, index: number) => {
       if (headElement) {
-        const headerContent = this.createHeaderContent(
-          chapterName,
-          isSingleColumn,
-          index,
-          headerStyle
-        );
+        headElement.style.visibility = 'visible';
+        const headerContent = this.createHeaderContent(chapterName, isSingleColumn, index, headerStyle);
         headElement.replaceChildren(headerContent);
       }
     });
@@ -54,13 +50,7 @@ export class ReaderHeaderFooterUtil {
 
     renderer.feet.forEach((footElement: HTMLElement, index: number) => {
       if (footElement) {
-        const footerContent = this.createFooterContent(
-          pageInfo,
-          isSingleColumn,
-          index,
-          renderer.feet.length,
-          footerStyle
-        );
+        const footerContent = this.createFooterContent(pageInfo, isSingleColumn, index, renderer.feet.length, footerStyle);
         footElement.replaceChildren(footerContent);
       }
     });
@@ -83,6 +73,7 @@ export class ReaderHeaderFooterUtil {
       const chapterSpan = document.createElement('span');
       chapterSpan.textContent = chapterName || '';
       chapterSpan.style.textAlign = 'right';
+      headerContent.style.justifyContent = 'left';
 
       headerContent.appendChild(spacer);
       headerContent.appendChild(chapterSpan);
@@ -136,4 +127,3 @@ export class ReaderHeaderFooterUtil {
     return footerContent;
   }
 }
-

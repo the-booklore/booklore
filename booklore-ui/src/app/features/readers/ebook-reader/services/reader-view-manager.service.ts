@@ -127,11 +127,7 @@ export class ReaderViewManagerService {
     return this.view?.renderer;
   }
 
-  updateHeadersAndFooters(
-    chapterName: string,
-    pageInfo?: PageInfo,
-    theme?: ThemeInfo
-  ): void {
+  updateHeadersAndFooters(chapterName: string, pageInfo?: PageInfo, theme?: ThemeInfo): void {
     const renderer = this.getRenderer();
     ReaderHeaderFooterUtil.updateHeadersAndFooters(renderer, chapterName, pageInfo, theme);
   }

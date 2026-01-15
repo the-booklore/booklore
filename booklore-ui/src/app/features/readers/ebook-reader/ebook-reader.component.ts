@@ -191,6 +191,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       .subscribe(() => this.applyStyles());
   }
 
+  private relocateTimeout: any = null;
+
   private subscribeToViewEvents(): void {
     this.viewManager.events$
       .pipe(takeUntil(this.destroy$))
@@ -201,7 +203,10 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
             this.chapters = this.viewManager.getChapters();
             break;
           case 'relocate':
-            this.handleRelocateEvent(event.detail);
+            if (this.relocateTimeout) clearTimeout(this.relocateTimeout);
+            this.relocateTimeout = setTimeout(() => {
+              this.handleRelocateEvent(event.detail);
+            }, 100);
             break;
           case 'middle-single-tap':
             this.toggleHeaderNavbarPinned();
@@ -211,6 +216,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   }
 
   private handleRelocateEvent(detail: any): void {
+    console.log('relocate event', detail);
     this.currentProgressData = detail;
 
     const cfi = detail?.cfi ?? null;
@@ -251,29 +257,17 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     }
 
     if (this.stateService.currentState.flow === 'paginated') {
-      setTimeout(() => {
-        const renderer = this.viewManager.getRenderer();
-        const theme: ThemeInfo = {
-          fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
-          bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
-        };
+      const renderer = this.viewManager.getRenderer();
+      const theme: ThemeInfo = {
+        fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
+        bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
+      };
 
-        if (renderer && renderer.heads && renderer.feet) {
-          this.viewManager.updateHeadersAndFooters(
-            this.currentChapterName || '',
-            this.currentPageInfo,
-            theme
-          );
-        } else {
-          setTimeout(() => {
-            this.viewManager.updateHeadersAndFooters(
-              this.currentChapterName || '',
-              this.currentPageInfo,
-              theme
-            );
-          }, 200);
-        }
-      }, 100);
+      if (renderer && renderer.heads && renderer.feet) {
+        this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
+      } else {
+        this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
+      }
     }
 
     if (cfi) {
@@ -399,20 +393,14 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     if (flow === 'paginated' && this.currentChapterName) {
       setTimeout(() => {
         const renderer = this.viewManager.getRenderer();
-
         if (renderer && renderer.heads && renderer.feet) {
           const theme: ThemeInfo = {
             fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
             bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
           };
-
-          this.viewManager.updateHeadersAndFooters(
-            this.currentChapterName || '',
-            this.currentPageInfo,
-            theme
-          );
+          this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
         }
-      }, 300);
+      }, 50);
     }
   }
 
