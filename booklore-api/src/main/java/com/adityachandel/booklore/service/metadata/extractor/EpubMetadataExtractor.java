@@ -83,7 +83,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private static final Map<String, BiConsumer<BookMetadata.BookMetadataBuilder, String>> CALIBRE_FIELD_MAPPINGS = Map.ofEntries(
         Map.entry("#subtitle", BookMetadata.BookMetadataBuilder::subtitle),
-        Map.entry("#page_count", (builder, value) -> safeParseInt(value, builder::pageCount)),
+        Map.entry("#pagecount", (builder, value) -> safeParseInt(value, builder::pageCount)),
         Map.entry("#series_total", (builder, value) -> safeParseInt(value, builder::seriesTotal)),
         Map.entry("#amazon_rating", (builder, value) -> safeParseDouble(value, builder::amazonRating)),
         Map.entry("#amazon_review_count", (builder, value) -> safeParseInt(value, builder::amazonReviewCount)),
