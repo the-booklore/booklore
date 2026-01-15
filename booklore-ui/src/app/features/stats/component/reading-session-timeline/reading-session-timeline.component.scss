@@ -1,5 +1,6 @@
 .timeline-container {
   width: 100%;
+  overflow: visible;
 }
 
 .timeline-header {
@@ -153,6 +154,7 @@
   position: relative;
   width: 100%;
   padding: 1rem;
+  overflow: visible;
 }
 
 .hour-markers {
@@ -197,11 +199,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  overflow: visible;
 }
 
 .timeline-row {
   display: flex;
   align-items: stretch;
+  overflow: visible;
 
   .day-label {
     width: 50px;
@@ -221,6 +225,7 @@
     border-radius: 4px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     min-height: 35px;
+    overflow: visible;
   }
 }
 
@@ -244,6 +249,7 @@
   position: absolute;
   inset: 4px;
   pointer-events: none;
+  overflow: visible;
 
   .session-block {
     position: absolute;
@@ -337,13 +343,14 @@
   border-radius: 8px;
   padding: 0;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 9999;
   pointer-events: none;
   min-width: 320px;
   max-width: 350px;
   backdrop-filter: blur(10px);
   opacity: 0;
   transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: normal;
 
   .tooltip-content {
     display: flex;
