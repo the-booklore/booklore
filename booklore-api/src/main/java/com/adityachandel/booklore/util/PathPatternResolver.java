@@ -33,10 +33,12 @@ public class PathPatternResolver {
     private final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\{(.*?)}");
     private final Pattern COMMA_SPACE_PATTERN = Pattern.compile(", ");
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
+    private final Pattern COMBINING_DIACRITICAL_MARKS_PATTERN = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
 
     public String resolvePattern(BookEntity book, String pattern) {
         String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
-        return resolvePattern(book.getMetadata(), pattern, currentFilename);
+        MetadataProvider metadataProvider = MetadataProvider.from(book.getMetadata());
+        return resolvePattern(metadataProvider, pattern, currentFilename);
     }
 
     public String resolvePattern(BookMetadata metadata, String pattern, String filename) {
@@ -49,18 +51,18 @@ public class PathPatternResolver {
         return resolvePattern(metadataProvider, pattern, filename);
     }
 
-    private String resolvePattern(MetadataProvider metadata, String pattern, String filename) {
+    private String resolvePattern(MetadataProvider metadata, String pattern, String currentFilename) {
         if (pattern == null || pattern.isBlank()) {
-            return filename;
+            return currentFilename;
         }
 
         String filenameBase = "Untitled";
-        if (filename != null && !filename.isBlank()) {
-            int lastDot = filename.lastIndexOf('.');
+        if (currentFilename != null && !currentFilename.isBlank()) {
+            int lastDot = currentFilename.lastIndexOf('.');
             if (lastDot > 0) {
-                filenameBase = filename.substring(0, lastDot);
+                filenameBase = currentFilename.substring(0, lastDot);
             } else {
-                filenameBase = filename;
+                filenameBase = currentFilename;
             }
         }
 
@@ -74,6 +76,17 @@ public class PathPatternResolver {
                 metadata != null
                         ? truncateAuthorsForFilesystem(String.join(", ", metadata.getAuthors()))
                         : ""
+        );
+
+        String author = sanitize(
+            metadata != null && metadata.getAuthors() != null && !metadata.getAuthors().isEmpty()
+                ? metadata.getAuthors().get(0)
+                : ""
+        );
+        String authorId = sanitize(
+            metadata != null
+                ? metadata.getFirstAuthorId().map(String::valueOf).orElse("")
+                : ""
         );
         String year = sanitize(
                 metadata != null && metadata.getPublishedDate() != null
@@ -102,18 +115,120 @@ public class PathPatternResolver {
         );
 
         Map<String, String> values = new LinkedHashMap<>();
+        values.put("author", truncatePathComponent(author, MAX_COMPONENT_BYTES));
+        values.put("author_id", authorId);
         values.put("authors", authors);
+        values.put("currentFilename", sanitize(currentFilename));
         values.put("title", truncatePathComponent(title, MAX_COMPONENT_BYTES));
         values.put("subtitle", truncatePathComponent(subtitle, MAX_COMPONENT_BYTES));
+        values.put("title_sortable", truncatePathComponent(normalizeForSorting(title), MAX_COMPONENT_BYTES));
         values.put("year", year);
         values.put("series", truncatePathComponent(series, MAX_COMPONENT_BYTES));
+        values.put("series_sortable", truncatePathComponent(normalizeForSorting(series), MAX_COMPONENT_BYTES));
         values.put("seriesIndex", seriesIndex);
         values.put("language", language);
         values.put("publisher", truncatePathComponent(publisher, MAX_COMPONENT_BYTES));
+        values.put("publisher_sortable", truncatePathComponent(normalizeForSorting(publisher), MAX_COMPONENT_BYTES));
         values.put("isbn", isbn);
-        values.put("currentFilename", filename);
 
-        return resolvePatternWithValues(pattern, values, filename);
+        values.put("author_sortable", truncatePathComponent(normalizeForSorting(author), MAX_COMPONENT_BYTES));
+
+        return resolvePatternWithValues(pattern, values, currentFilename);
+    }
+
+    private String normalizeForSorting(String input) {
+        if (input == null || input.isBlank()) {
+            return "";
+        }
+
+        // TR03-1999 (NISO TR03) key points applied here:
+        // - 3.1: collapse contiguous spaces
+        // - 3.2: hyphen/dash/slash treated as spaces
+        // - 3.3: listed punctuation marks ignored (not treated as spaces)
+        // - 3.4: contiguous symbols treated as a single character
+        // - 3.6.1: modified letters arranged as nearest basic equivalents
+        // - 4.6: initial articles are NOT removed automatically
+        // - 6.3: decimal point is significant for decimal fractions
+
+        String s = input;
+
+        // 3.2: treat hyphen/dash (any length) and slash as space
+        s = s.replaceAll("[-\\u2010\\u2011\\u2012\\u2013\\u2014\\u2212/]", " ");
+
+        StringBuilder out = new StringBuilder(s.length());
+        boolean lastWasSpace = false;
+        boolean lastWasSymbol = false;
+
+        for (int i = 0; i < s.length(); i++) {
+            char ch = s.charAt(i);
+
+            if (Character.isWhitespace(ch)) {
+                if (!lastWasSpace && !out.isEmpty()) {
+                    out.append(' ');
+                }
+                lastWasSpace = true;
+                lastWasSymbol = false;
+                continue;
+            }
+
+            // 3.3: punctuation marks ignored (not treated as spaces)
+            // with 6.3 exception: keep '.' only when it is a decimal point
+            if (isIgnoredPunctuation(ch)) {
+                if (ch == '.') {
+                    boolean nextIsDigit = (i + 1) < s.length() && Character.isDigit(s.charAt(i + 1));
+                    boolean prevIsDigitOrBoundary = (i == 0)
+                            || Character.isDigit(s.charAt(i - 1))
+                            || Character.isWhitespace(s.charAt(i - 1));
+
+                    if (nextIsDigit && prevIsDigitOrBoundary) {
+                        // 6.3: preserve decimal point
+                        out.append('.');
+                        lastWasSpace = false;
+                        lastWasSymbol = false;
+                    }
+                }
+                continue;
+            }
+
+            // 3.4: contiguous symbols treated as single character
+            boolean isLetterOrDigit = Character.isLetterOrDigit(ch);
+            boolean isSymbol = !isLetterOrDigit;
+            if (isSymbol) {
+                if (lastWasSymbol) {
+                    continue;
+                }
+                lastWasSymbol = true;
+            } else {
+                lastWasSymbol = false;
+            }
+
+            out.append(ch);
+            lastWasSpace = false;
+        }
+
+        // 3.6.1: normalize modified letters to nearest basic equivalents
+        String normalized = java.text.Normalizer.normalize(out.toString(), java.text.Normalizer.Form.NFD);
+        normalized = COMBINING_DIACRITICAL_MARKS_PATTERN.matcher(normalized).replaceAll("");
+        normalized = normalized
+                .replace("ø", "o").replace("Ø", "O")
+                .replace("ł", "l").replace("Ł", "L")
+                .replace("æ", "ae").replace("Æ", "AE")
+                .replace("œ", "oe").replace("Œ", "OE")
+                .replace("ß", "ss");
+
+        return sanitize(normalized);
+    }
+
+    private boolean isIgnoredPunctuation(char ch) {
+        return switch (ch) {
+            case '.', ',', ';', ':', '(', ')', '[', ']', '<', '>', '{', '}',
+                 '\'', '"', '!', '?' -> true;
+            // Common Unicode apostrophes/quotes are treated as ignored punctuation too
+            case '\u2018', '\u2019', '\u201A', '\u201B', // single quotes
+                 '\u201C', '\u201D', '\u201E', '\u201F'  // double quotes
+                    -> true;
+            default -> false;
+        };
     }
 
     private String resolvePatternWithValues(String pattern, Map<String, String> values, String currentFilename) {
@@ -169,8 +284,14 @@ public class PathPatternResolver {
                 String replacement = values.get(key);
                 placeholderMatcher.appendReplacement(finalResult, Matcher.quoteReplacement(replacement));
             } else {
-                // Preserve unknown placeholders (e.g., {foo})
-                placeholderMatcher.appendReplacement(finalResult, Matcher.quoteReplacement("{" + key + "}"));
+                // {originalFilename} is intentionally unsupported; replace with empty
+                // to avoid emitting literal braces into filesystem paths.
+                if ("originalFilename".equals(key)) {
+                    placeholderMatcher.appendReplacement(finalResult, "");
+                } else {
+                    // Preserve unknown placeholders (e.g., {foo})
+                    placeholderMatcher.appendReplacement(finalResult, Matcher.quoteReplacement("{" + key + "}"));
+                }
             }
         }
         placeholderMatcher.appendTail(finalResult);
@@ -179,14 +300,13 @@ public class PathPatternResolver {
 
         boolean usedFallbackFilename = false;
         if (result.isBlank()) {
-            result = values.getOrDefault("currentFilename", "untitled");
+            result = currentFilename != null && !currentFilename.isBlank() ? currentFilename : "untitled";
             usedFallbackFilename = true;
         }
 
-        boolean patternIncludesExtension = pattern.contains("{extension}");
-        boolean patternIncludesFullFilename = pattern.contains("{currentFilename}");
-        
-        if (!usedFallbackFilename && !patternIncludesExtension && !patternIncludesFullFilename && !extension.isBlank()) {
+        boolean patternIncludesExtension = pattern.contains("{extension}") || pattern.contains("{currentFilename}");
+
+        if (!usedFallbackFilename && !patternIncludesExtension && !extension.isBlank()) {
             result += "." + extension;
         }
 
@@ -328,6 +448,10 @@ public class PathPatternResolver {
 
         List<String> getAuthors();
 
+        default Optional<Long> getFirstAuthorId() {
+            return Optional.empty();
+        }
+
         Integer getYear();
 
         String getSeriesName();
@@ -439,6 +563,14 @@ public class PathPatternResolver {
                     .map(AuthorEntity::getName)
                     .toList()
                     : Collections.emptyList();
+        }
+
+        @Override
+        public Optional<Long> getFirstAuthorId() {
+            if (metadata.getAuthors() == null) {
+                return Optional.empty();
+            }
+            return metadata.getAuthors().stream().findFirst().map(AuthorEntity::getId);
         }
 
         @Override

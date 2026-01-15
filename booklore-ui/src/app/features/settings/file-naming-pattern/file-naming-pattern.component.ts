@@ -22,14 +22,22 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
 export class FileNamingPatternComponent implements OnInit {
   readonly exampleMetadata: Record<string, string> = {
     title: "The Name of the Wind",
+    title_sortable: "Name of the Wind",
     subtitle: "Special Edition",
+    author: "Patrick Rothfuss",
+    author_id: "123",
     authors: "Patrick Rothfuss",
+    author_sortable: "Patrick Rothfuss",
     year: "2007",
     series: "The Kingkiller Chronicle",
+    series_sortable: "Kingkiller Chronicle",
     seriesIndex: "01",
     language: "English",
     publisher: "DAW Books",
+    publisher_sortable: "DAW Books",
     isbn: "9780756404741",
+    originalFilename: "upload_name.epub",
+    currentFilename: "current_name.epub",
   };
 
   defaultPattern = '';
@@ -78,10 +86,6 @@ export class FileNamingPatternComponent implements OnInit {
 
     if (!path) return '/original_filename.pdf';
     if (path.endsWith('/')) return path + 'original_filename.pdf';
-    if (path.includes('{originalFilename}')) {
-      path = path.replace('{originalFilename}', 'original_filename.pdf');
-      return path.startsWith('/') ? path : `/${path}`;
-    }
     path = this.appendExtensionIfMissing(path);
     return path.startsWith('/') ? path : `/${path}`;
   }
@@ -95,7 +99,7 @@ export class FileNamingPatternComponent implements OnInit {
   }
 
   validatePattern(pattern: string): boolean {
-    const validPatternRegex = /^[\w\s\-{}\[\]\/().<>.,:'"#]*$/;
+    const validPatternRegex = /^[\w\s\-{}[\]/().<>.,:'"#]*$/;
     return validPatternRegex.test(pattern);
   }
 
@@ -104,7 +108,8 @@ export class FileNamingPatternComponent implements OnInit {
     this.defaultErrorMessage = this.validatePattern(pattern) ? '' : 'Pattern contains invalid characters.';
   }
 
-  onLibraryPatternChange(library: Library): void {
+  onLibraryPatternChange(_library: Library): void {
+    void _library;
     // Optionally add per-library validation here
   }
 

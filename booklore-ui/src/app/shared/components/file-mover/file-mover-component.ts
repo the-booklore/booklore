@@ -250,16 +250,25 @@ export class FileMoverComponent implements OnDestroy {
     const extension = fileName.match(/\.[^.]+$/)?.[0] ?? '';
     const pattern = this.getPatternForLibrary(preview.targetLibraryId);
 
+    const firstAuthor = (meta.authors && meta.authors.length > 0) ? meta.authors[0] : 'Unknown Author';
+
     const values: Record<string, string> = {
+      author: this.sanitize(firstAuthor),
+      author_id: '',
       authors: this.sanitize(meta.authors?.join(', ') || 'Unknown Author'),
       title: this.sanitize(meta.title || 'Untitled'),
+      title_sortable: this.normalizeForSorting(meta.title || 'Untitled'),
       year: this.formatYear(meta.publishedDate),
       series: this.sanitize(meta.seriesName || ''),
+      series_sortable: this.normalizeForSorting(meta.seriesName || ''),
       seriesIndex: this.formatSeriesIndex(meta.seriesNumber ?? undefined),
       language: this.sanitize(meta.language || ''),
       publisher: this.sanitize(meta.publisher || ''),
+      publisher_sortable: this.normalizeForSorting(meta.publisher || ''),
       isbn: this.sanitize(meta.isbn13 || meta.isbn10 || ''),
-      currentFilename: this.sanitize(fileName)
+      currentFilename: this.sanitize(fileName),
+      originalFilename: this.sanitize(fileName),
+      author_sortable: this.normalizeForSorting(firstAuthor)
     };
 
     let newPath: string;
@@ -332,6 +341,74 @@ export class FileMoverComponent implements OnDestroy {
       .replace(/[\x00-\x1F\x7F]/g, '')
       .replace(/\s+/g, ' ')
       .trim() ?? '';
+  }
+  private normalizeForSorting(input: string | undefined): string {
+    if (!input?.trim()) return '';
+
+    // TR03-1999 (NISO TR03) approximation for a stable, filename-safe “sortable” form:
+    // - Treat hyphen/dash/slash as spaces
+    // - Ignore listed punctuation (not treated as spaces)
+    // - Preserve '.' only when it acts as a decimal point
+    // - Collapse contiguous spaces and contiguous symbols
+    // - Normalize diacritics/ligatures to basic equivalents
+
+    const dashOrSlashAsSpace = input.replace(/[-\u2010-\u2015\u2212/]/g, ' ');
+
+    let out = '';
+    let lastWasSpace = false;
+    let lastWasSymbol = false;
+
+    const isIgnoredPunct = (ch: string) => {
+      return /[.,;:()\[\]<>{}'\"!?\u2018\u2019\u201A\u201B\u201C\u201D\u201E\u201F]/.test(ch);
+    };
+
+    for (let i = 0; i < dashOrSlashAsSpace.length; i++) {
+      const ch = dashOrSlashAsSpace[i];
+
+      if (/\s/.test(ch)) {
+        if (!lastWasSpace && out.length > 0) out += ' ';
+        lastWasSpace = true;
+        lastWasSymbol = false;
+        continue;
+      }
+
+      if (isIgnoredPunct(ch)) {
+        if (ch === '.') {
+          const nextIsDigit = i + 1 < dashOrSlashAsSpace.length && /\d/.test(dashOrSlashAsSpace[i + 1]);
+          const prevIsDigitOrBoundary = i === 0 || /\d/.test(dashOrSlashAsSpace[i - 1]) || /\s/.test(dashOrSlashAsSpace[i - 1]);
+          if (nextIsDigit && prevIsDigitOrBoundary) {
+            out += '.';
+            lastWasSpace = false;
+            lastWasSymbol = false;
+          }
+        }
+        continue;
+      }
+
+      const isLetterOrDigit = /[\p{L}\p{N}]/u.test(ch);
+      const isSymbol = !isLetterOrDigit;
+
+      if (isSymbol) {
+        if (lastWasSymbol) continue;
+        lastWasSymbol = true;
+      } else {
+        lastWasSymbol = false;
+      }
+
+      out += ch;
+      lastWasSpace = false;
+    }
+
+    // Modified letters / ligatures to basic equivalents (TR03 3.6.1)
+    out = out.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    out = out
+      .replace(/ø/g, 'o').replace(/Ø/g, 'O')
+      .replace(/ł/g, 'l').replace(/Ł/g, 'L')
+      .replace(/æ/g, 'ae').replace(/Æ/g, 'AE')
+      .replace(/œ/g, 'oe').replace(/Œ/g, 'OE')
+      .replace(/ß/g, 'ss');
+
+    return this.sanitize(out);
   }
 
   formatYear(dateStr?: string): string {
