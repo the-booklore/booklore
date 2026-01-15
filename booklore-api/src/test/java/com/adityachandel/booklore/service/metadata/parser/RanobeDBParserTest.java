@@ -32,6 +32,62 @@ class RanobeDbParserTest {
     }
 
     @Test
+    void testFetchMetadata_ProviderDisabled() {
+        // Given
+        Book book = Book.builder()
+            .title("Test Book")
+            .build();
+
+        FetchMetadataRequest request = FetchMetadataRequest.builder()
+            .title("Test Book")
+            .build();
+
+        // Mock disabled provider
+        AppSettings appSettings = new AppSettings();
+        MetadataProviderSettings providerSettings = new MetadataProviderSettings();
+        MetadataProviderSettings.Ranobedb ranobedb = new MetadataProviderSettings.Ranobedb();
+        ranobedb.setEnabled(false);
+        providerSettings.setRanobedb(ranobedb);
+        appSettings.setMetadataProviderSettings(providerSettings);
+
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        // When
+        List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+        // Then
+        assertNotNull(results);
+        assertTrue(results.isEmpty(), "Should return empty list when provider is disabled");
+        verify(appSettingService).getAppSettings();
+    }
+
+    @Test
+    void testFetchMetadata_ProviderSettingsNull() {
+        // Given
+        Book book = Book.builder()
+            .title("Test Book")
+            .build();
+
+        FetchMetadataRequest request = FetchMetadataRequest.builder()
+            .title("Test Book")
+            .build();
+
+        // Mock null settings
+        AppSettings appSettings = new AppSettings();
+        appSettings.setMetadataProviderSettings(null);
+
+        when(appSettingService.getAppSettings()).thenReturn(appSettings);
+
+        // When
+        List<BookMetadata> results = parser.fetchMetadata(book, request);
+
+        // Then
+        assertNotNull(results);
+        assertTrue(results.isEmpty(), "Should return empty list when settings are null");
+        verify(appSettingService).getAppSettings();
+    }
+
+    @Test
     void testFetchMetadata_EmptyQuery() {
         // Given
         Book book = Book.builder()
