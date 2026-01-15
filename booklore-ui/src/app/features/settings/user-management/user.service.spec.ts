@@ -320,7 +320,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
 
