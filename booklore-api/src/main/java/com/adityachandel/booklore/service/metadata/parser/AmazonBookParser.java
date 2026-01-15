@@ -44,6 +44,13 @@ public class AmazonBookParser implements BookParser {
     private static final Pattern REVIEWED_IN_ON_PATTERN = Pattern.compile("(?i)(?:Reviewed in|Rezension aus|Beoordeeld in|Recensie uit|Commenté en|Recensito in|Revisado en)\\s+(.+?)\\s+(?:on|vom|op|le|il|el)\\s+(.+)");
     private static final Pattern JAPANESE_REVIEW_DATE_PATTERN = Pattern.compile("(\\d{4}年\\d{1,2}月\\d{1,2}日).+");
 
+    // Format keyword constants for scoring search results
+    private static final Set<String> FORMAT_MANGA = Set.of("manga", "comic", "graphic novel");
+    private static final Set<String> FORMAT_LIGHT_NOVEL = Set.of("light novel", "novel", "ln");
+    private static final Pattern VOLUME_NUMBER_PATTERN = Pattern.compile(
+            "(?:vol\\.?|volume|#)\\s*(\\d+)|\\b(\\d{2})\\b(?:\\s*(?:\\(|$))",
+            Pattern.CASE_INSENSITIVE);
+
     private static final Map<String, LocaleInfo> DOMAIN_LOCALE_MAP = Map.ofEntries(
             Map.entry("com", new LocaleInfo("en-US,en;q=0.9", Locale.US)),
             Map.entry("co.uk", new LocaleInfo("en-GB,en;q=0.9", Locale.UK)),
@@ -87,7 +94,31 @@ public class AmazonBookParser implements BookParser {
         if (amazonBookIds == null || amazonBookIds.isEmpty()) {
             return null;
         }
-        return getBookMetadata(amazonBookIds.getFirst());
+
+        // Fetch metadata for top candidates and score them to find best match
+        List<BookMetadata> candidates = amazonBookIds.stream()
+                .limit(COUNT_DETAILED_METADATA_TO_GET)
+                .map(this::getBookMetadata)
+                .filter(Objects::nonNull)
+                .toList();
+
+        if (candidates.isEmpty()) {
+            log.warn("Amazon: Failed to fetch metadata for any candidates");
+            return null;
+        }
+
+        // Use title from request, or fall back to filename for scoring
+        String searchTerm = fetchMetadataRequest.getTitle();
+        if (searchTerm == null || searchTerm.isBlank()) {
+            searchTerm = BookUtils.cleanFileName(book.getFileName());
+        }
+
+        if (candidates.size() > 1 && searchTerm != null && !searchTerm.isBlank()) {
+            log.debug("Amazon: Scoring {} candidates against query '{}'", candidates.size(), searchTerm);
+            return selectBestMatch(candidates, searchTerm);
+        }
+
+        return candidates.get(0);
     }
 
     @Override
@@ -937,6 +968,108 @@ public class AmazonBookParser implements BookParser {
             log.warn("Error cleaning html description, Error: {}", e.getMessage());
         }
         return html;
+    }
+
+    // ==================== Metadata Selection Scoring ====================
+
+    /**
+     * Select the best matching metadata from a list of candidates based on the original query.
+     * Uses scoring to prefer results that match format keywords (manga/light novel) and volume numbers.
+     * Package-private for testing.
+     */
+    BookMetadata selectBestMatch(List<BookMetadata> candidates, String query) {
+        if (candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        if (candidates.size() == 1) {
+            return candidates.get(0);
+        }
+
+        BookMetadata best = candidates.stream()
+                .max(Comparator.comparingInt(c -> scoreResult(c, query)))
+                .orElse(candidates.get(0));
+
+        log.debug("Amazon: Selected best match '{}' from {} candidates", best.getTitle(), candidates.size());
+        return best;
+    }
+
+    /**
+     * Score a metadata result against the original search query.
+     * Higher scores indicate better matches.
+     * Package-private for testing.
+     *
+     * Scoring factors:
+     * - Format keyword match (+100): Query "Manga" matches result with "Manga" in title/categories
+     * - Format keyword mismatch (-50): Query "Manga" but result is "Light Novel" (penalty)
+     * - Volume number match (+50): Volume numbers align
+     * - Title word overlap (+5 per word, max +25): Common significant words
+     */
+    int scoreResult(BookMetadata result, String query) {
+        int score = 0;
+        String queryLower = query.toLowerCase();
+        String titleLower = result.getTitle() != null ? result.getTitle().toLowerCase() : "";
+        Set<String> categories = result.getCategories() != null ? result.getCategories() : Set.of();
+
+        // Format keyword scoring (+100 match, -50 mismatch)
+        score += scoreFormatMatch(queryLower, titleLower, categories);
+
+        // Volume number matching (+50)
+        score += scoreVolumeMatch(queryLower, titleLower);
+
+        // Title word overlap (max +25)
+        score += Math.min(25, countWordOverlap(queryLower, titleLower) * 5);
+
+        log.debug("Amazon: Scored '{}' against query '{}': {} points", result.getTitle(), query, score);
+        return score;
+    }
+
+    private int scoreFormatMatch(String query, String title, Set<String> categories) {
+        boolean queryHasManga = FORMAT_MANGA.stream().anyMatch(query::contains);
+        boolean queryHasLightNovel = FORMAT_LIGHT_NOVEL.stream().anyMatch(query::contains);
+
+        String categoriesLower = categories.stream()
+                .map(String::toLowerCase)
+                .collect(Collectors.joining(" "));
+
+        boolean resultHasManga = FORMAT_MANGA.stream()
+                .anyMatch(kw -> title.contains(kw) || categoriesLower.contains(kw));
+        boolean resultHasLightNovel = FORMAT_LIGHT_NOVEL.stream()
+                .anyMatch(kw -> title.contains(kw) || categoriesLower.contains(kw));
+
+        int score = 0;
+        if (queryHasManga && resultHasManga) score += 100;
+        if (queryHasLightNovel && resultHasLightNovel) score += 100;
+        if (queryHasManga && resultHasLightNovel && !resultHasManga) score -= 50;
+        if (queryHasLightNovel && resultHasManga && !resultHasLightNovel) score -= 50;
+
+        return score;
+    }
+
+    private int scoreVolumeMatch(String query, String title) {
+        String queryVol = extractVolumeNumber(query);
+        String resultVol = extractVolumeNumber(title);
+        return (queryVol != null && queryVol.equals(resultVol)) ? 50 : 0;
+    }
+
+    private String extractVolumeNumber(String text) {
+        Matcher m = VOLUME_NUMBER_PATTERN.matcher(text);
+        if (m.find()) {
+            String num = m.group(1) != null ? m.group(1) : m.group(2);
+            return num.replaceFirst("^0+", ""); // Remove leading zeros
+        }
+        return null;
+    }
+
+    private int countWordOverlap(String query, String title) {
+        Set<String> stopWords = Set.of("the", "vol", "and", "manga", "novel", "light", "volume");
+        Set<String> queryWords = Arrays.stream(query.split("\\W+"))
+                .filter(w -> w.length() > 2)
+                .filter(w -> !stopWords.contains(w))
+                .collect(Collectors.toSet());
+
+        return (int) queryWords.stream()
+                .filter(title::contains)
+                .count();
     }
 }
 

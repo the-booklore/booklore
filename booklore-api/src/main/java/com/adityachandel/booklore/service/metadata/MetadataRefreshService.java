@@ -582,11 +582,12 @@ public class MetadataRefreshService {
         if (fieldProvider == null) {
             return null;
         }
+        // P1 = highest priority (1st choice), P4 = lowest priority (fallback)
         MetadataProvider[] providers = {
-                fieldProvider.getP4(),
-                fieldProvider.getP3(),
+                fieldProvider.getP1(),
                 fieldProvider.getP2(),
-                fieldProvider.getP1()
+                fieldProvider.getP3(),
+                fieldProvider.getP4()
         };
         for (MetadataProvider provider : providers) {
             if (provider != null && metadataMap.containsKey(provider)) {
