@@ -50,7 +50,7 @@ end
 function BookloreSync:addToMainMenu(menu_items)
     menu_items.booklore_sync = {
         text = _("Booklore Sync"),
-        sorting_hint = "more_tools",
+        sorting_hint = "tools",
         sub_item_table = {
             {
                 text = _("Enable Sync"),
@@ -242,6 +242,41 @@ function BookloreSync:configureUsername()
                         UIManager:close(input_dialog)
                         UIManager:show(InfoMessage:new{
                             text = _("Username saved"),
+                            timeout = 1,
+                        })
+                    end,
+                },
+            },
+        },
+    }
+    UIManager:show(input_dialog)
+    input_dialog:onShowKeyboard()
+end
+
+function BookloreSync:configurePassword()
+    local input_dialog
+    input_dialog = InputDialog:new{
+        title = _("Booklore Password"),
+        input = self.password,
+        text_type = "password",
+        buttons = {
+            {
+                {
+                    text = _("Cancel"),
+                    callback = function()
+                        UIManager:close(input_dialog)
+                    end,
+                },
+                {
+                    text = _("Save"),
+                    is_enter_default = true,
+                    callback = function()
+                        self.password = input_dialog:getInputText()
+                        self.settings:saveSetting("password", self.password)
+                        self.settings:flush()
+                        UIManager:close(input_dialog)
+                        UIManager:show(InfoMessage:new{
+                            text = _("Password saved"),
                             timeout = 1,
                         })
                     end,
