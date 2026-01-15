@@ -79,7 +79,8 @@ describe('UserService', () => {
         global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false},
         overrides: []
       },
-      koReaderEnabled: false
+      koReaderEnabled: false,
+      autoSaveMetadata: false
     }
   };
 
@@ -394,7 +395,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
 
@@ -466,7 +468,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
 
@@ -638,7 +641,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route' as const,
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
       service.createUser(userData).subscribe();
@@ -814,7 +818,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       }];
 
@@ -875,7 +880,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route',
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
 
@@ -937,7 +943,8 @@ describe('UserService - API Contract Tests', () => {
           metadataCenterViewMode: 'route' as const,
           enableSeriesView: true,
           entityViewPreferences: {global: {sortKey: '', sortDir: 'ASC' as const, view: 'GRID' as const, coverSize: 1, seriesCollapsed: false}, overrides: []},
-          koReaderEnabled: false
+          koReaderEnabled: false,
+          autoSaveMetadata: false
         }
       };
       service.createUser(userData).subscribe(result => {
