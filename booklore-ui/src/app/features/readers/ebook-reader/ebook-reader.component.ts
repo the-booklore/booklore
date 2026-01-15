@@ -21,6 +21,7 @@ import {ReaderBookMetadataDialogComponent} from './reader-layout/sidebar/reader-
 import {ReadingSessionService} from '../../../shared/service/reading-session.service';
 import {TocItem} from 'epubjs';
 import {PageInfo, ThemeInfo} from './utils/reader-header-footer.util';
+import {ReaderHeaderFooterVisibilityManager} from './utils/reader-header-footer-visibility.util';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -66,13 +67,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private _fileUrl: string | null = null;
   private currentCfi: string | null = null;
 
-  private isHeaderNavbarPinned = false;
-  private mouseY = 0;
-  private hideHeaderTimeout: any;
-  private hideNavbarTimeout: any;
-  private readonly HEADER_HEIGHT = 36;
-  private readonly NAVBAR_HEIGHT = 36;
-  private readonly TRIGGER_ZONE = 20;
+  private visibilityManager!: ReaderHeaderFooterVisibilityManager;
 
   isLoading = true;
   showControls = false;
@@ -92,6 +87,12 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private currentPageInfo: PageInfo | undefined;
 
   ngOnInit() {
+    this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
+    this.visibilityManager.onStateChange((state) => {
+      this.forceHeaderVisible = state.headerVisible;
+      this.forceNavbarVisible = state.footerVisible;
+    });
+
     this.isLoading = true;
     this.initializeFoliate().pipe(
       switchMap(() => this.epubCustomFontService.loadAndCacheFonts()),
@@ -118,6 +119,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.viewManager.destroy();
     this.bookmarkService.reset();
     this.epubCustomFontService.cleanup();
+    this.visibilityManager.cleanup();
 
     if (this.readingSessionService.isSessionActive()) {
       const progress = typeof this.currentProgressData?.fraction === 'number'
@@ -130,8 +132,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       URL.revokeObjectURL(this._fileUrl);
       this._fileUrl = null;
     }
-    if (this.hideHeaderTimeout) clearTimeout(this.hideHeaderTimeout);
-    if (this.hideNavbarTimeout) clearTimeout(this.hideNavbarTimeout);
   }
 
   private initializeFoliate(): Observable<void> {
@@ -410,42 +410,22 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private updateHeaderNavbarVisibility(): void {
-    const windowHeight = window.innerHeight;
-
-    if (this.hideHeaderTimeout) clearTimeout(this.hideHeaderTimeout);
-    if (this.hideNavbarTimeout) clearTimeout(this.hideNavbarTimeout);
-
-    if (
-      this.mouseY <= this.TRIGGER_ZONE ||
-      (this.mouseY <= this.HEADER_HEIGHT && this.forceHeaderVisible) ||
-      this.isHeaderNavbarPinned
-    ) {
-      this.forceHeaderVisible = true;
-    } else if (this.mouseY > this.HEADER_HEIGHT) {
-      this.forceHeaderVisible = this.isHeaderNavbarPinned;
-    }
-
-    const navbarTop = windowHeight - this.NAVBAR_HEIGHT;
-    if (
-      this.mouseY >= windowHeight - this.TRIGGER_ZONE ||
-      (this.mouseY >= navbarTop && this.forceNavbarVisible) ||
-      this.isHeaderNavbarPinned
-    ) {
-      this.forceNavbarVisible = true;
-    } else if (this.mouseY < navbarTop) {
-      this.forceNavbarVisible = this.isHeaderNavbarPinned;
-    }
-  }
-
   private toggleHeaderNavbarPinned(): void {
-    this.isHeaderNavbarPinned = !this.isHeaderNavbarPinned;
-    this.updateHeaderNavbarVisibility();
+    this.visibilityManager.togglePinned();
   }
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
-    this.mouseY = event.clientY;
-    this.updateHeaderNavbarVisibility();
+    this.visibilityManager.handleMouseMove(event.clientY);
+  }
+
+  @HostListener('document:mouseleave', ['$event'])
+  onMouseLeave(event: MouseEvent): void {
+    this.visibilityManager.handleMouseLeave();
+  }
+
+  @HostListener('window:resize', ['$event'])
+  onWindowResize(event: Event): void {
+    this.visibilityManager.updateWindowHeight(window.innerHeight);
   }
 }
