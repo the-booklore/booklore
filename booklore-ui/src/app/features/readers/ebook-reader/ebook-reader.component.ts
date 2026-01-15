@@ -119,7 +119,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.viewManager.destroy();
     this.bookmarkService.reset();
     this.epubCustomFontService.cleanup();
-    this.visibilityManager.cleanup();
 
     if (this.readingSessionService.isSessionActive()) {
       const progress = typeof this.currentProgressData?.fraction === 'number'

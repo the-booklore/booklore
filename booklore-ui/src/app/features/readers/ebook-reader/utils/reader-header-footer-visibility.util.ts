@@ -6,11 +6,9 @@ export interface HeaderFooterVisibilityState {
 export class ReaderHeaderFooterVisibilityManager {
   private isPinned = false;
   private mouseY = 0;
-  private hideHeaderTimeout: any;
-  private hideFooterTimeout: any;
 
-  private readonly HEADER_HEIGHT = 36;
-  private readonly FOOTER_HEIGHT = 36;
+  private readonly HEADER_HEIGHT = 20;
+  private readonly FOOTER_HEIGHT = 20;
   private readonly TRIGGER_ZONE = 20;
 
   private headerVisible = false;
@@ -18,7 +16,8 @@ export class ReaderHeaderFooterVisibilityManager {
 
   private onStateChangeCallback?: (state: HeaderFooterVisibilityState) => void;
 
-  constructor(private windowHeight: number) {}
+  constructor(private windowHeight: number) {
+  }
 
   onStateChange(callback: (state: HeaderFooterVisibilityState) => void): void {
     this.onStateChangeCallback = callback;
@@ -46,10 +45,6 @@ export class ReaderHeaderFooterVisibilityManager {
     this.updateVisibility();
   }
 
-  isPinnedState(): boolean {
-    return this.isPinned;
-  }
-
   getVisibilityState(): HeaderFooterVisibilityState {
     return {
       headerVisible: this.headerVisible,
@@ -57,20 +52,7 @@ export class ReaderHeaderFooterVisibilityManager {
     };
   }
 
-  cleanup(): void {
-    if (this.hideHeaderTimeout) {
-      clearTimeout(this.hideHeaderTimeout);
-      this.hideHeaderTimeout = null;
-    }
-    if (this.hideFooterTimeout) {
-      clearTimeout(this.hideFooterTimeout);
-      this.hideFooterTimeout = null;
-    }
-  }
-
   private updateVisibility(): void {
-    this.clearTimers();
-
     if (
       this.mouseY <= this.TRIGGER_ZONE ||
       (this.mouseY <= this.HEADER_HEIGHT && this.headerVisible) ||
@@ -101,17 +83,6 @@ export class ReaderHeaderFooterVisibilityManager {
 
   private setFooterVisible(visible: boolean): void {
     this.footerVisible = visible;
-  }
-
-  private clearTimers(): void {
-    if (this.hideHeaderTimeout) {
-      clearTimeout(this.hideHeaderTimeout);
-      this.hideHeaderTimeout = null;
-    }
-    if (this.hideFooterTimeout) {
-      clearTimeout(this.hideFooterTimeout);
-      this.hideFooterTimeout = null;
-    }
   }
 
   private notifyStateChange(): void {
