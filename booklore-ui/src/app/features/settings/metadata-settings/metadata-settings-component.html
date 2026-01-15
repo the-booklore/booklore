@@ -34,6 +34,22 @@
             </p>
           </div>
         </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="setting-label-row">
+              <label class="setting-label">Auto-Import from BookDrop</label>
+              <p-toggleswitch
+                [(ngModel)]="autoImportEnabled"
+                (onChange)="onAutoImportToggle($event.checked)">
+              </p-toggleswitch>
+            </div>
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              Automatically import books from BookDrop when metadata (title and authors) is successfully found. Books without complete metadata will remain in BookDrop for manual review.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 

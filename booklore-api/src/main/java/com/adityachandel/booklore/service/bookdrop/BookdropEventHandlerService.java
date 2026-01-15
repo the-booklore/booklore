@@ -34,6 +34,7 @@ public class BookdropEventHandlerService {
     private final BookdropNotificationService bookdropNotificationService;
     private final AppSettingService appSettingService;
     private final BookdropMetadataService bookdropMetadataService;
+    private final BookdropAutoImportService bookdropAutoImportService;
 
     private final BlockingQueue<BookDropFileEvent> fileQueue = new LinkedBlockingQueue<>();
     private volatile boolean running = true;
@@ -120,15 +121,26 @@ public class BookdropEventHandlerService {
 
                 bookdropFileEntity = bookdropFileRepository.save(bookdropFileEntity);
 
+                boolean metadataFetched = false;
                 if (appSettingService.getAppSettings().isMetadataDownloadOnBookdrop()) {
                     bookdropMetadataService.attachInitialMetadata(bookdropFileEntity.getId());
                     bookdropMetadataService.attachFetchedMetadata(bookdropFileEntity.getId());
+                    metadataFetched = true;
                 } else {
                     bookdropMetadataService.attachInitialMetadata(bookdropFileEntity.getId());
                     log.info("Metadata download is disabled. Only initial metadata extracted for file: {}", bookdropFileEntity.getFileName());
                 }
 
-                bookdropNotificationService.sendBookdropFileSummaryNotification();
+                // Attempt auto-import if metadata was fetched from external sources
+                boolean autoImported = false;
+                if (metadataFetched) {
+                    autoImported = bookdropAutoImportService.attemptAutoImport(bookdropFileEntity.getId());
+                }
+
+                // Only send notification if file was not auto-imported (still needs review)
+                if (!autoImported) {
+                    bookdropNotificationService.sendBookdropFileSummaryNotification();
+                }
 
                 if (fileQueue.isEmpty()) {
                     notificationService.sendMessageToPermissions(

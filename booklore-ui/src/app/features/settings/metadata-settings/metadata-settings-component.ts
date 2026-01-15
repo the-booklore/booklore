@@ -31,6 +31,7 @@ export class MetadataSettingsComponent implements OnInit {
 
   currentMetadataOptions!: MetadataRefreshOptions;
   metadataDownloadOnBookdrop = true;
+  autoImportEnabled = false;
 
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
@@ -44,6 +45,11 @@ export class MetadataSettingsComponent implements OnInit {
   onMetadataDownloadOnBookdropToggle(checked: boolean): void {
     this.metadataDownloadOnBookdrop = checked;
     this.settingsHelper.saveSetting(AppSettingKey.METADATA_DOWNLOAD_ON_BOOKDROP, checked);
+  }
+
+  onAutoImportToggle(checked: boolean): void {
+    this.autoImportEnabled = checked;
+    this.settingsHelper.saveSetting(AppSettingKey.BOOKDROP_AUTO_IMPORT_ENABLED, checked);
   }
 
   onMetadataSubmit(metadataRefreshOptions: MetadataRefreshOptions): void {
@@ -70,5 +76,6 @@ export class MetadataSettingsComponent implements OnInit {
     }
 
     this.metadataDownloadOnBookdrop = settings.metadataDownloadOnBookdrop ?? true;
+    this.autoImportEnabled = settings.autoImportEnabled ?? false;
   }
 }

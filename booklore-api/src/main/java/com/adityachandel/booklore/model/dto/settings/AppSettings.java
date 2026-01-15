@@ -23,6 +23,7 @@ public class AppSettings {
     private Integer maxFileUploadSizeInMb;
     private boolean remoteAuthEnabled;
     private boolean metadataDownloadOnBookdrop;
+    private boolean autoImportEnabled;
     private boolean oidcEnabled;
     private boolean telemetryEnabled;
     private OidcProviderDetails oidcProviderDetails;
