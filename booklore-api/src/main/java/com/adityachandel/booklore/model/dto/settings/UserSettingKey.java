@@ -20,7 +20,8 @@ public enum UserSettingKey {
     METADATA_CENTER_VIEW_MODE("metadataCenterViewMode", false),
     ENABLE_SERIES_VIEW("enableSeriesView", false),
     HARDCOVER_API_KEY("hardcoverApiKey", false),
-    HARDCOVER_SYNC_ENABLED("hardcoverSyncEnabled", false);
+    HARDCOVER_SYNC_ENABLED("hardcoverSyncEnabled", false),
+    AUTO_SAVE_METADATA("autoSaveMetadata", false);
 
 
     private final String dbKey;
