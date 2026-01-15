@@ -39,7 +39,7 @@
         style="
           position: absolute;
           top: 0;
-          left: 24px;
+          left: 12px;
           z-index: 10;
           width: 48px;
           height: 64px;
@@ -57,6 +57,7 @@
   <app-reader-navbar
     [progressData]="currentProgressData"
     [forceVisible]="forceNavbarVisible"
+    [sectionFractions]="sectionFractions"
     (progressChange)="onProgressChange($event)">
   </app-reader-navbar>
 

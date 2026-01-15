@@ -85,6 +85,10 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   currentChapterHref: string | null = null;
   currentProgressData: any = null;
   private currentPageInfo: PageInfo | undefined;
+  private relocateTimeout: any;
+  private sectionFractionsTimeout: any;
+
+  sectionFractions: number[] = [];
 
   ngOnInit() {
     this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
@@ -197,8 +201,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       .subscribe(() => this.applyStyles());
   }
 
-  private relocateTimeout: any = null;
-
   private subscribeToViewEvents(): void {
     this.viewManager.events$
       .pipe(takeUntil(this.destroy$))
@@ -207,18 +209,28 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           case 'load':
             this.applyStyles();
             this.chapters = this.viewManager.getChapters();
+            this.updateSectionFractions();
             break;
           case 'relocate':
             if (this.relocateTimeout) clearTimeout(this.relocateTimeout);
             this.relocateTimeout = setTimeout(() => {
               this.handleRelocateEvent(event.detail);
             }, 100);
+
+            if (this.sectionFractionsTimeout) clearTimeout(this.sectionFractionsTimeout);
+            this.sectionFractionsTimeout = setTimeout(() => {
+              this.updateSectionFractions();
+            }, 500);
             break;
           case 'middle-single-tap':
             this.toggleHeaderNavbarPinned();
             break;
         }
       });
+  }
+
+  private updateSectionFractions(): void {
+    this.sectionFractions = this.viewManager.getSectionFractions();
   }
 
   private handleRelocateEvent(detail: any): void {

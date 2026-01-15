@@ -13,14 +13,21 @@
       <span class="location-text">{{ currentPercentage }}%</span>
     </button>
 
-    <input
-      type="range"
-      class="progress-slider"
-      [min]="0"
-      [max]="100"
-      [value]="currentPercentage"
-      (input)="onProgressChange($event)"
-      title="Progress"/>
+    <div class="progress-slider-wrapper">
+      <input
+        type="range"
+        class="progress-slider"
+        [min]="0"
+        [max]="100"
+        [value]="currentPercentage"
+        (input)="onProgressChange($event)"
+        title="Progress"/>
+      <div class="progress-ticks">
+        @for (frac of sectionFractions; track frac) {
+          <span class="progress-tick" [style.left.%]="frac * 100"></span>
+        }
+      </div>
+    </div>
   </div>
 
   <button class="icon-btn" title="Next">

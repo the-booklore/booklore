@@ -145,6 +145,11 @@ export class ReaderViewManagerService {
     return mapToc(this.view.book.toc);
   }
 
+  getSectionFractions(): number[] {
+    if (!this.view?.getSectionFractions) return [];
+    return this.view.getSectionFractions();
+  }
+
   getMetadata(): Observable<BookMetadata> {
     if (!this.view?.book?.metadata) {
       return of({});

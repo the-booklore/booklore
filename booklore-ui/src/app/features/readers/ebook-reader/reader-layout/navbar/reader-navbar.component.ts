@@ -35,6 +35,7 @@ interface RelocateEventDetail {
 export class ReaderNavbarComponent {
   @Input() progressData: RelocateEventDetail | null = null;
   @Input() forceVisible = false;
+  @Input() sectionFractions: number[] = [];
   @Output() progressChange = new EventEmitter<number>();
 
   private managerService = inject(ReaderViewManagerService);
