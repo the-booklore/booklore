@@ -768,6 +768,63 @@ function BookloreSync:sendSessionToServer(session_data)
     end
 end
 
+function BookloreSync:groupPagesIntoSessions(page_records)
+    -- Groups individual page records into reading sessions
+    -- A session continues as long as consecutive pages are within the reading window
+    logger.info("BookloreSync: Grouping", #page_records, "page records into sessions")
+    
+    if #page_records == 0 then
+        return {}
+    end
+    
+    local sessions = {}
+    local current_session = nil
+    
+    for i, page_record in ipairs(page_records) do
+        local should_start_new_session = false
+        
+        if not current_session then
+            -- First page - start new session
+            should_start_new_session = true
+        elseif page_record.book_hash ~= current_session.book_hash then
+            -- Different book - end current session and start new one
+            logger.info("BookloreSync: Book changed from", current_session.book_hash, "to", page_record.book_hash, "- ending session")
+            table.insert(sessions, current_session)
+            should_start_new_session = true
+        else
+            -- Same book - check if page is within reading window
+            local last_page = current_session.pages[#current_session.pages]
+            local last_page_end_time = last_page.start_time + last_page.duration
+            
+            if page_record.start_time > last_page_end_time then
+                -- Gap detected - end current session and start new one
+                local gap_seconds = page_record.start_time - last_page_end_time
+                logger.info("BookloreSync: Gap of", gap_seconds, "seconds detected - ending session")
+                table.insert(sessions, current_session)
+                should_start_new_session = true
+            else
+                -- Within reading window - add to current session
+                table.insert(current_session.pages, page_record)
+            end
+        end
+        
+        if should_start_new_session then
+            current_session = {
+                book_hash = page_record.book_hash,
+                pages = {page_record}
+            }
+        end
+    end
+    
+    -- Add the last session
+    if current_session then
+        table.insert(sessions, current_session)
+    end
+    
+    logger.info("BookloreSync: Grouped into", #sessions, "sessions")
+    return sessions
+end
+
 function BookloreSync:syncHistoricalData()
     UIManager:show(InfoMessage:new{
         text = _("Scanning KOReader statistics database..."),
@@ -792,19 +849,19 @@ function BookloreSync:syncHistoricalData()
     end
     file:close()
     
-    -- Use sqlite3 command-line tool to query the database
-    -- First, let's get the schema to see what columns are available
+    -- Query page_stat to get reading history
+    -- Order by book and start_time to enable session grouping
     local query = [[
 SELECT 
     book.md5,
+    book.id,
     page_stat.start_time,
     page_stat.duration,
     page_stat.page
 FROM page_stat
 JOIN book ON page_stat.id_book = book.id
-WHERE page_stat.duration > 5
-ORDER BY page_stat.start_time DESC
-LIMIT 500;
+WHERE page_stat.duration > 0
+ORDER BY book.id, page_stat.start_time ASC
 ]]
     
     -- Create a temporary SQL file
@@ -848,104 +905,176 @@ LIMIT 500;
     end
     
     logger.info("BookloreSync: Query output length:", #output)
-    logger.info("BookloreSync: Raw output:", output)
+    logger.info("BookloreSync: First 500 chars of output:", output:sub(1, 500))
     
-    local sessions_found = 0
-    local sessions_synced = 0
-    local sessions_skipped = 0
+    -- Parse all page records first
+    local page_records = {}
+    local parse_errors = 0
+    local lines_processed = 0
     
-    -- Parse each line of output
     for line in output:gmatch("[^\r\n]+") do
-        logger.info("BookloreSync: Parsing line:", line)
+        lines_processed = lines_processed + 1
         
         -- Skip empty lines and error lines
         if line ~= "" and not line:match("^Error:") then
             -- Check if line contains pipe separator
             if line:match("|") then
-                sessions_found = sessions_found + 1
+                logger.info("BookloreSync: Parsing line", lines_processed, ":", line)
                 
-                -- Parse the pipe-separated values
+                -- Parse the pipe-separated values - split properly
                 local parts = {}
-                for part in line:gmatch("([^|]*)") do
-                    if part ~= "" then
-                        table.insert(parts, part)
-                    end
+                for part in (line .. "|"):gmatch("([^|]*)%|") do
+                    table.insert(parts, part)
                 end
                 
-                logger.info("BookloreSync: Parsed parts count:", #parts)
+                logger.info("BookloreSync: Parsed", #parts, "parts from line")
                 
-                if #parts >= 4 then
-                    local md5_hash = parts[1]
-                    local start_time = tonumber(parts[2])
-                    local duration = tonumber(parts[3])
-                    local current_page = tonumber(parts[4])
+                -- Need at least 5 parts: md5, book_id, start_time, duration, page
+                if #parts >= 5 and parts[1] ~= "" then
+                    local page_record = {
+                        book_hash = parts[1],
+                        book_id = tonumber(parts[2]),
+                        start_time = tonumber(parts[3]),
+                        duration = tonumber(parts[4]),
+                        page = tonumber(parts[5]) or 0
+                    }
                     
-                    logger.info("BookloreSync: Found session - hash:", md5_hash, "duration:", duration, "s")
+                    logger.info("BookloreSync: Record - hash:", page_record.book_hash, "book_id:", page_record.book_id, "start:", page_record.start_time, "dur:", page_record.duration, "page:", page_record.page)
                     
-                    -- Check if book exists in Booklore
-                    local book_id = self:getBookIdByHash(md5_hash)
-                    
-                    if book_id then
-                        logger.info("BookloreSync: Book found in Booklore, ID:", book_id)
-                        
-                        -- We don't have total_pages from the database, so we'll use a simple approach
-                        -- Calculate progress based on page number (will be approximate)
-                        local end_progress = 0.5  -- Default middle of book if we can't calculate
-                        
-                        -- Estimate start progress (assume they started from previous page or same page)
-                        local start_progress = math.max(0, end_progress - 0.01)
-                        
-                        -- Create session data
-                        local session_data = {
-                            bookId = book_id,
-                            bookType = "EPUB",
-                            startTime = self:formatTimestamp(start_time),
-                            endTime = self:formatTimestamp(start_time + duration),
-                            durationSeconds = duration,
-                            startProgress = start_progress,
-                            endProgress = end_progress,
-                            progressDelta = end_progress - start_progress,
-                            startLocation = tostring(math.max(1, current_page - 1)),
-                            endLocation = tostring(current_page),
-                        }
-                        
-                        -- Send to server
-                        if self:sendHistoricalSession(session_data) then
-                            sessions_synced = sessions_synced + 1
-                        end
+                    if page_record.start_time and page_record.duration and page_record.book_id then
+                        table.insert(page_records, page_record)
+                        logger.info("BookloreSync: ✓ Valid record added (#", #page_records, ")")
                     else
-                        logger.info("BookloreSync: Book not found in Booklore, skipping")
-                        sessions_skipped = sessions_skipped + 1
-                    end
-                    
-                    -- Progress update every 10 sessions
-                    if sessions_found % 10 == 0 then
-                        UIManager:show(InfoMessage:new{
-                            text = T(_("Processed %1 sessions..."), sessions_found),
-                            timeout = 1,
-                        })
+                        parse_errors = parse_errors + 1
+                        logger.warn("BookloreSync: ✗ Invalid record - missing required fields")
                     end
                 else
-                    logger.warn("BookloreSync: Line has insufficient parts:", #parts)
+                    parse_errors = parse_errors + 1
+                    logger.warn("BookloreSync: ✗ Insufficient parts or empty hash - parts:", #parts)
                 end
-            else
-                logger.info("BookloreSync: Line has no pipe separator, skipping")
             end
         end
     end
     
-    logger.info("BookloreSync: Historical sync complete - found:", sessions_found, "synced:", sessions_synced, "skipped:", sessions_skipped)
+    logger.info("BookloreSync: Processed", lines_processed, "lines, parsed", #page_records, "page records,", parse_errors, "parse errors")
+    
+    if #page_records == 0 then
+        UIManager:show(InfoMessage:new{
+            text = _("No valid page records found"),
+            timeout = 3,
+        })
+        return
+    end
+    
+    -- Group pages into sessions
+    local sessions = self:groupPagesIntoSessions(page_records)
+    
+    logger.info("BookloreSync: Processing", #sessions, "grouped sessions")
     
     UIManager:show(InfoMessage:new{
-        text = T(_("Found %1 sessions\nSynced: %2\nSkipped: %3"), sessions_found, sessions_synced, sessions_skipped),
+        text = T(_("Found %1 sessions, syncing..."), #sessions),
+        timeout = 2,
+    })
+    
+    local sessions_synced = 0
+    local sessions_skipped = 0
+    local sessions_failed = 0
+    
+    -- Process each session
+    for session_num, session in ipairs(sessions) do
+        local book_hash = session.book_hash
+        local pages = session.pages
+        
+        -- Calculate session metrics from pages
+        local first_page = pages[1]
+        local last_page = pages[#pages]
+        
+        local start_time = first_page.start_time
+        local end_time = last_page.start_time + last_page.duration
+        local duration_seconds = end_time - start_time
+        
+        local start_page = first_page.page
+        local end_page = last_page.page
+        
+        logger.info("BookloreSync: Session", session_num, "- Hash:", book_hash, "Pages:", #pages, "Duration:", duration_seconds, "s")
+        
+        -- Check if book exists in Booklore
+        local book_id = self:getBookIdByHash(book_hash)
+        
+        if book_id then
+            logger.info("BookloreSync: Book found in Booklore, ID:", book_id)
+            
+            -- Calculate progress (approximate since we don't have total pages)
+            -- Assume progress based on page movement
+            local start_progress = 0.1
+            local end_progress = 0.1
+            
+            if end_page > start_page then
+                -- Some progress was made
+                end_progress = start_progress + ((end_page - start_page) * 0.01)
+                end_progress = math.min(end_progress, 1.0)
+            end
+            
+            -- Create session data
+            local session_data = {
+                bookId = book_id,
+                bookType = "EPUB",
+                startTime = self:formatTimestamp(start_time),
+                endTime = self:formatTimestamp(end_time),
+                durationSeconds = duration_seconds,
+                startProgress = start_progress,
+                endProgress = end_progress,
+                progressDelta = end_progress - start_progress,
+                startLocation = tostring(start_page),
+                endLocation = tostring(end_page),
+            }
+            
+            logger.info("BookloreSync: Syncing session #", session_num, "- Book ID:", book_id, "Duration:", duration_seconds, "s, Pages:", start_page, "to", end_page)
+            logger.info("BookloreSync: Session times - Start:", session_data.startTime, "End:", session_data.endTime)
+            
+            -- Send to server with detailed result tracking
+            local success, error_msg = self:sendHistoricalSession(session_data)
+            if success then
+                sessions_synced = sessions_synced + 1
+                logger.info("BookloreSync: ✓ Session synced successfully (#", sessions_synced, "/", #sessions, ")")
+            else
+                sessions_failed = sessions_failed + 1
+                logger.warn("BookloreSync: ✗ Session sync failed (#", sessions_failed, "):", error_msg or "unknown error")
+            end
+            
+            -- Rate limiting: sleep 1 second between requests to avoid hammering the endpoint
+            -- os.execute("sleep 1")
+        else
+            logger.info("BookloreSync: Book not found in Booklore, skipping")
+            sessions_skipped = sessions_skipped + 1
+        end
+        
+        -- Progress update every 10 sessions
+        if session_num % 10 == 0 then
+            UIManager:show(InfoMessage:new{
+                text = T(_("Synced %1/%2 sessions..."), session_num, #sessions),
+                timeout = 1,
+            })
+        end
+    end
+    
+    logger.info("BookloreSync: Historical sync complete - total sessions:", #sessions, "synced:", sessions_synced, "skipped:", sessions_skipped, "failed:", sessions_failed)
+    
+    local result_text
+    if sessions_failed > 0 then
+        result_text = T(_("Total sessions: %1\nSynced: %2\nSkipped: %3\nFailed: %4"), #sessions, sessions_synced, sessions_skipped, sessions_failed)
+    else
+        result_text = T(_("Total sessions: %1\nSynced: %2\nSkipped: %3"), #sessions, sessions_synced, sessions_skipped)
+    end
+    
+    UIManager:show(InfoMessage:new{
+        text = result_text,
         timeout = 5,
     })
 end
 
 function BookloreSync:sendHistoricalSession(session_data)
-    -- Silent version of sendSessionToServer for bulk historical sync
-    logger.info("BookloreSync: Sending historical session")
-    
+    -- Enhanced version with detailed logging for debugging historical sync issues
     local url = self.server_url
     if url:sub(-1) == "/" then
         url = url:sub(1, -2)
@@ -959,9 +1088,12 @@ function BookloreSync:sendHistoricalSession(session_data)
     local ltn12 = require("ltn12")
     local json = require("json")
     
-    http.TIMEOUT = 5 -- Shorter timeout for bulk sync
+    http.TIMEOUT = 10  -- Longer timeout to ensure request completes
     
     local json_data = json.encode(session_data)
+    logger.info("BookloreSync: POST to", url)
+    logger.info("BookloreSync: Payload:", json_data)
+    
     local response_body = {}
     
     local res, code, response_headers = http.request{
@@ -977,12 +1109,25 @@ function BookloreSync:sendHistoricalSession(session_data)
         },
     }
     
-    if code == 202 or code == 200 then
-        logger.info("BookloreSync: Historical session synced successfully")
-        return true
+    local response_text = table.concat(response_body)
+    logger.info("BookloreSync: Response code:", tostring(code))
+    
+    if response_text and response_text ~= "" then
+        logger.info("BookloreSync: Response body:", response_text)
     else
-        logger.warn("BookloreSync: Historical session failed, code:", tostring(code))
-        return false
+        logger.info("BookloreSync: Empty response body")
+    end
+    
+    if code == 202 or code == 200 then
+        logger.info("BookloreSync: ✓ Historical session synced successfully (code", code, ")")
+        return true, nil
+    else
+        local error_msg = "HTTP " .. tostring(code)
+        if response_text and response_text ~= "" then
+            error_msg = error_msg .. ": " .. response_text
+        end
+        logger.warn("BookloreSync: ✗ Historical session failed -", error_msg)
+        return false, error_msg
     end
 end
 
