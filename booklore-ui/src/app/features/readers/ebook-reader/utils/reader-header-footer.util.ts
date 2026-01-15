@@ -1,8 +1,6 @@
 export interface PageInfo {
-  current: number;
-  total: number;
-  remaining: number;
-  progressPercent: number;
+  percentCompleted: number;
+  sectionTimeText: string;
 }
 
 export interface ThemeInfo {
@@ -14,6 +12,7 @@ export class ReaderHeaderFooterUtil {
   private static readonly DEFAULT_FONT_SIZE = '0.875rem';
 
   static updateHeadersAndFooters(renderer: any, chapterName: string, pageInfo?: PageInfo, theme?: ThemeInfo): void {
+
     if (!renderer) {
       return;
     }
@@ -93,23 +92,25 @@ export class ReaderHeaderFooterUtil {
     const footerContent = document.createElement('div');
     footerContent.style.cssText = style;
 
+    const text = 'Time remaining in section: ' + (pageInfo.sectionTimeText ?? '0s');
+
     if (isSingleColumn) {
-      const remainingSpan = document.createElement('span');
-      remainingSpan.textContent = `${pageInfo.remaining} pages left`;
-      remainingSpan.style.textAlign = 'left';
+      const timeSpan = document.createElement('span');
+      timeSpan.textContent = text;
+      timeSpan.style.textAlign = 'left';
 
       const progressSpan = document.createElement('span');
-      progressSpan.textContent = `${pageInfo.progressPercent}%`;
+      progressSpan.textContent = `${pageInfo.percentCompleted}%`;
       progressSpan.style.textAlign = 'right';
 
-      footerContent.appendChild(remainingSpan);
+      footerContent.appendChild(timeSpan);
       footerContent.appendChild(progressSpan);
     } else {
       if (index === 0) {
-        const remainingSpan = document.createElement('span');
-        remainingSpan.textContent = `${pageInfo.remaining} pages left`;
-        remainingSpan.style.textAlign = 'left';
-        footerContent.appendChild(remainingSpan);
+        const timeSpan = document.createElement('span');
+        timeSpan.textContent = text;
+        timeSpan.style.textAlign = 'left';
+        footerContent.appendChild(timeSpan);
 
         const spacer = document.createElement('span');
         footerContent.appendChild(spacer);
@@ -118,7 +119,7 @@ export class ReaderHeaderFooterUtil {
         footerContent.appendChild(spacer);
 
         const progressSpan = document.createElement('span');
-        progressSpan.textContent = `${pageInfo.progressPercent}%`;
+        progressSpan.textContent = `${pageInfo.percentCompleted}%`;
         progressSpan.style.textAlign = 'right';
         footerContent.appendChild(progressSpan);
       }

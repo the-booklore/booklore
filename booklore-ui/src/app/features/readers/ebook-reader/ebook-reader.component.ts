@@ -259,17 +259,24 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       this.currentChapterHref = href;
     }
 
-    if (detail?.section && detail?.fraction !== undefined) {
-      const totalPages = detail?.section?.size ?? 100;
-      const currentPage = Math.floor(detail.fraction * totalPages) + 1;
-      const remaining = Math.max(0, totalPages - currentPage);
-      const progressPercent = Math.round(detail.fraction * 100);
+    if (detail?.section) {
+      const percentCompleted = Math.round((detail.fraction * 100) * 10) / 10;
+      const totalMinutes = detail.time?.section ?? 0;
+
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = Math.floor(totalMinutes % 60);
+      const seconds = Math.round((totalMinutes - Math.floor(totalMinutes)) * 60);
+
+      const parts: string[] = [];
+      if (hours) parts.push(`${hours}h`);
+      if (minutes) parts.push(`${minutes}m`);
+      if (seconds || parts.length === 0) parts.push(`${seconds}s`);
+
+      const sectionTimeText = parts.join(' ');
 
       this.currentPageInfo = {
-        current: currentPage,
-        total: totalPages,
-        remaining: remaining,
-        progressPercent: progressPercent
+        percentCompleted,
+        sectionTimeText
       };
     }
 
