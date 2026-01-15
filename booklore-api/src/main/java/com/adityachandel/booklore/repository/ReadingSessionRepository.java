@@ -16,11 +16,11 @@ import java.util.List;
 public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEntity, Long> {
 
     @Query("""
-            SELECT CAST(rs.createdAt AS LocalDate) as date, COUNT(rs) as count
+            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
             FROM ReadingSessionEntity rs
             WHERE rs.user.id = :userId
-            AND YEAR(rs.createdAt) = :year
-            GROUP BY CAST(rs.createdAt AS LocalDate)
+            AND YEAR(rs.startTime) = :year
+            GROUP BY CAST(rs.startTime AS LocalDate)
             ORDER BY date
             """)
     List<ReadingSessionCountDto> findSessionCountsByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
