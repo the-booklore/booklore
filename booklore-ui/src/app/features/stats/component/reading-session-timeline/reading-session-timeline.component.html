@@ -73,7 +73,7 @@
             <div class="sessions">
               @for (session of dayData.sessions; track $index) {
                 <div class="session-block"
-                     [ngClass]="'book-type-' + (session.bookType || 'default').toLowerCase()"
+                     [class]="'book-type-' + (session.bookType || 'default').toLowerCase()"
                      [style.left.%]="session.left"
                      [style.width.%]="session.width"
                      [style.top]="session.totalLevels > 1 ? 'calc(' + session.level + ' / ' + session.totalLevels + ' * 100% + ' + session.level * 2 + 'px)' : '0'"

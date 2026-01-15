@@ -16,11 +16,11 @@ import java.util.List;
 public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEntity, Long> {
 
     @Query("""
-            SELECT CAST(rs.createdAt AS LocalDate) as date, COUNT(rs) as count
+            SELECT CAST(rs.startTime AS LocalDate) as date, COUNT(rs) as count
             FROM ReadingSessionEntity rs
             WHERE rs.user.id = :userId
-            AND YEAR(rs.createdAt) = :year
-            GROUP BY CAST(rs.createdAt AS LocalDate)
+            AND YEAR(rs.startTime) = :year
+            GROUP BY CAST(rs.startTime AS LocalDate)
             ORDER BY date
             """)
     List<ReadingSessionCountDto> findSessionCountsByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
@@ -28,7 +28,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
     @Query("""
             SELECT
                 b.id as bookId,
-                b.metadata.title as bookTitle,
+                COALESCE(b.metadata.title, b.fileName, 'Unknown Book') as bookTitle,
                 rs.bookType as bookFileType,
                 MIN(rs.startTime) as startDate,
                 MAX(rs.endTime) as endDate,
@@ -38,7 +38,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             JOIN rs.book b
             WHERE rs.user.id = :userId
             AND rs.startTime >= :startOfWeek AND rs.startTime < :endOfWeek
-            GROUP BY b.id, b.metadata.title, rs.bookType
+            GROUP BY b.id, COALESCE(b.metadata.title, b.fileName, 'Unknown Book'), rs.bookType
             ORDER BY MIN(rs.startTime)
             """)
     List<ReadingSessionTimelineDto> findSessionTimelineByUserAndWeek(
