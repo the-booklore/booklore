@@ -35,7 +35,6 @@ public class KoreaderAuthFilter extends OncePerRequestFilter {
         log.info("KoreaderAuthFilter: Processing request to: {}", path);
         
         if (!path.startsWith("/api/koreader/") && !path.equals("/api/v1/reading-sessions")) {
-            log.info("KoreaderAuthFilter: Path does not match /api/koreader/** or /api/v1/reading-sessions, passing through");
             chain.doFilter(request, response);
             return;
         }
