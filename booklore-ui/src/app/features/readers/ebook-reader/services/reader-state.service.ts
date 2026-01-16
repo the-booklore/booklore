@@ -4,7 +4,7 @@ import {map, tap} from 'rxjs/operators';
 import {Theme, themes} from './reader-themes';
 import {BookService} from '../../../book/service/book.service';
 import {UserService} from '../../../settings/user-management/user.service';
-import {EpubCustomFontService} from '../../epub-reader/service/epub-custom-font.service';
+import {EpubCustomFontService} from './epub-custom-font.service';
 
 export interface ReaderState {
   lineHeight: number;

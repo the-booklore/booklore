@@ -11,7 +11,6 @@ import {BookService} from '../../book/service/book.service';
 import {ActivatedRoute} from '@angular/router';
 import {BookMark, BookMarkService} from '../../../shared/service/book-mark.service';
 import {BookPatchService} from '../../book/service/book-patch.service';
-import {EpubCustomFontService} from '../epub-reader/service/epub-custom-font.service';
 import {Book, EbookViewerSetting} from '../../book/model/book.model';
 import {ReaderHeaderComponent} from './reader-layout/header/reader-header.component';
 import {ReaderSidebarComponent} from './reader-layout/sidebar/reader-sidebar.component';
@@ -22,6 +21,7 @@ import {ReadingSessionService} from '../../../shared/service/reading-session.ser
 import {TocItem} from 'epubjs';
 import {PageInfo, ThemeInfo} from './utils/reader-header-footer.util';
 import {ReaderHeaderFooterVisibilityManager} from './utils/reader-header-footer-visibility.util';
+import {EpubCustomFontService} from './services/epub-custom-font.service';
 
 @Component({
   selector: 'app-ebook-reader',

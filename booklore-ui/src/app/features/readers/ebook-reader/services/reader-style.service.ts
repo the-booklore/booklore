@@ -1,6 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {ReaderState} from './reader-state.service';
-import {EpubCustomFontService} from '../../epub-reader/service/epub-custom-font.service';
+import {EpubCustomFontService} from './epub-custom-font.service';
 
 @Injectable({
   providedIn: 'root'

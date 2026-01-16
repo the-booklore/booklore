@@ -3,8 +3,8 @@ import {DecimalPipe, DOCUMENT} from '@angular/common';
 import {ReaderStateService} from '../../services/reader-state.service';
 import {ReaderViewManagerService} from '../../services/reader-view-manager.service';
 import {BookService} from '../../../../book/service/book.service';
-import {EpubCustomFontService} from '../../../epub-reader/service/epub-custom-font.service';
 import {EbookViewerSetting} from '../../../../book/model/book.model';
+import {EpubCustomFontService} from '../../services/epub-custom-font.service';
 
 @Component({
   selector: 'app-settings-dialog',

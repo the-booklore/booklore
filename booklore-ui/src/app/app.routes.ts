@@ -16,7 +16,6 @@ import {MainDashboardComponent} from './features/dashboard/components/main-dashb
 import {SeriesPageComponent} from './features/book/components/series-page/series-page.component';
 import {MetadataManagerComponent} from './features/metadata/component/metadata-manager/metadata-manager.component';
 import {StatsComponent} from './features/stats/component/stats-component';
-import {EpubReaderComponent} from './features/readers/epub-reader/component/epub-reader.component';
 import {PdfReaderComponent} from './features/readers/pdf-reader/pdf-reader.component';
 import {BookdropFileReviewComponent} from './features/bookdrop/component/bookdrop-file-review/bookdrop-file-review.component';
 import {LoginGuard} from './shared/components/setup/login.guard';
@@ -62,11 +61,6 @@ export const routes: Routes = [
   {
     path: 'pdf-reader/book/:bookId',
     component: PdfReaderComponent,
-    canActivate: [AuthGuard]
-  },
-  {
-    path: 'epub-reader/book/:bookId',
-    component: EpubReaderComponent,
     canActivate: [AuthGuard]
   },
   {
