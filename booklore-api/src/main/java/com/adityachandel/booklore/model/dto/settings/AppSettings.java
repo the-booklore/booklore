@@ -19,12 +19,12 @@ public class AppSettings {
     private boolean similarBookRecommendation;
     private boolean opdsServerEnabled;
     private String uploadPattern;
-    private Integer cbxCacheSizeInMb;
     private Integer pdfCacheSizeInMb;
     private Integer maxFileUploadSizeInMb;
     private boolean remoteAuthEnabled;
     private boolean metadataDownloadOnBookdrop;
     private boolean oidcEnabled;
+    private boolean telemetryEnabled;
     private OidcProviderDetails oidcProviderDetails;
     private OidcAutoProvisionDetails oidcAutoProvisionDetails;
     private MetadataProviderSettings metadataProviderSettings;

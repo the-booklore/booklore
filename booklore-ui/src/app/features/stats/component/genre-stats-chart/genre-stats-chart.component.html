@@ -1,0 +1,18 @@
+<div class="genre-stats-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-chart-bar genre-title-icon"></i>
+        Reading by Genre
+      </h3>
+      <p class="chart-description">Top genres by total reading time</p>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>

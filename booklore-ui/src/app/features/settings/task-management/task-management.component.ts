@@ -5,7 +5,8 @@ import {ProgressBar} from 'primeng/progressbar';
 import {MessageService} from 'primeng/api';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
-import {TaskInfo, MetadataReplaceMode, TaskHistory, TASK_TYPE_CONFIG, TaskCreateRequest, TaskCronConfigRequest, TaskProgressPayload, TaskService, TaskStatus, TaskType} from './task.service';
+import {TaskInfo, MetadataReplaceMode, TaskHistory, TASK_TYPE_CONFIG, TaskCreateRequest, TaskCronConfigRequest, TaskProgressPayload, TaskService, TaskStatus, TaskType, LibraryRescanOptions} from './task.service';
+import {MetadataRefreshRequest} from '../../metadata/model/request/metadata-refresh-request.model';
 import {finalize, forkJoin, Subscription} from 'rxjs';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
 import {ToggleSwitch} from 'primeng/toggleswitch';
@@ -36,7 +37,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   // State
   taskInfos: TaskInfo[] = [];
-  taskHistories: Map<string, TaskHistory> = new Map();
+  taskHistories = new Map<string, TaskHistory>();
   loading = false;
   executingTasks = new Set<string>();
   private subscription?: Subscription;
@@ -174,7 +175,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     this.runTaskWithOptions(type, options);
   }
 
-  private runTaskWithOptions(type: string, options: any): void {
+  private runTaskWithOptions(type: string, options: LibraryRescanOptions | MetadataRefreshRequest | null): void {
     const request: TaskCreateRequest = {
       taskType: type as TaskType,
       options: options
@@ -273,9 +274,15 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     return taskInfo?.cronSupported || false;
   }
 
-  getCronConfig(taskType: string): any {
+  getCronConfig(taskType: string): { enabled?: boolean; cronExpression?: string } | null | undefined {
     const taskInfo = this.taskInfos.find(t => t.taskType === taskType);
-    return taskInfo?.cronConfig;
+    if (!taskInfo?.cronConfig) return null;
+
+    const cronConfig = taskInfo.cronConfig;
+    return {
+      enabled: cronConfig.enabled,
+      cronExpression: cronConfig.cronExpression ?? undefined
+    };
   }
 
   toggleCronEnabled(taskType: string): void {
@@ -283,7 +290,7 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
     if (!cronConfig) return;
 
     const request: TaskCronConfigRequest = {
-      enabled: !cronConfig.enabled
+      enabled: !(cronConfig.enabled ?? false)
     };
 
     this.updateCronConfig(taskType, request);
@@ -441,7 +448,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   getTaskIcon(taskType: string): string {
     const icons: Record<string, string> = {
-      [TaskType.CLEAR_CBX_CACHE]: 'pi-database',
       [TaskType.CLEAR_PDF_CACHE]: 'pi-database',
       [TaskType.REFRESH_LIBRARY_METADATA]: 'pi-refresh',
       [TaskType.UPDATE_BOOK_RECOMMENDATIONS]: 'pi-sparkles',
@@ -464,7 +470,6 @@ export class TaskManagementComponent implements OnInit, OnDestroy {
 
   getMetadataIcon(taskType: string): string {
     const icons: Record<string, string> = {
-      [TaskType.CLEAR_CBX_CACHE]: 'pi-database',
       [TaskType.CLEAR_PDF_CACHE]: 'pi-database',
       [TaskType.CLEANUP_DELETED_BOOKS]: 'pi-trash',
       [TaskType.CLEANUP_TEMP_METADATA]: 'pi-file'

@@ -28,6 +28,16 @@ public class UserCreateRequest {
     private boolean permissionAccessTaskManager;
     private boolean permissionManageGlobalPreferences;
     private boolean permissionManageIcons;
+    private boolean permissionManageFonts;
+    private boolean permissionBulkAutoFetchMetadata;
+    private boolean permissionBulkCustomFetchMetadata;
+    private boolean permissionBulkEditMetadata;
+    private boolean permissionBulkRegenerateCover;
+    private boolean permissionMoveOrganizeFiles;
+    private boolean permissionBulkLockUnlockMetadata;
+    private boolean permissionBulkResetBookloreReadProgress;
+    private boolean permissionBulkResetKoReaderReadProgress;
+    private boolean permissionBulkResetBookReadStatus;
 
     private Set<Long> selectedLibraries;
 }

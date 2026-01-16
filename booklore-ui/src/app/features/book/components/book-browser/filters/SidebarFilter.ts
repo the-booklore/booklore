@@ -47,12 +47,14 @@ export function doesBookMatchReadStatus(book: Book, selected: string[]): boolean
 
 export class SideBarFilter implements BookFilter {
 
-  constructor(private selectedFilter$: Observable<any>, private selectedFilterMode$: Observable<BookFilterMode>) {
+  constructor(private selectedFilter$: Observable<unknown>, private selectedFilterMode$: Observable<BookFilterMode>) {
   }
 
   filter(bookState: BookState): Observable<BookState> {
     return combineLatest([this.selectedFilter$, this.selectedFilterMode$]).pipe(
       map(([activeFilters, mode]) => {
+        // Return original state if books is null or undefined
+        if (bookState.books == null) return bookState;
         if (!activeFilters) return bookState;
         const filteredBooks = (bookState.books || []).filter(book => {
           const matches = Object.entries(activeFilters).map(([filterType, filterValues]) => {
@@ -92,6 +94,8 @@ export class SideBarFilter implements BookFilter {
                 return filterValues.some(range => isRatingInRange(book.metadata?.goodreadsRating, range));
               case 'hardcoverRating':
                 return filterValues.some(range => isRatingInRange(book.metadata?.hardcoverRating, range));
+              case 'ranobedbRating':
+                return filterValues.some(range => isRatingInRange(book.metadata?.ranobedbRating, range));
               case 'personalRating':
                 return filterValues.some(range => isRatingInRange10(book.personalRating, range));
               case 'publishedDate':
@@ -101,6 +105,14 @@ export class SideBarFilter implements BookFilter {
                 return bookYear ? filterValues.some(val => val == bookYear || val == bookYear.toString()) : false;
               case 'fileSize':
                 return filterValues.some(range => isFileSizeInRange(book.fileSizeKb, range));
+              case 'library':
+                return mode === 'or'
+                  ? filterValues.some(val => val == book.libraryId)
+                  : filterValues.every(val => val == book.libraryId);
+              case 'shelf':
+                return mode === 'or'
+                  ? filterValues.some(val => book.shelves?.some(s => s.id == val))
+                  : filterValues.every(val => book.shelves?.some(s => s.id == val));
               case 'shelfStatus':
                 const shelved = book.shelves && book.shelves.length > 0 ? 'shelved' : 'unshelved';
                 return filterValues.includes(shelved);

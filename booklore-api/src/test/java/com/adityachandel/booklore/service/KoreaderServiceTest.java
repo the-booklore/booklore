@@ -2,7 +2,6 @@ package com.adityachandel.booklore.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.isNull;
 
 import com.adityachandel.booklore.config.security.userdetails.KoreaderUserDetails;
 import com.adityachandel.booklore.exception.APIException;
@@ -14,6 +13,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
 import com.adityachandel.booklore.repository.UserRepository;
 import com.adityachandel.booklore.repository.KoreaderUserRepository;
+import com.adityachandel.booklore.service.hardcover.HardcoverSyncService;
 import com.adityachandel.booklore.service.koreader.KoreaderService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.*;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -41,6 +42,8 @@ class KoreaderServiceTest {
     UserRepository userRepo;
     @Mock
     KoreaderUserRepository koreaderUserRepo;
+    @Mock
+    HardcoverSyncService hardcoverSyncService;
 
     @InjectMocks
     KoreaderService service;
@@ -232,5 +235,16 @@ class KoreaderServiceTest {
         when(details.isSyncEnabled()).thenReturn(false);
         var dto = KoreaderProgress.builder().document("h").build();
         assertThrows(APIException.class, () -> service.saveProgress("h", dto));
+    }
+
+    @Test
+    void normalizeProgressPercent_handlesNullAndRanges() throws Exception {
+        Method method = KoreaderService.class.getDeclaredMethod("normalizeProgressPercent", Float.class);
+        method.setAccessible(true);
+
+        assertNull(method.invoke(service, new Object[]{null}));
+        assertEquals(50.0f, (Float) method.invoke(service, 0.5f));
+        assertEquals(100.0f, (Float) method.invoke(service, 1.0f));
+        assertEquals(42.0f, (Float) method.invoke(service, 42.0f));
     }
 }

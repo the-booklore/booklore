@@ -156,6 +156,56 @@
   font-size: 0.875rem;
   line-height: 1.5;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .info-icon {
+    font-size: 1.125rem;
+    color: red;
+    cursor: help;
+    transition: opacity 0.2s;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+::ng-deep {
+  .p-tooltip {
+    max-width: 500px;
+  }
+}
+
+.warning-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1.25rem;
+  background: rgba(251, 146, 60, 0.05);
+  border: 1px solid rgba(251, 146, 60, 0.3);
+  border-radius: 6px;
+  color: var(--p-text-color-secondary);
+
+  .pi-exclamation-triangle {
+    font-size: 1rem;
+    color: rgba(251, 146, 60, 0.7);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.45;
+
+    strong {
+      font-weight: 500;
+      color: var(--p-text-color);
+    }
+  }
 }
 
 .settings-content {

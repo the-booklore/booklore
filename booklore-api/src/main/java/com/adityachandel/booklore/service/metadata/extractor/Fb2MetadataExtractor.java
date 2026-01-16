@@ -354,14 +354,14 @@ public class Fb2MetadataExtractor implements FileMetadataExtractor {
 
     private InputStream getInputStream(File file) throws Exception {
         FileInputStream fis = new FileInputStream(file);
-        try {
-            if (file.getName().toLowerCase().endsWith(".gz")) {
+        if (file.getName().toLowerCase().endsWith(".gz")) {
+            try {
                 return new GZIPInputStream(fis);
+            } catch (Exception e) {
+                fis.close();
+                throw e;
             }
-            return fis;
-        } catch (Exception e) {
-            fis.close();
-            throw e;
         }
+        return fis;
     }
 }

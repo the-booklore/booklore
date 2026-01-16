@@ -3,14 +3,14 @@ package com.adityachandel.booklore.service.upload;
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -18,6 +18,7 @@ import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,7 @@ public class FileUploadService {
     private final MetadataExtractorFactory metadataExtractorFactory;
     private final AdditionalFileMapper additionalFileMapper;
     private final FileMovingHelper fileMovingHelper;
+    private final MonitoringRegistrationService monitoringRegistrationService;
 
     public void uploadFile(MultipartFile file, long libraryId, long pathId) {
         validateFile(file);
@@ -66,7 +68,7 @@ public class FileUploadService {
             file.transferTo(tempPath);
 
             final BookFileExtension fileExtension = getFileExtension(originalFileName);
-            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile());
+            final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
             final String relativePath = PathPatternResolver.resolvePattern(metadata, uploadPattern, originalFileName);
@@ -86,33 +88,67 @@ public class FileUploadService {
     }
 
     @Transactional
-    public AdditionalFile uploadAdditionalFile(Long bookId, MultipartFile file, AdditionalFileType additionalFileType, String description) {
+    public BookFile uploadAdditionalFile(Long bookId, MultipartFile file, boolean isBook, BookFileType bookType, String description) {
         final BookEntity book = findBookById(bookId);
         final String originalFileName = getValidatedFileName(file);
+        final Long libraryId = book.getLibrary() != null ? book.getLibrary().getId() : null;
+        final String sanitizedFileName = PathPatternResolver.truncateFilenameWithExtension(originalFileName);
 
         Path tempPath = null;
+        boolean monitoringUnregistered = false;
         try {
-            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, originalFileName);
+            tempPath = createTempFile(UPLOAD_TEMP_PREFIX, sanitizedFileName);
             file.transferTo(tempPath);
 
             final String fileHash = FileFingerprint.generateHash(tempPath);
-            validateAlternativeFormatDuplicate(additionalFileType, fileHash);
+            if (isBook) {
+                validateAlternativeFormatDuplicate(fileHash);
+            }
 
-            final Path finalPath = buildAdditionalFilePath(book, originalFileName);
+            final Path finalPath;
+            final String finalFileName;
+            if (isBook) {
+                String pattern = fileMovingHelper.getFileNamingPattern(book.getLibrary());
+                String resolvedRelativePath = PathPatternResolver.resolvePattern(book.getMetadata(), pattern, sanitizedFileName);
+                finalFileName = Paths.get(resolvedRelativePath).getFileName().toString();
+                finalPath = buildAdditionalFilePath(book, finalFileName);
+            } else {
+                finalFileName = sanitizedFileName;
+                finalPath = buildAdditionalFilePath(book, sanitizedFileName);
+            }
             validateFinalPath(finalPath);
+
+            if (libraryId != null) {
+                log.debug("Unregistering library {} for monitoring", libraryId);
+                monitoringRegistrationService.unregisterLibrary(libraryId);
+                monitoringUnregistered = true;
+            }
             moveFileToFinalLocation(tempPath, finalPath);
 
             log.info("Additional file uploaded to final location: {}", finalPath);
 
-            final BookAdditionalFileEntity entity = createAdditionalFileEntity(book, originalFileName, additionalFileType, file.getSize(), fileHash, description);
-            final BookAdditionalFileEntity savedEntity = additionalFileRepository.save(entity);
+            final BookFileEntity entity = createAdditionalFileEntity(book, finalFileName, isBook, bookType, file.getSize(), fileHash, description);
+            final BookFileEntity savedEntity = additionalFileRepository.save(entity);
 
             return additionalFileMapper.toAdditionalFile(savedEntity);
 
         } catch (IOException e) {
-            log.error("Failed to upload additional file for book {}: {}", bookId, originalFileName, e);
+            log.error("Failed to upload additional file for book {}: {}", bookId, sanitizedFileName, e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         } finally {
+            if (monitoringUnregistered && libraryId != null) {
+                try {
+                    if (book.getLibrary() != null && book.getLibrary().getLibraryPaths() != null) {
+                        for (LibraryPathEntity libPath : book.getLibrary().getLibraryPaths()) {
+                            Path libraryRoot = Path.of(libPath.getPath());
+                            log.debug("Re-registering library {} for monitoring", libraryId);
+                            monitoringRegistrationService.registerLibraryPaths(libraryId, libraryRoot);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to re-register library {} for monitoring after additional file upload: {}", libraryId, e.getMessage());
+                }
+            }
             cleanupTempFile(tempPath);
         }
     }
@@ -124,13 +160,14 @@ public class FileUploadService {
         Files.createDirectories(dropFolder);
 
         final String originalFilename = getValidatedFileName(file);
+        final String sanitizedFilename = PathPatternResolver.truncateFilenameWithExtension(originalFilename);
         Path tempPath = null;
 
         try {
-            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, originalFilename);
+            tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, sanitizedFilename);
             file.transferTo(tempPath);
 
-            final Path finalPath = dropFolder.resolve(originalFilename);
+            final Path finalPath = dropFolder.resolve(sanitizedFilename);
             validateFinalPath(finalPath);
             Files.move(tempPath, finalPath);
 
@@ -174,7 +211,12 @@ public class FileUploadService {
     }
 
     private Path createTempFile(String prefix, String fileName) throws IOException {
-        return Files.createTempFile(prefix, fileName);
+        String suffix = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex >= 0) {
+            suffix = fileName.substring(lastDotIndex);
+        }
+        return Files.createTempFile(prefix, suffix);
     }
 
     private void validateFinalPath(Path finalPath) {
@@ -188,25 +230,26 @@ public class FileUploadService {
         Files.move(sourcePath, targetPath);
     }
 
-    private void validateAlternativeFormatDuplicate(AdditionalFileType additionalFileType, String fileHash) {
-        if (additionalFileType == AdditionalFileType.ALTERNATIVE_FORMAT) {
-            final Optional<BookAdditionalFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
-            if (existingAltFormat.isPresent()) {
-                throw new IllegalArgumentException("Alternative format file already exists with same content");
-            }
+    private void validateAlternativeFormatDuplicate(String fileHash) {
+        final Optional<BookFileEntity> existingAltFormat = additionalFileRepository.findByAltFormatCurrentHash(fileHash);
+        if (existingAltFormat.isPresent()) {
+            throw new IllegalArgumentException("Alternative format file already exists with same content");
         }
     }
 
     private Path buildAdditionalFilePath(BookEntity book, String fileName) {
-        return Paths.get(book.getLibraryPath().getPath(), book.getFileSubPath(), fileName);
+        final BookFileEntity primaryFile = book.getPrimaryBookFile();
+        return Paths.get(book.getLibraryPath().getPath(), primaryFile.getFileSubPath(), fileName);
     }
 
-    private BookAdditionalFileEntity createAdditionalFileEntity(BookEntity book, String fileName, AdditionalFileType additionalFileType, long fileSize, String fileHash, String description) {
-        return BookAdditionalFileEntity.builder()
+    private BookFileEntity createAdditionalFileEntity(BookEntity book, String fileName, boolean isBook, BookFileType bookType, long fileSize, String fileHash, String description) {
+        final BookFileEntity primaryFile = book.getPrimaryBookFile();
+        return BookFileEntity.builder()
                 .book(book)
                 .fileName(fileName)
-                .fileSubPath(book.getFileSubPath())
-                .additionalFileType(additionalFileType)
+                .fileSubPath(primaryFile.getFileSubPath())
+                .isBookFormat(isBook)
+                .bookType(bookType)
                 .fileSizeKb(fileSize / BYTES_TO_KB_DIVISOR)
                 .initialHash(fileHash)
                 .currentHash(fileHash)
@@ -225,8 +268,28 @@ public class FileUploadService {
         }
     }
 
-    private BookMetadata extractMetadata(BookFileExtension fileExt, File file) {
-        return metadataExtractorFactory.extractMetadata(fileExt, file);
+    private BookMetadata extractMetadata(BookFileExtension fileExt, File file, String originalFileName) {
+        BookMetadata metadata = metadataExtractorFactory.extractMetadata(fileExt, file);
+
+        // If the metadata title is the same as the temporary file's base name (which happens
+        // when CBX files have no embedded metadata), use the original filename as the title instead
+        String tempFileBaseName = java.nio.file.Paths.get(file.getName()).getFileName().toString();
+        int lastDotIndex = tempFileBaseName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            tempFileBaseName = tempFileBaseName.substring(0, lastDotIndex);
+        }
+
+        String originalFileBaseName = originalFileName;
+        lastDotIndex = originalFileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            originalFileBaseName = originalFileName.substring(0, lastDotIndex);
+        }
+
+        if (metadata.getTitle() != null && (metadata.getTitle().equals(tempFileBaseName) || metadata.getTitle().startsWith(UPLOAD_TEMP_PREFIX))) {
+            metadata.setTitle(originalFileBaseName);
+        }
+
+        return metadata;
     }
 
     private void validateFile(MultipartFile file) {

@@ -197,6 +197,24 @@ curl http://localhost:8080/actuator/health
 
 Always run tests before submitting a pull request to ensure your changes don't break existing functionality.
 
+### Frontend Tests (Angular + Vitest)
+
+Booklore uses [Vitest](https://vitest.dev/) for fast, modern frontend testing in the Angular app.
+
+```bash
+cd booklore-ui
+
+# Run all frontend tests
+ng test
+
+# Run tests with coverage report
+ng test --coverage
+```
+
+- The coverage report will be generated in the `coverage/` directory.
+- You can open `coverage/index.html` in your browser to view detailed coverage metrics.
+- All new features and bug fixes should include relevant unit tests.
+
 ### Backend Tests
 
 ```bash
@@ -393,7 +411,7 @@ Instances of unacceptable behavior may result in temporary or permanent ban from
 **Need help or want to discuss ideas?**
 
 - 💬 **Discord**: [Join our server](https://discord.gg/Ee5hd458Uz)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/adityachandelgit/BookLore/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/booklore-app/booklore/issues)
 
 ---
 
@@ -409,9 +427,9 @@ By contributing, you agree that your contributions will be licensed under the sa
 
 Not sure where to start? Check out:
 
-- Issues labeled [`good first issue`](https://github.com/adityachandelgit/BookLore/labels/good%20first%20issue)
-- Issues labeled [`help wanted`](https://github.com/adityachandelgit/BookLore/labels/help%20wanted)
-- Our [project roadmap](https://github.com/adityachandelgit/BookLore/projects)
+- Issues labeled [`good first issue`](https://github.com/booklore-app/booklore/labels/good%20first%20issue)
+- Issues labeled [`help wanted`](https://github.com/booklore-app/booklore/labels/help%20wanted)
+- Our [project roadmap](https://github.com/booklore-app/booklore/projects)
 
 ---
 

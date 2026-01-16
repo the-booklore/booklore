@@ -311,4 +311,168 @@ class OpdsFeedServiceTest {
 
         assertThat(userId).isNull();
     }
+
+    @Test
+    void parseShelfIds_shouldParseSingleShelfId() throws Exception {
+        when(request.getParameter("shelfId")).thenReturn("10");
+        when(request.getParameter("shelfIds")).thenReturn(null);
+
+        var method = OpdsFeedService.class.getDeclaredMethod("parseShelfIds", HttpServletRequest.class);
+        method.setAccessible(true);
+        Set<Long> result = (Set<Long>) method.invoke(opdsFeedService, request);
+
+        assertThat(result).containsExactly(10L);
+    }
+
+    @Test
+    void parseShelfIds_shouldParseCommaSeparatedShelfIds() throws Exception {
+        when(request.getParameter("shelfId")).thenReturn(null);
+        when(request.getParameter("shelfIds")).thenReturn("10,20,30");
+
+        var method = OpdsFeedService.class.getDeclaredMethod("parseShelfIds", HttpServletRequest.class);
+        method.setAccessible(true);
+        Set<Long> result = (Set<Long>) method.invoke(opdsFeedService, request);
+
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L, 30L);
+    }
+
+    @Test
+    void parseShelfIds_shouldCombineShelfIdAndShelfIds() throws Exception {
+        when(request.getParameter("shelfId")).thenReturn("5");
+        when(request.getParameter("shelfIds")).thenReturn("10,20");
+
+        var method = OpdsFeedService.class.getDeclaredMethod("parseShelfIds", HttpServletRequest.class);
+        method.setAccessible(true);
+        Set<Long> result = (Set<Long>) method.invoke(opdsFeedService, request);
+
+        assertThat(result).containsExactlyInAnyOrder(5L, 10L, 20L);
+    }
+
+    @Test
+    void parseShelfIds_shouldReturnNullWhenNoShelfIds() throws Exception {
+        when(request.getParameter("shelfId")).thenReturn(null);
+        when(request.getParameter("shelfIds")).thenReturn(null);
+
+        var method = OpdsFeedService.class.getDeclaredMethod("parseShelfIds", HttpServletRequest.class);
+        method.setAccessible(true);
+        Set<Long> result = (Set<Long>) method.invoke(opdsFeedService, request);
+
+        assertThat(result).isNull();
+    }
+
+    @Test
+    void parseShelfIds_shouldHandleInvalidIds() throws Exception {
+        when(request.getParameter("shelfId")).thenReturn("invalid");
+        when(request.getParameter("shelfIds")).thenReturn("10,abc,20");
+
+        var method = OpdsFeedService.class.getDeclaredMethod("parseShelfIds", HttpServletRequest.class);
+        method.setAccessible(true);
+        Set<Long> result = (Set<Long>) method.invoke(opdsFeedService, request);
+
+        // Should only parse valid IDs
+        assertThat(result).containsExactlyInAnyOrder(10L, 20L);
+    }
+
+    @Test
+    void generateCatalogFeed_withSingleShelfId_shouldFilterByShelf() {
+        mockAuthenticatedUser();
+
+        when(request.getParameter("libraryId")).thenReturn(null);
+        when(request.getParameter("shelfId")).thenReturn("10");
+        when(request.getParameter("shelfIds")).thenReturn(null);
+        when(request.getParameter("magicShelfId")).thenReturn(null);
+        when(request.getParameter("q")).thenReturn(null);
+        when(request.getParameter("author")).thenReturn(null);
+        when(request.getParameter("series")).thenReturn(null);
+        when(request.getParameter("page")).thenReturn(null);
+        when(request.getParameter("size")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/v1/opds/catalog");
+        when(request.getQueryString()).thenReturn("shelfId=10");
+
+        Book book = Book.builder()
+                .id(1L)
+                .bookType(BookFileType.EPUB)
+                .addedOn(FIXED_INSTANT)
+                .metadata(BookMetadata.builder().title("Shelf Book").build())
+                .build();
+
+        Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
+        when(opdsBookService.getBooksPage(eq(TEST_USER_ID), isNull(), isNull(), eq(Set.of(10L)), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
+        when(opdsBookService.getShelfName(10L)).thenReturn("My Shelf - Shelf");
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        assertThat(xml).contains("Shelf Book");
+        assertThat(xml).contains("My Shelf - Shelf");
+        assertThat(xml).contains("</feed>");
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L), 0, 50);
+    }
+
+    @Test
+    void generateCatalogFeed_withMultipleShelfIds_shouldFilterByMultipleShelves() {
+        mockAuthenticatedUser();
+
+        when(request.getParameter("libraryId")).thenReturn(null);
+        when(request.getParameter("shelfId")).thenReturn(null);
+        when(request.getParameter("shelfIds")).thenReturn("10,20");
+        when(request.getParameter("magicShelfId")).thenReturn(null);
+        when(request.getParameter("q")).thenReturn(null);
+        when(request.getParameter("author")).thenReturn(null);
+        when(request.getParameter("series")).thenReturn(null);
+        when(request.getParameter("page")).thenReturn(null);
+        when(request.getParameter("size")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/v1/opds/catalog");
+        when(request.getQueryString()).thenReturn("shelfIds=10,20");
+
+        Book book = Book.builder()
+                .id(1L)
+                .bookType(BookFileType.EPUB)
+                .addedOn(FIXED_INSTANT)
+                .metadata(BookMetadata.builder().title("Multi Shelf Book").build())
+                .build();
+
+        Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
+        when(opdsBookService.getBooksPage(eq(TEST_USER_ID), isNull(), isNull(), eq(Set.of(10L, 20L)), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        assertThat(xml).contains("Multi Shelf Book");
+        assertThat(xml).contains("Multiple Shelves");
+        assertThat(xml).contains("</feed>");
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L, 20L), 0, 50);
+    }
+
+    @Test
+    void generateCatalogFeed_withShelfIdAndQuery_shouldSearchInShelf() {
+        mockAuthenticatedUser();
+
+        when(request.getParameter("libraryId")).thenReturn(null);
+        when(request.getParameter("shelfId")).thenReturn("10");
+        when(request.getParameter("shelfIds")).thenReturn(null);
+        when(request.getParameter("magicShelfId")).thenReturn(null);
+        when(request.getParameter("q")).thenReturn("fantasy");
+        when(request.getParameter("author")).thenReturn(null);
+        when(request.getParameter("series")).thenReturn(null);
+        when(request.getParameter("page")).thenReturn(null);
+        when(request.getParameter("size")).thenReturn(null);
+        when(request.getRequestURI()).thenReturn("/api/v1/opds/catalog");
+        when(request.getQueryString()).thenReturn("shelfId=10&q=fantasy");
+
+        Book book = Book.builder()
+                .id(1L)
+                .bookType(BookFileType.EPUB)
+                .addedOn(FIXED_INSTANT)
+                .metadata(BookMetadata.builder().title("Fantasy Book").build())
+                .build();
+
+        Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
+        when(opdsBookService.getBooksPage(eq(TEST_USER_ID), eq("fantasy"), isNull(), eq(Set.of(10L)), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
+        when(opdsBookService.getShelfName(10L)).thenReturn("Fantasy Shelf - Shelf");
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        assertThat(xml).contains("Fantasy Book");
+        assertThat(xml).contains("</feed>");
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, "fantasy", null, Set.of(10L), 0, 50);
+    }
 }

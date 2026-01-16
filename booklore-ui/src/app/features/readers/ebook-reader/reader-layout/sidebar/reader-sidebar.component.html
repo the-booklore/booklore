@@ -1,0 +1,104 @@
+<div class="dialog-overlay"
+     (click)="onOverlayClick()"
+     [class.closing]="closing">
+  <div class="sidebar"
+       (click)="$event.stopPropagation()"
+       [class.closing]="closing">
+    <div class="sidebar-header">
+      <div class="sidebar-header-book">
+        @if (bookCoverUrl) {
+          <img
+            [src]="bookCoverUrl"
+            alt="Book cover"
+            class="sidebar-book-cover clickable"
+            (click)="onCoverClick()"
+            role="button"
+            tabindex="0"
+            (keydown.enter)="onCoverClick()"
+            (keydown.space)="onCoverClick()"
+            title="View book details"
+          />
+        }
+        <div class="sidebar-book-meta">
+          <div class="sidebar-book-title ellipsis">{{ bookTitle }}</div>
+          @if (bookAuthors) {
+            <div class="sidebar-book-authors ellipsis">{{ bookAuthors }}</div>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-tabs">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'chapters'"
+        (click)="activeTab = 'chapters'"
+        aria-label="Chapters"
+      >
+        <i class="pi pi-book tab-icon"></i>
+        <span class="tab-label">Chapters</span>
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab === 'bookmarks'"
+        (click)="activeTab = 'bookmarks'"
+        aria-label="Bookmarks"
+      >
+        <i class="pi pi-bookmark tab-icon"></i>
+        <span class="tab-label">Bookmarks</span>
+      </button>
+    </div>
+    <div class="sidebar-body">
+      @switch (activeTab) {
+        @case ('chapters') {
+          <ul class="chapter-list">
+            @for (chapter of chapters; track chapter.href) {
+              <ng-container *ngTemplateOutlet="chapterNode; context: { $implicit: chapter, level: 0 }"></ng-container>
+            }
+          </ul>
+          <ng-template #chapterNode let-chapter let-level="level">
+            <li>
+              <div class="chapter-row"
+                   [class.has-subchapters]="chapter.subitems?.length"
+                   [class.active]="isChapterActive(chapter.href)"
+                   [style.paddingLeft.px]="12 + (level * 16)"
+                   (click)="chapter.subitems?.length ? toggleChapterExpand(chapter.href) : onChapterClick(chapter.href)">
+                <span class="chapter-label ellipsis">{{ chapter.label }}</span>
+                @if (chapter.subitems?.length) {
+                  <span class="accordion-icon" [class.expanded]="isChapterExpanded(chapter.href)">
+                    <i class="pi" [ngClass]="isChapterExpanded(chapter.href) ? 'pi-chevron-down' : 'pi-chevron-right'"></i>
+                  </span>
+                }
+              </div>
+              @if (chapter.subitems?.length && isChapterExpanded(chapter.href)) {
+                <ul class="subchapter-list">
+                  @for (sub of chapter.subitems; track sub.href) {
+                    <ng-container *ngTemplateOutlet="chapterNode; context: { $implicit: sub, level: level + 1 }"></ng-container>
+                  }
+                </ul>
+              }
+            </li>
+          </ng-template>
+        }
+        @case ('bookmarks') {
+          @if (bookmarks.length > 0) {
+            <ul>
+              @for (bookmark of bookmarks; track bookmark.id) {
+                <li class="bookmark-item" (click)="onBookmarkClick(bookmark.cfi)">
+                  <div class="bookmark-info">
+                    <div class="bookmark-title ellipsis">{{ bookmark.title }}</div>
+                    <div class="bookmark-date">{{ bookmark.createdAt | date: 'short' }}</div>
+                  </div>
+                  <button class="bookmark-delete-btn" (click)="onDeleteBookmark($event, bookmark.id)" aria-label="Delete bookmark">
+                    &times;
+                  </button>
+                </li>
+              }
+            </ul>
+          } @else {
+            <div class="empty-tab">No bookmarks yet.</div>
+          }
+        }
+      }
+    </div>
+  </div>
+</div>

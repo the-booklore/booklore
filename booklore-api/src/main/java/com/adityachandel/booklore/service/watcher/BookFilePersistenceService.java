@@ -5,7 +5,6 @@ import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.PermissionType;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -41,11 +40,12 @@ public class BookFilePersistenceService {
 
         String newSubPath = FileUtils.getRelativeSubPath(newLibraryPath.getPath(), path);
 
-        boolean pathChanged = !Objects.equals(newSubPath, book.getFileSubPath()) || !Objects.equals(newLibraryPath.getId(), book.getLibraryPath().getId());
+        var primaryFile = book.getPrimaryBookFile();
+        boolean pathChanged = !Objects.equals(newSubPath, primaryFile.getFileSubPath()) || !Objects.equals(newLibraryPath.getId(), book.getLibraryPath().getId());
 
         if (pathChanged || Boolean.TRUE.equals(book.getDeleted())) {
             book.setLibraryPath(newLibraryPath);
-            book.setFileSubPath(newSubPath);
+            primaryFile.setFileSubPath(newSubPath);
             book.setDeleted(Boolean.FALSE);
             bookRepository.save(book);
             log.info("[FILE_CREATE] Updated path / undeleted existing book with hash '{}': '{}'", currentHash, path);

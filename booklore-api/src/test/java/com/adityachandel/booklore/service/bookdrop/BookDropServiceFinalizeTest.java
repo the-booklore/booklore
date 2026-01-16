@@ -2,11 +2,11 @@ package com.adityachandel.booklore.service.bookdrop;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.dto.request.BookdropFinalizeRequest;
-import com.adityachandel.booklore.model.dto.response.BookdropFinalizeResult;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -41,6 +41,8 @@ class BookDropServiceFinalizeTest {
     private AppProperties appProperties;
     @Mock
     private BookdropNotificationService bookdropNotificationService;
+    @Mock
+    private KoboAutoShelfService koboAutoShelfService;
 
     @InjectMocks
     private BookDropService bookDropService;

@@ -3,6 +3,7 @@ package com.adityachandel.booklore.util;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,11 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
+        return resolvePattern(book, book.getPrimaryBookFile(), pattern);
+    }
+
+    public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern) {
+        String currentFilename = bookFile != null && bookFile.getFileName() != null ? bookFile.getFileName().trim() : "";
         return resolvePattern(book.getMetadata(), pattern, currentFilename);
     }
 
@@ -238,7 +243,7 @@ public class PathPatternResolver {
         return result.toString();
     }
 
-    private String truncatePathComponent(String component, int maxBytes) {
+    public String truncatePathComponent(String component, int maxBytes) {
         if (component == null || component.isEmpty()) {
             return component;
         }
@@ -288,7 +293,7 @@ public class PathPatternResolver {
         return result.toString();
     }
 
-    private String truncateFilenameWithExtension(String filename) {
+    public String truncateFilenameWithExtension(String filename) {
         int lastDotIndex = filename.lastIndexOf('.');
         if (lastDotIndex == -1 || lastDotIndex == 0) {
             // No extension or dot is at start (hidden file), treat as normal component

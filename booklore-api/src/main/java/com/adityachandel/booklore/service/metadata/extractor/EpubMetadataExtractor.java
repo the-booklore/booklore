@@ -2,6 +2,9 @@ package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import io.documentnode.epub4j.domain.Book;
+import io.documentnode.epub4j.domain.MediaType;
+import io.documentnode.epub4j.domain.MediaTypes;
+import io.documentnode.epub4j.domain.Resource;
 import io.documentnode.epub4j.epub.EpubReader;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
@@ -19,14 +22,13 @@ import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -34,40 +36,54 @@ import java.util.regex.Pattern;
 public class EpubMetadataExtractor implements FileMetadataExtractor {
 
     private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("^\\d{4}$");
+    private static final String OPF_NS = "http://www.idpf.org/2007/opf";
+
+    // List of all media types that epub4j has so we can lazy load them.
+    // Note that we have to add in null to handle files without extentions like mimetype.
+    private static final List<MediaType> MEDIA_TYPES = new ArrayList<>();
+    static {
+        MEDIA_TYPES.addAll(Arrays.asList(MediaTypes.mediaTypes));
+        MEDIA_TYPES.add(null);
+    }
 
     @Override
     public byte[] extractCover(File epubFile) {
-        try (FileInputStream fis = new FileInputStream(epubFile)) {
-            Book epub = new EpubReader().readEpub(fis);
-            io.documentnode.epub4j.domain.Resource coverImage = epub.getCoverImage();
+        try (ZipFile zip = new ZipFile(epubFile)) {
+            Book epub = new EpubReader().readEpubLazy(zip, "UTF-8", MEDIA_TYPES);
 
-            if (coverImage == null) {
-                String coverHref = findCoverImageHrefInOpf(epubFile);
-                if (coverHref != null) {
-                    byte[] data = extractFileFromZip(epubFile, coverHref);
-                    if (data != null) return data;
+            // First we read the cover image from the epub4j reader.
+            // We filter to only images since it will default to the first page.
+            byte[] image = getImageFromEpubResource(epub.getCoverImage());
+            if (image != null) {
+                return image;
+            }
+
+            // We fall back to reading the image based on the cover-image property.
+            String coverHref = findCoverImageHrefInOpf(epubFile);
+            if (coverHref != null) {
+                image = extractFileFromZip(epubFile, coverHref);
+                if (image != null) {
+                    return image;
                 }
             }
 
-            if (coverImage == null) {
-                for (io.documentnode.epub4j.domain.Resource res : epub.getResources().getAll()) {
-                    String id = res.getId();
-                    String href = res.getHref();
-                    if ((id != null && id.toLowerCase().contains("cover")) ||
-                            (href != null && href.toLowerCase().contains("cover"))) {
-                        if (res.getMediaType() != null && res.getMediaType().getName().startsWith("image")) {
-                            coverImage = res;
-                            break;
-                        }
+            // As a last resort we look at all of the files in the epub for something cover related.
+            for (Resource res : epub.getResources().getAll()) {
+                String id = res.getId();
+                String href = res.getHref();
+                if ((id != null && id.toLowerCase().contains("cover")) ||
+                        (href != null && href.toLowerCase().contains("cover"))) {
+                    image = getImageFromEpubResource(res);
+                    if (image != null) {
+                        return image;
                     }
                 }
             }
-
-            return (coverImage != null) ? coverImage.getData() : null;
         } catch (Exception e) {
             log.warn("Failed to extract cover from EPUB: {}", epubFile.getName(), e);
-            return null;
         }
+
+        return null;
     }
 
     @Override
@@ -98,13 +114,17 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                     if (metadata == null) return null;
 
                     BookMetadata.BookMetadataBuilder builderMeta = BookMetadata.builder();
-                    Set<String> authors = new HashSet<>();
                     Set<String> categories = new HashSet<>();
 
                     boolean seriesFound = false;
                     boolean seriesIndexFound = false;
 
                     NodeList children = metadata.getChildNodes();
+
+                    Map<String, String> creatorsById = new HashMap<>();
+                    Map<String, String> creatorRoleById = new HashMap<>();
+                    Map<String, Set<String>> creatorsByRole = new HashMap<>();
+                    creatorsByRole.put("aut", new HashSet<>());
 
                     Map<String, String> titlesById = new HashMap<>();
                     Map<String, String> titleTypeById = new HashMap<>();
@@ -132,6 +152,10 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
 
                                 if ("title-type".equals(prop) && StringUtils.isNotBlank(refines)) {
                                     titleTypeById.put(refines.substring(1), content.toLowerCase());
+                                }
+
+                                if ("role".equals(prop) && StringUtils.isNotBlank(refines)) {
+                                   creatorRoleById.put(refines.substring(1), content.toLowerCase());
                                 }
 
                                 if (!seriesFound && ("booklore:series".equals(prop) || "calibre:series".equals(name) || "belongs-to-collection".equals(prop))) {
@@ -169,36 +193,52 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     case "booklore:asin" -> builderMeta.asin(content);
                                     case "booklore:goodreads_id" -> builderMeta.goodreadsId(content);
                                     case "booklore:comicvine_id" -> builderMeta.comicvineId(content);
+                                    case "booklore:ranobedb_id" -> builderMeta.ranobedbId(content);
                                     case "booklore:hardcover_id" -> builderMeta.hardcoverId(content);
                                     case "booklore:google_books_id" -> builderMeta.googleId(content);
                                     case "booklore:page_count" -> safeParseInt(content, builderMeta::pageCount);
                                 }
                             }
-                            case "creator" -> authors.add(text);
+                            case "creator" -> {
+                                String role = el.getAttributeNS(OPF_NS, "role");
+                                if (StringUtils.isNotBlank(role)) {
+                                    creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(text);
+                                } else {
+                                    String id = el.getAttribute("id");
+                                    if (StringUtils.isNotBlank(id)) {
+                                        creatorsById.put(id, text);
+                                    } else {
+                                        creatorsByRole.get("aut").add(text);
+                                    }
+                                }
+                            }
                             case "subject" -> categories.add(text);
                             case "description" -> builderMeta.description(text);
                             case "publisher" -> builderMeta.publisher(text);
                             case "language" -> builderMeta.language(text);
                             case "identifier" -> {
-                                String scheme = el.getAttributeNS("http://www.idpf.org/2007/opf", "scheme").toUpperCase();
+                                String scheme = el.getAttributeNS(OPF_NS, "scheme").toUpperCase();
                                 String value = text.toLowerCase().startsWith("isbn:") ? text.substring(5) : text;
 
                                 if (!scheme.isEmpty()) {
                                     switch (scheme) {
                                         case "ISBN" -> {
-                                            if (value.length() == 13) builderMeta.isbn13(value);
-                                            else if (value.length() == 10) builderMeta.isbn10(value);
+                                            String cleanValue = value.replaceAll("[- ]", "");
+                                            if (cleanValue.length() == 13) builderMeta.isbn13(value);
+                                            else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                         }
                                         case "GOODREADS" -> builderMeta.goodreadsId(value);
                                         case "COMICVINE" -> builderMeta.comicvineId(value);
+                                        case "RANOBEDB" -> builderMeta.ranobedbId(value);
                                         case "GOOGLE" -> builderMeta.googleId(value);
                                         case "AMAZON" -> builderMeta.asin(value);
                                         case "HARDCOVER" -> builderMeta.hardcoverId(value);
                                     }
                                 } else {
                                     if (text.toLowerCase().startsWith("isbn:")) {
-                                        if (value.length() == 13) builderMeta.isbn13(value);
-                                        else if (value.length() == 10) builderMeta.isbn10(value);
+                                        String cleanValue = value.replaceAll("[- ]", "");
+                                        if (cleanValue.length() == 13) builderMeta.isbn13(value);
+                                        else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                     }
                                 }
                             }
@@ -233,7 +273,14 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         }
                     }
 
-                    builderMeta.authors(authors);
+                    for (Map.Entry<String, String> entry : creatorsById.entrySet()) {
+                        String id = entry.getKey();
+                        String value = entry.getValue();
+                        String role = creatorRoleById.getOrDefault(id, "aut");
+                        creatorsByRole.computeIfAbsent(role, k -> new HashSet<>()).add(value);
+                    }
+
+                    builderMeta.authors(creatorsByRole.get("aut"));
                     builderMeta.categories(categories);
 
                     BookMetadata extractedMetadata = builderMeta.build();
@@ -302,6 +349,24 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
         return null;
     }
 
+    private byte[] getImageFromEpubResource(Resource res) {
+        if (res == null) {
+            return null;
+        }
+
+        MediaType mt = res.getMediaType();
+        if (mt == null || !mt.getName().startsWith("image")) {
+            return null;
+        }
+
+        try {
+            return res.getData();
+        } catch (IOException e) {
+            log.warn("Failed to read data for resource", e);
+            return null;
+        }
+    }
+
     private String findCoverImageHrefInOpf(File epubFile) {
         try (ZipFile zip = new ZipFile(epubFile)) {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -332,7 +397,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                         String properties = item.getAttribute("properties");
                         if (properties != null && properties.contains("cover-image")) {
                             String href = item.getAttribute("href");
-                            return resolvePath(opfPath, href);
+                            String decodedHref = URLDecoder.decode(href, StandardCharsets.UTF_8);
+                            return resolvePath(opfPath, decodedHref);
                         }
                     }
                 }

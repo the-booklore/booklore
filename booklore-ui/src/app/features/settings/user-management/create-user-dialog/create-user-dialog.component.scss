@@ -1,6 +1,6 @@
 .create-user-dialog {
-  width: 650px;
-  max-width: 650px;
+  width: 800px;
+  max-width: 800px;
   display: flex;
   flex-direction: column;
 
@@ -11,6 +11,7 @@
 }
 
 .panel-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -52,6 +53,12 @@
     }
   }
 
+  ::ng-deep .close-button {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
   @media (max-width: 480px) {
     padding: 1rem;
 
@@ -73,13 +80,18 @@
         font-size: 0.8rem;
       }
     }
+
+    ::ng-deep .close-button {
+      top: 0.5rem;
+      right: 0.5rem;
+    }
   }
 }
 
 .form-container {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 2rem;
   background: var(--card-background);
   border: 1px solid var(--border-color);
@@ -121,7 +133,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.75rem 0;
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-color);
@@ -130,6 +142,18 @@
     i {
       color: var(--primary-color);
       font-size: 1.125rem;
+    }
+  }
+
+  &.basic-info-section {
+    .form-fields-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+
+      @media (max-width: 640px) {
+        grid-template-columns: 1fr;
+      }
     }
   }
 }
@@ -170,6 +194,52 @@
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
+  }
+}
+
+.permissions-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.permission-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  .permission-group-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 0.5rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+
+    i {
+      color: var(--primary-color);
+      font-size: 1rem;
+    }
+  }
+
+  .permission-group-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &.full-width {
+    grid-column: 1 / -1;
   }
 }
 

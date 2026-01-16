@@ -1,7 +1,6 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -9,12 +8,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSName;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
-import org.springframework.messaging.rsocket.MetadataExtractor;
 import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -30,7 +29,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -48,7 +46,8 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
     @Override
     public byte[] extractCover(File file) {
         BufferedImage coverImage = null;
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             coverImage = new PDFRenderer(pdf).renderImageWithDPI(0, 300, ImageType.RGB);
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                 ImageIO.write(coverImage, "jpg", baos);
@@ -73,7 +72,8 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
 
         BookMetadata.BookMetadataBuilder metadataBuilder = BookMetadata.builder();
 
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead)) {
             PDDocumentInformation info = pdf.getDocumentInformation();
 
             if (info != null) {
@@ -179,6 +179,11 @@ public class PdfMetadataExtractor implements FileMetadataExtractor {
                                 String comicvine = identifiers.get("comicvine");
                                 if (StringUtils.isNotBlank(comicvine)) {
                                     metadataBuilder.comicvineId(comicvine);
+                                }
+
+                                String ranobedb = identifiers.get("ranobedb");
+                                if (StringUtils.isNotBlank(ranobedb)) {
+                                    metadataBuilder.ranobedbId(ranobedb);
                                 }
 
                                 String hardcover = identifiers.get("hardcover");

@@ -4,13 +4,13 @@ import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
+import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
@@ -20,6 +20,7 @@ import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +45,6 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FileUploadServiceTest {
@@ -73,6 +74,9 @@ class FileUploadServiceTest {
     @Mock
     AdditionalFileMapper additionalFileMapper;
 
+    @Mock
+    MonitoringRegistrationService monitoringRegistrationService;
+
     AppProperties appProperties;
     FileUploadService service;
 
@@ -89,7 +93,7 @@ class FileUploadServiceTest {
 
         service = new FileUploadService(
                 libraryRepository, bookRepository, bookAdditionalFileRepository,
-                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper
+                appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper, monitoringRegistrationService
         );
     }
 
@@ -209,6 +213,9 @@ class FileUploadServiceTest {
         when(libraryRepository.findById(7L)).thenReturn(Optional.of(lib));
         when(fileMovingHelper.getFileNamingPattern(lib)).thenReturn("{currentFilename}");
 
+        BookMetadata metadata = BookMetadata.builder().title("book").build();
+        when(metadataExtractorFactory.extractMetadata(any(BookFileExtension.class), any(File.class))).thenReturn(metadata);
+
         service.uploadFile(file, 7L, 2L);
 
         Path moved = tempDir.resolve("book.cbz");
@@ -226,7 +233,13 @@ class FileUploadServiceTest {
         BookEntity book = new BookEntity();
         book.setId(bookId);
         book.setLibraryPath(libPath);
-        book.setFileSubPath(".");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("primary.epub");
+        primaryFile.setFileSubPath(".");
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
@@ -235,20 +248,20 @@ class FileUploadServiceTest {
 
             when(bookAdditionalFileRepository.findByAltFormatCurrentHash("hash-123")).thenReturn(Optional.empty());
 
-            when(bookAdditionalFileRepository.save(any(BookAdditionalFileEntity.class))).thenAnswer(inv -> {
-                BookAdditionalFileEntity e = inv.getArgument(0);
+            when(bookAdditionalFileRepository.save(any(BookFileEntity.class))).thenAnswer(inv -> {
+                BookFileEntity e = inv.getArgument(0);
                 e.setId(99L);
                 return e;
             });
 
-            AdditionalFile dto = mock(AdditionalFile.class);
-            when(additionalFileMapper.toAdditionalFile(any(BookAdditionalFileEntity.class))).thenReturn(dto);
+            BookFile dto = mock(BookFile.class);
+            when(additionalFileMapper.toAdditionalFile(any(BookFileEntity.class))).thenReturn(dto);
 
-            AdditionalFile result = service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, "desc");
+            BookFile result = service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, "desc");
 
             assertThat(result).isEqualTo(dto);
-            verify(bookAdditionalFileRepository).save(any(BookAdditionalFileEntity.class));
-            verify(additionalFileMapper).toAdditionalFile(any(BookAdditionalFileEntity.class));
+            verify(bookAdditionalFileRepository).save(any(BookFileEntity.class));
+            verify(additionalFileMapper).toAdditionalFile(any(BookFileEntity.class));
         }
     }
 
@@ -263,19 +276,25 @@ class FileUploadServiceTest {
         BookEntity book = new BookEntity();
         book.setId(bookId);
         book.setLibraryPath(libPath);
-        book.setFileSubPath(".");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("primary.epub");
+        primaryFile.setFileSubPath(".");
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
 
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
         try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
             fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("dup-hash");
 
-            BookAdditionalFileEntity existing = new BookAdditionalFileEntity();
+            BookFileEntity existing = new BookFileEntity();
             existing.setId(1L);
             when(bookAdditionalFileRepository.findByAltFormatCurrentHash("dup-hash")).thenReturn(Optional.of(existing));
 
             assertThatExceptionOfType(IllegalArgumentException.class)
-                    .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, AdditionalFileType.ALTERNATIVE_FORMAT, null));
+                    .isThrownBy(() -> service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, null));
         }
     }
 
@@ -303,5 +322,60 @@ class FileUploadServiceTest {
         when(metadataExtractorFactory.extractMetadata(any(BookFileExtension.class), any(File.class))).thenReturn(metadata);
 
         assertDoesNotThrow(() -> service.uploadFile(file, 10L, 3L));
+    }
+
+    @Test
+    @DisplayName("Should truncate long filenames in uploadFileBookDrop")
+    void uploadFileBookDrop_truncatesLongFilename() throws IOException {
+        byte[] content = "data".getBytes();
+        String longName = "A".repeat(300) + ".pdf";
+        MockMultipartFile file = new MockMultipartFile("file", longName, "application/pdf", content);
+
+        service.uploadFileBookDrop(file);
+
+        File[] files = tempDir.toFile().listFiles();
+        assertThat(files).isNotNull();
+        assertThat(files).hasSize(1);
+        String savedName = files[0].getName();
+        
+        assertThat(savedName.length()).isLessThan(longName.length());
+        assertThat(savedName).endsWith(".pdf");
+    }
+
+    @Test
+    @DisplayName("Should truncate long filenames in uploadAdditionalFile")
+    void uploadAdditionalFile_truncatesLongFilename() {
+        long bookId = 11L;
+        String longName = "B".repeat(300) + ".pdf";
+        MockMultipartFile file = new MockMultipartFile("file", longName, "application/pdf", "payload".getBytes());
+
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        libPath.setId(1L);
+        libPath.setPath(tempDir.toString());
+        BookEntity book = new BookEntity();
+        book.setId(bookId);
+        book.setLibraryPath(libPath);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        book.setBookFiles(new ArrayList<>(List.of(primaryFile)));
+        book.getPrimaryBookFile().setFileSubPath(".");
+
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookAdditionalFileRepository.save(any(BookFileEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(additionalFileMapper.toAdditionalFile(any(BookFileEntity.class))).thenReturn(mock(BookFile.class));
+
+        try (MockedStatic<FileFingerprint> fp = mockStatic(FileFingerprint.class)) {
+             fp.when(() -> FileFingerprint.generateHash(any())).thenReturn("hash");
+
+             service.uploadAdditionalFile(bookId, file, true, BookFileType.PDF, "desc");
+
+             File[] files = tempDir.toFile().listFiles();
+             assertThat(files).isNotNull();
+             assertThat(files).hasSize(1);
+             String savedName = files[0].getName();
+
+             assertThat(savedName.length()).isLessThan(longName.length());
+             assertThat(savedName).endsWith(".pdf");
+        }
     }
 }

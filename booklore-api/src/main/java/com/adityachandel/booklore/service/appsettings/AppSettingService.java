@@ -73,7 +73,7 @@ public class AppSettingService {
         }
 
         boolean hasPermission = requiredPermissions.stream().anyMatch(permission ->
-            UserPermissionUtils.hasPermission(user.getPermissions(), permission)
+                UserPermissionUtils.hasPermission(user.getPermissions(), permission)
         );
 
         if (!hasPermission) {
@@ -95,7 +95,9 @@ public class AppSettingService {
     }
 
     private Map<String, String> getSettingsMap() {
-        return settingPersistenceHelper.appSettingsRepository.findAll().stream().collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
+        return settingPersistenceHelper.appSettingsRepository.findAll().stream()
+                .filter(entity -> entity.getName() != null && entity.getVal() != null)
+                .collect(Collectors.toMap(AppSettingEntity::getName, AppSettingEntity::getVal));
     }
 
     private PublicAppSetting buildPublicSetting() {
@@ -131,7 +133,7 @@ public class AppSettingService {
         builder.uploadPattern(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.UPLOAD_FILE_PATTERN, "{authors}/<{series}/><{seriesIndex}. >{title}< - {authors}>< ({year})>"));
         builder.similarBookRecommendation(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.SIMILAR_BOOK_RECOMMENDATION, "true")));
         builder.opdsServerEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.OPDS_SERVER_ENABLED, "false")));
-        builder.cbxCacheSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.CBX_CACHE_SIZE_IN_MB, "5120")));
+        builder.telemetryEnabled(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.TELEMETRY_ENABLED, "true")));
         builder.pdfCacheSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.PDF_CACHE_SIZE_IN_MB, "5120")));
         builder.maxFileUploadSizeInMb(Integer.parseInt(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.MAX_FILE_UPLOAD_SIZE_IN_MB, "100")));
         builder.metadataDownloadOnBookdrop(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.METADATA_DOWNLOAD_ON_BOOKDROP, "true")));
@@ -142,5 +144,21 @@ public class AppSettingService {
         builder.oidcEnabled(finalEnabled);
 
         return builder.build();
+    }
+
+    public String getSettingValue(String key) {
+        var setting = settingPersistenceHelper.appSettingsRepository.findByName(key);
+        return setting != null ? setting.getVal() : null;
+    }
+
+    @Transactional
+    public void saveSetting(String key, String value) {
+        var setting = settingPersistenceHelper.appSettingsRepository.findByName(key);
+        if (setting == null) {
+            setting = new AppSettingEntity();
+            setting.setName(key);
+        }
+        setting.setVal(value);
+        settingPersistenceHelper.appSettingsRepository.save(setting);
     }
 }

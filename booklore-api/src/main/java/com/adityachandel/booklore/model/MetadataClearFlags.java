@@ -29,6 +29,10 @@ public class MetadataClearFlags {
     private boolean goodreadsReviewCount;
     private boolean hardcoverRating;
     private boolean hardcoverReviewCount;
+    private boolean lubimyczytacId;
+    private boolean lubimyczytacRating;
+    private boolean ranobedbId;
+    private boolean ranobedbRating;
     private boolean authors;
     private boolean categories;
     private boolean moods;

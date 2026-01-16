@@ -1,4 +1,4 @@
-import {MetadataRefreshOptions} from '../../features/metadata/model/request/metadata-refresh-options.model';
+import { MetadataRefreshOptions } from '../../features/metadata/model/request/metadata-refresh-options.model';
 
 export interface MetadataMatchWeights {
   title: number;
@@ -23,6 +23,8 @@ export interface MetadataMatchWeights {
   hardcoverReviewCount: number;
   doubanRating: number;
   doubanReviewCount: number;
+  lubimyczytacRating: number;
+  ranobedbRating: number;
   coverImage: number;
 }
 
@@ -47,9 +49,11 @@ export interface MetadataProviderSettings {
   amazon: Amazon;
   google: Google;
   goodReads: Goodreads;
+  ranobedb: Ranobedb;
   hardcover: Hardcover;
   comicvine: Comicvine;
   douban: Douban;
+  lubimyczytac: Lubimyczytac;
 }
 
 export interface Amazon {
@@ -67,6 +71,10 @@ export interface Goodreads {
   enabled: boolean;
 }
 
+export interface Ranobedb {
+  enabled: boolean;
+}
+
 export interface Hardcover {
   enabled: boolean;
   apiKey: string;
@@ -81,9 +89,24 @@ export interface Douban {
   enabled: boolean;
 }
 
+export interface Lubimyczytac {
+  enabled: boolean;
+}
+
+export interface FormatWriteSettings {
+  enabled: boolean;
+  maxFileSizeInMb: number;
+}
+
+export interface SaveToOriginalFileSettings {
+  epub: FormatWriteSettings;
+  pdf: FormatWriteSettings;
+  cbx: FormatWriteSettings;
+}
+
 export interface MetadataPersistenceSettings {
   moveFilesToLibraryPattern: boolean;
-  saveToOriginalFile: boolean;
+  saveToOriginalFile: SaveToOriginalFileSettings;
   convertCbrCb7ToCbz: boolean;
 }
 
@@ -126,7 +149,6 @@ export interface AppSettings {
   oidcEnabled: boolean;
   oidcProviderDetails: OidcProviderDetails;
   oidcAutoProvisionDetails: OidcAutoProvisionDetails;
-  cbxCacheSizeInMb: number;
   maxFileUploadSizeInMb: number;
   metadataProviderSettings: MetadataProviderSettings;
   metadataMatchWeights: MetadataMatchWeights;
@@ -135,6 +157,7 @@ export interface AppSettings {
   koboSettings: KoboSettings;
   coverCroppingSettings: CoverCroppingSettings;
   metadataDownloadOnBookdrop: boolean;
+  telemetryEnabled: boolean;
 }
 
 export enum AppSettingKey {
@@ -147,7 +170,6 @@ export enum AppSettingKey {
   OIDC_ENABLED = 'OIDC_ENABLED',
   OIDC_PROVIDER_DETAILS = 'OIDC_PROVIDER_DETAILS',
   OIDC_AUTO_PROVISION_DETAILS = 'OIDC_AUTO_PROVISION_DETAILS',
-  CBX_CACHE_SIZE_IN_MB = 'CBX_CACHE_SIZE_IN_MB',
   MAX_FILE_UPLOAD_SIZE_IN_MB = 'MAX_FILE_UPLOAD_SIZE_IN_MB',
   METADATA_PROVIDER_SETTINGS = 'METADATA_PROVIDER_SETTINGS',
   METADATA_MATCH_WEIGHTS = 'METADATA_MATCH_WEIGHTS',
@@ -155,5 +177,6 @@ export enum AppSettingKey {
   METADATA_DOWNLOAD_ON_BOOKDROP = 'METADATA_DOWNLOAD_ON_BOOKDROP',
   METADATA_PUBLIC_REVIEWS_SETTINGS = 'METADATA_PUBLIC_REVIEWS_SETTINGS',
   KOBO_SETTINGS = 'KOBO_SETTINGS',
-  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS'
+  COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
+  TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
 }

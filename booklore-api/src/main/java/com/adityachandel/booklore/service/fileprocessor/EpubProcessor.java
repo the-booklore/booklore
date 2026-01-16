@@ -7,11 +7,11 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
-import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
+import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -33,19 +32,16 @@ import static com.adityachandel.booklore.util.FileService.truncate;
 public class EpubProcessor extends AbstractFileProcessor implements BookFileProcessor {
 
     private final EpubMetadataExtractor epubMetadataExtractor;
-    private final BookMetadataRepository bookMetadataRepository;
 
     public EpubProcessor(BookRepository bookRepository,
                          BookAdditionalFileRepository bookAdditionalFileRepository,
                          BookCreatorService bookCreatorService,
                          BookMapper bookMapper,
                          FileService fileService,
-                         BookMetadataRepository bookMetadataRepository,
                          MetadataMatchService metadataMatchService,
                          EpubMetadataExtractor epubMetadataExtractor) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
         this.epubMetadataExtractor = epubMetadataExtractor;
-        this.bookMetadataRepository = bookMetadataRepository;
     }
 
     @Override
@@ -54,6 +50,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         setBookMetadata(bookEntity);
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
+            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
         }
         return bookEntity;
     }
@@ -65,15 +62,15 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             byte[] coverData = epubMetadataExtractor.extractCover(epubFile);
 
             if (coverData == null) {
-                log.warn("No cover image found in EPUB '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
                 return false;
             }
 
             boolean saved;
             try (ByteArrayInputStream bais = new ByteArrayInputStream(coverData)) {
-                BufferedImage originalImage = ImageIO.read(bais);
+                BufferedImage originalImage = FileService.readImage(bais);
                 if (originalImage == null) {
-                    log.warn("Cover image found but could not be decoded (possibly SVG or unsupported format) in EPUB '{}'", bookEntity.getFileName());
+                    log.warn("Failed to decode cover image for EPUB '{}'", bookEntity.getPrimaryBookFile().getFileName());
                     return false;
                 }
                 saved = fileService.saveCoverImages(originalImage, bookEntity.getId());
@@ -83,7 +80,7 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
             return saved;
 
         } catch (Exception e) {
-            log.error("Error generating cover for EPUB '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for EPUB '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
             return false;
         }
     }
@@ -126,6 +123,8 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
         metadata.setHardcoverReviewCount(epubMetadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(epubMetadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(epubMetadata.getComicvineId(), 100));
+        metadata.setRanobedbId(truncate(epubMetadata.getRanobedbId(), 100));
+        metadata.setRanobedbRating(epubMetadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(epubMetadata.getAuthors(), bookEntity);
 

@@ -5,12 +5,6 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.Set;
 
-import lombok.*;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Set;
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,6 +35,8 @@ public class EpubMetadata {
     private Double hardcoverRating;
     private Integer hardcoverReviewCount;
     private String googleId;
+    private String ranobedbId;
+    private Double ranobedbRating;
     private Set<String> authors;
     private Set<String> categories;
 }

@@ -1,0 +1,96 @@
+<div
+  class="reader"
+  [style.background-color]="stateService.currentState.theme.bg ?? ''">
+
+  @if (isLoading) {
+    <div class="loader-overlay">
+      <div class="loader-content">
+        <div class="spinner"></div>
+        <p class="loader-text">Loading book...</p>
+      </div>
+    </div>
+  }
+
+  <app-reader-header
+    [bookTitle]="book?.metadata?.title!"
+    [currentTheme]="stateService.currentState.theme"
+    [isDark]="stateService.currentState.isDark"
+    [fontSize]="stateService.currentState.fontSize"
+    [lineHeight]="stateService.currentState.lineHeight"
+    [forceVisible]="forceHeaderVisible"
+    [flow]="stateService.currentState.flow"
+    (setFlow)="onSetFlow($event)"
+    (showChapters)="showChapters = true"
+    (showControls)="showControls = true"
+    (showMetadata)="showMetadata = true"
+    (createBookmark)="onCreateBookmark()"
+    (close)="location.back()"
+    (toggleDarkMode)="onToggleDarkMode()"
+    (increaseFontSize)="onIncreaseFontSize()"
+    (decreaseFontSize)="onDecreaseFontSize()"
+    (increaseLineHeight)="onIncreaseLineHeight()"
+    (decreaseLineHeight)="onDecreaseLineHeight()"
+  ></app-reader-header>
+
+
+  <div class="reader-content" style="position: relative;">
+    @if (isCurrentCfiBookmarked) {
+      <div
+        style="
+          position: absolute;
+          top: 0;
+          left: 12px;
+          z-index: 10;
+          width: 48px;
+          height: 64px;
+          background: none;
+          pointer-events: none;
+        ">
+        <svg width="48" height="64" viewBox="0 0 48 64">
+          <polygon points="0,0 48,0 48,64 24,48 0,64" fill="red"/>
+        </svg>
+      </div>
+    }
+    <div id="foliate-container" tabindex="0"></div>
+  </div>
+
+  <app-reader-navbar
+    [progressData]="currentProgressData"
+    [forceVisible]="forceNavbarVisible"
+    [sectionFractions]="sectionFractions"
+    (progressChange)="onProgressChange($event)">
+  </app-reader-navbar>
+
+  @if (showChapters) {
+    <app-reader-sidebar
+      [bookId]="book?.id ?? null"
+      [coverUpdatedOn]="coverUpdatedOn"
+      [bookTitle]="book?.metadata?.title ?? ''"
+      [bookAuthors]="(book?.metadata?.authors ?? []).join(', ')"
+      [chapters]="chapters"
+      [bookmarks]="bookmarks"
+      [currentChapterHref]="currentChapterHref"
+      (close)="showChapters = false"
+      (chapterClick)="onChapterClick($event)"
+      (bookmarkClick)="onBookmarkClick($event)"
+      (deleteBookmark)="onDeleteBookmark($event)"
+      (coverClick)="showMetadata = true"
+    ></app-reader-sidebar>
+  }
+
+  @if (showControls) {
+    <app-settings-dialog
+      [stateService]="stateService"
+      [viewManager]="viewManager"
+      [bookId]="bookId"
+      (close)="showControls = false">
+    </app-settings-dialog>
+  }
+
+  @if (showMetadata) {
+    <app-reader-book-metadata-dialog
+      [book]="book"
+      (close)="showMetadata = false"
+    ></app-reader-book-metadata-dialog>
+  }
+</div>

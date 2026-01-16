@@ -3,9 +3,14 @@ package com.adityachandel.booklore.service.metadata.writer;
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.io.IOUtils;
+import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.apache.pdfbox.pdmodel.common.PDMetadata;
@@ -33,17 +38,23 @@ import java.nio.file.StandardCopyOption;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Calendar;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PdfMetadataWriter implements MetadataWriter {
 
+    private final AppSettingService appSettingService;
+
     @Override
-    public void writeMetadataToFile(File file, BookMetadataEntity metadataEntity, String thumbnailUrl, MetadataClearFlags clear) {
+    public void saveMetadataToFile(File file, BookMetadataEntity metadataEntity, String thumbnailUrl, MetadataClearFlags clear) {
+        if (!shouldSaveMetadataToFile(file)) {
+            return;
+        }
+
         if (!file.exists() || !file.getName().toLowerCase().endsWith(".pdf")) {
             log.warn("Invalid PDF file: {}", file.getAbsolutePath());
             return;
@@ -63,10 +74,12 @@ public class PdfMetadataWriter implements MetadataWriter {
             log.warn("Could not create PDF temp backup for {}: {}", file.getName(), e.getMessage());
         }
 
-        try (PDDocument pdf = Loader.loadPDF(file)) {
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(file);
+             PDDocument pdf = Loader.loadPDF(randomAccessRead, IOUtils.createMemoryOnlyStreamCache())) {
             pdf.setAllSecurityToBeRemoved(true);
             applyMetadataToDocument(pdf, metadataEntity, clear);
             tempFile = File.createTempFile("pdfmeta-", ".pdf");
+            // PDFBox 3.x saves in compressed mode by default
             pdf.save(tempFile);
             Files.move(tempFile.toPath(), filePath, StandardCopyOption.REPLACE_EXISTING);
             log.info("Successfully embedded metadata into PDF: {}", file.getName());
@@ -99,6 +112,24 @@ public class PdfMetadataWriter implements MetadataWriter {
         return BookFileType.PDF;
     }
 
+    public boolean shouldSaveMetadataToFile(File pdfFile) {
+        MetadataPersistenceSettings.SaveToOriginalFile settings = appSettingService.getAppSettings().getMetadataPersistenceSettings().getSaveToOriginalFile();
+
+        MetadataPersistenceSettings.FormatSettings pdfSettings = settings.getPdf();
+        if (pdfSettings == null || !pdfSettings.isEnabled()) {
+            log.debug("PDF metadata writing is disabled. Skipping: {}", pdfFile.getName());
+            return false;
+        }
+
+        long fileSizeInMb = pdfFile.length() / (1024 * 1024);
+        if (fileSizeInMb > pdfSettings.getMaxFileSizeInMb()) {
+            log.info("PDF file {} ({} MB) exceeds max size limit ({} MB). Skipping metadata write.", pdfFile.getName(), fileSizeInMb, pdfSettings.getMaxFileSizeInMb());
+            return false;
+        }
+
+        return true;
+    }
+
     private void applyMetadataToDocument(PDDocument pdf, BookMetadataEntity entity, MetadataClearFlags clear) {
         PDDocumentInformation info = pdf.getDocumentInformation();
         MetadataCopyHelper helper = new MetadataCopyHelper(entity);
@@ -117,9 +148,9 @@ public class PdfMetadataWriter implements MetadataWriter {
             helper.copyPublisher(clear != null && clear.isPublisher(), pub -> dc.addPublisher(pub != null ? pub : ""));
             helper.copyLanguage(clear != null && clear.isLanguage(), lang -> dc.addLanguage(lang != null ? lang : ""));
             helper.copyPublishedDate(clear != null && clear.isPublishedDate(), date -> {
-                Calendar cal = GregorianCalendar.from(
-                        (date != null ? date : ZonedDateTime.now().toLocalDate())
-                                .atStartOfDay(ZoneId.systemDefault()));
+                Calendar cal = Calendar.getInstance();
+                cal.setTimeInMillis((date != null ? date : ZonedDateTime.now().toLocalDate())
+                        .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli());
                 dc.addDate(cal);
             });
 
@@ -178,6 +209,7 @@ public class PdfMetadataWriter implements MetadataWriter {
         helper.copyGoodreadsId(clear != null && clear.isGoodreadsId(), id -> appendIdentifier(doc, rdfBag, "goodreads", id != null ? id : ""));
         helper.copyComicvineId(clear != null && clear.isComicvineId(), id -> appendIdentifier(doc, rdfBag, "comicvine", id != null ? id : ""));
         helper.copyHardcoverId(clear != null && clear.isHardcoverId(), id -> appendIdentifier(doc, rdfBag, "hardcover", id != null ? id : ""));
+        helper.copyRanobedbId(clear != null && clear.isRanobedbId(), id -> appendIdentifier(doc, rdfBag, "ranobedb", id != null ? id : ""));
         helper.copyAsin(clear != null && clear.isAsin(), id -> appendIdentifier(doc, rdfBag, "amazon", id != null ? id : ""));
         helper.copyIsbn13(clear != null && clear.isIsbn13(), id -> appendIdentifier(doc, rdfBag, "isbn", id != null ? id : ""));
 

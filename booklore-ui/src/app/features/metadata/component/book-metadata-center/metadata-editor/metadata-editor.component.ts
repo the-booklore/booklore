@@ -13,18 +13,18 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, take} from "rxjs/operators";
+import {filter, finalize, take, tap} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
-import {AutoComplete} from "primeng/autocomplete";
+import {AutoComplete, AutoCompleteSelectEvent} from "primeng/autocomplete";
 import {DatePicker} from "primeng/datepicker";
 import {Textarea} from "primeng/textarea";
 import {Image} from "primeng/image";
 import {LazyLoadImageModule} from "ng-lazyload-image";
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
-import {BookDialogHelperService} from "../../../../book/components/book-browser/BookDialogHelperService";
+import {BookDialogHelperService} from "../../../../book/components/book-browser/book-dialog-helper.service";
 import {BookNavigationService} from '../../../../book/service/book-navigation.service';
-import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host-service';
+import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {Router} from '@angular/router';
 import {UserService} from '../../../../settings/user-management/user.service';
 
@@ -76,9 +76,11 @@ export class MetadataEditorComponent implements OnInit {
   isUploading = false;
   isLoading = false;
   isSaving = false;
+  isGeneratingCover = false;
 
   refreshingBookIds = new Set<number>();
   isAutoFetching = false;
+  autoSaveEnabled = false;
 
   originalMetadata!: BookMetadata;
 
@@ -166,6 +168,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: new FormControl(""),
       hardcoverRating: new FormControl(""),
       hardcoverReviewCount: new FormControl(""),
+      lubimyczytacId: new FormControl(""),
+      lubimyczytacRating: new FormControl(""),
+      ranobedbId: new FormControl(""),
+      ranobedbRating: new FormControl(""),
       googleId: new FormControl(""),
       seriesName: new FormControl(""),
       seriesNumber: new FormControl(""),
@@ -196,6 +202,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: new FormControl(false),
       hardcoverRatingLocked: new FormControl(false),
       hardcoverReviewCountLocked: new FormControl(false),
+      lubimyczytacIdLocked: new FormControl(false),
+      lubimyczytacRatingLocked: new FormControl(false),
+      ranobedbIdLocked: new FormControl(""),
+      ranobedbRatingLocked: new FormControl(false),
       googleIdLocked: new FormControl(false),
       seriesNameLocked: new FormControl(false),
       seriesNumberLocked: new FormControl(false),
@@ -227,6 +237,7 @@ export class MetadataEditorComponent implements OnInit {
       )
       .subscribe(userState => {
         this.metadataCenterViewMode = userState.user?.userSettings.metadataCenterViewMode ?? 'route';
+        this.autoSaveEnabled = userState.user?.userSettings.autoSaveMetadata ?? false;
       });
   }
 
@@ -296,6 +307,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: metadata.hardcoverBookId ?? null,
       hardcoverRating: metadata.hardcoverRating ?? null,
       hardcoverReviewCount: metadata.hardcoverReviewCount ?? null,
+      lubimyczytacId: metadata.lubimyczytacId ?? null,
+      lubimyczytacRating: metadata.lubimyczytacRating ?? null,
+      ranobedbId: metadata.ranobedbId ?? null,
+      ranobedbRating: metadata.ranobedbRating ?? null,
       googleId: metadata.googleId ?? null,
       seriesName: metadata.seriesName ?? null,
       seriesNumber: metadata.seriesNumber ?? null,
@@ -324,6 +339,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: metadata.hardcoverBookIdLocked ?? false,
       hardcoverRatingLocked: metadata.hardcoverRatingLocked ?? false,
       hardcoverReviewCountLocked: metadata.hardcoverReviewCountLocked ?? false,
+      lubimyczytacIdLocked: metadata.lubimyczytacIdLocked ?? false,
+      lubimyczytacRatingLocked: metadata.lubimyczytacRatingLocked ?? false,
+      ranobedbIdLocked: metadata.ranobedbIdLocked ?? false,
+      ranobedbRatingLocked: metadata.ranobedbRatingLocked ?? false,
       googleIdLocked: metadata.googleIdLocked ?? false,
       seriesNameLocked: metadata.seriesNameLocked ?? false,
       seriesNumberLocked: metadata.seriesNumberLocked ?? false,
@@ -355,6 +374,11 @@ export class MetadataEditorComponent implements OnInit {
       {key: "hardcoverBookIdLocked", control: "hardcoverBookId"},
       {key: "hardcoverReviewCountLocked", control: "hardcoverReviewCount"},
       {key: "hardcoverRatingLocked", control: "hardcoverRating"},
+      {key: "lubimyczytacIdLocked", control: "lubimyczytacId"},
+      {key: "lubimyczytacRatingLocked", control: "lubimyczytacRating"},
+      {key: "ranobedbReviewCountLocked", control: "ranobedbReviewCount"},
+      {key: "ranobedbIdLocked", control: "ranobedbId"},
+      {key: "ranobedbRatingLocked", control: "ranobedbRating"},
       {key: "googleIdLocked", control: "googleId"},
       {key: "pageCountLocked", control: "pageCount"},
       {key: "descriptionLocked", control: "description"},
@@ -374,10 +398,10 @@ export class MetadataEditorComponent implements OnInit {
     }
   }
 
-  onAutoCompleteSelect(fieldName: string, event: any) {
-    const values = this.metadataForm.get(fieldName)?.value || [];
-    if (!values.includes(event.value)) {
-      this.metadataForm.get(fieldName)?.setValue([...values, event.value]);
+  onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
+    const values = (this.metadataForm.get(fieldName)?.value as string[]) || [];
+    if (!values.includes(event.value as string)) {
+      this.metadataForm.get(fieldName)?.setValue([...values, event.value as string]);
     }
     (event.originalEvent.target as HTMLInputElement).value = "";
   }
@@ -397,32 +421,39 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onSave(): void {
+    this.saveMetadata().subscribe();
+  }
+
+  saveMetadata(): Observable<void> {
     this.isSaving = true;
-    this.bookService
+    return this.bookService
       .updateBookMetadata(
         this.currentBookId,
         this.buildMetadataWrapper(undefined),
         false
       )
-      .subscribe({
-        next: (response) => {
-          this.isSaving = false;
-          this.messageService.add({
-            severity: "info",
-            summary: "Success",
-            detail: "Book metadata updated",
-          });
-          this.prepareAutoComplete();
-        },
-        error: (err) => {
-          this.isSaving = false;
-          this.messageService.add({
-            severity: "error",
-            summary: "Error",
-            detail: err?.error?.message || "Failed to update book metadata",
-          });
-        },
-      });
+      .pipe(
+        tap({
+          next: (response: any) => {
+            this.isSaving = false;
+            this.messageService.add({
+              severity: "info",
+              summary: "Success",
+              detail: "Book metadata updated",
+            });
+            this.prepareAutoComplete();
+            this.metadataForm.markAsPristine();
+          },
+          error: (err: any) => {
+            this.isSaving = false;
+            this.messageService.add({
+              severity: "error",
+              summary: "Error",
+              detail: err?.error?.message || "Failed to update book metadata",
+            });
+          },
+        })
+      );
   }
 
   toggleLock(field: string): void {
@@ -494,6 +525,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookId: form.get("hardcoverBookId")?.value,
       hardcoverRating: form.get("hardcoverRating")?.value,
       hardcoverReviewCount: form.get("hardcoverReviewCount")?.value,
+      lubimyczytacId: form.get("lubimyczytacId")?.value,
+      lubimyczytacRating: form.get("lubimyczytacRating")?.value,
+      ranobedbId: form.get("ranobedbId")?.value,
+      ranobedbRating: form.get("ranobedbRating")?.value,
       googleId: form.get("googleId")?.value,
       language: form.get("language")?.value,
       seriesName: form.get("seriesName")?.value,
@@ -526,6 +561,10 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverBookIdLocked: form.get("hardcoverBookIdLocked")?.value,
       hardcoverRatingLocked: form.get("hardcoverRatingLocked")?.value,
       hardcoverReviewCountLocked: form.get("hardcoverReviewCountLocked")?.value,
+      lubimyczytacIdLocked: form.get("lubimyczytacIdLocked")?.value,
+      lubimyczytacRatingLocked: form.get("lubimyczytacRatingLocked")?.value,
+      ranobedbIdLocked: form.get("ranobedbIdLocked")?.value,
+      ranobedbRatingLocked: form.get("ranobedbRatingLocked")?.value,
       googleIdLocked: form.get("googleIdLocked")?.value,
       seriesNameLocked: form.get("seriesNameLocked")?.value,
       seriesNumberLocked: form.get("seriesNumberLocked")?.value,
@@ -541,10 +580,10 @@ export class MetadataEditorComponent implements OnInit {
     const original = this.originalMetadata;
 
     const wasCleared = (key: keyof BookMetadata): boolean => {
-      const current = (metadata[key] as any) ?? null;
-      const prev = (original[key] as any) ?? null;
+      const current = (metadata[key] as unknown) ?? null;
+      const prev = (original[key] as unknown) ?? null;
 
-      const isEmpty = (val: any): boolean =>
+      const isEmpty = (val: unknown): boolean =>
         val === null || val === "" || (Array.isArray(val) && val.length === 0);
 
       return isEmpty(current) && !isEmpty(prev);
@@ -574,6 +613,8 @@ export class MetadataEditorComponent implements OnInit {
       hardcoverId: wasCleared("hardcoverId"),
       hardcoverRating: wasCleared("hardcoverRating"),
       hardcoverReviewCount: wasCleared("hardcoverReviewCount"),
+      ranobedbId: wasCleared("ranobedbId"),
+      ranobedbRating: wasCleared("ranobedbRating"),
       googleId: wasCleared("googleId"),
       seriesName: wasCleared("seriesName"),
       seriesNumber: wasCleared("seriesNumber"),
@@ -585,7 +626,7 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   private updateMetadata(shouldLockAllFields: boolean | undefined): void {
-    let metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
+    const metadataUpdateWrapper = this.buildMetadataWrapper(shouldLockAllFields);
     this.bookService
       .updateBookMetadata(this.currentBookId, metadataUpdateWrapper, false)
       .subscribe({
@@ -621,14 +662,9 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onUpload(event: FileUploadEvent): void {
-    const response: HttpResponse<any> =
-      event.originalEvent as HttpResponse<any>;
+    const response: HttpResponse<unknown> =
+      event.originalEvent as HttpResponse<unknown>;
     if (response && response.status === 200) {
-      const bookMetadata: BookMetadata = response.body as BookMetadata;
-      this.bookService.handleBookMetadataUpdate(
-        this.currentBookId,
-        bookMetadata
-      );
       this.isUploading = false;
     } else {
       this.isUploading = false;
@@ -654,21 +690,59 @@ export class MetadataEditorComponent implements OnInit {
   regenerateCover(bookId: number) {
     this.bookService.regenerateCover(bookId).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: "success",
-          summary: "Success",
-          detail:
-            "Book cover regenerated successfully. Refresh page to see the new cover.",
-        });
-      },
-      error: () => {
-        this.messageService.add({
-          severity: "error",
-          summary: "Error",
-          detail: "Failed to start cover regeneration",
+        this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+          next: (updatedBook) => {
+            this.bookService.handleBookUpdate(updatedBook);
+            this.messageService.add({
+              severity: "success",
+              summary: "Success",
+              detail: "Book cover regenerated successfully.",
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: "warning",
+              summary: "Partial Success",
+              detail: "Cover regenerated but failed to refresh display. Please refresh the page.",
+            });
+          },
         });
       },
     });
+  }
+
+  generateCustomCover(bookId: number) {
+    this.isGeneratingCover = true;
+    this.bookService.generateCustomCover(bookId)
+      .pipe(finalize(() => this.isGeneratingCover = false))
+      .subscribe({
+        next: () => {
+          this.bookService.getBookByIdFromAPI(bookId, false).subscribe({
+            next: (updatedBook) => {
+              this.bookService.handleBookUpdate(updatedBook);
+              this.messageService.add({
+                severity: "success",
+                summary: "Success",
+                detail: "Custom cover generated successfully.",
+              });
+            },
+            error: () => {
+              this.messageService.add({
+                severity: "warning",
+                summary: "Partial Success",
+                detail: "Cover generated but failed to refresh display. Please refresh the page.",
+              });
+            },
+          });
+        },
+        error: (err) => {
+          this.messageService.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to generate custom cover",
+          });
+        }
+      });
   }
 
   autoFetch(bookId: number) {
@@ -730,14 +804,22 @@ export class MetadataEditorComponent implements OnInit {
   navigatePrevious(): void {
     const prevBookId = this.bookNavigationService.getPreviousBookId();
     if (prevBookId) {
-      this.navigateToBook(prevBookId);
+      if (this.autoSaveEnabled && this.metadataForm.dirty) {
+        this.saveMetadata().subscribe(() => this.navigateToBook(prevBookId));
+      } else {
+        this.navigateToBook(prevBookId);
+      }
     }
   }
 
   navigateNext(): void {
     const nextBookId = this.bookNavigationService.getNextBookId();
     if (nextBookId) {
-      this.navigateToBook(nextBookId);
+      if (this.autoSaveEnabled && this.metadataForm.dirty) {
+        this.saveMetadata().subscribe(() => this.navigateToBook(nextBookId));
+      } else {
+        this.navigateToBook(nextBookId);
+      }
     }
   }
 

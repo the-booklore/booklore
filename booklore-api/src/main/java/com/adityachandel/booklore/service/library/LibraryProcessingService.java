@@ -2,7 +2,7 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
@@ -46,7 +46,7 @@ public class LibraryProcessingService {
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         try {
             List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-            processor.processLibraryFiles(libraryFiles, libraryEntity);
+            processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
         } catch (IOException e) {
             log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
@@ -61,7 +61,7 @@ public class LibraryProcessingService {
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started refreshing library: " + libraryEntity.getName()));
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
+        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity, processor);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
             bookDeletionService.deleteRemovedAdditionalFiles(additionalFileIds);
@@ -96,31 +96,51 @@ public class LibraryProcessingService {
     }
 
     protected List<LibraryFile> detectNewBookPaths(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
-        Set<Path> existingFullPaths = libraryEntity.getBookEntities().stream()
-                .map(BookEntity::getFullFilePath)
+        Set<String> existingKeys = libraryEntity.getBookEntities().stream()
+                .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 
-        Set<Path> additionalFilePaths = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId()).stream()
-                .map(BookAdditionalFileEntity::getFullFilePath)
+        Set<String> additionalFileKeys = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId()).stream()
+                .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 
-        existingFullPaths.addAll(additionalFilePaths);
+        existingKeys.addAll(additionalFileKeys);
 
         return libraryFiles.stream()
-                .filter(file -> !existingFullPaths.contains(file.getFullPath()))
+                .filter(file -> !existingKeys.contains(generateUniqueKey(file)))
                 .collect(Collectors.toList());
     }
 
-    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
-        Set<String> currentFileNames = libraryFiles.stream()
-                .map(LibraryFile::getFileName)
+    private String generateUniqueKey(BookEntity book) {
+        return generateKey(book.getLibraryPath().getId(), book.getPrimaryBookFile().getFileSubPath(), book.getPrimaryBookFile().getFileName());
+    }
+
+    private String generateUniqueKey(BookFileEntity file) {
+        // Additional files inherit library path from their parent book
+        return generateKey(file.getBook().getLibraryPath().getId(), file.getFileSubPath(), file.getFileName());
+    }
+
+    private String generateUniqueKey(LibraryFile file) {
+        return generateKey(file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
+    }
+
+    private String generateKey(Long libraryPathId, String subPath, String fileName) {
+        String safeSubPath = (subPath == null) ? "" : subPath;
+        return libraryPathId + ":" + safeSubPath + ":" + fileName;
+    }
+
+    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity, LibraryFileProcessor processor) {
+        Set<String> currentFileKeys = libraryFiles.stream()
+                .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
 
-        List<BookAdditionalFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
+        List<BookFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
 
         return allAdditionalFiles.stream()
-                .filter(additionalFile -> !currentFileNames.contains(additionalFile.getFileName()))
-                .map(BookAdditionalFileEntity::getId)
+                // Only check files that would be scanned: book formats always, non-book files only if processor supports them
+                .filter(additionalFile -> additionalFile.isBookFormat() || processor.supportsSupplementaryFiles())
+                .filter(additionalFile -> !currentFileKeys.contains(generateUniqueKey(additionalFile)))
+                .map(BookFileEntity::getId)
                 .collect(Collectors.toList());
     }
 }

@@ -38,7 +38,7 @@ export class LibraryShelfMenuService {
             label: 'Edit Library',
             icon: 'pi pi-pen-to-square',
             command: () => {
-              this.dialogLauncherService.openLibraryEditDialog(<number>entity?.id);
+              this.dialogLauncherService.openLibraryEditDialog((entity?.id as number));
             }
           },
           {
@@ -77,7 +77,7 @@ export class LibraryShelfMenuService {
             label: 'Custom Fetch Metadata',
             icon: 'pi pi-sync',
             command: () => {
-              this.dialogLauncherService.openLibraryMetadataFetchDialog(<number>entity?.id);
+              this.dialogLauncherService.openLibraryMetadataFetchDialog((entity?.id as number));
             }
           },
           {
@@ -150,7 +150,7 @@ export class LibraryShelfMenuService {
             icon: 'pi pi-pen-to-square',
             disabled: disableOptions,
             command: () => {
-              this.dialogLauncherService.openShelfEditDialog(<number>entity?.id);
+              this.dialogLauncherService.openShelfEditDialog((entity?.id as number));
             }
           },
           {
@@ -190,21 +190,21 @@ export class LibraryShelfMenuService {
     ];
   }
 
-  initializeMagicShelfMenuItems(entity: any): MenuItem[] {
+  initializeMagicShelfMenuItems(entity: MagicShelf | null): MenuItem[] {
     const isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const isPublicShelf = entity?.isPublic ?? false;
     const disableOptions = isPublicShelf && !isAdmin;
 
     return [
       {
-        label: (isPublicShelf ? 'Public Shelf - ' : '') + (disableOptions ? 'Read only' : 'Options'),
+        label: 'Options',
         items: [
           {
             label: 'Edit Magic Shelf',
             icon: 'pi pi-pen-to-square',
             disabled: disableOptions,
             command: () => {
-              this.dialogLauncherService.openMagicShelfEditDialog(<number>entity?.id);
+              this.dialogLauncherService.openMagicShelfEditDialog((entity?.id as number));
             }
           },
           {

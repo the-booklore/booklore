@@ -16,9 +16,12 @@ import {MultiSelect} from 'primeng/multiselect';
 import {AutoComplete} from 'primeng/autocomplete';
 import {EMPTY_CHECK_OPERATORS, MULTI_VALUE_OPERATORS, parseValue, removeNulls, serializeDateRules} from '../service/magic-shelf-utils';
 import {IconPickerService, IconSelection} from '../../../shared/service/icon-picker.service';
-import {CheckboxModule} from "primeng/checkbox";
+import {CheckboxChangeEvent, CheckboxModule} from "primeng/checkbox";
 import {UserService} from "../../settings/user-management/user.service";
 import {IconDisplayComponent} from '../../../shared/components/icon-display/icon-display.component';
+import {BookService} from '../../book/service/book.service';
+import {ShelfService} from '../../book/service/shelf.service';
+import {Shelf} from '../../book/model/shelf.model';
 
 export type RuleOperator =
   | 'equals'
@@ -40,6 +43,7 @@ export type RuleOperator =
 
 export type RuleField =
   | 'library'
+  | 'shelf'
   | 'title'
   | 'subtitle'
   | 'authors'
@@ -51,12 +55,15 @@ export type RuleField =
   | 'seriesTotal'
   | 'pageCount'
   | 'language'
+  | 'isbn13'
+  | 'isbn10'
   | 'amazonRating'
   | 'amazonReviewCount'
   | 'goodreadsRating'
   | 'goodreadsReviewCount'
   | 'hardcoverRating'
   | 'hardcoverReviewCount'
+  | 'ranobedbRating'
   | 'personalRating'
   | 'fileType'
   | 'fileSize'
@@ -79,9 +86,9 @@ type FieldType = 'number' | 'decimal' | 'date' | undefined;
 export interface Rule {
   field: RuleField;
   operator: RuleOperator;
-  value: any;
-  valueStart?: any;
-  valueEnd?: any;
+  value: unknown;
+  valueStart?: unknown;
+  valueEnd?: unknown;
 }
 
 export interface FieldConfig {
@@ -112,6 +119,7 @@ export type GroupFormGroup = FormGroup<{
 
 const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   library: {label: 'Library'},
+  shelf: {label: 'Shelf'},
   readStatus: {label: 'Read Status'},
   dateFinished: {label: 'Date Finished', type: 'date'},
   lastReadTime: {label: 'Last Read Time', type: 'date'},
@@ -126,6 +134,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   personalRating: {label: 'Personal Rating', type: 'decimal', max: 10},
   pageCount: {label: 'Page Count', type: 'number'},
   language: {label: 'Language'},
+  isbn13: {label: 'ISBN-13'},
+  isbn10: {label: 'ISBN-10'},
   seriesName: {label: 'Series Name'},
   seriesNumber: {label: 'Series Number', type: 'number'},
   seriesTotal: {label: 'Books in Series', type: 'number'},
@@ -137,7 +147,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsRating: {label: 'Goodreads Rating', type: 'decimal', max: 5},
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
-  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'}
+  hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
 };
 
 @Component({
@@ -172,17 +183,24 @@ export class MagicShelfComponent implements OnInit {
     {label: 'OR', value: 'or'},
   ];
 
-  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => ({
-    label: config.label,
-    value: key as RuleField
-  }));
+  fieldOptions = Object.entries(FIELD_CONFIGS).map(([key, config]) => {
+    // Use "Genre" instead of "Categories" for user-facing label
+    const label = key === 'categories' ? 'Genre' : config.label;
+    return {
+      label: label,
+      value: key as RuleField
+    };
+  });
 
   fileType: { label: string; value: string }[] = [
     {label: 'PDF', value: 'pdf'},
     {label: 'EPUB', value: 'epub'},
     {label: 'CBR', value: 'cbr'},
     {label: 'CBZ', value: 'cbz'},
-    {label: 'CB7', value: 'cb7'}
+    {label: 'CB7', value: 'cb7'},
+    {label: 'FB2', value: 'fb2'},
+    {label: 'MOBI', value: 'mobi'},
+    {label: 'AZW3', value: 'azw3'}
   ];
 
   readStatusOptions = Object.entries(ReadStatus).map(([key, value]) => ({
@@ -192,6 +210,9 @@ export class MagicShelfComponent implements OnInit {
 
   libraries: Library[] = [];
   libraryOptions: { label: string; value: number }[] = [];
+  shelves: Shelf[] = [];
+  shelfOptions: { label: string; value: number }[] = [];
+  categoryOptions: { label: string; value: string }[] = [];
 
   form = new FormGroup({
     name: new FormControl<string | null>(null),
@@ -205,6 +226,8 @@ export class MagicShelfComponent implements OnInit {
   editMode!: boolean;
 
   libraryService = inject(LibraryService);
+  shelfService = inject(ShelfService);
+  bookService = inject(BookService);
   magicShelfService = inject(MagicShelfService);
   ref = inject(DynamicDialogRef);
   messageService = inject(MessageService);
@@ -214,7 +237,7 @@ export class MagicShelfComponent implements OnInit {
 
   selectedIcon: IconSelection | null = null;
 
-  trackByFn(ruleCtrl: AbstractControl, index: number): any {
+  trackByFn(ruleCtrl: AbstractControl, index: number): unknown {
     return ruleCtrl;
   }
 
@@ -222,6 +245,24 @@ export class MagicShelfComponent implements OnInit {
     this.isAdmin = this.userService.getCurrentUser()?.permissions.admin ?? false;
     const id = this.config?.data?.id;
     this.editMode = !!this.config?.data?.editMode;
+
+    // Load available categories from book metadata
+    this.bookService.bookState$.subscribe(state => {
+      if (state.loaded && state.books) {
+        // Extract unique categories from all books
+        const categoriesSet = new Set<string>();
+        state.books.forEach(book => {
+          if (book.metadata?.categories) {
+            book.metadata.categories.forEach(cat => categoriesSet.add(cat));
+          }
+        });
+
+        this.categoryOptions = Array.from(categoriesSet).map(cat => ({
+          label: cat,
+          value: cat
+        })).sort((a, b) => a.label.localeCompare(b.label));
+      }
+    });
 
     if (id) {
       this.shelfId = id;
@@ -254,6 +295,12 @@ export class MagicShelfComponent implements OnInit {
     this.libraryOptions = this.libraries.map(lib => ({
       label: lib.name,
       value: lib.id!
+    }));
+
+    this.shelves = this.shelfService.getShelvesFromState();
+    this.shelfOptions = this.shelves.map(shelf => ({
+      label: shelf.name,
+      value: shelf.id!
     }));
   }
 
@@ -324,14 +371,14 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);
@@ -354,7 +401,7 @@ export class MagicShelfComponent implements OnInit {
 
   createGroup(): GroupFormGroup {
     return new FormGroup({
-      type: new FormControl<'group'>('group' as 'group'),
+      type: new FormControl<'group'>('group' as const),
       join: new FormControl<'and' | 'or'>('and' as 'and' | 'or'),
       rules: new FormArray([] as (GroupFormGroup | RuleFormGroup)[]),
     }) as GroupFormGroup;
@@ -446,8 +493,9 @@ export class MagicShelfComponent implements OnInit {
     });
   }
 
-  onAutoCompleteBlur(formControl: any, event: any) {
-    const inputValue = event.target.value?.trim();
+  onAutoCompleteBlur(formControl: { value: unknown; setValue: (value: unknown[]) => void }, event: Event) {
+    const target = event.target as HTMLInputElement | null;
+    const inputValue = target?.value?.trim();
     if (inputValue) {
       const currentValue = formControl.value || [];
       const values = Array.isArray(currentValue) ? currentValue :
@@ -457,12 +505,15 @@ export class MagicShelfComponent implements OnInit {
         values.push(inputValue);
         formControl.setValue(values);
       }
-      event.target.value = '';
+      if (target) {
+        target.value = '';
+      }
     }
   }
 
-  onIsPublicChange(event: any) {
-    this.form.get('isPublic')?.setValue(event.checked);
+  onIsPublicChange(event: CheckboxChangeEvent): void {
+    const checked = event.checked ?? false;
+    this.form.get('isPublic')?.setValue(checked);
   }
 
   submit() {

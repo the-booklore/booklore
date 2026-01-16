@@ -19,6 +19,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -134,6 +135,23 @@ class CbxConversionServiceTest {
         verifyPageOrderInEpub(epubFile, 5);
     }
 
+    @Test
+    void convertCbxToEpub_WithZipNamedAsCbr_ShouldGenerateValidEpub() throws IOException, TemplateException, RarException {
+        File zipAsCbr = new File(tempDir.toFile(), "fake.cbr");
+        try (ZipArchiveOutputStream zipOut = new ZipArchiveOutputStream(new FileOutputStream(zipAsCbr))) {
+            BufferedImage testImage = createTestImage("Page 1", Color.RED);
+            ZipArchiveEntry imageEntry = new ZipArchiveEntry("page01.png");
+            zipOut.putArchiveEntry(imageEntry);
+            ImageIO.write(testImage, "png", zipOut);
+            zipOut.closeArchiveEntry();
+        }
+
+        File epubFile = cbxConversionService.convertCbxToEpub(zipAsCbr, tempDir.toFile(), testBookEntity, 85);
+
+        assertThat(epubFile).exists();
+        verifyEpubStructure(epubFile);
+    }
+
     private File createTestCbzFile() throws IOException {
         File cbzFile = Files.createFile(tempDir.resolve("test-comic.cbz")).toFile();
         
@@ -239,12 +257,12 @@ class CbxConversionServiceTest {
         try (ZipFile zipFile = ZipFile.builder().setFile(epubFile).get()) {
             List<ZipArchiveEntry> imageEntries = Collections.list(zipFile.getEntries()).stream()
                     .filter(entry -> entry.getName().startsWith("OEBPS/Images/page-"))
-                    .sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
+                    .sorted(Comparator.comparing(ZipArchiveEntry::getName))
                     .toList();
 
             List<ZipArchiveEntry> htmlEntries = Collections.list(zipFile.getEntries()).stream()
                     .filter(entry -> entry.getName().startsWith("OEBPS/Text/page-"))
-                    .sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
+                    .sorted(Comparator.comparing(ZipArchiveEntry::getName))
                     .toList();
 
             assertThat(imageEntries).hasSize(expectedPageCount);

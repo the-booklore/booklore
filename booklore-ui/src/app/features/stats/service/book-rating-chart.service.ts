@@ -4,6 +4,7 @@ import {map, takeUntil, catchError, filter, first, switchMap} from 'rxjs/operato
 import {LibraryFilterService} from './library-filter.service';
 import {BookService} from '../../book/service/book.service';
 import {Book} from '../../book/model/book.model';
+import {BookState} from '../../book/model/state/book-state.model';
 import {ChartConfiguration, ChartData, ChartType} from 'chart.js';
 
 interface RatingStats {
@@ -190,8 +191,16 @@ export class BookRatingChartService implements OnDestroy {
     return this.processRatingStats(filteredBooks);
   }
 
-  private isValidBookState(state: any): boolean {
-    return state?.loaded && state?.books && Array.isArray(state.books) && state.books.length > 0;
+  private isValidBookState(state: unknown): state is BookState {
+    return (
+      typeof state === 'object' &&
+      state !== null &&
+      'loaded' in state &&
+      typeof (state as {loaded: boolean}).loaded === 'boolean' &&
+      'books' in state &&
+      Array.isArray((state as {books: unknown}).books) &&
+      (state as {books: Book[]}).books.length > 0
+    );
   }
 
   private filterBooksByLibrary(books: Book[], selectedLibraryId: string | number | null): Book[] {
@@ -238,6 +247,7 @@ export class BookRatingChartService implements OnDestroy {
     if (book.metadata?.goodreadsRating) ratings.push(book.metadata.goodreadsRating);
     if (book.metadata?.amazonRating) ratings.push(book.metadata.amazonRating);
     if (book.metadata?.hardcoverRating) ratings.push(book.metadata.hardcoverRating);
+    if (book.metadata?.ranobedbRating) ratings.push(book.metadata.ranobedbRating);
 
     if (ratings.length > 0) {
       return ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length;

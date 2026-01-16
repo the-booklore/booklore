@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.settings.SidebarSortOption;
 import com.adityachandel.booklore.model.dto.settings.UserSettingKey;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.UserSettingEntity;
+import com.adityachandel.booklore.model.enums.UserPermission;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -25,24 +26,7 @@ public class BookLoreUserTransformer {
 
     public BookLoreUser toDTO(BookLoreUserEntity userEntity) {
         BookLoreUser.UserPermissions permissions = new BookLoreUser.UserPermissions();
-        permissions.setAdmin(userEntity.getPermissions().isPermissionAdmin());
-        permissions.setCanUpload(userEntity.getPermissions().isPermissionUpload());
-        permissions.setCanDownload(userEntity.getPermissions().isPermissionDownload());
-        permissions.setCanEditMetadata(userEntity.getPermissions().isPermissionEditMetadata());
-        permissions.setCanEmailBook(userEntity.getPermissions().isPermissionEmailBook());
-        permissions.setCanDeleteBook(userEntity.getPermissions().isPermissionDeleteBook());
-        permissions.setCanManageLibrary(userEntity.getPermissions().isPermissionManageLibrary());
-        permissions.setCanAccessOpds(userEntity.getPermissions().isPermissionAccessOpds());
-        permissions.setCanSyncKoReader(userEntity.getPermissions().isPermissionSyncKoreader());
-        permissions.setCanSyncKobo(userEntity.getPermissions().isPermissionSyncKobo());
-        permissions.setCanManageMetadataConfig(userEntity.getPermissions().isPermissionManageMetadataConfig());
-        permissions.setCanAccessBookdrop(userEntity.getPermissions().isPermissionAccessBookdrop());
-        permissions.setCanAccessLibraryStats(userEntity.getPermissions().isPermissionAccessLibraryStats());
-        permissions.setCanAccessUserStats(userEntity.getPermissions().isPermissionAccessUserStats());
-        permissions.setCanAccessTaskManager(userEntity.getPermissions().isPermissionAccessTaskManager());
-        permissions.setCanManageGlobalPreferences(userEntity.getPermissions().isPermissionManageGlobalPreferences());
-        permissions.setCanManageIcons(userEntity.getPermissions().isPermissionManageIcons());
-        permissions.setDemoUser(userEntity.getPermissions().isPermissionDemoUser());
+        UserPermission.copyFromEntityToDto(userEntity.getPermissions(), permissions);
 
         BookLoreUser bookLoreUser = new BookLoreUser();
         bookLoreUser.setId(userEntity.getId());
@@ -65,6 +49,7 @@ public class BookLoreUserTransformer {
                         case PER_BOOK_SETTING -> userSettings.setPerBookSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PerBookSetting.class));
                         case PDF_READER_SETTING -> userSettings.setPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PdfReaderSetting.class));
                         case EPUB_READER_SETTING -> userSettings.setEpubReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.EpubReaderSetting.class));
+                        case EBOOK_READER_SETTING -> userSettings.setEbookReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.EbookReaderSetting.class));
                         case CBX_READER_SETTING -> userSettings.setCbxReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.CbxReaderSetting.class));
                         case NEW_PDF_READER_SETTING -> userSettings.setNewPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.NewPdfReaderSetting.class));
                         case SIDEBAR_LIBRARY_SORTING -> userSettings.setSidebarLibrarySorting(objectMapper.readValue(value, SidebarSortOption.class));
@@ -81,6 +66,7 @@ public class BookLoreUserTransformer {
                         case FILTER_SORTING_MODE -> userSettings.setFilterSortingMode(value);
                         case METADATA_CENTER_VIEW_MODE -> userSettings.setMetadataCenterViewMode(value);
                         case ENABLE_SERIES_VIEW -> userSettings.setEnableSeriesView(Boolean.parseBoolean(value));
+                        case AUTO_SAVE_METADATA -> userSettings.setAutoSaveMetadata(Boolean.parseBoolean(value));
                     }
                 }
             } catch (IllegalArgumentException e) {

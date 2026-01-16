@@ -18,10 +18,11 @@ export interface EntityViewPreference {
   view: 'GRID' | 'TABLE';
   coverSize: number;
   seriesCollapsed: boolean;
+  overlayBookType: boolean;
 }
 
 export interface EntityViewPreferenceOverride {
-  entityType: 'LIBRARY' | 'SHELF';
+  entityType: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF';
   entityId: number;
   preferences: EntityViewPreference;
 }
@@ -96,6 +97,21 @@ export enum CbxScrollMode {
   INFINITE = 'INFINITE'
 }
 
+export interface EbookReaderSetting {
+  lineHeight: number;
+  justify: boolean;
+  hyphenate: boolean;
+  maxColumnCount: number;
+  gap: number;
+  fontSize: number;
+  theme: string
+  maxInlineSize: number;
+  maxBlockSize: number;
+  fontFamily: string;
+  isDark: boolean;
+  flow: 'paginated' | 'scrolled';
+}
+
 export interface EpubReaderSetting {
   theme: string;
   font: string;
@@ -105,6 +121,7 @@ export interface EpubReaderSetting {
   lineHeight: number;
   margin: number;
   letterSpacing: number;
+  customFontId?: number | null;
 }
 
 export interface CbxReaderSetting {
@@ -130,6 +147,7 @@ export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
   epubReaderSetting: EpubReaderSetting;
+  ebookReaderSetting: EbookReaderSetting;
   cbxReaderSetting: CbxReaderSetting;
   newPdfReaderSetting: NewPdfReaderSetting;
   sidebarLibrarySorting: SidebarLibrarySorting;
@@ -143,6 +161,7 @@ export interface UserSettings {
   tableColumnPreference?: TableColumnPreference[];
   dashboardConfig?: DashboardConfig;
   koReaderEnabled: boolean;
+  autoSaveMetadata: boolean;
 }
 
 export interface User {
@@ -170,7 +189,17 @@ export interface User {
     canManageEmailConfig: boolean;
     canManageGlobalPreferences: boolean;
     canManageIcons: boolean;
+    canManageFonts: boolean;
     demoUser: boolean;
+    canBulkAutoFetchMetadata: boolean;
+    canBulkCustomFetchMetadata: boolean;
+    canBulkEditMetadata: boolean;
+    canBulkRegenerateCover: boolean;
+    canMoveOrganizeFiles: boolean;
+    canBulkLockUnlockMetadata: boolean;
+    canBulkResetBookloreReadProgress?: boolean;
+    canBulkResetKoReaderReadProgress?: boolean;
+    canBulkResetBookReadStatus?: boolean;
   };
   userSettings: UserSettings;
   provisioningMethod?: 'LOCAL' | 'OIDC' | 'REMOTE';
@@ -180,6 +209,13 @@ export interface UserState {
   user: User | null;
   loaded: boolean;
   error: string | null;
+}
+
+export interface UserUpdateRequest {
+  name?: string;
+  email?: string;
+  permissions?: User['permissions'];
+  assignedLibraries?: number[];
 }
 
 @Injectable({
@@ -268,7 +304,7 @@ export class UserService {
     return this.http.get<User[]>(this.userUrl);
   }
 
-  updateUser(userId: number, updateData: Partial<User>): Observable<User> {
+  updateUser(userId: number, updateData: UserUpdateRequest): Observable<User> {
     return this.http.put<User>(`${this.userUrl}/${userId}`, updateData);
   }
 
@@ -302,7 +338,7 @@ export class UserService {
     );
   }
 
-  updateUserSetting(userId: number, key: string, value: any): void {
+  updateUserSetting(userId: number, key: string, value: unknown): void {
     const payload = {
       key,
       value

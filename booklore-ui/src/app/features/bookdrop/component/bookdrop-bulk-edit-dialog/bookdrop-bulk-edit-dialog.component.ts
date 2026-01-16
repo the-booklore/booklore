@@ -136,6 +136,10 @@ export class BookdropBulkEditDialogComponent implements OnInit {
     return this.enabledFields.has(fieldName);
   }
 
+  getControl(controlName: string): FormControl {
+    return this.bulkEditForm.get(controlName) as FormControl;
+  }
+
   get hasEnabledFields(): boolean {
     return this.enabledFields.size > 0;
   }

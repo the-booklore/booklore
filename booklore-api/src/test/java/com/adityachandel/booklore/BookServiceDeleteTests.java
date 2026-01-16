@@ -6,9 +6,9 @@ import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.book.BookDownloadService;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.book.BookService;
+import com.adityachandel.booklore.service.book.BookUpdateService;
 import com.adityachandel.booklore.service.user.UserProgressService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
-import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import com.adityachandel.booklore.util.FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,38 +38,34 @@ class BookServiceDeleteTests {
     void setUp() {
         BookRepository bookRepository = Mockito.mock(BookRepository.class);
         PdfViewerPreferencesRepository pdfViewerPreferencesRepository = Mockito.mock(PdfViewerPreferencesRepository.class);
-        EpubViewerPreferencesRepository epubViewerPreferencesRepository = Mockito.mock(EpubViewerPreferencesRepository.class);
+        EbookViewerPreferenceRepository ebookViewerPreferenceRepository = Mockito.mock(EbookViewerPreferenceRepository.class);
         CbxViewerPreferencesRepository cbxViewerPreferencesRepository = Mockito.mock(CbxViewerPreferencesRepository.class);
         NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository = Mockito.mock(NewPdfViewerPreferencesRepository.class);
-        ShelfRepository shelfRepository = Mockito.mock(ShelfRepository.class);
         FileService fileService = Mockito.mock(FileService.class);
         BookMapper bookMapper = Mockito.mock(BookMapper.class);
-        UserRepository userRepository = Mockito.mock(UserRepository.class);
         UserBookProgressRepository userBookProgressRepository = Mockito.mock(UserBookProgressRepository.class);
         AuthenticationService authenticationService = Mockito.mock(AuthenticationService.class);
         BookQueryService bookQueryService = Mockito.mock(BookQueryService.class);
         UserProgressService userProgressService = Mockito.mock(UserProgressService.class);
         BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
         MonitoringRegistrationService monitoringRegistrationService = Mockito.mock(MonitoringRegistrationService.class);
-        KoboReadingStateService koboReadingStateService = Mockito.mock(KoboReadingStateService.class);
+        BookUpdateService bookUpdateService = Mockito.mock(BookUpdateService.class);
 
         bookService = new BookService(
                 bookRepository,
                 pdfViewerPreferencesRepository,
-                epubViewerPreferencesRepository,
                 cbxViewerPreferencesRepository,
                 newPdfViewerPreferencesRepository,
-                shelfRepository,
                 fileService,
                 bookMapper,
-                userRepository,
                 userBookProgressRepository,
                 authenticationService,
                 bookQueryService,
                 userProgressService,
                 bookDownloadService,
                 monitoringRegistrationService,
-                koboReadingStateService
+                bookUpdateService,
+                ebookViewerPreferenceRepository
         );
     }
 

@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.service.library;
 
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
@@ -46,7 +46,7 @@ class FolderAsBookFileProcessorExampleTest {
     private FolderAsBookFileProcessor processor;
 
     @Captor
-    private ArgumentCaptor<BookAdditionalFileEntity> additionalFileCaptor;
+    private ArgumentCaptor<BookFileEntity> additionalFileCaptor;
 
     private MockedStatic<FileUtils> fileUtilsMock;
     private  MockedStatic<FileFingerprint> fileFingerprintMock;

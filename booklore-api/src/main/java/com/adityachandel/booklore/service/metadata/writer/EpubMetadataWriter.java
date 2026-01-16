@@ -1,9 +1,12 @@
 package com.adityachandel.booklore.service.metadata.writer;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
+import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.lingala.zip4j.ZipFile;
 import net.lingala.zip4j.model.ZipParameters;
@@ -24,11 +27,16 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -39,12 +47,18 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class EpubMetadataWriter implements MetadataWriter {
 
     private static final String OPF_NS = "http://www.idpf.org/2007/opf";
+    private final AppSettingService appSettingService;
 
     @Override
-    public void writeMetadataToFile(File epubFile, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clear) {
+    public void saveMetadataToFile(File epubFile, BookMetadataEntity metadata, String thumbnailUrl, MetadataClearFlags clear) {
+        if (!shouldSaveMetadataToFile(epubFile)) {
+            return;
+        }
+
         File backupFile = new File(epubFile.getParentFile(), epubFile.getName() + ".bak");
         try {
             Files.copy(epubFile.toPath(), backupFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -84,7 +98,8 @@ public class EpubMetadataWriter implements MetadataWriter {
             helper.copyLanguage(clear != null && clear.isLanguage(), val -> replaceAndTrackChange(opfDoc, metadataElement, "language", DC_NS, val, hasChanges));
 
             helper.copyAuthors(clear != null && clear.isAuthors(), names -> {
-                removeElementsByTagNameNS(metadataElement, DC_NS, "creator");
+                removeCreatorsByRole(metadataElement, "");
+                removeCreatorsByRole(metadataElement, "aut");
                 if (names != null) {
                     for (String name : names) {
                         String[] parts = name.split(" ", 2);
@@ -147,6 +162,7 @@ public class EpubMetadataWriter implements MetadataWriter {
             }
 
             if (hasChanges[0]) {
+                removeEmptyTextNodes(opfDoc);
                 Transformer transformer = TransformerFactory.newInstance().newTransformer();
                 transformer.setOutputProperty(OutputKeys.INDENT, "yes");
                 transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -234,68 +250,61 @@ public class EpubMetadataWriter implements MetadataWriter {
         return changed;
     }
 
+
+    public void replaceCoverImageFromBytes(BookEntity bookEntity, byte[] file) {
+        if (!shouldSaveMetadataToFile(bookEntity.getFullFilePath().toFile())) {
+            return;
+        }
+        if (file == null || file.length == 0) {
+            log.warn("Cover update failed: empty or null byte array.");
+            return;
+        }
+
+        replaceCoverImageInternal(bookEntity, file, "byte array");
+    }
+
     public void replaceCoverImageFromUpload(BookEntity bookEntity, MultipartFile multipartFile) {
+        if (!shouldSaveMetadataToFile(bookEntity.getFullFilePath().toFile())) {
+            return;
+        }
         if (multipartFile == null || multipartFile.isEmpty()) {
             log.warn("Cover upload failed: empty or null file.");
             return;
         }
 
-        Path tempDir = null;
         try {
-            File epubFile = new File(bookEntity.getFullFilePath().toUri());
-            tempDir = Files.createTempDirectory("epub_cover_" + UUID.randomUUID());
-            try (ZipFile zipFile = new ZipFile(epubFile)) {
-                zipFile.extractAll(tempDir.toString());
-            }
-
-            File opfFile = findOpfFile(tempDir.toFile());
-            if (opfFile == null) {
-                log.warn("OPF file not found in EPUB: {}", epubFile.getName());
-                return;
-            }
-
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            DocumentBuilder builder = dbf.newDocumentBuilder();
-            Document opfDoc = builder.parse(opfFile);
-
             byte[] coverData = multipartFile.getBytes();
-            applyCoverImageToEpub(tempDir, opfDoc, coverData);
-
-            Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.transform(new DOMSource(opfDoc), new StreamResult(opfFile));
-
-            File tempEpub = new File(epubFile.getParentFile(), epubFile.getName() + ".tmp");
-            try (ZipFile tempZipFile = new ZipFile(tempEpub)) {
-                addFolderContentsToZip(tempZipFile, tempDir.toFile(), tempDir.toFile());
-            }
-
-            if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
-            if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
-
-            log.info("Cover image updated in EPUB: {}", epubFile.getName());
-
-        } catch (Exception e) {
-            log.warn("Failed to update EPUB with uploaded cover image: {}", e.getMessage(), e);
-        } finally {
-            if (tempDir != null) {
-                deleteDirectoryRecursively(tempDir);
-            }
+            replaceCoverImageInternal(bookEntity, coverData, "upload");
+        } catch (IOException e) {
+            log.warn("Failed to read uploaded cover image: {}", e.getMessage(), e);
         }
     }
 
     @Override
     public void replaceCoverImageFromUrl(BookEntity bookEntity, String url) {
+        if (!shouldSaveMetadataToFile(bookEntity.getFullFilePath().toFile())) {
+            return;
+        }
         if (url == null || url.isBlank()) {
             log.warn("Cover update via URL failed: empty or null URL.");
             return;
         }
+
+        byte[] coverData = loadImage(url);
+        if (coverData == null) {
+            log.warn("Failed to load image from URL: {}", url);
+            return;
+        }
+
+        replaceCoverImageInternal(bookEntity, coverData, "URL");
+    }
+
+    private void replaceCoverImageInternal(BookEntity bookEntity, byte[] coverData, String source) {
         Path tempDir = null;
         try {
             File epubFile = new File(bookEntity.getFullFilePath().toUri());
-            tempDir = Files.createTempDirectory("epub_cover_url_" + UUID.randomUUID());
+            tempDir = Files.createTempDirectory("epub_cover_" + UUID.randomUUID());
+
             try (ZipFile zipFile = new ZipFile(epubFile)) {
                 zipFile.extractAll(tempDir.toString());
             }
@@ -311,14 +320,9 @@ public class EpubMetadataWriter implements MetadataWriter {
             DocumentBuilder builder = dbf.newDocumentBuilder();
             Document opfDoc = builder.parse(opfFile);
 
-            byte[] coverData = loadImage(url);
-            if (coverData == null) {
-                log.warn("Failed to load image from URL: {}", url);
-                return;
-            }
-
             applyCoverImageToEpub(tempDir, opfDoc, coverData);
 
+            removeEmptyTextNodes(opfDoc);
             Transformer transformer = TransformerFactory.newInstance().newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
@@ -332,9 +336,10 @@ public class EpubMetadataWriter implements MetadataWriter {
             if (!epubFile.delete()) throw new IOException("Could not delete original EPUB");
             if (!tempEpub.renameTo(epubFile)) throw new IOException("Could not rename temp EPUB");
 
-            log.info("Cover image updated in EPUB via URL: {}", epubFile.getName());
+            log.info("Cover image updated in EPUB from {}: {}", source, epubFile.getName());
+
         } catch (Exception e) {
-            log.warn("Failed to update EPUB with cover from URL: {}", e.getMessage(), e);
+            log.warn("Failed to update EPUB cover image from {}: {}", source, e.getMessage(), e);
         } finally {
             if (tempDir != null) {
                 deleteDirectoryRecursively(tempDir);
@@ -406,7 +411,8 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         String coverHref = existingCoverItem.getAttribute("href");
-        if (coverHref == null || coverHref.isBlank()) {
+        String decodedCoverHref = URLDecoder.decode(coverHref, StandardCharsets.UTF_8);
+        if (decodedCoverHref == null || decodedCoverHref.isBlank()) {
             throw new IOException("Cover item has no href attribute");
         }
 
@@ -418,7 +424,7 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
 
         Path opfDir = opfPath.getParent();
-        Path coverFilePath = opfDir.resolve(coverHref).normalize();
+        Path coverFilePath = opfDir.resolve(decodedCoverHref).normalize();
 
         Files.createDirectories(coverFilePath.getParent());
         Files.write(coverFilePath, coverData);
@@ -488,6 +494,16 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
+    private void removeMetaByRefines(Element metadataElement, String refines) {
+        NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
+        for (int i = metas.getLength() - 1; i >= 0; i--) {
+            Element meta = (Element) metas.item(i);
+            if (refines.equals(meta.getAttribute("refines"))) {
+                metadataElement.removeChild(meta);
+            }
+        }
+    }
+
     private Element createMetaElement(Document doc, String name, String content) {
         Element meta = doc.createElementNS(doc.getDocumentElement().getNamespaceURI(), "meta");
         meta.setAttribute("name", name);
@@ -520,6 +536,28 @@ public class EpubMetadataWriter implements MetadataWriter {
         }
     }
 
+    private void removeCreatorsByRole(Element metadataElement, String role) {
+        NodeList creators = metadataElement.getElementsByTagNameNS("*", "creator");
+        for (int i = creators.getLength() - 1; i >= 0; i--) {
+            Element creatorElement = (Element) creators.item(i);
+            String id = creatorElement.getAttribute("id");
+            String creatorRole = creatorElement.getAttributeNS(OPF_NS, "role");
+            if (StringUtils.isNotBlank(id) && StringUtils.isBlank(creatorRole)) {
+                // Finds any matching role meta tags for this creator ID
+                Element meta = getMetaElementByFilter(metadataElement, el -> ("role".equals(el.getAttribute("property")) && "#".concat(id).equals(el.getAttribute("refines"))));
+                if (meta != null) {
+                    creatorRole = meta.hasAttribute("content") ? meta.getAttribute("content").trim() : meta.getTextContent().trim();
+                }
+            }
+            if (role.equalsIgnoreCase(creatorRole)) {
+                metadataElement.removeChild(creatorElement);
+                if (StringUtils.isNotBlank(id)) {
+                    removeMetaByRefines(metadataElement, "#".concat(id));
+                }
+            }
+        }
+    }
+
     private Element createCreatorElement(Document doc, String fullName, String fileAs, String role) {
         Element creator = doc.createElementNS("http://purl.org/dc/elements/1.1/", "creator");
         creator.setPrefix("dc");
@@ -540,13 +578,21 @@ public class EpubMetadataWriter implements MetadataWriter {
         return subj;
     }
 
-    private String getMetaContentByName(Element metadataElement, String name) {
+    private Element getMetaElementByFilter(Element metadataElement, java.util.function.Predicate<Element> filter) {
         NodeList metas = metadataElement.getElementsByTagNameNS("*", "meta");
         for (int i = 0; i < metas.getLength(); i++) {
             Element meta = (Element) metas.item(i);
-            if (name.equals(meta.getAttribute("name"))) {
-                return meta.getAttribute("content");
+            if (filter.test(meta)) {
+                return meta;
             }
+        }
+        return null;
+    }
+
+    private String getMetaContentByName(Element metadataElement, String name) {
+        Element meta = getMetaElementByFilter(metadataElement, el -> name.equals(el.getAttribute("name")));
+        if (meta != null) {
+            return meta.getAttribute("content");
         }
         return null;
     }
@@ -564,6 +610,38 @@ public class EpubMetadataWriter implements MetadataWriter {
                     });
         } catch (IOException e) {
             log.warn("Failed to clean up temporary directory: {}", dir, e);
+        }
+    }
+
+    public boolean shouldSaveMetadataToFile(File epubFile) {
+        MetadataPersistenceSettings.SaveToOriginalFile settings = appSettingService.getAppSettings().getMetadataPersistenceSettings().getSaveToOriginalFile();
+
+        MetadataPersistenceSettings.FormatSettings epubSettings = settings.getEpub();
+        if (epubSettings == null || !epubSettings.isEnabled()) {
+            log.debug("EPUB metadata writing is disabled. Skipping: {}", epubFile.getName());
+            return false;
+        }
+
+        long fileSizeInMb = epubFile.length() / (1024 * 1024);
+        if (fileSizeInMb > epubSettings.getMaxFileSizeInMb()) {
+            log.info("EPUB file {} ({} MB) exceeds max size limit ({} MB). Skipping metadata write.", epubFile.getName(), fileSizeInMb, epubSettings.getMaxFileSizeInMb());
+            return false;
+        }
+
+        return true;
+    }
+
+    private void removeEmptyTextNodes(Document doc) {
+        try {
+            XPath xpath = XPathFactory.newInstance().newXPath();
+            NodeList emptyTextNodes = (NodeList) xpath.evaluate("//text()[normalize-space(.)='']", doc, XPathConstants.NODESET);
+
+            for (int i = 0; i < emptyTextNodes.getLength(); i++) {
+                Node emptyTextNode = emptyTextNodes.item(i);
+                emptyTextNode.getParentNode().removeChild(emptyTextNode);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to remove empty text nodes", e);
         }
     }
 }

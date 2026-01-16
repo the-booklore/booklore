@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.model.MetadataUpdateContext;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
@@ -34,7 +35,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -311,11 +311,15 @@ class LibraryRescanHelperTest {
         libraryPath.setPath("/test/path");
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setFileName(fileName);
-        book.setBookType(bookType);
         book.setDeleted(false);
         book.setLibraryPath(libraryPath);
-        book.setFileSubPath("");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName(fileName);
+        primaryFile.setFileSubPath("");
+        primaryFile.setBookType(bookType);
+        book.setBookFiles(List.of(primaryFile));
         return book;
     }
 }

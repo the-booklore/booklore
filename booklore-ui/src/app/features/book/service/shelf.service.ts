@@ -99,6 +99,10 @@ export class ShelfService {
     return this.shelfStateSubject.value.shelves?.find(s => s.id === id);
   }
 
+  getShelvesFromState(): Shelf[] {
+    return this.shelfStateSubject.value.shelves ?? [];
+  }
+
   getBookCount(shelfId: number): Observable<number> {
     return combineLatest([
       this.shelfState$,

@@ -4,17 +4,21 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.Library;
-import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.util.ArchiveUtils;
+import com.adityachandel.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -30,7 +34,8 @@ public class OpdsFeedService {
     private final MagicShelfBookService magicShelfBookService;
 
     public String generateRootNavigation(HttpServletRequest request) {
-        var feed = new StringBuilder("""
+
+        String feed = """
                 <?xml version="1.0" encoding="UTF-8"?>
                 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:opds="http://opds-spec.org/2010/catalog">
                   <id>urn:booklore:root</id>
@@ -39,9 +44,7 @@ public class OpdsFeedService {
                   <link rel="self" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
                   <link rel="start" href="/api/v1/opds" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
                   <link rel="search" type="application/opensearchdescription+xml" title="Search" href="/api/v1/opds/search.opds"/>
-                """.formatted(now()));
-
-        feed.append("""
+                """.formatted(now()) + """
                   <entry>
                     <title>All Books</title>
                     <id>urn:booklore:catalog:all</id>
@@ -49,80 +52,72 @@ public class OpdsFeedService {
                     <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
                     <content type="text">Browse all available books</content>
                   </entry>
-                """.formatted(now(), escapeXml("/api/v1/opds/catalog?page=1&size=" + DEFAULT_PAGE_SIZE)));
-
-        feed.append("""
-                  <entry>
-                    <title>Recently Added</title>
-                    <id>urn:booklore:catalog:recent</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
-                    <content type="text">Recently added books</content>
-                  </entry>
-                """.formatted(now(), escapeXml("/api/v1/opds/recent?page=1&size=" + DEFAULT_PAGE_SIZE)));
-
-        feed.append("""
-                  <entry>
-                    <title>Libraries</title>
-                    <id>urn:booklore:navigation:libraries</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/libraries" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by library</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Shelves</title>
-                    <id>urn:booklore:navigation:shelves</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse your personal shelves</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Magic Shelves</title>
-                    <id>urn:booklore:navigation:magic-shelves</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse your smart, dynamic shelves</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Authors</title>
-                    <id>urn:booklore:navigation:authors</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by author</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Series</title>
-                    <id>urn:booklore:navigation:series</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/series" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
-                    <content type="text">Browse books by series</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("""
-                  <entry>
-                    <title>Surprise Me</title>
-                    <id>urn:booklore:catalog:surprise</id>
-                    <updated>%s</updated>
-                    <link rel="subsection" href="/api/v1/opds/surprise" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
-                    <content type="text">25 random books from the catalog</content>
-                  </entry>
-                """.formatted(now()));
-
-        feed.append("</feed>");
-        return feed.toString();
+                """.formatted(now(), escapeXml("/api/v1/opds/catalog?page=1&size=" + DEFAULT_PAGE_SIZE)) +
+                """
+                          <entry>
+                            <title>Recently Added</title>
+                            <id>urn:booklore:catalog:recent</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="%s" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                            <content type="text">Recently added books</content>
+                          </entry>
+                        """.formatted(now(), escapeXml("/api/v1/opds/recent?page=1&size=" + DEFAULT_PAGE_SIZE)) +
+                """
+                          <entry>
+                            <title>Libraries</title>
+                            <id>urn:booklore:navigation:libraries</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/libraries" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by library</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Shelves</title>
+                            <id>urn:booklore:navigation:shelves</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse your personal shelves</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Magic Shelves</title>
+                            <id>urn:booklore:navigation:magic-shelves</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/magic-shelves" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse your smart, dynamic shelves</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Authors</title>
+                            <id>urn:booklore:navigation:authors</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/authors" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by author</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Series</title>
+                            <id>urn:booklore:navigation:series</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/series" type="application/atom+xml;profile=opds-catalog;kind=navigation"/>
+                            <content type="text">Browse books by series</content>
+                          </entry>
+                        """.formatted(now()) +
+                """
+                          <entry>
+                            <title>Surprise Me</title>
+                            <id>urn:booklore:catalog:surprise</id>
+                            <updated>%s</updated>
+                            <link rel="subsection" href="/api/v1/opds/surprise" type="application/atom+xml;profile=opds-catalog;kind=acquisition"/>
+                            <content type="text">25 random books from the catalog</content>
+                          </entry>
+                        """.formatted(now()) +
+                "</feed>";
+        return feed;
     }
 
     public String generateLibrariesNavigation(HttpServletRequest request) {
@@ -320,7 +315,7 @@ public class OpdsFeedService {
 
     public String generateCatalogFeed(HttpServletRequest request) {
         Long libraryId = parseLongParam(request, "libraryId", null);
-        Long shelfId = parseLongParam(request, "shelfId", null);
+        Set<Long> shelfIds = parseShelfIds(request);
         Long magicShelfId = parseLongParam(request, "magicShelfId", null);
         String query = request.getParameter("q");
         String author = request.getParameter("author");
@@ -339,14 +334,14 @@ public class OpdsFeedService {
         } else if (series != null && !series.isBlank()) {
             booksPage = opdsBookService.getBooksBySeriesName(userId, series, page - 1, size);
         } else {
-            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfId, page - 1, size);
+            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfIds, page - 1, size);
         }
 
         // Apply user's preferred sort order
         booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
-        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author, series);
-        String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author, series);
+        String feedTitle = determineFeedTitle(libraryId, shelfIds, magicShelfId, author, series);
+        String feedId = determineFeedId(libraryId, shelfIds, magicShelfId, author, series);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -385,7 +380,7 @@ public class OpdsFeedService {
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
         Page<Book> booksPage = opdsBookService.getRecentBooksPage(userId, page - 1, size);
-        
+
         // Apply user's preferred sort order
         booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
@@ -548,7 +543,7 @@ public class OpdsFeedService {
     }
 
     private void appendLinks(StringBuilder feed, Book book) {
-        String mimeType = "application/" + fileMimeType(book);
+        String mimeType = fileMimeType(book);
         feed.append("    <link href=\"/api/v1/opds/")
                 .append(book.getId()).append("/download\" rel=\"http://opds-spec.org/acquisition\" type=\"").append(mimeType).append("\"/>\n");
 
@@ -561,12 +556,15 @@ public class OpdsFeedService {
         }
     }
 
-    private String determineFeedTitle(Long libraryId, Long shelfId, Long magicShelfId, String author, String series) {
+    private String determineFeedTitle(Long libraryId, Set<Long> shelfIds, Long magicShelfId, String author, String series) {
         if (magicShelfId != null) {
             return magicShelfBookService.getMagicShelfName(magicShelfId);
         }
-        if (shelfId != null) {
-            return opdsBookService.getShelfName(shelfId);
+        if (shelfIds != null && !shelfIds.isEmpty()) {
+            if (shelfIds.size() == 1) {
+                return opdsBookService.getShelfName(shelfIds.iterator().next());
+            }
+            return "Multiple Shelves";
         }
         if (libraryId != null) {
             return opdsBookService.getLibraryName(libraryId);
@@ -580,12 +578,15 @@ public class OpdsFeedService {
         return "Booklore Catalog";
     }
 
-    private String determineFeedId(Long libraryId, Long shelfId, Long magicShelfId, String author, String series) {
+    private String determineFeedId(Long libraryId, Set<Long> shelfIds, Long magicShelfId, String author, String series) {
         if (magicShelfId != null) {
             return "urn:booklore:magic-shelf:" + magicShelfId;
         }
-        if (shelfId != null) {
-            return "urn:booklore:shelf:" + shelfId;
+        if (shelfIds != null && !shelfIds.isEmpty()) {
+            if (shelfIds.size() == 1) {
+                return "urn:booklore:shelf:" + shelfIds.iterator().next();
+            }
+            return "urn:booklore:shelves:" + String.join(",", shelfIds.stream().map(String::valueOf).sorted().toList());
         }
         if (libraryId != null) {
             return "urn:booklore:library:" + libraryId;
@@ -605,12 +606,50 @@ public class OpdsFeedService {
 
     private String fileMimeType(Book book) {
         if (book == null || book.getBookType() == null) {
-            return "octet-stream";
+            return "application/octet-stream";
         }
         return switch (book.getBookType()) {
-            case PDF -> "pdf";
-            case EPUB -> "epub+zip";
-            default -> "octet-stream";
+            case PDF -> "application/pdf";
+            case EPUB -> "application/epub+zip";
+            case FB2 -> {
+                if (book.getFileName() != null) {
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                    if (type == ArchiveUtils.ArchiveType.ZIP) {
+                        yield "application/zip";
+                    }
+                }
+                yield "application/x-fictionbook+xml";
+            }
+            case MOBI -> "application/x-mobipocket-ebook";
+            case AZW3 -> "application/vnd.amazon.ebook";
+            case CBX -> {
+                if (book.getArchiveType() != null) {
+                    yield switch (book.getArchiveType()) {
+                        case RAR -> "application/vnd.comicbook-rar";
+                        case ZIP -> "application/vnd.comicbook+zip";
+                        case SEVEN_ZIP -> "application/x-7z-compressed";
+                        default -> "application/vnd.comicbook+zip";
+                    };
+                }
+
+                if (book.getFileName() != null) {
+                    ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(book)));
+                    yield switch (type) {
+                        case RAR -> "application/vnd.comicbook-rar";
+                        case ZIP -> "application/vnd.comicbook+zip";
+                        case SEVEN_ZIP -> "application/x-7z-compressed";
+                        default -> {
+                            String lower = book.getFileName().toLowerCase();
+                            if (lower.endsWith(".cbr")) yield "application/vnd.comicbook-rar";
+                            if (lower.endsWith(".cbz")) yield "application/vnd.comicbook+zip";
+                            if (lower.endsWith(".cb7")) yield "application/x-7z-compressed";
+                            if (lower.endsWith(".cbt")) yield "application/x-tar";
+                            yield "application/vnd.comicbook+zip";
+                        }
+                    };
+                }
+                yield "application/vnd.comicbook+zip";
+            }
         };
     }
 
@@ -631,6 +670,34 @@ public class OpdsFeedService {
         } catch (Exception e) {
             return defaultValue;
         }
+    }
+
+    private Set<Long> parseShelfIds(HttpServletRequest request) {
+        String shelfIdParam = request.getParameter("shelfId");
+        String shelfIdsParam = request.getParameter("shelfIds");
+
+        Set<Long> shelfIds = new HashSet<>();
+
+        // Support both single shelfId and comma-separated shelfIds
+        if (shelfIdParam != null && !shelfIdParam.isBlank()) {
+            try {
+                shelfIds.add(Long.parseLong(shelfIdParam));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid shelfId parameter: {}", shelfIdParam);
+            }
+        }
+
+        if (shelfIdsParam != null && !shelfIdsParam.isBlank()) {
+            for (String id : shelfIdsParam.split(",")) {
+                try {
+                    shelfIds.add(Long.parseLong(id.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid shelf ID in shelfIds parameter: {}", id);
+                }
+            }
+        }
+
+        return shelfIds.isEmpty() ? null : shelfIds;
     }
 
     private Long getUserId() {

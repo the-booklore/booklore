@@ -1,0 +1,34 @@
+<div class="completion-timeline-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-calendar completion-title-icon"></i>
+        Reading Progress
+      </h3>
+      <p class="chart-description">Monthly book completion statistics</p>
+    </div>
+    <div class="year-selector">
+      <button type="button"
+              class="year-nav-btn"
+              (click)="changeYear(-1)"
+              title="Previous year">
+        <i class="pi pi-chevron-left"></i>
+      </button>
+      <span class="current-year">{{ currentYear }}</span>
+      <button type="button"
+              class="year-nav-btn"
+              (click)="changeYear(1)"
+              title="Next year">
+        <i class="pi pi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {labels: [], datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+  </div>
+</div>
+

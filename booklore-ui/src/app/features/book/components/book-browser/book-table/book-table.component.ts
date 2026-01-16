@@ -10,7 +10,7 @@ import {UrlHelperService} from '../../../../../shared/service/url-helper.service
 import {Button} from 'primeng/button';
 import {BookService} from '../../../service/book.service';
 import {MessageService} from 'primeng/api';
-import {Router, RouterLink} from '@angular/router';
+import {RouterLink} from '@angular/router';
 import {filter, Subject} from 'rxjs';
 import {UserService} from '../../../../settings/user-management/user.service';
 import {take, takeUntil} from 'rxjs/operators';
@@ -39,7 +39,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
   @Output() selectedBooksChange = new EventEmitter<Set<number>>();
   @Input() books: Book[] = [];
   @Input() sortOption: SortOption | null = null;
-  @Input() visibleColumns: any[] = [];
+  @Input() visibleColumns: { field: string; header: string }[] = [];
   @Input() preselectedBookIds = new Set<number>();
 
   protected urlHelper = inject(UrlHelperService);
@@ -72,7 +72,8 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     {field: 'goodreadsRating', header: 'Goodreads'},
     {field: 'goodreadsReviewCount', header: 'GR #'},
     {field: 'hardcoverRating', header: 'Hardcover'},
-    {field: 'hardcoverReviewCount', header: 'HC #'}
+    {field: 'hardcoverReviewCount', header: 'HC #'},
+    {field: 'ranobedbRating', header: 'Ranobedb'},
   ];
 
   scrollHeight = 'calc(100dvh - 160px)';
@@ -120,17 +121,21 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
     this.selectedBooksChange.emit(this.selectedBookIds);
   }
 
-  onRowSelect(event: any): void {
-    this.selectedBookIds.add(event.data.id);
-    this.selectedBooksChange.emit(this.selectedBookIds);
+  onRowSelect(event: { data?: Book | Book[] }): void {
+    if (event.data && !Array.isArray(event.data)) {
+      this.selectedBookIds.add(event.data.id);
+      this.selectedBooksChange.emit(this.selectedBookIds);
+    }
   }
 
-  onRowUnselect(event: any): void {
-    this.selectedBookIds.delete(event.data.id);
-    this.selectedBooksChange.emit(this.selectedBookIds);
+  onRowUnselect(event: { data?: Book | Book[] }): void {
+    if (event.data && !Array.isArray(event.data)) {
+      this.selectedBookIds.delete(event.data.id);
+      this.selectedBooksChange.emit(this.selectedBookIds);
+    }
   }
 
-  onHeaderCheckboxToggle(event: any): void {
+  onHeaderCheckboxToggle(event: { checked: boolean }): void {
     if (event.checked) {
       this.selectedBooks = [...this.books];
       this.selectedBookIds = new Set(this.books.map(book => book.id));
@@ -204,7 +209,7 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
       'isbn': 'isbn'
     } as const;
 
-    let data: string[] = [metadata[field]];
+    let data: string[] = [metadata[field] as string];
 
     switch (field) {
       case 'title':
@@ -290,7 +295,8 @@ export class BookTableComponent implements OnInit, OnDestroy, OnChanges {
 
       case 'amazonRating':
       case 'goodreadsRating':
-      case 'hardcoverRating': {
+      case 'hardcoverRating':
+      case 'ranobedbRating': {
         const rating = metadata[field];
         return typeof rating === 'number' ? rating.toFixed(1) : '';
       }

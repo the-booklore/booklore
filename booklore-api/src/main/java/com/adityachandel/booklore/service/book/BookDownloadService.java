@@ -12,7 +12,7 @@ import com.adityachandel.booklore.util.FileUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -56,8 +55,8 @@ public class BookDownloadService {
                 throw ApiError.FAILED_TO_DOWNLOAD_FILE.createException(bookId);
             }
 
-            InputStream inputStream = new FileInputStream(bookFile);
-            InputStreamResource resource = new InputStreamResource(inputStream);
+            // Use FileSystemResource which properly handles file resources and closing
+            Resource resource = new FileSystemResource(bookFile);
 
             String encodedFilename = URLEncoder.encode(file.getFileName().toString(), StandardCharsets.UTF_8)
                     .replace("+", "%20");
@@ -81,8 +80,9 @@ public class BookDownloadService {
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         
-        boolean isEpub = bookEntity.getBookType() == BookFileType.EPUB;
-        boolean isCbx = bookEntity.getBookType() == BookFileType.CBX;
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        boolean isEpub = primaryFile.getBookType() == BookFileType.EPUB;
+        boolean isCbx = primaryFile.getBookType() == BookFileType.CBX;
 
         if (!isEpub && !isCbx) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("The requested book is not an EPUB or CBX file.");
@@ -93,8 +93,8 @@ public class BookDownloadService {
             throw ApiError.GENERIC_BAD_REQUEST.createException("Kobo settings not found.");
         }
 
-        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
-        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
+        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && primaryFile.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
+        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && primaryFile.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
 
         int compressionPercentage = koboSettings.getConversionImageCompressionPercentage();
         Path tempDir = null;

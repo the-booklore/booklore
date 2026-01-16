@@ -2,6 +2,7 @@ package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.dto.settings.SidebarSortOption;
 import com.adityachandel.booklore.model.enums.*;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,7 +44,17 @@ public class BookLoreUser {
         private boolean canAccessTaskManager;
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
+        private boolean canManageFonts;
         private boolean isDemoUser;
+        private boolean canBulkAutoFetchMetadata;
+        private boolean canBulkCustomFetchMetadata;
+        private boolean canBulkEditMetadata;
+        private boolean canBulkRegenerateCover;
+        private boolean canMoveOrganizeFiles;
+        private boolean canBulkLockUnlockMetadata;
+        private boolean canBulkResetBookloreReadProgress;
+        private boolean canBulkResetKoReaderReadProgress;
+        private boolean canBulkResetBookReadStatus;
     }
 
     @Data
@@ -52,6 +63,7 @@ public class BookLoreUser {
         public PdfReaderSetting pdfReaderSetting;
         public NewPdfReaderSetting newPdfReaderSetting;
         public EpubReaderSetting epubReaderSetting;
+        public EbookReaderSetting ebookReaderSetting;
         public CbxReaderSetting cbxReaderSetting;
         public SidebarSortOption sidebarLibrarySorting;
         public SidebarSortOption sidebarShelfSorting;
@@ -63,6 +75,7 @@ public class BookLoreUser {
         public String metadataCenterViewMode;
         public boolean koReaderEnabled;
         public boolean enableSeriesView;
+        public boolean autoSaveMetadata;
         public DashboardConfig dashboardConfig;
 
         @Data
@@ -93,7 +106,9 @@ public class BookLoreUser {
             private String sortDir;
             private String view;
             private Float coverSize;
+            @JsonAlias("seriesCollapse")
             private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -114,7 +129,9 @@ public class BookLoreUser {
             private String sortKey;
             private String sortDir;
             private String view;
-            private Boolean seriesCollapse;
+            @JsonAlias("seriesCollapse")
+            private Boolean seriesCollapsed;
+            private Boolean overlayBookType;
         }
 
         @Data
@@ -129,6 +146,25 @@ public class BookLoreUser {
             private Float lineHeight;
             private String flow;
             private String spread;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class EbookReaderSetting {
+            private String fontFamily;
+            private Integer fontSize;
+            private Float gap;
+            private Boolean hyphenate;
+            private Boolean isDark;
+            private Boolean justify;
+            private Float lineHeight;
+            private Integer maxBlockSize;
+            private Integer maxColumnCount;
+            private Integer maxInlineSize;
+            private String theme;
+            private String flow;
         }
 
         @Data

@@ -5,17 +5,18 @@ import {filter, takeUntil} from 'rxjs/operators';
 import {Observable, Subject} from 'rxjs';
 import {TooltipModule} from 'primeng/tooltip';
 import {UserService, UserSettings, UserState} from '../user-management/user.service';
-import {ReaderPreferencesService} from './reader-preferences-service';
+import {ReaderPreferencesService} from './reader-preferences.service';
 import {EpubReaderPreferencesComponent} from './epub-reader-preferences/epub-reader-preferences-component';
 import {PdfReaderPreferencesComponent} from './pdf-reader-preferences/pdf-reader-preferences-component';
 import {CbxReaderPreferencesComponent} from './cbx-reader-preferences/cbx-reader-preferences-component';
+import {CustomFontsComponent} from '../custom-fonts/custom-fonts.component';
 
 @Component({
   selector: 'app-reader-preferences',
   templateUrl: './reader-preferences.component.html',
   standalone: true,
   styleUrls: ['./reader-preferences.component.scss'],
-  imports: [FormsModule, TooltipModule, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent]
+  imports: [FormsModule, TooltipModule, EpubReaderPreferencesComponent, PdfReaderPreferencesComponent, CbxReaderPreferencesComponent, CustomFontsComponent]
 })
 export class ReaderPreferences implements OnInit, OnDestroy {
   readonly scopeOptions = [
@@ -34,12 +35,16 @@ export class ReaderPreferences implements OnInit, OnDestroy {
   userData$: Observable<UserState> = this.userService.userState$;
   userSettings!: UserSettings;
 
+  hasFontManagementPermission = false;
+
   ngOnInit(): void {
     this.userData$.pipe(
       filter(userState => !!userState?.user && userState.loaded),
       takeUntil(this.destroy$)
     ).subscribe(userState => {
       this.userSettings = userState.user!.userSettings;
+      const perms = userState.user!.permissions;
+      this.hasFontManagementPermission = (perms.admin || perms.canManageFonts);
       this.loadPreferences(userState.user!.userSettings);
     });
   }

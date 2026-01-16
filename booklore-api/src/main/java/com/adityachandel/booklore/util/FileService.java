@@ -8,9 +8,6 @@ import com.adityachandel.booklore.repository.BookMetadataRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -103,10 +100,6 @@ public class FileService {
         return Paths.get(appProperties.getPathConfig(), "metadata_backup", String.valueOf(bookId)).toString();
     }
 
-    public String getCbxCachePath() {
-        return Paths.get(appProperties.getPathConfig(), "cbx_cache").toString();
-    }
-
     public String getPdfCachePath() {
         return Paths.get(appProperties.getPathConfig(), "pdf_cache").toString();
     }
@@ -144,6 +137,28 @@ public class FileService {
     // IMAGE OPERATIONS
     // ========================================
 
+    public static BufferedImage readImage(InputStream inputStream) throws IOException {
+        return readImage(inputStream.readAllBytes());
+    }
+
+    public static BufferedImage readImage(byte[] imageData) throws IOException {
+        if (imageData == null || imageData.length == 0) {
+            throw new IOException("Image data is null or empty");
+        }
+        try (InputStream is = new ByteArrayInputStream(imageData)) {
+            BufferedImage image = ImageIO.read(is);
+            if (image != null) {
+                return image;
+            }
+        } catch (Exception e) {
+            log.warn("ImageIO/TwelveMonkeys decode failed (possibly unsupported format like AVIF/HEIC): {}", e.getMessage());
+            return null;
+        }
+
+        log.warn("Unable to decode image - likely unsupported format (AVIF, HEIC, or SVG)");
+        return null;
+    }
+
     public static BufferedImage resizeImage(BufferedImage originalImage, int width, int height) {
         Image tmp = originalImage.getScaledInstance(width, height, Image.SCALE_SMOOTH);
         BufferedImage resizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
@@ -156,9 +171,10 @@ public class FileService {
     public static void saveImage(byte[] imageData, String filePath) throws IOException {
         BufferedImage originalImage = null;
         try {
-            originalImage = ImageIO.read(new ByteArrayInputStream(imageData));
+            originalImage = readImage(imageData);
             if (originalImage == null) {
-                throw new IOException("Invalid image data: unable to decode image");
+                log.warn("Skipping saveImage for {}: decoded image is null", filePath);
+                return;
             }
             File outputFile = new File(filePath);
             File parentDir = outputFile.getParentFile();
@@ -191,13 +207,7 @@ public class FileService {
 
             // Validate and convert
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                try (ByteArrayInputStream inputStream = new ByteArrayInputStream(response.getBody())) {
-                    BufferedImage image = ImageIO.read(inputStream);
-                    if (image == null) {
-                        throw new IOException("Downloaded content is not a supported image format.");
-                    }
-                    return image;
-                }
+                return readImage(response.getBody());
             } else {
                 throw new IOException("Failed to download image. HTTP Status: " + response.getStatusCode());
             }
@@ -216,10 +226,11 @@ public class FileService {
             validateCoverFile(file);
             BufferedImage originalImage;
             try (InputStream inputStream = file.getInputStream()) {
-                originalImage = ImageIO.read(inputStream);
+                originalImage = readImage(inputStream);
             }
             if (originalImage == null) {
-                throw ApiError.IMAGE_NOT_FOUND.createException();
+                log.warn("Could not decode image from file, skipping thumbnail creation for book: {}", bookId);
+                return;
             }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
@@ -235,12 +246,10 @@ public class FileService {
 
     public void createThumbnailFromBytes(long bookId, byte[] imageBytes) {
         try {
-            BufferedImage originalImage;
-            try (InputStream inputStream = new java.io.ByteArrayInputStream(imageBytes)) {
-                originalImage = ImageIO.read(inputStream);
-            }
+            BufferedImage originalImage = readImage(imageBytes);
             if (originalImage == null) {
-                throw ApiError.IMAGE_NOT_FOUND.createException();
+                log.warn("Skipping thumbnail creation for book {}: image decode failed", bookId);
+                return;
             }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
@@ -257,11 +266,15 @@ public class FileService {
     public void createThumbnailFromUrl(long bookId, String imageUrl) {
         try {
             BufferedImage originalImage = downloadImageFromUrl(imageUrl);
+            if (originalImage == null) {
+                log.warn("Skipping thumbnail creation for book {}: download/decode failed", bookId);
+                return;
+            }
             boolean success = saveCoverImages(originalImage, bookId);
             if (!success) {
                 throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
             }
-            originalImage.flush(); // Release resources after processing
+            originalImage.flush();
             log.info("Cover images created and saved from URL for book ID: {}", bookId);
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
@@ -353,7 +366,7 @@ public class FileService {
         boolean isExtremelyTall = settings.isVerticalCroppingEnabled() && heightToWidthRatio > threshold;
         if (isExtremelyTall) {
             int croppedHeight = (int) (width * TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+            log.debug("Cropping tall image: {}x{} (ratio {}) -> {}x{}, smartCrop={}",
                     width, height, String.format("%.2f", heightToWidthRatio), width, croppedHeight, smartCrop);
             return cropFromTop(image, width, croppedHeight, smartCrop);
         }
@@ -361,7 +374,7 @@ public class FileService {
         boolean isExtremelyWide = settings.isHorizontalCroppingEnabled() && widthToHeightRatio > threshold;
         if (isExtremelyWide) {
             int croppedWidth = (int) (height / TARGET_COVER_ASPECT_RATIO);
-            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}, smartCrop={}", 
+            log.debug("Cropping wide image: {}x{} (ratio {}) -> {}x{}, smartCrop={}",
                     width, height, String.format("%.2f", widthToHeightRatio), croppedWidth, height, smartCrop);
             return cropFromLeft(image, croppedWidth, height, smartCrop);
         }
@@ -375,7 +388,7 @@ public class FileService {
             int contentStartY = findContentStartY(image);
             int margin = (int) (targetHeight * SMART_CROP_MARGIN_PERCENT);
             startY = Math.max(0, contentStartY - margin);
-            
+
             int maxStartY = image.getHeight() - targetHeight;
             startY = Math.min(startY, maxStartY);
         }
@@ -388,7 +401,7 @@ public class FileService {
             int contentStartX = findContentStartX(image);
             int margin = (int) (targetWidth * SMART_CROP_MARGIN_PERCENT);
             startX = Math.max(0, contentStartX - margin);
-            
+
             int maxStartX = image.getWidth() - targetWidth;
             startX = Math.min(startX, maxStartX);
         }
@@ -437,8 +450,8 @@ public class FileService {
         int r1 = (rgb1 >> 16) & 0xFF, g1 = (rgb1 >> 8) & 0xFF, b1 = rgb1 & 0xFF;
         int r2 = (rgb2 >> 16) & 0xFF, g2 = (rgb2 >> 8) & 0xFF, b2 = rgb2 & 0xFF;
         return Math.abs(r1 - r2) <= SMART_CROP_COLOR_TOLERANCE
-            && Math.abs(g1 - g2) <= SMART_CROP_COLOR_TOLERANCE
-            && Math.abs(b1 - b2) <= SMART_CROP_COLOR_TOLERANCE;
+                && Math.abs(g1 - g2) <= SMART_CROP_COLOR_TOLERANCE
+                && Math.abs(b1 - b2) <= SMART_CROP_COLOR_TOLERANCE;
     }
 
     public static void setBookCoverPath(BookMetadataEntity bookMetadataEntity) {
@@ -469,87 +482,6 @@ public class FileService {
         log.info("Deleted {} book covers", bookIds.size());
     }
 
-    // ========================================
-    // BACKGROUND OPERATIONS
-    // ========================================
-
-    public void saveBackgroundImage(BufferedImage image, String filename, Long userId) throws IOException {
-        String backgroundsFolder = getBackgroundsFolder(userId);
-        File folder = new File(backgroundsFolder);
-        if (!folder.exists() && !folder.mkdirs()) {
-            throw new IOException("Failed to create backgrounds directory: " + folder.getAbsolutePath());
-        }
-
-        File outputFile = new File(folder, filename);
-        boolean saved = ImageIO.write(image, IMAGE_FORMAT, outputFile);
-        if (!saved) {
-            throw new IOException("Failed to save background image: " + filename);
-        }
-
-        log.info("Background image saved successfully for user {}: {}", userId, filename);
-        // Note: input image is not flushed here - caller is responsible for its lifecycle
-    }    public void deleteBackgroundFile(String filename, Long userId) {
-        try {
-            String backgroundsFolder = getBackgroundsFolder(userId);
-            File file = new File(backgroundsFolder, filename);
-            if (file.exists() && file.isFile()) {
-                boolean deleted = file.delete();
-                if (deleted) {
-                    if (userId != null) {
-                        deleteEmptyUserBackgroundFolder(userId);
-                    }
-                } else {
-                    log.warn("Failed to delete background file for user {}: {}", userId, filename);
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error deleting background file {} for user {}: {}", filename, userId, e.getMessage());
-        }
-    }
-
-    private void deleteEmptyUserBackgroundFolder(Long userId) {
-        try {
-            String userBackgroundsFolder = getBackgroundsFolder(userId);
-            File folder = new File(userBackgroundsFolder);
-
-            if (folder.exists() && folder.isDirectory()) {
-                File[] files = folder.listFiles();
-                if (files != null && files.length == 0) {
-                    boolean deleted = folder.delete();
-                    if (deleted) {
-                        log.info("Deleted empty background folder for user: {}", userId);
-                    } else {
-                        log.warn("Failed to delete empty background folder for user: {}", userId);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.warn("Error checking/deleting empty background folder for user {}: {}", userId, e.getMessage());
-        }
-    }
-
-    public Resource getBackgroundResource(Long userId) {
-        String[] possibleFiles = {"1.jpg", "1.jpeg", "1.png"};
-
-        if (userId != null) {
-            String userBackgroundsFolder = getBackgroundsFolder(userId);
-            for (String filename : possibleFiles) {
-                File customFile = new File(userBackgroundsFolder, filename);
-                if (customFile.exists() && customFile.isFile()) {
-                    return new FileSystemResource(customFile);
-                }
-            }
-        }
-        String globalBackgroundsFolder = getBackgroundsFolder();
-        for (String filename : possibleFiles) {
-            File customFile = new File(globalBackgroundsFolder, filename);
-            if (customFile.exists() && customFile.isFile()) {
-                return new FileSystemResource(customFile);
-            }
-        }
-        return new ClassPathResource("static/images/background.jpg");
-    }
-
     public String getIconsSvgFolder() {
         return Paths.get(appProperties.getPathConfig(), ICONS_DIR, SVG_DIR).toString();
     }
@@ -562,5 +494,25 @@ public class FileService {
         if (input == null) return null;
         if (maxLength <= 0) return "";
         return input.length() <= maxLength ? input : input.substring(0, maxLength);
+    }
+
+    public void clearCacheDirectory(String cachePath) {
+        Path path = Paths.get(cachePath);
+        if (Files.exists(path) && Files.isDirectory(path)) {
+            try (Stream<Path> walk = Files.walk(path)) {
+                walk.sorted(Comparator.reverseOrder())
+                        .forEach(p -> {
+                            try {
+                                Files.delete(p);
+                            } catch (IOException e) {
+                                log.error("Failed to delete file in cache: {} - {}", p, e.getMessage());
+                            }
+                        });
+                // Recreate the directory after deletion
+                Files.createDirectories(path);
+            } catch (IOException e) {
+                log.error("Failed to clear cache directory: {} - {}", cachePath, e.getMessage());
+            }
+        }
     }
 }

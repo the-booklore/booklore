@@ -87,6 +87,7 @@ export class SortService {
     goodreadsReviewCount: (book) => book.metadata?.goodreadsReviewCount || null,
     hardcoverRating: (book) => book.metadata?.hardcoverRating || null,
     hardcoverReviewCount: (book) => book.metadata?.hardcoverReviewCount || null,
+    ranobedbRating: (book) => book.metadata?.ranobedbRating || null,
     locked: (book) =>
       Object.keys(book.metadata ?? {})
         .filter((key) => key.endsWith('Locked'))

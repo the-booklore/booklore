@@ -30,5 +30,15 @@ public class UserUpdateRequest {
         private boolean canAccessTaskManager;
         private boolean canManageGlobalPreferences;
         private boolean canManageIcons;
+        private boolean canManageFonts;
+        private boolean canBulkAutoFetchMetadata;
+        private boolean canBulkCustomFetchMetadata;
+        private boolean canBulkEditMetadata;
+        private boolean canBulkRegenerateCover;
+        private boolean canMoveOrganizeFiles;
+        private boolean canBulkLockUnlockMetadata;
+        private boolean canBulkResetBookloreReadProgress;
+        private boolean canBulkResetKoReaderReadProgress;
+        private boolean canBulkResetBookReadStatus;
     }
 }

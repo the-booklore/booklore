@@ -33,24 +33,25 @@ import {SideBarFilter} from './filters/SidebarFilter';
 import {HeaderFilter} from './filters/HeaderFilter';
 import {CoverScalePreferenceService} from './cover-scale-preference.service';
 import {BookSorter} from './sorting/BookSorter';
-import {BookDialogHelperService} from './BookDialogHelperService';
+import {BookDialogHelperService} from './book-dialog-helper.service';
 import {Checkbox} from 'primeng/checkbox';
 import {Popover} from 'primeng/popover';
 import {Slider} from 'primeng/slider';
 import {Divider} from 'primeng/divider';
 import {MultiSelect} from 'primeng/multiselect';
-import {TableColumnPreferenceService} from './table-column-preference-service';
+import {TableColumnPreferenceService} from './table-column-preference.service';
 import {TieredMenu} from 'primeng/tieredmenu';
 import {BookMenuService} from '../../service/book-menu.service';
 import {MagicShelf, MagicShelfService} from '../../../magic-shelf/service/magic-shelf.service';
 import {BookRuleEvaluatorService} from '../../../magic-shelf/service/book-rule-evaluator.service';
-import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref-service';
+import {SidebarFilterTogglePrefService} from './filters/sidebar-filter-toggle-pref.service';
 import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refresh-type.enum';
 import {GroupRule} from '../../../magic-shelf/component/magic-shelf-component';
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {BookNavigationService} from '../../service/book-navigation.service';
+import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -123,13 +124,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private pageTitle = inject(PageTitleService);
   private loadingService = inject(LoadingService);
   private bookNavigationService = inject(BookNavigationService);
+  protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
   entityType$: Observable<EntityType> | undefined;
   searchTerm$ = new BehaviorSubject<string>('');
   parsedFilters: Record<string, string[]> = {};
-  selectedFilter = new BehaviorSubject<Record<string, any> | null>(null);
+  selectedFilter = new BehaviorSubject<Record<string, string[]> | null>(null);
   selectedFilterMode = new BehaviorSubject<BookFilterMode>('and');
   protected resetFilterSubject = new Subject<void>();
   entity: Library | Shelf | MagicShelf | null = null;
@@ -149,7 +151,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   lastAppliedSort: SortOption | null = null;
   private settingFiltersFromUrl = false;
   protected metadataMenuItems: MenuItem[] | undefined;
-  protected tieredMenuItems: MenuItem[] | undefined;
+  protected bulkReadActionsMenuItems: MenuItem[] | undefined;
   currentBooks: Book[] = [];
   lastSelectedIndex: number | null = null;
   showFilter = false;
@@ -222,6 +224,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.entityType = entityType;
       this.entityType$ = of(entityType);
       this.entity$ = of(null);
+      this.seriesCollapseFilter.setContext(null, null);
 
       this.pageTitle.setPageTitle(currentPath === 'all-books' ? 'All Books' : 'Unshelved Books');
     } else {
@@ -235,6 +238,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           this.pageTitle.setPageTitle(entity.name);
         }
         this.entity = entity ?? null;
+        this.updateSeriesCollapseContext();
         this.entityOptions = entity
           ? this.isLibrary(entity)
             ? this.libraryShelfMenuService.initializeLibraryMenuItems(entity)
@@ -252,20 +256,25 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.clearFilter();
     });
 
-    this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
-      () => this.autoFetchMetadata(),
-      () => this.fetchMetadata(),
-      () => this.bulkEditMetadata(),
-      () => this.multiBookEditMetadata(),
-      () => this.regenerateCoversForSelected(),
-    );
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
+      .subscribe(userState => {
+        this.metadataMenuItems = this.bookMenuService.getMetadataMenuItems(
+          () => this.autoFetchMetadata(),
+          () => this.fetchMetadata(),
+          () => this.bulkEditMetadata(),
+          () => this.multiBookEditMetadata(),
+          () => this.regenerateCoversForSelected(),
+          userState.user
+        );
+      });
+
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
 
     combineLatest([
       this.activatedRoute.paramMap,
       this.activatedRoute.queryParamMap,
       this.userService.userState$.pipe(filter(u => !!u?.user && u.loaded))
-    ]).subscribe(([paramMap, queryParamMap, user]) => {
+    ]).subscribe(([_, queryParamMap, user]) => {
 
       const viewParam = queryParamMap.get(QUERY_PARAMS.VIEW);
       const sortParam = queryParamMap.get(QUERY_PARAMS.SORT);
@@ -274,9 +283,9 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       const filterMode = queryParamMap.get(QUERY_PARAMS.FMODE) || user.user?.userSettings?.filterMode;
 
       if (filterMode && filterMode !== this.selectedFilterMode.getValue()) {
-        this.selectedFilterMode.next(<BookFilterMode>filterMode);
+        this.selectedFilterMode.next((filterMode as BookFilterMode));
         if (this.bookFilterComponent) {
-          this.bookFilterComponent.selectedFilterMode = <BookFilterMode>filterMode;
+          this.bookFilterComponent.selectedFilterMode = filterMode as BookFilterMode;
         }
       }
 
@@ -320,7 +329,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
       this.entityViewPreferences = user.user?.userSettings?.entityViewPreferences;
       const globalPrefs = this.entityViewPreferences?.global;
-      const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase() : undefined;
+      const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase().replaceAll(' ', '_') : undefined;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
@@ -372,7 +381,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
         this.applySortOption(this.bookSorter.selectedSort);
       }
 
-      const queryParams: any = {
+      const queryParams: Record<string, string | number | null | undefined> = {
         [QUERY_PARAMS.VIEW]: this.currentViewMode,
         [QUERY_PARAMS.SORT]: this.bookSorter.selectedSort.field,
         [QUERY_PARAMS.DIRECTION]: this.bookSorter.selectedSort.direction === SortDirection.ASCENDING ? SORT_DIRECTION.ASCENDING : SORT_DIRECTION.DESCENDING,
@@ -458,21 +467,37 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.coverScalePreferenceService.setScale(this.coverScalePreferenceService.scaleFactor);
   }
 
-  onVisibleColumnsChange(selected: any[]) {
+  onVisibleColumnsChange(selected: { field: string; header: string }[]) {
     const allFields = this.bookTableComponent.allColumns.map(col => col.field);
     this.visibleColumns = selected.sort(
       (a, b) => allFields.indexOf(a.field) - allFields.indexOf(b.field)
     );
   }
 
-  onCheckboxClicked(event: { index: number; bookId: number; selected: boolean; shiftKey: boolean }) {
-    const {index, bookId, selected, shiftKey} = event;
-    if (!shiftKey || this.lastSelectedIndex === null) {
-      if (selected) {
-        this.selectedBooks.add(bookId);
+  handleBookSelection(book: Book, selected: boolean) {
+    if (selected) {
+      if (book.seriesBooks) {
+        //it is a series
+        this.selectedBooks = new Set([...this.selectedBooks, ...book.seriesBooks.map(book => book.id)]);
       } else {
-        this.selectedBooks.delete(bookId);
+        this.selectedBooks.add(book.id);
       }
+    } else {
+      if (book.seriesBooks) {
+        //it is a series
+        book.seriesBooks.forEach(book => {
+          this.selectedBooks.delete(book.id);
+        });
+      } else {
+        this.selectedBooks.delete(book.id);
+      }
+    }
+  }
+
+  onCheckboxClicked(event: { index: number; book: Book; selected: boolean; shiftKey: boolean }) {
+    const {index, book, selected, shiftKey} = event;
+    if (!shiftKey || this.lastSelectedIndex === null) {
+      this.handleBookSelection(book, selected);
       this.lastSelectedIndex = index;
     } else {
       const start = Math.min(this.lastSelectedIndex, index);
@@ -481,31 +506,22 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       for (let i = start; i <= end; i++) {
         const book = this.currentBooks[i];
         if (!book) continue;
-
-        if (isUnselectingRange) {
-          this.selectedBooks.delete(book.id);
-        } else {
-          this.selectedBooks.add(book.id);
-        }
+        this.handleBookSelection(book, !isUnselectingRange);
       }
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
-  handleBookSelect(bookId: number, selected: boolean): void {
-    if (selected) {
-      this.selectedBooks.add(bookId);
-    } else {
-      this.selectedBooks.delete(bookId);
-    }
+  handleBookSelect(book: Book, selected: boolean): void {
+    this.handleBookSelection(book, selected);
     this.isDrawerVisible = this.selectedBooks.size > 0;
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   onSelectedBooksChange(selectedBookIds: Set<number>): void {
     this.selectedBooks = new Set(selectedBookIds);
     this.isDrawerVisible = this.selectedBooks.size > 0;
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   selectAllBooks(): void {
@@ -516,7 +532,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.selectAllBooks();
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   deselectAllBooks(): void {
@@ -525,7 +541,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     if (this.bookTableComponent) {
       this.bookTableComponent.clearSelectedBooks();
     }
-    this.tieredMenuItems = this.bookMenuService.getTieredMenuItems(this.selectedBooks);
+    this.bulkReadActionsMenuItems = this.bookMenuService.getBulkReadActionsMenu(this.selectedBooks, this.user());
   }
 
   confirmDeleteBooks(): void {
@@ -542,8 +558,6 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           .subscribe(() => {
             this.selectedBooks.clear();
           });
-      },
-      reject: () => {
       }
     });
   }
@@ -643,6 +657,13 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   openShelfAssigner(): void {
     this.dynamicDialogRef = this.dialogHelperService.openShelfAssignerDialog(null, this.selectedBooks);
+    if (this.dynamicDialogRef) {
+      this.dynamicDialogRef.onClose.subscribe(result => {
+        if (result.assigned) {
+          this.selectedBooks.clear();
+        }
+      });
+    }
   }
 
   lockUnlockMetadata(): void {
@@ -705,12 +726,36 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.dialogHelperService.openFileMoverDialog(this.selectedBooks);
   }
 
+  private updateSeriesCollapseContext() {
+    let type: 'LIBRARY' | 'SHELF' | 'MAGIC_SHELF' | null = null;
+    let id: number | null = null;
+
+    if (this.entity && this.entityType) {
+      switch (this.entityType) {
+        case EntityType.LIBRARY:
+          type = 'LIBRARY';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.SHELF:
+          type = 'SHELF';
+          id = this.entity.id ?? 0;
+          break;
+        case EntityType.MAGIC_SHELF:
+          type = 'MAGIC_SHELF';
+          id = this.entity.id ?? 0;
+          break;
+      }
+    }
+
+    this.seriesCollapseFilter.setContext(type, id);
+  }
+
   private isLibrary(entity: Library | Shelf | MagicShelf): entity is Library {
     return (entity as Library).paths !== undefined;
   }
 
-  private isMagicShelf(entity: any): entity is MagicShelf {
-    return entity && 'filterJson' in entity;
+  private isMagicShelf(entity: Library | Shelf | MagicShelf | null): entity is MagicShelf {
+    return !!entity && 'filterJson' in entity;
   }
 
   private getEntityInfoFromRoute(): Observable<{ entityId: number; entityType: EntityType }> {
@@ -899,5 +944,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
   get seriesViewEnabled(): boolean {
     return Boolean(this.userService.getCurrentUser()?.userSettings?.enableSeriesView);
+  }
+
+  get hasMetadataMenuItems(): boolean {
+    return this.metadataMenuItems!.length > 0;
+  }
+
+  get hasBulkReadActionsItems(): boolean {
+    return this.bulkReadActionsMenuItems!.length > 0;
+  }
+
+  user() {
+    return this.userService.getCurrentUser();
   }
 }

@@ -21,7 +21,7 @@ import {DynamicDialogRef} from 'primeng/dynamicdialog';
     Checkbox,
     MultiSelectModule,
     Button
-],
+  ],
   templateUrl: './create-user-dialog.component.html',
   styleUrl: './create-user-dialog.component.scss'
 })
@@ -53,7 +53,34 @@ export class CreateUserDialogComponent implements OnInit {
       permissionAccessOpds: [false],
       permissionSyncKoreader: [false],
       permissionSyncKobo: [false],
+      permissionManageMetadataConfig: [false],
+      permissionAccessBookdrop: [false],
+      permissionAccessLibraryStats: [false],
+      permissionAccessUserStats: [false],
+      permissionAccessTaskManager: [false],
+      permissionManageEmailConfig: [false],
+      permissionManageGlobalPreferences: [false],
+      permissionManageIcons: [false],
+      permissionManageFonts: [false],
       permissionAdmin: [false],
+      permissionBulkAutoFetchMetadata: [false],
+      permissionBulkCustomFetchMetadata: [false],
+      permissionBulkEditMetadata: [false],
+      permissionBulkRegenerateCover: [false],
+      permissionMoveOrganizeFiles: [false],
+      permissionBulkLockUnlockMetadata: [false],
+      permissionBulkResetBookloreReadProgress: [false],
+      permissionBulkResetKoReaderReadProgress: [false],
+      permissionBulkResetBookReadStatus: [false],
+    });
+
+    this.userForm.get('permissionAdmin')?.valueChanges.subscribe((isAdmin: boolean) => {
+      const controls = this.userForm.controls;
+      Object.keys(controls).forEach(key => {
+        if (key !== 'permissionAdmin' && key.startsWith('permission')) {
+          controls[key].setValue(isAdmin, {emitEvent: false});
+        }
+      });
     });
   }
 

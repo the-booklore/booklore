@@ -7,8 +7,10 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.CategoryEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -20,33 +22,42 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class BookMetadataUpdaterCategoryTest {
 
-    @Mock private AuthorRepository authorRepository;
-    @Mock private CategoryRepository categoryRepository;
-    @Mock private MoodRepository moodRepository;
-    @Mock private TagRepository tagRepository;
-    @Mock private BookRepository bookRepository;
-    @Mock private FileService fileService;
-    @Mock private MetadataMatchService metadataMatchService;
-    @Mock private AppSettingService appSettingService;
-    @Mock private MetadataWriterFactory metadataWriterFactory;
-    @Mock private BookReviewUpdateService bookReviewUpdateService;
-    @Mock private FileMoveService fileMoveService;
+    @Mock
+    private AuthorRepository authorRepository;
+    @Mock
+    private CategoryRepository categoryRepository;
+    @Mock
+    private MoodRepository moodRepository;
+    @Mock
+    private TagRepository tagRepository;
+    @Mock
+    private BookRepository bookRepository;
+    @Mock
+    private FileService fileService;
+    @Mock
+    private MetadataMatchService metadataMatchService;
+    @Mock
+    private AppSettingService appSettingService;
+    @Mock
+    private MetadataWriterFactory metadataWriterFactory;
+    @Mock
+    private BookReviewUpdateService bookReviewUpdateService;
+    @Mock
+    private FileMoveService fileMoveService;
 
     @InjectMocks
     private BookMetadataUpdater bookMetadataUpdater;
@@ -54,7 +65,13 @@ class BookMetadataUpdaterCategoryTest {
     @BeforeEach
     void setUp() {
         AppSettings appSettings = new AppSettings();
-        appSettings.setMetadataPersistenceSettings(new MetadataPersistenceSettings());
+        MetadataPersistenceSettings persistenceSettings = new MetadataPersistenceSettings();
+
+        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = Mockito.mock(MetadataPersistenceSettings.SaveToOriginalFile.class);
+        when(saveToOriginalFile.isAnyFormatEnabled()).thenReturn(false);
+        persistenceSettings.setSaveToOriginalFile(saveToOriginalFile);
+
+        appSettings.setMetadataPersistenceSettings(persistenceSettings);
         lenient().when(appSettingService.getAppSettings()).thenReturn(appSettings);
 
         lenient().when(categoryRepository.findByName(anyString())).thenAnswer(invocation -> {
@@ -63,8 +80,9 @@ class BookMetadataUpdaterCategoryTest {
         });
 
         lenient().when(categoryRepository.save(any(CategoryEntity.class))).thenAnswer(invocation ->
-            invocation.getArgument(0));
+                invocation.getArgument(0));
     }
+
     @Test
     void replaceAll_withMergeFalse_shouldClearAndAddNew() {
         BookEntity bookEntity = createBookWithCategories("Old1", "Old2");
@@ -307,7 +325,7 @@ class BookMetadataUpdaterCategoryTest {
         bookMetadataUpdater.setBookMetadata(context);
 
         assertTrue(bookEntity.getMetadata().getCategories().isEmpty(),
-            "BUG REPRODUCED: Empty array cleared all categories");
+                "BUG REPRODUCED: Empty array cleared all categories");
     }
 
     @Test
@@ -374,7 +392,16 @@ class BookMetadataUpdaterCategoryTest {
         }
 
         metadataEntity.setCategories(categories);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         return bookEntity;
     }
@@ -397,3 +424,4 @@ class BookMetadataUpdaterCategoryTest {
         return categories.stream().anyMatch(c -> c.getName().equals(name));
     }
 }
+

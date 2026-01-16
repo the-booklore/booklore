@@ -50,6 +50,11 @@ public class SecurityUtil {
         return user != null && user.getPermissions().isCanManageIcons();
     }
 
+    public boolean canManageFonts() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanManageFonts();
+    }
+
     public boolean canSyncKoReader() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanSyncKoReader();
@@ -63,6 +68,21 @@ public class SecurityUtil {
     public boolean canEditMetadata() {
         var user = getCurrentUser();
         return user != null && user.getPermissions().isCanEditMetadata();
+    }
+
+    public boolean canBulkEditMetadata() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkEditMetadata();
+    }
+
+    public boolean canBulkLockUnlockMetadata() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkLockUnlockMetadata();
+    }
+
+    public boolean canBulkRegenerateCover() {
+        var user = getCurrentUser();
+        return user != null && user.getPermissions().isCanBulkRegenerateCover();
     }
 
     public boolean canEmailBook() {

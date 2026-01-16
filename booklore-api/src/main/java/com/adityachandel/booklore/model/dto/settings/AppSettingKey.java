@@ -20,7 +20,7 @@ public enum AppSettingKey {
     LIBRARY_METADATA_REFRESH_OPTIONS    ("library_metadata_refresh_options",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_PROVIDER_SETTINGS          ("metadata_provider_settings",           true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_MATCH_WEIGHTS              ("metadata_match_weights",               true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
-    METADATA_PERSISTENCE_SETTINGS       ("metadata_persistence_settings",        true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
+    METADATA_PERSISTENCE_SETTINGS       ("metadata_persistence_settings_v2",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_PUBLIC_REVIEWS_SETTINGS    ("metadata_public_reviews_settings",     true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     UPLOAD_FILE_PATTERN                 ("upload_file_pattern",                  false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     MOVE_FILE_PATTERN                   ("move_file_pattern",                    false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
@@ -30,9 +30,9 @@ public enum AppSettingKey {
     COVER_CROPPING_SETTINGS             ("cover_cropping_settings",              true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     AUTO_BOOK_SEARCH                    ("auto_book_search",                     false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     SIMILAR_BOOK_RECOMMENDATION         ("similar_book_recommendation",          false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
-    CBX_CACHE_SIZE_IN_MB                ("cbx_cache_size_in_mb",                 false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     PDF_CACHE_SIZE_IN_MB                ("pdf_cache_size_in_mb",                 false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     MAX_FILE_UPLOAD_SIZE_IN_MB          ("max_file_upload_size_in_mb",           false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
+    TELEMETRY_ENABLED                   ("telemetryEnabled",                     false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
 
     // No specific permissions required
     SIDEBAR_LIBRARY_SORTING             ("sidebar_library_sorting",              true,  false, List.of()),

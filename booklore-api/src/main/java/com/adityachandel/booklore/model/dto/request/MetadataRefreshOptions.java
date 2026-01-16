@@ -19,9 +19,11 @@ public class MetadataRefreshOptions {
     private boolean mergeCategories;
     private Boolean reviewBeforeApply;
     @NotNull(message = "Field options cannot be null")
-    private FieldOptions fieldOptions;
+    @Builder.Default
+    private FieldOptions fieldOptions = new FieldOptions();
     @NotNull(message = "Enabled fields cannot be null")
-    private EnabledFields enabledFields;
+    @Builder.Default
+    private EnabledFields enabledFields = new EnabledFields();
 
     @Getter
     @Setter
@@ -49,12 +51,16 @@ public class MetadataRefreshOptions {
         private FieldProvider comicvineId;
         private FieldProvider hardcoverId;
         private FieldProvider googleId;
+        private FieldProvider lubimyczytacId;
         private FieldProvider amazonRating;
         private FieldProvider amazonReviewCount;
         private FieldProvider goodreadsRating;
         private FieldProvider goodreadsReviewCount;
         private FieldProvider hardcoverRating;
         private FieldProvider hardcoverReviewCount;
+        private FieldProvider lubimyczytacRating;
+        private FieldProvider ranobedbId;
+        private FieldProvider ranobedbRating;
         private FieldProvider moods;
         private FieldProvider tags;
     }
@@ -97,12 +103,16 @@ public class MetadataRefreshOptions {
         private boolean comicvineId;
         private boolean hardcoverId;
         private boolean googleId;
+        private boolean lubimyczytacId;
         private boolean amazonRating;
         private boolean amazonReviewCount;
         private boolean goodreadsRating;
         private boolean goodreadsReviewCount;
         private boolean hardcoverRating;
         private boolean hardcoverReviewCount;
+        private boolean lubimyczytacRating;
+        private boolean ranobedbId;
+        private boolean ranobedbRating;
         private boolean moods;
         private boolean tags;
     }

@@ -1,4 +1,4 @@
-import {HttpErrorResponse, HttpHandlerFn, HttpInterceptorFn, HttpRequest} from '@angular/common/http';
+import {HttpErrorResponse, HttpEvent, HttpHandlerFn, HttpInterceptorFn, HttpRequest} from '@angular/common/http';
 import {inject} from '@angular/core';
 import {Router} from '@angular/router';
 import {catchError, filter, switchMap, take} from 'rxjs/operators';
@@ -31,7 +31,7 @@ export const AuthInterceptorService: HttpInterceptorFn = (req, next: HttpHandler
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
-function handle401Error(authService: AuthService, request: HttpRequest<any>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<any> {
+function handle401Error(authService: AuthService, request: HttpRequest<unknown>, next: HttpHandlerFn, router: Router, isInternal: boolean): Observable<HttpEvent<unknown>> {
   if (!isRefreshing && isInternal) {
     isRefreshing = true;
     refreshTokenSubject.next(null);

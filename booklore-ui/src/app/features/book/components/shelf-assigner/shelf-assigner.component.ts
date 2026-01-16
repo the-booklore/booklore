@@ -12,9 +12,11 @@ import {Button} from 'primeng/button';
 import {AsyncPipe} from '@angular/common';
 import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
-import {BookDialogHelperService} from '../book-browser/BookDialogHelperService';
+import {BookDialogHelperService} from '../book-browser/book-dialog-helper.service';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {UserService} from '../../../settings/user-management/user.service';
+import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
+import {IconSelection} from '../../../../shared/service/icon-picker.service';
 
 @Component({
   selector: 'app-shelf-assigner',
@@ -25,7 +27,8 @@ import {UserService} from '../../../settings/user-management/user.service';
     Button,
     Checkbox,
     AsyncPipe,
-    FormsModule
+    FormsModule,
+    IconDisplayComponent
   ]
 })
 export class ShelfAssignerComponent implements OnInit {
@@ -82,11 +85,11 @@ export class ShelfAssignerComponent implements OnInit {
       .subscribe({
         next: () => {
           this.messageService.add({severity: 'info', summary: 'Success', detail: 'Book shelves updated'});
-          this.dynamicDialogRef.close();
+          this.dynamicDialogRef.close({assigned: true});
         },
         error: () => {
           this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to update book shelves'});
-          this.dynamicDialogRef.close();
+          this.dynamicDialogRef.close({assigned: false});
         }
       });
   }
@@ -112,10 +115,18 @@ export class ShelfAssignerComponent implements OnInit {
   }
 
   closeDialog(): void {
-    this.dynamicDialogRef.close();
+    this.dynamicDialogRef.close({assigned: false});
   }
 
   isShelfSelected(shelf: Shelf): boolean {
     return this.selectedShelves.some(s => s.id === shelf.id);
+  }
+
+  getShelfIcon(shelf: Shelf): IconSelection {
+    if (shelf.iconType === 'PRIME_NG') {
+      return {type: 'PRIME_NG', value: `pi pi-${shelf.icon}`};
+    } else {
+      return {type: 'CUSTOM_SVG', value: shelf.icon};
+    }
   }
 }
