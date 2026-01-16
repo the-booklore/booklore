@@ -290,15 +290,39 @@
       }
     }
 
+    &.book-type-fb2 {
+      background: rgba(34, 197, 94, 0.8);
+      border: 1px solid rgba(34, 197, 94, 1);
+      box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 8px rgba(34, 197, 94, 0.5);
+      }
+    }
+
+    &.book-type-mobi {
+      background: rgba(168, 85, 247, 0.8);
+      border: 1px solid rgba(168, 85, 247, 1);
+      box-shadow: 0 2px 4px rgba(168, 85, 247, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 8px rgba(168, 85, 247, 0.5);
+      }
+    }
+
+    &.book-type-azw3 {
+      background: rgba(236, 72, 153, 0.8);
+      border: 1px solid rgba(236, 72, 153, 1);
+      box-shadow: 0 2px 4px rgba(236, 72, 153, 0.3);
+
+      &:hover {
+        box-shadow: 0 4px 8px rgba(236, 72, 153, 0.5);
+      }
+    }
+
     &:hover {
       transform: translateY(-2px);
       z-index: 10;
-
-      .session-tooltip {
-        opacity: 1;
-        transform: translate(-50%, 0);
-        pointer-events: auto;
-      }
     }
 
     .session-content {
@@ -333,32 +357,33 @@
   }
 }
 
-.session-tooltip {
-  position: absolute;
-  bottom: calc(100% + 15px);
-  left: 50%;
-  transform: translate(-50%, 10px);
-  background: rgba(30, 30, 30, 0.98);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  z-index: 9999;
-  pointer-events: none;
-  min-width: 320px;
-  max-width: 350px;
-  backdrop-filter: blur(10px);
-  opacity: 0;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  white-space: normal;
+::ng-deep .p-tooltip {
+  --p-tooltip-max-width: 300px;
+  --p-tooltip-background: rgba(30, 30, 30, 0.98);
+  --p-tooltip-color: #ffffff;
+  --p-tooltip-border-radius: 12px;
+  --p-tooltip-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --p-tooltip-padding: 0 !important;
+  --p-tooltip-gutter: 12px;
 
-  .tooltip-content {
-    display: flex;
-    gap: 1rem;
-    padding: 1rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 320px;
+  padding: 0 !important;
+
+  .p-tooltip-text {
+    padding: 0 !important;
+    margin: 0 !important;
+    white-space: normal;
   }
 
-  .tooltip-cover {
+  .session-tooltip-content {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem;
+  }
+
+  .session-tooltip-cover {
     flex-shrink: 0;
     width: 80px;
     height: 120px;
@@ -372,53 +397,50 @@
     }
   }
 
-  .tooltip-details {
+  .session-tooltip-details {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
   }
 
-  .tooltip-header {
+  .session-tooltip-header {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0;
-    background: none;
+    margin-bottom: 0.75rem;
 
     i {
       font-size: 1.1rem;
       color: rgba(239, 68, 68, 1);
     }
-
-    .tooltip-title {
-      color: #ffffff;
-      font-weight: 600;
-      font-size: 0.95rem;
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
   }
 
-  .tooltip-divider {
+  .session-tooltip-title {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-tooltip-divider {
     height: 1px;
     background: linear-gradient(90deg,
       transparent 0%,
       rgba(255, 255, 255, 0.1) 50%,
       transparent 100%);
-    margin: 0.75rem 0;
+    margin-bottom: 0.75rem;
   }
 
-  .tooltip-body {
-    padding: 0;
+  .session-tooltip-body {
     display: flex;
     flex-direction: column;
     gap: 0.625rem;
   }
 
-  .tooltip-row {
+  .session-tooltip-row {
     display: grid;
     grid-template-columns: auto auto 1fr;
     align-items: center;
@@ -431,31 +453,17 @@
       width: 16px;
       text-align: center;
     }
-
-    .tooltip-label {
-      color: rgba(255, 255, 255, 0.7);
-      font-weight: 500;
-    }
-
-    .tooltip-value {
-      color: #ffffff;
-      text-align: right;
-      font-weight: 500;
-    }
   }
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 8px solid rgba(30, 30, 30, 0.98);
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  .session-tooltip-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+  }
+
+  .session-tooltip-value {
+    color: #ffffff;
+    text-align: right;
+    font-weight: 500;
   }
 }
 
