@@ -5,7 +5,7 @@
       Reader Preferences
     </h2>
     <p class="settings-description">
-      Configure reader settings scope and customize reading experience for different book formats including PDF, EPUB, and CBX files.
+      Configure reading experience settings for your library. Set default preferences that serve as overrides for individual books, or allow each book to maintain its own custom settings for PDF, EPUB, FB2, MOBI, AZW3, and CBX formats.
     </p>
   </div>
 
@@ -14,10 +14,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-cog"></i>
-          Reader Settings Scope
+          Settings Application Mode
         </h3>
         <p class="section-description">
-          Select whether to apply the same reader settings (font, theme, spread, zoom, etc.) globally for all books or individually per book.
+          Control how default settings are applied. Select "Default Override" to apply your configured defaults to all books of the same format, overriding individual book preferences. Choose "Book-Specific" to let each book retain its own custom reading settings.
         </p>
       </div>
 
@@ -32,17 +32,15 @@
                     type="button"
                     class="option-button"
                     [class.selected]="selectedPdfScope === item.key"
-                    (click)="selectedPdfScope = item.key; onPdfScopeChange()"
-                    [pTooltip]="item.name"
-                    tooltipPosition="bottom">
+                    (click)="selectedPdfScope = item.key; onPdfScopeChange()">
                     <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.name }}</span>
+                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
                   </button>
                 }
               </div>
             </div>
             <p class="setting-description">
-              Choose how PDF reader settings are applied across your library.
+              Choose whether default zoom, layout, and navigation settings override individual PDF preferences or if each document maintains its own settings.
             </p>
           </div>
         </div>
@@ -50,24 +48,22 @@
         <div class="setting-item">
           <div class="setting-info">
             <div class="setting-label-row">
-              <label class="setting-label">EPUB Reader Settings</label>
+              <label class="setting-label">eBook Reader Settings</label>
               <div class="button-group">
                 @for (item of scopeOptions; track item) {
                   <button
                     type="button"
                     class="option-button"
                     [class.selected]="selectedEpubScope === item.key"
-                    (click)="selectedEpubScope = item.key; onEpubScopeChange()"
-                    [pTooltip]="item.name"
-                    tooltipPosition="bottom">
+                    (click)="selectedEpubScope = item.key; onEpubScopeChange()">
                     <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.name }}</span>
+                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
                   </button>
                 }
               </div>
             </div>
             <p class="setting-description">
-              Choose how EPUB reader settings are applied across your library.
+              Choose whether default font, theme, and layout settings override individual eBook preferences (EPUB, FB2, MOBI, AZW3) or if each book maintains its own settings.
             </p>
           </div>
         </div>
@@ -82,17 +78,15 @@
                     type="button"
                     class="option-button"
                     [class.selected]="selectedCbxScope === item.key"
-                    (click)="selectedCbxScope = item.key; onCbxScopeChange()"
-                    [pTooltip]="item.name"
-                    tooltipPosition="bottom">
+                    (click)="selectedCbxScope = item.key; onCbxScopeChange()">
                     <i [class]="item.icon"></i>
-                    <span class="option-text">{{ item.name }}</span>
+                    <span class="option-text">{{ item.key === 'Global' ? 'Default Override' : 'Book-Specific' }}</span>
                   </button>
                 }
               </div>
             </div>
             <p class="setting-description">
-              Choose how CBX (comic book) reader settings are applied across your library.
+              Choose whether default layout, direction, and scaling settings override individual comic book preferences (CBZ, CBR, CB7) or if each file maintains its own settings.
             </p>
           </div>
         </div>
@@ -103,10 +97,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-book"></i>
-          EPUB Preferences: Global
+          eBook Reader: Default Settings
         </h3>
         <p class="section-description">
-          Set default reading options that will apply to all EPUB books in your library, including font, theme, text flow, and layout preferences.
+          Set default preferences for eBook formats (EPUB, FB2, MOBI, AZW3). When "Default Override" mode is active, these settings will override individual book preferences. Configure typography, themes, text flow, and layout options.
         </p>
       </div>
 
@@ -121,10 +115,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-file-pdf"></i>
-          PDF Preferences: Global
+          PDF Reader: Default Settings
         </h3>
         <p class="section-description">
-          Set default reading options that apply to all PDF books in your library, including zoom level, page layout, and navigation behavior.
+          Set default preferences for PDF documents. When "Default Override" mode is active, these settings will override individual document preferences. Configure zoom levels, display modes, scroll behavior, and navigation.
         </p>
       </div>
 
@@ -139,10 +133,10 @@
       <div class="section-header">
         <h3 class="section-title">
           <i class="pi pi-images"></i>
-          CBX Preferences: Global
+          Comic Book Reader: Default Settings
         </h3>
         <p class="section-description">
-          Configure default reading settings for all comic books in your library, including page layout, reading direction, and image scaling.
+          Set default preferences for comic book archives (CBZ, CBR, CB7). When "Default Override" mode is active, these settings will override individual file preferences. Configure page layout, reading direction, and image rendering.
         </p>
       </div>
 
@@ -158,10 +152,10 @@
         <div class="section-header">
           <h3 class="section-title">
             <i class="pi pi-palette"></i>
-            Custom Fonts Management
+            Custom Font Library
           </h3>
           <p class="section-description">
-            Upload and manage up to 10 custom fonts for a personalized reading experience in the EPUB reader. Each font can then be selected in the EPUB reader settings.
+            Personalize your reading experience by uploading custom fonts to use with eBook formats (EPUB, FB2, MOBI, AZW3). Upload up to 10 custom font files that will be available for selection in the eBook reader settings.
           </p>
         </div>
         <div class="settings-card">

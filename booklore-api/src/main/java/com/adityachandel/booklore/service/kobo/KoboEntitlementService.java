@@ -86,7 +86,7 @@ public class KoboEntitlementService {
                     .collect(Collectors.toList());
         }
         return books.stream()
-                .filter(bookEntity -> bookEntity.getBookType() == BookFileType.EPUB)
+                .filter(bookEntity -> bookEntity.getPrimaryBookFile().getBookType() == BookFileType.EPUB)
                 .map(book -> ChangedProductMetadata.builder()
                         .changedProductMetadata(BookEntitlementContainer.builder()
                                 .bookEntitlement(buildBookEntitlement(book, false))
@@ -232,8 +232,9 @@ public class KoboEntitlementService {
         KoboBookFormat bookFormat = KoboBookFormat.EPUB3;
         KoboSettings koboSettings = appSettingService.getAppSettings().getKoboSettings();
 
-        boolean isEpubFile = book.getBookType() == BookFileType.EPUB;
-        boolean isCbxFile = book.getBookType() == BookFileType.CBX;
+        var primaryFile = book.getPrimaryBookFile();
+        boolean isEpubFile = primaryFile.getBookType() == BookFileType.EPUB;
+        boolean isCbxFile = primaryFile.getBookType() == BookFileType.CBX;
 
         if (koboSettings != null) {
             if (isEpubFile && koboSettings.isConvertToKepub()) {
@@ -269,7 +270,7 @@ public class KoboEntitlementService {
                         KoboBookMetadata.DownloadUrl.builder()
                                 .url(downloadUrl)
                                 .format(bookFormat.toString())
-                                .size(book.getFileSizeKb() * 1024)
+                                .size(primaryFile.getFileSizeKb() * 1024)
                                 .build()
                 ))
                 .build();

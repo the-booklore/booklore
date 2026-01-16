@@ -734,6 +734,12 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
         return 'purple';
       case 'cb7':
         return 'blue';
+      case 'fb2':
+        return 'orange';
+      case 'mobi':
+        return 'yellow';
+      case 'azw3':
+        return 'green';
       default:
         return 'gray';
     }

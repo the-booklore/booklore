@@ -13,7 +13,7 @@ import {HttpResponse} from "@angular/common/http";
 import {BookService} from "../../../../book/service/book.service";
 import {ProgressSpinner} from "primeng/progressspinner";
 import {Tooltip} from "primeng/tooltip";
-import {filter, finalize, take} from "rxjs/operators";
+import {filter, finalize, take, tap} from "rxjs/operators";
 import {takeUntilDestroyed} from "@angular/core/rxjs-interop";
 import {MetadataRefreshType} from "../../../model/request/metadata-refresh-type.enum";
 import {AutoComplete, AutoCompleteSelectEvent} from "primeng/autocomplete";
@@ -80,6 +80,7 @@ export class MetadataEditorComponent implements OnInit {
 
   refreshingBookIds = new Set<number>();
   isAutoFetching = false;
+  autoSaveEnabled = false;
 
   originalMetadata!: BookMetadata;
 
@@ -236,6 +237,7 @@ export class MetadataEditorComponent implements OnInit {
       )
       .subscribe(userState => {
         this.metadataCenterViewMode = userState.user?.userSettings.metadataCenterViewMode ?? 'route';
+        this.autoSaveEnabled = userState.user?.userSettings.autoSaveMetadata ?? false;
       });
   }
 
@@ -419,32 +421,39 @@ export class MetadataEditorComponent implements OnInit {
   }
 
   onSave(): void {
+    this.saveMetadata().subscribe();
+  }
+
+  saveMetadata(): Observable<void> {
     this.isSaving = true;
-    this.bookService
+    return this.bookService
       .updateBookMetadata(
         this.currentBookId,
         this.buildMetadataWrapper(undefined),
         false
       )
-      .subscribe({
-        next: (response) => {
-          this.isSaving = false;
-          this.messageService.add({
-            severity: "info",
-            summary: "Success",
-            detail: "Book metadata updated",
-          });
-          this.prepareAutoComplete();
-        },
-        error: (err) => {
-          this.isSaving = false;
-          this.messageService.add({
-            severity: "error",
-            summary: "Error",
-            detail: err?.error?.message || "Failed to update book metadata",
-          });
-        },
-      });
+      .pipe(
+        tap({
+          next: (response: any) => {
+            this.isSaving = false;
+            this.messageService.add({
+              severity: "info",
+              summary: "Success",
+              detail: "Book metadata updated",
+            });
+            this.prepareAutoComplete();
+            this.metadataForm.markAsPristine();
+          },
+          error: (err: any) => {
+            this.isSaving = false;
+            this.messageService.add({
+              severity: "error",
+              summary: "Error",
+              detail: err?.error?.message || "Failed to update book metadata",
+            });
+          },
+        })
+      );
   }
 
   toggleLock(field: string): void {
@@ -795,14 +804,22 @@ export class MetadataEditorComponent implements OnInit {
   navigatePrevious(): void {
     const prevBookId = this.bookNavigationService.getPreviousBookId();
     if (prevBookId) {
-      this.navigateToBook(prevBookId);
+      if (this.autoSaveEnabled && this.metadataForm.dirty) {
+        this.saveMetadata().subscribe(() => this.navigateToBook(prevBookId));
+      } else {
+        this.navigateToBook(prevBookId);
+      }
     }
   }
 
   navigateNext(): void {
     const nextBookId = this.bookNavigationService.getNextBookId();
     if (nextBookId) {
-      this.navigateToBook(nextBookId);
+      if (this.autoSaveEnabled && this.metadataForm.dirty) {
+        this.saveMetadata().subscribe(() => this.navigateToBook(nextBookId));
+      } else {
+        this.navigateToBook(nextBookId);
+      }
     }
   }
 

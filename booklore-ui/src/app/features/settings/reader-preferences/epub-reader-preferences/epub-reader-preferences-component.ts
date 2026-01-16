@@ -9,6 +9,7 @@ import {CustomFont} from '../../../../shared/model/custom-font.model';
 import {skip, Subject, takeUntil} from 'rxjs';
 import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
 import {Skeleton} from 'primeng/skeleton';
+import {themes} from '../../../readers/ebook-reader/services/reader-themes';
 
 @Component({
   selector: 'app-epub-reader-preferences-component',
@@ -40,33 +41,7 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
     {name: 'Monospace', displayName: 'Monospace', key: 'monospace'}
   ];
 
-  readonly flowOptions = [
-    {name: 'Paginated', key: 'paginated', icon: 'pi pi-book'},
-    {name: 'Scrolled', key: 'scrolled', icon: 'pi pi-sort-alt'}
-  ];
-
-  readonly spreadOptions = [
-    {name: 'Single', key: 'single', icon: 'pi pi-file'},
-    {name: 'Double', key: 'double', icon: 'pi pi-copy'}
-  ];
-
-  readonly themes = [
-    {name: 'White', key: 'white', color: '#FFFFFF'},
-    {name: 'Black', key: 'black', color: '#1A1A1A'},
-    {name: 'Grey', key: 'grey', color: '#4B5563'},
-    {name: 'Sepia', key: 'sepia', color: '#F4ECD8'},
-    {name: 'Green', key: 'green', color: '#D1FAE5'},
-    {name: 'Lavender', key: 'lavender', color: '#E9D5FF'},
-    {name: 'Cream', key: 'cream', color: '#FEF3C7'},
-    {name: 'Light Blue', key: 'light-blue', color: '#DBEAFE'},
-    {name: 'Peach', key: 'peach', color: '#FECACA'},
-    {name: 'Mint', key: 'mint', color: '#A7F3D0'},
-    {name: 'Dark Slate', key: 'dark-slate', color: '#1E293B'},
-    {name: 'Dark Olive', key: 'dark-olive', color: '#3F3F2C'},
-    {name: 'Dark Purple', key: 'dark-purple', color: '#3B2F4A'},
-    {name: 'Dark Teal', key: 'dark-teal', color: '#0F3D3E'},
-    {name: 'Dark Brown', key: 'dark-brown', color: '#3E2723'}
-  ];
+  readonly themes = themes;
 
   customFontsReady = false;
 
@@ -129,12 +104,13 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
   }
 
   private isCurrentlySelectedFontDeleted(newFonts: CustomFont[]): boolean {
-    const customFontId = this.userSettings.epubReaderSetting.customFontId;
-    if (!customFontId) {
+    const fontFamily = this.userSettings.ebookReaderSetting.fontFamily;
+    if (!fontFamily || !fontFamily.startsWith('custom:')) {
       return false;
     }
 
-    const fontStillExists = newFonts.some(font => font.id === customFontId);
+    const fontId = fontFamily.split(':')[1];
+    const fontStillExists = newFonts.some(font => font.id === parseInt(fontId, 10));
     return !fontStillExists;
   }
 
@@ -144,93 +120,176 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
   }
 
   get selectedTheme(): string | null {
-    return this.userSettings.epubReaderSetting.theme;
+    return this.userSettings.ebookReaderSetting.theme;
   }
 
   set selectedTheme(value: string | null) {
     if (typeof value === "string") {
-      this.userSettings.epubReaderSetting.theme = value;
+      this.userSettings.ebookReaderSetting.theme = value;
     }
-    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'theme'], value);
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'theme'], value);
   }
 
   get selectedFont(): string | null {
-    // If customFontId is set, return the custom font key
-    if (this.userSettings.epubReaderSetting.customFontId) {
-      return `custom:${this.userSettings.epubReaderSetting.customFontId}`;
-    }
-    return this.userSettings.epubReaderSetting.font;
+    return this.userSettings.ebookReaderSetting.fontFamily;
   }
 
   set selectedFont(value: string | null) {
-    // Handle custom fonts
-    if (value && value.startsWith('custom:')) {
-      const fontIdStr = value.split(':')[1];
-      const fontId = parseInt(fontIdStr, 10);
-
-      if (isNaN(fontId)) {
-        console.error('Invalid custom font ID:', value);
-        return;
-      }
-
-      // Update both fields in local state
-      this.userSettings.epubReaderSetting.customFontId = fontId;
-      this.userSettings.epubReaderSetting.font = value;
+    if (typeof value === "string") {
+      this.userSettings.ebookReaderSetting.fontFamily = value;
     } else {
-      // Clear customFontId and set font in local state
-      this.userSettings.epubReaderSetting.customFontId = null;
-      if (typeof value === "string") {
-        this.userSettings.epubReaderSetting.font = value;
-      } else {
-        // value is null - set to default font
-        this.userSettings.epubReaderSetting.font = null as any;
-      }
+      this.userSettings.ebookReaderSetting.fontFamily = null as any;
     }
-
-    // Single API call with entire epubReaderSetting object
-    this.readerPreferencesService.updatePreference(['epubReaderSetting'], this.userSettings.epubReaderSetting);
-  }
-
-  get selectedFlow(): string | null {
-    return this.userSettings.epubReaderSetting.flow;
-  }
-
-  set selectedFlow(value: string | null) {
-    if (typeof value === "string") {
-      this.userSettings.epubReaderSetting.flow = value;
-    }
-    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'flow'], value);
-  }
-
-  get selectedSpread(): string | null {
-    return this.userSettings.epubReaderSetting.spread;
-  }
-
-  set selectedSpread(value: string | null) {
-    if (typeof value === "string") {
-      this.userSettings.epubReaderSetting.spread = value;
-    }
-    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'spread'], value);
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'fontFamily'], value);
   }
 
   get fontSize(): number {
-    return this.userSettings.epubReaderSetting.fontSize;
+    return this.userSettings.ebookReaderSetting.fontSize;
   }
 
   set fontSize(value: number) {
-    this.userSettings.epubReaderSetting.fontSize = value;
-    this.readerPreferencesService.updatePreference(['epubReaderSetting', 'fontSize'], value);
+    this.userSettings.ebookReaderSetting.fontSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'fontSize'], value);
+  }
+
+  get lineHeight(): number {
+    return this.userSettings.ebookReaderSetting.lineHeight;
+  }
+
+  set lineHeight(value: number) {
+    this.userSettings.ebookReaderSetting.lineHeight = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'lineHeight'], value);
+  }
+
+  get justify(): boolean {
+    return this.userSettings.ebookReaderSetting.justify;
+  }
+
+  set justify(value: boolean) {
+    this.userSettings.ebookReaderSetting.justify = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'justify'], value);
+  }
+
+  get hyphenate(): boolean {
+    return this.userSettings.ebookReaderSetting.hyphenate;
+  }
+
+  set hyphenate(value: boolean) {
+    this.userSettings.ebookReaderSetting.hyphenate = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'hyphenate'], value);
+  }
+
+  get maxColumnCount(): number {
+    return this.userSettings.ebookReaderSetting.maxColumnCount;
+  }
+
+  set maxColumnCount(value: number) {
+    this.userSettings.ebookReaderSetting.maxColumnCount = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxColumnCount'], value);
+  }
+
+  get gap(): number {
+    return this.userSettings.ebookReaderSetting.gap;
+  }
+
+  set gap(value: number) {
+    this.userSettings.ebookReaderSetting.gap = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'gap'], value);
+  }
+
+  get maxInlineSize(): number {
+    return this.userSettings.ebookReaderSetting.maxInlineSize;
+  }
+
+  set maxInlineSize(value: number) {
+    this.userSettings.ebookReaderSetting.maxInlineSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxInlineSize'], value);
+  }
+
+  get maxBlockSize(): number {
+    return this.userSettings.ebookReaderSetting.maxBlockSize;
+  }
+
+  set maxBlockSize(value: number) {
+    this.userSettings.ebookReaderSetting.maxBlockSize = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'maxBlockSize'], value);
+  }
+
+  get isDark(): boolean {
+    return this.userSettings.ebookReaderSetting.isDark;
+  }
+
+  set isDark(value: boolean) {
+    this.userSettings.ebookReaderSetting.isDark = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'isDark'], value);
+  }
+
+  get flow(): 'paginated' | 'scrolled' {
+    return this.userSettings.ebookReaderSetting.flow;
+  }
+
+  set flow(value: 'paginated' | 'scrolled') {
+    this.userSettings.ebookReaderSetting.flow = value;
+    this.readerPreferencesService.updatePreference(['ebookReaderSetting', 'flow'], value);
   }
 
   increaseFontSize() {
-    if (this.fontSize < 250) {
-      this.fontSize += 10;
+    if (this.fontSize < 72) {
+      this.fontSize += 1;
     }
   }
 
   decreaseFontSize() {
-    if (this.fontSize > 50) {
-      this.fontSize -= 10;
+    if (this.fontSize > 8) {
+      this.fontSize -= 1;
+    }
+  }
+
+  increaseLineHeight() {
+    if (this.lineHeight < 3) {
+      this.lineHeight += 0.1;
+    }
+  }
+
+  decreaseLineHeight() {
+    if (this.lineHeight > 1) {
+      this.lineHeight -= 0.1;
+    }
+  }
+
+  increaseGap() {
+    if (this.gap < 100) {
+      this.gap += 5;
+    }
+  }
+
+  decreaseGap() {
+    if (this.gap > 0) {
+      this.gap -= 5;
+    }
+  }
+
+  increaseMaxInlineSize() {
+    if (this.maxInlineSize < 2000) {
+      this.maxInlineSize += 50;
+    }
+  }
+
+  decreaseMaxInlineSize() {
+    if (this.maxInlineSize > 400) {
+      this.maxInlineSize -= 50;
+    }
+  }
+
+  increaseMaxBlockSize() {
+    if (this.maxBlockSize < 2000) {
+      this.maxBlockSize += 50;
+    }
+  }
+
+  decreaseMaxBlockSize() {
+    if (this.maxBlockSize > 400) {
+      this.maxBlockSize -= 50;
     }
   }
 

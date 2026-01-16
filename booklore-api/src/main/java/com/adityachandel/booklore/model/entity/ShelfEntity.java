@@ -40,6 +40,10 @@ public class ShelfEntity {
     @Builder.Default
     private IconType iconType = IconType.PRIME_NG;
 
+    @Column(name = "is_public", nullable = false)
+    @Builder.Default
+    private boolean isPublic = false;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "book_shelf_mapping",

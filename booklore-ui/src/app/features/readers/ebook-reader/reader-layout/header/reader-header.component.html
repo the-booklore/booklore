@@ -1,0 +1,19 @@
+<div
+  class="reader-header"
+  [style.color]="currentTheme?.fg ?? ''"
+  [style.background]="currentTheme?.bg ?? ''"
+  [class.visible]="headerVisible">
+  <button class="icon-btn" (click)="showChapters.emit()" title="Chapters">
+    <i class="pi pi-bars" aria-label="Chapters"></i>
+  </button>
+  <button class="icon-btn" (click)="createBookmark.emit()" title="Create Bookmark">
+    <i class="pi pi-bookmark" aria-label="Create Bookmark"></i>
+  </button>
+  <span class="chapter-title">{{ bookTitle || '' }}</span>
+  <button class="icon-btn" (click)="showControls.emit()" title="Settings">
+    <i class="pi pi-cog" aria-label="Settings"></i>
+  </button>
+  <button class="icon-btn" (click)="close.emit(); $event.stopPropagation()" title="Close Reader">
+    <i class="pi pi-times" aria-label="Close Reader"></i>
+  </button>
+</div>

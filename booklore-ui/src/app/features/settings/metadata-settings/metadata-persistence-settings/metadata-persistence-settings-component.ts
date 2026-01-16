@@ -87,11 +87,11 @@ export class MetadataPersistenceSettingsComponent implements OnInit {
         saveToOriginalFile: {
           epub: {
             enabled: persistenceSettings.saveToOriginalFile?.epub?.enabled ?? false,
-            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.epub?.maxFileSizeInMb ?? 100
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.epub?.maxFileSizeInMb ?? 250
           },
           pdf: {
             enabled: persistenceSettings.saveToOriginalFile?.pdf?.enabled ?? false,
-            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.pdf?.maxFileSizeInMb ?? 100
+            maxFileSizeInMb: persistenceSettings.saveToOriginalFile?.pdf?.maxFileSizeInMb ?? 250
           },
           cbx: {
             enabled: persistenceSettings.saveToOriginalFile?.cbx?.enabled ?? false,

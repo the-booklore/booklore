@@ -21,4 +21,6 @@ public class ShelfCreateRequest {
 
     @NotNull(message = "Shelf icon type must not be null.")
     private IconType iconType;
+
+    private boolean publicShelf;
 }

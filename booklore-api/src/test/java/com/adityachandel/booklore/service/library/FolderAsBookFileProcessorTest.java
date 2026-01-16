@@ -4,7 +4,6 @@ import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -58,7 +57,7 @@ class FolderAsBookFileProcessorTest {
     private FolderAsBookFileProcessor processor;
 
     @Captor
-    private ArgumentCaptor<BookAdditionalFileEntity> additionalFileCaptor;
+    private ArgumentCaptor<BookFileEntity> additionalFileCaptor;
 
     private MockedStatic<FileUtils> fileUtilsMock;
     private MockedStatic<FileFingerprint> fileFingerprintMock;
@@ -134,12 +133,12 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.epub", "cover.jpg");
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
-                .containsExactly(AdditionalFileType.ALTERNATIVE_FORMAT, AdditionalFileType.SUPPLEMENTARY);
+        assertThat(capturedFiles).extracting(BookFileEntity::isBookFormat)
+                .containsExactlyInAnyOrder(true, false);
     }
 
     @Test
@@ -167,9 +166,9 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.epub", "cover.jpg");
     }
 
@@ -200,10 +199,10 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
         assertThat(capturedFiles).hasSize(2);
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getAdditionalFileType)
-                .containsOnly(AdditionalFileType.SUPPLEMENTARY);
+        assertThat(capturedFiles).extracting(BookFileEntity::isBookFormat)
+                .containsOnly(false);
     }
 
     @Test
@@ -246,8 +245,8 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(2)).save(additionalFileCaptor.capture());
 
-        List<BookAdditionalFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
-        assertThat(capturedFiles).extracting(BookAdditionalFileEntity::getFileName)
+        List<BookFileEntity> capturedFiles = additionalFileCaptor.getAllValues();
+        assertThat(capturedFiles).extracting(BookFileEntity::getFileName)
                 .containsExactlyInAnyOrder("book.pdf", "book.cbz");
     }
 
@@ -301,12 +300,13 @@ class FolderAsBookFileProcessorTest {
                 .toList();
 
         BookEntity existingBook = createBookEntity(1L, "book.pdf", "books");
-        BookAdditionalFileEntity existingAdditionalFile = BookAdditionalFileEntity.builder()
+        BookFileEntity existingAdditionalFile = BookFileEntity.builder()
                 .id(1L)
                 .book(existingBook)
                 .fileName("book.epub")
                 .fileSubPath("books")
-                .additionalFileType(AdditionalFileType.ALTERNATIVE_FORMAT)
+                .isBookFormat(true)
+                .bookType(BookFileType.EPUB)
                 .build();
 
         when(bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(anyLong(), eq("books")))
@@ -324,7 +324,7 @@ class FolderAsBookFileProcessorTest {
         verify(adminEventBroadcaster, never()).broadcastAdminEvent(anyString());
         verify(bookAdditionalFileRepository, times(1)).save(additionalFileCaptor.capture());
 
-        BookAdditionalFileEntity capturedFile = additionalFileCaptor.getValue();
+        BookFileEntity capturedFile = additionalFileCaptor.getValue();
         assertThat(capturedFile.getFileName()).isEqualTo("cover.jpg");
     }
 
@@ -418,15 +418,21 @@ class FolderAsBookFileProcessorTest {
     private BookEntity createBookEntity(Long id, String fileName, String subPath) {
         BookEntity book = new BookEntity();
         book.setId(id);
-        book.setFileName(fileName);
-        book.setFileSubPath(subPath);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.parse("2025-01-01T12:00:00Z"));
+
+        book.setBookFiles(new ArrayList<>());
 
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setId(1L);
         libraryPath.setPath("/test/library");
         book.setLibraryPath(libraryPath);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName(fileName);
+        primaryFile.setFileSubPath(subPath);
+        primaryFile.setBookType(BookFileType.PDF);
+        book.getBookFiles().add(primaryFile);
 
         return book;
     }

@@ -46,6 +46,32 @@
     <div class="preferences-section">
       <div class="section-header">
         <h3 class="section-title">
+          <i class="pi pi-pencil"></i>
+          Metadata Editor Settings
+        </h3>
+        <p class="section-description">
+          Configure behavior for the metadata editor.
+        </p>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-item no-border">
+          <div class="setting-info">
+            <label class="setting-label">Auto-save on Navigation</label>
+            <p class="setting-description">
+              Automatically save changes when navigating to the next or previous book in the metadata editor.
+            </p>
+          </div>
+          <div class="setting-control">
+            <p-toggleswitch [(ngModel)]="autoSaveMetadata"></p-toggleswitch>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
           <i class="pi pi-list"></i>
           Specific Overrides
         </h3>

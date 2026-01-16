@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import org.junit.jupiter.api.DisplayName;
@@ -221,7 +222,12 @@ class PathPatternResolverTest {
         metadata.setTitle("Book Title");
         
         BookEntity book = new BookEntity();
-        book.setFileName("book.epub");
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setFileName("book.epub");
+        primaryFile.setFileSubPath("");
+        book.setBookFiles(List.of(primaryFile));
         book.setMetadata(metadata);
 
         String result = PathPatternResolver.resolvePattern(book, "{title}.{extension}");

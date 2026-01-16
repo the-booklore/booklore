@@ -232,8 +232,12 @@ public class BookRuleEvaluatorService {
             Subquery<Long> subquery = cb.createQuery().subquery(Long.class);
             Root<BookEntity> subRoot = subquery.from(BookEntity.class);
 
-            Join<Object, Object> metadataJoin = subRoot.join("metadata", JoinType.INNER);
-            joinArrayField(rule.getField(), metadataJoin);
+            if (rule.getField() == RuleField.SHELF) {
+                subRoot.join("shelves", JoinType.INNER);
+            } else {
+                Join<Object, Object> metadataJoin = subRoot.join("metadata", JoinType.INNER);
+                joinArrayField(rule.getField(), metadataJoin);
+            }
 
             subquery.select(cb.literal(1L)).where(cb.equal(subRoot.get("id"), root.get("id")));
 
@@ -309,6 +313,7 @@ public class BookRuleEvaluatorService {
     private Expression<?> getFieldExpression(RuleField field, CriteriaBuilder cb, Root<BookEntity> root, Join<BookEntity, UserBookProgressEntity> progressJoin) {
         return switch (field) {
             case LIBRARY -> root.get("library").get("id");
+            case SHELF -> null; // Shelf is handled specially as a join field
             case READ_STATUS -> progressJoin.get("readStatus");
             case DATE_FINISHED -> progressJoin.get("dateFinished");
             case LAST_READ_TIME -> progressJoin.get("lastReadTime");
@@ -342,15 +347,21 @@ public class BookRuleEvaluatorService {
     private boolean isArrayField(RuleField field) {
         return field == RuleField.AUTHORS || field == RuleField.CATEGORIES ||
                field == RuleField.MOODS || field == RuleField.TAGS ||
-               field == RuleField.GENRE;
+               field == RuleField.GENRE || field == RuleField.SHELF;
     }
 
     private Join<?, ?> createArrayFieldJoin(RuleField field, Root<BookEntity> root) {
+        if (field == RuleField.SHELF) {
+            return root.join("shelves", JoinType.INNER);
+        }
         Join<Object, Object> metadataJoin = root.join("metadata", JoinType.INNER);
         return joinArrayField(field, metadataJoin);
     }
 
     private Expression<String> getArrayFieldNameExpression(RuleField field, Join<?, ?> arrayJoin) {
+        if (field == RuleField.SHELF) {
+            return arrayJoin.get("id").as(String.class);
+        }
         return arrayJoin.get("name");
     }
 

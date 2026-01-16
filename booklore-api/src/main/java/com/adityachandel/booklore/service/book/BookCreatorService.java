@@ -35,10 +35,11 @@ public class BookCreatorService {
             String newHash = FileFingerprint.generateHash(libraryFile.getFullPath());
             long fileSizeKb = FileUtils.getFileSizeInKb(libraryFile.getFullPath());
             BookEntity existingBook = existingBookOpt.get();
-            existingBook.setCurrentHash(newHash);
-            existingBook.setInitialHash(newHash);
+            BookFileEntity primaryFile = existingBook.getPrimaryBookFile();
+            primaryFile.setCurrentHash(newHash);
+            primaryFile.setInitialHash(newHash);
+            primaryFile.setFileSizeKb(fileSizeKb);
             existingBook.setDeleted(false);
-            existingBook.setFileSizeKb(fileSizeKb);
             return existingBook;
         }
 
@@ -47,12 +48,20 @@ public class BookCreatorService {
         BookEntity bookEntity = BookEntity.builder()
                 .library(libraryFile.getLibraryEntity())
                 .libraryPath(libraryFile.getLibraryPathEntity())
+                .addedOn(Instant.now())
+                .bookFiles(new ArrayList<>())
+                .build();
+
+        BookFileEntity bookFileEntity = BookFileEntity.builder()
+                .book(bookEntity)
                 .fileName(libraryFile.getFileName())
                 .fileSubPath(libraryFile.getFileSubPath())
+                .isBookFormat(true)
                 .bookType(bookFileType)
                 .fileSizeKb(fileSizeKb)
                 .addedOn(Instant.now())
                 .build();
+        bookEntity.getBookFiles().add(bookFileEntity);
 
         BookMetadataEntity metadata = BookMetadataEntity.builder()
                 .book(bookEntity)

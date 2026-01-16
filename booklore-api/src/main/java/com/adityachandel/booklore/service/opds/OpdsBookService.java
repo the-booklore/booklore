@@ -53,7 +53,7 @@ public class OpdsBookService {
         return user.getAssignedLibraries();
     }
 
-    public Page<Book> getBooksPage(Long userId, String query, Long libraryId, Long shelfId, int page, int size) {
+    public Page<Book> getBooksPage(Long userId, String query, Long libraryId, Set<Long> shelfIds, int page, int size) {
         if (userId == null) {
             throw ApiError.FORBIDDEN.createException("Authentication required");
         }
@@ -72,9 +72,12 @@ public class OpdsBookService {
                 .map(Library::getId)
                 .collect(Collectors.toSet());
 
-        if (shelfId != null) {
-            validateShelfAccess(shelfId, user.getId(), isAdmin);
-            return getBooksByShelfIdPageInternal(shelfId, page, size);
+        if (shelfIds != null && !shelfIds.isEmpty()) {
+            validateShelfAccess(shelfIds, user.getId(), isAdmin);
+            Page<Book> books = query != null && !query.isBlank()
+                    ? searchByMetadataInShelvesPageInternal(BookUtils.normalizeForSearch(query), shelfIds, page, size)
+                    : getBooksByShelfIdsPageInternal(shelfIds, page, size);
+            return applyBookFilters(books, userId);
         }
 
         if (libraryId != null) {
@@ -335,6 +338,18 @@ public class OpdsBookService {
         return createPageFromEntities(books, idPage, pageable);
     }
 
+    private Page<Book> getBooksByShelfIdsPageInternal(Set<Long> shelfIds, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), size);
+
+        Page<Long> idPage = bookOpdsRepository.findBookIdsByShelfIds(shelfIds, pageable);
+        if (idPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        List<BookEntity> books = bookOpdsRepository.findAllWithMetadataByIdsAndShelfIds(idPage.getContent(), shelfIds);
+        return createPageFromEntities(books, idPage, pageable);
+    }
+
     private Page<Book> searchByMetadataPageInternal(String text, int page, int size) {
         Pageable pageable = PageRequest.of(Math.max(page, 0), size);
 
@@ -359,11 +374,29 @@ public class OpdsBookService {
         return createPageFromEntities(books, idPage, pageable);
     }
 
+    private Page<Book> searchByMetadataInShelvesPageInternal(String text, Set<Long> shelfIds, int page, int size) {
+        Pageable pageable = PageRequest.of(Math.max(page, 0), size);
+
+        Page<Long> idPage = bookOpdsRepository.findBookIdsByMetadataSearchAndShelfIds(text, shelfIds, pageable);
+        if (idPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, 0);
+        }
+
+        List<BookEntity> books = bookOpdsRepository.findAllWithFullMetadataByIdsAndShelfIds(idPage.getContent(), shelfIds);
+        return createPageFromEntities(books, idPage, pageable);
+    }
+
     private void validateShelfAccess(Long shelfId, Long userId, boolean isAdmin) {
         var shelf = shelfRepository.findById(shelfId)
                 .orElseThrow(() -> ApiError.SHELF_NOT_FOUND.createException(shelfId));
         if (!shelf.getUser().getId().equals(userId) && !isAdmin) {
             throw ApiError.FORBIDDEN.createException("You are not allowed to access this shelf");
+        }
+    }
+
+    private void validateShelfAccess(Set<Long> shelfIds, Long userId, boolean isAdmin) {
+        for (Long shelfId : shelfIds) {
+            validateShelfAccess(shelfId, userId, isAdmin);
         }
     }
 
