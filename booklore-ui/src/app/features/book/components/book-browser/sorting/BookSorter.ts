@@ -8,6 +8,7 @@ export class BookSorter {
     {label: 'Title + Series', field: 'titleSeries', direction: SortDirection.ASCENDING},
     {label: 'File Name', field: 'fileName', direction: SortDirection.ASCENDING},
     {label: 'Author', field: 'author', direction: SortDirection.ASCENDING},
+    {label: 'Author (Surname)', field: 'authorSurnameVorname', direction: SortDirection.ASCENDING},
     {label: 'Author + Series', field: 'authorSeries', direction: SortDirection.ASCENDING},
     {label: 'Last Read', field: 'lastReadTime', direction: SortDirection.ASCENDING},
     {label: 'Personal Rating', field: 'personalRating', direction: SortDirection.ASCENDING},
