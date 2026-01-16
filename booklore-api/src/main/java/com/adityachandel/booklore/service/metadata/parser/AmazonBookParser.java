@@ -10,6 +10,7 @@ import com.adityachandel.booklore.util.BookUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -31,6 +32,12 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class AmazonBookParser implements BookParser {
+
+    private static class AmazonAntiScrapingException extends RuntimeException {
+        public AmazonAntiScrapingException(String message) {
+            super(message);
+        }
+    }
 
     private static final int COUNT_DETAILED_METADATA_TO_GET = 3;
     private static final String BASE_BOOK_URL_SUFFIX = "/dp/";
@@ -163,6 +170,9 @@ public class AmazonBookParser implements BookParser {
                     bookIds.add(extractAmazonBookId(item));
                 }
             }
+        } catch (AmazonAntiScrapingException e) {
+            log.debug("Aborting Amazon search due to anti-scraping (503).");
+            return null;
         } catch (Exception e) {
             log.error("Failed to get asin: {}", e.getMessage(), e);
         }
@@ -199,7 +209,13 @@ public class AmazonBookParser implements BookParser {
         log.info("Amazon: Fetching metadata for: {}", amazonBookId);
 
         String domain = appSettingService.getAppSettings().getMetadataProviderSettings().getAmazon().getDomain();
-        Document doc = fetchDocument("https://www.amazon." + domain + BASE_BOOK_URL_SUFFIX + amazonBookId);
+        Document doc;
+        try {
+            doc = fetchDocument("https://www.amazon." + domain + BASE_BOOK_URL_SUFFIX + amazonBookId);
+        } catch (AmazonAntiScrapingException e) {
+            log.debug("Aborting metadata fetch for ID {} due to status code (503).", amazonBookId);
+            return null;
+        }
 
         List<BookReview> reviews = appSettingService.getAppSettings()
                 .getMetadataPublicReviewsSettings()
@@ -840,6 +856,17 @@ public class AmazonBookParser implements BookParser {
 
             Connection.Response response = connection.execute();
             return response.parse();
+        } catch (HttpStatusException e) {
+            if (e.getStatusCode() == 503) {
+                log.info("Amazon service unavailable (503). Please note: this is NOT a Booklore bug. Likely causes include: rate-limiting or failed captcha. Action required: Update cookies or select an alternative metadata source in the Metadata 2 UI. URL: {}", url);
+                throw new AmazonAntiScrapingException("Amazon 503 Anti-Scraping");
+            }
+            if (e.getStatusCode() == 500) {
+                log.info("Amazon internal server error (500). Please note: this is NOT a Booklore bug. Likely causes include: temporary server issues or anti-bot measures. Action required: Retry later or select an alternative metadata source in the Metadata 2 UI. URL: {}", url);
+                throw new AmazonAntiScrapingException("Amazon 500 Internal Server Error");
+            }
+            log.error("HTTP error fetching URL. Status={}, URL=[{}]", e.getStatusCode(), url, e);
+            throw new RuntimeException(e);
         } catch (IOException e) {
             log.error("Error parsing url: {}", url, e);
             throw new RuntimeException(e);
