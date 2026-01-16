@@ -222,7 +222,7 @@ end
 function BookloreSync:configureUsername()
     local input_dialog
     input_dialog = InputDialog:new{
-        title = _("Booklore Username"),
+        title = _("KOReader Username"),
         input = self.username,
         buttons = {
             {
@@ -256,7 +256,7 @@ end
 function BookloreSync:configurePassword()
     local input_dialog
     input_dialog = InputDialog:new{
-        title = _("Booklore Password"),
+        title = _("KOReader Password"),
         input = self.password,
         text_type = "password",
         buttons = {
