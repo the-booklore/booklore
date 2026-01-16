@@ -66,7 +66,7 @@ public class KoreaderService {
         
         return ResponseEntity.ok(Map.of(
             "id", book.getId(),
-            "currentHash", book.getCurrentHash() != null ? book.getCurrentHash() : ""
+            "currentHash", book.getPrimaryBookFile().getCurrentHash() != null ? book.getPrimaryBookFile().getCurrentHash() : ""
         ));
     }
 
