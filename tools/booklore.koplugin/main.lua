@@ -8,6 +8,7 @@ Syncs reading sessions to Booklore server via REST API.
 
 local DataStorage = require("datastorage")
 local Dispatcher = require("dispatcher")
+local EventListener = require("ui/widget/eventlistener")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local LuaSettings = require("luasettings")
@@ -45,6 +46,70 @@ function BookloreSync:init()
     
     -- Register menu
     self.ui.menu:registerToMainMenu(self)
+    
+    -- Register actions with Dispatcher for gesture manager integration
+    self:registerDispatcherActions()
+end
+
+function BookloreSync:registerDispatcherActions()
+    -- Register Toggle Sync action
+    Dispatcher:registerAction("booklore_toggle_sync", {
+        category = "none",
+        event = "ToggleBookloreSync",
+        title = _("Toggle Booklore Sync"),
+        general = true,
+    })
+    
+    -- Register Sync Pending Sessions action
+    Dispatcher:registerAction("booklore_sync_pending", {
+        category = "none",
+        event = "SyncBooklorePending",
+        title = _("Sync Booklore Pending Sessions"),
+        general = true,
+    })
+    
+    -- Register Test Connection action
+    Dispatcher:registerAction("booklore_test_connection", {
+        category = "none",
+        event = "TestBookloreConnection",
+        title = _("Test Booklore Connection"),
+        general = true,
+    })
+end
+
+function BookloreSync:toggleSync()
+    self.is_enabled = not self.is_enabled
+    self.settings:saveSetting("is_enabled", self.is_enabled)
+    self.settings:flush()
+    UIManager:show(InfoMessage:new{
+        text = self.is_enabled and _("Booklore sync enabled") or _("Booklore sync disabled"),
+        timeout = 1,
+    })
+end
+
+-- Event handlers for Dispatcher actions
+function BookloreSync:onToggleBookloreSync()
+    self:toggleSync()
+    return true
+end
+
+function BookloreSync:onSyncBooklorePending()
+    if #self.pending_sessions > 0 and self.is_enabled then
+        self:syncPendingSessions()
+    else
+        if #self.pending_sessions == 0 then
+            UIManager:show(InfoMessage:new{
+                text = _("No pending sessions to sync"),
+                timeout = 1,
+            })
+        end
+    end
+    return true
+end
+
+function BookloreSync:onTestBookloreConnection()
+    self:testConnection()
+    return true
 end
 
 function BookloreSync:addToMainMenu(menu_items)
