@@ -6,11 +6,13 @@ import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.MagicShelfService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
+import com.adityachandel.booklore.service.reader.PdfReaderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -39,6 +41,7 @@ public class KomgaService {
     private final KomgaMapper komgaMapper;
     private final MagicShelfService magicShelfService;
     private final CbxReaderService cbxReaderService;
+    private final PdfReaderService pdfReaderService;
     private final AppSettingService appSettingService;
 
     public List<KomgaLibraryDto> getAllLibraries() {
@@ -378,13 +381,22 @@ public class KomgaService {
         
         BookEntity book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found: " + bookId));
-        
-        // Make sure pages are cached
-        cbxReaderService.getAvailablePages(bookId);
-        
+
+        boolean isPDF = book.getBookType() == BookFileType.PDF;
+     
         // Stream the page to a ByteArrayOutputStream
+        // streamPageImage will throw if page does not exist
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
+
+        // Make sure pages are cached
+        if (isPDF) {
+            cbxReaderService.getAvailablePages(bookId);
+            cbxReaderService.streamPageImage(bookId, pageNumber, outputStream);
+        } else {
+            pdfReaderService.getAvailablePages(bookId);
+            pdfReaderService.streamPageImage(bookId, pageNumber, outputStream);
+        }
+        
         byte[] imageData = outputStream.toByteArray();
         
         // If conversion to PNG is requested, convert the image
