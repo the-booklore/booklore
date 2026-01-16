@@ -11,6 +11,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
@@ -58,6 +59,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     @Override
     public BookEntity processNewFile(LibraryFile libraryFile) {
         BookEntity bookEntity = bookCreatorService.createShellBook(libraryFile, BookFileType.CBX);
+        bookEntity.getPrimaryBookFile().setArchiveType(ArchiveUtils.detectArchiveType(new File(FileUtils.getBookFullPath(bookEntity))));
         if (generateCover(bookEntity)) {
             FileService.setBookCoverPath(bookEntity.getMetadata());
             bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
@@ -78,16 +80,16 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                     if (saved) {
                         return true;
                     } else {
-                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getFileName());
+                        log.warn("Could not save image extracted from CBZ as cover for '{}'", bookEntity.getPrimaryBookFile().getFileName());
                     }
                 } finally {
                     image.flush(); // Release resources after processing
                 }
             } else {
-                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getFileName());
+                log.warn("Could not find cover image in CBZ file '{}'", bookEntity.getPrimaryBookFile().getFileName());
             }
         } catch (Exception e) {
-            log.error("Error generating cover for '{}': {}", bookEntity.getFileName(), e.getMessage());
+            log.error("Error generating cover for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
         }
         return false;
     }
@@ -98,18 +100,12 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     }
 
     private Optional<BufferedImage> extractImagesFromArchive(File file) {
-        String name = file.getName();
-        String extension = FileUtils.getExtension(name).toLowerCase();
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(file);
 
-        if (!BookFileType.CBX.supports(extension)) {
-            log.warn("Unsupported CBX format: {}", name);
-            return Optional.empty();
-        }
-
-        return switch (extension) {
-            case "cbz" -> extractFirstImageFromZip(file);
-            case "cb7" -> extractFirstImageFrom7z(file);
-            case "cbr" -> extractFirstImageFromRar(file);
+        return switch (type) {
+            case ZIP -> extractFirstImageFromZip(file);
+            case SEVEN_ZIP -> extractFirstImageFrom7z(file);
+            case RAR -> extractFirstImageFromRar(file);
             default -> Optional.empty();
         };
     }
@@ -236,14 +232,14 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                 bookCreatorService.addCategoriesToBook(extracted.getCategories(), bookEntity);
             }
         } catch (Exception e) {
-            log.warn("Failed to extract ComicInfo metadata for '{}': {}", bookEntity.getFileName(), e.getMessage());
+            log.warn("Failed to extract ComicInfo metadata for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
             // Fallback to filename-derived title
             setMetadata(bookEntity);
         }
     }
 
     private void setMetadata(BookEntity bookEntity) {
-        String baseName = new File(bookEntity.getFileName()).getName();
+        String baseName = new File(bookEntity.getPrimaryBookFile().getFileName()).getName();
         String extension = FileUtils.getExtension(baseName);
         if (BookFileType.CBX.supports(extension)) {
             baseName = baseName.substring(0, baseName.length() - extension.length() - 1);

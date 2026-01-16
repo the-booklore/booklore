@@ -21,7 +21,6 @@ public class AppSettings {
     private boolean komgaApiEnabled;
     private boolean komgaGroupUnknown;
     private String uploadPattern;
-    private Integer cbxCacheSizeInMb;
     private Integer pdfCacheSizeInMb;
     private Integer maxFileUploadSizeInMb;
     private boolean remoteAuthEnabled;

@@ -101,7 +101,7 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
         backgroundColor: 'rgba(0, 0, 0, 0.95)',
         titleColor: '#ffffff',
         bodyColor: '#ffffff',
-        borderColor: '#4fc3f7',
+        borderColor: '#e91e63',
         borderWidth: 2,
         cornerRadius: 8,
         padding: 16,
@@ -199,8 +199,8 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
       ];
 
       const gradientColors = [
-        '#ff6b9d', '#45aaf2', '#96f7d2', '#feca57',
-        '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3'
+        '#e91e63', '#2196f3', '#00bcd4', '#ff9800',
+        '#9c27b0', '#3f51b5', '#673ab7', '#009688'
       ];
 
       this.chartDataSubject.next({
@@ -211,8 +211,8 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
         datasets: [{
           label: 'Reading DNA Profile',
           data,
-          backgroundColor: 'rgba(79, 195, 247, 0.2)',
-          borderColor: '#4fc3f7',
+          backgroundColor: 'rgba(233, 30, 99, 0.2)',
+          borderColor: '#e91e63',
           borderWidth: 3,
           pointBackgroundColor: gradientColors,
           pointBorderColor: '#ffffff',
@@ -514,49 +514,49 @@ export class ReadingDNAChartComponent implements OnInit, OnDestroy {
         trait: 'Adventurous',
         score: profile.adventurous,
         description: 'You explore diverse genres and experimental content',
-        color: '#ff6b9d'
+        color: '#e91e63'
       },
       {
         trait: 'Perfectionist',
         score: profile.perfectionist,
         description: 'You prefer high-quality books and finish what you start',
-        color: '#45aaf2'
+        color: '#2196f3'
       },
       {
         trait: 'Intellectual',
         score: profile.intellectual,
         description: 'You gravitate toward complex, educational material',
-        color: '#96f7d2'
+        color: '#00bcd4'
       },
       {
         trait: 'Emotional',
         score: profile.emotional,
         description: 'You connect emotionally with fiction and personal stories',
-        color: '#feca57'
+        color: '#ff9800'
       },
       {
         trait: 'Patient',
         score: profile.patient,
         description: 'You tackle long books and complete series',
-        color: '#ff9ff3'
+        color: '#9c27b0'
       },
       {
         trait: 'Social',
         score: profile.social,
         description: 'You enjoy popular, widely-discussed books',
-        color: '#54a0ff'
+        color: '#3f51b5'
       },
       {
         trait: 'Nostalgic',
         score: profile.nostalgic,
         description: 'You appreciate classic literature and older works',
-        color: '#5f27cd'
+        color: '#673ab7'
       },
       {
         trait: 'Ambitious',
         score: profile.ambitious,
         description: 'You challenge yourself with volume and difficulty',
-        color: '#00d2d3'
+        color: '#009688'
       }
     ];
   }

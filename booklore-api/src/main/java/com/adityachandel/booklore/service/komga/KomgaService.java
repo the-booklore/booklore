@@ -382,7 +382,7 @@ public class KomgaService {
         BookEntity book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found: " + bookId));
 
-        boolean isPDF = book.getBookType() == BookFileType.PDF;
+        boolean isPDF = book.getPrimaryBookFile().getBookType() == BookFileType.PDF;
      
         // Stream the page to a ByteArrayOutputStream
         // streamPageImage will throw if page does not exist

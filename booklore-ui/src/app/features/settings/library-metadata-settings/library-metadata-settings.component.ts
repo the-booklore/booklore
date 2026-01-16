@@ -217,6 +217,8 @@ export class LibraryMetadataSettingsComponent implements OnInit {
         hardcoverReviewCount: {p1: null, p2: null, p3: null, p4: null},
         lubimyczytacId: {p1: null, p2: null, p3: null, p4: null},
         lubimyczytacRating: {p1: null, p2: null, p3: null, p4: null},
+        ranobedbId: {p1: null, p2: null, p3: null, p4: null},
+        ranobedbRating: {p1: null, p2: null, p3: null, p4: null},
         moods: {p1: null, p2: null, p3: null, p4: null},
         tags: {p1: null, p2: null, p3: null, p4: null}
       }

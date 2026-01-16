@@ -124,6 +124,16 @@
                     {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
                   </div>
                 </div>
+                <!-- Book type pill toggle control -->
+                <div class="flex flex-col gap-2">
+                  <label for="show-book-type-pill-checkbox" class="font-medium">Show book type pill</label>
+                  <p-checkbox
+                    inputId="show-book-type-pill-checkbox"
+                    [binary]="true"
+                    [ngModel]="bookCardOverlayPreferenceService.showBookTypePill"
+                    (onChange)="bookCardOverlayPreferenceService.setShowBookTypePill($event.checked)">
+                  </p-checkbox>
+                </div>
               </div>
             </p-popover>
           </div>
@@ -273,7 +283,8 @@
                         [onBookSelect]="handleBookSelect.bind(this)"
                         [isSeriesCollapsed]="seriesCollapseFilter.isSeriesCollapsed"
                         (checkboxClick)="onCheckboxClicked($event)"
-                        [isSelected]="selectedBooks.has(book.id)">
+                        [isSelected]="selectedBooks.has(book.id)"
+                        [overlayPreferenceService]="bookCardOverlayPreferenceService">
                       </app-book-card>
                     </div>
                   }

@@ -3,14 +3,17 @@ package com.adityachandel.booklore.model.entity;
 import com.adityachandel.booklore.convertor.BookRecommendationIdsListConverter;
 import com.adityachandel.booklore.model.dto.BookRecommendationLite;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Getter
@@ -24,18 +27,6 @@ public class BookEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(name = "file_name", length = 1000)
-    private String fileName;
-
-    @Column(name = "file_sub_path")
-    private String fileSubPath;
-
-    @Column(name = "book_type")
-    private BookFileType bookType;
-
-    @Column(name = "file_size_kb")
-    private Long fileSizeKb;
 
     @Column(name = "metadata_match_score")
     private Float metadataMatchScore;
@@ -60,12 +51,6 @@ public class BookEntity {
     @Column(name = "added_on")
     private Instant addedOn;
 
-    @Column(name = "initial_hash", length = 128, updatable = false)
-    private String initialHash;
-
-    @Column(name = "current_hash", length = 128)
-    private String currentHash;
-
     @Column(name = "book_cover_hash", length = 20)
     private String bookCoverHash;
 
@@ -89,16 +74,41 @@ public class BookEntity {
     private Set<BookRecommendationLite> similarBooksJson;
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<BookAdditionalFileEntity> additionalFiles;
+    @OrderBy("id ASC")
+    @Builder.Default
+    private List<BookFileEntity> bookFiles = new ArrayList<>();
 
     @OneToMany(mappedBy = "book", fetch = FetchType.LAZY)
     private List<UserBookProgressEntity> userBookProgress;
 
     public Path getFullFilePath() {
-        if (libraryPath == null || libraryPath.getPath() == null || fileSubPath == null || fileName == null) {
-            throw new IllegalStateException("Cannot construct file path: missing library path, file subpath, or file name");
+        BookFileEntity primaryBookFile = getPrimaryBookFile();
+        if (libraryPath == null || libraryPath.getPath() == null || primaryBookFile.getFileSubPath() == null || primaryBookFile.getFileName() == null) {
+            throw new IllegalStateException(
+                    "Cannot construct file path: missing library path, file subpath, or file name");
         }
 
-        return Paths.get(libraryPath.getPath(), fileSubPath, fileName);
+        return Paths.get(libraryPath.getPath(), primaryBookFile.getFileSubPath(), primaryBookFile.getFileName());
+    }
+
+    public List<Path> getFullFilePaths() {
+        if (libraryPath == null || libraryPath.getPath() == null || bookFiles == null || bookFiles.isEmpty()) {
+            throw new IllegalStateException(
+                    "Cannot construct file path: missing library path, file subpath, or file name");
+        }
+        return bookFiles.stream()
+                .map(bookFile -> Paths.get(libraryPath.getPath(), bookFile.getFileSubPath(), bookFile.getFileName()))
+                .collect(Collectors.toList());
+    }
+
+    // TODO: Add support for specifying the preferred format
+    public BookFileEntity getPrimaryBookFile() {
+        if (bookFiles == null) {
+            bookFiles = new ArrayList<>();
+        }
+        if (bookFiles.isEmpty()) {
+            throw new IllegalStateException("Book file not found");
+        }
+        return bookFiles.getFirst();
     }
 }

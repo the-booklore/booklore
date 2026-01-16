@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import com.github.junrar.Archive;
 import com.github.junrar.rarfile.FileHeader;
 import lombok.RequiredArgsConstructor;
@@ -54,12 +55,13 @@ public class CbxMetadataWriter implements MetadataWriter {
         if (!shouldSaveMetadataToFile(file)) {
             return;
         }
-        String fileName = file.getName().toLowerCase(Locale.ROOT);
-        boolean isCbz = fileName.endsWith(".cbz");
-        boolean isCbr = fileName.endsWith(".cbr");
-        boolean isCb7 = fileName.endsWith(".cb7");
 
-        if (!isCbz && !isCbr && !isCb7) {
+        ArchiveUtils.ArchiveType type = ArchiveUtils.detectArchiveType(file);
+        boolean isCbz = type == ArchiveUtils.ArchiveType.ZIP;
+        boolean isCbr = type == ArchiveUtils.ArchiveType.RAR;
+        boolean isCb7 = type == ArchiveUtils.ArchiveType.SEVEN_ZIP;
+
+        if (type == ArchiveUtils.ArchiveType.UNKNOWN) {
             log.warn("Unsupported file type for CBX writer: {}", file.getName());
             return;
         }

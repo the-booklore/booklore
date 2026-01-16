@@ -51,6 +51,7 @@ import {TaskHelperService} from '../../../settings/task-management/task-helper.s
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
 import {BookNavigationService} from '../../service/book-navigation.service';
+import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -123,6 +124,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private pageTitle = inject(PageTitleService);
   private loadingService = inject(LoadingService);
   private bookNavigationService = inject(BookNavigationService);
+  protected bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -327,7 +329,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
 
       this.entityViewPreferences = user.user?.userSettings?.entityViewPreferences;
       const globalPrefs = this.entityViewPreferences?.global;
-      const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase() : undefined;
+      const currentEntityTypeStr = this.entityType ? this.entityType.toString().toUpperCase().replaceAll(' ', '_') : undefined;
       this.coverScalePreferenceService.initScaleValue(this.coverScalePreferenceService.scaleFactor);
       this.columnPreferenceService.initPreferences(user.user?.userSettings?.tableColumnPreference);
       this.visibleColumns = this.columnPreferenceService.visibleColumns;
@@ -798,8 +800,16 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       case EntityType.LIBRARY:
         return this.fetchBooks(book => book.libraryId === entityId);
       case EntityType.SHELF:
-        return this.fetchBooks(book =>
-          book.shelves?.some(shelf => shelf.id === entityId) ?? false
+        return this.shelfService.getBooksOnShelf(entityId).pipe(
+          map(books => {
+            const sortedBooks = this.sortService.applySort(books, this.bookSorter.selectedSort!);
+            return {
+              books: sortedBooks,
+              loaded: true,
+              error: null
+            };
+          }),
+          switchMap(bookState => this.applyBookFilters(bookState))
         );
       case EntityType.MAGIC_SHELF:
         return this.fetchBooksMagicShelfBooks(entityId);

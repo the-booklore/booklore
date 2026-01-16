@@ -54,7 +54,7 @@ public abstract class AbstractFileProcessor implements BookFileProcessor {
 
     private Book createAndMapBook(LibraryFile libraryFile, String hash) {
         BookEntity entity = processNewFile(libraryFile);
-        entity.setCurrentHash(hash);
+        entity.getPrimaryBookFile().setCurrentHash(hash);
         entity.setMetadataMatchScore(metadataMatchService.calculateMatchScore(entity));
         bookCreatorService.saveConnections(entity);
         return bookMapper.toBook(entity);

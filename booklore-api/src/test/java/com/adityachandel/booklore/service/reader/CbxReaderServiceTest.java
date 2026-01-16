@@ -1,229 +1,285 @@
 package com.adityachandel.booklore.service.reader;
 
-import com.adityachandel.booklore.exception.APIException;
-import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.entity.BookEntity;
-import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.util.FileService;
-import org.junit.jupiter.api.AfterEach;
+import com.adityachandel.booklore.util.FileUtils;
+import com.github.junrar.Archive;
+import com.github.junrar.rarfile.FileHeader;
+import org.apache.commons.compress.archivers.sevenz.SevenZArchiveEntry;
+import org.apache.commons.compress.archivers.sevenz.SevenZFile;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Optional;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
-
-import javax.imageio.ImageIO;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CbxReaderServiceTest {
 
-    @TempDir
-    Path tempDir;
-
     @Mock
-    private BookRepository bookRepository;
+    BookRepository bookRepository;
 
-    @Mock
-    private AppSettingService appSettingService;
+    @InjectMocks
+    CbxReaderService cbxReaderService;
 
-    @Mock
-    private FileService fileService;
+    @Captor
+    ArgumentCaptor<Long> longCaptor;
 
-    private CbxReaderService service;
-    private Path cbzFile;
-    private Path cacheDir;
-    private BookEntity testBook;
-    private final Long bookId = 113L;
+    BookEntity bookEntity;
+    Path cbzPath;
+    Path cb7Path;
+    Path cbrPath;
 
     @BeforeEach
-    void setUp() throws IOException {
-        service = new CbxReaderService(bookRepository, appSettingService, fileService);
-        
-        cacheDir = tempDir.resolve("cbx_cache").resolve(String.valueOf(bookId));
-        Files.createDirectories(cacheDir);
-        
-        cbzFile = tempDir.resolve("doctorwho_fourdoctors.cbz");
-        createTestCbzWithMacOsFiles(cbzFile.toFile());
-        
-        LibraryPathEntity libraryPath = new LibraryPathEntity();
-        libraryPath.setPath(cbzFile.getParent().toString());
-        
-        testBook = new BookEntity();
-        testBook.setId(bookId);
-        testBook.setLibraryPath(libraryPath);
-        testBook.setFileSubPath("");
-        testBook.setFileName(cbzFile.getFileName().toString());
-        
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(testBook));
-        when(fileService.getCbxCachePath()).thenReturn(cacheDir.getParent().toString());
-        
-        AppSettings appSettings = new AppSettings();
-        appSettings.setCbxCacheSizeInMb(1000);
-        when(appSettingService.getAppSettings()).thenReturn(appSettings);
-    }
-
-    @AfterEach
-    void tearDown() throws IOException {
-        if (Files.exists(cacheDir)) {
-            Files.walk(cacheDir)
-                    .sorted((a, b) -> -a.compareTo(b))
-                    .forEach(path -> {
-                        try {
-                            Files.deleteIfExists(path);
-                        } catch (IOException ignored) {
-                        }
-                    });
-        }
+    void setup() throws Exception {
+        bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        cbzPath = Path.of("/tmp/test.cbz");
+        cb7Path = Path.of("/tmp/test.cb7");
+        cbrPath = Path.of("/tmp/test.cbr");
+        Files.deleteIfExists(cbzPath);
+        Files.deleteIfExists(cb7Path);
+        Files.deleteIfExists(cbrPath);
     }
 
     @Test
-    void getAvailablePages_filtersOutMacOsFiles_shouldReturnCorrectPageCount() throws IOException {
-        List<Integer> pages = service.getAvailablePages(bookId);
-        
-        assertEquals(130, pages.size(), 
-            "Page count should be 130 (actual comic pages), not 260 (including __MACOSX files)");
-        assertEquals(1, pages.getFirst());
-        assertEquals(130, pages.getLast());
-        
-        List<Path> cachedFiles = Files.list(cacheDir)
-                .filter(Files::isRegularFile)
-                .filter(p -> !p.getFileName().toString().equals(".cache-info"))
-                .toList();
-        
-        assertEquals(130, cachedFiles.size(), 
-            "Cache should contain exactly 130 image files, not 260. Actual files: " + 
-            cachedFiles.stream().map(p -> p.getFileName().toString()).sorted().toList());
-        
-        boolean hasMacOsFiles = cachedFiles.stream()
-                .anyMatch(p -> p.getFileName().toString().startsWith("._") || 
-                              p.getFileName().toString().contains("__MACOSX"));
-        assertFalse(hasMacOsFiles, "Cache should not contain any __MACOSX or ._ files. Found: " +
-            cachedFiles.stream()
-                .map(p -> p.getFileName().toString())
-                .filter(name -> name.startsWith("._") || name.contains("__MACOSX"))
-                .toList());
-        
-        boolean allAreComicPages = cachedFiles.stream()
-                .allMatch(p -> p.getFileName().toString().matches("DW_4D_\\d{3}\\.jpg"));
-        assertTrue(allAreComicPages, "All cached files should be actual comic pages (DW_4D_*.jpg)");
-    }
+    void testGetAvailablePages_CBZ_Success() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbzPath.toString());
 
-    @Test
-    void streamPageImage_returnsActualComicPages_notMacOsFiles() throws IOException {
-        service.getAvailablePages(bookId);
-        
-        ByteArrayOutputStream page1Output = new ByteArrayOutputStream();
-        service.streamPageImage(bookId, 1, page1Output);
-        
-        byte[] page1Data = page1Output.toByteArray();
-        assertTrue(page1Data.length > 0, "Page 1 should have content");
-        assertEquals(0xFF, page1Data[0] & 0xFF);
-        assertEquals(0xD8, page1Data[1] & 0xFF);
-        
-        ByteArrayOutputStream page130Output = new ByteArrayOutputStream();
-        service.streamPageImage(bookId, 130, page130Output);
-        
-        byte[] page130Data = page130Output.toByteArray();
-        assertTrue(page130Data.length > 0, "Page 130 should have content");
-        assertEquals(0xFF, page130Data[0] & 0xFF);
-        assertEquals(0xD8, page130Data[1] & 0xFF);
-        
-        List<Path> cachedFiles = Files.list(cacheDir)
-                .filter(Files::isRegularFile)
-                .filter(p -> !p.getFileName().toString().equals(".cache-info"))
-                .sorted()
-                .toList();
-        
-        assertEquals("DW_4D_001.jpg", cachedFiles.getFirst().getFileName().toString());
-        assertEquals("DW_4D_130.jpg", cachedFiles.get(129).getFileName().toString());
-    }
+            ZipArchiveEntry entry1 = new ZipArchiveEntry("1.jpg");
+            ZipArchiveEntry entry2 = new ZipArchiveEntry("2.png");
+            Enumeration<ZipArchiveEntry> entries = Collections.enumeration(List.of(entry1, entry2));
+            ZipFile zipFile = mock(ZipFile.class);
+            when(zipFile.getEntries()).thenReturn(entries);
 
-    @Test
-    void getAvailablePages_withMacOsFiles_shouldNotDoubleCountPages() throws IOException {
-        List<Integer> pages = service.getAvailablePages(bookId);
-        
-        assertNotEquals(260, pages.size(), 
-            "Page count should NOT be 260 (this was the bug - double counting __MACOSX files)");
-        assertEquals(130, pages.size(), 
-            "Page count should be exactly 130 (actual comic pages only)");
-    }
+            ZipFile.Builder builder = mock(ZipFile.Builder.class, RETURNS_DEEP_STUBS);
+            when(builder.setPath(cbzPath)).thenReturn(builder);
+            when(builder.setCharset(any(Charset.class))).thenReturn(builder);
+            when(builder.setUseUnicodeExtraFields(anyBoolean())).thenReturn(builder);
+            when(builder.setIgnoreLocalFileHeader(anyBoolean())).thenReturn(builder);
+            when(builder.get()).thenReturn(zipFile);
 
-    @Test
-    void getAvailablePages_whenArchiveIsCorrupt_shouldThrowFileReadError() throws IOException {
-        Path corruptCbz = tempDir.resolve("corrupt.cbz");
-        Files.writeString(corruptCbz, "This is not a zip file");
+            try (MockedStatic<ZipFile> zipFileStatic = mockStatic(ZipFile.class)) {
+                zipFileStatic.when(ZipFile::builder).thenReturn(builder);
 
-        testBook.setFileName(corruptCbz.getFileName().toString());
-        testBook.getLibraryPath().setPath(tempDir.toString());
-        
-        APIException exception = assertThrows(APIException.class, () -> service.getAvailablePages(bookId));
-        
-        assertNotEquals(ApiError.CACHE_TOO_LARGE.getMessage(), exception.getMessage(), 
-             "Should not throw CACHE_TOO_LARGE for a corrupt file");
-        assertTrue(exception.getMessage().startsWith("Error reading files from path"),
-            "Should throw FILE_READ_ERROR (message starts with 'Error reading files from path'), actual: '" + exception.getMessage() + "'");
-    }
+                Files.createFile(cbzPath);
+                Files.setLastModifiedTime(cbzPath, FileTime.fromMillis(System.currentTimeMillis()));
 
-    private void createTestCbzWithMacOsFiles(File cbzFile) throws IOException {
-        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(cbzFile))) {
-            for (int i = 1; i <= 130; i++) {
-                String pageNumber = String.format("%03d", i);
-                
-                String comicPageName = "DW_4D_" + pageNumber + ".jpg";
-                ZipEntry comicEntry = new ZipEntry(comicPageName);
-                comicEntry.setTime(0L);
-                zos.putNextEntry(comicEntry);
-                byte[] comicImage = createTestImage(Color.RED, "Page " + i);
-                zos.write(comicImage);
-                zos.closeEntry();
-                
-                String macOsFileName = "__MACOSX/._DW_4D_" + pageNumber + ".jpg";
-                ZipEntry macOsEntry = new ZipEntry(macOsFileName);
-                macOsEntry.setTime(0L);
-                zos.putNextEntry(macOsEntry);
-                byte[] macOsData = "MacOS metadata".getBytes();
-                zos.write(macOsData);
-                zos.closeEntry();
+                List<Integer> pages = cbxReaderService.getAvailablePages(1L);
+                assertEquals(List.of(1, 2), pages);
             }
         }
     }
 
-    private byte[] createTestImage(Color color, String label) throws IOException {
-        BufferedImage image = new BufferedImage(400, 600, BufferedImage.TYPE_INT_RGB);
-        Graphics2D g2d = image.createGraphics();
-        
-        g2d.setColor(color);
-        g2d.fillRect(0, 0, 400, 600);
-        
-        g2d.setColor(Color.BLACK);
-        g2d.setFont(g2d.getFont().deriveFont(24f));
-        g2d.drawString(label, 50, 300);
-        
-        g2d.dispose();
-        
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "jpg", baos);
-        return baos.toByteArray();
+    @Test
+    void testStreamPageImage_CBZ_Success() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbzPath.toString());
+
+            ZipArchiveEntry entry1 = new ZipArchiveEntry("1.jpg");
+            Enumeration<ZipArchiveEntry> entries = Collections.enumeration(List.of(entry1));
+            ZipFile zipFile = mock(ZipFile.class);
+            when(zipFile.getEntries()).thenReturn(entries);
+            when(zipFile.getEntry("1.jpg")).thenReturn(entry1);
+            when(zipFile.getInputStream(entry1)).thenReturn(new ByteArrayInputStream(new byte[]{1, 2, 3}));
+
+            ZipFile.Builder builder = mock(ZipFile.Builder.class, RETURNS_DEEP_STUBS);
+            when(builder.setPath(cbzPath)).thenReturn(builder);
+            when(builder.setCharset(any(Charset.class))).thenReturn(builder);
+            when(builder.setUseUnicodeExtraFields(anyBoolean())).thenReturn(builder);
+            when(builder.setIgnoreLocalFileHeader(anyBoolean())).thenReturn(builder);
+            when(builder.get()).thenReturn(zipFile);
+
+            try (MockedStatic<ZipFile> zipFileStatic = mockStatic(ZipFile.class)) {
+                zipFileStatic.when(ZipFile::builder).thenReturn(builder);
+
+                Files.createFile(cbzPath);
+                Files.setLastModifiedTime(cbzPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                cbxReaderService.streamPageImage(1L, 1, out);
+                assertArrayEquals(new byte[]{1, 2, 3}, out.toByteArray());
+            }
+        }
+    }
+
+    @Test
+    void testGetAvailablePages_CBZ_ThrowsOnMissingBook() {
+        when(bookRepository.findById(2L)).thenReturn(Optional.empty());
+        assertThrows(ApiError.BOOK_NOT_FOUND.createException().getClass(), () -> cbxReaderService.getAvailablePages(2L));
+    }
+
+    @Test
+    void testGetAvailablePages_CB7_Success() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cb7Path.toString());
+
+            SevenZArchiveEntry entry1 = mock(SevenZArchiveEntry.class);
+            when(entry1.getName()).thenReturn("1.jpg");
+            when(entry1.isDirectory()).thenReturn(false);
+
+            SevenZFile sevenZFile = mock(SevenZFile.class);
+            when(sevenZFile.getNextEntry()).thenReturn(entry1, (SevenZArchiveEntry) null);
+
+            SevenZFile.Builder builder = mock(SevenZFile.Builder.class, RETURNS_DEEP_STUBS);
+            when(builder.setPath(cb7Path)).thenReturn(builder);
+            when(builder.get()).thenReturn(sevenZFile);
+
+            try (MockedStatic<SevenZFile> sevenZFileStatic = mockStatic(SevenZFile.class)) {
+                sevenZFileStatic.when(SevenZFile::builder).thenReturn(builder);
+
+                Files.createFile(cb7Path);
+                Files.setLastModifiedTime(cb7Path, FileTime.fromMillis(System.currentTimeMillis()));
+
+                List<Integer> pages = cbxReaderService.getAvailablePages(1L);
+                assertEquals(List.of(1), pages);
+            }
+        }
+    }
+
+    @Test
+    void testGetAvailablePages_CBR_Success() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbrPath.toString());
+
+            FileHeader header = mock(FileHeader.class);
+            when(header.isDirectory()).thenReturn(false);
+            when(header.getFileName()).thenReturn("1.jpg");
+
+            try (MockedConstruction<Archive> ignored = mockConstruction(Archive.class, (mock, context) -> {
+                when(mock.getFileHeaders()).thenReturn(List.of(header));
+            })) {
+                Files.deleteIfExists(cbrPath);
+                Files.createFile(cbrPath);
+                Files.setLastModifiedTime(cbrPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+                List<Integer> pages = cbxReaderService.getAvailablePages(1L);
+                assertEquals(List.of(1), pages);
+            }
+        }
+    }
+
+    @Test
+    void testStreamPageImage_CBR_Success() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbrPath.toString());
+
+            FileHeader header = mock(FileHeader.class);
+            when(header.isDirectory()).thenReturn(false);
+            when(header.getFileName()).thenReturn("1.jpg");
+
+            try (MockedConstruction<Archive> ignored = mockConstruction(Archive.class, (mock, context) -> {
+                when(mock.getFileHeaders()).thenReturn(List.of(header));
+                doAnswer(invocation -> {
+                    OutputStream out = invocation.getArgument(1);
+                    out.write(new byte[]{1, 2, 3});
+                    return null;
+                }).when(mock).extractFile(eq(header), any(OutputStream.class));
+            })) {
+                Files.deleteIfExists(cbrPath);
+                Files.createFile(cbrPath);
+                Files.setLastModifiedTime(cbrPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                cbxReaderService.streamPageImage(1L, 1, out);
+                assertArrayEquals(new byte[]{1, 2, 3}, out.toByteArray());
+            }
+        }
+    }
+
+    @Test
+    void testStreamPageImage_PageOutOfRange_Throws() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbzPath.toString());
+
+            ZipArchiveEntry entry1 = new ZipArchiveEntry("1.jpg");
+            Enumeration<ZipArchiveEntry> entries = Collections.enumeration(List.of(entry1));
+            ZipFile zipFile = mock(ZipFile.class);
+            when(zipFile.getEntries()).thenReturn(entries);
+
+            ZipFile.Builder builder = mock(ZipFile.Builder.class, RETURNS_DEEP_STUBS);
+            when(builder.setPath(cbzPath)).thenReturn(builder);
+            when(builder.setCharset(any(Charset.class))).thenReturn(builder);
+            when(builder.setUseUnicodeExtraFields(anyBoolean())).thenReturn(builder);
+            when(builder.setIgnoreLocalFileHeader(anyBoolean())).thenReturn(builder);
+            when(builder.get()).thenReturn(zipFile);
+
+            try (MockedStatic<ZipFile> zipFileStatic = mockStatic(ZipFile.class)) {
+                zipFileStatic.when(ZipFile::builder).thenReturn(builder);
+
+                Files.createFile(cbzPath);
+                Files.setLastModifiedTime(cbzPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+                assertThrows(FileNotFoundException.class, () -> cbxReaderService.streamPageImage(1L, 2, new ByteArrayOutputStream()));
+            }
+        }
+    }
+
+    @Test
+    void testGetAvailablePages_UnsupportedArchive_Throws() throws Exception {
+        Path unknownPath = Path.of("/tmp/test.unknown");
+        Files.deleteIfExists(unknownPath);
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(unknownPath.toString());
+
+            Files.createFile(unknownPath);
+            Files.setLastModifiedTime(unknownPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+            assertThrows(com.adityachandel.booklore.exception.APIException.class, () -> cbxReaderService.getAvailablePages(1L));
+        }
+    }
+
+    @Test
+    void testStreamPageImage_EntryNotFound_Throws() throws Exception {
+        when(bookRepository.findById(1L)).thenReturn(Optional.of(bookEntity));
+        try (MockedStatic<FileUtils> fileUtilsStatic = mockStatic(FileUtils.class)) {
+            fileUtilsStatic.when(() -> FileUtils.getBookFullPath(bookEntity)).thenReturn(cbzPath.toString());
+
+            ZipArchiveEntry entry1 = new ZipArchiveEntry("1.jpg");
+            Enumeration<ZipArchiveEntry> entries = Collections.enumeration(List.of(entry1));
+            ZipFile zipFile = mock(ZipFile.class);
+            when(zipFile.getEntries()).thenReturn(entries);
+
+            ZipFile.Builder builder = mock(ZipFile.Builder.class, RETURNS_DEEP_STUBS);
+            when(builder.setPath(cbzPath)).thenReturn(builder);
+            when(builder.setCharset(any(Charset.class))).thenReturn(builder);
+            when(builder.setUseUnicodeExtraFields(anyBoolean())).thenReturn(builder);
+            when(builder.setIgnoreLocalFileHeader(anyBoolean())).thenReturn(builder);
+            when(builder.get()).thenReturn(zipFile);
+
+            try (MockedStatic<ZipFile> zipFileStatic = mockStatic(ZipFile.class)) {
+                zipFileStatic.when(ZipFile::builder).thenReturn(builder);
+
+                Files.createFile(cbzPath);
+                Files.setLastModifiedTime(cbzPath, FileTime.fromMillis(System.currentTimeMillis()));
+
+                assertThrows(IOException.class, () -> cbxReaderService.streamPageImage(1L, 2, new ByteArrayOutputStream()));
+            }
+        }
     }
 }

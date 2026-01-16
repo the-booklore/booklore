@@ -43,6 +43,8 @@ export interface FieldOptions {
   hardcoverRating: FieldProvider;
   hardcoverReviewCount: FieldProvider;
   lubimyczytacRating: FieldProvider;
+  ranobedbId: FieldProvider;
+  ranobedbRating: FieldProvider;
   moods: FieldProvider;
   tags: FieldProvider;
 }

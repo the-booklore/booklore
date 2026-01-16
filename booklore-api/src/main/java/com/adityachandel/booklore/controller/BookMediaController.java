@@ -4,7 +4,6 @@ import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.bookdrop.BookDropService;
 import com.adityachandel.booklore.service.reader.CbxReaderService;
 import com.adityachandel.booklore.service.reader.PdfReaderService;
-import com.adityachandel.booklore.service.IconService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -21,9 +20,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
 
 @Tag(name = "Book Media", description = "Endpoints for retrieving book media such as covers, thumbnails, and pages")
 @AllArgsConstructor
@@ -31,27 +27,22 @@ import java.util.regex.Pattern;
 @RequestMapping("/api/v1/media")
 public class BookMediaController {
 
-    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\x00-\\x7F]");
-
     private final BookService bookService;
     private final PdfReaderService pdfReaderService;
     private final CbxReaderService cbxReaderService;
     private final BookDropService bookDropService;
-    private final IconService iconService;
 
     @Operation(summary = "Get book thumbnail", description = "Retrieve the thumbnail image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book thumbnail returned successfully")
     @GetMapping("/book/{bookId}/thumbnail")
-    public ResponseEntity<Resource> getBookThumbnail(
-            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+    public ResponseEntity<Resource> getBookThumbnail(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookThumbnail(bookId));
     }
 
     @Operation(summary = "Get book cover", description = "Retrieve the cover image for a specific book.")
     @ApiResponse(responseCode = "200", description = "Book cover returned successfully")
     @GetMapping("/book/{bookId}/cover")
-    public ResponseEntity<Resource> getBookCover(
-            @Parameter(description = "ID of the book") @PathVariable long bookId) {
+    public ResponseEntity<Resource> getBookCover(@Parameter(description = "ID of the book") @PathVariable long bookId) {
         return ResponseEntity.ok(bookService.getBookCover(bookId));
     }
 
@@ -80,8 +71,7 @@ public class BookMediaController {
     @Operation(summary = "Get bookdrop cover", description = "Retrieve the cover image for a specific bookdrop file.")
     @ApiResponse(responseCode = "200", description = "Bookdrop cover returned successfully")
     @GetMapping("/bookdrop/{bookdropId}/cover")
-    public ResponseEntity<Resource> getBookdropCover(
-            @Parameter(description = "ID of the bookdrop file") @PathVariable long bookdropId) {
+    public ResponseEntity<Resource> getBookdropCover(@Parameter(description = "ID of the bookdrop file") @PathVariable long bookdropId) {
         Resource file = bookDropService.getBookdropCover(bookdropId);
         String contentDisposition = "inline; filename=\"cover.jpg\"; filename*=UTF-8''cover.jpg";
         return (file != null)

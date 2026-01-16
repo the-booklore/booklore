@@ -47,7 +47,6 @@ export class GlobalPreferencesComponent implements OnInit {
   private messageService = inject(MessageService);
 
   appSettings$: Observable<AppSettings | null> = this.appSettingsService.appSettings$;
-  cbxCacheValue?: number;
   maxFileUploadSizeInMb?: number;
 
   ngOnInit(): void {
@@ -55,9 +54,6 @@ export class GlobalPreferencesComponent implements OnInit {
       filter(settings => !!settings),
       take(1)
     ).subscribe(settings => {
-      if (settings?.cbxCacheSizeInMb) {
-        this.cbxCacheValue = settings.cbxCacheSizeInMb;
-      }
       if (settings?.maxFileUploadSizeInMb) {
         this.maxFileUploadSizeInMb = settings.maxFileUploadSizeInMb;
       }
@@ -87,15 +83,6 @@ export class GlobalPreferencesComponent implements OnInit {
 
   onCoverCroppingChange(): void {
     this.saveSetting(AppSettingKey.COVER_CROPPING_SETTINGS, this.coverCroppingSettings);
-  }
-
-  saveCacheSize(): void {
-    if (!this.cbxCacheValue || this.cbxCacheValue <= 0) {
-      this.showMessage('error', 'Invalid Input', 'Please enter a valid cache size in MB.');
-      return;
-    }
-
-    this.saveSetting(AppSettingKey.CBX_CACHE_SIZE_IN_MB, this.cbxCacheValue);
   }
 
   saveFileSize() {

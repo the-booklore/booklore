@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.util;
 
+import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,7 +23,16 @@ public class FileUtils {
     private final String FILE_NOT_FOUND_MESSAGE = "File does not exist: ";
 
     public String getBookFullPath(BookEntity bookEntity) {
-        return Path.of(bookEntity.getLibraryPath().getPath(), bookEntity.getFileSubPath(), bookEntity.getFileName())
+        BookFileEntity bookFile = bookEntity.getPrimaryBookFile();
+
+        return Path.of(bookEntity.getLibraryPath().getPath(), bookFile.getFileSubPath(), bookFile.getFileName())
+                .normalize()
+                .toString()
+                .replace("\\", "/");
+    }
+
+    public String getBookFullPath(Book book) {
+        return Path.of(book.getLibraryPath().getPath(), book.getFileSubPath(), book.getFileName())
                 .normalize()
                 .toString()
                 .replace("\\", "/");
@@ -74,13 +85,14 @@ public class FileUtils {
         return "";
     }
 
-    private List<String> systemDirs = Arrays.asList(
+    final private List<String> systemDirs = Arrays.asList(
       // synology
       "#recycle",
       "@eaDir",
       // calibre
       ".caltrash"
     );
+
     public boolean shouldIgnore(Path path) {
         if (!path.getFileName().toString().isEmpty() && path.getFileName().toString().charAt(0) == '.') {
             return true;

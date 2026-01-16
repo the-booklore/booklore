@@ -162,6 +162,8 @@ public class TelemetryService {
             enabled.add(MetadataProvider.Hardcover.name());
         if (providers.getComicvine() != null && providers.getComicvine().isEnabled())
             enabled.add(MetadataProvider.Comicvine.name());
+        if (providers.getRanobedb() != null && providers.getRanobedb().isEnabled())
+            enabled.add(MetadataProvider.Ranobedb.name());
         if (providers.getDouban() != null && providers.getDouban().isEnabled())
             enabled.add(MetadataProvider.Douban.name());
         if (providers.getLubimyczytac() != null && providers.getLubimyczytac().isEnabled())

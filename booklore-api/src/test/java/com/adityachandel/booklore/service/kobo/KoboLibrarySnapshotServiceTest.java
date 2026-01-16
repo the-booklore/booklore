@@ -5,6 +5,7 @@ import com.adityachandel.booklore.mapper.BookEntityToKoboSnapshotBookMapper;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.BookLoreUser.UserPermissions;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.KoboLibrarySnapshotEntity;
 import com.adityachandel.booklore.model.entity.KoboSnapshotBookEntity;
@@ -83,10 +84,18 @@ class KoboLibrarySnapshotServiceTest {
                 .library(ownersLibrary)
                 .build();
 
+        BookFileEntity ownersPrimaryFile = new BookFileEntity();
+        ownersPrimaryFile.setBook(ownersBook);
+        ownersBook.setBookFiles(List.of(ownersPrimaryFile));
+
         otherUsersBook = BookEntity.builder()
                 .id(202L)
                 .library(othersLibrary)
                 .build();
+
+        BookFileEntity otherPrimaryFile = new BookFileEntity();
+        otherPrimaryFile.setBook(otherUsersBook);
+        otherUsersBook.setBookFiles(List.of(otherPrimaryFile));
 
         UserPermissions userPermissions = new UserPermissions();
         userPermissions.setAdmin(false);

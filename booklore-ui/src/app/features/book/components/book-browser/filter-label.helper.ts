@@ -24,6 +24,7 @@ export class FilterLabelHelper {
     amazonRating: 'Amazon Rating',
     goodreadsRating: 'Goodreads Rating',
     hardcoverRating: 'Hardcover Rating',
+    ranobedbRating: 'Ranobedb Rating',
     mood: 'Mood',
     tag: 'Tag',
   };
@@ -71,6 +72,7 @@ export class FilterLabelHelper {
       case 'amazonrating':
       case 'goodreadsrating':
       case 'hardcoverrating':
+      case 'ranobedbrating':
         {
           const ratingRange = ratingRanges.find(r => r.id === value);
           if (ratingRange) return ratingRange.label;

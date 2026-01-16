@@ -62,7 +62,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
             byte[] coverData = fb2MetadataExtractor.extractCover(fb2File);
 
             if (coverData == null || coverData.length == 0) {
-                log.warn("No cover image found in FB2 '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in FB2 '{}'", bookEntity.getPrimaryBookFile().getFileName());
                 return false;
             }
 
@@ -70,7 +70,7 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
             return saved;
 
         } catch (Exception e) {
-            log.error("Error generating cover for FB2 '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for FB2 '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage(), e);
             return false;
         }
     }
@@ -113,6 +113,8 @@ public class Fb2Processor extends AbstractFileProcessor implements BookFileProce
         metadata.setHardcoverReviewCount(fb2Metadata.getHardcoverReviewCount());
         metadata.setGoogleId(truncate(fb2Metadata.getGoogleId(), 100));
         metadata.setComicvineId(truncate(fb2Metadata.getComicvineId(), 100));
+        metadata.setRanobedbId(truncate(fb2Metadata.getRanobedbId(), 100));
+        metadata.setRanobedbRating(fb2Metadata.getRanobedbRating());
 
         bookCreatorService.addAuthorsToBook(fb2Metadata.getAuthors(), bookEntity);
 

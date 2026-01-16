@@ -71,16 +71,16 @@ public class LibraryRescanHelper {
                 break;
             }
 
-            log.info("Processing book: library={}, bookId={}, fileName={}", library.getName(), bookEntity.getId(), bookEntity.getFileName());
+            log.info("Processing book: library={}, bookId={}, fileName={}", library.getName(), bookEntity.getId(), bookEntity.getPrimaryBookFile().getFileName());
 
             int progressPercentage = totalBooks > 0 ? (processedBooks * 100) / totalBooks : 0;
 
             sendTaskProgressNotification(taskId, progressPercentage,
-                    String.format("Processing: %s (Library: %s)", bookEntity.getFileName(), library.getName()),
+                    String.format("Processing: %s (Library: %s)", bookEntity.getPrimaryBookFile().getFileName(), library.getName()),
                     TaskStatus.IN_PROGRESS);
 
             try {
-                BookMetadata bookMetadata = metadataExtractorFactory.extractMetadata(bookEntity.getBookType(), bookEntity.getFullFilePath().toFile());
+                BookMetadata bookMetadata = metadataExtractorFactory.extractMetadata(bookEntity.getPrimaryBookFile().getBookType(), bookEntity.getFullFilePath().toFile());
                 if (bookMetadata == null) {
                     log.warn("No metadata extracted for book id={} path={}", bookEntity.getId(), bookEntity.getFullFilePath());
                     continue;

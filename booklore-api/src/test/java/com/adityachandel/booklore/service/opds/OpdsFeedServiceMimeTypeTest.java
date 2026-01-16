@@ -4,19 +4,28 @@ import com.adityachandel.booklore.config.security.service.AuthenticationService;
 import com.adityachandel.booklore.config.security.userdetails.OpdsUserDetails;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
+import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.dto.OpdsUserV2;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.OpdsSortOrder;
 import com.adityachandel.booklore.service.MagicShelfService;
+import com.adityachandel.booklore.util.ArchiveUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +41,9 @@ class OpdsFeedServiceMimeTypeTest {
     private MagicShelfBookService magicShelfBookService;
     private OpdsFeedService opdsFeedService;
     private HttpServletRequest request;
+
+    @TempDir
+    Path tempDir;
 
     @BeforeEach
     void setUp() {
@@ -123,11 +135,83 @@ class OpdsFeedServiceMimeTypeTest {
         assertThat(xml).contains("type=\"application/x-fictionbook+xml\"");
     }
 
+    @Test
+    void testMimeTypeForZippedFb2() throws IOException {
+        File zipAsFb2 = tempDir.resolve("book_zipped.fb2").toFile();
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipAsFb2))) {
+            zos.putNextEntry(new ZipEntry("book.fb2"));
+            zos.write("<FictionBook>...</FictionBook>".getBytes());
+            zos.closeEntry();
+        }
+
+        Book book = createBook(BookFileType.FB2, "book_zipped.fb2");
+        mockBooksPage(book);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        assertThat(xml).contains("type=\"application/zip\"");
+    }
+
+    @Test
+    void testMimeTypeForZipNamedAsCbr() throws IOException {
+        // Create a ZIP file named .cbr
+        File zipAsCbr = tempDir.resolve("mismatched.cbr").toFile();
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipAsCbr))) {
+            zos.putNextEntry(new ZipEntry("test.txt"));
+            zos.write("hello".getBytes());
+            zos.closeEntry();
+        }
+
+        Book book = createBook(BookFileType.CBX, "mismatched.cbr");
+        mockBooksPage(book);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        
+        // Should detect as ZIP (application/vnd.comicbook+zip) despite .cbr extension
+        assertThat(xml).contains("type=\"application/vnd.comicbook+zip\"");
+    }
+
+    @Test
+    void testMimeTypeForRarNamedAsCbz() throws IOException {
+        // Create a RAR file named .cbz (fake RAR header)
+        File rarAsCbz = tempDir.resolve("mismatched.cbz").toFile();
+        try (FileOutputStream fos = new FileOutputStream(rarAsCbz)) {
+            // RAR 5.0 magic number
+            fos.write(new byte[]{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00});
+        }
+
+        Book book = createBook(BookFileType.CBX, "mismatched.cbz");
+        mockBooksPage(book);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        
+        // Should detect as RAR (application/vnd.comicbook-rar) despite .cbz extension
+        assertThat(xml).contains("type=\"application/vnd.comicbook-rar\"");
+    }
+
+    @Test
+    void testMimeTypeFromCachedArchiveType() {
+        Book book = createBook(BookFileType.CBX, "whatever.cbz");
+        book.setArchiveType(ArchiveUtils.ArchiveType.RAR); // Simulate mismatched but cached type
+        
+        mockBooksPage(book);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        
+        // Should use cached type (RAR) even if filename is .cbz and no file exists (mocked logic)
+        // Note: The logic in OpdsFeedService prioritizes cached type.
+        // However, my test creates a real file in other tests, but here I can skip file creation 
+        // because the cached type check happens first.
+        
+        assertThat(xml).contains("type=\"application/vnd.comicbook-rar\"");
+    }
+
     private Book createBook(BookFileType type, String fileName) {
         return Book.builder()
                 .id(1L)
                 .bookType(type)
                 .fileName(fileName)
+                .fileSubPath("")
+                .libraryPath(LibraryPath.builder().path(tempDir.toString()).build())
                 .addedOn(Instant.now())
                 .metadata(BookMetadata.builder().title("Test Book").build())
                 .build();

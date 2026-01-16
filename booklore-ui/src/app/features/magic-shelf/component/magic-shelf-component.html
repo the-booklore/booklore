@@ -138,6 +138,8 @@
                       <p-multiSelect [options]="fileType" formControlName="value" display="chip" class="value-input" appendTo="body" placeholder="Select File Types"></p-multiSelect>
                     } @else if (ruleCtrl.get('field')?.value === 'library') {
                       <p-multiSelect [options]="libraryOptions" formControlName="value" display="chip" class="value-input" appendTo="body" placeholder="Select Libraries"></p-multiSelect>
+                    } @else if (ruleCtrl.get('field')?.value === 'shelf') {
+                      <p-multiSelect [options]="shelfOptions" formControlName="value" display="chip" class="value-input" appendTo="body" placeholder="Select Shelves"></p-multiSelect>
                     } @else if (ruleCtrl.get('field')?.value === 'categories') {
                       <p-multiSelect [options]="categoryOptions" formControlName="value" display="chip" class="value-input" appendTo="body" placeholder="Select Genres"></p-multiSelect>
                     } @else {
@@ -151,6 +153,8 @@
                     <p-select [options]="fileType" formControlName="value" placeholder="Select File Type" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'library') {
                     <p-select [options]="libraryOptions" formControlName="value" placeholder="Select Library" appendTo="body" class="value-input"></p-select>
+                  } @else if (ruleCtrl.get('field')?.value === 'shelf') {
+                    <p-select [options]="shelfOptions" formControlName="value" placeholder="Select Shelf" appendTo="body" class="value-input"></p-select>
                   } @else if (ruleCtrl.get('field')?.value === 'categories') {
                     <p-select [options]="categoryOptions" formControlName="value" placeholder="Select Genre" appendTo="body" class="value-input"></p-select>
                   } @else {

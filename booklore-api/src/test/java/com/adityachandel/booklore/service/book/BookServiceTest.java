@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -38,7 +39,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
+@ExtendWith(MockitoExtension.class)
 class BookServiceTest {
 
     @Mock
@@ -46,7 +47,7 @@ class BookServiceTest {
     @Mock
     private PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     @Mock
-    private EpubViewerPreferencesRepository epubViewerPreferencesRepository;
+    private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
     @Mock
     private CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     @Mock
@@ -103,7 +104,10 @@ class BookServiceTest {
     void getBooksByIds_returnsMappedBooksWithProgress() {
         BookEntity entity = new BookEntity();
         entity.setId(2L);
-        entity.setBookType(BookFileType.EPUB);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        entity.setBookFiles(List.of(primaryFile));
         LibraryPathEntity libPath = new LibraryPathEntity();
         libPath.setPath("/tmp/library");
         LibraryEntity library = new LibraryEntity();
@@ -128,13 +132,16 @@ class BookServiceTest {
     void getBook_existingBook_returnsBookWithProgress() {
         BookEntity entity = new BookEntity();
         entity.setId(3L);
-        entity.setBookType(BookFileType.PDF);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(BookFileType.PDF);
+        entity.setBookFiles(List.of(primaryFile));
         LibraryPathEntity libPath = new LibraryPathEntity();
         libPath.setPath("/tmp/library");
         LibraryEntity library = new LibraryEntity();
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
-        when(bookRepository.findById(3L)).thenReturn(Optional.of(entity));
+        when(bookRepository.findByIdWithBookFiles(3L)).thenReturn(Optional.of(entity));
         when(userBookProgressRepository.findByUserIdAndBookId(anyLong(), eq(3L))).thenReturn(Optional.of(new UserBookProgressEntity()));
         Book mappedBook = Book.builder().id(3L).bookType(BookFileType.PDF).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
         when(bookMapper.toBook(entity)).thenReturn(mappedBook);
@@ -144,13 +151,13 @@ class BookServiceTest {
             fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/library/book.pdf");
             Book result = bookService.getBook(3L, true);
             assertEquals(3L, result.getId());
-            verify(bookRepository).findById(3L);
+            verify(bookRepository).findByIdWithBookFiles(3L);
         }
     }
 
     @Test
     void getBook_notFound_throwsException() {
-        when(bookRepository.findById(99L)).thenReturn(Optional.empty());
+        when(bookRepository.findByIdWithBookFiles(99L)).thenReturn(Optional.empty());
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         assertThrows(APIException.class, () -> bookService.getBook(99L, true));
     }
@@ -159,25 +166,51 @@ class BookServiceTest {
     void getBookViewerSetting_epub_returnsEpubSettings() {
         BookEntity entity = new BookEntity();
         entity.setId(4L);
-        entity.setBookType(BookFileType.EPUB);
-        when(bookRepository.findById(4L)).thenReturn(Optional.of(entity));
-        EpubViewerPreferencesEntity epubPref = new EpubViewerPreferencesEntity();
-        epubPref.setFont("Arial");
-        when(epubViewerPreferencesRepository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        entity.setBookFiles(List.of(primaryFile));
+        when(bookRepository.findByIdWithBookFiles(4L)).thenReturn(Optional.of(entity));
+        EbookViewerPreferenceEntity epubPref = new EbookViewerPreferenceEntity();
+        epubPref.setFontFamily("Arial");
+        epubPref.setFontSize(16);
+        epubPref.setGap(0.2f);
+        epubPref.setHyphenate(true);
+        epubPref.setIsDark(false);
+        epubPref.setJustify(true);
+        epubPref.setLineHeight(1.5f);
+        epubPref.setMaxBlockSize(800);
+        epubPref.setMaxColumnCount(2);
+        epubPref.setMaxInlineSize(1200);
+        epubPref.setTheme("light");
+        when(ebookViewerPreferenceRepository.findByBookIdAndUserId(4L, testUser.getId())).thenReturn(Optional.of(epubPref));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
 
         BookViewerSettings settings = bookService.getBookViewerSetting(4L);
 
-        assertNotNull(settings.getEpubSettings());
-        assertEquals("Arial", settings.getEpubSettings().getFont());
+        assertNotNull(settings.getEbookSettings());
+        assertEquals("Arial", settings.getEbookSettings().getFontFamily());
+        assertEquals(16, settings.getEbookSettings().getFontSize());
+        assertEquals(0.2f, settings.getEbookSettings().getGap());
+        assertTrue(settings.getEbookSettings().getHyphenate());
+        assertFalse(settings.getEbookSettings().getIsDark());
+        assertTrue(settings.getEbookSettings().getJustify());
+        assertEquals(1.5f, settings.getEbookSettings().getLineHeight());
+        assertEquals(800, settings.getEbookSettings().getMaxBlockSize());
+        assertEquals(2, settings.getEbookSettings().getMaxColumnCount());
+        assertEquals(1200, settings.getEbookSettings().getMaxInlineSize());
+        assertEquals("light", settings.getEbookSettings().getTheme());
     }
 
     @Test
     void getBookViewerSetting_unsupportedType_throwsException() {
         BookEntity entity = new BookEntity();
         entity.setId(5L);
-        entity.setBookType(null);
-        when(bookRepository.findById(5L)).thenReturn(Optional.of(entity));
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(null);
+        entity.setBookFiles(List.of(primaryFile));
+        when(bookRepository.findByIdWithBookFiles(5L)).thenReturn(Optional.of(entity));
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         assertThrows(APIException.class, () -> bookService.getBookViewerSetting(5L));
     }
@@ -321,20 +354,24 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(11L);
         LibraryEntity library = new LibraryEntity();
+        library.setId(42L);
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        libPath.setPath("/tmp");
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
+        entity.setLibraryPath(libPath);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setFileSubPath("");
+        primaryFile.setFileName("bookfile.txt");
+        entity.setBookFiles(List.of(primaryFile));
+
         Path filePath = Paths.get("/tmp/bookfile.txt");
         Files.createDirectories(filePath.getParent());
         Files.write(filePath, "abc".getBytes());
 
-        when(bookQueryService.findAllWithMetadataByIds(Set.of(11L))).thenReturn(List.of(entity));
         doNothing().when(bookRepository).deleteAll(anyList());
-        BookEntity spyEntity = spy(entity);
-        doReturn(filePath).when(spyEntity).getFullFilePath();
-
-        when(bookQueryService.findAllWithMetadataByIds(Set.of(11L))).thenReturn(List.of(spyEntity));
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(11L))).thenReturn(List.of(entity));
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(11L)).getBody();
 
@@ -349,15 +386,19 @@ class BookServiceTest {
         BookEntity entity = new BookEntity();
         entity.setId(13L);
         LibraryEntity library = new LibraryEntity();
+        library.setId(42L);
         LibraryPathEntity libPath = new LibraryPathEntity();
-        libPath.setPath("/tmp/library");
+        libPath.setPath("/tmp");
         library.setLibraryPaths(List.of(libPath));
         entity.setLibrary(library);
+        entity.setLibraryPath(libPath);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setFileSubPath("");
+        primaryFile.setFileName("nonexistentfile.txt");
+        entity.setBookFiles(List.of(primaryFile));
 
-        BookEntity spyEntity = spy(entity);
-        doReturn(Paths.get("/tmp/nonexistentfile.txt")).when(spyEntity).getFullFilePath();
-
-        when(bookQueryService.findAllWithMetadataByIds(Set.of(13L))).thenReturn(List.of(spyEntity));
+        when(bookQueryService.findAllWithMetadataByIds(Set.of(13L))).thenReturn(List.of(entity));
         doNothing().when(bookRepository).deleteAll(anyList());
 
         BookDeletionResponse response = bookService.deleteBooks(Set.of(13L)).getBody();

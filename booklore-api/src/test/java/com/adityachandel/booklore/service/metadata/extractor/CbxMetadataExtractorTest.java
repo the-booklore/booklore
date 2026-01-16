@@ -173,6 +173,30 @@ class CbxMetadataExtractorTest {
         assertEquals("Some Book Title", md.getTitle());
     }
 
+    @Test
+    void extractMetadata_fromCbz_withCbrExtension_shouldWork() throws Exception {
+        String xml = "<ComicInfo><Title>Mismatched Extension</Title></ComicInfo>";
+
+        File cbzAsCbr = createCbz("mismatched.cbr", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbzAsCbr);
+        assertEquals("Mismatched Extension", md.getTitle());
+    }
+
+    @Test
+    void extractCover_fromCbz_withCbrExtension_shouldWork() throws Exception {
+        byte[] img = createTestImage(Color.RED);
+
+        File cbzAsCbr = createCbz("mismatched_cover.cbr", new LinkedHashMap<>() {{
+            put("cover.jpg", img);
+        }});
+
+        byte[] cover = extractor.extractCover(cbzAsCbr);
+        assertArrayEquals(img, cover);
+    }
+
     // ---------- helpers ----------
 
     private File createCbz(String name, Map<String, byte[]> entries) throws IOException {

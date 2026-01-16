@@ -6,4 +6,7 @@ export interface Shelf {
   icon: string;
   iconType?: 'PRIME_NG' | 'CUSTOM_SVG';
   sort?: SortOption;
+  publicShelf?: boolean;
+  userId?: number;
+  bookCount?: number;
 }

@@ -45,10 +45,10 @@ public class PopulateFileHashesMigration implements Migration {
 
             try {
                 String hash = FileFingerprint.generateHash(path);
-                if (book.getInitialHash() == null) {
-                    book.setInitialHash(hash);
+                if (book.getPrimaryBookFile().getInitialHash() == null) {
+                    book.getPrimaryBookFile().setInitialHash(hash);
                 }
-                book.setCurrentHash(hash);
+                book.getPrimaryBookFile().setCurrentHash(hash);
                 updated++;
             } catch (Exception e) {
                 log.error("Failed to compute hash for file: {}", path, e);

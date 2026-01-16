@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -68,8 +69,11 @@ class EpubMetadataWriterTest {
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setPath(tempDir.toString());
         bookEntity.setLibraryPath(libraryPath);
-        bookEntity.setFileSubPath("");
-        bookEntity.setFileName("test.epub");
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        bookEntity.setBookFiles(Collections.singletonList(primaryFile));
+        bookEntity.getPrimaryBookFile().setFileSubPath("");
+        bookEntity.getPrimaryBookFile().setFileName("test.epub");
     }
 
     @Nested
@@ -139,6 +143,53 @@ class EpubMetadataWriterTest {
             );
 
             assertDoesNotThrow(() -> writer.replaceCoverImageFromUpload(bookEntity, coverFile));
+        }
+    }
+
+    @Nested
+    @DisplayName("Whitespace Tests")
+    class WhitespaceTests {
+        @Test
+        @DisplayName("Should not add extra whitespace lines on repeated saves")
+        void saveMetadataToFile_repeatedSaves_shouldNotInflateWhitespace() throws IOException {
+            String initialOpfContent = """
+                    <?xml version="1.0" encoding="UTF-8"?>
+                    <package xmlns="http://www.idpf.org/2007/opf" version="3.0">
+                        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+                            <dc:title>Original Title</dc:title>
+                            <dc:creator>Original Author</dc:creator>
+                        </metadata>
+                    </package>""";
+
+            File epubFile = createEpubWithOpf(initialOpfContent, "test-whitespace-" + System.nanoTime() + ".epub");
+
+            BookMetadataEntity newMeta = new BookMetadataEntity();
+            newMeta.setTitle("Updated Title");
+            AuthorEntity author = new AuthorEntity();
+            author.setName("Updated Author");
+            newMeta.setAuthors(Collections.singleton(author));
+
+            writer.saveMetadataToFile(epubFile, newMeta, null, new MetadataClearFlags());
+            String contentAfterFirstSave = readOpfContent(epubFile);
+
+            newMeta.setTitle("Updated Title 2"); // Change title to force write
+            writer.saveMetadataToFile(epubFile, newMeta, null, new MetadataClearFlags());
+            String contentAfterSecondSave = readOpfContent(epubFile);
+
+            long lines1 = contentAfterFirstSave.lines().count();
+            long lines2 = contentAfterSecondSave.lines().count();
+
+            assertTrue(Math.abs(lines2 - lines1) <= 2, "Line count should be stable");
+            assertTrue(!contentAfterSecondSave.contains("\n\n"), "Should not contain double newlines");
+        }
+    }
+
+    private String readOpfContent(File epubFile) throws IOException {
+        try (ZipFile zf = new ZipFile(epubFile)) {
+            ZipEntry ze = zf.getEntry("OEBPS/content.opf");
+            try (InputStream is = zf.getInputStream(ze)) {
+                return new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            }
         }
     }
 

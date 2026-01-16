@@ -67,17 +67,17 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             // Note: Catching OOM is generally discouraged, but for batch processing
             // of potentially large/corrupted PDFs, we prefer graceful degradation
             // over crashing the entire service.
-            log.error("Out of memory (heap space exhausted) while generating cover for '{}'. Skipping cover generation.", bookEntity.getFileName());
+            log.error("Out of memory (heap space exhausted) while generating cover for '{}'. Skipping cover generation.", bookEntity.getPrimaryBookFile().getFileName());
             System.gc(); // Hint to JVM to reclaim memory
             return false;
         } catch (NegativeArraySizeException e) {
             // This can appear on corrupted PDF, or PDF with such large images that the
             // initial memory buffer is already bigger than the entire JVM heap, therefore
             // it leads to NegativeArrayException (basically run out of memory, and overflows)
-            log.warn("Corrupted PDF structure for '{}'. Skipping cover generation.", bookEntity.getFileName());
+            log.warn("Corrupted PDF structure for '{}'. Skipping cover generation.", bookEntity.getPrimaryBookFile().getFileName());
             return false;
         } catch (Exception e) {
-            log.warn("Failed to generate cover for '{}': {}", bookEntity.getFileName(), e.getMessage());
+            log.warn("Failed to generate cover for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
             return false;
         }
     }
@@ -130,6 +130,9 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             if (StringUtils.isNotBlank(extracted.getComicvineId())) {
                 bookEntity.getMetadata().setComicvineId(extracted.getComicvineId());
             }
+            if (StringUtils.isNotBlank(extracted.getRanobedbId())) {
+                bookEntity.getMetadata().setRanobedbId(extracted.getRanobedbId());
+            }
             if (StringUtils.isNotBlank(extracted.getIsbn10())) {
                 bookEntity.getMetadata().setIsbn10(extracted.getIsbn10());
             }
@@ -141,7 +144,7 @@ public class PdfProcessor extends AbstractFileProcessor implements BookFileProce
             }
 
         } catch (Exception e) {
-            log.warn("Failed to extract PDF metadata for '{}': {}", bookEntity.getFileName(), e.getMessage());
+            log.warn("Failed to extract PDF metadata for '{}': {}", bookEntity.getPrimaryBookFile().getFileName(), e.getMessage());
         }
     }
 

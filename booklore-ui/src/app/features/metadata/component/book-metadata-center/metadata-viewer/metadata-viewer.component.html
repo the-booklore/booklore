@@ -154,7 +154,7 @@
               </p-button>
             </div>
 
-            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.googleId) {
+            @if (book?.metadata?.amazonRating || book?.metadata?.goodreadsRating || book?.metadata?.hardcoverRating || book?.metadata?.lubimyczytacRating || book?.metadata?.ranobedbRating || book?.metadata?.googleId) {
               <div class="gradient-divider"></div>
             }
 
@@ -212,6 +212,20 @@
                 >
                   <img src="https://lubimyczytac.pl/favicon.ico" alt="Lubimyczytac" class="rating-favicon"/>
                   <span class="rating-value">{{ getRatingPercent(book.metadata!.lubimyczytacRating) }}%</span>
+                </a>
+              }
+
+              @if (book?.metadata?.ranobedbRating) {
+                <a
+                  class="rating-link"
+                  [href]="'https://ranobedb.org/book/' + (book.metadata?.ranobedbId ?? '')"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  [pTooltip]="getRatingTooltip(book, 'ranobedb')"
+                  tooltipPosition="top"
+                >
+                  <img src="https://www.ranobedb.org/favicon.png" alt="Ranobedb" class="rating-favicon"/>
+                  <span class="rating-value">{{ getRatingPercent(book.metadata!.ranobedbRating) }}%</span>
                 </a>
               }
 
@@ -545,7 +559,7 @@
                 <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF' && book!.bookType !== 'FB2') {
+            @if (book!.bookType !== 'PDF') {
               <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
             }
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>

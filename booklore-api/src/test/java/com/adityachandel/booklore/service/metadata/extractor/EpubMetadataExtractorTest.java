@@ -386,6 +386,19 @@ class EpubMetadataExtractorTest {
                 () -> assertEquals("1234567890", result.getIsbn10())
             );
         }
+
+        @Test
+        @DisplayName("Should extract formatted ISBN-10 as ISBN-10, not ISBN-13")
+        void extractMetadata_withFormattedIsbn10_returnsIsbn10() throws IOException {
+            // "90-206-1280-8" is 13 characters long, causing it to be mistaken for ISBN-13 if formatting isn't stripped
+            File epubFile = createEpubWithIsbn(null, "90-206-1280-8");
+
+            BookMetadata result = extractor.extractMetadata(epubFile);
+
+            assertNotNull(result);
+            assertEquals("90-206-1280-8", result.getIsbn10());
+            assertNull(result.getIsbn13(), "Should not set ISBN-13 for a formatted ISBN-10");
+        }
     }
 
     @Nested

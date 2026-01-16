@@ -259,8 +259,8 @@ export class BookService {
         ? reader === 'ngx'
           ? 'pdf-reader'
           : 'cbx-reader'
-        : book.bookType === 'EPUB'
-          ? 'epub-reader'
+        : book.bookType === 'EPUB' || book.bookType === 'FB2' || book.bookType === 'MOBI' || book.bookType === 'AZW3'
+          ? 'ebook-reader'
           : book.bookType === 'CBX'
             ? 'cbx-reader'
             : null;
@@ -334,7 +334,25 @@ export class BookService {
   uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('additionalFileType', fileType);
+
+    const isBook = fileType === AdditionalFileType.ALTERNATIVE_FORMAT;
+    formData.append('isBook', String(isBook));
+
+    if (isBook) {
+      const lower = (file?.name || '').toLowerCase();
+      const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : '';
+      const bookType = ext === 'pdf'
+        ? 'PDF'
+        : ext === 'epub'
+          ? 'EPUB'
+          : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
+            ? 'CBX'
+            : null;
+
+      if (bookType) {
+        formData.append('bookType', bookType);
+      }
+    }
     if (description) {
       formData.append('description', description);
     }
@@ -378,8 +396,11 @@ export class BookService {
   }
 
   downloadAdditionalFile(book: Book, fileId: number): void {
-    const additionalFile = book.alternativeFormats!.find((f: AdditionalFile) => f.id === fileId);
-    const downloadUrl = `${this.url}/${additionalFile!.id}/files/${fileId}/download`;
+    const additionalFile = [
+      ...(book.alternativeFormats || []),
+      ...(book.supplementaryFiles || [])
+    ].find((f: AdditionalFile) => f.id === fileId);
+    const downloadUrl = `${this.url}/${book!.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
 
@@ -393,9 +414,9 @@ export class BookService {
     return this.bookPatchService.savePdfProgress(bookId, page, percentage);
   }
 
-  saveEpubProgress(bookId: number, cfi: string, percentage: number): Observable<void> {
-    return this.bookPatchService.saveEpubProgress(bookId, cfi, percentage);
-  }
+  /*saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): Observable<void> {
+    return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
+  }*/
 
   saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
     return this.bookPatchService.saveCbxProgress(bookId, page, percentage);

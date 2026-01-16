@@ -3,7 +3,7 @@ import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Book} from '../../model/book.model';
 import {MessageService} from 'primeng/api';
 import {ShelfService} from '../../service/shelf.service';
-import {finalize, Observable} from 'rxjs';
+import {combineLatest, finalize, Observable} from 'rxjs';
 import {BookService} from '../../service/book.service';
 import {map, tap} from 'rxjs/operators';
 import {Shelf} from '../../model/shelf.model';
@@ -14,6 +14,7 @@ import {Checkbox} from 'primeng/checkbox';
 import {FormsModule} from '@angular/forms';
 import {BookDialogHelperService} from '../book-browser/book-dialog-helper.service';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {UserService} from '../../../settings/user-management/user.service';
 import {IconDisplayComponent} from '../../../../shared/components/icon-display/icon-display.component';
 import {IconSelection} from '../../../../shared/service/icon-picker.service';
 
@@ -39,8 +40,18 @@ export class ShelfAssignerComponent implements OnInit {
   private bookService = inject(BookService);
   private bookDialogHelper = inject(BookDialogHelperService);
   private loadingService = inject(LoadingService);
+  private userService = inject(UserService);
 
-  shelfState$: Observable<ShelfState> = this.shelfService.shelfState$;
+  shelfState$: Observable<ShelfState> = combineLatest([
+    this.shelfService.shelfState$,
+    this.userService.userState$
+  ]).pipe(
+    map(([state, userState]) => ({
+      ...state,
+      shelves: state.shelves?.filter(s => s.userId === userState.user?.id) || []
+    }))
+  );
+
   book: Book = this.dynamicDialogConfig.data.book;
   selectedShelves: Shelf[] = [];
   bookIds: Set<number> = this.dynamicDialogConfig.data.bookIds;

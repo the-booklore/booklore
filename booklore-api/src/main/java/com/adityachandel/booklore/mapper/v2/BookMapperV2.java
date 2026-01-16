@@ -5,11 +5,13 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -19,6 +21,7 @@ public interface BookMapperV2 {
     @Mapping(source = "library.id", target = "libraryId")
     @Mapping(source = "library.name", target = "libraryName")
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
+    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
     @Mapping(target = "metadata", qualifiedByName = "mapMetadata")
     Book toDTO(BookEntity bookEntity);
 
@@ -51,6 +54,16 @@ public interface BookMapperV2 {
     default Set<String> mapTags(Set<TagEntity> tags) {
         return tags == null ? Set.of() :
                 tags.stream().map(TagEntity::getName).collect(Collectors.toSet());
+    }
+
+    @Named("mapPrimaryBookType")
+    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
+        if (bookFiles == null || bookFiles.isEmpty()) return null;
+        return bookFiles.stream()
+                .filter(BookFileEntity::isBook)
+                .map(BookFileEntity::getBookType)
+                .findFirst()
+                .orElse(null);
     }
 
     @Named("mapLibraryPathIdOnly")

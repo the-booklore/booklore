@@ -1,0 +1,205 @@
+<div class="dialog-overlay" (click)="close.emit()">
+  <div class="dialog" (click)="$event.stopPropagation()">
+    <div class="tabs-row">
+      <div class="tabs">
+        <button
+          class="tab"
+          [class.active]="activeTab === 'theme'"
+          (click)="activeTab = 'theme'">
+          Theme
+        </button>
+        <button
+          class="tab"
+          [class.active]="activeTab === 'typography'"
+          (click)="activeTab = 'typography'">
+          Typography
+        </button>
+        <button
+          class="tab"
+          [class.active]="activeTab === 'layout'"
+          (click)="activeTab = 'layout'">
+          Layout
+        </button>
+      </div>
+      <button class="close-btn" (click)="close.emit()">✕</button>
+    </div>
+
+    <div class="dialog-body">
+      @if (activeTab === 'theme') {
+        <div class="tab-content">
+          <div class="section-header dark-mode-header">
+            Dark Mode
+            <span class="mode-switch-wrapper">
+              <span class="mode-icon sun" [class.active]="!state.isDark">☀️</span>
+              <button class="switch" [class.active]="state.isDark" (click)="toggleDarkMode()">
+                <span class="slider"></span>
+              </button>
+              <span class="mode-icon moon" [class.active]="state.isDark">🌙</span>
+            </span>
+          </div>
+
+          <div class="section-header">Theme Colors</div>
+          <div class="theme-grid">
+            @for (theme of themes; track theme.name) {
+              <label class="theme-option">
+                <input
+                  type="radio"
+                  name="theme"
+                  [value]="theme.name"
+                  [checked]="state.theme.name === theme.name"
+                  (change)="onThemeChange(theme.name)">
+                <div class="theme-card">
+                  <div class="theme-colors">
+                    <span class="color-swatch" [style.background-color]="state.isDark ? theme.dark.bg : theme.light.bg"></span>
+                    <span class="color-swatch" [style.background-color]="state.isDark ? theme.dark.fg : theme.light.fg"></span>
+                  </div>
+                  <span class="theme-name">{{ theme.label }}</span>
+                </div>
+              </label>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'typography') {
+        <div class="tab-content">
+
+          <div class="section-header">Font Settings</div>
+          <div class="control">
+            <label>Font Size</label>
+            <div class="control-right">
+              <div class="stepper">
+                <button (click)="decreaseFontSize()">−</button>
+                <span>{{ state.fontSize }}</span>
+                <button (click)="increaseFontSize()">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="control">
+            <label>Line Height</label>
+            <div class="control-right">
+              <div class="stepper">
+                <button (click)="decreaseLineHeight()">−</button>
+                <span>{{ state.lineHeight | number:'1.1-1' }}</span>
+                <button (click)="increaseLineHeight()">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header">Font Family</div>
+          <div class="font-grid">
+            @for (font of fonts; track font.value) {
+              <button
+                class="font-option"
+                [class.active]="state.fontFamily === font.value"
+                [style.font-family]="font.value ? getFontFamilyForPreview(font.value) : 'inherit'"
+                (click)="setFontFamily(font.value)">
+                <span class="font-preview">Aa</span>
+                <span class="font-name">{{ font.name }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
+      @if (activeTab === 'layout') {
+        <div class="tab-content">
+          <div class="section-header">Layout</div>
+
+          <div class="control">
+            <label>Reading Flow</label>
+            <div class="control-right">
+              <div class="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    name="flow"
+                    value="paginated"
+                    [checked]="state.flow === 'paginated'"
+                    (change)="setFlow('paginated')"
+                  />
+                  Paginated
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="flow"
+                    value="scrolled"
+                    [checked]="state.flow === 'scrolled'"
+                    (change)="setFlow('scrolled')"
+                  />
+                  Scrolled
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Max Columns</label>
+            <div class="control-right">
+              <div class="stepper">
+                <button (click)="decreaseMaxColumnCount()">−</button>
+                <span>{{ state.maxColumnCount }}</span>
+                <button (click)="increaseMaxColumnCount()">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Column Gap</label>
+            <div class="control-right gap-control">
+              <input
+                #gapInput
+                type="range"
+                min="0"
+                max="0.5"
+                step="0.01"
+                [value]="state.gap"
+                (input)="setGap(gapInput.valueAsNumber)"
+              />
+              <span class="value">{{ (state.gap * 100) | number : '1.0-0' }}%</span>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Max Width</label>
+            <div class="control-right">
+              <div class="stepper">
+                <button (click)="decreaseMaxInlineSize()">−</button>
+                <span>{{ state.maxInlineSize }}</span>
+                <button (click)="increaseMaxInlineSize()">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="control">
+            <label>Max Height</label>
+            <div class="control-right">
+              <div class="stepper">
+                <button (click)="decreaseMaxBlockSize()">−</button>
+                <span>{{ state.maxBlockSize }}</span>
+                <button (click)="increaseMaxBlockSize()">+</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header">Text Options</div>
+
+          <div class="toggle-control">
+            <span>Justify Text</span>
+            <button class="switch" [class.active]="state.justify" (click)="toggleJustify()">
+              <span class="slider"></span>
+            </button>
+          </div>
+
+          <div class="toggle-control">
+            <span>Hyphenate</span>
+            <button class="switch" [class.active]="state.hyphenate" (click)="toggleHyphenate()">
+              <span class="slider"></span>
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</div>

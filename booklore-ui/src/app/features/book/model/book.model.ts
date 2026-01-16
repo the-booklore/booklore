@@ -3,7 +3,7 @@ import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrol
 import {BookReview} from '../components/book-reviews/book-review-service';
 import {ZoomType} from 'ngx-extended-pdf-viewer';
 
-export type BookType = "PDF" | "EPUB" | "CBX" | "FB2";
+export type BookType = "PDF" | "EPUB" | "CBX" | "FB2" | "MOBI" | "AZW3";
 
 export enum AdditionalFileType {
   ALTERNATIVE_FORMAT = 'ALTERNATIVE_FORMAT',
@@ -48,6 +48,7 @@ export interface Book extends FileInfo {
   libraryPath?: { id: number };
   alternativeFormats?: AdditionalFile[];
   supplementaryFiles?: AdditionalFile[];
+
   [key: string]: unknown;
 }
 
@@ -100,10 +101,12 @@ export interface BookMetadata {
   amazonReviewCount?: number | null;
   goodreadsRating?: number | null;
   goodreadsReviewCount?: number | null;
-  hardcoverRating?: number | null;
   hardcoverReviewCount?: number | null;
   lubimyczytacId?: string;
   lubimyczytacRating?: number | null;
+  ranobedbId?: string;
+  ranobedbRating?: number | null;
+  hardcoverRating?: number | null;
   coverUpdatedOn?: string;
   authors?: string[];
   categories?: string[];
@@ -139,6 +142,8 @@ export interface BookMetadata {
   hardcoverReviewCountLocked?: boolean;
   lubimyczytacIdLocked?: boolean;
   lubimyczytacRatingLocked?: boolean;
+  ranobedbIdLocked?: boolean;
+  ranobedbRatingLocked?: boolean;
   coverUpdatedOnLocked?: boolean;
   authorsLocked?: boolean;
   categoriesLocked?: boolean;
@@ -146,6 +151,7 @@ export interface BookMetadata {
   tagsLocked?: boolean;
   coverLocked?: boolean;
   reviewsLocked?: boolean;
+
   [key: string]: unknown;
 }
 
@@ -176,6 +182,8 @@ export interface MetadataClearFlags {
   hardcoverReviewCount?: boolean;
   lubimyczytacId?: boolean;
   lubimyczytacRating?: boolean;
+  ranobedbId?: boolean;
+  ranobedbRating?: boolean;
   authors?: boolean;
   categories?: boolean;
   moods?: boolean;
@@ -204,6 +212,21 @@ export interface EpubViewerSetting {
   customFontId?: number | null;
 }
 
+export interface EbookViewerSetting {
+  lineHeight: number;
+  justify: boolean;
+  hyphenate: boolean;
+  maxColumnCount: number;
+  gap: number;
+  fontSize: number;
+  theme: string
+  maxInlineSize: number;
+  maxBlockSize: number;
+  fontFamily: string | null;
+  isDark: boolean;
+  flow: 'paginated' | 'scrolled';
+}
+
 export interface CbxViewerSetting {
   pageSpread: CbxPageSpread;
   pageViewMode: CbxPageViewMode;
@@ -215,8 +238,10 @@ export interface CbxViewerSetting {
 export interface BookSetting {
   pdfSettings?: PdfViewerSetting;
   epubSettings?: EpubViewerSetting;
+  ebookSettings?: EbookViewerSetting;
   cbxSettings?: CbxViewerSetting;
   newPdfSettings?: NewPdfReaderSetting;
+
   [key: string]: unknown;
 }
 

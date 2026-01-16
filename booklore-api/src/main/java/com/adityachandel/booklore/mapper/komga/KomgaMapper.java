@@ -4,6 +4,7 @@ import com.adityachandel.booklore.context.KomgaCleanContext;
 import com.adityachandel.booklore.model.dto.MagicShelf;
 import com.adityachandel.booklore.model.dto.komga.*;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -35,6 +36,7 @@ public class KomgaMapper {
 
     public KomgaBookDto toKomgaBookDto(BookEntity book) {
         BookMetadataEntity metadata = book.getMetadata();
+        BookFileEntity bookFile = book.getPrimaryBookFile();
         String seriesId = generateSeriesId(book);
         
         return KomgaBookDto.builder()
@@ -42,7 +44,7 @@ public class KomgaMapper {
                 .seriesId(seriesId)
                 .seriesTitle(getBookSeriesName(book))
                 .libraryId(book.getLibrary().getId().toString())
-                .name(metadata != null ? metadata.getTitle() : book.getFileName())
+                .name(metadata != null ? metadata.getTitle() : bookFile.getFileName())
                 .url("/komga/api/v1/books/" + book.getId())
                 .number(metadata != null && metadata.getSeriesNumber() != null 
                        ? metadata.getSeriesNumber().intValue() 
@@ -50,12 +52,12 @@ public class KomgaMapper {
                 .created(book.getAddedOn())
                 .lastModified(book.getAddedOn())
                 .fileLastModified(book.getAddedOn())
-                .sizeBytes(book.getFileSizeKb() != null ? book.getFileSizeKb() * 1024 : 0L)
-                .size(formatFileSize(book.getFileSizeKb()))
+                .sizeBytes(bookFile.getFileSizeKb() != null ? bookFile.getFileSizeKb() * 1024 : 0L)
+                .size(formatFileSize(bookFile.getFileSizeKb()))
                 .media(toKomgaMediaDto(book, metadata))
                 .metadata(toKomgaBookMetadataDto(metadata))
                 .deleted(book.getDeleted())
-                .fileHash(book.getCurrentHash())
+                .fileHash(bookFile.getCurrentHash())
                 .oneshot(false)
                 .build();
     }
@@ -92,12 +94,13 @@ public class KomgaMapper {
     }
 
     private KomgaMediaDto toKomgaMediaDto(BookEntity book, BookMetadataEntity metadata) {
-        String mediaType = getMediaType(book.getBookType());
+        BookFileEntity bookFile = book.getPrimaryBookFile();
+        String mediaType = getMediaType(bookFile.getBookType());
         Integer pageCount = metadata != null && metadata.getPageCount() != null ? metadata.getPageCount() : 0;
         return KomgaMediaDto.builder()
                 .status("READY")
                 .mediaType(mediaType)
-                .mediaProfile(getMediaProfile(book.getBookType()))
+                .mediaProfile(getMediaProfile(bookFile.getBookType()))
                 .pagesCount(pageCount)
                 .build();
     }
@@ -243,9 +246,10 @@ public class KomgaMapper {
     public String getBookSeriesName(BookEntity book) {
         boolean groupUnknown = appSettingService.getAppSettings().isKomgaGroupUnknown();
         BookMetadataEntity metadata = book.getMetadata();
+        BookFileEntity bookFile = book.getPrimaryBookFile();
         String bookSeriesName = metadata != null && metadata.getSeriesName() != null 
             ? metadata.getSeriesName() 
-                : (groupUnknown ? UNKNOWN_SERIES : (metadata.getTitle() != null ? metadata.getTitle() : book.getFileName() ));
+                : (groupUnknown ? UNKNOWN_SERIES : (metadata.getTitle() != null ? metadata.getTitle() : bookFile.getFileName() ));
         return bookSeriesName;
     }
 
@@ -261,7 +265,7 @@ public class KomgaMapper {
         return libraryId + "-" + seriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
     }
 
-    private String getMediaType(com.adityachandel.booklore.model.enums.BookFileType bookType) {
+    private String getMediaType(BookFileType bookType) {
         if (bookType == null) {
             return "application/zip";
         }
@@ -271,16 +275,20 @@ public class KomgaMapper {
             case EPUB -> "application/epub+zip";
             case CBX -> "application/x-cbz";
             case FB2 -> "application/fictionbook2+zip";
+            case MOBI -> "application/x-mobipocket-ebook";
+            case AZW3 -> "application/vnd.amazon.ebook";
         };
     }
 
-    private String getMediaProfile(com.adityachandel.booklore.model.enums.BookFileType bookType) {
+    private String getMediaProfile(BookFileType bookType) {
         if (bookType == null) {
             return "UNKNOWN";
         }
         
         return switch (bookType) {
             case PDF -> "PDF";
+            case MOBI -> "EPUB";
+            case AZW3 -> "EPUB";
             case EPUB -> "EPUB";
             case CBX -> "DIVINA"; // DIVINA is for comic books
             case FB2 -> "DIVINA";
