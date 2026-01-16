@@ -61,14 +61,14 @@ public class MobiProcessor extends AbstractFileProcessor implements BookFileProc
             byte[] coverData = mobiMetadataExtractor.extractCover(mobiFile);
 
             if (coverData == null || coverData.length == 0) {
-                log.warn("No cover image found in MOBI '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in MOBI '{}'", bookEntity.getPrimaryBookFile().getFileName());
                 return false;
             }
 
             return saveCoverImage(coverData, bookEntity.getId());
 
         } catch (Exception e) {
-            log.error("Error generating cover for MOBI '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for MOBI '{}': {}", bookEntity.getPrimaryBookFile(), e.getMessage(), e);
             return false;
         }
     }

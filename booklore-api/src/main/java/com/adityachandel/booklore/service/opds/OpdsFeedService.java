@@ -675,9 +675,9 @@ public class OpdsFeedService {
     private Set<Long> parseShelfIds(HttpServletRequest request) {
         String shelfIdParam = request.getParameter("shelfId");
         String shelfIdsParam = request.getParameter("shelfIds");
-        
+
         Set<Long> shelfIds = new HashSet<>();
-        
+
         // Support both single shelfId and comma-separated shelfIds
         if (shelfIdParam != null && !shelfIdParam.isBlank()) {
             try {
@@ -686,7 +686,7 @@ public class OpdsFeedService {
                 log.warn("Invalid shelfId parameter: {}", shelfIdParam);
             }
         }
-        
+
         if (shelfIdsParam != null && !shelfIdsParam.isBlank()) {
             for (String id : shelfIdsParam.split(",")) {
                 try {
@@ -696,7 +696,7 @@ public class OpdsFeedService {
                 }
             }
         }
-        
+
         return shelfIds.isEmpty() ? null : shelfIds;
     }
 

@@ -61,14 +61,14 @@ public class Azw3Processor extends AbstractFileProcessor implements BookFileProc
             byte[] coverData = azw3MetadataExtractor.extractCover(azw3File);
 
             if (coverData == null || coverData.length == 0) {
-                log.warn("No cover image found in AZW3 '{}'", bookEntity.getFileName());
+                log.warn("No cover image found in AZW3 '{}'", bookEntity.getPrimaryBookFile());
                 return false;
             }
 
             return saveCoverImage(coverData, bookEntity.getId());
 
         } catch (Exception e) {
-            log.error("Error generating cover for AZW3 '{}': {}", bookEntity.getFileName(), e.getMessage(), e);
+            log.error("Error generating cover for AZW3 '{}': {}", bookEntity.getPrimaryBookFile(), e.getMessage(), e);
             return false;
         }
     }

@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -38,7 +39,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(org.mockito.junit.jupiter.MockitoExtension.class)
+@ExtendWith(MockitoExtension.class)
 class BookServiceTest {
 
     @Mock
@@ -165,8 +166,11 @@ class BookServiceTest {
     void getBookViewerSetting_epub_returnsEpubSettings() {
         BookEntity entity = new BookEntity();
         entity.setId(4L);
-        entity.getPrimaryBookFile().setBookType(BookFileType.EPUB);
-        when(bookRepository.findById(4L)).thenReturn(Optional.of(entity));
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        entity.setBookFiles(List.of(primaryFile));
+        when(bookRepository.findByIdWithBookFiles(4L)).thenReturn(Optional.of(entity));
         EbookViewerPreferenceEntity epubPref = new EbookViewerPreferenceEntity();
         epubPref.setFontFamily("Arial");
         epubPref.setFontSize(16);
