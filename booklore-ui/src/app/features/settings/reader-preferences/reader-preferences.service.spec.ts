@@ -78,7 +78,8 @@ const mockUser: User = {
       global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
       overrides: []
     },
-    koReaderEnabled: false
+    koReaderEnabled: false,
+    autoSaveMetadata: false
   }
 };
 

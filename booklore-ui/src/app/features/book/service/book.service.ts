@@ -334,7 +334,25 @@ export class BookService {
   uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('additionalFileType', fileType);
+
+    const isBook = fileType === AdditionalFileType.ALTERNATIVE_FORMAT;
+    formData.append('isBook', String(isBook));
+
+    if (isBook) {
+      const lower = (file?.name || '').toLowerCase();
+      const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : '';
+      const bookType = ext === 'pdf'
+        ? 'PDF'
+        : ext === 'epub'
+          ? 'EPUB'
+          : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
+            ? 'CBX'
+            : null;
+
+      if (bookType) {
+        formData.append('bookType', bookType);
+      }
+    }
     if (description) {
       formData.append('description', description);
     }
@@ -378,8 +396,11 @@ export class BookService {
   }
 
   downloadAdditionalFile(book: Book, fileId: number): void {
-    const additionalFile = book.alternativeFormats!.find((f: AdditionalFile) => f.id === fileId);
-    const downloadUrl = `${this.url}/${additionalFile!.id}/files/${fileId}/download`;
+    const additionalFile = [
+      ...(book.alternativeFormats || []),
+      ...(book.supplementaryFiles || [])
+    ].find((f: AdditionalFile) => f.id === fileId);
+    const downloadUrl = `${this.url}/${book!.id}/files/${fileId}/download`;
     this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
 

@@ -1,11 +1,10 @@
 package com.adityachandel.booklore.service;
 
 import com.adityachandel.booklore.mapper.AdditionalFileMapper;
-import com.adityachandel.booklore.model.dto.AdditionalFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.dto.BookFile;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.service.file.AdditionalFileService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
@@ -51,8 +50,8 @@ class AdditionalFileServiceTest {
     @TempDir
     Path tempDir;
 
-    private BookAdditionalFileEntity fileEntity;
-    private AdditionalFile additionalFile;
+    private BookFileEntity fileEntity;
+    private BookFile additionalFile;
     private BookEntity bookEntity;
 
     @BeforeEach
@@ -68,26 +67,26 @@ class AdditionalFileServiceTest {
         bookEntity.setId(100L);
         bookEntity.setLibraryPath(libraryPathEntity);
 
-        fileEntity = new BookAdditionalFileEntity();
+        fileEntity = new BookFileEntity();
         fileEntity.setId(1L);
         fileEntity.setBook(bookEntity);
         fileEntity.setFileName("test-file.pdf");
         fileEntity.setFileSubPath(".");
-        fileEntity.setAdditionalFileType(AdditionalFileType.ALTERNATIVE_FORMAT);
+        fileEntity.setBookFormat(true);
 
-        additionalFile = mock(AdditionalFile.class);
+        additionalFile = mock(BookFile.class);
     }
 
     @Test
     void getAdditionalFilesByBookId_WhenFilesExist_ShouldReturnMappedFiles() {
         Long bookId = 100L;
-        List<BookAdditionalFileEntity> entities = List.of(fileEntity);
-        List<AdditionalFile> expectedFiles = List.of(additionalFile);
+        List<BookFileEntity> entities = List.of(fileEntity);
+        List<BookFile> expectedFiles = List.of(additionalFile);
 
         when(additionalFileRepository.findByBookId(bookId)).thenReturn(entities);
         when(additionalFileMapper.toAdditionalFiles(entities)).thenReturn(expectedFiles);
 
-        List<AdditionalFile> result = additionalFileService.getAdditionalFilesByBookId(bookId);
+        List<BookFile> result = additionalFileService.getAdditionalFilesByBookId(bookId);
 
         assertEquals(expectedFiles, result);
         verify(additionalFileRepository).findByBookId(bookId);
@@ -97,13 +96,13 @@ class AdditionalFileServiceTest {
     @Test
     void getAdditionalFilesByBookId_WhenNoFilesExist_ShouldReturnEmptyList() {
         Long bookId = 100L;
-        List<BookAdditionalFileEntity> entities = Collections.emptyList();
-        List<AdditionalFile> expectedFiles = Collections.emptyList();
+        List<BookFileEntity> entities = Collections.emptyList();
+        List<BookFile> expectedFiles = Collections.emptyList();
 
         when(additionalFileRepository.findByBookId(bookId)).thenReturn(entities);
         when(additionalFileMapper.toAdditionalFiles(entities)).thenReturn(expectedFiles);
 
-        List<AdditionalFile> result = additionalFileService.getAdditionalFilesByBookId(bookId);
+        List<BookFile> result = additionalFileService.getAdditionalFilesByBookId(bookId);
 
         assertTrue(result.isEmpty());
         verify(additionalFileRepository).findByBookId(bookId);
@@ -113,34 +112,34 @@ class AdditionalFileServiceTest {
     @Test
     void getAdditionalFilesByBookIdAndType_WhenFilesExist_ShouldReturnMappedFiles() {
         Long bookId = 100L;
-        AdditionalFileType type = AdditionalFileType.ALTERNATIVE_FORMAT;
-        List<BookAdditionalFileEntity> entities = List.of(fileEntity);
-        List<AdditionalFile> expectedFiles = List.of(additionalFile);
+        boolean isBook = true;
+        List<BookFileEntity> entities = List.of(fileEntity);
+        List<BookFile> expectedFiles = List.of(additionalFile);
 
-        when(additionalFileRepository.findByBookIdAndAdditionalFileType(bookId, type)).thenReturn(entities);
+        when(additionalFileRepository.findByBookIdAndIsBookFormat(bookId, isBook)).thenReturn(entities);
         when(additionalFileMapper.toAdditionalFiles(entities)).thenReturn(expectedFiles);
 
-        List<AdditionalFile> result = additionalFileService.getAdditionalFilesByBookIdAndType(bookId, type);
+        List<BookFile> result = additionalFileService.getAdditionalFilesByBookIdAndIsBook(bookId, isBook);
 
         assertEquals(expectedFiles, result);
-        verify(additionalFileRepository).findByBookIdAndAdditionalFileType(bookId, type);
+        verify(additionalFileRepository).findByBookIdAndIsBookFormat(bookId, isBook);
         verify(additionalFileMapper).toAdditionalFiles(entities);
     }
 
     @Test
     void getAdditionalFilesByBookIdAndType_WhenNoFilesExist_ShouldReturnEmptyList() {
         Long bookId = 100L;
-        AdditionalFileType type = AdditionalFileType.SUPPLEMENTARY;
-        List<BookAdditionalFileEntity> entities = Collections.emptyList();
-        List<AdditionalFile> expectedFiles = Collections.emptyList();
+        boolean isBook = false;
+        List<BookFileEntity> entities = Collections.emptyList();
+        List<BookFile> expectedFiles = Collections.emptyList();
 
-        when(additionalFileRepository.findByBookIdAndAdditionalFileType(bookId, type)).thenReturn(entities);
+        when(additionalFileRepository.findByBookIdAndIsBookFormat(bookId, isBook)).thenReturn(entities);
         when(additionalFileMapper.toAdditionalFiles(entities)).thenReturn(expectedFiles);
 
-        List<AdditionalFile> result = additionalFileService.getAdditionalFilesByBookIdAndType(bookId, type);
+        List<BookFile> result = additionalFileService.getAdditionalFilesByBookIdAndIsBook(bookId, isBook);
 
         assertTrue(result.isEmpty());
-        verify(additionalFileRepository).findByBookIdAndAdditionalFileType(bookId, type);
+        verify(additionalFileRepository).findByBookIdAndIsBookFormat(bookId, isBook);
         verify(additionalFileMapper).toAdditionalFiles(entities);
     }
 
@@ -201,7 +200,7 @@ class AdditionalFileServiceTest {
     @Test
     void deleteAdditionalFile_WhenEntityRelationshipsMissing_ShouldThrowIllegalStateException() {
         Long fileId = 1L;
-        BookAdditionalFileEntity invalidEntity = new BookAdditionalFileEntity();
+        BookFileEntity invalidEntity = new BookFileEntity();
         invalidEntity.setId(fileId);
 
         when(additionalFileRepository.findById(fileId)).thenReturn(Optional.of(invalidEntity));
@@ -232,7 +231,7 @@ class AdditionalFileServiceTest {
     void downloadAdditionalFile_WhenPhysicalFileNotExists_ShouldReturnNotFound() throws IOException {
         Long fileId = 1L;
 
-        BookAdditionalFileEntity entityWithNonExistentFile = new BookAdditionalFileEntity();
+        BookFileEntity entityWithNonExistentFile = new BookFileEntity();
         entityWithNonExistentFile.setId(fileId);
         entityWithNonExistentFile.setBook(bookEntity);
         entityWithNonExistentFile.setFileName("non-existent.pdf");
@@ -277,7 +276,7 @@ class AdditionalFileServiceTest {
     @Test
     void downloadAdditionalFile_WhenEntityRelationshipsMissing_ShouldThrowIllegalStateException() {
         Long fileId = 1L;
-        BookAdditionalFileEntity invalidEntity = new BookAdditionalFileEntity();
+        BookFileEntity invalidEntity = new BookFileEntity();
         invalidEntity.setId(fileId);
 
         when(additionalFileRepository.findById(fileId)).thenReturn(Optional.of(invalidEntity));

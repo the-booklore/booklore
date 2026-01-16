@@ -38,6 +38,6 @@ public class Book {
     private String readStatus;
     private Instant dateFinished;
     private LibraryPath libraryPath;
-    private List<AdditionalFile> alternativeFormats;
-    private List<AdditionalFile> supplementaryFiles;
+    private List<BookFile> alternativeFormats;
+    private List<BookFile> supplementaryFiles;
 }

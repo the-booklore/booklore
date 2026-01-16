@@ -107,14 +107,13 @@ public class BookService {
 
     public Book getBook(long bookId, boolean withDescription) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
         UserBookProgressEntity userProgress = userBookProgressRepository.findByUserIdAndBookId(user.getId(), bookId).orElse(new UserBookProgressEntity());
 
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
-
         BookProgressUtil.enrichBookWithProgress(book, userProgress);
         book.setFilePath(FileUtils.getBookFullPath(bookEntity));
 
@@ -127,12 +126,12 @@ public class BookService {
 
 
     public BookViewerSettings getBookViewerSetting(long bookId) {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        BookEntity bookEntity = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         BookLoreUser user = authenticationService.getAuthenticatedUser();
 
         BookViewerSettings.BookViewerSettingsBuilder settingsBuilder = BookViewerSettings.builder();
 
-        BookFileType bookType = bookEntity.getBookType();
+        BookFileType bookType = bookEntity.getPrimaryBookFile().getBookType();
         if (bookType == BookFileType.EPUB || bookType == BookFileType.FB2
                 || bookType == BookFileType.MOBI
                 || bookType == BookFileType.AZW3) {
@@ -251,30 +250,32 @@ public class BookService {
         List<BookEntity> books = bookQueryService.findAllWithMetadataByIds(ids);
         List<Long> failedFileDeletions = new ArrayList<>();
         for (BookEntity book : books) {
-            Path fullFilePath = book.getFullFilePath();
-            try {
-                if (Files.exists(fullFilePath)) {
-                    try {
-                        monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
-                    } catch (Exception ex) {
-                        log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
+            List<Path> fullFilePaths = book.getFullFilePaths();
+            for (Path fullFilePath : fullFilePaths) {
+                try {
+                    if (Files.exists(fullFilePath)) {
+                        try {
+                            monitoringRegistrationService.unregisterSpecificPath(fullFilePath.getParent());
+                        } catch (Exception ex) {
+                            log.warn("Failed to unregister monitoring for path: {}", fullFilePath.getParent(), ex);
+                        }
+                        Files.delete(fullFilePath);
+                        log.info("Deleted book file: {}", fullFilePath);
+
+                        Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
+                                .map(LibraryPathEntity::getPath)
+                                .map(Paths::get)
+                                .map(Path::normalize)
+                                .collect(Collectors.toSet());
+
+                        deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
                     }
-                    Files.delete(fullFilePath);
-                    log.info("Deleted book file: {}", fullFilePath);
-
-                    Set<Path> libraryRoots = book.getLibrary().getLibraryPaths().stream()
-                            .map(LibraryPathEntity::getPath)
-                            .map(Paths::get)
-                            .map(Path::normalize)
-                            .collect(Collectors.toSet());
-
-                    deleteEmptyParentDirsUpToLibraryFolders(fullFilePath.getParent(), libraryRoots);
+                } catch (IOException e) {
+                    log.warn("Failed to delete book file: {}", fullFilePath, e);
+                    failedFileDeletions.add(book.getId());
+                } finally {
+                    monitoringRegistrationService.registerSpecificPath(fullFilePath.getParent(), book.getLibrary().getId());
                 }
-            } catch (IOException e) {
-                log.warn("Failed to delete book file: {}", fullFilePath, e);
-                failedFileDeletions.add(book.getId());
-            } finally {
-                monitoringRegistrationService.registerSpecificPath(fullFilePath.getParent(), book.getLibrary().getId());
             }
         }
 

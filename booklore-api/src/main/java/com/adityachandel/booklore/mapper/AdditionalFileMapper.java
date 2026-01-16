@@ -1,7 +1,7 @@
 package com.adityachandel.booklore.mapper;
 
-import com.adityachandel.booklore.model.dto.AdditionalFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.dto.BookFile;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -13,12 +13,13 @@ public interface AdditionalFileMapper {
 
     @Mapping(source = "book.id", target = "bookId")
     @Mapping(source = ".", target = "filePath", qualifiedByName = "mapFilePath")
-    AdditionalFile toAdditionalFile(BookAdditionalFileEntity entity);
+    @Mapping(source = "bookFormat", target = "isBook")
+    BookFile toAdditionalFile(BookFileEntity entity);
 
-    List<AdditionalFile> toAdditionalFiles(List<BookAdditionalFileEntity> entities);
+    List<BookFile> toAdditionalFiles(List<BookFileEntity> entities);
 
     @Named("mapFilePath")
-    default String mapFilePath(BookAdditionalFileEntity entity) {
+    default String mapFilePath(BookFileEntity entity) {
         if (entity == null) return null;
         try {
             return entity.getFullFilePath().toString();

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public enum RuleField {
     @JsonProperty("library")
     LIBRARY,
+    @JsonProperty("shelf")
+    SHELF,
     @JsonProperty("title")
     TITLE,
     @JsonProperty("subtitle")

@@ -2,11 +2,10 @@ package com.adityachandel.booklore.service.library;
 
 import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
-import com.adityachandel.booklore.model.entity.BookAdditionalFileEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -84,20 +83,20 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     private GetOrCreateBookResult getOrCreateBookInDirectory(Path directoryPath, List<LibraryFile> filesInDirectory, LibraryEntity libraryEntity) {
         var existingBook = findExistingBookInDirectory(directoryPath, libraryEntity);
         if (existingBook.isPresent()) {
-            log.debug("Found existing book in directory {}: {}", directoryPath, existingBook.get().getFileName());
+            log.debug("Found existing book in directory {}: {}", directoryPath, existingBook.get().getPrimaryBookFile().getFileName());
             return new GetOrCreateBookResult(existingBook, filesInDirectory);
         }
 
         Optional<BookEntity> parentBook = findBookInParentDirectories(directoryPath, libraryEntity);
         if (parentBook.isPresent()) {
-            log.debug("Found parent book for directory {}: {}", directoryPath, parentBook.get().getFileName());
+            log.debug("Found parent book for directory {}: {}", directoryPath, parentBook.get().getPrimaryBookFile().getFileName());
             return new GetOrCreateBookResult(parentBook, filesInDirectory);
         }
 
         log.debug("No existing book found, creating new book from directory: {}", directoryPath);
         Optional<CreateBookResult> newBook = createNewBookFromDirectory(directoryPath, filesInDirectory, libraryEntity);
         if (newBook.isPresent()) {
-            log.info("Created new book: {}", newBook.get().bookEntity.getFileName());
+            log.info("Created new book: {}", newBook.get().bookEntity.getPrimaryBookFile().getFileName());
             var remainingFiles = filesInDirectory.stream()
                     .filter(file -> !file.equals(newBook.get().libraryFile))
                     .toList();
@@ -140,7 +139,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
             Optional<BookEntity> parentBook =
                     bookRepository.findAllByLibraryPathIdAndFileSubPathStartingWith(
                                     directoryLibraryPathEntity.getId(), parentPath).stream()
-                            .filter(book -> book.getFileSubPath().equals(parentPath))
+                            .filter(book -> book.getPrimaryBookFile().getFileSubPath().equals(parentPath))
                             .findFirst();
             if (parentBook.isPresent()) {
                 return parentBook;
@@ -172,7 +171,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
 
                 BookEntity bookEntity = bookRepository.getReferenceById(result.getBook().getId());
                 if (bookEntity.getFullFilePath().equals(bookFile.getFullPath())) {
-                    log.info("Successfully created new book: {}", bookEntity.getFileName());
+                    log.info("Successfully created new book: {}", bookEntity.getPrimaryBookFile().getFileName());
                 } else {
                     log.warn("Found duplicate book with different path: {} vs {}", bookEntity.getFullFilePath(), bookFile.getFullPath());
                 }
@@ -205,15 +204,15 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
     private void processAdditionalFiles(BookEntity existingBook, List<LibraryFile> filesInDirectory) {
         for (LibraryFile file : filesInDirectory) {
             Optional<BookFileExtension> extension = BookFileExtension.fromFileName(file.getFileName());
-            AdditionalFileType fileType = extension.isPresent() ?
-                    AdditionalFileType.ALTERNATIVE_FORMAT : AdditionalFileType.SUPPLEMENTARY;
+            boolean isBook = extension.isPresent();
+            BookFileType bookType = extension.map(BookFileExtension::getType).orElse(null);
 
-            createAdditionalFileIfNotExists(existingBook, file, fileType);
+            createAdditionalFileIfNotExists(existingBook, file, isBook, bookType);
         }
     }
 
-    private void createAdditionalFileIfNotExists(BookEntity bookEntity, LibraryFile file, AdditionalFileType fileType) {
-        Optional<BookAdditionalFileEntity> existingFile = bookAdditionalFileRepository
+    private void createAdditionalFileIfNotExists(BookEntity bookEntity, LibraryFile file, boolean isBook, BookFileType bookType) {
+        Optional<BookFileEntity> existingFile = bookAdditionalFileRepository
                 .findByLibraryPath_IdAndFileSubPathAndFileName(
                         file.getLibraryPathEntity().getId(), file.getFileSubPath(), file.getFileName());
 
@@ -223,11 +222,12 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
         }
 
         String hash = FileFingerprint.generateHash(file.getFullPath());
-        BookAdditionalFileEntity additionalFile = BookAdditionalFileEntity.builder()
+        BookFileEntity additionalFile = BookFileEntity.builder()
                 .book(bookEntity)
                 .fileName(file.getFileName())
                 .fileSubPath(file.getFileSubPath())
-                .additionalFileType(fileType)
+                .isBookFormat(isBook)
+                .bookType(bookType)
                 .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
                 .initialHash(hash)
                 .currentHash(hash)
@@ -235,12 +235,12 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
                 .build();
 
         try {
-            log.debug("Creating additional file: {} (type: {})", file.getFileName(), fileType);
+            log.debug("Creating additional file: {} (isBook: {}, type: {})", file.getFileName(), isBook, bookType);
             bookAdditionalFileRepository.save(additionalFile);
 
             log.debug("Successfully created additional file: {}", file.getFileName());
         } catch (Exception e) {
-            bookEntity.getAdditionalFiles().removeIf(a -> a.equals(additionalFile));
+            bookEntity.getBookFiles().removeIf(a -> a.equals(additionalFile));
 
             log.error("Error creating additional file {}: {}", file.getFileName(), e.getMessage(), e);
         }

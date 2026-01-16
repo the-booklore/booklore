@@ -16,7 +16,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -313,7 +315,7 @@ public class OpdsFeedService {
 
     public String generateCatalogFeed(HttpServletRequest request) {
         Long libraryId = parseLongParam(request, "libraryId", null);
-        Long shelfId = parseLongParam(request, "shelfId", null);
+        Set<Long> shelfIds = parseShelfIds(request);
         Long magicShelfId = parseLongParam(request, "magicShelfId", null);
         String query = request.getParameter("q");
         String author = request.getParameter("author");
@@ -332,14 +334,14 @@ public class OpdsFeedService {
         } else if (series != null && !series.isBlank()) {
             booksPage = opdsBookService.getBooksBySeriesName(userId, series, page - 1, size);
         } else {
-            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfId, page - 1, size);
+            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfIds, page - 1, size);
         }
 
         // Apply user's preferred sort order
         booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
-        String feedTitle = determineFeedTitle(libraryId, shelfId, magicShelfId, author, series);
-        String feedId = determineFeedId(libraryId, shelfId, magicShelfId, author, series);
+        String feedTitle = determineFeedTitle(libraryId, shelfIds, magicShelfId, author, series);
+        String feedId = determineFeedId(libraryId, shelfIds, magicShelfId, author, series);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>
@@ -554,12 +556,15 @@ public class OpdsFeedService {
         }
     }
 
-    private String determineFeedTitle(Long libraryId, Long shelfId, Long magicShelfId, String author, String series) {
+    private String determineFeedTitle(Long libraryId, Set<Long> shelfIds, Long magicShelfId, String author, String series) {
         if (magicShelfId != null) {
             return magicShelfBookService.getMagicShelfName(magicShelfId);
         }
-        if (shelfId != null) {
-            return opdsBookService.getShelfName(shelfId);
+        if (shelfIds != null && !shelfIds.isEmpty()) {
+            if (shelfIds.size() == 1) {
+                return opdsBookService.getShelfName(shelfIds.iterator().next());
+            }
+            return "Multiple Shelves";
         }
         if (libraryId != null) {
             return opdsBookService.getLibraryName(libraryId);
@@ -573,12 +578,15 @@ public class OpdsFeedService {
         return "Booklore Catalog";
     }
 
-    private String determineFeedId(Long libraryId, Long shelfId, Long magicShelfId, String author, String series) {
+    private String determineFeedId(Long libraryId, Set<Long> shelfIds, Long magicShelfId, String author, String series) {
         if (magicShelfId != null) {
             return "urn:booklore:magic-shelf:" + magicShelfId;
         }
-        if (shelfId != null) {
-            return "urn:booklore:shelf:" + shelfId;
+        if (shelfIds != null && !shelfIds.isEmpty()) {
+            if (shelfIds.size() == 1) {
+                return "urn:booklore:shelf:" + shelfIds.iterator().next();
+            }
+            return "urn:booklore:shelves:" + String.join(",", shelfIds.stream().map(String::valueOf).sorted().toList());
         }
         if (libraryId != null) {
             return "urn:booklore:library:" + libraryId;
@@ -662,6 +670,34 @@ public class OpdsFeedService {
         } catch (Exception e) {
             return defaultValue;
         }
+    }
+
+    private Set<Long> parseShelfIds(HttpServletRequest request) {
+        String shelfIdParam = request.getParameter("shelfId");
+        String shelfIdsParam = request.getParameter("shelfIds");
+        
+        Set<Long> shelfIds = new HashSet<>();
+        
+        // Support both single shelfId and comma-separated shelfIds
+        if (shelfIdParam != null && !shelfIdParam.isBlank()) {
+            try {
+                shelfIds.add(Long.parseLong(shelfIdParam));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid shelfId parameter: {}", shelfIdParam);
+            }
+        }
+        
+        if (shelfIdsParam != null && !shelfIdsParam.isBlank()) {
+            for (String id : shelfIdsParam.split(",")) {
+                try {
+                    shelfIds.add(Long.parseLong(id.trim()));
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid shelf ID in shelfIds parameter: {}", id);
+                }
+            }
+        }
+        
+        return shelfIds.isEmpty() ? null : shelfIds;
     }
 
     private Long getUserId() {

@@ -6,9 +6,11 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.dto.settings.MetadataPersistenceSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.MoodEntity;
 import com.adityachandel.booklore.model.entity.TagEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.*;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -25,6 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -83,7 +86,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Set.of("Tag1"));
@@ -118,7 +130,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Collections.emptySet());
@@ -149,7 +170,16 @@ class BookMetadataUpdaterTest {
         existingTags.add(TagEntity.builder().name("Tag1").build());
         existingTags.add(TagEntity.builder().name("Tag2").build());
         metadataEntity.setTags(existingTags);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTags(Set.of("Tag3"));
@@ -187,7 +217,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Set.of("Mood1"));
@@ -222,7 +261,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Collections.emptySet());
@@ -252,7 +300,16 @@ class BookMetadataUpdaterTest {
         existingMoods.add(MoodEntity.builder().name("Mood1").build());
         existingMoods.add(MoodEntity.builder().name("Mood2").build());
         metadataEntity.setMoods(existingMoods);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setMoods(Set.of("Mood3"));
@@ -286,7 +343,16 @@ class BookMetadataUpdaterTest {
         BookMetadataEntity metadataEntity = new BookMetadataEntity();
         metadataEntity.setTitle("Old Title");
         metadataEntity.setTitleLocked(false);
+        metadataEntity.setBook(bookEntity);
         bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
 
         BookMetadata newMetadata = new BookMetadata();
         newMetadata.setTitle("New Title");

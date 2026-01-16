@@ -161,6 +161,7 @@ export interface UserSettings {
   tableColumnPreference?: TableColumnPreference[];
   dashboardConfig?: DashboardConfig;
   koReaderEnabled: boolean;
+  autoSaveMetadata: boolean;
 }
 
 export interface User {
