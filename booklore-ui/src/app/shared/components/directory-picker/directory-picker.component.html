@@ -44,6 +44,42 @@
       />
     </div>
 
+    <div class="selection-actions">
+      <p-button
+        label="Select All"
+        icon="pi pi-check-square"
+        severity="secondary"
+        [outlined]="true"
+        size="small"
+        (click)="selectAll()"
+        [disabled]="filteredPaths.length === 0"
+        pTooltip="Select all visible folders"
+        tooltipPosition="bottom"
+      />
+      <p-button
+        label="Deselect All"
+        icon="pi pi-times-circle"
+        severity="secondary"
+        [outlined]="true"
+        size="small"
+        (click)="deselectAll()"
+        [disabled]="selectedFolders.length === 0"
+        pTooltip="Clear all selections"
+        tooltipPosition="bottom"
+      />
+      <p-button
+        label="Select Current"
+        icon="pi pi-folder"
+        severity="info"
+        [outlined]="true"
+        size="small"
+        (click)="selectCurrent()"
+        [disabled]="!selectedProductName || selectedProductName === '/'"
+        pTooltip="Select the current directory"
+        tooltipPosition="bottom"
+      />
+    </div>
+
     @if (selectedFolders.length > 0) {
       <div class="selection-badge">
         <i class="pi pi-check-circle"></i>
