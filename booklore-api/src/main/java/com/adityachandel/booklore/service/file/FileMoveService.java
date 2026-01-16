@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
@@ -31,6 +32,7 @@ public class FileMoveService {
     private static final long EVENT_DRAIN_TIMEOUT_MS = 300;
 
     private final BookRepository bookRepository;
+    private final BookAdditionalFileRepository bookFileRepository;
     private final LibraryRepository libraryRepository;
     private final FileMoveHelper fileMoveHelper;
     private final MonitoringRegistrationService monitoringRegistrationService;
@@ -82,11 +84,13 @@ public class FileMoveService {
         Long targetLibraryId = move.getTargetLibraryId();
         Long targetLibraryPathId = move.getTargetLibraryPathId();
 
-        Path tempPath = null;
-        Path currentFilePath = null;
+        record PlannedMove(Path source, Path temp, Path target) {}
+
+        Map<Long, PlannedMove> plannedMovesByBookFileId = new HashMap<>();
+        Set<Path> sourceParentsToCleanup = new HashSet<>();
 
         try {
-            Optional<BookEntity> optionalBook = bookRepository.findById(bookId);
+            Optional<BookEntity> optionalBook = bookRepository.findByIdWithBookFiles(bookId);
             Optional<LibraryEntity> optionalLibrary = libraryRepository.findById(targetLibraryId);
             if (optionalBook.isEmpty()) {
                 log.warn("Book not found for move operation: bookId={}", bookId);
@@ -108,24 +112,73 @@ public class FileMoveService {
             }
             LibraryPathEntity libraryPathEntity = optionalLibraryPathEntity.get();
 
-            currentFilePath = bookEntity.getFullFilePath();
-            String pattern = fileMoveHelper.getFileNamingPattern(targetLibrary);
-            Path newFilePath = fileMoveHelper.generateNewFilePath(bookEntity, libraryPathEntity, pattern);
-            if (currentFilePath.equals(newFilePath)) {
+            if (bookEntity.getBookFiles() == null || bookEntity.getBookFiles().isEmpty()) {
+                log.warn("Book has no files to move: bookId={}", bookId);
                 return;
             }
 
-            tempPath = fileMoveHelper.moveFileWithBackup(currentFilePath);
+            Path currentPrimaryFilePath = bookEntity.getFullFilePath();
+            String pattern = fileMoveHelper.getFileNamingPattern(targetLibrary);
+            Path newFilePath = fileMoveHelper.generateNewFilePath(bookEntity, libraryPathEntity, pattern);
 
-            String newFileName = newFilePath.getFileName().toString();
+            if (currentPrimaryFilePath.equals(newFilePath)) {
+                return;
+            }
+
             String newFileSubPath = fileMoveHelper.extractSubPath(newFilePath, libraryPathEntity);
-            bookRepository.updateFileAndLibrary(bookEntity.getId(), newFileSubPath, newFileName, targetLibrary.getId(), libraryPathEntity);
+            Path targetParentDir = newFilePath.getParent();
 
-            fileMoveHelper.commitMove(tempPath, newFilePath);
-            tempPath = null;
+            if (targetParentDir == null) {
+                log.warn("Target parent directory could not be determined for move operation: bookId={}", bookId);
+                return;
+            }
 
-            Path libraryRoot = Paths.get(bookEntity.getLibraryPath().getPath()).toAbsolutePath().normalize();
-            fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(currentFilePath.getParent(), Set.of(libraryRoot));
+            for (var bookFile : bookEntity.getBookFiles()) {
+                Path sourcePath = bookFile.getFullFilePath();
+                Path targetPath;
+                if (bookFile.isBook()) {
+                    targetPath = fileMoveHelper.generateNewFilePath(bookEntity, bookFile, libraryPathEntity, pattern);
+                } else {
+                    targetPath = targetParentDir.resolve(bookFile.getFileName());
+                }
+
+                if (sourcePath.equals(targetPath)) {
+                    continue;
+                }
+
+                Path tempPath = fileMoveHelper.moveFileWithBackup(sourcePath);
+                plannedMovesByBookFileId.put(bookFile.getId(), new PlannedMove(sourcePath, tempPath, targetPath));
+                if (sourcePath.getParent() != null) {
+                    sourceParentsToCleanup.add(sourcePath.getParent());
+                }
+            }
+
+            if (plannedMovesByBookFileId.isEmpty()) {
+                return;
+            }
+
+            for (var bookFile : bookEntity.getBookFiles()) {
+                String newFileName;
+                if (bookFile.isBook()) {
+                    Path targetPath = fileMoveHelper.generateNewFilePath(bookEntity, bookFile, libraryPathEntity, pattern);
+                    newFileName = targetPath.getFileName().toString();
+                } else {
+                    newFileName = bookFile.getFileName();
+                }
+                bookFileRepository.updateFileNameAndSubPath(bookFile.getId(), newFileName, newFileSubPath);
+            }
+
+            bookRepository.updateLibrary(bookEntity.getId(), targetLibrary.getId(), libraryPathEntity);
+
+            for (PlannedMove planned : plannedMovesByBookFileId.values()) {
+                fileMoveHelper.commitMove(planned.temp(), planned.target());
+            }
+            plannedMovesByBookFileId.clear();
+
+            Path libraryRoot = Paths.get(libraryPathEntity.getPath()).toAbsolutePath().normalize();
+            for (Path sourceParent : sourceParentsToCleanup) {
+                fileMoveHelper.deleteEmptyParentDirsUpToLibraryFolders(sourceParent, Set.of(libraryRoot));
+            }
 
             entityManager.clear();
 
@@ -136,8 +189,8 @@ public class FileMoveService {
         } catch (Exception e) {
             log.error("Error moving file for book ID {}: {}", bookId, e.getMessage(), e);
         } finally {
-            if (tempPath != null && currentFilePath != null) {
-                fileMoveHelper.rollbackMove(tempPath, currentFilePath);
+            for (PlannedMove planned : plannedMovesByBookFileId.values()) {
+                fileMoveHelper.rollbackMove(planned.temp(), planned.source());
             }
         }
     }

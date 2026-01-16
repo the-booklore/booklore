@@ -39,6 +39,9 @@ public class UserBookProgressEntity {
     @Column(name = "epub_progress", length = 1000)
     private String epubProgress;
 
+    @Column(name = "epub_progress_href", length = 1000)
+    private String epubProgressHref;
+
     @Column(name = "epub_progress_percent")
     private Float epubProgressPercent;
 

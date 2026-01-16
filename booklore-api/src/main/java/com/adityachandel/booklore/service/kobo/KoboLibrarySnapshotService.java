@@ -139,7 +139,7 @@ public class KoboLibrarySnapshotService {
                 .map(book -> {
                     KoboSnapshotBookEntity snapshotBook = mapper.toKoboSnapshotBook(book);
                     snapshotBook.setSnapshot(snapshot);
-                    snapshotBook.setFileHash(book.getCurrentHash());
+                    snapshotBook.setFileHash(book.getPrimaryBookFile().getCurrentHash());
                     snapshotBook.setMetadataUpdatedAt(book.getMetadataUpdatedAt());
                     return snapshotBook;
                 })

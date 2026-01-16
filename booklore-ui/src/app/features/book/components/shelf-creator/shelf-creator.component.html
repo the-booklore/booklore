@@ -88,6 +88,21 @@
         </div>
       }
     </div>
+
+    @if (isAdmin) {
+      <div class="gradient-divider"></div>
+
+      <div class="form-group highlight-group">
+        <label class="form-label">
+          <i class="pi pi-globe label-icon"></i>
+          Visibility
+        </label>
+        <div class="input-wrapper" style="display: flex; align-items: center; gap: 0.5rem;">
+          <p-checkbox [(ngModel)]="isPublic" [binary]="true" inputId="publicShelf"></p-checkbox>
+          <label for="publicShelf" style="cursor: pointer">Make this shelf public (read-only for others)</label>
+        </div>
+      </div>
+    }
   </div>
 
   <div class="dialog-footer">

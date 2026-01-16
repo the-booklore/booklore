@@ -7,6 +7,7 @@ import {catchError} from 'rxjs/operators';
 import {of} from 'rxjs';
 import {Select} from 'primeng/select';
 import {FormsModule} from '@angular/forms';
+import {Tooltip} from 'primeng/tooltip';
 import {
   addWeeks,
   endOfISOWeek,
@@ -51,7 +52,7 @@ interface DayTimeline {
 @Component({
   selector: 'app-reading-session-timeline',
   standalone: true,
-  imports: [CommonModule, Select, FormsModule],
+  imports: [CommonModule, Select, FormsModule, Tooltip],
   templateUrl: './reading-session-timeline.component.html',
   styleUrls: ['./reading-session-timeline.component.scss']
 })
@@ -340,9 +341,9 @@ export class ReadingSessionTimelineComponent implements OnInit {
     const secs = totalSeconds % 60;
 
     const parts: string[] = [];
-    if (hours) parts.push(`${hours}H`);
-    if (mins || hours) parts.push(`${mins}M`);
-    parts.push(`${secs}S`);
+    if (hours) parts.push(`${hours}h`);
+    if (mins || hours) parts.push(`${mins}m`);
+    parts.push(`${secs}s`);
 
     return parts.join(' ');
   }
@@ -364,5 +365,41 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
   public getCoverUrl(bookId: number): string {
     return this.urlHelperService.getThumbnailUrl1(bookId);
+  }
+
+  public getTooltipContent(session: TimelineSession): string {
+    return `
+      <div class="session-tooltip-content">
+        <div class="session-tooltip-cover">
+          <img src="${this.getCoverUrl(session.bookId)}" alt="Book Cover">
+        </div>
+        <div class="session-tooltip-details">
+          <div class="session-tooltip-header">
+            <i class="pi pi-book"></i>
+            <span class="session-tooltip-title">${session.bookTitle || 'Reading Session'}</span>
+          </div>
+          <div class="session-tooltip-divider"></div>
+          <div class="session-tooltip-body">
+            <div class="session-tooltip-row">
+              <i class="pi pi-clock"></i>
+              <span class="session-tooltip-label">Time:</span>
+              <span class="session-tooltip-value">
+                ${this.formatTime(session.startHour, session.startMinute)} - ${this.formatTime(session.endHour, session.endMinute)}
+              </span>
+            </div>
+            <div class="session-tooltip-row">
+              <i class="pi pi-hourglass"></i>
+              <span class="session-tooltip-label">Duration:</span>
+              <span class="session-tooltip-value">${this.formatDuration(session.duration)}</span>
+            </div>
+            <div class="session-tooltip-row">
+              <i class="pi pi-file"></i>
+              <span class="session-tooltip-label">Format:</span>
+              <span class="session-tooltip-value">${session.bookType || 'Unknown'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
   }
 }

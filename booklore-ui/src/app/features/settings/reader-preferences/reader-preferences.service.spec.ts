@@ -44,6 +44,20 @@ const mockUser: User = {
     perBookSetting: {pdf: '', epub: '', cbx: ''},
     pdfReaderSetting: {pageSpread: 'off', pageZoom: '', showSidebar: false},
     epubReaderSetting: {theme: '', font: '', fontSize: 1, flow: '', spread: '', lineHeight: 1, margin: 1, letterSpacing: 1},
+    ebookReaderSetting: {
+      lineHeight: 1,
+      justify: false,
+      hyphenate: false,
+      maxColumnCount: 1,
+      gap: 0,
+      fontSize: 1,
+      theme: '',
+      maxInlineSize: 0,
+      maxBlockSize: 0,
+      fontFamily: '',
+      isDark: false,
+      flow: 'paginated'
+    },
     cbxReaderSetting: {
       pageSpread: CbxPageSpread.EVEN,
       pageViewMode: CbxPageViewMode.SINGLE_PAGE,
@@ -61,10 +75,11 @@ const mockUser: User = {
     metadataCenterViewMode: 'route',
     enableSeriesView: true,
     entityViewPreferences: {
-      global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false},
+      global: {sortKey: '', sortDir: 'ASC', view: 'GRID', coverSize: 1, seriesCollapsed: false, overlayBookType: false},
       overrides: []
     },
-    koReaderEnabled: false
+    koReaderEnabled: false,
+    autoSaveMetadata: false
   }
 };
 

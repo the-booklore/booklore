@@ -68,12 +68,10 @@ describe('BookPatchService', () => {
 
   it('should save EPUB progress', () => {
     httpMock.post.mockReturnValue(of(void 0));
-    service.saveEpubProgress(2, 'cfi123', 0.8).subscribe(result => {
-      expect(result).toBeUndefined();
-      expect(httpMock.post).toHaveBeenCalledWith(expect.stringContaining('/progress'), {
-        bookId: 2,
-        epubProgress: {cfi: 'cfi123', percentage: 0.8}
-      });
+    service.saveEpubProgress(2, 'cfi123', 'href123', 0.8);
+    expect(httpMock.post).toHaveBeenCalledWith(expect.stringContaining('/progress'), {
+      bookId: 2,
+      epubProgress: {cfi: 'cfi123', href: 'href123', percentage: 0.8}
     });
   });
 

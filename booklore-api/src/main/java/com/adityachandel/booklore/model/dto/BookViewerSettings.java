@@ -8,6 +8,6 @@ import lombok.Data;
 public class BookViewerSettings {
     private PdfViewerPreferences pdfSettings;
     private NewPdfViewerPreferences newPdfSettings;
-    private EpubViewerPreferences epubSettings;
+    private EbookViewerPreferences ebookSettings;
     private CbxViewerPreferences cbxSettings;
 }

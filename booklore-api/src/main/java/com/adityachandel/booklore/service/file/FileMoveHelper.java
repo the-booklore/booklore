@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.file;
 
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -152,6 +153,15 @@ public class FileMoveHelper {
 
     public Path generateNewFilePath(BookEntity book, LibraryPathEntity libraryPathEntity, String pattern) {
         String newRelativePathStr = PathPatternResolver.resolvePattern(book, pattern);
+        if (newRelativePathStr.startsWith("/") || newRelativePathStr.startsWith("\\")) {
+            newRelativePathStr = newRelativePathStr.substring(1);
+        }
+        String path = libraryPathEntity.getPath();
+        return Paths.get(path, newRelativePathStr);
+    }
+
+    public Path generateNewFilePath(BookEntity book, BookFileEntity bookFile, LibraryPathEntity libraryPathEntity, String pattern) {
+        String newRelativePathStr = PathPatternResolver.resolvePattern(book, bookFile, pattern);
         if (newRelativePathStr.startsWith("/") || newRelativePathStr.startsWith("\\")) {
             newRelativePathStr = newRelativePathStr.substring(1);
         }

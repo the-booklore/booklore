@@ -46,7 +46,7 @@ public class ComicvineBookParser implements BookParser {
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern SPECIAL_ISSUE_PATTERN = Pattern.compile("(annual|special|one-?shot)\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\(?(\\d{4})\\)?");
-    private static final long MIN_REQUEST_INTERVAL_MS = 1000;
+    private static final long MIN_REQUEST_INTERVAL_MS = 2000;
 
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;

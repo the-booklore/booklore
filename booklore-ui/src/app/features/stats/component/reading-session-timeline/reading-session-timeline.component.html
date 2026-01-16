@@ -77,7 +77,11 @@
                      [style.left.%]="session.left"
                      [style.width.%]="session.width"
                      [style.top]="session.totalLevels > 1 ? 'calc(' + session.level + ' / ' + session.totalLevels + ' * 100% + ' + session.level * 2 + 'px)' : '0'"
-                     [style.height]="session.totalLevels > 1 ? 'calc((1 / ' + session.totalLevels + ' * 100%) - ' + (session.totalLevels - 1) * 2 / session.totalLevels + 'px)' : '100%'">
+                     [style.height]="session.totalLevels > 1 ? 'calc((1 / ' + session.totalLevels + ' * 100%) - ' + (session.totalLevels - 1) * 2 / session.totalLevels + 'px)' : '100%'"
+                     [pTooltip]="getTooltipContent(session)"
+                     [escape]="false"
+                     tooltipPosition="top"
+                     [appendTo]="'body'">
                   @if (isDurationGreaterThanOneHour(session.duration)) {
                     <div class="session-content">
                       <span class="session-time">
@@ -88,36 +92,6 @@
                       </span>
                     </div>
                   }
-
-                  <div class="session-tooltip">
-                    <div class="tooltip-content">
-                      <div class="tooltip-cover">
-                        <img [src]="getCoverUrl(session.bookId)" alt="Book Cover">
-                      </div>
-                      <div class="tooltip-details">
-                        <div class="tooltip-header">
-                          <i class="pi pi-book"></i>
-                          <span class="tooltip-title">{{ session.bookTitle || 'Reading Session' }}</span>
-                        </div>
-                        <div class="tooltip-divider"></div>
-                        <div class="tooltip-body">
-                          <div class="tooltip-row">
-                            <i class="pi pi-clock"></i>
-                            <span class="tooltip-label">Time:</span>
-                            <span class="tooltip-value">
-                              {{ formatTime(session.startHour, session.startMinute) }} -
-                              {{ formatTime(session.endHour, session.endMinute) }}
-                            </span>
-                          </div>
-                          <div class="tooltip-row">
-                            <i class="pi pi-hourglass"></i>
-                            <span class="tooltip-label">Duration:</span>
-                            <span class="tooltip-value">{{ formatDuration(session.duration) }}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               }
             </div>

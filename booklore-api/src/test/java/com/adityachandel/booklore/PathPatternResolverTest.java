@@ -1,6 +1,7 @@
 package com.adityachandel.booklore;
 
 import com.adityachandel.booklore.model.entity.AuthorEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.util.PathPatternResolver;
@@ -23,10 +24,12 @@ class PathPatternResolverTest {
                                   String publisher, String isbn13, String isbn10,
                                   String fileName) {
         BookEntity book = mock(BookEntity.class);
+        BookFileEntity primaryFile = mock(BookFileEntity.class);
         BookMetadataEntity metadata = mock(BookMetadataEntity.class);
 
         when(book.getMetadata()).thenReturn(metadata);
-        when(book.getFileName()).thenReturn(fileName);
+        when(book.getPrimaryBookFile()).thenReturn(primaryFile);
+        when(primaryFile.getFileName()).thenReturn(fileName);
 
         when(metadata.getTitle()).thenReturn(title);
         when(metadata.getSubtitle()).thenReturn(subtitle);

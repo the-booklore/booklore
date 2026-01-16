@@ -1,7 +1,7 @@
 import {inject, Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
-import {tap} from 'rxjs/operators';
+import {Observable, Subject} from 'rxjs';
+import {distinctUntilChanged, exhaustMap, share, tap} from 'rxjs/operators';
 import {Book, ReadStatus} from '../model/book.model';
 import {BookStateService} from './book-state.service';
 import {API_CONFIG} from '../../../core/config/api-config';
@@ -16,6 +16,33 @@ export class BookPatchService {
 
   private http = inject(HttpClient);
   private bookStateService = inject(BookStateService);
+
+  private epubProgressSubject = new Subject<{ bookId: number; cfi: string; href: string; percentage: number }>();
+
+  private epubProgress$ = this.epubProgressSubject.pipe(
+    distinctUntilChanged((prev, curr) =>
+      prev.bookId === curr.bookId &&
+      prev.cfi === curr.cfi &&
+      prev.href === curr.href &&
+      prev.percentage === curr.percentage
+    ),
+    exhaustMap(payload => {
+      const body = {
+        bookId: payload.bookId,
+        epubProgress: {
+          cfi: payload.cfi,
+          href: payload.href,
+          percentage: payload.percentage
+        }
+      };
+      return this.http.post<void>(`${this.url}/progress`, body);
+    }),
+    share()
+  );
+
+  constructor() {
+    this.epubProgress$.subscribe();
+  }
 
   updateBookShelves(bookIds: Set<number | undefined>, shelvesToAssign: Set<number | null | undefined>, shelvesToUnassign: Set<number | null | undefined>): Observable<Book[]> {
     const requestPayload = {
@@ -49,15 +76,8 @@ export class BookPatchService {
     return this.http.post<void>(`${this.url}/progress`, body);
   }
 
-  saveEpubProgress(bookId: number, cfi: string, percentage: number): Observable<void> {
-    const body = {
-      bookId: bookId,
-      epubProgress: {
-        cfi: cfi,
-        percentage: percentage
-      }
-    };
-    return this.http.post<void>(`${this.url}/progress`, body);
+  saveEpubProgress(bookId: number, cfi: string, href: string, percentage: number): void {
+    this.epubProgressSubject.next({bookId, cfi, href, percentage});
   }
 
   saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
@@ -197,4 +217,3 @@ export class BookPatchService {
     this.bookStateService.updateBookState({...currentState, books: updatedBooks});
   }
 }
-

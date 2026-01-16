@@ -59,21 +59,22 @@ public class MetadataManagementService {
                 BookEntity book = metadata.getBook();
                 boolean bookModified = false;
 
-                BookFileType bookType = book.getBookType();
+                var primaryFile = book.getPrimaryBookFile();
+                BookFileType bookType = primaryFile.getBookType();
                 Optional<MetadataWriter> writerOpt = metadataWriterFactory.getWriter(bookType);
                 if (writerOpt.isPresent()) {
                     File file = book.getFullFilePath().toFile();
                     writerOpt.get().saveMetadataToFile(file, metadata, null, null);
                     String newHash = FileFingerprint.generateHash(book.getFullFilePath());
-                    book.setCurrentHash(newHash);
+                    primaryFile.setCurrentHash(newHash);
                     bookModified = true;
                 }
 
                 if (moveFile) {
                     FileMoveResult result = fileMoveService.moveSingleFile(book);
                     if (result.isMoved()) {
-                        book.setFileName(result.getNewFileName());
-                        book.setFileSubPath(result.getNewFileSubPath());
+                        primaryFile.setFileName(result.getNewFileName());
+                        primaryFile.setFileSubPath(result.getNewFileSubPath());
                         bookModified = true;
                     }
                 }

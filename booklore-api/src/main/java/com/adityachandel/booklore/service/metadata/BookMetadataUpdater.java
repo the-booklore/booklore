@@ -86,7 +86,8 @@ public class BookMetadataUpdater {
 
         MetadataPersistenceSettings settings = appSettingService.getAppSettings().getMetadataPersistenceSettings();
         MetadataPersistenceSettings.SaveToOriginalFile writeToFile = settings.getSaveToOriginalFile();
-        BookFileType bookType = bookEntity.getBookType();
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        BookFileType bookType = primaryFile.getBookType();
 
         boolean hasValueChangesForFileWrite = MetadataChangeDetector.hasValueChangesForFileWrite(newMetadata, metadata, clearFlags);
 
@@ -120,7 +121,7 @@ public class BookMetadataUpdater {
                     writer.saveMetadataToFile(file, metadata, thumbnailUrl, clearFlags);
                     String newHash = FileFingerprint.generateHash(bookEntity.getFullFilePath());
                     bookEntity.setMetadataForWriteUpdatedAt(Instant.now());
-                    bookEntity.setCurrentHash(newHash);
+                    primaryFile.setCurrentHash(newHash);
                     bookRepository.save(bookEntity);
                 } catch (Exception e) {
                     log.warn("Failed to write metadata for book ID {}: {}", bookId, e.getMessage());
@@ -134,8 +135,9 @@ public class BookMetadataUpdater {
                 BookEntity book = metadata.getBook();
                 FileMoveResult result = fileMoveService.moveSingleFile(book);
                 if (result.isMoved()) {
-                    book.setFileName(result.getNewFileName());
-                    book.setFileSubPath(result.getNewFileSubPath());
+                    var bookPrimaryFile = book.getPrimaryBookFile();
+                    bookPrimaryFile.setFileName(result.getNewFileName());
+                    bookPrimaryFile.setFileSubPath(result.getNewFileSubPath());
                 }
             } catch (Exception e) {
                 log.warn("Failed to move files for book ID {} after metadata update: {}", bookId, e.getMessage());

@@ -3,6 +3,7 @@ package com.adityachandel.booklore.util;
 import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.entity.AuthorEntity;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,11 @@ public class PathPatternResolver {
     private final Pattern SLASH_PATTERN = Pattern.compile("/");
 
     public String resolvePattern(BookEntity book, String pattern) {
-        String currentFilename = book.getFileName() != null ? book.getFileName().trim() : "";
+        return resolvePattern(book, book.getPrimaryBookFile(), pattern);
+    }
+
+    public String resolvePattern(BookEntity book, BookFileEntity bookFile, String pattern) {
+        String currentFilename = bookFile != null && bookFile.getFileName() != null ? bookFile.getFileName().trim() : "";
         return resolvePattern(book.getMetadata(), pattern, currentFilename);
     }
 

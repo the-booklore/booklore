@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -35,10 +36,12 @@ public class GoogleParser implements BookParser {
     private static final Pattern FOUR_DIGIT_YEAR_PATTERN = Pattern.compile("\\d{4}");
     private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
     private static final Pattern SPECIAL_CHARACTERS_PATTERN = Pattern.compile("[.,\\-\\[\\]{}()!@#$%^&*_=+|~`<>?/\";:]");
+    private static final long MIN_REQUEST_INTERVAL_MS = 1500;
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private static final String GOOGLE_BOOKS_API_URL = "https://www.googleapis.com/books/v1/volumes";
+    private final AtomicLong lastRequestTime = new AtomicLong(0);
 
     @Override
     public BookMetadata fetchTopMetadata(Book book, FetchMetadataRequest fetchMetadataRequest) {
@@ -57,6 +60,8 @@ public class GoogleParser implements BookParser {
 
     private List<BookMetadata> getMetadataListByIsbn(String isbn) {
         try {
+            waitForRateLimit();
+            
             URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", "isbn:" + isbn.replace("-", ""))
                     .build()
@@ -86,6 +91,8 @@ public class GoogleParser implements BookParser {
 
     public List<BookMetadata> getMetadataListByTerm(String term) {
         try {
+            waitForRateLimit();
+            
             URI uri = UriComponentsBuilder.fromUriString(getApiUrl())
                     .queryParam("q", term)
                     .build()
@@ -224,5 +231,18 @@ public class GoogleParser implements BookParser {
             .build()
             .toUri()
             .toString();
+    }
+
+    private void waitForRateLimit() {
+        long now = System.currentTimeMillis();
+        long timeSinceLastRequest = now - lastRequestTime.get();
+        if (timeSinceLastRequest < MIN_REQUEST_INTERVAL_MS) {
+            try {
+                Thread.sleep(MIN_REQUEST_INTERVAL_MS - timeSinceLastRequest);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        lastRequestTime.set(System.currentTimeMillis());
     }
 }

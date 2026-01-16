@@ -12,17 +12,23 @@
       decoding="async"
       (load)="onImageLoad()"/>
 
-    @if (!book.seriesCount && book.metadata?.seriesNumber != null) {
-      <div class="series-number-overlay">
-        #{{ book.metadata?.seriesNumber }}
-      </div>
-    }
-
-    @if (book.seriesCount && book.seriesCount >= 1) {
-      <div class="series-items-count-overlay" [pTooltip]="seriesCountTooltip" tooltipPosition="right">
-        <i class="pi pi-book" style="font-size: 0.65rem; margin-right: 2px;"></i>{{ book.seriesCount }}
-      </div>
-    }
+    <div class="top-left-overlay-stack">
+      @if (showBookTypePill && book.bookType) {
+        <div class="book-type-pill-overlay" [ngClass]="'book-type-' + book.bookType.toLowerCase()">
+          {{ book.bookType }}
+        </div>
+      }
+      @if (!book.seriesCount && book.metadata?.seriesNumber != null) {
+        <div class="series-number-overlay">
+          #{{ book.metadata?.seriesNumber }}
+        </div>
+      }
+      @if (book.seriesCount && book.seriesCount >= 1) {
+        <div class="series-items-count-overlay">
+          <i class="pi pi-book series-items-count-icon"></i>{{ book.seriesCount }}
+        </div>
+      }
+    </div>
 
     @if (_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openSeriesInfo()"></p-button>
@@ -30,7 +36,7 @@
       <p-button [rounded]="true" icon="pi pi-info" class="info-btn" (click)="openBookInfo(book)"></p-button>
     }
 
-    @if (!_isSeriesViewActive && _canReadBook) {
+    @if (!_isSeriesViewActive) {
       <p-button [rounded]="true" icon="pi pi-book" class="read-btn" (click)="readBook(book)"></p-button>
     }
 

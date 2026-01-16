@@ -1,10 +1,11 @@
-import {Component, ElementRef, Input, ViewChild} from '@angular/core';
+import {Component, ElementRef, Input, ViewChild, inject} from '@angular/core';
 import {BookCardComponent} from '../../../book/components/book-browser/book-card/book-card.component';
 import {InfiniteScrollDirective} from 'ngx-infinite-scroll';
 
 import {ProgressSpinnerModule} from 'primeng/progressspinner';
 import {Book} from '../../../book/model/book.model';
 import {ScrollerType} from '../../models/dashboard-config.model';
+import { BookCardOverlayPreferenceService } from '../../../book/components/book-browser/book-card-overlay-preference.service';
 
 @Component({
   selector: 'app-dashboard-scroller',
@@ -26,6 +27,8 @@ export class DashboardScrollerComponent {
 
   @ViewChild('scrollContainer') scrollContainer!: ElementRef;
   openMenuBookId: number | null = null;
+
+  public bookCardOverlayPreferenceService = inject(BookCardOverlayPreferenceService);
 
   handleMenuToggle(bookId: number, isOpen: boolean) {
     this.openMenuBookId = isOpen ? bookId : null;

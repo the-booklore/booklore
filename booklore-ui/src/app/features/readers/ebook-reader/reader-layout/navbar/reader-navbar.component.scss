@@ -1,0 +1,301 @@
+.reader-navbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -2px 8px 0 rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(100%);
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  color: white;
+
+  &.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .icon-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    border-radius: 50%;
+    transition: background 0.15s, box-shadow 0.15s, color 0.15s;
+    width: 36px;
+    height: 36px;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.10);
+      color: #ffffff;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .progress-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .location-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.15s, color 0.15s;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ffffff;
+      }
+    }
+
+    .progress-slider-wrapper {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+
+      .progress-slider {
+        flex: 1;
+        height: 6px;
+        border-radius: 3px;
+        outline: none;
+        -webkit-appearance: none;
+        background: rgba(255, 255, 255, 0.15);
+        position: relative;
+        z-index: 1;
+
+        &::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #4a9eff;
+          cursor: pointer;
+        }
+
+        &::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #4a9eff;
+          cursor: pointer;
+          border: none;
+        }
+      }
+
+      .progress-ticks {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        width: 100%;
+        height: 10px;
+        transform: translateY(-50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .progress-tick {
+        position: absolute;
+        top: 0;
+        width: 1.5px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+.location-popover {
+  position: absolute;
+  bottom: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  min-width: 380px;
+  animation: popoverSlideIn 0.15s ease-out;
+  transform-origin: bottom center;
+  color: white;
+
+  .popover-content {
+    padding: 20px;
+  }
+
+  .time-info {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: space-around;
+    padding: 8px 0;
+
+    .time-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: center;
+      flex: 1;
+
+      .label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.6);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+      }
+
+      .value {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.3px;
+        color: #ffffff;
+      }
+    }
+
+    .separator {
+      width: 1px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+  }
+
+  .divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 16px 0;
+  }
+
+  .location-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 0;
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      label {
+        min-width: 70px;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      input {
+        width: 65px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        color: #ffffff;
+        font-size: 13px;
+        text-align: right;
+        transition: background 0.15s, border-color 0.15s;
+
+        &:focus {
+          outline: none;
+          background: rgba(255, 255, 255, 0.1);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+      }
+
+      span {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.85);
+      }
+    }
+  }
+
+  .section-navigation {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.9);
+      padding: 0;
+      margin: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, color 0.15s ease;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.15);
+        transform: scale(1.05);
+        color: #ffffff;
+      }
+
+      &:active {
+        background: rgba(255, 255, 255, 0.15);
+        transform: scale(0.95);
+      }
+
+      i {
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
+}
+
+@keyframes popoverSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}

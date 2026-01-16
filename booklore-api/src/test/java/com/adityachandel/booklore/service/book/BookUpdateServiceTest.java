@@ -34,8 +34,6 @@ class BookUpdateServiceTest {
     @Mock
     private PdfViewerPreferencesRepository pdfViewerPreferencesRepository;
     @Mock
-    private EpubViewerPreferencesRepository epubViewerPreferencesRepository;
-    @Mock
     private CbxViewerPreferencesRepository cbxViewerPreferencesRepository;
     @Mock
     private NewPdfViewerPreferencesRepository newPdfViewerPreferencesRepository;
@@ -55,6 +53,8 @@ class BookUpdateServiceTest {
     private UserProgressService userProgressService;
     @Mock
     private KoboReadingStateService koboReadingStateService;
+    @Mock
+    private EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
 
     @InjectMocks
     private BookUpdateService bookUpdateService;
@@ -65,7 +65,6 @@ class BookUpdateServiceTest {
         bookUpdateService = new BookUpdateService(
                 bookRepository,
                 pdfViewerPreferencesRepository,
-                epubViewerPreferencesRepository,
                 cbxViewerPreferencesRepository,
                 newPdfViewerPreferencesRepository,
                 shelfRepository,
@@ -75,7 +74,8 @@ class BookUpdateServiceTest {
                 authenticationService,
                 bookQueryService,
                 userProgressService,
-                koboReadingStateService
+                koboReadingStateService,
+                ebookViewerPreferenceRepository
         );
     }
 
@@ -84,9 +84,12 @@ class BookUpdateServiceTest {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
-        book.setBookType(BookFileType.PDF);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(BookFileType.PDF);
+        book.setBookFiles(List.of(primaryFile));
         BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
@@ -107,40 +110,53 @@ class BookUpdateServiceTest {
     }
 
     @Test
-    void updateBookViewerSetting_epub_shouldUpdateEpubPrefs() {
+    void updateBookViewerSetting_epub_shouldUpdateEpubPrefsV2() {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
-        book.setBookType(BookFileType.EPUB);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(List.of(primaryFile));
         BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
-        EpubViewerPreferencesEntity epubPrefs = new EpubViewerPreferencesEntity();
-        when(epubViewerPreferencesRepository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
+        EbookViewerPreferenceEntity epubPrefs = new EbookViewerPreferenceEntity();
+        when(ebookViewerPreferenceRepository.findByBookIdAndUserId(bookId, 2L)).thenReturn(Optional.of(epubPrefs));
         BookViewerSettings settings = BookViewerSettings.builder()
-                .epubSettings(EpubViewerPreferences.builder()
-                        .font("font")
-                        .fontSize(12)
-                        .theme("theme")
-                        .flow("flow")
-                        .spread("spread")
-                        .letterSpacing(1.2f)
-                        .lineHeight(1.3f)
+                .ebookSettings(EbookViewerPreferences.builder()
+                        .fontFamily("serif")
+                        .fontSize(18)
+                        .gap(0.1f)
+                        .hyphenate(true)
+                        .isDark(true)
+                        .justify(true)
+                        .lineHeight(1.7f)
+                        .maxBlockSize(800)
+                        .maxColumnCount(3)
+                        .maxInlineSize(1200)
+                        .theme("dark")
+                        .flow("paginated")
                         .build())
                 .build();
 
         bookUpdateService.updateBookViewerSetting(bookId, settings);
 
-        verify(epubViewerPreferencesRepository).save(epubPrefs);
-        assertEquals("font", epubPrefs.getFont());
-        assertEquals(12, epubPrefs.getFontSize());
-        assertEquals("theme", epubPrefs.getTheme());
-        assertEquals("flow", epubPrefs.getFlow());
-        assertEquals("spread", epubPrefs.getSpread());
-        assertEquals(1.2f, epubPrefs.getLetterSpacing());
-        assertEquals(1.3f, epubPrefs.getLineHeight());
+        verify(ebookViewerPreferenceRepository).save(epubPrefs);
+        assertEquals("serif", epubPrefs.getFontFamily());
+        assertEquals(18, epubPrefs.getFontSize());
+        assertEquals(0.1f, epubPrefs.getGap());
+        assertTrue(epubPrefs.getHyphenate());
+        assertTrue(epubPrefs.getIsDark());
+        assertTrue(epubPrefs.getJustify());
+        assertEquals(1.7f, epubPrefs.getLineHeight());
+        assertEquals(800, epubPrefs.getMaxBlockSize());
+        assertEquals(3, epubPrefs.getMaxColumnCount());
+        assertEquals(1200, epubPrefs.getMaxInlineSize());
+        assertEquals("dark", epubPrefs.getTheme());
+        assertEquals("paginated", epubPrefs.getFlow());
     }
 
     @Test
@@ -148,8 +164,11 @@ class BookUpdateServiceTest {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
-        book.setBookType(null);
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(null);
+        book.setBookFiles(List.of(primaryFile));
+        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
         when(authenticationService.getAuthenticatedUser()).thenReturn(mock(BookLoreUser.class));
         BookViewerSettings settings = BookViewerSettings.builder().build();
 
@@ -161,9 +180,12 @@ class BookUpdateServiceTest {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
-        book.setBookType(BookFileType.EPUB);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(BookFileType.EPUB);
+        book.setBookFiles(List.of(primaryFile));
         BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
@@ -190,9 +212,12 @@ class BookUpdateServiceTest {
         long bookId = 1L;
         BookEntity book = new BookEntity();
         book.setId(bookId);
-        book.setBookType(BookFileType.PDF);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(book);
+        primaryFile.setBookType(BookFileType.PDF);
+        book.setBookFiles(List.of(primaryFile));
         BookLoreUser user = mock(BookLoreUser.class);
-        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+        when(bookRepository.findByIdWithBookFiles(bookId)).thenReturn(Optional.of(book));
         when(authenticationService.getAuthenticatedUser()).thenReturn(user);
         when(user.getId()).thenReturn(2L);
 
@@ -392,8 +417,11 @@ class BookUpdateServiceTest {
         LibraryPathEntity libraryPath1 = new LibraryPathEntity();
         libraryPath1.setPath("/mock/path/1");
         doReturn(libraryPath1).when(bookEntity1).getLibraryPath();
-        bookEntity1.setFileSubPath("sub1");
-        bookEntity1.setFileName("file1.pdf");
+        BookFileEntity bookFileEntity1 = new BookFileEntity();
+        bookFileEntity1.setBook(bookEntity1);
+        bookFileEntity1.setFileSubPath("sub1");
+        bookFileEntity1.setFileName("file1.pdf");
+        bookEntity1.setBookFiles(List.of(bookFileEntity1));
 
         BookEntity bookEntity2 = spy(new BookEntity());
         bookEntity2.setId(2L);
@@ -401,8 +429,11 @@ class BookUpdateServiceTest {
         LibraryPathEntity libraryPath2 = new LibraryPathEntity();
         libraryPath2.setPath("/mock/path/2");
         doReturn(libraryPath2).when(bookEntity2).getLibraryPath();
-        bookEntity2.setFileSubPath("sub2");
-        bookEntity2.setFileName("file2.pdf");
+        BookFileEntity bookFileEntity2 = new BookFileEntity();
+        bookFileEntity2.setBook(bookEntity2);
+        bookFileEntity2.setFileSubPath("sub2");
+        bookFileEntity2.setFileName("file2.pdf");
+        bookEntity2.setBookFiles(List.of(bookFileEntity2));
 
         when(bookQueryService.findAllWithMetadataByIds(bookIds)).thenReturn(Arrays.asList(bookEntity1, bookEntity2));
         ShelfEntity assignShelf = new ShelfEntity();

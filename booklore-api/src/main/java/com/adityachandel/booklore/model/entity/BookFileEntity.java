@@ -1,6 +1,6 @@
 package com.adityachandel.booklore.model.entity;
-
-import com.adityachandel.booklore.model.enums.AdditionalFileType;
+import com.adityachandel.booklore.util.ArchiveUtils;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -14,8 +14,8 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "book_additional_file")
-public class BookAdditionalFileEntity {
+@Table(name = "book_file")
+public class BookFileEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,9 +31,16 @@ public class BookAdditionalFileEntity {
     @Column(name = "file_sub_path", length = 512, nullable = false)
     private String fileSubPath;
 
+    @Column(name = "is_book", nullable = false)
+    private boolean isBookFormat;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "additional_file_type", nullable = false)
-    private AdditionalFileType additionalFileType;
+    @Column(name = "book_type", nullable = false)
+    private BookFileType bookType;
+
+    @Column(name = "archive_type")
+    @Enumerated(EnumType.STRING)
+    private ArchiveUtils.ArchiveType archiveType;
 
     @Column(name = "file_size_kb")
     private Long fileSizeKb;
@@ -52,6 +59,10 @@ public class BookAdditionalFileEntity {
 
     @Column(name = "added_on")
     private Instant addedOn;
+
+    public boolean isBook() {
+        return isBookFormat;
+    }
 
     public Path getFullFilePath() {
         if (book == null || book.getLibraryPath() == null || book.getLibraryPath().getPath() == null

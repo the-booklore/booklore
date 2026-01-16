@@ -1,0 +1,92 @@
+<div
+  class="reader-navbar"
+  [style.color]="'#ffffff'"
+  [style.background]="'#1a1a1a'"
+  [class.visible]="navbarVisible">
+
+  <button class="icon-btn" title="Previous">
+    <i class="pi pi-caret-left" aria-label="Previous"></i>
+  </button>
+
+  <div class="progress-section">
+    <button class="location-btn" (click)="toggleLocationPopover()" title="Location">
+      <span class="location-text">{{ currentPercentage }}%</span>
+    </button>
+
+    <div class="progress-slider-wrapper">
+      <input
+        type="range"
+        class="progress-slider"
+        [min]="0"
+        [max]="100"
+        [value]="currentPercentage"
+        (input)="onProgressChange($event)"
+        title="Progress"/>
+      <div class="progress-ticks">
+        @for (frac of sectionFractions; track frac) {
+          <span class="progress-tick" [style.left.%]="frac * 100"></span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <button class="icon-btn" title="Next">
+    <i class="pi pi-caret-right" aria-label="Next"></i>
+  </button>
+</div>
+
+@if (showLocationPopover) {
+  <div class="location-popover" [style.color]="'#ffffff'" [style.background]="'#1a1a1a'" (mousedown)="$event.preventDefault()">
+    <div class="popover-content">
+      <div class="time-info">
+        <div class="time-section">
+          <span class="label">Time Left in Section</span>
+          <span class="value">{{ timeSection }}</span>
+        </div>
+        <div class="separator"></div>
+        <div class="time-section">
+          <span class="label">Time Left in Book</span>
+          <span class="value">{{ timeTotal }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="location-controls">
+        <div class="control-row">
+          <label>Page</label>
+          <span>{{ currentPage }}</span>
+        </div>
+        <div class="control-row">
+          <label>Location</label>
+          <input type="number" [value]="locationCurrent"/>
+          <span>/ {{ locationTotal }}</span>
+        </div>
+        <div class="control-row">
+          <label>Section</label>
+          <span>{{ sectionCurrent }} / {{ sectionTotal }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-navigation">
+        <button class="nav-btn" title="First Section" (click)="onFirstSection()">
+          <i class="pi pi-step-backward"></i>
+        </button>
+        <button class="nav-btn" title="Previous Section" (click)="onPreviousSection()">
+          <i class="pi pi-caret-left"></i>
+        </button>
+        <button class="nav-btn" title="Jump To…">
+          <i class="pi pi-ellipsis-v"></i>
+        </button>
+        <button class="nav-btn" title="Next Section" (click)="onNextSection()">
+          <i class="pi pi-caret-right"></i>
+        </button>
+        <button class="nav-btn" title="Last Section" (click)="onLastSection()">
+          <i class="pi pi-step-forward"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+}
