@@ -721,28 +721,10 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     }
   }
 
-  getFileTypeColor(fileType: string | null | undefined): TagColor {
-    if (!fileType) return 'gray';
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return 'pink';
-      case 'epub':
-        return 'indigo';
-      case 'cbz':
-        return 'teal';
-      case 'cbr':
-        return 'purple';
-      case 'cb7':
-        return 'blue';
-      case 'fb2':
-        return 'orange';
-      case 'mobi':
-        return 'yellow';
-      case 'azw3':
-        return 'green';
-      default:
-        return 'gray';
-    }
+  getFileTypeBgColor(fileType: string | null | undefined): string {
+    if (!fileType) return 'var(--p-gray-500)';
+    const type = fileType.toLowerCase();
+    return `var(--book-type-${type}-color, var(--p-gray-500))`;
   }
 
   getStarColorScaled(rating?: number | null, maxScale: number = 5): string {

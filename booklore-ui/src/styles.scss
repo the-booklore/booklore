@@ -12,6 +12,19 @@ html {
   Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
 }
 
+:root {
+  /* Book type colors - single source of truth */
+  --book-type-pdf-color: #dc2626;
+  --book-type-epub-color: #16a34a;
+  --book-type-cbx-color: #d97706;
+  --book-type-cbz-color: #d97706;
+  --book-type-cbr-color: #ea580c;
+  --book-type-cb7-color: #9333ea;
+  --book-type-fb2-color: #7c3aed;
+  --book-type-mobi-color: #2563eb;
+  --book-type-azw3-color: #0891b2;
+}
+
 * {
   &::-webkit-scrollbar {
     width: 12px;
