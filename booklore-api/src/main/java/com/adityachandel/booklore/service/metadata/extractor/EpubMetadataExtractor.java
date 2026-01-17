@@ -58,6 +58,18 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                 return image;
             }
 
+            // First fallback to reading the cover image based on the cover
+            String coverId = epub.getMetadata().getMetaAttribute("cover");
+            if (coverId != null) {
+                Resource coverResource = epub.getResources().getById(coverId);
+                if (coverResource != null) {
+                    image = getImageFromEpubResource(coverResource);
+                    if (image != null) {
+                        return image;
+                    }
+                }
+            }
+
             // We fall back to reading the image based on the cover-image property.
             String coverHref = findCoverImageHrefInOpf(epubFile);
             if (coverHref != null) {
