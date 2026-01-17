@@ -163,6 +163,76 @@ class BookServiceTest {
     }
 
     @Test
+    void getBookByHash_success_returnsBookWithAccess() {
+        String hash = "abc123hash";
+        BookEntity entity = new BookEntity();
+        entity.setId(10L);
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(entity);
+        primaryFile.setBookType(BookFileType.PDF);
+        entity.setBookFiles(List.of(primaryFile));
+        
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        libPath.setPath("/tmp/library");
+        LibraryEntity library = new LibraryEntity();
+        library.setLibraryPaths(List.of(libPath));
+        BookLoreUserEntity userEntity = new BookLoreUserEntity();
+        userEntity.setId(1L);
+        library.setUsers(List.of(userEntity));
+        entity.setLibrary(library);
+        entity.setLibraryPath(libPath);
+        
+        when(bookRepository.findByCurrentHash(hash)).thenReturn(Optional.of(entity));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(entity));
+        when(userBookProgressRepository.findByUserIdAndBookId(anyLong(), eq(10L))).thenReturn(Optional.of(new UserBookProgressEntity()));
+        Book mappedBook = Book.builder().id(10L).bookType(BookFileType.PDF).metadata(BookMetadata.builder().build()).shelves(Set.of()).build();
+        when(bookMapper.toBook(entity)).thenReturn(mappedBook);
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        
+        try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
+            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/library/book.pdf");
+            Book result = bookService.getBookByHash(hash, true);
+            
+            assertEquals(10L, result.getId());
+            verify(bookRepository).findByCurrentHash(hash);
+            verify(bookRepository).findByIdWithBookFiles(10L);
+        }
+    }
+
+    @Test
+    void getBookByHash_notFound_throwsException() {
+        String hash = "nonexistent";
+        when(bookRepository.findByCurrentHash(hash)).thenReturn(Optional.empty());
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        
+        assertThrows(APIException.class, () -> bookService.getBookByHash(hash, true));
+        verify(bookRepository).findByCurrentHash(hash);
+    }
+
+    @Test
+    void getBookByHash_noAccess_throwsException() {
+        String hash = "restrictedHash";
+        BookEntity entity = new BookEntity();
+        entity.setId(15L);
+        
+        LibraryPathEntity libPath = new LibraryPathEntity();
+        LibraryEntity library = new LibraryEntity();
+        library.setLibraryPaths(List.of(libPath));
+        BookLoreUserEntity differentUser = new BookLoreUserEntity();
+        differentUser.setId(999L); // Different user ID
+        library.setUsers(List.of(differentUser));
+        entity.setLibrary(library);
+        entity.setLibraryPath(libPath);
+        
+        when(bookRepository.findByCurrentHash(hash)).thenReturn(Optional.of(entity));
+        when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
+        
+        assertThrows(APIException.class, () -> bookService.getBookByHash(hash, true));
+        verify(bookRepository).findByCurrentHash(hash);
+        verify(bookRepository, never()).findByIdWithBookFiles(anyLong());
+    }
+
+    @Test
     void getBookViewerSetting_epub_returnsEpubSettings() {
         BookEntity entity = new BookEntity();
         entity.setId(4L);

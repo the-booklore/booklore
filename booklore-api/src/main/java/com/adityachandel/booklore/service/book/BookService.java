@@ -129,14 +129,14 @@ public class BookService {
 
         // Find book by MD5 hash
         BookEntity bookEntity = bookRepository.findByCurrentHash(md5Hash)
-                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException("Book with hash " + md5Hash + " not found"));
+                .orElseThrow(() -> ApiError.GENERIC_NOT_FOUND.createException("Book with hash " + md5Hash + " not found"));
 
         // Check if user has access to this book (via library access)
         boolean hasAccess = bookEntity.getLibraryPath().getLibrary().getUsers().stream()
                 .anyMatch(u -> u.getId().equals(user.getId()));
 
         if (!hasAccess) {
-            throw ApiError.BOOK_NOT_FOUND.createException("Book with hash " + md5Hash + " not found");
+            throw ApiError.GENERIC_NOT_FOUND.createException("Book with hash " + md5Hash + " not found");
         }
 
         return getBook(bookEntity.getId(), withDescription);
