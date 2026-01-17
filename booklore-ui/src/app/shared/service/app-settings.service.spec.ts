@@ -104,9 +104,9 @@ describe('AppSettingsService', () => {
       aspectRatioThreshold: 0,
       smartCroppingEnabled: false
     },
-    metadataDownloadOnBookdrop: false,
-    telemetryEnabled: false,
-    metadataProviderSpecificFields: {
+        metadataDownloadOnBookdrop: false,
+        prioritizeEmbeddedMetadata: false,
+        telemetryEnabled: false,    metadataProviderSpecificFields: {
       asin: false,
       amazonRating: false,
       amazonReviewCount: false,
@@ -474,9 +474,9 @@ describe('AppSettingsService - API Contract Tests', () => {
           aspectRatioThreshold: 0,
           smartCroppingEnabled: false
         },
-        metadataDownloadOnBookdrop: false,
-        telemetryEnabled: false,
-        metadataProviderSpecificFields: {
+            metadataDownloadOnBookdrop: false,
+            prioritizeEmbeddedMetadata: false,
+            telemetryEnabled: false,        metadataProviderSpecificFields: {
           asin: false,
           amazonRating: false,
           amazonReviewCount: false,
