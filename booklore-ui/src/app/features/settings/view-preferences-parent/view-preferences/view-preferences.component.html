@@ -1,153 +1,107 @@
-<div class="main-container enclosing-container">
-  <div class="settings-header">
-    <h2 class="settings-title">
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
       <i class="pi pi-table"></i>
       Library and Shelf View & Sort Preferences
-    </h2>
-    <p class="settings-description">
+    </h3>
+    <p class="section-description">
       Configure default and per-library/shelf preferences for sorting and view mode (grid or table) in the browser.
     </p>
   </div>
 
-  <div class="settings-content">
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-cog"></i>
-          Default Settings
-        </h3>
-        <p class="section-description">
-          Set the default sorting and view preferences that will apply to all libraries and shelves unless overridden.
-        </p>
+  <div class="section-body">
+    <div class="setting-item">
+      <label class="setting-label">Default Preferences</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Configure the default sorting field, direction, and view mode for all libraries and shelves.</span>
+      </p>
+      <div class="setting-controls">
+        <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
+                  [(ngModel)]="selectedSort" placeholder="Sort By" appendTo="body"></p-select>
+        <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="selectedSortDir"
+                  placeholder="Direction" appendTo="body"></p-select>
+        <p-select size="small" [options]="viewModeOptions" [(ngModel)]="selectedView"
+                  placeholder="View Mode" appendTo="body"></p-select>
       </div>
+    </div>
 
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Default Preferences</label>
-              <div class="select-group">
+    <div class="setting-item">
+      <label class="setting-label">Auto-save on Navigation</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Automatically save changes when navigating to the next or previous book in the metadata editor.</span>
+      </p>
+      <div class="setting-controls">
+        <label class="control-label">Enabled:</label>
+        <p-toggleswitch [(ngModel)]="autoSaveMetadata"></p-toggleswitch>
+      </div>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label">Override Management</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Add custom preferences for specific libraries or shelves. These will override your default settings.</span>
+      </p>
+      <div class="setting-controls">
+        <p-button label="Add Override" outlined size="small" (onClick)="addOverride()"
+                  severity="success" icon="pi pi-plus" [disabled]="availableLibraries.length === 0"></p-button>
+      </div>
+    </div>
+
+    @if (overrides.length > 0) {
+      <div class="overrides-table">
+        <p-table [value]="overrides" [tableStyle]="{'width': '100%'}">
+          <ng-template pTemplate="header">
+            <tr>
+              <th style="min-width: 150px; max-width: 220px;">Type</th>
+              <th style="min-width: 220px; max-width: 280px;">Name</th>
+              <th style="min-width: 190px; max-width: 250px;">Sort By</th>
+              <th style="min-width: 125px;">Direction</th>
+              <th style="min-width: 125px;">View Mode</th>
+              <th style="width: 75px; text-align: center;">Actions</th>
+            </tr>
+          </ng-template>
+          <ng-template pTemplate="body" let-override let-rowIndex="rowIndex">
+            <tr>
+              <td>
+                <p-select size="small" [options]="entityTypeOptions" [(ngModel)]="override.entityType"
+                          [style]="{'width': '100%'}" appendTo="body"></p-select>
+              </td>
+              <td>
+                @if (override.entityType) {
+                  <p-select size="small"
+                            [options]="getAvailableEntities(rowIndex, override.entityType)"
+                            [(ngModel)]="override.library"
+                            optionLabel="label" optionValue="value"
+                            [style]="{'width': '100%'}" appendTo="body"></p-select>
+                }
+              </td>
+              <td>
                 <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                          [(ngModel)]="selectedSort" placeholder="Sort By" class="select-item" appendTo="body"></p-select>
-                <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="selectedSortDir"
-                          placeholder="Direction" class="select-item" appendTo="body"></p-select>
-                <p-select size="small" [options]="viewModeOptions" [(ngModel)]="selectedView"
-                          placeholder="View Mode" class="select-item" appendTo="body"></p-select>
-              </div>
-            </div>
-            <p class="setting-description">
-              Configure the default sorting field, direction, and view mode for all libraries and shelves.
-            </p>
-          </div>
-        </div>
+                          [(ngModel)]="override.sort" [style]="{'width': '100%'}" appendTo="body"></p-select>
+              </td>
+              <td>
+                <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="override.sortDir"
+                          [style]="{'width': '100%'}" appendTo="body"></p-select>
+              </td>
+              <td>
+                <p-select size="small" [options]="viewModeOptions" [(ngModel)]="override.view"
+                          [style]="{'width': '100%'}" appendTo="body"></p-select>
+              </td>
+              <td style="text-align: center;">
+                <p-button icon="pi pi-trash" severity="danger" size="small" [outlined]="true"
+                          (onClick)="removeOverride(rowIndex)" [pTooltip]="'Remove override'" tooltipPosition="left"></p-button>
+              </td>
+            </tr>
+          </ng-template>
+        </p-table>
       </div>
-    </div>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-pencil"></i>
-          Metadata Editor Settings
-        </h3>
-        <p class="section-description">
-          Configure behavior for the metadata editor.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <div class="setting-item no-border">
-          <div class="setting-info">
-            <label class="setting-label">Auto-save on Navigation</label>
-            <p class="setting-description">
-              Automatically save changes when navigating to the next or previous book in the metadata editor.
-            </p>
-          </div>
-          <div class="setting-control">
-            <p-toggleswitch [(ngModel)]="autoSaveMetadata"></p-toggleswitch>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="preferences-section">
-      <div class="section-header">
-        <h3 class="section-title">
-          <i class="pi pi-list"></i>
-          Specific Overrides
-        </h3>
-        <p class="section-description">
-          Create specific sorting and view preferences for individual libraries or shelves that override the default settings.
-        </p>
-      </div>
-
-      <div class="settings-card">
-        <div class="setting-item no-border">
-          <div class="setting-info">
-            <label class="setting-label">Override Management</label>
-            <p class="setting-description">
-              Add custom preferences for specific libraries or shelves. These will override your default settings.
-            </p>
-          </div>
-          <div class="setting-control">
-            <p-button label="Add Override" outlined size="small" (onClick)="addOverride()"
-                      severity="success" icon="pi pi-plus" [disabled]="availableLibraries.length === 0"></p-button>
-          </div>
-        </div>
-
-        @if (overrides.length > 0) {
-          <div class="overrides-table">
-            <p-table [value]="overrides" [tableStyle]="{'width': '100%'}">
-              <ng-template pTemplate="header">
-                <tr>
-                  <th style="min-width: 150px; max-width: 220px;">Type</th>
-                  <th style="min-width: 220px; max-width: 280px;">Name</th>
-                  <th style="min-width: 190px; max-width: 250px;">Sort By</th>
-                  <th style="min-width: 125px;">Direction</th>
-                  <th style="min-width: 125px;">View Mode</th>
-                  <th style="width: 75px; text-align: center;">Actions</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-override let-rowIndex="rowIndex">
-                <tr>
-                  <td>
-                    <p-select size="small" [options]="entityTypeOptions" [(ngModel)]="override.entityType"
-                              [style]="{'width': '100%'}" appendTo="body"></p-select>
-                  </td>
-                  <td>
-                    @if (override.entityType) {
-                      <p-select size="small"
-                                [options]="getAvailableEntities(rowIndex, override.entityType)"
-                                [(ngModel)]="override.library"
-                                optionLabel="label" optionValue="value"
-                                [style]="{'width': '100%'}" appendTo="body"></p-select>
-                    }
-                  </td>
-                  <td>
-                    <p-select size="small" [options]="sortOptions" optionLabel="label" optionValue="field"
-                              [(ngModel)]="override.sort" [style]="{'width': '100%'}" appendTo="body"></p-select>
-                  </td>
-                  <td>
-                    <p-select size="small" [options]="sortDirectionOptions" [(ngModel)]="override.sortDir"
-                              [style]="{'width': '100%'}" appendTo="body"></p-select>
-                  </td>
-                  <td>
-                    <p-select size="small" [options]="viewModeOptions" [(ngModel)]="override.view"
-                              [style]="{'width': '100%'}" appendTo="body"></p-select>
-                  </td>
-                  <td style="text-align: center;">
-                    <p-button icon="pi pi-trash" severity="danger" size="small" [outlined]="true"
-                              (onClick)="removeOverride(rowIndex)" [pTooltip]="'Remove override'" tooltipPosition="left"></p-button>
-                  </td>
-                </tr>
-              </ng-template>
-            </p-table>
-          </div>
-        }
-      </div>
-    </div>
+    }
 
     <div class="save-section">
-      <p-button label="Save Settings" icon="pi pi-save" severity="success" (onClick)="saveSettings()"></p-button>
+      <p-button label="Save Settings" icon="pi pi-save" outlined severity="success" (onClick)="saveSettings()"></p-button>
     </div>
   </div>
 </div>

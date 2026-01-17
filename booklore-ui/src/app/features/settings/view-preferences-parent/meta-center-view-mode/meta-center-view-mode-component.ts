@@ -1,5 +1,4 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {Tooltip} from 'primeng/tooltip';
 import {FormsModule} from '@angular/forms';
 import {UserService} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
@@ -9,7 +8,6 @@ import {Subject} from 'rxjs';
 @Component({
   selector: 'app-meta-center-view-mode-component',
   imports: [
-    Tooltip,
     FormsModule
   ],
   templateUrl: './meta-center-view-mode-component.html',

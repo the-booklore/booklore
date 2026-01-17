@@ -1,12 +1,15 @@
-<div class="preferences-section">
+<div class="settings-card">
   <div class="section-header">
     <h3 class="section-title">
       <i class="pi pi-save"></i>
       Metadata Persistence
     </h3>
+    <p class="section-description">
+      Configure how metadata is written to original files and how files are moved or renamed when metadata changes.
+    </p>
   </div>
 
-  <div class="settings-card">
+  <div class="section-notice">
     <div class="warning-notice">
       <i class="pi pi-exclamation-triangle"></i>
       <div>
@@ -14,149 +17,134 @@
         incomplete writes, or permanent data loss. Github issues related to network storage will not be supported.
       </div>
     </div>
-
-    <div class="info-notice unsupported-formats-note" style="margin-bottom: 1rem;">
+    <div class="info-notice unsupported-formats-note">
       <i class="pi pi-info-circle"></i>
       <div>
         <strong>Note:</strong> Writing metadata is <b>not supported</b> for FB2, AZW3, and MOBI formats.
       </div>
     </div>
+  </div>
 
+  <div class="section-body">
     <div class="setting-item">
-      <div class="setting-info">
-        <label class="setting-label">Write Metadata to EPUB</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Write metadata directly into EPUB files when editing book information.
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Enabled:</label>
-              <p-toggleswitch
-                [ngModel]="metadataPersistence.saveToOriginalFile.epub.enabled"
-                (onChange)="onSaveToOriginalFileToggle('epub')">
-              </p-toggleswitch>
-            </div>
-            @if (metadataPersistence.saveToOriginalFile.epub.enabled) {
-              <div class="filesize-input" style="margin-top: 0.5rem;">
-                <label>Max File Size (MB):</label>
-                <input
-                  type="number"
-                  [(ngModel)]="metadataPersistence.saveToOriginalFile.epub.maxFileSizeInMb"
-                  (change)="onFilesizeChange('epub')"
-                  min="1"
-                  max="1000"
-                  class="filesize-field">
-                <i
-                  class="pi pi-info-circle text-blue-500"
-                  pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
-                  tooltipPosition="right"
-                  style="cursor: help; margin-left: 4px;"
-                ></i>
-              </div>
-            }
-          </div>
+      <label class="setting-label">Write Metadata to EPUB</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Write metadata directly into EPUB files when editing book information.</span>
+      </p>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-label-row">
+          <label class="setting-label">Enabled:</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.epub.enabled"
+            (onChange)="onSaveToOriginalFileToggle('epub')">
+          </p-toggleswitch>
         </div>
+        @if (metadataPersistence.saveToOriginalFile.epub.enabled) {
+          <div class="filesize-input">
+            <label>Max File Size (MB):</label>
+            <input
+              type="number"
+              [(ngModel)]="metadataPersistence.saveToOriginalFile.epub.maxFileSizeInMb"
+              (change)="onFilesizeChange('epub')"
+              min="1"
+              max="1000"
+              class="filesize-field">
+            <i
+              class="pi pi-info-circle text-blue-500"
+              pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
+              tooltipPosition="right"
+              style="cursor: help;"
+            ></i>
+          </div>
+        }
       </div>
     </div>
 
     <div class="setting-item">
-      <div class="setting-info">
-        <label class="setting-label">Write Metadata to CBX</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Write metadata directly into CBX files when editing book information.
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Enabled:</label>
-              <p-toggleswitch
-                [ngModel]="metadataPersistence.saveToOriginalFile.cbx.enabled"
-                (onChange)="onSaveToOriginalFileToggle('cbx')">
-              </p-toggleswitch>
-            </div>
-            @if (metadataPersistence.saveToOriginalFile.cbx.enabled) {
-              <div class="filesize-input" style="margin-top: 0.5rem;">
-                <label>Max File Size (MB):</label>
-                <input
-                  type="number"
-                  [(ngModel)]="metadataPersistence.saveToOriginalFile.cbx.maxFileSizeInMb"
-                  (change)="onFilesizeChange('cbx')"
-                  min="1"
-                  max="1000"
-                  class="filesize-field">
-                <i
-                  class="pi pi-info-circle text-blue-500"
-                  pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
-                  tooltipPosition="right"
-                  style="cursor: help; margin-left: 4px;"
-                ></i>
-              </div>
-            }
-          </div>
+      <label class="setting-label">Write Metadata to CBX</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Write metadata directly into CBX files when editing book information.</span>
+      </p>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-label-row">
+          <label class="setting-label">Enabled:</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.cbx.enabled"
+            (onChange)="onSaveToOriginalFileToggle('cbx')">
+          </p-toggleswitch>
         </div>
+        @if (metadataPersistence.saveToOriginalFile.cbx.enabled) {
+          <div class="filesize-input">
+            <label>Max File Size (MB):</label>
+            <input
+              type="number"
+              [(ngModel)]="metadataPersistence.saveToOriginalFile.cbx.maxFileSizeInMb"
+              (change)="onFilesizeChange('cbx')"
+              min="1"
+              max="1000"
+              class="filesize-field">
+            <i
+              class="pi pi-info-circle text-blue-500"
+              pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
+              tooltipPosition="right"
+              style="cursor: help;"
+            ></i>
+          </div>
+        }
       </div>
     </div>
 
     <div class="setting-item">
-      <div class="setting-info">
-        <label class="setting-label">Write Metadata to PDF</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Write metadata directly into PDF files when editing book information. <br>
-          Note: PDFs do not support embedded covers, and only a limited set of metadata can be updated (Title, Authors, Publisher, Categories, Description, Language, Published Date). This is a limitation of the PDF format.
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Enabled:</label>
-              <p-toggleswitch
-                [ngModel]="metadataPersistence.saveToOriginalFile.pdf.enabled"
-                (onChange)="onSaveToOriginalFileToggle('pdf')">
-              </p-toggleswitch>
-            </div>
-            @if (metadataPersistence.saveToOriginalFile.pdf.enabled) {
-              <div class="filesize-input" style="margin-top: 0.5rem;">
-                <label>Max File Size (MB):</label>
-                <input
-                  type="number"
-                  [(ngModel)]="metadataPersistence.saveToOriginalFile.pdf.maxFileSizeInMb"
-                  (change)="onFilesizeChange('pdf')"
-                  min="1"
-                  max="1000"
-                  class="filesize-field">
-                <i
-                  class="pi pi-info-circle text-blue-500"
-                  pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
-                  tooltipPosition="right"
-                  style="cursor: help; margin-left: 4px;"
-                ></i>
-              </div>
-            }
-          </div>
+      <label class="setting-label">Write Metadata to PDF</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Write metadata directly into PDF files when editing book information. <br>
+        <strong>Note:</strong> PDFs do not support embedded covers, and only a limited set of metadata can be updated (Title, Authors, Publisher, Categories, Description, Language, Published Date). This is a limitation of the PDF format.</span>
+      </p>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-label-row">
+          <label class="setting-label">Enabled:</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.saveToOriginalFile.pdf.enabled"
+            (onChange)="onSaveToOriginalFileToggle('pdf')">
+          </p-toggleswitch>
         </div>
+        @if (metadataPersistence.saveToOriginalFile.pdf.enabled) {
+          <div class="filesize-input">
+            <label>Max File Size (MB):</label>
+            <input
+              type="number"
+              [(ngModel)]="metadataPersistence.saveToOriginalFile.pdf.maxFileSizeInMb"
+              (change)="onFilesizeChange('pdf')"
+              min="1"
+              max="1000"
+              class="filesize-field">
+            <i
+              class="pi pi-info-circle text-blue-500"
+              pTooltip="Only files up to this size (MB) will be updated. Larger files are ignored."
+              tooltipPosition="right"
+              style="cursor: help;"
+            ></i>
+          </div>
+        }
       </div>
     </div>
 
     <div class="setting-item">
-      <div class="setting-info">
-        <label class="setting-label">Auto-Move Files on Metadata Update</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          Automatically move and rename files according to their library's naming pattern when metadata is updated, either through manual editing or auto-fetch operations.
-        </p>
-        <div class="setting-item setting-item-indented">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">Enabled:</label>
-              <p-toggleswitch
-                [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
-                (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
-              </p-toggleswitch>
-            </div>
-          </div>
+      <label class="setting-label">Auto-Move Files on Metadata Update</label>
+      <p class="setting-description">
+        <i class="pi pi-info-circle"></i>
+        <span>Automatically move and rename files according to their library's naming pattern when metadata is updated, either through manual editing or auto-fetch operations.</span>
+      </p>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-label-row">
+          <label class="setting-label">Enabled:</label>
+          <p-toggleswitch
+            [ngModel]="metadataPersistence.moveFilesToLibraryPattern"
+            (onChange)="onPersistenceToggle('moveFilesToLibraryPattern')">
+          </p-toggleswitch>
         </div>
       </div>
     </div>

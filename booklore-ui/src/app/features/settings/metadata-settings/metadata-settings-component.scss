@@ -1,21 +1,3 @@
-.main-container {
-  width: 100%;
-  padding: 1rem;
-  height: calc(100dvh - 10.5rem);
-  overflow-y: auto;
-  border-width: 1px;
-  border-radius: 0.5rem;
-
-  @media (min-width: 768px) {
-    height: calc(100dvh - 11.65rem);
-  }
-}
-
-.enclosing-container {
-  border-color: var(--p-content-border-color);
-  background: var(--p-content-background);
-}
-
 .settings-header {
   margin-top: 1rem;
   margin-bottom: 2rem;
@@ -49,13 +31,6 @@
   gap: 2rem;
 }
 
-.preferences-section {
-
-  @media (min-width: 768px) {
-    padding: 0 1rem;
-  }
-}
-
 .section-header {
   margin-bottom: 1rem;
 
@@ -69,9 +44,16 @@
     gap: 0.5rem;
 
     .pi {
-      color: var(--p-primary-color);
       margin-top: 0.125rem;
       flex-shrink: 0;
+    }
+
+    .pi-exclamation-triangle {
+      color: var(--p-orange-500);
+    }
+
+    .pi-info-circle {
+      color: var(--p-primary-color);
     }
   }
 }
@@ -97,7 +79,17 @@
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
+
+  .section-header {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--p-content-border-color);
+    margin-bottom: 0;
+
+    + .setting-item {
+      margin-top: 0.5rem;
+    }
+  }
 }
 
 .setting-item {

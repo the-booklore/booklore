@@ -1,5 +1,4 @@
 import {Component} from '@angular/core';
-import {Divider} from 'primeng/divider';
 import {FormsModule} from '@angular/forms';
 import {TableModule} from 'primeng/table';
 import {ToastModule} from 'primeng/toast';
@@ -12,7 +11,6 @@ import {FilterPreferencesComponent} from './filter-preferences/filter-preference
   selector: 'app-view-preferences-parent',
   standalone: true,
   imports: [
-    Divider,
     FormsModule,
     TableModule,
     ToastModule,
