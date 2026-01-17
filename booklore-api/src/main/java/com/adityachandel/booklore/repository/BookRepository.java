@@ -204,7 +204,15 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
                 CASE 
                     WHEN m.seriesName IS NOT NULL THEN m.seriesName
                     WHEN m.title IS NOT NULL THEN m.title
-                    ELSE b.fileName
+                    ELSE (
+                        SELECT bf2.fileName FROM BookFileEntity bf2
+                        WHERE bf2.book = b
+                          AND bf2.isBookFormat = true
+                          AND bf2.id = (
+                              SELECT MIN(bf3.id) FROM BookFileEntity bf3
+                              WHERE bf3.book = b AND bf3.isBookFormat = true
+                          )
+                    )
                 END as seriesName
             FROM BookEntity b
             LEFT JOIN b.metadata m
@@ -223,7 +231,15 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
                 CASE 
                     WHEN m.seriesName IS NOT NULL THEN m.seriesName
                     WHEN m.title IS NOT NULL THEN m.title
-                    ELSE b.fileName
+                    ELSE (
+                        SELECT bf2.fileName FROM BookFileEntity bf2
+                        WHERE bf2.book = b
+                          AND bf2.isBookFormat = true
+                          AND bf2.id = (
+                              SELECT MIN(bf3.id) FROM BookFileEntity bf3
+                              WHERE bf3.book = b AND bf3.isBookFormat = true
+                          )
+                    )
                 END as seriesName
             FROM BookEntity b
             LEFT JOIN b.metadata m
@@ -234,15 +250,25 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
 
     /**
      * Find books by series name for a library when groupUnknown=true.
+     * Uses the first bookFile.fileName as fallback when metadata.seriesName is null.
      */
     @EntityGraph(attributePaths = {"metadata", "shelves", "libraryPath"})
     @Query("""
-            SELECT b FROM BookEntity b
+            SELECT DISTINCT b FROM BookEntity b
             LEFT JOIN b.metadata m
+            LEFT JOIN b.bookFiles bf
             WHERE b.library.id = :libraryId
             AND (
                 (m.seriesName = :seriesName)
-                OR (m.seriesName IS NULL AND :seriesName = :unknownSeriesName)
+                OR (
+                    m.seriesName IS NULL
+                    AND bf.isBookFormat = true
+                    AND bf.id = (
+                        SELECT MIN(bf2.id) FROM BookFileEntity bf2
+                        WHERE bf2.book = b AND bf2.isBookFormat = true
+                    )
+                    AND bf.fileName = :seriesName
+                )
             )
             AND (b.deleted IS NULL OR b.deleted = false)
             ORDER BY COALESCE(m.seriesNumber, 0)
@@ -260,11 +286,20 @@ public interface BookRepository extends JpaRepository<BookEntity, Long>, JpaSpec
     @Query("""
             SELECT b FROM BookEntity b
             LEFT JOIN b.metadata m
+            LEFT JOIN b.bookFiles bf
             WHERE b.library.id = :libraryId
             AND (
                 (m.seriesName = :seriesName)
                 OR (m.seriesName IS NULL AND m.title = :seriesName)
-                OR (m.seriesName IS NULL AND m.title IS NULL AND b.fileName = :seriesName)
+                OR (
+                    m.seriesName IS NULL AND m.title IS NULL
+                    AND bf.isBookFormat = true
+                    AND bf.id = (
+                        SELECT MIN(bf2.id) FROM BookFileEntity bf2
+                        WHERE bf2.book = b AND bf2.isBookFormat = true
+                    )
+                    AND bf.fileName = :seriesName
+                )
             )
             AND (b.deleted IS NULL OR b.deleted = false)
             ORDER BY COALESCE(m.seriesNumber, 0)
