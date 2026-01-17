@@ -1,3 +1,45 @@
+.form-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  animation: fadeIn 0.3s ease-in;
+}
+
+.form-content {
+  flex-grow: 1;
+  overflow: auto;
+  padding: 0;
+
+  @media (min-width: 768px) {
+    padding: 1rem;
+  }
+}
+
+.metadata-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  padding-left: 9.25rem;
+  margin-top: 1rem;
+}
+
+.metadata-header-text {
+  margin-left: 0.75rem;
+  font-size: 1.125rem;
+}
+
+.button-left {
+  padding-left: 3rem;
+  padding-right: 0.5rem;
+}
+
+.button-double-left {
+  padding-left: 0.5rem;
+  padding-right: 2rem;
+}
+
 .form-row {
   display: flex;
   align-items: center;
@@ -7,7 +49,7 @@
 }
 
 .label {
-  width: 7rem;
+  width: 8rem;
   text-align: left;
 }
 
@@ -23,6 +65,16 @@
   padding: 0.5rem;
   border-radius: 0.25rem;
   margin: 0 1rem;
+}
+
+.autocomplete-container {
+  width: 100%;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.autocomplete-full-width {
+  width: 100%;
 }
 
 .thumbnail {
@@ -54,10 +106,31 @@
   --p-button-outlined-primary-color: #E32636;
 }
 
+.form-footer {
+  margin-top: auto;
+}
+
+.footer-buttons {
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem 0.5rem 0;
+}
+
+.footer-buttons-right {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
 ::ng-deep .p-inputchips {
   width: 100% !important;
 }
 
-.flex.flex-col.h-full.w-full {
-  animation: fadeIn 0.3s ease-in;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }

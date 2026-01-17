@@ -238,16 +238,19 @@ label {
 }
 
 .metadata-ids-row {
-  @media (min-width: 768px) {
-    .field-group {
-      width: calc(100% / 6);
-    }
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+
+  .metadata-id-field {
+    min-width: 0;
   }
 }
 
 .metadata-id-field {
   @media (min-width: 768px) {
-    width: calc(100% / 6);
+    min-width: 0;
   }
 }
 
