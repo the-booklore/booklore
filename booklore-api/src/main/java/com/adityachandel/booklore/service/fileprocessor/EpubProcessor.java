@@ -11,11 +11,13 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.EpubMetadataExtractor;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -32,6 +34,7 @@ import static com.adityachandel.booklore.util.FileService.truncate;
 public class EpubProcessor extends AbstractFileProcessor implements BookFileProcessor {
 
     private final EpubMetadataExtractor epubMetadataExtractor;
+    private final AppSettingService appSettingService;
 
     public EpubProcessor(BookRepository bookRepository,
                          BookAdditionalFileRepository bookAdditionalFileRepository,
@@ -39,9 +42,11 @@ public class EpubProcessor extends AbstractFileProcessor implements BookFileProc
                          BookMapper bookMapper,
                          FileService fileService,
                          MetadataMatchService metadataMatchService,
-                         EpubMetadataExtractor epubMetadataExtractor) {
+                         EpubMetadataExtractor epubMetadataExtractor,
+                         AppSettingService appSettingService) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
         this.epubMetadataExtractor = epubMetadataExtractor;
+        this.appSettingService = appSettingService;
     }
 
     @Override

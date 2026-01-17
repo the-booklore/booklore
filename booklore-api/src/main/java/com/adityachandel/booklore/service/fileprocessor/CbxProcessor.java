@@ -11,6 +11,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.util.ArchiveUtils;
 import com.adityachandel.booklore.util.BookCoverUtils;
 import com.adityachandel.booklore.util.FileService;
@@ -23,6 +24,7 @@ import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -44,6 +46,7 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
     private static final Pattern IMAGE_EXTENSION_PATTERN = Pattern.compile(".*\\.(jpg|jpeg|png|webp)");
     private static final Pattern IMAGE_EXTENSION_CASE_INSENSITIVE_PATTERN = Pattern.compile("(?i).*\\.(jpg|jpeg|png|webp)");
     private final CbxMetadataExtractor cbxMetadataExtractor;
+    private final AppSettingService appSettingService;
 
     public CbxProcessor(BookRepository bookRepository,
                         BookAdditionalFileRepository bookAdditionalFileRepository,
@@ -51,9 +54,11 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
                         BookMapper bookMapper,
                         FileService fileService,
                         MetadataMatchService metadataMatchService,
-                        CbxMetadataExtractor cbxMetadataExtractor) {
+                        CbxMetadataExtractor cbxMetadataExtractor,
+                        AppSettingService appSettingService) {
         super(bookRepository, bookAdditionalFileRepository, bookCreatorService, bookMapper, fileService, metadataMatchService);
         this.cbxMetadataExtractor = cbxMetadataExtractor;
+        this.appSettingService = appSettingService;
     }
 
     @Override
@@ -67,7 +72,6 @@ public class CbxProcessor extends AbstractFileProcessor implements BookFileProce
         extractAndSetMetadata(bookEntity);
         return bookEntity;
     }
-
     @Override
     public boolean generateCover(BookEntity bookEntity) {
         File file = new File(FileUtils.getBookFullPath(bookEntity));

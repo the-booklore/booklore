@@ -373,4 +373,171 @@ class BookMetadataUpdaterTest {
         assertEquals("New Title", bookEntity.getMetadata().getTitle());
         assertTrue(bookEntity.getMetadata().getTitleLocked());
     }
+
+    @Test
+    void setBookMetadata_withPrioritizeEmbeddedMetadata_andNotManual_shouldNotOverwrite() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Existing Title");
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title From Auto-Fetch");
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL) // even if REPLACE_ALL is requested
+                .manual(false)
+                .build();
+        AppSettings settings = appSettingService.getAppSettings();
+        settings.setPrioritizeEmbeddedMetadata(true);
+        when(appSettingService.getAppSettings()).thenReturn(settings);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Existing Title", bookEntity.getMetadata().getTitle());
+    }
+
+    @Test
+    void setBookMetadata_withPrioritizeEmbeddedMetadata_andManual_shouldOverwrite() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Existing Title");
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title From User");
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .manual(true)
+                .build();
+
+        AppSettings settings = appSettingService.getAppSettings();
+        settings.setPrioritizeEmbeddedMetadata(true);
+        when(appSettingService.getAppSettings()).thenReturn(settings);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("New Title From User", bookEntity.getMetadata().getTitle());
+    }
+
+    @Test
+    void setBookMetadata_withPrioritizeEmbeddedMetadata_andNotManual_shouldFillMissingButNotOverwriteExisting() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Existing Title");
+        metadataEntity.setDescription(null);
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title From Auto-Fetch");
+        newMetadata.setDescription("New Description From Auto-Fetch");
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .manual(false)
+                .build();
+
+        // Enable prioritization
+        AppSettings settings = appSettingService.getAppSettings();
+        settings.setPrioritizeEmbeddedMetadata(true);
+        when(appSettingService.getAppSettings()).thenReturn(settings);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("Existing Title", bookEntity.getMetadata().getTitle());
+        assertEquals("New Description From Auto-Fetch", bookEntity.getMetadata().getDescription());
+    }
+
+    @Test
+    void setBookMetadata_withPrioritizeEmbeddedMetadata_OFF_andNotManual_shouldOverwrite() {
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setTitle("Existing Title");
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setTitle("New Title From Auto-Fetch");
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .manual(false)
+                .build();
+
+        AppSettings settings = appSettingService.getAppSettings();
+        settings.setPrioritizeEmbeddedMetadata(false);
+        when(appSettingService.getAppSettings()).thenReturn(settings);
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        assertEquals("New Title From Auto-Fetch", bookEntity.getMetadata().getTitle());
+    }
 }

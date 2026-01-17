@@ -73,6 +73,7 @@ public class MetadataController {
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .mergeMoods(false)
                 .mergeTags(false)
+                .manual(true)
                 .build();
 
         bookMetadataUpdater.setBookMetadata(context);

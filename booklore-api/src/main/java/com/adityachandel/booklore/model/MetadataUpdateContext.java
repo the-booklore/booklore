@@ -15,4 +15,6 @@ public class MetadataUpdateContext {
     private boolean mergeMoods;
     private boolean mergeTags;
     private MetadataReplaceMode replaceMode;
+    @Builder.Default
+    private boolean manual = false;
 }

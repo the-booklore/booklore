@@ -33,6 +33,7 @@ export class MetadataSettingsComponent implements OnInit {
 
   currentMetadataOptions!: MetadataRefreshOptions;
   metadataDownloadOnBookdrop = true;
+  prioritizeEmbeddedMetadata = false;
 
   private readonly appSettingsService = inject(AppSettingsService);
   private readonly settingsHelper = inject(SettingsHelperService);
@@ -46,6 +47,11 @@ export class MetadataSettingsComponent implements OnInit {
   onMetadataDownloadOnBookdropToggle(checked: boolean): void {
     this.metadataDownloadOnBookdrop = checked;
     this.settingsHelper.saveSetting(AppSettingKey.METADATA_DOWNLOAD_ON_BOOKDROP, checked);
+  }
+
+  onPrioritizeEmbeddedMetadataToggle(checked: boolean): void {
+    this.prioritizeEmbeddedMetadata = checked;
+    this.settingsHelper.saveSetting(AppSettingKey.PRIORITIZE_EMBEDDED_METADATA, checked);
   }
 
   onMetadataSubmit(metadataRefreshOptions: MetadataRefreshOptions): void {
@@ -72,5 +78,6 @@ export class MetadataSettingsComponent implements OnInit {
     }
 
     this.metadataDownloadOnBookdrop = settings.metadataDownloadOnBookdrop ?? true;
+    this.prioritizeEmbeddedMetadata = settings.prioritizeEmbeddedMetadata ?? false;
   }
 }

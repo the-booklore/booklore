@@ -15,15 +15,22 @@
       </div>
 
       <div class="section-body">
-        <div class="setting-item">
-          <div class="setting-item setting-item-indented">
-            <div class="setting-label-row">
-              <label class="setting-label">Enable automatic metadata download for Bookdrop imports</label>
-              <p-toggleswitch
-                [(ngModel)]="metadataDownloadOnBookdrop"
-                (onChange)="onMetadataDownloadOnBookdropToggle($event.checked)">
-              </p-toggleswitch>
-            </div>
+        <div class="setting-item setting-item-indented">
+          <div class="setting-label-row">
+            <label class="setting-label">Enable automatic metadata download for Bookdrop imports</label>
+            <p-toggleswitch
+              [(ngModel)]="metadataDownloadOnBookdrop"
+              (onChange)="onMetadataDownloadOnBookdropToggle($event.checked)">
+            </p-toggleswitch>
+          </div>
+        </div>
+        <div class="setting-item setting-item-indented">
+          <div class="setting-label-row">
+            <label class="setting-label">Prioritize embedded metadata (prevents overwriting by auto-fetch)</label>
+            <p-toggleswitch
+              [(ngModel)]="prioritizeEmbeddedMetadata"
+              (onChange)="onPrioritizeEmbeddedMetadataToggle($event.checked)">
+            </p-toggleswitch>
           </div>
         </div>
       </div>

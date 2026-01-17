@@ -60,6 +60,10 @@ public class BookMetadataUpdater {
         boolean updateThumbnail = context.isUpdateThumbnail();
         MetadataReplaceMode replaceMode = context.getReplaceMode();
 
+        if (appSettingService.getAppSettings().isPrioritizeEmbeddedMetadata() && !context.isManual()) {
+            replaceMode = MetadataReplaceMode.REPLACE_MISSING;
+        }
+
         Long bookId = bookEntity.getId();
         BookMetadata newMetadata = wrapper.getMetadata();
 

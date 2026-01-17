@@ -161,6 +161,7 @@ public class BookMetadataService {
                     .mergeCategories(mergeCategories)
                     .mergeMoods(mergeMoods)
                     .mergeTags(mergeTags)
+                    .manual(true)
                     .build();
 
             bookMetadataUpdater.setBookMetadata(context);

@@ -475,6 +475,7 @@ public class BookDropService {
                 .replaceMode(MetadataReplaceMode.REPLACE_ALL)
                 .mergeMoods(true)
                 .mergeTags(true)
+                .manual(false)
                 .build();
 
         metadataRefreshService.updateBookMetadata(context);

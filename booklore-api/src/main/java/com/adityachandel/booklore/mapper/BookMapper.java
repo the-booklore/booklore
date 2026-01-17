@@ -26,6 +26,7 @@ public interface BookMapper {
     @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
+    @Mapping(target = "filePath", expression = "java(bookEntity.getFullFilePath().toString())")
     Book toBook(BookEntity bookEntity);
 
     @Mapping(source = "library.id", target = "libraryId")
@@ -36,6 +37,7 @@ public interface BookMapper {
     @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
+    @Mapping(target = "filePath", expression = "java(bookEntity.getFullFilePath().toString())")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
 
     default Set<String> mapAuthors(Set<AuthorEntity> authors) {

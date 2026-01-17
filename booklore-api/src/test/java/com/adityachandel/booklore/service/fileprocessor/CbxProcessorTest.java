@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.book.BookCreatorService;
 import com.adityachandel.booklore.service.metadata.MetadataMatchService;
 import com.adityachandel.booklore.service.metadata.extractor.CbxMetadataExtractor;
@@ -43,6 +44,7 @@ class CbxProcessorTest {
     @Mock private FileService fileService;
     @Mock private MetadataMatchService metadataMatchService;
     @Mock private CbxMetadataExtractor cbxMetadataExtractor;
+    @Mock private AppSettingService appSettingService;
 
     private CbxProcessor cbxProcessor;
 
@@ -58,7 +60,8 @@ class CbxProcessorTest {
                 bookMapper,
                 fileService,
                 metadataMatchService,
-                cbxMetadataExtractor
+                cbxMetadataExtractor,
+                appSettingService
         );
     }
 
