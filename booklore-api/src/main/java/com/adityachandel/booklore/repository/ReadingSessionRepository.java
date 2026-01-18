@@ -84,7 +84,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             SELECT
                 DAYOFWEEK(rs.startTime) as dayOfWeek,
                 COUNT(rs) as sessionCount,
-                SUM(rs.durationSeconds) as totalDurationSeconds
+                COALESCE(SUM(rs.durationSeconds), 0) as totalDurationSeconds
             FROM ReadingSessionEntity rs
             WHERE rs.user.id = :userId
             AND (:year IS NULL OR YEAR(rs.startTime) = :year)
