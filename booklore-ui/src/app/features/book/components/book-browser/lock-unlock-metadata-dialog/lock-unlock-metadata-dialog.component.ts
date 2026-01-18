@@ -23,7 +23,7 @@ import {finalize} from 'rxjs';
 export class LockUnlockMetadataDialogComponent implements OnInit {
   private bookService = inject(BookService);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
-  private dialogRef = inject(DynamicDialogRef);
+  dialogRef = inject(DynamicDialogRef);
   private messageService = inject(MessageService);
   private loadingService = inject(LoadingService);
   fieldLocks: Record<string, boolean | undefined> = {};

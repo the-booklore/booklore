@@ -1,9 +1,27 @@
-<div class="p-fluid px-4 py-2 rounded-xl flex flex-col h-full">
+<div class="file-mover-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-folder-open header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Move & Organize Files</h2>
+      <p class="panel-description">{{ books.length }} book{{ books.length !== 1 ? 's' : '' }} selected</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="ref.close()"
+      styleClass="close-button">
+    </p-button>
+  </div>
 
-  <div class="px-4 mx-2 mb-4 py-3 rounded-lg border border-[var(--border-color)] transition-all">
-    <p class="text-[var(--primary-color)] font-semibold mb-1">
-      File Organization Preview
-    </p>
+  <div class="dialog-content">
+    <div class="px-4 mx-2 mb-4 py-3 rounded-lg border border-[var(--border-color)] transition-all">
+      <p class="text-[var(--primary-color)] font-semibold mb-1">
+        File Organization Preview
+      </p>
     <div class="text-sm text-gray-300 space-y-3">
       <p>
         Your files will be automatically renamed, organized, and can be moved between libraries based on your preferences.
@@ -157,9 +175,9 @@
     </p-table>
   </div>
 
-  <p-divider></p-divider>
+  </div>
 
-  <div class="flex justify-end items-center gap-4 flex-shrink-0 px-4 pt-4">
+  <div class="dialog-footer">
     @if (movedFileCount > 0) {
       <span class="text-green-500 flex items-center font-semibold drop-shadow-sm select-none">
         {{ movedFileCount }} file{{ movedFileCount > 1 ? 's' : '' }} successfully moved
@@ -182,7 +200,8 @@
       <p-button
         label="Cancel"
         icon="pi pi-times"
-        severity="danger"
+        severity="secondary"
+        [text]="true"
         (click)="cancel()"
       ></p-button>
     } @else {

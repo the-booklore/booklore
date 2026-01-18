@@ -261,62 +261,62 @@
     box-sizing: border-box;
 
     &.book-type-epub, &.book-type-default {
-      background: rgba(59, 130, 246, 0.8);
-      border: 1px solid rgba(59, 130, 246, 1);
-      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      background: color-mix(in srgb, var(--book-type-epub-color) 80%, transparent);
+      border: 1px solid var(--book-type-epub-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-epub-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(59, 130, 246, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-epub-color) 50%, transparent);
       }
     }
 
     &.book-type-pdf {
-      background: rgba(239, 68, 68, 0.8);
-      border: 1px solid rgba(239, 68, 68, 1);
-      box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+      background: color-mix(in srgb, var(--book-type-pdf-color) 80%, transparent);
+      border: 1px solid var(--book-type-pdf-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-pdf-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(239, 68, 68, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-pdf-color) 50%, transparent);
       }
     }
 
     &.book-type-cbx {
-      background: rgba(255, 193, 7, 0.8);
-      border: 1px solid rgba(255, 193, 7, 1);
-      box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3);
+      background: color-mix(in srgb, var(--book-type-cbx-color) 80%, transparent);
+      border: 1px solid var(--book-type-cbx-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-cbx-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(255, 193, 7, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-cbx-color) 50%, transparent);
       }
     }
 
     &.book-type-fb2 {
-      background: rgba(34, 197, 94, 0.8);
-      border: 1px solid rgba(34, 197, 94, 1);
-      box-shadow: 0 2px 4px rgba(34, 197, 94, 0.3);
+      background: color-mix(in srgb, var(--book-type-fb2-color) 80%, transparent);
+      border: 1px solid var(--book-type-fb2-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-fb2-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(34, 197, 94, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-fb2-color) 50%, transparent);
       }
     }
 
     &.book-type-mobi {
-      background: rgba(168, 85, 247, 0.8);
-      border: 1px solid rgba(168, 85, 247, 1);
-      box-shadow: 0 2px 4px rgba(168, 85, 247, 0.3);
+      background: color-mix(in srgb, var(--book-type-mobi-color) 80%, transparent);
+      border: 1px solid var(--book-type-mobi-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-mobi-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(168, 85, 247, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-mobi-color) 50%, transparent);
       }
     }
 
     &.book-type-azw3 {
-      background: rgba(236, 72, 153, 0.8);
-      border: 1px solid rgba(236, 72, 153, 1);
-      box-shadow: 0 2px 4px rgba(236, 72, 153, 0.3);
+      background: color-mix(in srgb, var(--book-type-azw3-color) 80%, transparent);
+      border: 1px solid var(--book-type-azw3-color);
+      box-shadow: 0 2px 4px color-mix(in srgb, var(--book-type-azw3-color) 30%, transparent);
 
       &:hover {
-        box-shadow: 0 4px 8px rgba(236, 72, 153, 0.5);
+        box-shadow: 0 4px 8px color-mix(in srgb, var(--book-type-azw3-color) 50%, transparent);
       }
     }
 
