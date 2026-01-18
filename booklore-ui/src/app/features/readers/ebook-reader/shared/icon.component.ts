@@ -162,7 +162,6 @@ export class ReaderIconComponent {
   }
 
   getLineCoords(d: string, index: number): string {
-    // Parse "M3,6 L21,6" or "3,6 21,6" format
     const coords = d.replace(/[ML]/g, ' ').trim().split(/[\s,]+/);
     return coords[index] || '0';
   }
