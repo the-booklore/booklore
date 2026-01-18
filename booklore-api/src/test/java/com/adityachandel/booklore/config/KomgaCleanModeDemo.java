@@ -11,6 +11,7 @@ import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
 /**
  * Demonstrates the JSON output differences with and without clean mode.
  */
@@ -21,7 +22,7 @@ class KomgaCleanModeDemo {
     @BeforeEach
     void setup() {
         JacksonConfig config = new JacksonConfig();
-        objectMapper = config.objectMapper(new org.springframework.http.converter.json.Jackson2ObjectMapperBuilder());
+        objectMapper = config.komgaCleanObjectMapper(new org.springframework.http.converter.json.Jackson2ObjectMapperBuilder());
     }
 
     @AfterEach

@@ -5,6 +5,7 @@ import com.adityachandel.booklore.model.dto.komga.KomgaBookDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaSeriesDto;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -61,11 +62,19 @@ class KomgaMapperTest {
 
         BookEntity book = new BookEntity();
         book.setId(100L);
-        book.setFileName("test-book.pdf");
         book.setLibrary(library);
         book.setMetadata(metadata);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.now());
+
+        BookFileEntity pdf = new BookFileEntity();
+        pdf.setId(100L);
+        pdf.setBook(book);
+        pdf.setFileSubPath("author/title");
+        pdf.setFileName("test-book.pdf");
+        pdf.setBookType(BookFileType.PDF);
+        pdf.setBookFormat(true);
+
+        book.setBookFiles(List.of(pdf));
 
         // When: Converting to DTO
         KomgaBookDto dto = mapper.toKomgaBookDto(book);
@@ -84,11 +93,19 @@ class KomgaMapperTest {
 
         BookEntity book = new BookEntity();
         book.setId(100L);
-        book.setFileName("test-book.pdf");
         book.setLibrary(library);
         book.setMetadata(null);  // Null metadata
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.now());
+
+        BookFileEntity pdf = new BookFileEntity();
+        pdf.setId(100L);
+        pdf.setBook(book);
+        pdf.setFileSubPath("author/title");
+        pdf.setFileName("test-book.pdf");
+        pdf.setBookType(BookFileType.PDF);
+        pdf.setBookFormat(true);
+
+        book.setBookFiles(List.of(pdf));
 
         // When: Converting to DTO
         KomgaBookDto dto = mapper.toKomgaBookDto(book);
@@ -113,11 +130,19 @@ class KomgaMapperTest {
 
         BookEntity book = new BookEntity();
         book.setId(100L);
-        book.setFileName("test-book.pdf");
         book.setLibrary(library);
         book.setMetadata(metadata);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.now());
+
+        BookFileEntity pdf = new BookFileEntity();
+        pdf.setId(100L);
+        pdf.setBook(book);
+        pdf.setFileSubPath("author/title");
+        pdf.setFileName("test-book.pdf");
+        pdf.setBookType(BookFileType.PDF);
+        pdf.setBookFormat(true);
+
+        book.setBookFiles(List.of(pdf));
 
         // When: Converting to DTO
         KomgaBookDto dto = mapper.toKomgaBookDto(book);
@@ -139,10 +164,18 @@ class KomgaMapperTest {
         List<BookEntity> books = new ArrayList<>();
         BookEntity book = new BookEntity();
         book.setId(100L);
-        book.setFileName("test-book.pdf");
         book.setLibrary(library);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.now());
+
+        BookFileEntity pdf = new BookFileEntity();
+        pdf.setId(100L);
+        pdf.setBook(book);
+        pdf.setFileSubPath("author/title");
+        pdf.setFileName("test-book.pdf");
+        pdf.setBookType(BookFileType.PDF);
+        pdf.setBookFormat(true);
+
+        book.setBookFiles(List.of(pdf));
         
         // Book with metadata but empty fields
         BookMetadataEntity metadata = BookMetadataEntity.builder()
@@ -177,10 +210,18 @@ class KomgaMapperTest {
         List<BookEntity> books = new ArrayList<>();
         BookEntity book = new BookEntity();
         book.setId(100L);
-        book.setFileName("test-book.pdf");
         book.setLibrary(library);
-        book.setBookType(BookFileType.PDF);
         book.setAddedOn(Instant.now());
+
+        BookFileEntity pdf = new BookFileEntity();
+        pdf.setId(100L);
+        pdf.setBook(book);
+        pdf.setFileSubPath("author/title");
+        pdf.setFileName("test-book.pdf");
+        pdf.setBookType(BookFileType.PDF);
+        pdf.setBookFormat(true);
+
+        book.setBookFiles(List.of(pdf));
         
         // Book with metadata but empty fields
         BookMetadataEntity metadata = BookMetadataEntity.builder()

@@ -7,6 +7,7 @@ import com.adityachandel.booklore.model.dto.komga.KomgaPageableDto;
 import com.adityachandel.booklore.model.dto.komga.KomgaSeriesDto;
 import com.adityachandel.booklore.model.dto.settings.AppSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -80,11 +81,19 @@ class KomgaServiceTest {
 
             BookEntity book = new BookEntity();
             book.setId((long) i);
-            book.setFileName("book-" + i + ".pdf");
             book.setLibrary(library);
             book.setMetadata(metadata);
-            book.setBookType(BookFileType.PDF);
             book.setAddedOn(Instant.now());
+
+            BookFileEntity pdf = new BookFileEntity();
+            pdf.setId((long) i);
+            pdf.setBook(book);
+            pdf.setFileSubPath("author/title");
+            pdf.setFileName("book-" + i + ".pdf");
+            pdf.setBookType(BookFileType.PDF);
+            pdf.setBookFormat(true);
+
+            book.setBookFiles(List.of(pdf));
 
             seriesBooks.add(book);
         }

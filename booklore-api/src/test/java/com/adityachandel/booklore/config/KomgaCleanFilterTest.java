@@ -21,7 +21,7 @@ class KomgaCleanFilterTest {
     void setup() {
         // Create ObjectMapper with our custom configuration
         JacksonConfig config = new JacksonConfig();
-        objectMapper = config.objectMapper(new org.springframework.http.converter.json.Jackson2ObjectMapperBuilder());
+        objectMapper = config.komgaCleanObjectMapper(new org.springframework.http.converter.json.Jackson2ObjectMapperBuilder());
     }
 
     @AfterEach
