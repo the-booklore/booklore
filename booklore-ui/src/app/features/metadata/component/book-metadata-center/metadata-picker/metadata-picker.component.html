@@ -1,23 +1,23 @@
 @if (book$ | async; as book) {
-  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="flex flex-col h-full w-full">
-    <div class="flex-grow overflow-auto p-0 md:p-4">
-      <div class="flex justify-center items-center" [ngStyle]="{'padding-bottom': '0.75rem', 'padding-left': '7.6rem'}">
-        <p class="ml-3 text-lg">Current Metadata</p>
+  <form [formGroup]="metadataForm" (ngSubmit)="onSave()" class="form-container">
+    <div class="form-content">
+      <div class="metadata-header">
+        <p class="metadata-header-text">Current Metadata</p>
         <p-button
-          severity="success"
+          severity="info"
           icon='pi pi-angle-left'
-          [ngStyle]="{'padding-left': '3rem', 'padding-right': '0.5rem'}"
+          class="button-left"
           [outlined]="true"
           pTooltip="Move all missing fields" tooltipPosition="bottom"
           (onClick)="copyMissing()"></p-button>
         <p-button
-          severity="success"
+          severity="info"
           icon='pi pi-angle-double-left'
-          [ngStyle]="{'padding-left': '0.5rem', 'padding-right': '2rem'}"
+          class="button-double-left"
           [outlined]="true"
           pTooltip="Move all fields" tooltipPosition="bottom"
           (onClick)="copyAll()"></p-button>
-        <p class="text-lg">Fetched Metadata</p>
+        <p class="metadata-header-text">Fetched Metadata</p>
       </div>
       <div class="form-row">
         <label class="label"></label>
@@ -103,9 +103,9 @@
             @if (metadataForm.get(field.lockedKey)?.value) {
               <p-button icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock(field.controlName)" severity="warn"></p-button>
             }
-            <div class="w-full px-4">
+            <div class="autocomplete-container">
               <p-autoComplete
-                class="w-full"
+                class="autocomplete-full-width"
                 formControlName="{{field.controlName}}"
                 [multiple]="true"
                 [dropdown]="false"
@@ -131,12 +131,12 @@
               (mouseenter)="onMouseEnter(field.controlName)"
               (mouseleave)="onMouseLeave(field.controlName)"/>
 
-            <div class="w-full px-4">
+            <div class="autocomplete-container">
               <p-autoComplete
                 [ngModel]="fetchedMetadata[field.fetchedKey] ?? []"
                 [ngModelOptions]="{ standalone: true }"
                 [disabled]="true"
-                [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="w-full">
+                [multiple]="true" [typeahead]="false" [dropdown]="false" [forceSelection]="false" class="autocomplete-full-width">
               </p-autoComplete>
             </div>
           </div>
@@ -198,33 +198,33 @@
           </div>
         </div>
       }
-      <div class="flex justify-center items-center" [ngStyle]="{'padding-bottom': '0.75rem', 'padding-left': '7.6rem'}">
-        <p class="ml-3 text-lg">Current Metadata</p>
+      <div class="metadata-header">
+        <p class="metadata-header-text">Current Metadata</p>
         <p-button
-          severity="success"
+          severity="info"
           icon='pi pi-angle-left'
-          [ngStyle]="{'padding-left': '3rem', 'padding-right': '0.5rem'}"
+          class="button-left"
           [outlined]="true"
           pTooltip="Move all missing fields" tooltipPosition="bottom"
           (onClick)="copyMissing()"></p-button>
         <p-button
-          severity="success"
+          severity="info"
           icon='pi pi-angle-double-left'
-          [ngStyle]="{'padding-left': '0.5rem', 'padding-right': '2rem'}"
+          class="button-double-left"
           [outlined]="true"
           pTooltip="Move all fields" tooltipPosition="bottom"
           (onClick)="copyAll()"></p-button>
-        <p class="text-lg">Fetched Metadata</p>
+        <p class="metadata-header-text">Fetched Metadata</p>
       </div>
     </div>
 
 
     @if (!reviewMode) {
-      <div class="mt-auto">
+      <div class="form-footer">
         <p-divider></p-divider>
-        <div class="flex justify-between px-2 pt-4">
+        <div class="footer-buttons">
           <p-button label="To Metadata List" icon="pi pi-arrow-left" severity="info" (onClick)="goBackClick()"></p-button>
-          <div class="flex gap-x-4 justify-end">
+          <div class="footer-buttons-right">
             <p-button label="Unlock All" icon="pi pi-lock-open" [outlined]="true" severity="success" (onClick)="unlockAll()"></p-button>
             <p-button label="Lock All" icon="pi pi-lock" [outlined]="true" severity="warn" (onClick)="lockAll()"></p-button>
             <p-divider layout="vertical"/>

@@ -1,0 +1,171 @@
+@if (isOpen) {
+  <div class="sidebar-overlay" (click)="onOverlayClick()" [class.closing]="closing">
+    <aside class="sidebar" (click)="$event.stopPropagation()" [class.closing]="closing">
+      <!-- Header -->
+      <header class="sidebar-header">
+        <h2 class="sidebar-title">
+          @if (activeTab === 'search') {
+            Search
+          } @else {
+            Notes
+          }
+        </h2>
+      </header>
+
+      <!-- Tab navigation -->
+      <nav class="tabs">
+        <button
+          class="tab"
+          [class.active]="activeTab === 'search'"
+          (click)="setActiveTab('search')">
+          <app-reader-icon name="search" class="tab-icon"></app-reader-icon>
+          <span>Search</span>
+          @if (searchState.results.length > 0) {
+            <span class="badge">{{ searchState.results.length }}</span>
+          }
+        </button>
+        <button
+          class="tab"
+          [class.active]="activeTab === 'notes'"
+          (click)="setActiveTab('notes')">
+          <app-reader-icon name="note" class="tab-icon"></app-reader-icon>
+          <span>Notes</span>
+          @if (notes.length > 0) {
+            <span class="badge">{{ notes.length }}</span>
+          }
+        </button>
+      </nav>
+
+      <!-- Tab content -->
+      <div class="content">
+        @switch (activeTab) {
+          @case ('search') {
+            <div class="search-container">
+              <div class="search-input-wrapper">
+                <app-reader-icon name="search" class="search-icon" [size]="16"></app-reader-icon>
+                <input
+                  type="text"
+                  class="search-input"
+                  placeholder="Search in book..."
+                  [(ngModel)]="searchQuery"
+                  (ngModelChange)="onSearchInput($event)"
+                  autofocus
+                />
+                @if (searchQuery) {
+                  <button class="clear-btn" (click)="clearSearch()" aria-label="Clear search">
+                    <app-reader-icon name="close" [size]="14"></app-reader-icon>
+                  </button>
+                }
+              </div>
+
+              @if (searchState.isSearching) {
+                <div class="search-progress">
+                  <div class="progress-bar">
+                    <div class="progress-fill" [style.width.%]="searchState.progress * 100"></div>
+                  </div>
+                  <span class="progress-text">Searching... {{ (searchState.progress * 100) | number:'1.0-0' }}%</span>
+                </div>
+              }
+
+              @if (searchState.results.length > 0) {
+                <div class="search-results-header">
+                  <span>{{ searchState.results.length }} result{{ searchState.results.length === 1 ? '' : 's' }} found</span>
+                </div>
+                <ul class="item-list search-results">
+                  @for (result of searchState.results; track result.cfi) {
+                    <li class="list-item search-result-item" (click)="onSearchResultClick(result.cfi)">
+                      <div class="item-content">
+                        <span class="search-excerpt">
+                          <span class="excerpt-context">{{ result.excerpt.pre }}</span>
+                          <mark class="excerpt-match">{{ result.excerpt.match }}</mark>
+                          <span class="excerpt-context">{{ result.excerpt.post }}</span>
+                        </span>
+                        @if (result.sectionLabel) {
+                          <span class="item-chapter">{{ result.sectionLabel }}</span>
+                        }
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else if (!searchState.isSearching && searchQuery) {
+                <div class="empty-state">
+                  <app-reader-icon name="search" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No results found</p>
+                  <span class="empty-hint">Try different keywords</span>
+                </div>
+              } @else if (!searchQuery) {
+                <div class="empty-state">
+                  <app-reader-icon name="search" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>Search this book</p>
+                  <span class="empty-hint">Enter text to find in the book</span>
+                </div>
+              }
+            </div>
+          }
+
+          @case ('notes') {
+            <div class="notes-container">
+              @if (notes.length > 0) {
+                <div class="notes-search-wrapper">
+                  <app-reader-icon name="search" class="search-icon" [size]="16"></app-reader-icon>
+                  <input
+                    type="text"
+                    class="search-input"
+                    placeholder="Search notes..."
+                    [(ngModel)]="notesSearchQuery"
+                    (ngModelChange)="onNotesSearchInput($event)"
+                  />
+                  @if (notesSearchQuery) {
+                    <button class="clear-btn" (click)="clearNotesSearch()" aria-label="Clear search">
+                      <app-reader-icon name="close" [size]="14"></app-reader-icon>
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (filteredNotes.length > 0) {
+                <ul class="item-list">
+                  @for (note of filteredNotes; track note.id) {
+                    <li class="list-item note-item" (click)="onNoteClick(note.cfi)">
+                      <div class="note-bar" [style.background-color]="note.color"></div>
+                      <div class="item-content">
+                        <span class="note-text">{{ note.noteContent }}</span>
+                        @if (note.selectedText) {
+                          <span class="note-selected-text">"{{ note.selectedText }}"</span>
+                        }
+                        @if (note.chapterTitle) {
+                          <span class="item-chapter">{{ note.chapterTitle }}</span>
+                        }
+                        <span class="item-meta">{{ note.createdAt | date: 'MMM d, y' }}</span>
+                      </div>
+                      <div class="action-buttons">
+                        <button class="edit-btn" (click)="onEditNote($event, note)" aria-label="Edit note">
+                          <app-reader-icon name="edit" [size]="16"></app-reader-icon>
+                        </button>
+                        <button class="delete-btn" (click)="onDeleteNote($event, note.id)" aria-label="Delete note">
+                          <app-reader-icon name="trash" [size]="16"></app-reader-icon>
+                        </button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else if (notes.length > 0 && notesSearchQuery) {
+                <div class="empty-state">
+                  <app-reader-icon name="search" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No matching notes</p>
+                  <span class="empty-hint">Try different search terms</span>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <app-reader-icon name="note" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No notes yet</p>
+                  <span class="empty-hint">Select text and tap the note icon to add a note</span>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </aside>
+  </div>
+}

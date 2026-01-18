@@ -1,0 +1,10 @@
+@use '../../../../../shared/styles/panel-shared' as panel;
+
+.metadata-fetch-options-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  @include panel.panel-header;
+}

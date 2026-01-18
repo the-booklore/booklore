@@ -133,7 +133,7 @@ public class GoodReadsParser implements BookParser {
                 if (detailedMetadata != null) {
                     fetchedMetadata.add(detailedMetadata);
                 }
-                Thread.sleep(Duration.ofSeconds(1));
+                Thread.sleep(Duration.ofSeconds(2));
             } catch (Exception e) {
                 log.error("Error fetching metadata for book: {}", preview.getGoodreadsId(), e);
             }

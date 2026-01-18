@@ -12,7 +12,9 @@ public enum BookFileType {
     PDF(Set.of("pdf")),
     EPUB(Set.of("epub")),
     CBX(Set.of("cbz", "cbr", "cb7")),
-    FB2(Set.of("fb2"));
+    FB2(Set.of("fb2")),
+    MOBI(Set.of("mobi")),
+    AZW3(Set.of("azw3", "azw"));
 
     private final Set<String> extensions;
 

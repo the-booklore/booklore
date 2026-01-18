@@ -24,7 +24,9 @@ public class MetadataPersistenceSettings {
         private FormatSettings cbx;
 
         public boolean isAnyFormatEnabled() {
-            return (epub != null && epub.isEnabled()) || (pdf != null && pdf.isEnabled() || (cbx != null && cbx.isEnabled()));
+            return (epub != null && epub.isEnabled())
+                    || (pdf != null && pdf.isEnabled())
+                    || (cbx != null && cbx.isEnabled());
         }
     }
 

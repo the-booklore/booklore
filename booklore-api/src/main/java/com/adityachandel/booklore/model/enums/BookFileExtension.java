@@ -14,6 +14,9 @@ public enum BookFileExtension {
     CBZ("cbz", BookFileType.CBX),
     CBR("cbr", BookFileType.CBX),
     CB7("cb7", BookFileType.CBX),
+    MOBI("mobi", BookFileType.MOBI),
+    AZW3("azw3", BookFileType.AZW3),
+    AZW("azw", BookFileType.AZW3),
     FB2("fb2", BookFileType.FB2);
 
     private final String extension;

@@ -49,6 +49,7 @@ public class BookLoreUserTransformer {
                         case PER_BOOK_SETTING -> userSettings.setPerBookSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PerBookSetting.class));
                         case PDF_READER_SETTING -> userSettings.setPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.PdfReaderSetting.class));
                         case EPUB_READER_SETTING -> userSettings.setEpubReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.EpubReaderSetting.class));
+                        case EBOOK_READER_SETTING -> userSettings.setEbookReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.EbookReaderSetting.class));
                         case CBX_READER_SETTING -> userSettings.setCbxReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.CbxReaderSetting.class));
                         case NEW_PDF_READER_SETTING -> userSettings.setNewPdfReaderSetting(objectMapper.readValue(value, BookLoreUser.UserSettings.NewPdfReaderSetting.class));
                         case SIDEBAR_LIBRARY_SORTING -> userSettings.setSidebarLibrarySorting(objectMapper.readValue(value, SidebarSortOption.class));
@@ -65,6 +66,7 @@ public class BookLoreUserTransformer {
                         case FILTER_SORTING_MODE -> userSettings.setFilterSortingMode(value);
                         case METADATA_CENTER_VIEW_MODE -> userSettings.setMetadataCenterViewMode(value);
                         case ENABLE_SERIES_VIEW -> userSettings.setEnableSeriesView(Boolean.parseBoolean(value));
+                        case AUTO_SAVE_METADATA -> userSettings.setAutoSaveMetadata(Boolean.parseBoolean(value));
                     }
                 }
             } catch (IllegalArgumentException e) {

@@ -80,8 +80,9 @@ public class BookDownloadService {
     public void downloadKoboBook(Long bookId, HttpServletResponse response) {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
         
-        boolean isEpub = bookEntity.getBookType() == BookFileType.EPUB;
-        boolean isCbx = bookEntity.getBookType() == BookFileType.CBX;
+        var primaryFile = bookEntity.getPrimaryBookFile();
+        boolean isEpub = primaryFile.getBookType() == BookFileType.EPUB;
+        boolean isCbx = primaryFile.getBookType() == BookFileType.CBX;
 
         if (!isEpub && !isCbx) {
             throw ApiError.GENERIC_BAD_REQUEST.createException("The requested book is not an EPUB or CBX file.");
@@ -92,8 +93,8 @@ public class BookDownloadService {
             throw ApiError.GENERIC_BAD_REQUEST.createException("Kobo settings not found.");
         }
 
-        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
-        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && bookEntity.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
+        boolean convertEpubToKepub = isEpub && koboSettings.isConvertToKepub() && primaryFile.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMb() * 1024;
+        boolean convertCbxToEpub = isCbx && koboSettings.isConvertCbxToEpub() && primaryFile.getFileSizeKb() <= (long) koboSettings.getConversionLimitInMbForCbx() * 1024;
 
         int compressionPercentage = koboSettings.getConversionImageCompressionPercentage();
         Path tempDir = null;

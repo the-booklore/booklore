@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.fileprocessor;
 
 import com.adityachandel.booklore.mapper.BookMapper;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.BookMetadataEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
@@ -75,8 +76,13 @@ class CbxProcessorTest {
 
         BookEntity bookEntity = new BookEntity();
         bookEntity.setId(1L);
-        bookEntity.setFileName(zipAsCbr.getName());
-        bookEntity.setFileSubPath("");
+
+        // Create and configure the primary book file
+        BookFileEntity bookFile = new BookFileEntity();
+        bookFile.setFileName(zipAsCbr.getName());
+        bookFile.setFileSubPath("");
+        bookFile.setBook(bookEntity);
+        bookEntity.getBookFiles().add(bookFile);
         LibraryPathEntity libPath = new LibraryPathEntity();
         libPath.setPath(tempDir.toString());
         bookEntity.setLibraryPath(libPath);

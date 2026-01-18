@@ -329,12 +329,6 @@ describe('BookService', () => {
       expect(result).toBeUndefined();
     });
 
-    it('should save epub progress', async () => {
-      bookPatchServiceMock.saveEpubProgress.mockReturnValue(of(void 0));
-      const result = await firstValueFrom(service.saveEpubProgress(1, 'cfi', 0.5));
-      expect(result).toBeUndefined();
-    });
-
     it('should save cbx progress', async () => {
       bookPatchServiceMock.saveCbxProgress.mockReturnValue(of(void 0));
       const result = await firstValueFrom(service.saveCbxProgress(1, 2, 0.5));

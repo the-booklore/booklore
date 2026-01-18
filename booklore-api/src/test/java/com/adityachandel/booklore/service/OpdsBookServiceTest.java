@@ -29,6 +29,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class OpdsBookServiceTest {
@@ -147,15 +148,19 @@ class OpdsBookServiceTest {
         when(bookOpdsRepository.findRecentBookIds(any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByLibraryIds(anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByShelfId(anyLong(), any())).thenReturn(Page.empty());
+        when(bookOpdsRepository.findBookIdsByShelfIds(anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByMetadataSearch(anyString(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByMetadataSearchAndLibraryIds(anyString(), anySet(), any())).thenReturn(Page.empty());
+        when(bookOpdsRepository.findBookIdsByMetadataSearchAndShelfIds(anyString(), anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findAllWithMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfId(anyList(), anyLong())).thenReturn(List.of());
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfIds(anyList(), anySet())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
+        when(bookOpdsRepository.findAllWithFullMetadataByIdsAndShelfIds(anyList(), anySet())).thenReturn(List.of());
 
-        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, 2L, 0, 10);
+        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, Set.of(2L), 0, 10);
     }
 
     @Test
@@ -165,12 +170,16 @@ class OpdsBookServiceTest {
         when(bookOpdsRepository.findRecentBookIds(any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByLibraryIds(anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByShelfId(anyLong(), any())).thenReturn(Page.empty());
+        when(bookOpdsRepository.findBookIdsByShelfIds(anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findBookIdsByMetadataSearch(anyString(), any())).thenReturn(Page.empty());
+        when(bookOpdsRepository.findBookIdsByMetadataSearchAndShelfIds(anyString(), anySet(), any())).thenReturn(Page.empty());
         when(bookOpdsRepository.findAllWithMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfId(anyList(), anyLong())).thenReturn(List.of());
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfIds(anyList(), anySet())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIds(anyList())).thenReturn(List.of());
         when(bookOpdsRepository.findAllWithFullMetadataByIdsAndLibraryIds(anyList(), anySet())).thenReturn(List.of());
+        when(bookOpdsRepository.findAllWithFullMetadataByIdsAndShelfIds(anyList(), anySet())).thenReturn(List.of());
 
         BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
         var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
@@ -191,7 +200,7 @@ class OpdsBookServiceTest {
         when(shelf.getUser()).thenReturn(shelfUser);
         when(shelfRepository.findById(anyLong())).thenReturn(Optional.of(shelf));
 
-        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, 2L, 0, 10);
+        opdsBookService.getBooksPage(details.getOpdsUserV2().getUserId(), "q", 1L, Set.of(2L), 0, 10);
     }
 
     @Test
@@ -329,6 +338,193 @@ class OpdsBookServiceTest {
         assertThatThrownBy(() ->
                 opdsBookService.getBooksPage(1L, null, null, null, 0, 10)
         ).hasMessageContaining("You are not allowed to access this resource");
+    }
+
+    @Test
+    void getBooksPage_withSingleShelfId_returnsShelfBooks() {
+        OpdsUserDetails details = v2UserDetails(1L, false, Set.of(1L));
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(perms.isCanAccessOpds()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        ShelfEntity shelf = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(1L);
+        when(shelf.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(10L)).thenReturn(Optional.of(shelf));
+
+        BookEntity bookEntity = mock(BookEntity.class);
+        when(bookEntity.getId()).thenReturn(1L);
+        Book book = Book.builder().id(1L).build();
+        when(bookMapper.toBook(bookEntity)).thenReturn(book);
+
+        when(bookOpdsRepository.findBookIdsByShelfIds(eq(Set.of(10L)), any())).thenReturn(new PageImpl<>(List.of(1L)));
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfIds(eq(List.of(1L)), eq(Set.of(10L)))).thenReturn(List.of(bookEntity));
+
+        Page<Book> result = opdsBookService.getBooksPage(1L, null, null, Set.of(10L), 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(bookOpdsRepository).findBookIdsByShelfIds(eq(Set.of(10L)), any());
+    }
+
+    @Test
+    void getBooksPage_withMultipleShelfIds_returnsShelfBooks() {
+        OpdsUserDetails details = v2UserDetails(1L, false, Set.of(1L));
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(perms.isCanAccessOpds()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        ShelfEntity shelf1 = mock(ShelfEntity.class);
+        ShelfEntity shelf2 = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(1L);
+        when(shelf1.getUser()).thenReturn(shelfUser);
+        when(shelf2.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(10L)).thenReturn(Optional.of(shelf1));
+        when(shelfRepository.findById(20L)).thenReturn(Optional.of(shelf2));
+
+        BookEntity bookEntity1 = mock(BookEntity.class);
+        BookEntity bookEntity2 = mock(BookEntity.class);
+        when(bookEntity1.getId()).thenReturn(1L);
+        when(bookEntity2.getId()).thenReturn(2L);
+        Book book1 = Book.builder().id(1L).build();
+        Book book2 = Book.builder().id(2L).build();
+        when(bookMapper.toBook(bookEntity1)).thenReturn(book1);
+        when(bookMapper.toBook(bookEntity2)).thenReturn(book2);
+
+        when(bookOpdsRepository.findBookIdsByShelfIds(eq(Set.of(10L, 20L)), any())).thenReturn(new PageImpl<>(List.of(1L, 2L)));
+        when(bookOpdsRepository.findAllWithMetadataByIdsAndShelfIds(eq(List.of(1L, 2L)), eq(Set.of(10L, 20L)))).thenReturn(List.of(bookEntity1, bookEntity2));
+
+        Page<Book> result = opdsBookService.getBooksPage(1L, null, null, Set.of(10L, 20L), 0, 10);
+
+        assertThat(result.getContent()).hasSize(2);
+        verify(bookOpdsRepository).findBookIdsByShelfIds(eq(Set.of(10L, 20L)), any());
+    }
+
+    @Test
+    void getBooksPage_withShelfIdAndQuery_searchesInShelf() {
+        OpdsUserDetails details = v2UserDetails(1L, false, Set.of(1L));
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(perms.isCanAccessOpds()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        ShelfEntity shelf = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(1L);
+        when(shelf.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(10L)).thenReturn(Optional.of(shelf));
+
+        BookEntity bookEntity = mock(BookEntity.class);
+        when(bookEntity.getId()).thenReturn(1L);
+        Book book = Book.builder().id(1L).build();
+        when(bookMapper.toBook(bookEntity)).thenReturn(book);
+
+        when(bookOpdsRepository.findBookIdsByMetadataSearchAndShelfIds(eq("test"), eq(Set.of(10L)), any())).thenReturn(new PageImpl<>(List.of(1L)));
+        when(bookOpdsRepository.findAllWithFullMetadataByIdsAndShelfIds(eq(List.of(1L)), eq(Set.of(10L)))).thenReturn(List.of(bookEntity));
+
+        Page<Book> result = opdsBookService.getBooksPage(1L, "test", null, Set.of(10L), 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        verify(bookOpdsRepository).findBookIdsByMetadataSearchAndShelfIds(eq("test"), eq(Set.of(10L)), any());
+    }
+
+    @Test
+    void getBooksPage_withShelfId_throwsForbidden_whenNotOwner() {
+        OpdsUserDetails details = v2UserDetails(1L, false, Set.of(1L));
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(false);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(false);
+        when(perms.isCanAccessOpds()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        ShelfEntity shelf = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(999L); // Different user
+        when(shelf.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(10L)).thenReturn(Optional.of(shelf));
+
+        assertThatThrownBy(() ->
+                opdsBookService.getBooksPage(1L, null, null, Set.of(10L), 0, 10)
+        ).hasMessageContaining("You are not allowed to access this shelf");
+    }
+
+    @Test
+    void getBooksPage_withShelfId_allowsAdmin_evenIfNotOwner() {
+        OpdsUserDetails details = v2UserDetails(1L, true, Set.of(1L));
+        BookLoreUserEntity entity = mock(BookLoreUserEntity.class);
+        var permissionsEntity = mock(com.adityachandel.booklore.model.entity.UserPermissionsEntity.class);
+        when(permissionsEntity.isPermissionAccessOpds()).thenReturn(true);
+        when(permissionsEntity.isPermissionAdmin()).thenReturn(true);
+        when(entity.getPermissions()).thenReturn(permissionsEntity);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(entity));
+
+        BookLoreUser user = mock(BookLoreUser.class);
+        BookLoreUser.UserPermissions perms = mock(BookLoreUser.UserPermissions.class);
+        when(bookLoreUserTransformer.toDTO(entity)).thenReturn(user);
+        when(user.getPermissions()).thenReturn(perms);
+        when(perms.isAdmin()).thenReturn(true);
+        when(perms.isCanAccessOpds()).thenReturn(true);
+        when(user.getId()).thenReturn(1L);
+        when(user.getAssignedLibraries()).thenReturn(List.of(Library.builder().id(1L).watch(false).build()));
+
+        ShelfEntity shelf = mock(ShelfEntity.class);
+        BookLoreUserEntity shelfUser = mock(BookLoreUserEntity.class);
+        when(shelfUser.getId()).thenReturn(999L); // Different user, but admin
+        when(shelf.getUser()).thenReturn(shelfUser);
+        when(shelfRepository.findById(10L)).thenReturn(Optional.of(shelf));
+
+        when(bookOpdsRepository.findBookIdsByShelfIds(eq(Set.of(10L)), any())).thenReturn(Page.empty());
+
+        Page<Book> result = opdsBookService.getBooksPage(1L, null, null, Set.of(10L), 0, 10);
+
+        assertThat(result).isNotNull();
+        verify(bookOpdsRepository).findBookIdsByShelfIds(eq(Set.of(10L)), any());
     }
 
 }

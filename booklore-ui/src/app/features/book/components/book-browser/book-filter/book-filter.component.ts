@@ -28,6 +28,8 @@ export interface Filter<T extends FilterValue = FilterValue> {
 }
 
 export type FilterType =
+  | 'library'
+  | 'shelf'
   | 'author'
   | 'category'
   | 'series'
@@ -205,6 +207,8 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   private _selectedFilterMode: BookFilterMode = 'and';
   expandedPanels: number[] = [0];
   readonly filterLabels: Record<FilterType, string> = {
+    library: 'Library',
+    shelf: 'Shelf',
     author: 'Author',
     category: 'Genre',
     series: 'Series',
@@ -249,6 +253,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.filterStreams = {
+          library: this.getFilterStream(
+            (book) => (book.libraryId ? [{id: book.libraryId, name: book.libraryName}] : []),
+            'id', 'name'
+          ),
+          shelf: this.getFilterStream(
+            (book) => (book.shelves ? book.shelves.map(s => ({id: s.id, name: s.name})) : []),
+            'id', 'name'
+          ),
           author: this.getFilterStream(
             (book: Book) => Array.isArray(book.metadata?.authors) ? book.metadata.authors.map(name => ({id: name, name})) : [],
             'id', 'name'

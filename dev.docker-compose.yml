@@ -19,6 +19,7 @@ services:
       - './booklore-api:/booklore-api'
       - ./shared/data:/app/data
       - ./shared/books:/books
+      - ./shared/bookdrop:/bookdrop
 
   backend_db:
     image: mariadb:11.4

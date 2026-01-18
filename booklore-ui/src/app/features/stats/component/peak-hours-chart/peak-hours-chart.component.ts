@@ -88,9 +88,7 @@ export class PeakHoursChartComponent implements OnInit, OnDestroy {
               if (label === 'Sessions') {
                 return `${label}: ${value} session${value !== 1 ? 's' : ''}`;
               } else {
-                const hours = Math.floor(value / 3600);
-                const minutes = Math.floor((value % 3600) / 60);
-                return `${label}: ${hours}h ${minutes}m`;
+                return `${label}: ${value} min`;
               }
             }
           }
@@ -149,7 +147,7 @@ export class PeakHoursChartComponent implements OnInit, OnDestroy {
           position: 'right',
           title: {
             display: true,
-            text: 'Duration (minutes)',
+            text: 'Avg Duration (min)',
             color: 'rgba(251, 191, 36, 0.9)',
             font: {
               family: "'Inter', sans-serif",
@@ -227,9 +225,13 @@ export class PeakHoursChartComponent implements OnInit, OnDestroy {
       return hourData?.sessionCount || 0;
     });
 
-    const durations = allHours.map(hour => {
+    // Calculate average duration per session (in minutes) for each hour
+    const avgDurations = allHours.map(hour => {
       const hourData = hourMap.get(hour);
-      return hourData ? hourData.totalDurationSeconds / 60 : 0; // Convert to minutes
+      if (hourData && hourData.sessionCount > 0) {
+        return Math.round(hourData.totalDurationSeconds / 60 / hourData.sessionCount);
+      }
+      return 0;
     });
 
     this.chartDataSubject.next({
@@ -251,8 +253,8 @@ export class PeakHoursChartComponent implements OnInit, OnDestroy {
           yAxisID: 'y'
         },
         {
-          label: 'Duration (minutes)',
-          data: durations,
+          label: 'Avg Duration (min)',
+          data: avgDurations,
           borderColor: 'rgba(251, 191, 36, 0.9)',
           backgroundColor: 'rgba(251, 191, 36, 0.1)',
           borderWidth: 2,

@@ -136,6 +136,22 @@ class OpdsFeedServiceMimeTypeTest {
     }
 
     @Test
+    void testMimeTypeForZippedFb2() throws IOException {
+        File zipAsFb2 = tempDir.resolve("book_zipped.fb2").toFile();
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipAsFb2))) {
+            zos.putNextEntry(new ZipEntry("book.fb2"));
+            zos.write("<FictionBook>...</FictionBook>".getBytes());
+            zos.closeEntry();
+        }
+
+        Book book = createBook(BookFileType.FB2, "book_zipped.fb2");
+        mockBooksPage(book);
+
+        String xml = opdsFeedService.generateCatalogFeed(request);
+        assertThat(xml).contains("type=\"application/zip\"");
+    }
+
+    @Test
     void testMimeTypeForZipNamedAsCbr() throws IOException {
         // Create a ZIP file named .cbr
         File zipAsCbr = tempDir.resolve("mismatched.cbr").toFile();
