@@ -185,4 +185,8 @@ export class AdditionalFileUploaderComponent implements OnInit, OnDestroy {
         return 'info';
     }
   }
+
+  closeDialog(): void {
+    this.dialogRef.close();
+  }
 }

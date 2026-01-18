@@ -57,7 +57,7 @@ export class BulkMetadataUpdateComponent implements OnInit {
   };
 
   private readonly config = inject(DynamicDialogConfig);
-  private readonly ref = inject(DynamicDialogRef);
+  readonly ref = inject(DynamicDialogRef);
   private readonly fb = inject(FormBuilder);
   private readonly bookService = inject(BookService);
   private readonly messageService = inject(MessageService);

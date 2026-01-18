@@ -1,8 +1,6 @@
 @use '../../../../shared/styles/panel-shared' as panel;
 
 .create-user-dialog {
-  width: 800px;
-  max-width: 800px;
   display: flex;
   flex-direction: column;
 

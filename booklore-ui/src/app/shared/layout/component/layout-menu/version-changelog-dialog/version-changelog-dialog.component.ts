@@ -4,12 +4,15 @@ import { ReleaseNote, VersionService } from '../../../../service/version.service
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import showdown from 'showdown';
 import {DatePipe} from '@angular/common';
+import {DynamicDialogRef} from 'primeng/dynamicdialog';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-version-changelog-dialog',
   standalone: true,
   imports: [
-    DatePipe
+    DatePipe,
+    Button
   ],
   templateUrl: './version-changelog-dialog.component.html',
   styleUrl: './version-changelog-dialog.component.scss'
@@ -18,6 +21,7 @@ export class VersionChangelogDialogComponent implements OnInit {
 
   private versionService = inject(VersionService);
   private sanitizer = inject(DomSanitizer);
+  dialogRef = inject(DynamicDialogRef);
 
   changelog: ReleaseNote[] = [];
   loading = true;
