@@ -8,6 +8,7 @@ import {BookService} from '../../../book/service/book.service';
 import {AppSettingsService} from '../../../../shared/service/app-settings.service';
 import {Tab, TabList, TabPanel, TabPanels, Tabs,} from 'primeng/tabs';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
+import {Button} from 'primeng/button';
 import {BookMetadataHostService} from '../../../../shared/service/book-metadata-host.service';
 import {MetadataViewerComponent} from './metadata-viewer/metadata-viewer.component';
 import {MetadataEditorComponent} from './metadata-editor/metadata-editor.component';
@@ -25,7 +26,8 @@ import {MetadataSearcherComponent} from './metadata-searcher/metadata-searcher.c
     TabPanel,
     MetadataViewerComponent,
     MetadataEditorComponent,
-    MetadataSearcherComponent
+    MetadataSearcherComponent,
+    Button
   ],
   styleUrls: ['./book-metadata-center.component.scss'],
 })
@@ -65,8 +67,8 @@ export class BookMetadataCenterComponent implements OnInit, OnDestroy {
   }
 
   constructor(
-    @Optional() private config?: DynamicDialogConfig,
-    @Optional() private ref?: DynamicDialogRef
+    @Optional() public config?: DynamicDialogConfig,
+    @Optional() public ref?: DynamicDialogRef
   ) {
   }
 
