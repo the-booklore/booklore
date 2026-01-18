@@ -1,77 +1,82 @@
-<div class="main-container enclosing-container">
-  <div class="settings-header">
-    <h2 class="settings-title">
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
       <i class="pi pi-sort-alt"></i>
       Sidebar Library and Shelf Sorting Preference
-    </h2>
-    <p class="settings-description">
+    </h3>
+    <p class="section-description">
       Configure sorting options for your library and shelves names shown in the left menu sidebar.
     </p>
   </div>
 
-  <div class="settings-content">
-    <div class="preferences-section">
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Library
-              </label>
-              <p-select
-                size="small"
-                [options]="sortingOptions"
-                [(ngModel)]="selectedLibrarySorting"
-                (ngModelChange)="onLibrarySortingChange()"
-                appendTo="body"
-                placeholder="Select Sorting">
-              </p-select>
-            </div>
-            <p class="setting-description">
-              Choose how library names are sorted and displayed in the sidebar.
-            </p>
+  <div class="section-body">
+    <div class="setting-item">
+      <div class="setting-info">
+        <label class="setting-label">Library</label>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          <span>Choose how library names are sorted and displayed in the sidebar.</span>
+        </p>
+      </div>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-info">
+          <div class="setting-label-row">
+            <p-select
+              size="small"
+              [options]="sortingOptions"
+              [(ngModel)]="selectedLibrarySorting"
+              (ngModelChange)="onLibrarySortingChange()"
+              appendTo="body"
+              placeholder="Select Sorting">
+            </p-select>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Shelf
-              </label>
-              <p-select
-                size="small"
-                [options]="sortingOptions"
-                [(ngModel)]="selectedShelfSorting"
-                (ngModelChange)="onShelfSortingChange()"
-                appendTo="body"
-                placeholder="Select Sorting">
-              </p-select>
-            </div>
-            <p class="setting-description">
-              Choose how shelf names are sorted and displayed in the sidebar.
-            </p>
+    <div class="setting-item">
+      <div class="setting-info">
+        <label class="setting-label">Shelf</label>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          <span>Choose how shelf names are sorted and displayed in the sidebar.</span>
+        </p>
+      </div>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-info">
+          <div class="setting-label-row">
+            <p-select
+              size="small"
+              [options]="sortingOptions"
+              [(ngModel)]="selectedShelfSorting"
+              (ngModelChange)="onShelfSortingChange()"
+              appendTo="body"
+              placeholder="Select Sorting">
+            </p-select>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Magic Shelf
-              </label>
-              <p-select
-                size="small"
-                [options]="sortingOptions"
-                [(ngModel)]="selectedMagicShelfSorting"
-                (ngModelChange)="onMagicShelfSortingChange()"
-                appendTo="body"
-                placeholder="Select Sorting">
-              </p-select>
-            </div>
-            <p class="setting-description">
-              Choose how magic shelf names are sorted and displayed in the sidebar.
-            </p>
+    <div class="setting-item">
+      <div class="setting-info">
+        <label class="setting-label">Magic Shelf</label>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          <span>Choose how magic shelf names are sorted and displayed in the sidebar.</span>
+        </p>
+      </div>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-info">
+          <div class="setting-label-row">
+            <p-select
+              size="small"
+              [options]="sortingOptions"
+              [(ngModel)]="selectedMagicShelfSorting"
+              (ngModelChange)="onMagicShelfSortingChange()"
+              appendTo="body"
+              placeholder="Select Sorting">
+            </p-select>
           </div>
         </div>
       </div>

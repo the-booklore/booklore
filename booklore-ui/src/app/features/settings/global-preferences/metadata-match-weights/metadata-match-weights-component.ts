@@ -3,7 +3,6 @@ import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/
 import {MessageService} from 'primeng/api';
 import {MetadataMatchWeightsService} from '../../../../shared/service/metadata-match-weights.service';
 import {Button} from 'primeng/button';
-import {Tooltip} from 'primeng/tooltip';
 import {filter, take} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 import {AppSettingKey, AppSettings} from '../../../../shared/model/app-settings.model';
@@ -16,7 +15,6 @@ import {InputNumber} from 'primeng/inputnumber';
   imports: [
     ReactiveFormsModule,
     Button,
-    Tooltip,
     InputNumber
   ],
   templateUrl: './metadata-match-weights-component.html',

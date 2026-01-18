@@ -40,7 +40,7 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             JOIN rs.book b
             WHERE rs.user.id = :userId
             AND rs.startTime >= :startOfWeek AND rs.startTime < :endOfWeek
-            GROUP BY b.id, b.metadata.title, rs.bookType
+            GROUP BY b.id, b.metadata.title, rs.bookType, CAST(rs.startTime AS LocalDate)
             ORDER BY MIN(rs.startTime)
             """)
     List<ReadingSessionTimelineDto> findSessionTimelineByUserAndWeek(

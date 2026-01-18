@@ -1,29 +1,48 @@
-<div class="p-2">
-  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-24 gap-y-4">
-    @for (field of lockableFields; track field) {
-      <div class="flex items-center justify-between">
-        <label class="capitalize">{{ fieldLabels[field] || field }}</label>
-        <p-button
-          [outlined]="true"
-          [label]="getLockLabel(field)"
-          [icon]="getLockIcon(field)"
-          [severity]="fieldLocks[field] === true ? 'danger' : fieldLocks[field] === false ? 'success' : 'secondary'"
-          (click)="cycleLockState(field)"
-        ></p-button>
-      </div>
-    }
+<div class="lock-unlock-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-lock header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Lock or Unlock Metadata</h2>
+      <p class="panel-description">{{ bookIds.size }} book{{ bookIds.size > 1 ? 's' : '' }} selected</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dialogRef.close()"
+      styleClass="close-button">
+    </p-button>
   </div>
-</div>
 
-<p-divider></p-divider>
-
-<div class="flex justify-end px-4 pt-4">
-  <p-button icon="pi pi-refresh" label="Reset" outlined="true" severity="warn" (onClick)="resetFieldLocks()"></p-button>
-  <p-divider layout="vertical"></p-divider>
-  <div class="flex gap-4 justify-center">
-    <p-button icon="pi pi-lock" label="Lock All" outlined="true" severity="danger" (onClick)="toggleLockAll('LOCK')"></p-button>
-    <p-button icon="pi pi-lock-open" label="Unlock All" outlined="true" severity="success" (onClick)="toggleLockAll('UNLOCK')"></p-button>
+  <div class="dialog-content">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-24 gap-y-4">
+      @for (field of lockableFields; track field) {
+        <div class="flex items-center justify-between">
+          <label class="capitalize">{{ fieldLabels[field] || field }}</label>
+          <p-button
+            [outlined]="true"
+            [label]="getLockLabel(field)"
+            [icon]="getLockIcon(field)"
+            [severity]="fieldLocks[field] === true ? 'danger' : fieldLocks[field] === false ? 'success' : 'secondary'"
+            (click)="cycleLockState(field)"
+          ></p-button>
+        </div>
+      }
+    </div>
   </div>
-  <p-divider layout="vertical"></p-divider>
-  <p-button [label]="isSaving ? 'Saving...' : 'Save'" [outlined]="true" icon="pi pi-check" severity="info" (onClick)="applyFieldLocks()" [disabled]="bookIds.size === 0 || isSaving"></p-button>
+
+  <div class="dialog-footer">
+    <div class="footer-actions">
+      <p-button icon="pi pi-refresh" label="Reset" outlined="true" severity="warn" (onClick)="resetFieldLocks()"></p-button>
+    </div>
+    <div class="footer-actions">
+      <p-button icon="pi pi-lock" label="Lock All" outlined="true" severity="danger" (onClick)="toggleLockAll('LOCK')"></p-button>
+      <p-button icon="pi pi-lock-open" label="Unlock All" outlined="true" severity="success" (onClick)="toggleLockAll('UNLOCK')"></p-button>
+      <p-divider layout="vertical"></p-divider>
+      <p-button [label]="isSaving ? 'Saving...' : 'Save'" [outlined]="true" icon="pi pi-check" severity="info" (onClick)="applyFieldLocks()" [disabled]="bookIds.size === 0 || isSaving"></p-button>
+    </div>
+  </div>
 </div>
