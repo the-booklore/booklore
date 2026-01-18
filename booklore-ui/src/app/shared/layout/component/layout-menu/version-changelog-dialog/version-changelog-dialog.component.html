@@ -1,26 +1,48 @@
-@if (loading) {
-  <div class="p-4 text-center text-gray-400">
-    Loading changelog...
+<div class="changelog-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-sparkles header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">What's New</h2>
+      <p class="panel-description">Latest updates and improvements</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dialogRef.close()"
+      styleClass="close-button">
+    </p-button>
   </div>
-}
 
-@if (!loading && changelog.length === 0) {
-  <div class="p-4 text-center text-gray-400">
-    No updates available.
-  </div>
-}
+  <div class="dialog-content">
+    @if (loading) {
+      <div class="loading-state">
+        Loading changelog...
+      </div>
+    }
 
-@if (!loading && changelog.length > 0) {
-  <div class="space-y-6 p-4 overflow-auto">
-    @for (release of changelog; track release) {
-      <div class="border-b pb-4">
-        <p class="font-bold text-2xl pb-2">
-          <a [href]="release.url" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">
-            {{ release.name }} ({{ release.publishedAt | date: 'mediumDate' }})
-          </a>
-        </p>
-        <div [innerHTML]="markdownToHtml(release.changelog)" class="prose prose-invert w-full max-w-full"></div>
+    @if (!loading && changelog.length === 0) {
+      <div class="empty-state">
+        No updates available.
+      </div>
+    }
+
+    @if (!loading && changelog.length > 0) {
+      <div class="changelog-list">
+        @for (release of changelog; track release) {
+          <div class="release-item">
+            <p class="release-title">
+              <a [href]="release.url" target="_blank" rel="noopener noreferrer" class="release-link">
+                {{ release.name }} ({{ release.publishedAt | date: 'mediumDate' }})
+              </a>
+            </p>
+            <div [innerHTML]="markdownToHtml(release.changelog)" class="prose prose-invert w-full max-w-full"></div>
+          </div>
+        }
       </div>
     }
   </div>
-}
+</div>
