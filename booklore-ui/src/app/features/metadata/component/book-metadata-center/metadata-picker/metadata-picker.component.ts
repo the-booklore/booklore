@@ -4,7 +4,7 @@ import {MessageService} from 'primeng/api';
 import {Button} from 'primeng/button';
 import {FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
 import {InputText} from 'primeng/inputtext';
-import {AsyncPipe, NgClass, NgStyle} from '@angular/common';
+import {AsyncPipe, NgClass} from '@angular/common';
 import {Divider} from 'primeng/divider';
 import {Observable} from 'rxjs';
 import {Tooltip} from 'primeng/tooltip';
@@ -13,10 +13,11 @@ import {BookService} from '../../../../book/service/book.service';
 import {Textarea} from 'primeng/textarea';
 import {filter, map, take} from 'rxjs/operators';
 import {takeUntilDestroyed} from '@angular/core/rxjs-interop';
-import {AutoComplete} from 'primeng/autocomplete';
-import {AutoCompleteSelectEvent} from 'primeng/autocomplete';
+import {AutoComplete, AutoCompleteSelectEvent} from 'primeng/autocomplete';
 import {Image} from 'primeng/image';
 import {LazyLoadImageModule} from 'ng-lazyload-image';
+import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
+import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
 
 @Component({
   selector: 'app-metadata-picker',
@@ -30,7 +31,6 @@ import {LazyLoadImageModule} from 'ng-lazyload-image';
     Divider,
     ReactiveFormsModule,
     NgClass,
-    NgStyle,
     Tooltip,
     AsyncPipe,
     Textarea,
@@ -66,23 +66,23 @@ export class MetadataPickerComponent implements OnInit {
     {label: 'Language', controlName: 'language', lockedKey: 'languageLocked', fetchedKey: 'language'},
     {label: 'ISBN-10', controlName: 'isbn10', lockedKey: 'isbn10Locked', fetchedKey: 'isbn10'},
     {label: 'ISBN-13', controlName: 'isbn13', lockedKey: 'isbn13Locked', fetchedKey: 'isbn13'},
-    {label: 'ASIN', controlName: 'asin', lockedKey: 'asinLocked', fetchedKey: 'asin'},
-    {label: 'Amz Reviews', controlName: 'amazonReviewCount', lockedKey: 'amazonReviewCountLocked', fetchedKey: 'amazonReviewCount'},
-    {label: 'Amz Rating', controlName: 'amazonRating', lockedKey: 'amazonRatingLocked', fetchedKey: 'amazonRating'},
-    {label: 'Comicvine ID', controlName: 'comicvineId', lockedKey: 'comicvineIdLocked', fetchedKey: 'comicvineId'},
-    {label: 'Goodreads ID', controlName: 'goodreadsId', lockedKey: 'goodreadsIdLocked', fetchedKey: 'goodreadsId'},
-    {label: 'GR Reviews', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount'},
-    {label: 'GR Rating', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating'},
-    {label: 'Hardcover ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId'},
-    {label: 'Hardcover Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId'},
-    {label: 'HC Reviews', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount'},
-    {label: 'HC Rating', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
-    {label: 'LC ID', controlName: 'lubimyczytacId', lockedKey: 'lubimyczytacIdLocked', fetchedKey: 'lubimyczytacId'},
-    {label: 'LC Rating', controlName: 'lubimyczytacRating', lockedKey: 'lubimyczytacRatingLocked', fetchedKey: 'lubimyczytacRating'},
-    {label: 'Ranobedb ID', controlName: 'ranobedbId', lockedKey: 'ranobedbIdLocked', fetchedKey: 'ranobedbId'},
-    {label: 'RD Rating', controlName: 'ranobedbRating', lockedKey: 'ranobedbRatingLocked', fetchedKey: 'ranobedbRating'},
+    {label: 'Pages', controlName: 'pageCount', lockedKey: 'pageCountLocked', fetchedKey: 'pageCount'},
     {label: 'Google ID', controlName: 'googleId', lockedKey: 'googleIdLocked', fetchedKey: 'googleId'},
-    {label: 'Pages', controlName: 'pageCount', lockedKey: 'pageCountLocked', fetchedKey: 'pageCount'}
+    {label: 'ASIN', controlName: 'asin', lockedKey: 'asinLocked', fetchedKey: 'asin'},
+    {label: 'Amazon #', controlName: 'amazonReviewCount', lockedKey: 'amazonReviewCountLocked', fetchedKey: 'amazonReviewCount'},
+    {label: 'Amazon ★', controlName: 'amazonRating', lockedKey: 'amazonRatingLocked', fetchedKey: 'amazonRating'},
+    {label: 'Goodreads ID', controlName: 'goodreadsId', lockedKey: 'goodreadsIdLocked', fetchedKey: 'goodreadsId'},
+    {label: 'Goodreads ★', controlName: 'goodreadsReviewCount', lockedKey: 'goodreadsReviewCountLocked', fetchedKey: 'goodreadsReviewCount'},
+    {label: 'Goodreads #', controlName: 'goodreadsRating', lockedKey: 'goodreadsRatingLocked', fetchedKey: 'goodreadsRating'},
+    {label: 'HC Book ID', controlName: 'hardcoverBookId', lockedKey: 'hardcoverBookIdLocked', fetchedKey: 'hardcoverBookId'},
+    {label: 'Hardcover ID', controlName: 'hardcoverId', lockedKey: 'hardcoverIdLocked', fetchedKey: 'hardcoverId'},
+    {label: 'Hardcover #', controlName: 'hardcoverReviewCount', lockedKey: 'hardcoverReviewCountLocked', fetchedKey: 'hardcoverReviewCount'},
+    {label: 'Hardcover ★', controlName: 'hardcoverRating', lockedKey: 'hardcoverRatingLocked', fetchedKey: 'hardcoverRating'},
+    {label: 'Comicvine ID', controlName: 'comicvineId', lockedKey: 'comicvineIdLocked', fetchedKey: 'comicvineId'},
+    {label: 'LB ID', controlName: 'lubimyczytacId', lockedKey: 'lubimyczytacIdLocked', fetchedKey: 'lubimyczytacId'},
+    {label: 'LB ★', controlName: 'lubimyczytacRating', lockedKey: 'lubimyczytacRatingLocked', fetchedKey: 'lubimyczytacRating'},
+    {label: 'Ranobedb ID', controlName: 'ranobedbId', lockedKey: 'ranobedbIdLocked', fetchedKey: 'ranobedbId'},
+    {label: 'Ranobedb ★', controlName: 'ranobedbRating', lockedKey: 'ranobedbRatingLocked', fetchedKey: 'ranobedbRating'}
   ];
 
   @Input() reviewMode!: boolean;
@@ -131,6 +131,9 @@ export class MetadataPickerComponent implements OnInit {
   private bookService = inject(BookService);
   protected urlHelper = inject(UrlHelperService);
   private destroyRef = inject(DestroyRef);
+  private appSettingsService = inject(AppSettingsService);
+
+  private enabledProviderFields: MetadataProviderSpecificFields | null = null;
 
   constructor() {
     this.metadataForm = new FormGroup({
@@ -205,6 +208,17 @@ export class MetadataPickerComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => !!settings?.metadataProviderSpecificFields),
+        take(1)
+      )
+      .subscribe(settings => {
+        if (settings?.metadataProviderSpecificFields) {
+          this.enabledProviderFields = settings.metadataProviderSpecificFields;
+          this.filterMetadataFields();
+        }
+      });
 
     this.bookService.bookState$
       .pipe(
@@ -318,7 +332,6 @@ export class MetadataPickerComponent implements OnInit {
           coverLocked: metadata.coverLocked || false,
         });
 
-        // Always enable all fields before applying locked state
         Object.keys(this.metadataForm.controls).forEach((key) => {
           if (!key.endsWith('Locked')) {
             this.metadataForm.get(key)?.enable({emitEvent: false});
@@ -362,6 +375,34 @@ export class MetadataPickerComponent implements OnInit {
     });
   }
 
+  private filterMetadataFields(): void {
+    if (!this.enabledProviderFields) return;
+
+    const providerFieldMap: Record<string, keyof MetadataProviderSpecificFields> = {
+      'asin': 'asin',
+      'amazonRating': 'amazonRating',
+      'amazonReviewCount': 'amazonReviewCount',
+      'googleId': 'googleId',
+      'goodreadsId': 'goodreadsId',
+      'goodreadsRating': 'goodreadsRating',
+      'goodreadsReviewCount': 'goodreadsReviewCount',
+      'hardcoverId': 'hardcoverId',
+      'hardcoverBookId': 'hardcoverId',
+      'hardcoverRating': 'hardcoverRating',
+      'hardcoverReviewCount': 'hardcoverReviewCount',
+      'comicvineId': 'comicvineId',
+      'lubimyczytacId': 'lubimyczytacId',
+      'lubimyczytacRating': 'lubimyczytacRating',
+      'ranobedbId': 'ranobedbId',
+      'ranobedbRating': 'ranobedbRating'
+    };
+
+    this.metadataFieldsBottom = this.metadataFieldsBottom.filter(field => {
+      const providerKey = providerFieldMap[field.controlName];
+      return !providerKey || this.enabledProviderFields![providerKey];
+    });
+  }
+
   onAutoCompleteSelect(fieldName: string, event: AutoCompleteSelectEvent) {
     const values = (this.metadataForm.get(fieldName)?.value as string[]) || [];
     if (!values.includes(event.value as string)) {
@@ -387,7 +428,7 @@ export class MetadataPickerComponent implements OnInit {
   onSave(): void {
     this.isSaving = true;
     const updatedBookMetadata = this.buildMetadataWrapper(undefined);
-    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, true).subscribe({
+    this.bookService.updateBookMetadata(this.currentBookId, updatedBookMetadata, false).subscribe({
       next: (bookMetadata) => {
         this.isSaving = false;
         Object.keys(this.copiedFields).forEach((field) => {

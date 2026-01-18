@@ -1,3 +1,64 @@
+@use '../../../../../shared/styles/panel-shared' as panel;
+
+.changelog-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 90dvh;
+}
+
+.panel-header {
+  @include panel.panel-header;
+}
+
+.dialog-content {
+  padding: 1.5rem;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.loading-state,
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  color: var(--text-secondary-color);
+}
+
+.changelog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.release-item {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.release-title {
+  font-weight: 700;
+  font-size: 1.25rem;
+  padding-bottom: 0.5rem;
+  margin: 0;
+}
+
+.release-link {
+  color: var(--primary-color);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 :host ::ng-deep .prose h3 {
-  margin-top: 0px;
+  margin-top: 0;
 }

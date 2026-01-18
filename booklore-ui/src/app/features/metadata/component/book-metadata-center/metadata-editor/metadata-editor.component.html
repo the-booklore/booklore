@@ -372,204 +372,230 @@
             }
           </div>
         </div>
-        <div class="field-group metadata-id-field">
-          <label for="asin">Amazon ASIN</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="asin" formControlName="asin"/>
-            @if (!book.metadata!['asinLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('asin')" severity="success"></p-button>
-            }
-            @if (book.metadata!['asinLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('asin')" severity="warn"></p-button>
-            }
+        @if (isFieldVisible('asin')) {
+          <div class="field-group metadata-id-field">
+            <label for="asin">Amazon ASIN</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="asin" formControlName="asin"/>
+              @if (!book.metadata!['asinLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('asin')" severity="success"></p-button>
+              }
+              @if (book.metadata!['asinLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('asin')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="amazonRating">Amazon ★</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="amazonRating" formControlName="amazonRating"/>
-            @if (!book.metadata!['amazonRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('amazonRating')" severity="success"></p-button>
-            }
-            @if (book.metadata!['amazonRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('amazonRating')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('amazonRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="amazonRating">Amazon ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="amazonRating" formControlName="amazonRating"/>
+              @if (!book.metadata!['amazonRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('amazonRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['amazonRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('amazonRating')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="amazonRatingCount">Amazon #</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="amazonRatingCount" formControlName="amazonReviewCount"/>
-            @if (!book.metadata!['amazonReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('amazonReviewCount')" severity="success"></p-button>
-            }
-            @if (book.metadata!['amazonReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('amazonReviewCount')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('amazonReviewCount')) {
+          <div class="field-group metadata-id-field">
+            <label for="amazonRatingCount">Amazon #</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="amazonRatingCount" formControlName="amazonReviewCount"/>
+              @if (!book.metadata!['amazonReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('amazonReviewCount')" severity="success"></p-button>
+              }
+              @if (book.metadata!['amazonReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('amazonReviewCount')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="googleId">Google Books ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="googleId" formControlName="googleId"/>
-            @if (!book.metadata!['googleIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('googleId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['googleIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('googleId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('googleId')) {
+          <div class="field-group metadata-id-field">
+            <label for="googleId">Google Books ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="googleId" formControlName="googleId"/>
+              @if (!book.metadata!['googleIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('googleId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['googleIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('googleId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div class="field-row metadata-ids-row">
-        <div class="field-group metadata-id-field">
-          <label for="goodreadsId">Goodreads ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="goodreadsId" formControlName="goodreadsId"/>
-            @if (!book.metadata!['goodreadsIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['goodreadsIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('goodreadsId')) {
+          <div class="field-group metadata-id-field">
+            <label for="goodreadsId">Goodreads ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="goodreadsId" formControlName="goodreadsId"/>
+              @if (!book.metadata!['goodreadsIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['goodreadsIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="goodreadsRating">Goodreads ★</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="goodreadsRating" formControlName="goodreadsRating"/>
-            @if (!book.metadata!['goodreadsRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsRating')" severity="success"></p-button>
-            }
-            @if (book.metadata!['goodreadsRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsRating')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('goodreadsRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="goodreadsRating">Goodreads ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="goodreadsRating" formControlName="goodreadsRating"/>
+              @if (!book.metadata!['goodreadsRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['goodreadsRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsRating')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="goodreadsReviewCount">Goodreads #</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="goodreadsReviewCount" formControlName="goodreadsReviewCount"/>
-            @if (!book.metadata!['goodreadsReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsReviewCount')" severity="success"></p-button>
-            }
-            @if (book.metadata!['goodreadsReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsReviewCount')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('goodreadsReviewCount')) {
+          <div class="field-group metadata-id-field">
+            <label for="goodreadsReviewCount">Goodreads #</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="goodreadsReviewCount" formControlName="goodreadsReviewCount"/>
+              @if (!book.metadata!['goodreadsReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('goodreadsReviewCount')" severity="success"></p-button>
+              }
+              @if (book.metadata!['goodreadsReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('goodreadsReviewCount')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="hardcoverId">Hardcover ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="hardcoverId" formControlName="hardcoverId"/>
-            @if (!book.metadata!['hardcoverIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['hardcoverIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('hardcoverId')) {
+          <div class="field-group metadata-id-field">
+            <label for="hardcoverId">Hardcover ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="hardcoverId" formControlName="hardcoverId"/>
+              @if (!book.metadata!['hardcoverIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['hardcoverIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="hardcoverBookId">Hardcover Book ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="hardcoverBookId" formControlName="hardcoverBookId"/>
-            @if (!book.metadata!['hardcoverBookIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['hardcoverBookIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('hardcoverBookId')) {
+          <div class="field-group metadata-id-field">
+            <label for="hardcoverBookId">Hardcover Book ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="hardcoverBookId" formControlName="hardcoverBookId"/>
+              @if (!book.metadata!['hardcoverBookIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['hardcoverBookIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverBookId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="hardcoverRating">Hardcover ★</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="hardcoverRating" formControlName="hardcoverRating"/>
-            @if (!book.metadata!['hardcoverRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverRating')" severity="success"></p-button>
-            }
-            @if (book.metadata!['hardcoverRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverRating')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('hardcoverRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="hardcoverRating">Hardcover ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="hardcoverRating" formControlName="hardcoverRating"/>
+              @if (!book.metadata!['hardcoverRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['hardcoverRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverRating')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="hardcoverReviewCount">Hardcover #</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="hardcoverReviewCount" formControlName="hardcoverReviewCount"/>
-            @if (!book.metadata!['hardcoverReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverReviewCount')" severity="success"></p-button>
-            }
-            @if (book.metadata!['hardcoverReviewCountLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverReviewCount')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('hardcoverReviewCount')) {
+          <div class="field-group metadata-id-field">
+            <label for="hardcoverReviewCount">Hardcover #</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="hardcoverReviewCount" formControlName="hardcoverReviewCount"/>
+              @if (!book.metadata!['hardcoverReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('hardcoverReviewCount')" severity="success"></p-button>
+              }
+              @if (book.metadata!['hardcoverReviewCountLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('hardcoverReviewCount')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div class="flex flex-col md:flex-row w-full gap-4 mt-2 pb-1">
-        <div class="field-group metadata-id-field">
-          <label for="lubimyczytacId">LC ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="lubimyczytacId" formControlName="lubimyczytacId"/>
-            @if (!book.metadata!['lubimyczytacIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['lubimyczytacIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('lubimyczytacId')) {
+          <div class="field-group metadata-id-field">
+            <label for="lubimyczytacId">Lubimyczytac ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="lubimyczytacId" formControlName="lubimyczytacId"/>
+              @if (!book.metadata!['lubimyczytacIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['lubimyczytacIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="lubimyczytacRating">LC ★</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="lubimyczytacRating" formControlName="lubimyczytacRating"/>
-            @if (!book.metadata!['lubimyczytacRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="success"></p-button>
-            }
-            @if (book.metadata!['lubimyczytacRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('lubimyczytacRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="lubimyczytacRating">Lubimyczytac ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="lubimyczytacRating" formControlName="lubimyczytacRating"/>
+              @if (!book.metadata!['lubimyczytacRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['lubimyczytacRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('lubimyczytacRating')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="field-group metadata-id-field">
-          <label for="comicvineId">Comicvine ID</label>
-          <div class="field-with-lock">
-            <input pSize="small" pInputText id="comicvineId" formControlName="comicvineId"/>
-            @if (!book.metadata!['comicvineIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('comicvineId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['comicvineIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('comicvineId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('comicvineId')) {
+          <div class="field-group metadata-id-field">
+            <label for="comicvineId">Comicvine ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="comicvineId" formControlName="comicvineId"/>
+              @if (!book.metadata!['comicvineIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('comicvineId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['comicvineIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('comicvineId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="flex flex-col gap-1 md:w-1/6">
-          <label class="text-sm" for="ranobedbId">Ranobedb ID</label>
-          <div class="flex withbutton">
-            <input pSize="small" pInputText id="ranobedbId" formControlName="ranobedbId" class="w-full"/>
-            @if (!book.metadata!['ranobedbIdLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="success"></p-button>
-            }
-            @if (book.metadata!['ranobedbIdLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('ranobedbId')) {
+          <div class="field-group metadata-id-field">
+            <label for="ranobedbId">Ranobedb ID</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="ranobedbId" formControlName="ranobedbId"/>
+              @if (!book.metadata!['ranobedbIdLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="success"></p-button>
+              }
+              @if (book.metadata!['ranobedbIdLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbId')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
-        <div class="flex flex-col gap-1 md:w-1/6">
-          <label class="text-sm" for="ranobedbRating">Ranobedb ★</label>
-          <div class="flex withbutton">
-            <input pSize="small" pInputText id="ranobedbRating" formControlName="ranobedbRating" class="w-full"/>
-            @if (!book.metadata!['ranobedbRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="success"></p-button>
-            }
-            @if (book.metadata!['ranobedbRatingLocked']) {
-              <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="warn"></p-button>
-            }
+        }
+        @if (isFieldVisible('ranobedbRating')) {
+          <div class="field-group metadata-id-field">
+            <label for="ranobedbRating">Ranobedb ★</label>
+            <div class="field-with-lock">
+              <input pSize="small" pInputText id="ranobedbRating" formControlName="ranobedbRating"/>
+              @if (!book.metadata!['ranobedbRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock-open" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="success"></p-button>
+              }
+              @if (book.metadata!['ranobedbRatingLocked']) {
+                <p-button size="small" icon="pi pi-lock" [outlined]="true" (onClick)="toggleLock('ranobedbRating')" severity="warn"></p-button>
+              }
+            </div>
           </div>
-        </div>
+        }
       </div>
 
       <div class="description-section">

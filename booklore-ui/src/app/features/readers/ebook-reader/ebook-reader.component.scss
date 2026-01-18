@@ -19,6 +19,17 @@
   height: 100%;
 }
 
+.bookmark-indicator {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  z-index: 10;
+  width: 48px;
+  height: 64px;
+  background: none;
+  pointer-events: none;
+}
+
 .navigation-overlay {
   position: absolute;
   top: 0;

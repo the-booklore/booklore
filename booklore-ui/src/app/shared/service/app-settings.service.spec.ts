@@ -105,7 +105,25 @@ describe('AppSettingsService', () => {
       smartCroppingEnabled: false
     },
     metadataDownloadOnBookdrop: false,
-    telemetryEnabled: false
+    telemetryEnabled: false,
+    metadataProviderSpecificFields: {
+      asin: false,
+      amazonRating: false,
+      amazonReviewCount: false,
+      googleId: false,
+      goodreadsId: false,
+      goodreadsRating: false,
+      goodreadsReviewCount: false,
+      hardcoverId: false,
+      hardcoverBookId: false,
+      hardcoverRating: false,
+      hardcoverReviewCount: false,
+      comicvineId: false,
+      lubimyczytacId: false,
+      lubimyczytacRating: false,
+      ranobedbId: false,
+      ranobedbRating: false
+    }
   };
 
   const mockPublicSettings: PublicAppSettings = {
@@ -457,7 +475,25 @@ describe('AppSettingsService - API Contract Tests', () => {
           smartCroppingEnabled: false
         },
         metadataDownloadOnBookdrop: false,
-        telemetryEnabled: false
+        telemetryEnabled: false,
+        metadataProviderSpecificFields: {
+          asin: false,
+          amazonRating: false,
+          amazonReviewCount: false,
+          googleId: false,
+          goodreadsId: false,
+          goodreadsRating: false,
+          goodreadsReviewCount: false,
+          hardcoverId: false,
+          hardcoverBookId: false,
+          hardcoverRating: false,
+          hardcoverReviewCount: false,
+          comicvineId: false,
+          lubimyczytacId: false,
+          lubimyczytacRating: false,
+          ranobedbId: false,
+          ranobedbRating: false
+        }
       };
       httpClientMock.get.mockReturnValue(of(mockSettings));
       service['fetchAppSettings']().subscribe(settings => {

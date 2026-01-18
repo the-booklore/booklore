@@ -101,6 +101,7 @@ label {
   flex-direction: column;
   flex-grow: 1;
   overflow: auto;
+  height: 72.5dvh;
 
   @media (min-width: 768px) {
     padding: 0.5rem;
@@ -238,16 +239,19 @@ label {
 }
 
 .metadata-ids-row {
-  @media (min-width: 768px) {
-    .field-group {
-      width: calc(100% / 6);
-    }
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  width: 100%;
+
+  .metadata-id-field {
+    min-width: 0;
   }
 }
 
 .metadata-id-field {
   @media (min-width: 768px) {
-    width: calc(100% / 6);
+    min-width: 0;
   }
 }
 
@@ -312,8 +316,7 @@ label {
   z-index: 10;
 
   @media (min-width: 768px) {
-    padding: 0.5rem;
-    padding-bottom: 1rem;
+    padding: 1rem;
   }
 }
 
