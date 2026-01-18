@@ -13,6 +13,7 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookdropFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
+import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.repository.LibraryPathRepository;
@@ -24,6 +25,7 @@ import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistr
 import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +45,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -491,12 +494,15 @@ class BookDropServiceTest {
         Path tempPath = tempDir.resolve("temp-file");
         Path targetPath = tempDir.resolve("moved-book.pdf");
 
-        try (MockedStatic<Files> filesMock = mockStatic(Files.class)) {
+        try (MockedStatic<Files> filesMock = mockStatic(Files.class);
+             MockedStatic<BookFileTypeDetector> detectorMock = mockStatic(BookFileTypeDetector.class)) {
             filesMock.when(() -> Files.exists(any(Path.class))).thenReturn(true);
             filesMock.when(() -> Files.createTempFile(anyString(), anyString())).thenReturn(tempPath);
             filesMock.when(() -> Files.copy(any(Path.class), any(Path.class), any())).thenReturn(tempPath);
             filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(tempDir);
             filesMock.when(() -> Files.move(any(Path.class), any(Path.class), any())).thenReturn(targetPath);
+            detectorMock.when(() -> BookFileTypeDetector.detectType(any(File.class)))
+                    .thenReturn(Optional.of(BookFileExtension.PDF));
             
             BookdropFinalizeResult result = bookDropService.finalizeImport(request);
 

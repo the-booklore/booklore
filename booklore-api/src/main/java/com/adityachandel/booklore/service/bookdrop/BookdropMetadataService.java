@@ -12,6 +12,7 @@ import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,15 +94,15 @@ public class BookdropMetadataService {
 
     private BookMetadata extractInitialMetadata(BookdropFileEntity entity) {
         File file = new File(entity.getFilePath());
-        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName())
-            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+        BookFileExtension fileExt = BookFileTypeDetector.detectType(file)
+            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file format"));
         return metadataExtractorFactory.extractMetadata(fileExt, file);
     }
 
     private void extractAndSaveCover(BookdropFileEntity entity) {
         File file = new File(entity.getFilePath());
-        BookFileExtension fileExt = BookFileExtension.fromFileName(file.getName())
-            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+        BookFileExtension fileExt = BookFileTypeDetector.detectType(file)
+            .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file format"));
         byte[] coverBytes = metadataExtractorFactory.extractCover(fileExt, file);
         if (coverBytes != null) {
             try {

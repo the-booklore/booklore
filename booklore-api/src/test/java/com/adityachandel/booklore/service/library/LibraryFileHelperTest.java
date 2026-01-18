@@ -13,7 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -21,6 +23,9 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,9 +41,9 @@ class LibraryFileHelperTest {
     void testGetLibraryFiles_HandlesInaccessibleDirectories() throws IOException {
         LibraryFileHelper libraryFileHelper = new LibraryFileHelper();
 
-        Files.createFile(tempDir.resolve("happy.epub"));
+        createValidEpub(tempDir.resolve("happy.epub"));
         Files.createDirectory(tempDir.resolve("some_other_random_named_dir"), PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("---------")));
-        Files.createFile(tempDir.resolve("zzzz_happ.epub"));
+        createValidEpub(tempDir.resolve("zzzz_happ.epub"));
 
         LibraryPathEntity libraryPath = new LibraryPathEntity();
         libraryPath.setId(10L);
@@ -54,5 +59,21 @@ class LibraryFileHelperTest {
 
         List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(testLibrary, processor);
         assertEquals(libraryFiles.stream().map(LibraryFile::getFileName).sorted().toList(), List.of("happy.epub", "zzzz_happ.epub"));
+    }
+
+    private void createValidEpub(Path path) throws IOException {
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(path.toFile()))) {
+            byte[] mimetypeContent = "application/epub+zip".getBytes(StandardCharsets.US_ASCII);
+            ZipEntry mimetypeEntry = new ZipEntry("mimetype");
+            mimetypeEntry.setMethod(ZipEntry.STORED);
+            mimetypeEntry.setSize(mimetypeContent.length);
+            mimetypeEntry.setCompressedSize(mimetypeContent.length);
+            CRC32 crc = new CRC32();
+            crc.update(mimetypeContent);
+            mimetypeEntry.setCrc(crc.getValue());
+            zos.putNextEntry(mimetypeEntry);
+            zos.write(mimetypeContent);
+            zos.closeEntry();
+        }
     }
 }

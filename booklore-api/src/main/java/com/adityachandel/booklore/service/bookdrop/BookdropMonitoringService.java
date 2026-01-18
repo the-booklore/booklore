@@ -2,6 +2,7 @@ package com.adityachandel.booklore.service.bookdrop;
 
 import com.adityachandel.booklore.config.AppProperties;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -147,14 +148,14 @@ public class BookdropMonitoringService {
                             pathStream
                                     .filter(Files::isRegularFile)
                                     .filter(path -> !FileUtils.shouldIgnore(path))
-                                    .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
+                                    .filter(BookFileTypeDetector::isLikelyBookFile)
                                     .forEach(path -> eventHandler.enqueueFile(path, StandardWatchEventKinds.ENTRY_CREATE));
                         } catch (IOException e) {
                             log.error("Failed to scan new directory: {}", fullPath, e);
                         }
                     } else {
                         if (!FileUtils.shouldIgnore(fullPath)) {
-                            if (BookFileExtension.fromFileName(fullPath.getFileName().toString()).isPresent()) {
+                            if (BookFileTypeDetector.isLikelyBookFile(fullPath)) {
                                 eventHandler.enqueueFile(fullPath, kind);
                             } else {
                                 log.info("Ignored unsupported file type: {}", fullPath);
@@ -188,7 +189,7 @@ public class BookdropMonitoringService {
         try (Stream<Path> files = Files.walk(bookdrop)) {
             files.filter(Files::isRegularFile)
                     .filter(path -> !FileUtils.shouldIgnore(path))
-                    .filter(path -> BookFileExtension.fromFileName(path.getFileName().toString()).isPresent())
+                    .filter(BookFileTypeDetector::isLikelyBookFile)
                     .forEach(file -> {
                         log.info("Found existing supported file on startup: {}", file);
                         eventHandler.enqueueFile(file, StandardWatchEventKinds.ENTRY_CREATE);

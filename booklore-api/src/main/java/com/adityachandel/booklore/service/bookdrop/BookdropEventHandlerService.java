@@ -9,6 +9,7 @@ import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookdropFileRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +91,7 @@ public class BookdropEventHandlerService {
                 String filePath = file.toAbsolutePath().toString();
                 String fileName = file.getFileName().toString();
 
-                if (BookFileExtension.fromFileName(fileName).isEmpty()) {
+                if (BookFileTypeDetector.detectType(file).isEmpty()) {
                     log.info("Unsupported file type detected, ignoring file: {}", fileName);
                     return;
                 }

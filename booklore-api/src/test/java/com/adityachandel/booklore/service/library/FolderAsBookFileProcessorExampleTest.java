@@ -9,6 +9,7 @@ import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import com.adityachandel.booklore.util.builder.LibraryTestBuilder;
 import static com.adityachandel.booklore.util.builder.LibraryTestBuilderAssert.assertThat;
@@ -49,20 +50,23 @@ class FolderAsBookFileProcessorExampleTest {
     private ArgumentCaptor<BookFileEntity> additionalFileCaptor;
 
     private MockedStatic<FileUtils> fileUtilsMock;
-    private  MockedStatic<FileFingerprint> fileFingerprintMock;
+    private MockedStatic<FileFingerprint> fileFingerprintMock;
+    private MockedStatic<BookFileTypeDetector> bookFileTypeDetectorMock;
     private LibraryTestBuilder libraryTestBuilder;
 
     @BeforeEach
     void setUp() {
         fileUtilsMock = mockStatic(FileUtils.class);
         fileFingerprintMock = mockStatic(FileFingerprint.class);
-        libraryTestBuilder = new LibraryTestBuilder(fileUtilsMock, fileFingerprintMock, bookFileProcessorRegistry, mockBookFileProcessor, bookRepository, bookAdditionalFileRepository);
+        bookFileTypeDetectorMock = mockStatic(BookFileTypeDetector.class);
+        libraryTestBuilder = new LibraryTestBuilder(fileUtilsMock, fileFingerprintMock, bookFileTypeDetectorMock, bookFileProcessorRegistry, mockBookFileProcessor, bookRepository, bookAdditionalFileRepository);
     }
 
     @AfterEach
     void tearDown() {
         fileUtilsMock.close();
         fileFingerprintMock.close();
+        bookFileTypeDetectorMock.close();
     }
 
     @Test

@@ -12,11 +12,13 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.validation.constraints.NotNull;
 import org.apache.commons.io.FilenameUtils;
 import org.mockito.MockedStatic;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -55,6 +58,7 @@ public class LibraryTestBuilder {
 
     public LibraryTestBuilder(MockedStatic<FileUtils> fileUtilsMock,
                               MockedStatic<FileFingerprint> fileFingerprintMock,
+                              MockedStatic<BookFileTypeDetector> bookFileTypeDetectorMock,
                               BookFileProcessorRegistry bookFileProcessorRegistry,
                               BookFileProcessor bookFileProcessorMock,
                               BookRepository bookRepositoryMock,
@@ -64,6 +68,26 @@ public class LibraryTestBuilder {
                 .then(invocation -> {
                     Path path = invocation.getArgument(0);
                     return computeFileHash(path);
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.detectType(any(File.class)))
+                .then(invocation -> {
+                    File file = invocation.getArgument(0);
+                    return getBookFileExtension(file.getName());
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.detectType(any(Path.class)))
+                .then(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    return getBookFileExtension(path.getFileName().toString());
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.isLikelyBookFile(any(Path.class)))
+                .then(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    return getBookFileExtension(path.getFileName().toString()).isPresent();
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.isLikelyBookFile(any(String.class)))
+                .then(invocation -> {
+                    String fileName = invocation.getArgument(0);
+                    return getBookFileExtension(fileName).isPresent();
                 });
 
         lenient().when(bookFileProcessorRegistry.getProcessorOrThrow(any(BookFileType.class)))
@@ -349,6 +373,10 @@ public class LibraryTestBuilder {
         additionalFile.setId((long) bookAdditionalFileRepository.size() + 1);
         bookAdditionalFileRepository.put(additionalFile.getId(), additionalFile);
         return additionalFile;
+    }
+
+    private static Optional<BookFileExtension> getBookFileExtension(String fileName) {
+        return BookFileExtension.fromFileName(fileName);
     }
 
     private static BookFileType getBookFileType(String fileName) {

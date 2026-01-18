@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.service.library.LibraryProcessingService;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -50,7 +51,7 @@ public class BookFileTransactionalHandler {
                 .libraryPathEntity(libraryPathEntity)
                 .fileSubPath(FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), path))
                 .fileName(fileName)
-                .bookFileType(BookFileExtension.fromFileName(fileName)
+                .bookFileType(BookFileTypeDetector.detectType(path)
                         .map(BookFileExtension::getType)
                         .orElseThrow(() -> new IllegalArgumentException("Unsupported book file type: " + fileName)))
                 .build();

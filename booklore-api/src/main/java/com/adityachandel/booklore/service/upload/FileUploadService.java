@@ -20,6 +20,7 @@ import com.adityachandel.booklore.service.appsettings.AppSettingService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.PathPatternResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +57,7 @@ public class FileUploadService {
     private final MonitoringRegistrationService monitoringRegistrationService;
 
     public void uploadFile(MultipartFile file, long libraryId, long pathId) {
-        validateFile(file);
+        validateFileSize(file);
 
         final LibraryEntity libraryEntity = findLibraryById(libraryId);
         final LibraryPathEntity libraryPathEntity = findLibraryPathById(libraryEntity, pathId);
@@ -67,7 +68,7 @@ public class FileUploadService {
             tempPath = createTempFile(UPLOAD_TEMP_PREFIX, originalFileName);
             file.transferTo(tempPath);
 
-            final BookFileExtension fileExtension = getFileExtension(originalFileName);
+            final BookFileExtension fileExtension = detectFileType(tempPath);
             final BookMetadata metadata = extractMetadata(fileExtension, tempPath.toFile(), originalFileName);
             final String uploadPattern = fileMovingHelper.getFileNamingPattern(libraryEntity);
 
@@ -154,7 +155,7 @@ public class FileUploadService {
     }
 
     public Book uploadFileBookDrop(MultipartFile file) throws IOException {
-        validateFile(file);
+        validateFileSize(file);
 
         final Path dropFolder = Paths.get(appProperties.getBookdropFolder());
         Files.createDirectories(dropFolder);
@@ -166,6 +167,8 @@ public class FileUploadService {
         try {
             tempPath = createTempFile(BOOKDROP_TEMP_PREFIX, sanitizedFilename);
             file.transferTo(tempPath);
+
+            detectFileType(tempPath);
 
             final Path finalPath = dropFolder.resolve(sanitizedFilename);
             validateFinalPath(finalPath);
@@ -205,9 +208,9 @@ public class FileUploadService {
         return originalFileName;
     }
 
-    private BookFileExtension getFileExtension(String fileName) {
-        return BookFileExtension.fromFileName(fileName)
-                .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"));
+    private BookFileExtension detectFileType(Path filePath) {
+        return BookFileTypeDetector.detectType(filePath)
+                .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file format"));
     }
 
     private Path createTempFile(String prefix, String fileName) throws IOException {
@@ -292,12 +295,7 @@ public class FileUploadService {
         return metadata;
     }
 
-    private void validateFile(MultipartFile file) {
-        final String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || BookFileExtension.fromFileName(originalFilename).isEmpty()) {
-            throw ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension");
-        }
-
+    private void validateFileSize(MultipartFile file) {
         final int maxSizeMb = appSettingService.getAppSettings().getMaxFileUploadSizeInMb();
         if (file.getSize() > maxSizeMb * MB_TO_BYTES_MULTIPLIER) {
             throw ApiError.FILE_TOO_LARGE.createException(maxSizeMb);

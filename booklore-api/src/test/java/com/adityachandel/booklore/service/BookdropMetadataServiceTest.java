@@ -21,15 +21,23 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.CRC32;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static com.adityachandel.booklore.model.entity.BookdropFileEntity.Status.PENDING_REVIEW;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +46,9 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BookdropMetadataServiceTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock
     private BookdropFileRepository bookdropFileRepository;
@@ -62,13 +73,33 @@ class BookdropMetadataServiceTest {
     private BookdropMetadataService bookdropMetadataService;
 
     private BookdropFileEntity sampleFile;
+    private Path epubPath;
 
     @BeforeEach
-    void setup() {
+    void setup() throws IOException {
+        epubPath = tempDir.resolve("book.epub");
+        createValidEpub(epubPath);
+
         sampleFile = new BookdropFileEntity();
         sampleFile.setId(1L);
         sampleFile.setFileName("book.epub");
-        sampleFile.setFilePath("/tmp/book.epub");
+        sampleFile.setFilePath(epubPath.toString());
+    }
+
+    private void createValidEpub(Path path) throws IOException {
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(path.toFile()))) {
+            byte[] mimetypeContent = "application/epub+zip".getBytes(StandardCharsets.US_ASCII);
+            ZipEntry mimetypeEntry = new ZipEntry("mimetype");
+            mimetypeEntry.setMethod(ZipEntry.STORED);
+            mimetypeEntry.setSize(mimetypeContent.length);
+            mimetypeEntry.setCompressedSize(mimetypeContent.length);
+            CRC32 crc = new CRC32();
+            crc.update(mimetypeContent);
+            mimetypeEntry.setCrc(crc.getValue());
+            zos.putNextEntry(mimetypeEntry);
+            zos.write(mimetypeContent);
+            zos.closeEntry();
+        }
     }
 
     @Test
@@ -133,9 +164,12 @@ class BookdropMetadataServiceTest {
     }
 
     @Test
-    void extractInitialMetadata_shouldThrowForUnsupportedFileExtension() {
+    void extractInitialMetadata_shouldThrowForUnsupportedFileExtension() throws IOException {
+        Path txtPath = tempDir.resolve("book.txt");
+        java.nio.file.Files.writeString(txtPath, "Just some plain text content");
+        
         sampleFile.setFileName("book.txt");
-        sampleFile.setFilePath("/tmp/book.txt");
+        sampleFile.setFilePath(txtPath.toString());
 
         when(bookdropFileRepository.findById(sampleFile.getId())).thenReturn(Optional.of(sampleFile));
 

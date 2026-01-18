@@ -1,8 +1,8 @@
 package com.adityachandel.booklore.service.monitoring;
 
 import com.adityachandel.booklore.model.dto.Library;
-import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.watcher.LibraryFileEventProcessor;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -241,7 +241,7 @@ public class MonitoringService {
     }
 
     public boolean isRelevantBookFile(Path path) {
-        return BookFileExtension.fromFileName(path.getFileName().toString()).isPresent();
+        return BookFileTypeDetector.isLikelyBookFile(path);
     }
 
     public boolean isPathMonitored(Path path) {

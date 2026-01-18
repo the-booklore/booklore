@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.enums.PermissionType;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -103,7 +104,7 @@ public class LibraryFileEventProcessor {
             return;
         }
 
-        if (!isBookFile(fileName)) {
+        if (!isBookFile(path)) {
             log.debug("[SKIP] Ignored non-book file '{}'", fileName);
             return;
         }
@@ -148,7 +149,7 @@ public class LibraryFileEventProcessor {
         log.info("[FOLDER_CREATE] '{}'", folderPath);
         try (var stream = Files.walk(folderPath)) {
             stream.filter(Files::isRegularFile)
-                    .filter(p -> isBookFile(p.getFileName().toString()))
+                    .filter(this::isBookFile)
                     .forEach(p -> {
                         try {
                             bookFileTransactionalHandler.handleNewBookFile(library.getId(), p);
@@ -180,7 +181,14 @@ public class LibraryFileEventProcessor {
     }
 
     private boolean isBookFile(String fileName) {
-        return BookFileExtension.fromFileName(fileName).isPresent();
+        return BookFileTypeDetector.isLikelyBookFile(fileName);
+    }
+
+    private boolean isBookFile(Path path) {
+        if (BookFileTypeDetector.isLikelyBookFile(path)) {
+            return true;
+        }
+        return BookFileTypeDetector.detectType(path).isPresent();
     }
 
     @PreDestroy

@@ -16,6 +16,7 @@ import com.adityachandel.booklore.service.event.AdminEventBroadcaster;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -203,7 +204,7 @@ public class FolderAsBookFileProcessor implements LibraryFileProcessor {
 
     private void processAdditionalFiles(BookEntity existingBook, List<LibraryFile> filesInDirectory) {
         for (LibraryFile file : filesInDirectory) {
-            Optional<BookFileExtension> extension = BookFileExtension.fromFileName(file.getFileName());
+            Optional<BookFileExtension> extension = BookFileTypeDetector.detectType(file.getFullPath());
             boolean isBook = extension.isPresent();
             BookFileType bookType = extension.map(BookFileExtension::getType).orElse(null);
 

@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -47,7 +48,7 @@ public class LibraryFileHelper {
                 }
 
                 String fileName = file.getFileName().toString();
-                Optional<BookFileExtension> bookExtension = BookFileExtension.fromFileName(fileName);
+                Optional<BookFileExtension> bookExtension = BookFileTypeDetector.detectType(file);
 
                 if (bookExtension.isEmpty() && !supportsSupplementaryFiles) {
                     return FileVisitResult.CONTINUE;

@@ -31,6 +31,7 @@ import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistr
 import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.metadata.MetadataRefreshService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -457,8 +458,8 @@ public class BookDropService {
                                                 LibraryPathEntity path,
                                                 BookMetadata metadata) {
         FileProcessResult fileProcessResult = processFileInLibrary(targetFile.getName(), library, path, targetFile,
-                BookFileExtension.fromFileName(bookdropFile.getFileName())
-                        .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file extension"))
+                BookFileTypeDetector.detectType(targetFile)
+                        .orElseThrow(() -> ApiError.INVALID_FILE_FORMAT.createException("Unsupported file format"))
                         .getType());
 
         BookEntity bookEntity = bookRepository.findById(fileProcessResult.getBook().getId())

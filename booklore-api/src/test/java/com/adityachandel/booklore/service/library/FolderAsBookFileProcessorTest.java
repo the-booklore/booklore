@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.enums.LibraryScanMode;
@@ -14,6 +15,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.util.BookFileTypeDetector;
 import com.adityachandel.booklore.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -61,11 +64,13 @@ class FolderAsBookFileProcessorTest {
 
     private MockedStatic<FileUtils> fileUtilsMock;
     private MockedStatic<FileFingerprint> fileFingerprintMock;
+    private MockedStatic<BookFileTypeDetector> bookFileTypeDetectorMock;
 
     @BeforeEach
     void setUp() {
         fileUtilsMock = mockStatic(FileUtils.class);
         fileFingerprintMock = mockStatic(FileFingerprint.class);
+        bookFileTypeDetectorMock = mockStatic(BookFileTypeDetector.class);
         // Setup common FileUtils mocks for all tests
         fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
         fileFingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class)))
@@ -81,12 +86,33 @@ class FolderAsBookFileProcessorTest {
                     }
                     return hexString.toString();
                 });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.detectType(any(File.class)))
+                .then(invocation -> {
+                    File file = invocation.getArgument(0);
+                    return BookFileExtension.fromFileName(file.getName());
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.detectType(any(Path.class)))
+                .then(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    return BookFileExtension.fromFileName(path.getFileName().toString());
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.isLikelyBookFile(any(Path.class)))
+                .then(invocation -> {
+                    Path path = invocation.getArgument(0);
+                    return BookFileExtension.fromFileName(path.getFileName().toString()).isPresent();
+                });
+        bookFileTypeDetectorMock.when(() -> BookFileTypeDetector.isLikelyBookFile(any(String.class)))
+                .then(invocation -> {
+                    String fileName = invocation.getArgument(0);
+                    return BookFileExtension.fromFileName(fileName).isPresent();
+                });
     }
 
     @AfterEach
     void tearDown() {
         fileUtilsMock.close();
         fileFingerprintMock.close();
+        bookFileTypeDetectorMock.close();
     }
 
     @Test
