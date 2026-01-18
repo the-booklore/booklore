@@ -30,6 +30,7 @@ export class ReaderEventService {
   private readonly LONG_HOLD_THRESHOLD_MS = 500;
   private readonly LEFT_ZONE_PERCENT = 0.3;
   private readonly RIGHT_ZONE_PERCENT = 0.7;
+  private readonly SWIPE_THRESHOLD_PX = 50;
 
   private annotationService = inject(ReaderAnnotationService);
 
@@ -41,6 +42,12 @@ export class ReaderEventService {
   private longHoldTimeout: ReturnType<typeof setTimeout> | null = null;
   private keydownHandler?: (event: KeyboardEvent) => void;
   private clickedDocs = new WeakSet<Document>();
+
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private isTextSelectionInProgress = false;
+  private touchStartTime = 0;
+  private selectionChangeTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private eventSubject = new Subject<ViewEvent>();
   public events$ = this.eventSubject.asObservable();
@@ -77,6 +84,15 @@ export class ReaderEventService {
           e.detail.doc.addEventListener('keydown', this.keydownHandler);
         }
         this.attachIframeEventHandlers(e.detail.doc);
+      }
+
+      const allAnnotations = this.annotationService.getAllAnnotations();
+      if (allAnnotations.length > 0 && this.view) {
+        setTimeout(() => {
+          allAnnotations.forEach(annotation => {
+            this.view?.addAnnotation({value: annotation.value});
+          });
+        }, 100);
       }
     });
 
@@ -137,56 +153,8 @@ export class ReaderEventService {
       }, this.LONG_HOLD_THRESHOLD_MS);
     }, true);
 
-    doc.addEventListener('mouseup', (event: MouseEvent) => {
-      setTimeout(() => {
-        const selection = doc.defaultView?.getSelection();
-        if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-          return;
-        }
-
-        const range = selection.getRangeAt(0);
-        const text = range.toString().trim();
-        if (!text) return;
-
-        const contents = this.viewCallbacks?.getContents();
-        if (!contents || contents.length === 0) return;
-
-        const {index} = contents[0];
-        const cfi = this.viewCallbacks?.getCFI(index, range);
-
-        if (cfi) {
-          const iframe = doc.defaultView?.frameElement as HTMLIFrameElement | null;
-          const rangeRect = range.getBoundingClientRect();
-          let popupX = rangeRect.left + (rangeRect.width / 2);
-          let selectionTop = rangeRect.top;
-          let selectionBottom = rangeRect.bottom;
-
-          if (iframe) {
-            const iframeRect = iframe.getBoundingClientRect();
-            popupX = iframeRect.left + rangeRect.left + (rangeRect.width / 2);
-            selectionTop = iframeRect.top + rangeRect.top;
-            selectionBottom = iframeRect.top + rangeRect.bottom;
-          }
-
-          const minSpaceAbove = 120;
-          const showBelow = selectionTop < minSpaceAbove;
-
-          let popupY: number;
-          if (showBelow) {
-            popupY = selectionBottom + 10;
-          } else {
-            popupY = selectionTop - 50;
-          }
-
-          popupX = Math.max(100, Math.min(popupX, window.innerWidth - 150));
-
-          this.eventSubject.next({
-            type: 'text-selected',
-            detail: {text, cfi, range, index},
-            popupPosition: {x: popupX, y: popupY, showBelow}
-          });
-        }
-      }, 10);
+    doc.addEventListener('mouseup', () => {
+      this.handleSelectionEnd(doc);
     });
 
     doc.addEventListener('click', (event: MouseEvent) => {
@@ -207,6 +175,210 @@ export class ReaderEventService {
         target: (event.target as HTMLElement)?.tagName
       }, '*');
     }, true);
+
+    doc.addEventListener('touchstart', (event: TouchEvent) => {
+      this.handleTouchStart(event, doc);
+    }, {passive: true});
+
+    doc.addEventListener('touchmove', (event: TouchEvent) => {
+      this.handleTouchMove(event, doc);
+    }, {passive: false});
+
+    doc.addEventListener('touchend', (event: TouchEvent) => {
+      this.handleTouchEnd(event, doc);
+    }, {passive: false});
+
+    doc.addEventListener('contextmenu', (event: MouseEvent) => {
+      const selection = doc.defaultView?.getSelection();
+      if (selection && !selection.isCollapsed) {
+        event.preventDefault();
+      }
+    });
+
+    doc.addEventListener('selectionchange', () => {
+      this.handleSelectionChange(doc);
+    });
+
+    this.injectMobileSelectionStyles(doc);
+  }
+
+  private handleSelectionChange(doc: Document): void {
+    if (this.selectionChangeTimeout) {
+      clearTimeout(this.selectionChangeTimeout);
+    }
+
+    this.selectionChangeTimeout = setTimeout(() => {
+      const selection = doc.defaultView?.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const text = range.toString().trim();
+      if (!text) return;
+
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        this.handleSelectionEnd(doc);
+      }
+    }, 300);
+  }
+
+  private injectMobileSelectionStyles(doc: Document): void {
+    const styleId = 'booklore-mobile-selection-styles';
+    if (doc.getElementById(styleId)) return;
+
+    const style = doc.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      * {
+        -webkit-touch-callout: none !important;
+        -webkit-user-select: text !important;
+        user-select: text !important;
+      }
+    `;
+    doc.head.appendChild(style);
+  }
+
+  private handleTouchStart(event: TouchEvent, _doc: Document): void {
+    if (event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    this.touchStartTime = Date.now();
+    this.isTextSelectionInProgress = false;
+
+    this.longHoldTimeout = setTimeout(() => {
+      this.longHoldTimeout = null;
+    }, this.LONG_HOLD_THRESHOLD_MS);
+  }
+
+  private handleTouchMove(event: TouchEvent, doc: Document): void {
+    if (event.touches.length !== 1) return;
+
+    const touch = event.touches[0];
+    const deltaX = Math.abs(touch.clientX - this.touchStartX);
+    const deltaY = Math.abs(touch.clientY - this.touchStartY);
+
+    const selection = doc.defaultView?.getSelection();
+    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+      this.isTextSelectionInProgress = true;
+      event.preventDefault();
+      return;
+    }
+
+    if (deltaX > 10 && deltaX > deltaY && !this.isTextSelectionInProgress) {
+      return;
+    }
+  }
+
+  private handleTouchEnd(event: TouchEvent, doc: Document): void {
+    const touchEndTime = Date.now();
+    const touchDuration = touchEndTime - this.touchStartTime;
+
+    const selection = doc.defaultView?.getSelection();
+    const hasSelection = selection && !selection.isCollapsed && selection.rangeCount > 0;
+
+    if (hasSelection) {
+      this.isTextSelectionInProgress = false;
+      event.preventDefault();
+
+      setTimeout(() => {
+        this.handleSelectionEnd(doc);
+      }, 50);
+      return;
+    }
+
+    if (!this.isTextSelectionInProgress && event.changedTouches.length === 1) {
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - this.touchStartX;
+      const deltaY = Math.abs(touch.clientY - this.touchStartY);
+
+      if (Math.abs(deltaX) >= this.SWIPE_THRESHOLD_PX && Math.abs(deltaX) > deltaY) {
+        if (this.isNavigating) return;
+
+        this.isNavigating = true;
+        if (deltaX < 0) {
+          this.viewCallbacks?.next();
+        } else {
+          this.viewCallbacks?.prev();
+        }
+        setTimeout(() => this.isNavigating = false, 300);
+        return;
+      }
+
+      if (touchDuration < this.LONG_HOLD_THRESHOLD_MS && Math.abs(deltaX) < 10 && deltaY < 10) {
+        const iframe = doc.defaultView?.frameElement as HTMLIFrameElement | null;
+        if (!iframe) return;
+
+        const iframeRect = iframe.getBoundingClientRect();
+        const viewportX = iframeRect.left + touch.clientX;
+
+        window.postMessage({
+          type: 'iframe-click',
+          clientX: viewportX,
+          clientY: iframeRect.top + touch.clientY,
+          iframeLeft: iframeRect.left,
+          iframeWidth: iframeRect.width,
+          eventClientX: touch.clientX,
+          target: (event.target as HTMLElement)?.tagName
+        }, '*');
+      }
+    }
+
+    this.isTextSelectionInProgress = false;
+  }
+
+  private handleSelectionEnd(doc: Document): void {
+    setTimeout(() => {
+      const selection = doc.defaultView?.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+        return;
+      }
+
+      const range = selection.getRangeAt(0);
+      const text = range.toString().trim();
+      if (!text) return;
+
+      const contents = this.viewCallbacks?.getContents();
+      if (!contents || contents.length === 0) return;
+
+      const {index} = contents[0];
+      const cfi = this.viewCallbacks?.getCFI(index, range);
+
+      if (cfi) {
+        const iframe = doc.defaultView?.frameElement as HTMLIFrameElement | null;
+        const rangeRect = range.getBoundingClientRect();
+        let popupX = rangeRect.left + (rangeRect.width / 2);
+        let selectionTop = rangeRect.top;
+        let selectionBottom = rangeRect.bottom;
+
+        if (iframe) {
+          const iframeRect = iframe.getBoundingClientRect();
+          popupX = iframeRect.left + rangeRect.left + (rangeRect.width / 2);
+          selectionTop = iframeRect.top + rangeRect.top;
+          selectionBottom = iframeRect.top + rangeRect.bottom;
+        }
+
+        const minSpaceAbove = 120;
+        const showBelow = selectionTop < minSpaceAbove;
+
+        let popupY: number;
+        if (showBelow) {
+          popupY = selectionBottom + 10;
+        } else {
+          popupY = selectionTop - 50;
+        }
+
+        popupX = Math.max(100, Math.min(popupX, window.innerWidth - 150));
+
+        this.eventSubject.next({
+          type: 'text-selected',
+          detail: {text, cfi, range, index},
+          popupPosition: {x: popupX, y: popupY, showBelow}
+        });
+      }
+    }, 10);
   }
 
   private handleIframeClickMessage(data: any): void {

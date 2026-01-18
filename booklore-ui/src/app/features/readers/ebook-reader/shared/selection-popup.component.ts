@@ -39,16 +39,16 @@ export class TextSelectionPopupComponent {
   @Output() action = new EventEmitter<TextSelectionAction>();
 
   showAnnotationOptions = false;
-  selectedColor = '#FFFF00';
+  selectedColor = '#FACC15';
   selectedStyle: AnnotationStyle = 'highlight';
   private hasPreview = false;
 
   highlightColors = [
-    {value: '#FFFF00', label: 'Yellow'},
-    {value: '#90EE90', label: 'Green'},
-    {value: '#87CEEB', label: 'Blue'},
-    {value: '#FFB6C1', label: 'Pink'},
-    {value: '#FFD580', label: 'Orange'}
+    {value: '#FACC15', label: 'Yellow'},
+    {value: '#4ADE80', label: 'Green'},
+    {value: '#38BDF8', label: 'Blue'},
+    {value: '#F472B6', label: 'Pink'},
+    {value: '#FB923C', label: 'Orange'}
   ];
 
   lineColors = [
