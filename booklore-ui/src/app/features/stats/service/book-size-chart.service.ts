@@ -16,17 +16,11 @@ interface BookSizeStats {
   pageCount?: number;
 }
 
-const BOOK_TYPE_COLORS = {
-  'PDF': '#e74c3c',
-  'EPUB': '#3498db',
-  'CBZ': '#27a153',
-  'CBX': '#d4b50f',
-  'CBR': '#e67e22',
-  'CB7': '#9b59b6',
-  'FB2': '#1abc9c',
-  'MOBI': '#f39c12',
-  'AZW3': '#2ecc71'
-} as const;
+function getBookTypeColor(bookType: string): string {
+  const cssVarName = `--book-type-${bookType.toLowerCase()}-color`;
+  const color = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
+  return color || '#95a5a6'; // fallback gray
+}
 
 const CHART_DEFAULTS = {
   borderWidth: 1,
@@ -171,7 +165,7 @@ export class BookSizeChartService implements OnDestroy {
       this.lastCalculatedStats = stats;
       const labels = stats.map(s => this.truncateTitle(s.title, 30));
       const dataValues = stats.map(s => s.sizeMB);
-      const colors = stats.map(s => BOOK_TYPE_COLORS[s.bookType as keyof typeof BOOK_TYPE_COLORS] || '#95a5a6');
+      const colors = stats.map(s => getBookTypeColor(s.bookType));
 
       this.bookSizeChartDataSubject.next({
         labels,
