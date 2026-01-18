@@ -1,66 +1,73 @@
-<div class="flex pb-8">
-  <p class="text-lg flex items-center gap-2">
-    Recalculate Metadata Scores:
-    <i
-      class="pi pi-info-circle text-blue-500"
-      pTooltip="Recomputes match scores for all books based on the latest weights."
-      tooltipPosition="right"
-      style="cursor: help;"
-    ></i>
-  </p>
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
+      <i class="pi pi-sliders-h"></i>
+      Metadata Match Weights
+    </h3>
+    <p class="section-description">
+      Configure how important each metadata field is when computing match scores. Higher weights make fields more influential in determining the overall match quality.
+    </p>
+  </div>
 
-  <p-button
-    class="pl-4"
-    type="button"
-    icon="pi pi-refresh"
-    label="Recalculate"
-    [disabled]="isRecalculating"
-    (click)="recalculate()"
-    outlined
-  ></p-button>
-</div>
-
-
-<p class="text-lg flex items-center gap-2">
-  Metadata Field Weights
-  <i
-    class="pi pi-info-circle text-blue-500"
-    pTooltip="Adjust how important each metadata field is when computing match scores. Higher weights make fields more influential."
-    tooltipPosition="right"
-    style="cursor: help;"
-  ></i>
-</p>
-
-<div class="flex flex-col space-y-6 p-4">
-  <div class="p-4 space-y-4 max-w-4xl custom-border">
-    <form [formGroup]="form">
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-4 gap-x-6">
-        @for (key of orderedKeys; track key) {
-          <div class="flex text-sm items-center gap-2">
-            <label class="capitalize w-full max-w-[150px]">
-              {{ labelMap[key] }}
-            </label>
-            <p-inputNumber
-              [formControlName]="key"
-              [min]="0"
-              [max]="10"
-              fluid
-              [showButtons]="true"
-            />
+  <div class="section-body">
+    <div class="preferences-section">
+      <div class="action-section">
+        <div class="action-content">
+          <div class="action-info">
+            <span class="action-label">Recalculate Metadata Scores</span>
+            <span class="action-description">
+              <i class="pi pi-info-circle"></i>
+              Recomputes match scores for all books based on the latest weights.
+            </span>
           </div>
-        }
+          <p-button
+            type="button"
+            icon="pi pi-refresh"
+            label="Recalculate"
+            [disabled]="isRecalculating"
+            (click)="recalculate()"
+            outlined
+          ></p-button>
+        </div>
       </div>
-      <div class="mt-4 flex justify-end">
-        <p-button
-          type="button"
-          severity="success"
-          label="Save"
-          icon="pi pi-save"
-          outlined
-          [disabled]="isSaving"
-          (click)="save()">
-        </p-button>
+
+      <div class="weights-section">
+        <div class="weights-header">
+          <span class="weights-icon pi pi-sliders-v"></span>
+          <h4 class="weights-label">Metadata Field Weights</h4>
+        </div>
+
+        <form [formGroup]="form" class="weights-form">
+          <div class="weights-grid">
+            @for (key of orderedKeys; track key) {
+              <div class="weight-field">
+                <label class="field-label">
+                  {{ labelMap[key] }}
+                </label>
+                <p-inputNumber
+                  size="small"
+                  [formControlName]="key"
+                  [min]="0"
+                  [max]="10"
+                  fluid
+                  [showButtons]="true"
+                />
+              </div>
+            }
+          </div>
+          <div class="form-actions">
+            <p-button
+              type="button"
+              severity="success"
+              label="Save Weights"
+              icon="pi pi-save"
+              outlined
+              [disabled]="isSaving"
+              (click)="save()">
+            </p-button>
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 </div>

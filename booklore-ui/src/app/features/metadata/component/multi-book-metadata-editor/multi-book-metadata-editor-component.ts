@@ -8,6 +8,7 @@ import {UserService} from '../../../settings/user-management/user.service';
 import {distinctUntilChanged, filter, map, shareReplay, switchMap, takeUntil} from 'rxjs/operators';
 import {MetadataEditorComponent} from '../book-metadata-center/metadata-editor/metadata-editor.component';
 import {MetadataSearcherComponent} from '../book-metadata-center/metadata-searcher/metadata-searcher.component';
+import {Button} from 'primeng/button';
 
 @Component({
   selector: 'app-multi-book-metadata-editor-component',
@@ -18,7 +19,8 @@ import {MetadataSearcherComponent} from '../book-metadata-center/metadata-search
     TabList,
     TabPanel,
     TabPanels,
-    Tabs
+    Tabs,
+    Button
   ],
   templateUrl: './multi-book-metadata-editor-component.html',
   standalone: true,
@@ -37,7 +39,7 @@ export class MultiBookMetadataEditorComponent implements OnInit, OnDestroy {
   admin = false;
 
   private readonly config = inject(DynamicDialogConfig);
-  private readonly ref = inject(DynamicDialogRef);
+  readonly ref = inject(DynamicDialogRef);
   private readonly bookService = inject(BookService);
   private readonly userService = inject(UserService);
 

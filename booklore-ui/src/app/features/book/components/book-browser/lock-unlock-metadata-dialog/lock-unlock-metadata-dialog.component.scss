@@ -1,0 +1,28 @@
+@use '../../../../../shared/styles/panel-shared' as panel;
+
+.lock-unlock-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-header {
+  @include panel.panel-header;
+}
+
+.dialog-content {
+  padding: 1.5rem;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-bottom: none;
+}
+
+.dialog-footer {
+  @include panel.dialog-footer;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}

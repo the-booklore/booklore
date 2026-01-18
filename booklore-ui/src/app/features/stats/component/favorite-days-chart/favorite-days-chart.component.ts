@@ -90,8 +90,8 @@ export class FavoriteDaysChartComponent implements OnInit, OnDestroy {
               if (label === 'Sessions') {
                 return `${label}: ${value} session${value !== 1 ? 's' : ''}`;
               } else {
-                const hours = Math.floor(value / 3600);
-                const minutes = Math.floor((value % 3600) / 60);
+                const hours = Math.floor(value);
+                const minutes = Math.floor((value % 1) * 60);
                 return `${label}: ${hours}h ${minutes}m`;
               }
             }

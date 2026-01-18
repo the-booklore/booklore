@@ -27,6 +27,8 @@ import {BookNavigationService} from '../../../../book/service/book-navigation.se
 import {BookMetadataHostService} from '../../../../../shared/service/book-metadata-host.service';
 import {Router} from '@angular/router';
 import {UserService} from '../../../../settings/user-management/user.service';
+import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
+import {MetadataProviderSpecificFields} from '../../../../../shared/model/app-settings.model';
 
 @Component({
   selector: "app-metadata-editor",
@@ -70,6 +72,7 @@ export class MetadataEditorComponent implements OnInit {
   private router = inject(Router);
   private userService = inject(UserService);
   private destroyRef = inject(DestroyRef);
+  private appSettingsService = inject(AppSettingsService);
 
   metadataForm: FormGroup;
   currentBookId!: number;
@@ -97,6 +100,25 @@ export class MetadataEditorComponent implements OnInit {
   filteredPublishers: string[] = [];
   filteredSeries: string[] = [];
   private metadataCenterViewMode: 'route' | 'dialog' = 'route';
+
+  providerSpecificFields: MetadataProviderSpecificFields = {
+    asin: true,
+    amazonRating: true,
+    amazonReviewCount: true,
+    googleId: true,
+    goodreadsId: true,
+    goodreadsRating: true,
+    goodreadsReviewCount: true,
+    hardcoverId: true,
+    hardcoverBookId: true,
+    hardcoverRating: true,
+    hardcoverReviewCount: true,
+    comicvineId: true,
+    lubimyczytacId: true,
+    lubimyczytacRating: true,
+    ranobedbId: true,
+    ranobedbRating: true,
+  };
 
   navigationState$ = this.bookNavigationService.getNavigationState();
 
@@ -238,6 +260,17 @@ export class MetadataEditorComponent implements OnInit {
       .subscribe(userState => {
         this.metadataCenterViewMode = userState.user?.userSettings.metadataCenterViewMode ?? 'route';
         this.autoSaveEnabled = userState.user?.userSettings.autoSaveMetadata ?? false;
+      });
+
+    this.appSettingsService.appSettings$
+      .pipe(
+        filter(settings => !!settings),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe(settings => {
+        if (settings?.metadataProviderSpecificFields) {
+          this.providerSpecificFields = settings.metadataProviderSpecificFields;
+        }
       });
   }
 
@@ -493,9 +526,7 @@ export class MetadataEditorComponent implements OnInit {
     this.updateMetadata(false);
   }
 
-  private buildMetadataWrapper(
-    shouldLockAllFields?: boolean
-  ): MetadataUpdateWrapper {
+  private buildMetadataWrapper(shouldLockAllFields?: boolean): MetadataUpdateWrapper {
     const form = this.metadataForm;
 
     const metadata: BookMetadata = {
@@ -837,6 +868,10 @@ export class MetadataEditorComponent implements OnInit {
   getNavigationPosition(): string {
     const position = this.bookNavigationService.getCurrentPosition();
     return position ? `${position.current} of ${position.total}` : '';
+  }
+
+  isFieldVisible(field: keyof MetadataProviderSpecificFields): boolean {
+    return this.providerSpecificFields[field] ?? false;
   }
 
   protected readonly sample = sample;

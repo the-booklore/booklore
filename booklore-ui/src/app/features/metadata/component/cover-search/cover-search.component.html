@@ -1,99 +1,150 @@
 <div class="cover-search-container">
-  <div class="search-section">
-    <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
-      <div class="form-grid">
-        <div class="form-field">
-          <label for="title">Title *</label>
-          <input
-            pInputText
-            id="title"
-            formControlName="title"
-            placeholder="Enter book title"
-          />
-          @if (searchForm.get('title')?.invalid && searchForm.get('title')?.touched) {
-            <small class="error-message">
-              Title is required
-            </small>
-          }
-        </div>
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-image header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Search Cover Images</h2>
+      <p class="panel-description">Find and select a cover for your book</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dynamicDialogRef.close()"
+      styleClass="close-button">
+    </p-button>
+  </div>
 
-        <div class="form-field">
-          <label for="author">Author</label>
-          <input
-            pInputText
-            id="author"
-            formControlName="author"
-            placeholder="Enter author name"
-          />
-        </div>
+  <div class="dialog-content">
+    <!-- Search Form -->
+    <div class="search-section">
+      <form [formGroup]="searchForm" (ngSubmit)="onSearch()">
+        <div class="form-row">
+          <div class="form-field title-field">
+            <label for="title">
+              <i class="pi pi-book"></i>
+              Title
+              <span class="required">*</span>
+            </label>
+            <input
+              pInputText
+              id="title"
+              formControlName="title"
+              placeholder="Enter book title"
+            />
+            @if (searchForm.get('title')?.invalid && searchForm.get('title')?.touched) {
+              <small class="error-message">
+                <i class="pi pi-exclamation-circle"></i>
+                Title is required
+              </small>
+            }
+          </div>
 
-        <div class="form-field">
-          <label>&nbsp;</label>
-          <div class="button-group">
+          <div class="form-field author-field">
+            <label for="author">
+              <i class="pi pi-user"></i>
+              Author
+            </label>
+            <input
+              pInputText
+              id="author"
+              formControlName="author"
+              placeholder="Enter author name (optional)"
+            />
+          </div>
+
+          <div class="form-actions">
             <p-button
               type="submit"
-              outlined
-              label="Search Covers"
+              label="Search"
               icon="pi pi-search"
               [loading]="loading"
               [disabled]="searchForm.invalid">
             </p-button>
-
             <p-button
               type="button"
-              label="Clear"
-              icon="pi pi-times"
+              icon="pi pi-refresh"
+              [text]="true"
+              [rounded]="true"
+              severity="secondary"
               (click)="onClear()"
-              styleClass="p-button-secondary p-button-outlined">
+              pTooltip="Reset search"
+              tooltipPosition="top">
             </p-button>
           </div>
         </div>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
 
-  @if (hasSearched) {
+    <!-- Results Area -->
     <div class="results-section">
-      @if (loading) {
-        <div class="loading-container">
-          <p-progressSpinner></p-progressSpinner>
-          <p>Searching for book covers...</p>
+      @if (!hasSearched) {
+        <!-- Initial State -->
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <i class="pi pi-images"></i>
+          </div>
+          <h3>Search for Book Covers</h3>
+          <p>Enter a book title above to find cover images from various sources.</p>
         </div>
-      }
-
-      @if (!loading && coverImages.length === 0) {
-        <div class="no-results">
-          <i class="pi pi-info-circle"></i>
-          <p>No cover images found. Try adjusting your search terms.</p>
+      } @else if (loading) {
+        <!-- Loading State -->
+        <div class="loading-state">
+          <p-progressSpinner strokeWidth="3" animationDuration="1s"></p-progressSpinner>
+          <p>Searching for covers...</p>
         </div>
-      }
+      } @else if (coverImages.length === 0) {
+        <!-- No Results State -->
+        <div class="empty-state no-results">
+          <div class="empty-state-icon warning">
+            <i class="pi pi-search"></i>
+          </div>
+          <h3>No Covers Found</h3>
+          <p>Try adjusting your search terms or check the spelling.</p>
+        </div>
+      } @else {
+        <!-- Results Grid -->
+        <div class="results-header">
+          <span class="results-count">
+            <i class="pi pi-images"></i>
+            {{ coverImages.length }} cover{{ coverImages.length !== 1 ? 's' : '' }} found
+          </span>
+          <span class="results-hint">
+            <i class="pi pi-info-circle"></i>
+            Click on an image to preview, or select to apply
+          </span>
+        </div>
 
-      @if (!loading && coverImages.length > 0) {
         <div class="covers-grid">
           @for (cover of coverImages; track cover.url; let i = $index) {
-            <div class="cover-item">
-              <p-image
-                [src]="cover.url"
-                [alt]="'Book cover ' + (i + 1)"
-                appendTo="body"
-                [preview]="true">
-              </p-image>
-              @if (cover.width && cover.height) {
-                <div class="resolution-overlay">
-                  {{cover.width}} x {{cover.height}}
+            <div class="cover-card">
+              <div class="cover-image-wrapper">
+                <p-image
+                  [src]="cover.url"
+                  [alt]="'Book cover ' + (i + 1)"
+                  appendTo="body"
+                  [preview]="true">
+                </p-image>
+                @if (cover.width && cover.height) {
+                  <div class="resolution-badge">
+                    {{ cover.width }} x {{ cover.height }}
+                  </div>
+                }
+                <div class="cover-overlay">
+                  <p-button
+                    (click)="selectAndSave(cover)"
+                    label="Select Cover"
+                    icon="pi pi-check"
+                    size="small">
+                  </p-button>
                 </div>
-              }
-              <p-button
-                class="select-button"
-                (click)="selectAndSave(cover)"
-                label="Pick & Save"
-                severity="info"
-                title="Select & Save this cover">
-              </p-button>
+              </div>
             </div>
           }
         </div>
       }
     </div>
-  }
+  </div>
 </div>

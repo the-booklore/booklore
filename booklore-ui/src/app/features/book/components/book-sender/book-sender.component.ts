@@ -26,7 +26,7 @@ export class BookSenderComponent implements OnInit {
   private emailRecipientService = inject(EmailV2RecipientService);
   private emailService = inject(EmailService);
   private messageService = inject(MessageService);
-  private dynamicDialogRef = inject(DynamicDialogRef);
+  dynamicDialogRef = inject(DynamicDialogRef);
   private dynamicDialogConfig = inject(DynamicDialogConfig);
 
   bookId: number = this.dynamicDialogConfig.data.bookId;
