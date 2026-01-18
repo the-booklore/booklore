@@ -1,29 +1,57 @@
-<div class="flex flex-col gap-10 p-4 items-center justify-center min-w-[300px] max-w-[700px] sm:min-w-[400px] mx-auto">
+<div class="book-sender-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-envelope header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Send Book</h2>
+      <p class="panel-description">Email this book to a recipient</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="dynamicDialogRef.close()"
+      styleClass="close-button">
+    </p-button>
+  </div>
 
-  <p-select
-    [options]="emailProviders"
-    optionLabel="label"
-    placeholder="Select Email Provider"
-    [(ngModel)]="selectedProvider"
-    appendTo="body"
-    class="w-full">
-  </p-select>
+  <div class="dialog-content">
+    <div class="flex flex-col gap-6">
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-gray-300">Email Provider</label>
+        <p-select
+          [options]="emailProviders"
+          optionLabel="label"
+          placeholder="Select Email Provider"
+          [(ngModel)]="selectedProvider"
+          appendTo="body"
+          class="w-full">
+        </p-select>
+      </div>
 
-  <p-select
-    [options]="emailRecipients"
-    optionLabel="label"
-    placeholder="Select Book Recipient"
-    [(ngModel)]="selectedRecipient"
-    [disabled]="!selectedProvider"
-    appendTo="body"
-    class="w-full">
-  </p-select>
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-medium text-gray-300">Recipient</label>
+        <p-select
+          [options]="emailRecipients"
+          optionLabel="label"
+          placeholder="Select Book Recipient"
+          [(ngModel)]="selectedRecipient"
+          [disabled]="!selectedProvider"
+          appendTo="body"
+          class="w-full">
+        </p-select>
+      </div>
+    </div>
+  </div>
 
-  <p-button
-    icon="pi pi-envelope"
-    label="Email Book"
-    [disabled]="!selectedProvider || !selectedRecipient"
-    (onClick)="sendBook()">
-  </p-button>
-
+  <div class="dialog-footer">
+    <p-button
+      icon="pi pi-envelope"
+      label="Send Book"
+      [disabled]="!selectedProvider || !selectedRecipient"
+      (onClick)="sendBook()">
+    </p-button>
+  </div>
 </div>

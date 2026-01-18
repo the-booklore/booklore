@@ -6,7 +6,6 @@ import {MetadataRefreshOptions} from '../../../model/request/metadata-refresh-op
 import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
 import {filter, take} from 'rxjs/operators';
 import {MetadataAdvancedFetchOptionsComponent} from '../metadata-advanced-fetch-options/metadata-advanced-fetch-options.component';
-import {TaskCreateRequest, TaskType} from '../../../../settings/task-management/task.service';
 import {TaskHelperService} from '../../../../settings/task-management/task-helper.service';
 
 @Component({
@@ -25,7 +24,7 @@ export class MetadataFetchOptionsComponent {
   currentMetadataOptions!: MetadataRefreshOptions;
 
   private dynamicDialogConfig = inject(DynamicDialogConfig);
-  private dynamicDialogRef = inject(DynamicDialogRef);
+  dynamicDialogRef = inject(DynamicDialogRef);
   private taskHelperService = inject(TaskHelperService);
   private appSettingsService = inject(AppSettingsService);
 
