@@ -25,6 +25,7 @@ public enum AppSettingKey {
     UPLOAD_FILE_PATTERN                 ("upload_file_pattern",                  false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     MOVE_FILE_PATTERN                   ("move_file_pattern",                    false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
     METADATA_DOWNLOAD_ON_BOOKDROP       ("metadata_download_on_bookdrop",        false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
+    METADATA_PROVIDER_SPECIFIC_FIELDS   ("metadata_provider_specific_fields",    true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
 
     // ADMIN + MANAGE_GLOBAL_PREFERENCES
     COVER_CROPPING_SETTINGS             ("cover_cropping_settings",              true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),

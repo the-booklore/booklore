@@ -1,0 +1,87 @@
+<div class="reader-navbar" [class.visible]="navbarVisible">
+  <button class="icon-btn" title="Previous Section" [disabled]="!canGoPrevious" (click)="onPreviousSection()">
+    <app-reader-icon name="chevron-left"></app-reader-icon>
+  </button>
+
+  <div class="progress-section">
+    <button class="location-btn" (click)="toggleLocationPopover()" title="Location">
+      <span class="location-text">{{ currentPercentage }}%</span>
+    </button>
+
+    <div class="progress-slider-wrapper">
+      <input
+        type="range"
+        class="progress-slider"
+        [min]="0"
+        [max]="100"
+        [value]="currentPercentage"
+        (input)="onProgressChange($event)"
+        title="Progress"/>
+      <div class="progress-ticks">
+        @for (frac of displaySectionFractions; track frac) {
+          <span class="progress-tick" [style.left.%]="frac * 100"></span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <button class="icon-btn" title="Next Section" [disabled]="!canGoNext" (click)="onNextSection()">
+    <app-reader-icon name="chevron-right"></app-reader-icon>
+  </button>
+</div>
+
+@if (showLocationPopover) {
+  <div class="location-popover" (mousedown)="$event.preventDefault()">
+    <div class="popover-content">
+      <div class="time-info">
+        <div class="time-section">
+          <span class="label">Time Left in Section</span>
+          <span class="value">{{ timeSection }}</span>
+        </div>
+        <div class="separator"></div>
+        <div class="time-section">
+          <span class="label">Time Left in Book</span>
+          <span class="value">{{ timeTotal }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="location-controls">
+        <div class="control-row">
+          <label>Page</label>
+          <span>{{ currentPage }}</span>
+        </div>
+        <div class="control-row">
+          <label>Location</label>
+          <input type="number" [value]="locationCurrent"/>
+          <span>/ {{ locationTotal }}</span>
+        </div>
+        <div class="control-row">
+          <label>Section</label>
+          <span>{{ sectionCurrent }} / {{ sectionTotal }}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section-navigation">
+        <button class="nav-btn" title="First Section" (click)="onFirstSection()">
+          <app-reader-icon name="chevron-first" [size]="16"></app-reader-icon>
+        </button>
+        <button class="nav-btn" title="Previous Section" (click)="onPreviousSection()">
+          <app-reader-icon name="chevron-left" [size]="16"></app-reader-icon>
+        </button>
+        <button class="nav-btn" title="Jump To...">
+          <app-reader-icon name="dots-vertical" [size]="16"></app-reader-icon>
+        </button>
+        <button class="nav-btn" title="Next Section" (click)="onNextSection()">
+          <app-reader-icon name="chevron-right" [size]="16"></app-reader-icon>
+        </button>
+        <button class="nav-btn" title="Last Section" (click)="onLastSection()">
+          <app-reader-icon name="chevron-last" [size]="16"></app-reader-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+}

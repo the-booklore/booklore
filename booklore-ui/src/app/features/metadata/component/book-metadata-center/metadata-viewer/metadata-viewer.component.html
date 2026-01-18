@@ -349,12 +349,12 @@
               <span class="metadata-key">File Type:</span>
               @if (getFileExtension(book?.filePath)) {
                 <span (click)="goToFileType(book?.filePath)" style="cursor: pointer;">
-                  <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                  <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
                     {{ (getFileExtension(book?.filePath) | uppercase) || '-' }}
                   </app-tag>
                 </span>
               } @else {
-                <app-tag size="3xs" variant="pill" [color]="getFileTypeColor(getFileExtension(book?.filePath))">
+                <app-tag size="3xs" variant="pill" [customBgColor]="getFileTypeBgColor(getFileExtension(book?.filePath))" customTextColor="#fff">
                   -
                 </app-tag>
               }
