@@ -79,7 +79,6 @@ export class ReaderViewManagerService {
 
   destroy(): void {
     this.eventService.destroy();
-    this.annotationService.clearAnnotations();
     this.view?.remove();
     this.view = null;
   }
