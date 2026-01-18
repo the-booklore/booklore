@@ -1,7 +1,6 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {Select} from 'primeng/select';
-import {Tooltip} from 'primeng/tooltip';
-import {BookFilterMode, FilterSortingMode, SidebarLibrarySorting, SidebarShelfSorting, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
+import {BookFilterMode, FilterSortingMode, User, UserService, UserSettings, UserState} from '../../user-management/user.service';
 import {MessageService} from 'primeng/api';
 import {Observable, Subject} from 'rxjs';
 import {FormsModule} from '@angular/forms';
@@ -11,7 +10,6 @@ import {filter, takeUntil} from 'rxjs/operators';
   selector: 'app-filter-preferences',
   imports: [
     Select,
-    Tooltip,
     FormsModule
   ],
   templateUrl: './filter-preferences.component.html',
@@ -32,7 +30,7 @@ export class FilterPreferencesComponent implements OnInit, OnDestroy {
 
   selectedFilterMode: BookFilterMode = 'and';
   selectedFilterSortingMode: FilterSortingMode = 'alphabetical';
-  
+
   private readonly userService = inject(UserService);
   private readonly messageService = inject(MessageService);
   private readonly destroy$ = new Subject<void>();

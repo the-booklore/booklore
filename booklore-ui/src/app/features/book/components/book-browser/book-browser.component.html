@@ -1,11 +1,11 @@
-<div class="relative flex flex-row">
-  <div class="flex flex-col w-full">
+<div class="book-browser-container">
+  <div class="book-browser-main">
 
-    <div class="flex items-center justify-between w-full gap-4 py-2 px-2 md:px-4 rounded-t-xl md:mb-4 mb-2 bg-[var(--card-background)] border-[1px] border-solid border-[var(--p-content-border-color)]">
-      <div class="flex items-center min-w-0 max-w-full flex-shrink">
+    <div class="book-browser-header">
+      <div class="entity-info-wrapper">
         @if (entityType$ | async; as entityType) {
-          <div class="flex flex-col gap-0.5">
-            <p class="text-xl whitespace-nowrap overflow-hidden text-ellipsis w-full">
+          <div class="entity-info">
+            <p class="entity-title">
               @if (entityType === EntityType.ALL_BOOKS) {
                 @if (currentFilterLabel && rawFilterParamFromUrl) {
                   {{ currentFilterLabel }}
@@ -21,7 +21,7 @@
               }
             </p>
             @if (seriesCollapseFilter.isSeriesCollapsed && (bookState$ | async)?.books; as books) {
-              <p class="text-sm text-gray-500">
+              <p class="series-collapsed-info">
                 Showing {{ books.length }} {{ books.length === 1 ? 'item' : 'items' }} (series collapsed)
               </p>
             }
@@ -30,7 +30,7 @@
           @if (userService.userState$ | async; as userState) {
             @if (entityType !== EntityType.ALL_BOOKS && entityType !== EntityType.UNSHELVED &&
             (userState.user!.permissions.admin || userState.user!.permissions.canManageLibrary)) {
-              <div class="ml-2 flex-shrink-0">
+              <div class="entity-menu-wrapper">
                 <p-button
                   icon="pi pi-ellipsis-v"
                   [rounded]="true"
@@ -44,15 +44,14 @@
           }
         }
       </div>
-      <div class="flex flex-wrap items-center gap-4 flex-shrink-0">
-        <div class="flex flex-wrap items-center gap-4 md:gap-6">
+      <div class="toolbar-actions">
+        <div class="toolbar-icons">
           @if (isFilterActive) {
             <a class="topbar-items topbar-item" (click)="clearFilter()">
               <i
-                class="pi pi-filter-slash"
+                class="pi pi-filter-slash filter-clear-icon"
                 pTooltip="Clear applied filters"
-                tooltipPosition="top"
-                style="color: orange;">
+                tooltipPosition="top">
               </i>
             </a>
           }
@@ -67,7 +66,7 @@
                 </i>
               </a>
               <p-popover #columnPopover [dismissable]="true" appendTo="body">
-                <div class="w-[200px]">
+                <div class="column-popover-content">
                   <p-multiSelect
                     optionLabel="header"
                     [options]="columnPreferenceService.allColumns"
@@ -80,7 +79,7 @@
                     [showClear]="true"
                   ></p-multiSelect>
                 </div>
-                <div class="flex items-center gap-2 pt-4 pl-1">
+                <div class="column-popover-footer">
                   <p>Set as default?</p>
                   <p-button
                     label="Save"
@@ -100,9 +99,9 @@
               <i class="pi pi-cog"></i>
             </a>
             <p-popover #seriesCollapseOverlay [dismissable]="true" appendTo="body">
-              <div class="w-[220px] p-2 space-y-4 text-sm">
-                <div class="flex flex-col gap-2">
-                  <label for="collapse-series-checkbox" class="font-medium">Collapse series</label>
+              <div class="display-settings-popover">
+                <div class="display-settings-section">
+                  <label for="collapse-series-checkbox" class="display-settings-label">Collapse series</label>
                   <p-checkbox
                     inputId="collapse-series-checkbox"
                     [binary]="true"
@@ -110,8 +109,8 @@
                     (onChange)="onSeriesCollapseCheckboxChange($event.checked)">
                   </p-checkbox>
                 </div>
-                <div class="flex flex-col gap-2">
-                  <label class="font-medium text-sm">Grid item size</label>
+                <div class="display-settings-section">
+                  <label class="display-settings-label">Grid item size</label>
                   <p-slider
                     [(ngModel)]="coverScalePreferenceService.scaleFactor"
                     [min]="0.5"
@@ -120,13 +119,12 @@
                     [style]="{ width: '100%' }"
                     (onChange)="updateScale()">
                   </p-slider>
-                  <div class="text-center">
+                  <div class="scale-value-display">
                     {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
                   </div>
                 </div>
-                <!-- Book type pill toggle control -->
-                <div class="flex flex-col gap-2">
-                  <label for="show-book-type-pill-checkbox" class="font-medium">Show book type pill</label>
+                <div class="display-settings-section">
+                  <label for="show-book-type-pill-checkbox" class="display-settings-label">Show book type pill</label>
                   <p-checkbox
                     inputId="show-book-type-pill-checkbox"
                     [binary]="true"
@@ -148,7 +146,7 @@
             </a>
             <p-menu #sortMenu [popup]="true" [model]="this.bookSorter.sortOptions" appendTo="body">
               <ng-template pTemplate="item" let-item>
-                <div class="flex justify-between items-center px-4 py-2 cursor-pointer" (click)="this.bookSorter.sortBooks(item.field)">
+                <div class="sort-menu-item" (click)="this.bookSorter.sortBooks(item.field)">
                   <span>{{ item.label }}</span>
                   @if (item.icon) {
                     <i [class]="item.icon"></i>
@@ -168,7 +166,7 @@
         </div>
 
         <!-- MOBILE SEARCH (only visible below md) -->
-        <div class="relative md:hidden">
+        <div class="mobile-search-wrapper">
           <button
             type="button"
             class="topbar-items topbar-item"
@@ -180,28 +178,28 @@
           </button>
 
           <p-popover #searchDropdown [dismissable]="true" appendTo="body" [style]="{ width: '24rem' }">
-            <div class="relative w-full">
+            <div class="search-popover-content">
               <input
                 type="text"
                 pInputText
                 placeholder="Title, Author, Series, Genre, or ISBN..."
                 [(ngModel)]="bookTitle"
                 (ngModelChange)="onSearchTermChange($event)"
-                class="w-full"
+                class="search-input-full"
               />
               <p-button
                 icon="pi pi-times"
                 [text]="true"
                 size="small"
                 [rounded]="true"
-                class="absolute right-2 top-1/2 -translate-y-1/2"
+                class="search-clear-btn"
                 (click)="clearSearch(); searchDropdown.hide()"
               ></p-button>
             </div>
           </p-popover>
         </div>
 
-        <div class="hidden md:block relative">
+        <div class="desktop-search-wrapper">
           <i class="pi pi-search search-icon"></i>
           <input
             type="text"
@@ -217,7 +215,7 @@
               [text]="true"
               size="small"
               [rounded]="true"
-              class="absolute right-2 top-1/2 -translate-y-1/2"
+              class="search-clear-btn"
               (click)="clearSearch()"
             ></p-button>
           }
@@ -240,7 +238,7 @@
             <p-progressSpinner></p-progressSpinner>
           </div>
         }
-        <div class="relative">
+        <div class="book-state-wrapper">
           @if (bookState?.error) {
             <div class="no-books-container">
               <p class="no-books-text">
@@ -273,7 +271,7 @@
                   [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
                   @for (book of scroll.viewPortItems; let i = $index; track book.id) {
                     <div
-                      class="virtual-scroller-item relative"
+                      class="virtual-scroller-item"
                       [ngStyle]="{width: currentCardSize.width + 'px', height: currentCardSize.height + 'px'}">
                       <app-book-card
                         [index]="books.indexOf(book)"
@@ -294,18 +292,18 @@
           }
           @if (selectedBooks.size > 0) {
             @if (userService.userState$ | async; as userState) {
-              <div class="book-browser-footer bg-[var(--card-background)] bg-opacity-10" [@slideInOut]>
-                <div class="flex items-center">
-                  <div class="flex items-center pl-2 w-1/4">
-                    <div class="selected-count-badge text-zinc-200">
-                      <i class="pi pi-check-circle mr-2"></i>
-                      <span class="font-bold text-base" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
-                      <span class="ml-1">selected</span>
+              <div class="book-browser-footer" [@slideInOut]>
+                <div class="footer-content">
+                  <div class="footer-left">
+                    <div class="selected-count-badge">
+                      <i class="pi pi-check-circle"></i>
+                      <span class="selected-count">{{ selectedBooks.size }}</span>
+                      <span class="selected-label">selected</span>
                     </div>
                   </div>
-                  <div class="flex justify-center w-2/4">
+                  <div class="footer-center">
                     @if (entityType$ | async; as entityType) {
-                      <div class="flex gap-2 md:gap-6">
+                      <div class="action-buttons-group">
                         @if (hasMetadataMenuItems) {
                           <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                           <p-button
@@ -356,7 +354,7 @@
                           </p-button>
                         }
                         @if (hasBulkReadActionsItems) {
-                          <div class="card flex justify-center">
+                          <div class="more-actions-wrapper">
                             <p-button
                               (click)="menu.toggle($event)"
                               pTooltip="More actions"
@@ -371,7 +369,7 @@
                       </div>
                     }
                     <p-divider layout="vertical"></p-divider>
-                    <div class="flex gap-2 md:gap-6">
+                    <div class="action-buttons-group">
                       <p-button
                         outlined="true"
                         icon="pi pi-check-square"
@@ -401,7 +399,7 @@
                       </p-button>
                     }
                   </div>
-                  <div class="w-1/4"></div>
+                  <div class="footer-right"></div>
                 </div>
               </div>
             }
@@ -418,8 +416,8 @@
     </div>
     <app-book-filter
       [showFilter]="showFilter"
-      class="filter-overlay-container z-50 flex-shrink-0"
-      [ngClass]="{ 'active': showFilter, 'ml-4': showFilter }"
+      class="filter-overlay-container"
+      [ngClass]="{ 'active': showFilter }"
       [entity$]="entity$"
       [entityType$]="entityType$"
       [resetFilter$]="resetFilterSubject"

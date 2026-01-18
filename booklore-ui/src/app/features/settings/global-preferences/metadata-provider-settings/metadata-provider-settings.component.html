@@ -1,171 +1,191 @@
 <div class="metadata-settings">
-  <div class="setting-item">
-    <div class="setting-info">
-      <label class="setting-label">Enabled Metadata Providers</label>
-      <p class="setting-description">
-        <i class="pi pi-info-circle"></i>
-        Enable or configure third-party metadata sources for enhanced book information. Each provider offers different types of data and coverage.
+  <div class="settings-card">
+    <div class="section-header">
+      <h3 class="section-title">
+        <i class="pi pi-cloud"></i>
+        Metadata Providers
+      </h3>
+      <p class="section-description">
+        Configure which online sources to use for fetching book metadata. Enable providers and set up their API tokens or cookies to access richer book information.
       </p>
     </div>
-  </div>
 
-  <div class="providers-list">
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="amazonEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Amazon</label>
-        </div>
-      </div>
+    <div class="section-body">
+      <div>
+        <h4 class="provider-group-title">Providers with Configuration</h4>
 
-      <div class="provider-config">
-        <div class="config-field">
-          <label class="config-label">Region</label>
-          <p-select
-            [options]="amazonDomains"
-            [(ngModel)]="selectedAmazonDomain"
-            placeholder="Select Domain"
-            class="config-select">
-          </p-select>
-        </div>
-
-        <div class="config-field">
-          <div class="config-label-row">
-            <label class="config-label">Cookie (Optional, but highly recommended)</label>
-            <app-external-doc-link docType="amazonCookie"></app-external-doc-link>
+        <div class="setting-item">
+          <div class="setting-info">
+            <label class="setting-label">Amazon</label>
           </div>
-          <p class="config-description">
-            <i class="pi pi-info-circle"></i>
-            Providing your Amazon session cookie allows the app to access richer book metadata and bypass rate limits. Optional but recommended for best results.
-          </p>
-          <input
-            type="text"
-            pInputText
-            placeholder="Paste your Amazon cookie"
-            fluid
-            class="max-w-[60rem]"
-            [(ngModel)]="amazonCookie"/>
-        </div>
-      </div>
-    </div>
+          <div class="setting-item setting-item-indented">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Enabled:</label>
+                <p-toggleswitch [(ngModel)]="amazonEnabled"></p-toggleswitch>
+              </div>
+              @if (amazonEnabled) {
+                <div class="provider-config-fields">
+                  <div class="config-field">
+                    <label class="config-label">Region</label>
+                    <p-select
+                      [options]="amazonDomains"
+                      [(ngModel)]="selectedAmazonDomain"
+                      placeholder="Select Domain"
+                      class="config-select">
+                    </p-select>
+                  </div>
 
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="goodreadsEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Goodreads</label>
-        </div>
-      </div>
-    </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="googleEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Google</label>
-        </div>
-      </div>
-
-      <div class="provider-config">
-        <div class="config-field">
-          <label class="config-label">Language restriction</label>
-          <p-select
-            [options]="googleLanguages"
-            [(ngModel)]="selectedGoogleLanguage"
-            [showClear]="!!selectedGoogleLanguage"
-            placeholder="Select Language"
-            class="config-select">
-          </p-select>
-        </div>
-      </div>
-    </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox
-            [binary]="true"
-            [(ngModel)]="hardcoverEnabled"
-            [disabled]="!hardcoverToken">
-          </p-checkbox>
-          <label class="provider-label">Hardcover</label>
-        </div>
-      </div>
-
-      <div class="provider-config">
-        <div class="config-field">
-          <div class="config-label-row">
-            <label class="config-label">API Token</label>
-            <app-external-doc-link docType="hardcover"></app-external-doc-link>
+                  <div class="config-field">
+                    <div class="config-label-row">
+                      <label class="config-label">Cookie (Optional, but highly recommended)</label>
+                      <app-external-doc-link docType="amazonCookie"></app-external-doc-link>
+                    </div>
+                    <p class="config-description">
+                      <i class="pi pi-info-circle"></i>
+                      <span>Providing your Amazon session cookie allows the app to access richer book metadata and bypass rate limits.</span>
+                    </p>
+                    <input
+                      type="text"
+                      pInputText
+                      placeholder="Paste your Amazon cookie"
+                      [(ngModel)]="amazonCookie"
+                      class="config-input"/>
+                  </div>
+                </div>
+              }
+            </div>
           </div>
-          <input
-            type="text"
-            pInputText
-            placeholder="Enter Hardcover API token"
-            fluid
-            class="max-w-[60rem]"
-            [(ngModel)]="hardcoverToken"
-            (ngModelChange)="onTokenChange($event)"/>
         </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <label class="setting-label">Google Books</label>
+          </div>
+          <div class="setting-item setting-item-indented">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Enabled:</label>
+                <p-toggleswitch [(ngModel)]="googleEnabled"></p-toggleswitch>
+              </div>
+              @if (googleEnabled) {
+                <div class="provider-config-fields">
+                  <div class="config-field">
+                    <label class="config-label">Language Restriction</label>
+                    <p-select
+                      [options]="googleLanguages"
+                      [(ngModel)]="selectedGoogleLanguage"
+                      [showClear]="!!selectedGoogleLanguage"
+                      placeholder="Select Language"
+                      class="config-select">
+                    </p-select>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <label class="setting-label">Hardcover</label>
+          </div>
+          <div class="setting-item setting-item-indented">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Enabled:</label>
+                <p-toggleswitch
+                  [(ngModel)]="hardcoverEnabled"
+                  [disabled]="!hardcoverToken">
+                </p-toggleswitch>
+              </div>
+              @if (hardcoverEnabled) {
+                <div class="provider-config-fields">
+                  <div class="config-field">
+                    <div class="config-label-row">
+                      <label class="config-label">API Token</label>
+                      <app-external-doc-link docType="hardcover"></app-external-doc-link>
+                    </div>
+                    <input
+                      type="text"
+                      pInputText
+                      placeholder="Enter Hardcover API token"
+                      [(ngModel)]="hardcoverToken"
+                      (ngModelChange)="onTokenChange($event)"
+                      class="config-input"/>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <label class="setting-label">Comic Vine</label>
+          </div>
+          <div class="setting-item setting-item-indented">
+            <div class="setting-info">
+              <div class="setting-label-row">
+                <label class="setting-label">Enabled:</label>
+                <p-toggleswitch [(ngModel)]="comicvineEnabled"></p-toggleswitch>
+              </div>
+              @if (comicvineEnabled) {
+                <div class="provider-config-fields">
+                  <div class="config-field">
+                    <label class="config-label">API Token</label>
+                    <input
+                      type="text"
+                      pInputText
+                      placeholder="Enter Comic Vine API token"
+                      [(ngModel)]="comicvineToken"
+                      (ngModelChange)="onComicTokenChange($event)"
+                      class="config-input"/>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 class="provider-group-title">Ready-to-Use Providers</h4>
+
+        <div class="simple-providers-grid">
+          <div class="simple-provider-item">
+            <div class="simple-provider-header">
+              <label class="setting-label">Goodreads</label>
+              <p-toggleswitch [(ngModel)]="goodreadsEnabled"></p-toggleswitch>
+            </div>
+          </div>
+
+          <div class="simple-provider-item">
+            <div class="simple-provider-header">
+              <label class="setting-label">Douban</label>
+              <p-toggleswitch [(ngModel)]="doubanEnabled"></p-toggleswitch>
+            </div>
+          </div>
+
+          <div class="simple-provider-item">
+            <div class="simple-provider-header">
+              <label class="setting-label">Lubimyczytac</label>
+              <p-toggleswitch [(ngModel)]="lubimyCzytacEnabled"></p-toggleswitch>
+            </div>
+          </div>
+
+          <div class="simple-provider-item">
+            <div class="simple-provider-header">
+              <label class="setting-label">Ranobedb</label>
+              <p-toggleswitch [(ngModel)]="ranobedbEnabled"></p-toggleswitch>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="setting-actions">
+        <p-button label="Save Configurations" icon="pi pi-save" severity="success" [outlined]="true" (click)="saveSettings()"></p-button>
       </div>
     </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox
-            [binary]="true"
-            [(ngModel)]="comicvineEnabled"
-            [disabled]="!comicvineToken">
-          </p-checkbox>
-          <label class="provider-label">Comic Vine</label>
-        </div>
-      </div>
-
-      <div class="provider-config">
-        <div class="config-field">
-          <label class="config-label">API Token</label>
-          <input
-            type="text"
-            pInputText
-            placeholder="Enter Comic Vine API token"
-            fluid
-            class="max-w-[60rem]"
-            [(ngModel)]="comicvineToken"
-            (ngModelChange)="onComicTokenChange($event)"/>
-        </div>
-      </div>
-    </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="doubanEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Douban</label>
-        </div>
-      </div>
-    </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="lubimyCzytacEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Lubimyczytac</label>
-        </div>
-      </div>
-    </div>
-
-    <div class="provider-item">
-      <div class="provider-control">
-        <div class="provider-info">
-          <p-checkbox [(ngModel)]="ranobedbEnabled" [binary]="true"></p-checkbox>
-          <label class="provider-label">Ranobedb</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="setting-actions">
-    <p-button label="Save" icon="pi pi-save" severity="success" [outlined]="true" (click)="saveSettings()"></p-button>
   </div>
 </div>

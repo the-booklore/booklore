@@ -1,64 +1,56 @@
-<div class="main-container enclosing-container">
-  <div class="settings-header">
-    <h2 class="settings-title">
-      <i class="pi pi-sort-alt"></i>
+<div class="settings-card">
+  <div class="section-header">
+    <h3 class="section-title">
+      <i class="pi pi-filter"></i>
       Filter Preferences
-    </h2>
-    <p class="settings-description">
+    </h3>
+    <p class="section-description">
       Configure default options for filter controls shown in the sidebar.
     </p>
   </div>
 
-  <div class="settings-content">
-    <div class="preferences-section">
-      <div class="settings-card">
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Filter Mode
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Choose the default mode for combining filters selected from the filter sidebar."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
-              </label>
-              <p-select
-                size="small"
-                [options]="filterModes"
-                [(ngModel)]="selectedFilterMode"
-                (ngModelChange)="onFilterModeChange()"
-                appendTo="body">
-              </p-select>
-            </div>
-            <p class="setting-description">
-              Choose the default mode for combining filters selected from the right filter sidebar.
-            </p>
+  <div class="section-body">
+    <div class="setting-item">
+      <div class="setting-info">
+        <label class="setting-label">Filter Mode</label>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          <span>Choose the default mode for combining filters selected from the right filter sidebar.</span>
+        </p>
+      </div>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-info">
+          <div class="setting-label-row">
+            <p-select
+              size="small"
+              [options]="filterModes"
+              [(ngModel)]="selectedFilterMode"
+              (ngModelChange)="onFilterModeChange()"
+              appendTo="body">
+            </p-select>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="setting-item">
-          <div class="setting-info">
-            <div class="setting-label-row">
-              <label class="setting-label">
-                Sorting Mode
-                <i class="pi pi-info-circle text-sky-600"
-                   pTooltip="Choose how filter options are sorted in the sidebar."
-                   tooltipPosition="right"
-                   style="cursor: pointer;">
-                </i>
-              </label>
-              <p-select
-                size="small"
-                [options]="filterSortingModes"
-                [(ngModel)]="selectedFilterSortingMode"
-                (ngModelChange)="onFilterSortingModeChange()"
-                appendTo="body">
-              </p-select>
-            </div>
-            <p class="setting-description">
-              Choose how filter options are sorted in the sidebar.
-            </p>
+    <div class="setting-item">
+      <div class="setting-info">
+        <label class="setting-label">Sorting Mode</label>
+        <p class="setting-description">
+          <i class="pi pi-info-circle"></i>
+          <span>Choose how filter options are sorted in the sidebar.</span>
+        </p>
+      </div>
+      <div class="setting-item setting-item-indented">
+        <div class="setting-info">
+          <div class="setting-label-row">
+            <p-select
+              size="small"
+              [options]="filterSortingModes"
+              [(ngModel)]="selectedFilterSortingMode"
+              (ngModelChange)="onFilterSortingModeChange()"
+              appendTo="body">
+            </p-select>
           </div>
         </div>
       </div>

@@ -25,17 +25,23 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
     'title', 'subtitle', 'description', 'authors', 'publisher', 'publishedDate',
     'seriesName', 'seriesNumber', 'seriesTotal', 'isbn13', 'isbn10',
     'language', 'categories', 'cover', 'pageCount',
-    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
-    'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
-    'moods', 'tags'
+    'asin', 'amazonRating', 'amazonReviewCount',
+    'googleId',
+    'goodreadsId', 'goodreadsRating', 'goodreadsReviewCount',
+    'hardcoverId', 'hardcoverRating', 'hardcoverReviewCount', 'moods', 'tags',
+    'comicvineId',
+    'lubimyczytacId', 'lubimyczytacRating',
+    'ranobedbId', 'ranobedbRating'
   ];
 
   providerSpecificFields: (keyof FieldOptions)[] = [
-    'asin', 'goodreadsId', 'comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
-    'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
-    'moods', 'tags'
+    'asin', 'amazonRating', 'amazonReviewCount',
+    'googleId',
+    'goodreadsId', 'goodreadsRating', 'goodreadsReviewCount',
+    'hardcoverId', 'hardcoverRating', 'hardcoverReviewCount', 'moods', 'tags',
+    'comicvineId',
+    'lubimyczytacId', 'lubimyczytacRating',
+    'ranobedbId', 'ranobedbRating',
   ];
 
   nonProviderSpecificFields: (keyof FieldOptions)[] = [
@@ -64,9 +70,28 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   private justSubmitted = false;
 
   private providerSpecificFieldsList = [
-    'asin', 'goodreadsId','comicvineId', 'hardcoverId', 'googleId', 'lubimyczytacId', 'ranobedbId',
-    'amazonRating', 'amazonReviewCount', 'goodreadsRating', 'goodreadsReviewCount',
-    'hardcoverRating', 'hardcoverReviewCount', 'lubimyczytacRating', 'ranobedbRating',
+    // Amazon
+    'asin', 'amazonRating', 'amazonReviewCount',
+
+    // Google
+    'googleId',
+
+    // Goodreads
+    'goodreadsId', 'goodreadsRating', 'goodreadsReviewCount',
+
+    // Hardcover
+    'hardcoverId', 'hardcoverRating', 'hardcoverReviewCount',
+
+    // Comicvine
+    'comicvineId',
+
+    // Lubimyczytac
+    'lubimyczytacId', 'lubimyczytacRating',
+
+    // Ranobedb
+    'ranobedbId', 'ranobedbRating',
+
+    // Generic provider-specific
     'moods', 'tags'
   ];
 
@@ -231,7 +256,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       'goodreadsReviewCount': 'Goodreads Review Count',
       'hardcoverRating': 'Hardcover Rating',
       'hardcoverReviewCount': 'Hardcover Review Count',
-      'lubimyczytacId': 'LC ID',
+      'lubimyczytacId': 'Lubimyczytac ID',
       'lubimyczytacRating': 'Lubimyczytac Rating',
       'ranobedbId': 'Ranobedb ID',
       'ranobedbRating': 'Ranobedb Rating',
