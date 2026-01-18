@@ -1,11 +1,7 @@
-<div class="dialog-overlay" (click)="onOverlayClick($event)">
-  <div class="dialog" (click)="$event.stopPropagation()">
-    <div class="dialog-header">
-      <h3 class="dialog-title">Quick Settings</h3>
-      <button class="close-btn" (click)="close.emit()">✕</button>
-    </div>
-
-    <div class="dialog-body">
+<div class="quick-settings-overlay" (click)="onOverlayClick()">
+  <div class="quick-settings-panel" (click)="$event.stopPropagation()">
+    <div class="pointer"></div>
+    <div class="panel-body">
       <!-- Dark Mode -->
       <div class="control">
         <label>Dark Mode</label>
@@ -43,7 +39,7 @@
       </div>
     </div>
 
-    <div class="dialog-footer">
+    <div class="panel-footer">
       <button class="more-settings-btn" (click)="onOpenFullSettings()">
         <app-reader-icon name="settings" [size]="16"></app-reader-icon>
         <span>More Settings</span>
