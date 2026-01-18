@@ -8,12 +8,13 @@ import {
   AnnotationStyle,
   CreateAnnotationRequest
 } from '../../../../../shared/service/annotation.service';
-import {Annotation as ViewAnnotation} from './annotation-renderer.service';
+import {Annotation as ViewAnnotation, ReaderAnnotationService} from './annotation-renderer.service';
 
 @Injectable()
 export class ReaderAnnotationHttpService {
   private annotationService = inject(AnnotationService);
   private messageService = inject(MessageService);
+  private readerAnnotationService = inject(ReaderAnnotationService);
 
   private currentChapterTitle: string | null = null;
 
@@ -25,7 +26,7 @@ export class ReaderAnnotationHttpService {
     bookId: number,
     cfi: string,
     text: string,
-    color: string = '#FFFF00',
+    color: string = '#FACC15',
     style: AnnotationStyle = 'highlight',
     note?: string
   ): Observable<Annotation | null> {
@@ -126,5 +127,6 @@ export class ReaderAnnotationHttpService {
 
   reset(): void {
     this.currentChapterTitle = null;
+    this.readerAnnotationService.resetAnnotations();
   }
 }
