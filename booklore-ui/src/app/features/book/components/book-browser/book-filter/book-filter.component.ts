@@ -1,20 +1,47 @@
-import {ChangeDetectionStrategy, Component, EventEmitter, inject, Input, OnDestroy, OnInit, Output} from '@angular/core';
-import {combineLatest, filter, Observable, of, shareReplay, Subject, takeUntil} from 'rxjs';
-import {map} from 'rxjs/operators';
-import {BookService} from '../../../service/book.service';
-import {Library} from '../../../model/library.model';
-import {Shelf} from '../../../model/shelf.model';
-import {EntityType} from '../book-browser.component';
-import {Book, ReadStatus} from '../../../model/book.model';
-import {Accordion, AccordionContent, AccordionHeader, AccordionPanel} from 'primeng/accordion';
-import {AsyncPipe, NgClass, TitleCasePipe} from '@angular/common';
-import {Badge} from 'primeng/badge';
-import {FormsModule} from '@angular/forms';
-import {SelectButton} from 'primeng/selectbutton';
-import {BookFilterMode, FilterSortingMode, UserService, UserState} from '../../../../settings/user-management/user.service';
-import {MagicShelf} from '../../../../magic-shelf/service/magic-shelf.service';
-import {BookRuleEvaluatorService} from '../../../../magic-shelf/service/book-rule-evaluator.service';
-import {GroupRule} from '../../../../magic-shelf/component/magic-shelf-component';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  inject,
+  Input,
+  OnDestroy,
+  OnInit,
+  Output,
+} from "@angular/core";
+import {
+  combineLatest,
+  filter,
+  Observable,
+  of,
+  shareReplay,
+  Subject,
+  takeUntil,
+} from "rxjs";
+import { map } from "rxjs/operators";
+import { BookService } from "../../../service/book.service";
+import { Library } from "../../../model/library.model";
+import { Shelf } from "../../../model/shelf.model";
+import { EntityType } from "../book-browser.component";
+import { Book, ReadStatus } from "../../../model/book.model";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionHeader,
+  AccordionPanel,
+} from "primeng/accordion";
+import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
+import { Badge } from "primeng/badge";
+import { FormsModule } from "@angular/forms";
+import { SelectButton } from "primeng/selectbutton";
+import {
+  BookFilterMode,
+  FilterSortingMode,
+  UserService,
+  UserState,
+} from "../../../../settings/user-management/user.service";
+import { MagicShelf } from "../../../../magic-shelf/service/magic-shelf.service";
+import { BookRuleEvaluatorService } from "../../../../magic-shelf/service/book-rule-evaluator.service";
+import { GroupRule } from "../../../../magic-shelf/component/magic-shelf-component";
 
 export interface FilterValue {
   id?: string | number;
@@ -28,147 +55,227 @@ export interface Filter<T extends FilterValue = FilterValue> {
 }
 
 export type FilterType =
-  | 'library'
-  | 'shelf'
-  | 'author'
-  | 'category'
-  | 'series'
-  | 'publisher'
-  | 'readStatus'
-  | 'personalRating'
-  | 'publishedDate'
-  | 'matchScore'
-  | 'mood'
-  | 'tag'
-  | 'language'
-  | 'bookType'
-  | 'shelfStatus'
-  | 'fileSize'
-  | 'pageCount'
-  | 'amazonRating'
-  | 'goodreadsRating'
-  | 'ranobedbRating'
-  | 'hardcoverRating';
+  | "library"
+  | "shelf"
+  | "author"
+  | "category"
+  | "series"
+  | "incompleteSeries"
+  | "publisher"
+  | "readStatus"
+  | "personalRating"
+  | "publishedDate"
+  | "matchScore"
+  | "mood"
+  | "tag"
+  | "language"
+  | "bookType"
+  | "shelfStatus"
+  | "fileSize"
+  | "pageCount"
+  | "amazonRating"
+  | "goodreadsRating"
+  | "ranobedbRating"
+  | "hardcoverRating";
 
 export const ratingRanges = [
-  {id: '0to1', label: '0 to 1', min: 0, max: 1, sortIndex: 0},
-  {id: '1to2', label: '1 to 2', min: 1, max: 2, sortIndex: 1},
-  {id: '2to3', label: '2 to 3', min: 2, max: 3, sortIndex: 2},
-  {id: '3to4', label: '3 to 4', min: 3, max: 4, sortIndex: 3},
-  {id: '4to4.5', label: '4 to 4.5', min: 4, max: 4.5, sortIndex: 4},
-  {id: '4.5plus', label: '4.5+', min: 4.5, max: Infinity, sortIndex: 5}
+  { id: "0to1", label: "0 to 1", min: 0, max: 1, sortIndex: 0 },
+  { id: "1to2", label: "1 to 2", min: 1, max: 2, sortIndex: 1 },
+  { id: "2to3", label: "2 to 3", min: 2, max: 3, sortIndex: 2 },
+  { id: "3to4", label: "3 to 4", min: 3, max: 4, sortIndex: 3 },
+  { id: "4to4.5", label: "4 to 4.5", min: 4, max: 4.5, sortIndex: 4 },
+  { id: "4.5plus", label: "4.5+", min: 4.5, max: Infinity, sortIndex: 5 },
 ];
 
-export const ratingOptions10 = Array.from({length: 10}, (_, i) => ({
+export const ratingOptions10 = Array.from({ length: 10 }, (_, i) => ({
   id: `${i + 1}`,
   label: `${i + 1}`,
   value: i + 1,
-  sortIndex: i
+  sortIndex: i,
 }));
 
 export const fileSizeRanges = [
-  {id: '<1mb', label: '< 1 MB', min: 0, max: 1024, sortIndex: 0},
-  {id: '1to10mb', label: '1–10 MB', min: 1024, max: 10240, sortIndex: 1},
-  {id: '10to50mb', label: '10–50 MB', min: 10240, max: 51200, sortIndex: 2},
-  {id: '50to100mb', label: '50–100 MB', min: 51200, max: 102400, sortIndex: 3},
-  {id: '250to500mb', label: '250–500 MB', min: 256000, max: 512000, sortIndex: 4},
-  {id: '500mbto1gb', label: '0.5–1 GB', min: 512000, max: 1048576, sortIndex: 5},
-  {id: '1to2gb', label: '1–2 GB', min: 1048576, max: 2097152, sortIndex: 6},
-  {id: '5plusgb', label: '5+ GB', min: 5242880, max: Infinity, sortIndex: 7}
+  { id: "<1mb", label: "< 1 MB", min: 0, max: 1024, sortIndex: 0 },
+  { id: "1to10mb", label: "1–10 MB", min: 1024, max: 10240, sortIndex: 1 },
+  { id: "10to50mb", label: "10–50 MB", min: 10240, max: 51200, sortIndex: 2 },
+  {
+    id: "50to100mb",
+    label: "50–100 MB",
+    min: 51200,
+    max: 102400,
+    sortIndex: 3,
+  },
+  {
+    id: "250to500mb",
+    label: "250–500 MB",
+    min: 256000,
+    max: 512000,
+    sortIndex: 4,
+  },
+  {
+    id: "500mbto1gb",
+    label: "0.5–1 GB",
+    min: 512000,
+    max: 1048576,
+    sortIndex: 5,
+  },
+  { id: "1to2gb", label: "1–2 GB", min: 1048576, max: 2097152, sortIndex: 6 },
+  { id: "5plusgb", label: "5+ GB", min: 5242880, max: Infinity, sortIndex: 7 },
 ];
 
 export const pageCountRanges = [
-  {id: '<50', label: '< 50 pages', min: 0, max: 50, sortIndex: 0},
-  {id: '50to100', label: '50–100 pages', min: 50, max: 100, sortIndex: 1},
-  {id: '100to200', label: '100–200 pages', min: 100, max: 200, sortIndex: 2},
-  {id: '200to400', label: '200–400 pages', min: 200, max: 400, sortIndex: 3},
-  {id: '400to600', label: '400–600 pages', min: 400, max: 600, sortIndex: 4},
-  {id: '600to1000', label: '600–1000 pages', min: 600, max: 1000, sortIndex: 5},
-  {id: '1000plus', label: '1000+ pages', min: 1000, max: Infinity, sortIndex: 6}
+  { id: "<50", label: "< 50 pages", min: 0, max: 50, sortIndex: 0 },
+  { id: "50to100", label: "50–100 pages", min: 50, max: 100, sortIndex: 1 },
+  { id: "100to200", label: "100–200 pages", min: 100, max: 200, sortIndex: 2 },
+  { id: "200to400", label: "200–400 pages", min: 200, max: 400, sortIndex: 3 },
+  { id: "400to600", label: "400–600 pages", min: 400, max: 600, sortIndex: 4 },
+  {
+    id: "600to1000",
+    label: "600–1000 pages",
+    min: 600,
+    max: 1000,
+    sortIndex: 5,
+  },
+  {
+    id: "1000plus",
+    label: "1000+ pages",
+    min: 1000,
+    max: Infinity,
+    sortIndex: 6,
+  },
 ];
 
 export const matchScoreRanges = [
-  {id: '0.95-1.0', min: 0.95, max: 1.01, label: 'Outstanding (95–100%)', sortIndex: 0},
-  {id: '0.90-0.94', min: 0.90, max: 0.95, label: 'Excellent (90–94%)', sortIndex: 1},
-  {id: '0.80-0.89', min: 0.80, max: 0.90, label: 'Great (80–89%)', sortIndex: 2},
-  {id: '0.70-0.79', min: 0.70, max: 0.80, label: 'Good (70–79%)', sortIndex: 3},
-  {id: '0.50-0.69', min: 0.50, max: 0.70, label: 'Fair (50–69%)', sortIndex: 4},
-  {id: '0.30-0.49', min: 0.30, max: 0.50, label: 'Weak (30–49%)', sortIndex: 5},
-  {id: '0.00-0.29', min: 0.00, max: 0.30, label: 'Poor (0–29%)', sortIndex: 6}
+  {
+    id: "0.95-1.0",
+    min: 0.95,
+    max: 1.01,
+    label: "Outstanding (95–100%)",
+    sortIndex: 0,
+  },
+  {
+    id: "0.90-0.94",
+    min: 0.9,
+    max: 0.95,
+    label: "Excellent (90–94%)",
+    sortIndex: 1,
+  },
+  {
+    id: "0.80-0.89",
+    min: 0.8,
+    max: 0.9,
+    label: "Great (80–89%)",
+    sortIndex: 2,
+  },
+  { id: "0.70-0.79", min: 0.7, max: 0.8, label: "Good (70–79%)", sortIndex: 3 },
+  { id: "0.50-0.69", min: 0.5, max: 0.7, label: "Fair (50–69%)", sortIndex: 4 },
+  { id: "0.30-0.49", min: 0.3, max: 0.5, label: "Weak (30–49%)", sortIndex: 5 },
+  { id: "0.00-0.29", min: 0.0, max: 0.3, label: "Poor (0–29%)", sortIndex: 6 },
 ];
 
 function getLanguageFilter(book: Book): { id: string; name: string }[] {
   const lang = book.metadata?.language;
-  return lang ? [{id: lang, name: lang}] : [];
+  return lang ? [{ id: lang, name: lang }] : [];
 }
 
-function getFileSizeRangeFilters(sizeKb?: number): { id: string; name: string; sortIndex?: number }[] {
+function getFileSizeRangeFilters(
+  sizeKb?: number,
+): { id: string; name: string; sortIndex?: number }[] {
   if (sizeKb == null) return [];
-  const match = fileSizeRanges.find(r => sizeKb >= r.min && sizeKb < r.max);
-  return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
+  const match = fileSizeRanges.find((r) => sizeKb >= r.min && sizeKb < r.max);
+  return match
+    ? [{ id: match.id, name: match.label, sortIndex: match.sortIndex }]
+    : [];
 }
 
-function getRatingRangeFilters(rating?: number): { id: string; name: string; sortIndex?: number }[] {
+function getRatingRangeFilters(
+  rating?: number,
+): { id: string; name: string; sortIndex?: number }[] {
   if (rating == null) return [];
-  const match = ratingRanges.find(r => rating >= r.min && rating < r.max);
-  return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
+  const match = ratingRanges.find((r) => rating >= r.min && rating < r.max);
+  return match
+    ? [{ id: match.id, name: match.label, sortIndex: match.sortIndex }]
+    : [];
 }
 
-function getRatingRangeFilters10(rating?: number): { id: string; name: string; sortIndex?: number }[] {
+function getRatingRangeFilters10(
+  rating?: number,
+): { id: string; name: string; sortIndex?: number }[] {
   if (!rating || rating < 1 || rating > 10) return [];
-  const idx = ratingOptions10.find(r => r.value === rating || +r.id === rating);
-  return idx ? [{id: idx.id, name: idx.label, sortIndex: idx.sortIndex}] : [];
+  const idx = ratingOptions10.find(
+    (r) => r.value === rating || +r.id === rating,
+  );
+  return idx ? [{ id: idx.id, name: idx.label, sortIndex: idx.sortIndex }] : [];
 }
 
-function extractPublishedYearFilter(book: Book): { id: string; name: string }[] {
+function extractPublishedYearFilter(
+  book: Book,
+): { id: string; name: string }[] {
   const date = book.metadata?.publishedDate;
   if (!date) return [];
   const year = new Date(date).getFullYear();
-  return [{id: year.toString(), name: year.toString()}];
+  return [{ id: year.toString(), name: year.toString() }];
 }
 
 function getShelfStatusFilter(book: Book): { id: string; name: string }[] {
   const isShelved = (book.shelves?.length ?? 0) > 0;
-  return [{id: isShelved ? 'shelved' : 'unshelved', name: isShelved ? 'Shelved' : 'Unshelved'}];
+  return [
+    {
+      id: isShelved ? "shelved" : "unshelved",
+      name: isShelved ? "Shelved" : "Unshelved",
+    },
+  ];
 }
 
-function getPageCountRangeFilters(pageCount?: number): { id: string; name: string; sortIndex?: number }[] {
+function getPageCountRangeFilters(
+  pageCount?: number,
+): { id: string; name: string; sortIndex?: number }[] {
   if (pageCount == null) return [];
-  const match = pageCountRanges.find(r => pageCount >= r.min && pageCount < r.max);
-  return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
+  const match = pageCountRanges.find(
+    (r) => pageCount >= r.min && pageCount < r.max,
+  );
+  return match
+    ? [{ id: match.id, name: match.label, sortIndex: match.sortIndex }]
+    : [];
 }
 
-function getMatchScoreRangeFilters(score?: number | null): { id: string; name: string; sortIndex?: number }[] {
+function getMatchScoreRangeFilters(
+  score?: number | null,
+): { id: string; name: string; sortIndex?: number }[] {
   if (score == null) return [];
   const normalizedScore = score > 1 ? score / 100 : score;
-  const match = matchScoreRanges.find(r => normalizedScore >= r.min && normalizedScore < r.max);
-  return match ? [{id: match.id, name: match.label, sortIndex: match.sortIndex}] : [];
+  const match = matchScoreRanges.find(
+    (r) => normalizedScore >= r.min && normalizedScore < r.max,
+  );
+  return match
+    ? [{ id: match.id, name: match.label, sortIndex: match.sortIndex }]
+    : [];
 }
 
 function getBookTypeFilter(book: Book): { id: string; name: string }[] {
-  return book.bookType ? [{id: book.bookType, name: book.bookType}] : [];
+  return book.bookType ? [{ id: book.bookType, name: book.bookType }] : [];
 }
 
 export const readStatusLabels: Record<ReadStatus, string> = {
-  [ReadStatus.UNREAD]: 'Unread',
-  [ReadStatus.READING]: 'Reading',
-  [ReadStatus.RE_READING]: 'Re-reading',
-  [ReadStatus.PARTIALLY_READ]: 'Partially Read',
-  [ReadStatus.PAUSED]: 'Paused',
-  [ReadStatus.READ]: 'Read',
-  [ReadStatus.WONT_READ]: 'Won’t Read',
-  [ReadStatus.ABANDONED]: 'Abandoned',
-  [ReadStatus.UNSET]: 'Unset'
+  [ReadStatus.UNREAD]: "Unread",
+  [ReadStatus.READING]: "Reading",
+  [ReadStatus.RE_READING]: "Re-reading",
+  [ReadStatus.PARTIALLY_READ]: "Partially Read",
+  [ReadStatus.PAUSED]: "Paused",
+  [ReadStatus.READ]: "Read",
+  [ReadStatus.WONT_READ]: "Won’t Read",
+  [ReadStatus.ABANDONED]: "Abandoned",
+  [ReadStatus.UNSET]: "Unset",
 };
 
 function getReadStatusName(status?: ReadStatus | null): string {
-  return status != null ? readStatusLabels[status] ?? 'Unset' : 'Unset';
+  return status != null ? (readStatusLabels[status] ?? "Unset") : "Unset";
 }
 
 @Component({
-  selector: 'app-book-filter',
-  templateUrl: './book-filter.component.html',
-  styleUrls: ['./book-filter.component.scss'],
+  selector: "app-book-filter",
+  templateUrl: "./book-filter.component.html",
+  styleUrls: ["./book-filter.component.scss"],
   changeDetection: ChangeDetectionStrategy.OnPush,
   standalone: true,
   imports: [
@@ -181,8 +288,8 @@ function getReadStatusName(status?: ReadStatus | null): string {
     AsyncPipe,
     TitleCasePipe,
     FormsModule,
-    SelectButton
-  ]
+    SelectButton,
+  ],
 })
 export class BookFilterComponent implements OnInit, OnDestroy {
   private filterChangeSubject = new Subject<Record<string, unknown> | null>();
@@ -190,44 +297,50 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   @Output() filterSelected = new EventEmitter<Record<string, unknown> | null>();
   @Output() filterModeChanged = new EventEmitter<BookFilterMode>();
 
-  @Input() entity$!: Observable<Library | Shelf | MagicShelf | null> | undefined;
+  @Input() entity$!:
+    | Observable<Library | Shelf | MagicShelf | null>
+    | undefined;
   @Input() entityType$!: Observable<EntityType> | undefined;
   @Input() resetFilter$!: Subject<void>;
   @Input() showFilter: boolean = false;
 
   activeFilters: Record<string, unknown[]> = {};
-  filterStreams: Record<FilterType, Observable<Filter[]>> = {} as Record<FilterType, Observable<Filter[]>>;
+  filterStreams: Record<FilterType, Observable<Filter[]>> = {} as Record<
+    FilterType,
+    Observable<Filter[]>
+  >;
   truncatedFilters: Record<string, boolean> = {};
   filterTypes: FilterType[] = [];
   filterModeOptions = [
-    {label: 'AND', value: 'and'},
-    {label: 'OR', value: 'or'},
-    {label: '1', value: 'single'},
+    { label: "AND", value: "and" },
+    { label: "OR", value: "or" },
+    { label: "1", value: "single" },
   ];
-  private _selectedFilterMode: BookFilterMode = 'and';
+  private _selectedFilterMode: BookFilterMode = "and";
   expandedPanels: number[] = [0];
   readonly filterLabels: Record<FilterType, string> = {
-    library: 'Library',
-    shelf: 'Shelf',
-    author: 'Author',
-    category: 'Genre',
-    series: 'Series',
-    publisher: 'Publisher',
-    readStatus: 'Read Status',
-    personalRating: 'Personal Rating',
-    publishedDate: 'Published Year',
-    matchScore: 'Metadata Match Score',
-    mood: 'Mood',
-    tag: 'Tag',
-    language: 'Language',
-    bookType: 'Book Type',
-    shelfStatus: 'Shelf Status',
-    fileSize: 'File Size',
-    pageCount: 'Page Count',
-    amazonRating: 'Amazon Rating',
-    goodreadsRating: 'Goodreads Rating',
-    hardcoverRating: 'Hardcover Rating',
-    ranobedbRating: 'Ranobedb Rating',
+    library: "Library",
+    shelf: "Shelf",
+    author: "Author",
+    category: "Genre",
+    series: "Series",
+    incompleteSeries: "Incomplete Series",
+    publisher: "Publisher",
+    readStatus: "Read Status",
+    personalRating: "Personal Rating",
+    publishedDate: "Published Year",
+    matchScore: "Metadata Match Score",
+    mood: "Mood",
+    tag: "Tag",
+    language: "Language",
+    bookType: "Book Type",
+    shelfStatus: "Shelf Status",
+    fileSize: "File Size",
+    pageCount: "Page Count",
+    amazonRating: "Amazon Rating",
+    goodreadsRating: "Goodreads Rating",
+    hardcoverRating: "Hardcover Rating",
+    ranobedbRating: "Ranobedb Rating",
   };
 
   private destroy$ = new Subject<void>();
@@ -236,86 +349,191 @@ export class BookFilterComponent implements OnInit, OnDestroy {
   userService = inject(UserService);
   bookRuleEvaluatorService = inject(BookRuleEvaluatorService);
   userData$: Observable<UserState> = this.userService.userState$;
-  filterSortingMode: FilterSortingMode = 'alphabetical';
+  filterSortingMode: FilterSortingMode = "alphabetical";
 
   ngOnInit(): void {
-    this.userData$.pipe(
-      filter(userState => !!userState?.user && userState.loaded),
-      takeUntil(this.destroy$)
-    ).subscribe(userState => {
-      this.filterSortingMode = userState.user!.userSettings.filterSortingMode ?? 'alphabetical';
-    });
+    this.userData$
+      .pipe(
+        filter((userState) => !!userState?.user && userState.loaded),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((userState) => {
+        this.filterSortingMode =
+          userState.user!.userSettings.filterSortingMode ?? "alphabetical";
+      });
 
     combineLatest([
       this.entity$ ?? of(null),
-      this.entityType$ ?? of(EntityType.ALL_BOOKS)
+      this.entityType$ ?? of(EntityType.ALL_BOOKS),
     ])
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.filterStreams = {
           library: this.getFilterStream(
-            (book) => (book.libraryId ? [{id: book.libraryId, name: book.libraryName}] : []),
-            'id', 'name'
+            (book) =>
+              book.libraryId
+                ? [{ id: book.libraryId, name: book.libraryName }]
+                : [],
+            "id",
+            "name",
           ),
           shelf: this.getFilterStream(
-            (book) => (book.shelves ? book.shelves.map(s => ({id: s.id, name: s.name})) : []),
-            'id', 'name'
+            (book) =>
+              book.shelves
+                ? book.shelves.map((s) => ({ id: s.id, name: s.name }))
+                : [],
+            "id",
+            "name",
           ),
           author: this.getFilterStream(
-            (book: Book) => Array.isArray(book.metadata?.authors) ? book.metadata.authors.map(name => ({id: name, name})) : [],
-            'id', 'name'
+            (book: Book) =>
+              Array.isArray(book.metadata?.authors)
+                ? book.metadata.authors.map((name) => ({ id: name, name }))
+                : [],
+            "id",
+            "name",
           ),
           category: this.getFilterStream(
-            (book: Book) => Array.isArray(book.metadata?.categories) ? book.metadata.categories.map(name => ({id: name, name})) : [],
-            'id', 'name'
+            (book: Book) =>
+              Array.isArray(book.metadata?.categories)
+                ? book.metadata.categories.map((name) => ({ id: name, name }))
+                : [],
+            "id",
+            "name",
           ),
           series: this.getFilterStream(
-            (book) => (book.metadata?.seriesName ? [{id: book.metadata.seriesName, name: book.metadata.seriesName}] : []),
-            'id', 'name'
+            (book) =>
+              book.metadata?.seriesName
+                ? [
+                    {
+                      id: book.metadata.seriesName,
+                      name: book.metadata.seriesName,
+                    },
+                  ]
+                : [],
+            "id",
+            "name",
           ),
+          incompleteSeries: this.getIncompleteSeriesFilterStream(),
           publisher: this.getFilterStream(
-            (book) => (book.metadata?.publisher ? [{id: book.metadata.publisher, name: book.metadata.publisher}] : []),
-            'id', 'name'
+            (book) =>
+              book.metadata?.publisher
+                ? [
+                    {
+                      id: book.metadata.publisher,
+                      name: book.metadata.publisher,
+                    },
+                  ]
+                : [],
+            "id",
+            "name",
           ),
-          readStatus: this.getFilterStream((book: Book) => {
-            let status = book.readStatus;
-            if (status == null || !(status in readStatusLabels)) {
-              status = ReadStatus.UNSET;
-            }
-            return [{id: status, name: getReadStatusName(status)}];
-          }, 'id', 'name'),
-          personalRating: this.getFilterStream((book: Book) => getRatingRangeFilters10(book.personalRating!), 'id', 'name', 'sortIndex'),
-          publishedDate: this.getFilterStream(extractPublishedYearFilter, 'id', 'name'),
-          matchScore: this.getFilterStream((book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore), 'id', 'name', 'sortIndex'),
+          readStatus: this.getFilterStream(
+            (book: Book) => {
+              let status = book.readStatus;
+              if (status == null || !(status in readStatusLabels)) {
+                status = ReadStatus.UNSET;
+              }
+              return [{ id: status, name: getReadStatusName(status) }];
+            },
+            "id",
+            "name",
+          ),
+          personalRating: this.getFilterStream(
+            (book: Book) => getRatingRangeFilters10(book.personalRating!),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          publishedDate: this.getFilterStream(
+            extractPublishedYearFilter,
+            "id",
+            "name",
+          ),
+          matchScore: this.getFilterStream(
+            (book: Book) => getMatchScoreRangeFilters(book.metadataMatchScore),
+            "id",
+            "name",
+            "sortIndex",
+          ),
           mood: this.getFilterStream(
-            (book: Book) => Array.isArray(book.metadata?.moods) ? book.metadata.moods.map(name => ({id: name, name})) : [],
-            'id', 'name'
+            (book: Book) =>
+              Array.isArray(book.metadata?.moods)
+                ? book.metadata.moods.map((name) => ({ id: name, name }))
+                : [],
+            "id",
+            "name",
           ),
           tag: this.getFilterStream(
-            (book: Book) => Array.isArray(book.metadata?.tags) ? book.metadata.tags.map(name => ({id: name, name})) : [],
-            'id', 'name'
+            (book: Book) =>
+              Array.isArray(book.metadata?.tags)
+                ? book.metadata.tags.map((name) => ({ id: name, name }))
+                : [],
+            "id",
+            "name",
           ),
-          language: this.getFilterStream(getLanguageFilter, 'id', 'name'),
-          bookType: this.getFilterStream(getBookTypeFilter, 'id', 'name'),
-          shelfStatus: this.getFilterStream(getShelfStatusFilter, 'id', 'name'),
-          fileSize: this.getFilterStream((book: Book) => getFileSizeRangeFilters(book.fileSizeKb), 'id', 'name', 'sortIndex'),
-          pageCount: this.getFilterStream((book: Book) => getPageCountRangeFilters(book.metadata?.pageCount ?? undefined), 'id', 'name', 'sortIndex'),
-          amazonRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.amazonRating ?? undefined), 'id', 'name', 'sortIndex'),
-          goodreadsRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.goodreadsRating ?? undefined), 'id', 'name', 'sortIndex'),
-          hardcoverRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.hardcoverRating ?? undefined), 'id', 'name', 'sortIndex'),
-          ranobedbRating: this.getFilterStream((book: Book) => getRatingRangeFilters(book.metadata?.ranobedbRating ?? undefined), 'id', 'name', 'sortIndex'),
+          language: this.getFilterStream(getLanguageFilter, "id", "name"),
+          bookType: this.getFilterStream(getBookTypeFilter, "id", "name"),
+          shelfStatus: this.getFilterStream(getShelfStatusFilter, "id", "name"),
+          fileSize: this.getFilterStream(
+            (book: Book) => getFileSizeRangeFilters(book.fileSizeKb),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          pageCount: this.getFilterStream(
+            (book: Book) =>
+              getPageCountRangeFilters(book.metadata?.pageCount ?? undefined),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          amazonRating: this.getFilterStream(
+            (book: Book) =>
+              getRatingRangeFilters(book.metadata?.amazonRating ?? undefined),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          goodreadsRating: this.getFilterStream(
+            (book: Book) =>
+              getRatingRangeFilters(
+                book.metadata?.goodreadsRating ?? undefined,
+              ),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          hardcoverRating: this.getFilterStream(
+            (book: Book) =>
+              getRatingRangeFilters(
+                book.metadata?.hardcoverRating ?? undefined,
+              ),
+            "id",
+            "name",
+            "sortIndex",
+          ),
+          ranobedbRating: this.getFilterStream(
+            (book: Book) =>
+              getRatingRangeFilters(book.metadata?.ranobedbRating ?? undefined),
+            "id",
+            "name",
+            "sortIndex",
+          ),
         };
 
         this.filterTypes = Object.keys(this.filterStreams) as FilterType[];
         this.setExpandedPanels();
       });
 
-    this.filterChangeSubject.pipe(
-      takeUntil(this.destroy$)
-    ).subscribe(value => this.filterSelected.emit(value));
+    this.filterChangeSubject
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((value) => this.filterSelected.emit(value));
 
     if (this.resetFilter$) {
-      this.resetFilter$.pipe(takeUntil(this.destroy$)).subscribe(() => this.clearActiveFilter());
+      this.resetFilter$
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(() => this.clearActiveFilter());
     }
   }
 
@@ -323,22 +541,26 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     extractor: (book: Book) => T[] | undefined,
     idKey: keyof T,
     nameKey: keyof T,
-    sortMode: FilterSortingMode | 'sortIndex' = this.filterSortingMode
+    sortMode: FilterSortingMode | "sortIndex" = this.filterSortingMode,
   ): Observable<Filter<T>[]> {
     return combineLatest([
       this.bookService.bookState$,
       this.entity$ ?? of(null),
-      this.entityType$ ?? of(EntityType.ALL_BOOKS)
+      this.entityType$ ?? of(EntityType.ALL_BOOKS),
     ]).pipe(
       map(([state, entity, entityType]) => {
-        const filteredBooks = this.filterBooksByEntityType(state.books || [], entity, entityType);
+        const filteredBooks = this.filterBooksByEntityType(
+          state.books || [],
+          entity,
+          entityType,
+        );
         const filterMap = new Map<unknown, Filter<T>>();
 
         filteredBooks.forEach((book) => {
           (extractor(book) || []).forEach((item) => {
             const id = item[idKey];
             if (!filterMap.has(id)) {
-              filterMap.set(id, {value: item, bookCount: 0});
+              filterMap.set(id, { value: item, bookCount: 0 });
             }
             filterMap.get(id)!.bookCount += 1;
           });
@@ -347,29 +569,31 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         const result = Array.from(filterMap.values());
 
         const sorted = result.sort((a, b) => {
-          if (sortMode === 'sortIndex') {
+          if (sortMode === "sortIndex") {
             const aValue = a.value as { sortIndex?: number };
             const bValue = b.value as { sortIndex?: number };
             return (aValue.sortIndex ?? 999) - (bValue.sortIndex ?? 999);
-          } else if (sortMode === 'count' && b.bookCount !== a.bookCount) {
+          } else if (sortMode === "count" && b.bookCount !== a.bookCount) {
             return b.bookCount - a.bookCount;
           }
           const aValue = a.value as Record<string, unknown>;
           const bValue = b.value as Record<string, unknown>;
-          const aKey = String(aValue[String(nameKey)] ?? '');
-          const bKey = String(bValue[String(nameKey)] ?? '');
+          const aKey = String(aValue[String(nameKey)] ?? "");
+          const bKey = String(bValue[String(nameKey)] ?? "");
           return aKey.localeCompare(bKey);
         });
 
         const isTruncated = sorted.length > 500;
         const truncated = sorted.slice(0, 500);
 
-        return {items: truncated, isTruncated};
+        return { items: truncated, isTruncated };
       }),
-      map(({items, isTruncated}) => {
+      map(({ items, isTruncated }) => {
         setTimeout(() => {
-          const filterType = Object.keys(this.filterStreams).find(key =>
-            this.filterStreams[key as FilterType] === this.getFilterStream(extractor, idKey, nameKey)
+          const filterType = Object.keys(this.filterStreams).find(
+            (key) =>
+              this.filterStreams[key as FilterType] ===
+              this.getFilterStream(extractor, idKey, nameKey),
           );
           if (filterType) {
             this.truncatedFilters[filterType] = isTruncated;
@@ -377,7 +601,48 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         });
         return items as Filter<T>[];
       }),
-      shareReplay({bufferSize: 1, refCount: true})
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+  }
+
+  private getIncompleteSeriesFilterStream(): Observable<Filter[]> {
+    return combineLatest([
+      this.bookService.getIncompleteSeriesNames(),
+      this.bookService.bookState$,
+      this.entity$ ?? of(null),
+      this.entityType$ ?? of(EntityType.ALL_BOOKS),
+    ]).pipe(
+      map(([incompleteSeriesNames, state, entity, entityType]) => {
+        const filteredBooks = this.filterBooksByEntityType(
+          state.books || [],
+          entity,
+          entityType,
+        );
+        const seriesCountMap = new Map<string, number>();
+
+        // Count books in each incomplete series
+        filteredBooks.forEach((book) => {
+          const seriesName = book.metadata?.seriesName;
+          if (seriesName && incompleteSeriesNames.includes(seriesName)) {
+            seriesCountMap.set(
+              seriesName,
+              (seriesCountMap.get(seriesName) || 0) + 1,
+            );
+          }
+        });
+
+        return Array.from(seriesCountMap.entries())
+          .map(([seriesName, count]) => ({
+            value: { id: seriesName, name: seriesName },
+            bookCount: count,
+          }))
+          .sort((a, b) => {
+            const nameA = a.value.name || "";
+            const nameB = b.value.name || "";
+            return nameA.localeCompare(nameB);
+          });
+      }),
+      shareReplay({ bufferSize: 1, refCount: true }),
     );
   }
 
@@ -390,29 +655,54 @@ export class BookFilterComponent implements OnInit, OnDestroy {
       this._selectedFilterMode = mode;
       this.filterModeChanged.emit(mode);
       this.filterChangeSubject.next(
-        Object.keys(this.activeFilters).length ? {...this.activeFilters} : null
+        Object.keys(this.activeFilters).length
+          ? { ...this.activeFilters }
+          : null,
       );
     }
   }
 
-  private filterBooksByEntityType(books: Book[], entity: unknown, entityType: EntityType): Book[] {
-    if (entityType === EntityType.LIBRARY && entity !== null && typeof entity === 'object' && 'id' in entity) {
+  private filterBooksByEntityType(
+    books: Book[],
+    entity: unknown,
+    entityType: EntityType,
+  ): Book[] {
+    if (
+      entityType === EntityType.LIBRARY &&
+      entity !== null &&
+      typeof entity === "object" &&
+      "id" in entity
+    ) {
       const libraryEntity = entity as { id: number };
       return books.filter((book) => book.libraryId === libraryEntity.id);
     }
 
-    if (entityType === EntityType.SHELF && entity !== null && typeof entity === 'object' && 'id' in entity) {
+    if (
+      entityType === EntityType.SHELF &&
+      entity !== null &&
+      typeof entity === "object" &&
+      "id" in entity
+    ) {
       const shelfEntity = entity as { id: number };
-      return books.filter((book) => book.shelves?.some((shelf) => shelf.id === shelfEntity.id));
+      return books.filter((book) =>
+        book.shelves?.some((shelf) => shelf.id === shelfEntity.id),
+      );
     }
 
-    if (entityType === EntityType.MAGIC_SHELF && entity !== null && typeof entity === 'object' && 'filterJson' in entity) {
+    if (
+      entityType === EntityType.MAGIC_SHELF &&
+      entity !== null &&
+      typeof entity === "object" &&
+      "filterJson" in entity
+    ) {
       try {
         const magicShelfEntity = entity as { filterJson: string };
         const groupRule = JSON.parse(magicShelfEntity.filterJson) as GroupRule;
-        return books.filter((book) => this.bookRuleEvaluatorService.evaluateGroup(book, groupRule));
+        return books.filter((book) =>
+          this.bookRuleEvaluatorService.evaluateGroup(book, groupRule),
+        );
       } catch (e) {
-        console.warn('Invalid filterJson for MagicShelf:', e);
+        console.warn("Invalid filterJson for MagicShelf:", e);
         return [];
       }
     }
@@ -428,7 +718,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
     const filterArray = this.activeFilters[filterType];
     const index = filterArray.indexOf(value);
     if (index > -1) {
-      if (this._selectedFilterMode == 'single') {
+      if (this._selectedFilterMode == "single") {
         this.activeFilters = {};
       } else {
         filterArray.splice(index, 1);
@@ -437,12 +727,14 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      if (this._selectedFilterMode == 'single') {
-        this.activeFilters = {[filterType]: []};
+      if (this._selectedFilterMode == "single") {
+        this.activeFilters = { [filterType]: [] };
       }
       this.activeFilters[filterType].push(value);
     }
-    this.filterChangeSubject.next(Object.keys(this.activeFilters).length ? {...this.activeFilters} : null);
+    this.filterChangeSubject.next(
+      Object.keys(this.activeFilters).length ? { ...this.activeFilters } : null,
+    );
   }
 
   setFilters(filters: Record<string, unknown>) {
@@ -455,7 +747,7 @@ export class BookFilterComponent implements OnInit, OnDestroy {
         this.activeFilters[key] = [value];
       }
     }
-    this.filterChangeSubject.next({...this.activeFilters});
+    this.filterChangeSubject.next({ ...this.activeFilters });
   }
 
   clearActiveFilter() {
@@ -484,20 +776,24 @@ export class BookFilterComponent implements OnInit, OnDestroy {
 
   trackByFilter(_: number, filter: Filter<FilterValue>): unknown {
     const value = filter.value as { id?: unknown } | unknown;
-    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as {id: unknown}).id : filter.value;
+    return typeof value === "object" && value !== null && "id" in value
+      ? (value as { id: unknown }).id
+      : filter.value;
   }
 
   getFilterValueId(filter: Filter<FilterValue>): unknown {
     const value = filter.value as { id?: unknown } | unknown;
-    return (typeof value === 'object' && value !== null && 'id' in value) ? (value as {id: unknown}).id : filter.value;
+    return typeof value === "object" && value !== null && "id" in value
+      ? (value as { id: unknown }).id
+      : filter.value;
   }
 
   getFilterValueDisplay(filter: Filter<FilterValue>): string {
     const value = filter.value as { name?: string } | string | unknown;
-    if (typeof value === 'object' && value !== null && 'name' in value) {
-      return String((value as {name: string}).name ?? '');
+    if (typeof value === "object" && value !== null && "name" in value) {
+      return String((value as { name: string }).name ?? "");
     }
-    return String(value ?? '');
+    return String(value ?? "");
   }
 
   ngOnDestroy(): void {

@@ -5,6 +5,7 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.BookRecommendation;
 import com.adityachandel.booklore.model.dto.BookViewerSettings;
+import com.adityachandel.booklore.model.dto.IncompleteSeriesDto;
 import com.adityachandel.booklore.model.dto.request.PersonalRatingUpdateRequest;
 import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.request.ReadStatusUpdateRequest;
@@ -13,6 +14,7 @@ import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
+import com.adityachandel.booklore.service.IncompleteSeriesService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
 import com.adityachandel.booklore.service.metadata.BookMetadataService;
@@ -46,6 +48,7 @@ public class BookController {
     private final BookUpdateService bookUpdateService;
     private final BookRecommendationService bookRecommendationService;
     private final BookMetadataService bookMetadataService;
+    private final IncompleteSeriesService incompleteSeriesService;
 
     @Operation(summary = "Get all books", description = "Retrieve a list of all books. Optionally include descriptions.")
     @ApiResponse(responseCode = "200", description = "List of books returned successfully")
@@ -207,5 +210,19 @@ public class BookController {
         }
         List<PersonalRatingUpdateResponse> updatedBooks = bookUpdateService.resetPersonalRating(bookIds);
         return ResponseEntity.ok(updatedBooks);
+    }
+
+    @Operation(summary = "Get incomplete series", description = "Get all series that are missing books (have gaps in series numbers).")
+    @ApiResponse(responseCode = "200", description = "List of incomplete series returned successfully")
+    @GetMapping("/series/incomplete")
+    public ResponseEntity<List<IncompleteSeriesDto>> getIncompleteSeries() {
+        return ResponseEntity.ok(incompleteSeriesService.findIncompleteSeries());
+    }
+
+    @Operation(summary = "Get incomplete series names", description = "Get names of all series that are missing books.")
+    @ApiResponse(responseCode = "200", description = "List of incomplete series names returned successfully")
+    @GetMapping("/series/incomplete/names")
+    public ResponseEntity<List<String>> getIncompleteSeriesNames() {
+        return ResponseEntity.ok(incompleteSeriesService.getIncompleteSeriesNames());
     }
 }
