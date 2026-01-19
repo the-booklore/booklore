@@ -12,6 +12,8 @@ import {filter, take} from 'rxjs/operators';
 import {InputText} from 'primeng/inputtext';
 import {Slider} from 'primeng/slider';
 import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-link/external-doc-link.component';
+import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
+import {BookFileType} from '../../book/model/library.model';
 
 @Component({
   selector: 'app-global-preferences',
@@ -22,7 +24,8 @@ import {ExternalDocLinkComponent} from '../../../shared/components/external-doc-
     FormsModule,
     InputText,
     Slider,
-    ExternalDocLinkComponent
+    ExternalDocLinkComponent,
+    DragDropModule
   ],
   templateUrl: './global-preferences.component.html',
   styleUrl: './global-preferences.component.scss'
@@ -41,6 +44,8 @@ export class GlobalPreferencesComponent implements OnInit {
     aspectRatioThreshold: 2.5,
     smartCroppingEnabled: false
   };
+
+  preferredBookFormatOrder: BookFileType[] = ['EPUB', 'PDF', 'CBX', 'FB2', 'MOBI', 'AZW3'];
 
   private appSettingsService = inject(AppSettingsService);
   private bookService = inject(BookService);
@@ -63,6 +68,9 @@ export class GlobalPreferencesComponent implements OnInit {
       this.toggles.autoBookSearch = settings.autoBookSearch ?? false;
       this.toggles.similarBookRecommendation = settings.similarBookRecommendation ?? false;
       this.toggles.enableTelemetry = settings?.telemetryEnabled ?? true;
+      if (settings?.preferredBookFormatOrder && settings.preferredBookFormatOrder.length > 0) {
+        this.preferredBookFormatOrder = [...settings.preferredBookFormatOrder];
+      }
     });
   }
 
@@ -83,6 +91,11 @@ export class GlobalPreferencesComponent implements OnInit {
 
   onCoverCroppingChange(): void {
     this.saveSetting(AppSettingKey.COVER_CROPPING_SETTINGS, this.coverCroppingSettings);
+  }
+
+  onFormatOrderDrop(event: CdkDragDrop<BookFileType[]>): void {
+    moveItemInArray(this.preferredBookFormatOrder, event.previousIndex, event.currentIndex);
+    this.saveSetting(AppSettingKey.PREFERRED_BOOK_FORMAT_ORDER, this.preferredBookFormatOrder);
   }
 
   saveFileSize() {

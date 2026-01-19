@@ -211,6 +211,50 @@
                     </div>
                   </div>
                 </div>
+
+                <div class="gradient-divider"></div>
+
+                <div class="form-section">
+                  <div class="form-group">
+                    <label class="form-label">
+                      <i class="pi pi-sort-alt label-icon"></i>
+                      5. Custom Format Priority
+                    </label>
+                    <div class="toggle-group">
+                      <div class="toggle-wrapper">
+                        <p-toggleswitch [(ngModel)]="useCustomFormatOrder" inputId="format-order-toggle" (onChange)="onCustomFormatOrderToggle()"/>
+                        <label for="format-order-toggle" class="toggle-label">
+                          @if (useCustomFormatOrder) {
+                            <span class="toggle-status active">Custom order</span>
+                          } @else {
+                            <span class="toggle-status inactive">Use global default</span>
+                          }
+                        </label>
+                      </div>
+                      <div class="info-tooltip large">
+                        <i
+                          class="pi pi-question-circle"
+                          pTooltip="Override the global format priority for this library. When a book has multiple formats, the first available format in this order will be used."
+                          [escape]="false"
+                          tooltipPosition="right"
+                        ></i>
+                      </div>
+                    </div>
+                    @if (useCustomFormatOrder && preferredBookFormatOrder) {
+                      <div class="format-order-list" cdkDropList (cdkDropListDropped)="onFormatOrderDrop($event)">
+                        @for (format of preferredBookFormatOrder; track format; let i = $index) {
+                          <div class="format-order-item" cdkDrag>
+                            <div class="format-drag-handle" cdkDragHandle>
+                              <i class="pi pi-bars"></i>
+                            </div>
+                            <span class="format-position">{{ i + 1 }}</span>
+                            <span class="format-name">{{ format }}</span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
               </div>
             </div>
 

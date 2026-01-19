@@ -7,6 +7,7 @@ import com.adityachandel.booklore.service.book.BookDownloadService;
 import com.adityachandel.booklore.service.book.BookQueryService;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
+import com.adityachandel.booklore.service.book.PreferredBookFileResolver;
 import com.adityachandel.booklore.service.user.UserProgressService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.util.FileService;
@@ -50,6 +51,7 @@ class BookServiceDeleteTests {
         BookDownloadService bookDownloadService = Mockito.mock(BookDownloadService.class);
         MonitoringRegistrationService monitoringRegistrationService = Mockito.mock(MonitoringRegistrationService.class);
         BookUpdateService bookUpdateService = Mockito.mock(BookUpdateService.class);
+        PreferredBookFileResolver preferredBookFileResolver = Mockito.mock(PreferredBookFileResolver.class);
 
         bookService = new BookService(
                 bookRepository,
@@ -65,6 +67,7 @@ class BookServiceDeleteTests {
                 bookDownloadService,
                 monitoringRegistrationService,
                 bookUpdateService,
+                preferredBookFileResolver,
                 ebookViewerPreferenceRepository
         );
     }

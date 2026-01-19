@@ -17,12 +17,13 @@ import {IconDisplayComponent} from '../../shared/components/icon-display/icon-di
 import {DialogLauncherService} from '../../shared/services/dialog-launcher.service';
 import {switchMap} from 'rxjs/operators';
 import {map, of} from 'rxjs';
+import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-library-creator',
   standalone: true,
   templateUrl: './library-creator.component.html',
-  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button, IconDisplayComponent],
+  imports: [TableModule, StepPanel, FormsModule, InputText, Stepper, StepList, Step, StepPanels, ToggleSwitch, Tooltip, Select, Button, IconDisplayComponent, DragDropModule],
   styleUrl: './library-creator.component.scss'
 })
 export class LibraryCreatorComponent implements OnInit {
@@ -36,6 +37,10 @@ export class LibraryCreatorComponent implements OnInit {
   watch: boolean = false;
   scanMode: LibraryScanMode = 'FILE_AS_BOOK';
   defaultBookFormat: BookFileType | undefined = undefined;
+  preferredBookFormatOrder: BookFileType[] | undefined = undefined;
+  useCustomFormatOrder: boolean = false;
+
+  readonly allBookFormats: BookFileType[] = ['EPUB', 'PDF', 'CBX', 'FB2', 'MOBI', 'AZW3'];
 
   readonly scanModeOptions = [
     {label: 'Each file is a book (Recommended)', value: 'FILE_AS_BOOK'},
@@ -78,6 +83,11 @@ export class LibraryCreatorComponent implements OnInit {
         this.scanMode = scanMode || 'FILE_AS_BOOK';
         this.defaultBookFormat = defaultBookFormat || undefined;
         this.folders = paths.map(path => path.path);
+
+        if (this.library.preferredBookFormatOrder && this.library.preferredBookFormatOrder.length > 0) {
+          this.preferredBookFormatOrder = [...this.library.preferredBookFormatOrder];
+          this.useCustomFormatOrder = true;
+        }
       }
     }
   }
@@ -119,6 +129,20 @@ export class LibraryCreatorComponent implements OnInit {
     this.selectedIcon = null;
   }
 
+  onCustomFormatOrderToggle(): void {
+    if (this.useCustomFormatOrder && !this.preferredBookFormatOrder) {
+      this.preferredBookFormatOrder = [...this.allBookFormats];
+    } else if (!this.useCustomFormatOrder) {
+      this.preferredBookFormatOrder = undefined;
+    }
+  }
+
+  onFormatOrderDrop(event: CdkDragDrop<BookFileType[]>): void {
+    if (this.preferredBookFormatOrder) {
+      moveItemInArray(this.preferredBookFormatOrder, event.previousIndex, event.currentIndex);
+    }
+  }
+
   isLibraryDetailsValid(): boolean {
     return !!this.chosenLibraryName.trim() && !!this.selectedIcon;
   }
@@ -156,7 +180,8 @@ export class LibraryCreatorComponent implements OnInit {
       paths: this.folders.map(folder => ({path: folder})),
       watch: this.watch,
       scanMode: this.scanMode,
-      defaultBookFormat: this.defaultBookFormat
+      defaultBookFormat: this.defaultBookFormat,
+      preferredBookFormatOrder: this.useCustomFormatOrder ? this.preferredBookFormatOrder : undefined
     };
 
     if (this.mode === 'edit') {

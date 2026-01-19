@@ -39,7 +39,39 @@ public class LibraryTestBuilder {
     public static final String DEFAULT_LIBRARY_NAME = "Test Library";
     public static final String DEFAULT_LIBRARY_PATH = "/library/books";
 
-    private static final BookMapper BOOK_MAPPER = new BookMapperImpl();
+    private static final BookMapper BOOK_MAPPER;
+
+    static {
+        BookMapperImpl mapper = new BookMapperImpl();
+        try {
+            // Create a mock AppSettingService that returns default preferred format order
+            com.adityachandel.booklore.service.appsettings.AppSettingService mockAppSettingService = 
+                    org.mockito.Mockito.mock(com.adityachandel.booklore.service.appsettings.AppSettingService.class);
+            com.adityachandel.booklore.model.dto.settings.AppSettings appSettings = 
+                    com.adityachandel.booklore.model.dto.settings.AppSettings.builder()
+                            .preferredBookFormatOrder(java.util.List.of(
+                                    com.adityachandel.booklore.model.enums.BookFileType.EPUB,
+                                    com.adityachandel.booklore.model.enums.BookFileType.PDF,
+                                    com.adityachandel.booklore.model.enums.BookFileType.CBX,
+                                    com.adityachandel.booklore.model.enums.BookFileType.FB2,
+                                    com.adityachandel.booklore.model.enums.BookFileType.MOBI,
+                                    com.adityachandel.booklore.model.enums.BookFileType.AZW3
+                            ))
+                            .build();
+            org.mockito.Mockito.when(mockAppSettingService.getAppSettings()).thenReturn(appSettings);
+            
+            // Create PreferredBookFileResolver with mocked AppSettingService
+            com.adityachandel.booklore.service.book.PreferredBookFileResolver resolver = 
+                    new com.adityachandel.booklore.service.book.PreferredBookFileResolver(mockAppSettingService);
+            
+            java.lang.reflect.Field field = BookMapper.class.getDeclaredField("preferredBookFileResolver");
+            field.setAccessible(true);
+            field.set(mapper, resolver);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to initialize BookMapper with PreferredBookFileResolver", e);
+        }
+        BOOK_MAPPER = mapper;
+    }
 
     private Long libraryId = 1L;
 
@@ -95,6 +127,19 @@ public class LibraryTestBuilder {
                 .thenAnswer(invocation -> {
                     BookFileEntity additionalFile = invocation.getArgument(0);
                     return saveBookAdditionalFile(additionalFile);
+                });
+
+        // Mock findByLibraryPath_IdAndFileSubPathAndFileName to check if file already exists
+        lenient().when(bookAdditionalFileRepositoryMock.findByLibraryPath_IdAndFileSubPathAndFileName(anyLong(), any(String.class), any(String.class)))
+                .thenAnswer(invocation -> {
+                    Long libraryPathId = invocation.getArgument(0);
+                    String fileSubPath = invocation.getArgument(1);
+                    String fileName = invocation.getArgument(2);
+                    return bookAdditionalFileRepository.values().stream()
+                            .filter(f -> f.getBook().getLibraryPath().getId().equals(libraryPathId) &&
+                                    f.getFileSubPath().equals(fileSubPath) &&
+                                    f.getFileName().equals(fileName))
+                            .findFirst();
                 });
     }
 
@@ -213,7 +258,8 @@ public class LibraryTestBuilder {
                 .currentHash(hash)
                 .addedOn(java.time.Instant.now())
                 .build();
-        bookEntity.getBookFiles().add(primaryFile);
+        // Hibernate bytecode enhancement automatically adds the file to bookEntity.getBookFiles()
+        // when setBook() is called during builder construction
 
         bookRepository.put(bookEntity.getId(), bookEntity);
         bookMap.put(metadata.getTitle(), bookEntity);
@@ -317,7 +363,8 @@ public class LibraryTestBuilder {
                 .currentHash(hash)
                 .addedOn(java.time.Instant.now())
                 .build();
-        bookEntity.getBookFiles().add(primaryFile);
+        // Hibernate bytecode enhancement automatically adds the file to bookEntity.getBookFiles()
+        // when setBook() is called during builder construction
 
         bookRepository.put(bookEntity.getId(), bookEntity);
         bookMap.put(metadata.getTitle(), bookEntity);

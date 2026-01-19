@@ -23,5 +23,6 @@ public class Library {
     private List<LibraryPath> paths;
     private LibraryScanMode scanMode;
     private BookFileType defaultBookFormat;
+    private List<BookFileType> preferredBookFormatOrder;
 }
 

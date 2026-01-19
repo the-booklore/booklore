@@ -38,8 +38,9 @@ export class NewPdfReaderService {
     return token ? `${url}${url.includes('?') ? '&' : '?'}token=${token}` : url;
   }
 
-  getAvailablePages(bookId: number) {
-    return this.http.get<number[]>(this.appendToken(`${this.pagesUrl}/${bookId}/pages`));
+  getAvailablePages(bookId: number, targetFormat?: string) {
+    const url = targetFormat ? `${this.pagesUrl}/${bookId}/pages?targetFormat=${targetFormat}` : `${this.pagesUrl}/${bookId}/pages`;
+    return this.http.get<number[]>(this.appendToken(url));
   }
 
   getPageInfo(bookId: number) {

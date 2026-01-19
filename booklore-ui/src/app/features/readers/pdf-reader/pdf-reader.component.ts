@@ -45,11 +45,12 @@ export class PdfReaderComponent implements OnInit, OnDestroy {
     this.route.paramMap.subscribe((params) => {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
+      const targetFormat = this.route.snapshot.queryParamMap.get('targetFormat') || undefined;
 
       const myself$ = this.userService.getMyself();
       const book$ = this.bookService.getBookByIdFromAPI(this.bookId, false);
       const bookSetting$ = this.bookService.getBookSetting(this.bookId);
-      const pdfData$ = this.bookService.getFileContent(this.bookId);
+      const pdfData$ = this.bookService.getFileContent(this.bookId, targetFormat);
 
       forkJoin([book$, bookSetting$, pdfData$, myself$]).subscribe({
         next: (results) => {

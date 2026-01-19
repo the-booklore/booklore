@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.appsettings;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
 import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.AppSettingsRepository;
@@ -13,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -323,5 +325,16 @@ public class SettingPersistenceHelper {
         fields.setRanobedbId(true);
         fields.setRanobedbRating(true);
         return fields;
+    }
+
+    public List<BookFileType> getDefaultPreferredBookFormatOrder() {
+        return List.of(
+                BookFileType.EPUB,
+                BookFileType.PDF,
+                BookFileType.CBX,
+                BookFileType.FB2,
+                BookFileType.MOBI,
+                BookFileType.AZW3
+        );
     }
 }

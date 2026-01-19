@@ -21,6 +21,8 @@ export interface AdditionalFile extends FileInfo {
   id: number;
   bookId: number;
   additionalFileType: AdditionalFileType;
+  bookType?: BookType;
+  isBook?: boolean;
   description?: string;
   addedOn?: string;
 }

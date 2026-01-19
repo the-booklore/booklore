@@ -4,7 +4,10 @@ import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.response.PdfBookInfo;
 import com.adityachandel.booklore.model.dto.response.PdfOutlineItem;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.service.book.PreferredBookFileResolver;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +42,7 @@ public class PdfReaderService {
     private static final float DEFAULT_DPI = 200f;
 
     private final BookRepository bookRepository;
+    private final PreferredBookFileResolver preferredBookFileResolver;
     private final Map<String, CachedPdfMetadata> metadataCache = new ConcurrentHashMap<>();
 
     private static class CachedPdfMetadata {
@@ -55,8 +59,8 @@ public class PdfReaderService {
         }
     }
 
-    public List<Integer> getAvailablePages(Long bookId) {
-        Path pdfPath = getBookPath(bookId);
+    public List<Integer> getAvailablePages(Long bookId, BookFileType targetFormat) {
+        Path pdfPath = getBookPath(bookId, targetFormat);
         try {
             CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
             return IntStream.rangeClosed(1, metadata.pageCount)
@@ -68,8 +72,8 @@ public class PdfReaderService {
         }
     }
 
-    public PdfBookInfo getBookInfo(Long bookId) {
-        Path pdfPath = getBookPath(bookId);
+    public PdfBookInfo getBookInfo(Long bookId, BookFileType targetFormat) {
+        Path pdfPath = getBookPath(bookId, targetFormat);
         try {
             CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
             return PdfBookInfo.builder()
@@ -82,17 +86,19 @@ public class PdfReaderService {
         }
     }
 
-    public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {
-        Path pdfPath = getBookPath(bookId);
+    public void streamPageImage(Long bookId, int page, OutputStream outputStream, BookFileType targetFormat) throws IOException {
+        Path pdfPath = getBookPath(bookId, targetFormat);
         CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
         validatePageRequest(bookId, page, metadata.pageCount);
         renderPageToStream(pdfPath, page, outputStream);
     }
 
-    private Path getBookPath(Long bookId) {
+    private Path getBookPath(Long bookId, BookFileType targetFormat) {
         BookEntity bookEntity = bookRepository.findById(bookId)
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        String bookFullPath = FileUtils.getBookFullPath(bookEntity);
+        BookFileEntity bookFile = preferredBookFileResolver.resolvePrimaryBookFile(bookEntity, targetFormat);
+        String bookFullPath = FileUtils.getBookFileFullPath(bookEntity, bookFile);
+
         return Path.of(bookFullPath);
     }
 

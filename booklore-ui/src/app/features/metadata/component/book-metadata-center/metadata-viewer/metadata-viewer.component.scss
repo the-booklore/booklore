@@ -413,6 +413,13 @@
   gap: 0.375rem;
 }
 
+.file-type-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+
 .metadata-link {
   color: var(--primary-text-color);
   cursor: pointer;

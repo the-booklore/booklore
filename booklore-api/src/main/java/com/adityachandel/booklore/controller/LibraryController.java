@@ -4,6 +4,8 @@ import com.adityachandel.booklore.config.security.annotation.CheckLibraryAccess;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.Library;
 import com.adityachandel.booklore.model.dto.request.CreateLibraryRequest;
+import com.adityachandel.booklore.model.dto.request.PreferredBookFormatOrderRequest;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.service.library.LibraryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -113,6 +115,28 @@ public class LibraryController {
             @Parameter(description = "File naming pattern body") @RequestBody Map<String, String> body) {
         String pattern = body.get("fileNamingPattern");
         Library updated = libraryService.setFileNamingPattern(libraryId, pattern);
+        return ResponseEntity.ok(updated);
+    }
+
+    @Operation(summary = "Get preferred book format order", description = "Retrieve the preferred book format order for a library.")
+    @ApiResponse(responseCode = "200", description = "Preferred book format order returned successfully")
+    @GetMapping("/{libraryId}/preferred-book-format-order")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    public ResponseEntity<List<BookFileType>> getPreferredBookFormatOrder(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId) {
+        return ResponseEntity.ok(libraryService.getLibrary(libraryId).getPreferredBookFormatOrder());
+    }
+
+    @Operation(summary = "Set preferred book format order", description = "Set the preferred book format order for a library. Requires admin or manipulation permission.")
+    @ApiResponse(responseCode = "200", description = "Preferred book format order updated successfully")
+    @PatchMapping("/{libraryId}/preferred-book-format-order")
+    @CheckLibraryAccess(libraryIdParam = "libraryId")
+    @PreAuthorize("@securityUtil.canManageLibrary() or @securityUtil.isAdmin()")
+    public ResponseEntity<Library> setPreferredBookFormatOrder(
+            @Parameter(description = "ID of the library") @PathVariable long libraryId,
+            @Parameter(description = "Preferred book format order body")
+            @RequestBody PreferredBookFormatOrderRequest request) {
+        Library updated = libraryService.setPreferredBookFormatOrder(libraryId, request.getPreferredBookFormatOrder());
         return ResponseEntity.ok(updated);
     }
 

@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.model.dto.settings;
 
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,4 +37,5 @@ public class AppSettings {
     private KoboSettings koboSettings;
     private CoverCroppingSettings coverCroppingSettings;
     private MetadataProviderSpecificFields metadataProviderSpecificFields;
+    private List<BookFileType> preferredBookFormatOrder;
 }

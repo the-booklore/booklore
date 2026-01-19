@@ -70,6 +70,8 @@ class BookServiceTest {
     private MonitoringRegistrationService monitoringRegistrationService;
     @Mock
     private BookUpdateService bookUpdateService;
+    @Mock
+    private PreferredBookFileResolver preferredBookFileResolver;
 
     @InjectMocks
     private BookService bookService;
@@ -308,9 +310,9 @@ class BookServiceTest {
     @Test
     void downloadBook_delegatesToDownloadService() {
         ResponseEntity<Resource> response = ResponseEntity.ok(mock(Resource.class));
-        when(bookDownloadService.downloadBook(1L)).thenReturn(response);
+        when(bookDownloadService.downloadBook(1L, null)).thenReturn(response);
 
-        ResponseEntity<Resource> result = bookService.downloadBook(1L);
+        ResponseEntity<Resource> result = bookService.downloadBook(1L, null);
 
         assertEquals(response, result);
     }
@@ -319,12 +321,16 @@ class BookServiceTest {
     void getBookContent_returnsByteArrayResource() throws Exception {
         BookEntity entity = new BookEntity();
         entity.setId(10L);
+        BookFileEntity bookFile = new BookFileEntity();
+        bookFile.setId(1L);
+        bookFile.setBook(entity);
         when(bookRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(preferredBookFileResolver.resolvePrimaryBookFile(entity, null)).thenReturn(bookFile);
         Path path = Paths.get("/tmp/bookcontent.txt");
         Files.write(path, "hello".getBytes());
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
-            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn(path.toString());
-            ResponseEntity<ByteArrayResource> response = bookService.getBookContent(10L);
+            fileUtilsMock.when(() -> FileUtils.getBookFileFullPath(entity, bookFile)).thenReturn(path.toString());
+            ResponseEntity<ByteArrayResource> response = bookService.getBookContent(10L, null);
             assertEquals(HttpStatus.OK, response.getStatusCode());
             assertArrayEquals("hello".getBytes(), response.getBody().getByteArray());
         } finally {
@@ -335,17 +341,21 @@ class BookServiceTest {
     @Test
     void getBookContent_bookNotFound_throwsException() {
         when(bookRepository.findById(404L)).thenReturn(Optional.empty());
-        assertThrows(APIException.class, () -> bookService.getBookContent(404L));
+        assertThrows(APIException.class, () -> bookService.getBookContent(404L, null));
     }
 
     @Test
     void getBookContent_fileIoError_throwsIOException() throws Exception {
         BookEntity entity = new BookEntity();
         entity.setId(12L);
+        BookFileEntity bookFile = new BookFileEntity();
+        bookFile.setId(1L);
+        bookFile.setBook(entity);
         when(bookRepository.findById(12L)).thenReturn(Optional.of(entity));
+        when(preferredBookFileResolver.resolvePrimaryBookFile(entity, null)).thenReturn(bookFile);
         try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
-            fileUtilsMock.when(() -> FileUtils.getBookFullPath(entity)).thenReturn("/tmp/nonexistentfile.txt");
-            assertThrows(java.io.FileNotFoundException.class, () -> bookService.getBookContent(12L));
+            fileUtilsMock.when(() -> FileUtils.getBookFileFullPath(entity, bookFile)).thenReturn("/tmp/nonexistentfile.txt");
+            assertThrows(java.io.FileNotFoundException.class, () -> bookService.getBookContent(12L, null));
         }
     }
 

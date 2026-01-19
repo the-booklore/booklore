@@ -6,6 +6,7 @@ import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.PermissionType;
 import com.adityachandel.booklore.util.UserPermissionUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -137,6 +138,7 @@ public class AppSettingService {
                 true
             )
         );
+        builder.preferredBookFormatOrder(settingPersistenceHelper.getJsonSetting(settingsMap, AppSettingKey.PREFERRED_BOOK_FORMAT_ORDER, new TypeReference<List<BookFileType>>() {}, settingPersistenceHelper.getDefaultPreferredBookFormatOrder(), true));
         builder.autoBookSearch(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.AUTO_BOOK_SEARCH, "true")));
         builder.uploadPattern(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.UPLOAD_FILE_PATTERN, "{authors}/<{series}/><{seriesIndex}. >{title}< - {authors}>< ({year})>"));
         builder.similarBookRecommendation(Boolean.parseBoolean(settingPersistenceHelper.getOrCreateSetting(AppSettingKey.SIMILAR_BOOK_RECOMMENDATION, "true")));

@@ -144,6 +144,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
           this.bookType = book.bookType;
           this.currentBook = book;
 
+          const targetFormat = this.route.snapshot.queryParamMap.get('targetFormat') || undefined;
+          const effectiveBookType = targetFormat === 'PDF' ? 'PDF' : this.bookType;
+
           this.pageTitle.setBookPageTitle(book);
 
           const title = book.metadata?.title || book.fileName;
@@ -154,14 +157,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
             this.loadSeriesNavigationAsync(book);
           }
 
-          const pagesObservable = this.bookType === CbxReaderComponent.TYPE_PDF
-            ? this.pdfReaderService.getAvailablePages(this.bookId)
+          const pagesObservable = effectiveBookType === CbxReaderComponent.TYPE_PDF
+            ? this.pdfReaderService.getAvailablePages(this.bookId, targetFormat)
             : this.cbxReaderService.getAvailablePages(this.bookId);
 
           pagesObservable.subscribe({
             next: (pages) => {
               this.pages = pages;
-              if (this.bookType === CbxReaderComponent.TYPE_CBX) {
+              if (effectiveBookType === CbxReaderComponent.TYPE_CBX) {
                 const global = userSettings.perBookSetting.cbx === CbxReaderComponent.SETTING_GLOBAL;
                 this.pageViewMode = global
                   ? this.CbxPageViewMode[userSettings.cbxReaderSetting.pageViewMode as keyof typeof CbxPageViewMode] || this.CbxPageViewMode.SINGLE_PAGE
@@ -190,7 +193,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
                 }
               }
 
-              if (this.bookType === CbxReaderComponent.TYPE_PDF) {
+              if (effectiveBookType === CbxReaderComponent.TYPE_PDF) {
                 const global = userSettings.perBookSetting.pdf === CbxReaderComponent.SETTING_GLOBAL;
                 this.pageViewMode = global
                   ? PdfPageViewMode[userSettings.newPdfReaderSetting.pageViewMode as keyof typeof PdfPageViewMode] || PdfPageViewMode.SINGLE_PAGE
@@ -727,7 +730,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   }
 
   private getPageImageUrl(pageIndex: number): string {
-    return this.bookType === CbxReaderComponent.TYPE_PDF
+    const targetFormat = this.route.snapshot.queryParamMap.get('targetFormat');
+    const effectiveBookType = targetFormat === 'PDF' ? 'PDF' : this.bookType;
+    return effectiveBookType === CbxReaderComponent.TYPE_PDF
       ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex])
       : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex]);
   }
@@ -764,10 +769,13 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10
       : 0;
 
-    if (this.bookType === CbxReaderComponent.TYPE_CBX) {
+    const targetFormat = this.route.snapshot.queryParamMap.get('targetFormat');
+    const effectiveBookType = targetFormat === 'PDF' ? 'PDF' : this.bookType;
+
+    if (effectiveBookType === CbxReaderComponent.TYPE_CBX) {
       this.bookService.saveCbxProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
     }
-    if (this.bookType === CbxReaderComponent.TYPE_PDF) {
+    if (effectiveBookType === CbxReaderComponent.TYPE_PDF) {
       this.bookService.savePdfProgress(this.bookId, this.currentPage + 1, percentage).subscribe();
     }
   }

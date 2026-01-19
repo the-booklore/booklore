@@ -3,6 +3,7 @@ package com.adityachandel.booklore.service.book;
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.KoboSettings;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
@@ -42,13 +43,15 @@ public class BookDownloadService {
     private final KepubConversionService kepubConversionService;
     private final CbxConversionService cbxConversionService;
     private final AppSettingService appSettingService;
+    private final PreferredBookFileResolver preferredBookFileResolver;
 
-    public ResponseEntity<Resource> downloadBook(Long bookId) {
+    public ResponseEntity<Resource> downloadBook(Long bookId, BookFileType targetFormat) {
         try {
             BookEntity bookEntity = bookRepository.findById(bookId)
                     .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
 
-            Path file = Paths.get(FileUtils.getBookFullPath(bookEntity)).toAbsolutePath().normalize();
+            BookFileEntity bookFileEntity = preferredBookFileResolver.resolvePrimaryBookFile(bookEntity, targetFormat);
+            Path file = Paths.get(FileUtils.getBookFileFullPath(bookEntity, bookFileEntity)).toAbsolutePath().normalize();
             File bookFile = file.toFile();
 
             if (!bookFile.exists()) {

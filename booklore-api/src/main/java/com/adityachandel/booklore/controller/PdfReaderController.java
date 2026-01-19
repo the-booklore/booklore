@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.controller;
 
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.dto.response.PdfBookInfo;
 import com.adityachandel.booklore.service.reader.PdfReaderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -22,11 +24,13 @@ public class PdfReaderController {
 
     private final PdfReaderService pdfReaderService;
 
-    @Operation(summary = "List pages in a PDF book", description = "Retrieve a list of available page numbers for a PDF book.")
+    @Operation(summary = "List pages in a PDF book", description = "Retrieve a list of available page numbers for a PDF book. Optionally specify a target format.")
     @ApiResponse(responseCode = "200", description = "Page numbers returned successfully")
     @GetMapping("/{bookId}/pages")
-    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId) {
-        return pdfReaderService.getAvailablePages(bookId);
+    public List<Integer> listPages(@Parameter(description = "ID of the book") @PathVariable Long bookId,
+            @Parameter(description = "Target format to read (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat) {
+        return pdfReaderService.getAvailablePages(bookId, targetFormat);
     }
 
     @Operation(summary = "Get book info for a PDF book", description = "Retrieve book information including page count and hierarchical outline/table of contents.")

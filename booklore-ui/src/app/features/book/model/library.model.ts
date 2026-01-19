@@ -14,6 +14,7 @@ export interface Library {
   paths: LibraryPath[];
   scanMode?: LibraryScanMode;
   defaultBookFormat?: BookFileType;
+  preferredBookFormatOrder?: BookFileType[];
 }
 
 export interface LibraryPath {

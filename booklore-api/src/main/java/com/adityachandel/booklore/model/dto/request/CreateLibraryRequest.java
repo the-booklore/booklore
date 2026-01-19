@@ -32,4 +32,5 @@ public class CreateLibraryRequest {
     private boolean watch;
     private LibraryScanMode scanMode;
     private BookFileType defaultBookFormat;
+    private List<BookFileType> preferredBookFormatOrder;
 }

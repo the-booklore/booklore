@@ -207,6 +207,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
 
   private loadBookFromAPI(): Observable<void> {
     this.bookId = +this.route.snapshot.paramMap.get('bookId')!;
+    const targetFormat = this.route.snapshot.paramMap.get('targetFormat') || undefined;
 
     return this.stateService.initializeState(this.bookId).pipe(
       switchMap(() => forkJoin({
@@ -215,16 +216,17 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       })),
       switchMap(({book}) => {
         this.book = book;
+        const effectiveFormat = (targetFormat || book.bookType) as BookType;
 
-        this.progressService.initialize(this.bookId, book.bookType!);
+        this.progressService.initialize(this.bookId, effectiveFormat);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
         // Use streaming for EPUB if query param is set, blob loading otherwise (default)
         const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
-        const loadBook$ = book.bookType === 'EPUB' && useStreaming
+        const loadBook$ = effectiveFormat === 'EPUB' && useStreaming
           ? this.viewManager.loadEpubStreaming(this.bookId)
-          : this.loadBookBlob();
+          : this.loadBookBlob(targetFormat);
 
         return loadBook$.pipe(
           tap(() => {
@@ -246,8 +248,8 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     );
   }
 
-  private loadBookBlob(): Observable<void> {
-    return this.bookService.getFileContent(this.bookId).pipe(
+  private loadBookBlob(targetFormat?: string): Observable<void> {
+    return this.bookService.getFileContent(this.bookId, targetFormat).pipe(
       switchMap(fileBlob => {
         const fileUrl = URL.createObjectURL(fileBlob);
         this._fileUrl = fileUrl;

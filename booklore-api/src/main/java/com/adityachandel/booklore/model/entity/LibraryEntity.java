@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.model.entity;
 
+import com.adityachandel.booklore.convertor.BookFileTypeListConverter;
 import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -57,6 +58,10 @@ public class LibraryEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "default_book_format")
     private BookFileType defaultBookFormat;
+
+    @Convert(converter = BookFileTypeListConverter.class)
+    @Column(name = "preferred_book_format_order", columnDefinition = "TEXT")
+    private List<BookFileType> preferredBookFormatOrder;
 
     @PrePersist
     public void ensureIconType() {

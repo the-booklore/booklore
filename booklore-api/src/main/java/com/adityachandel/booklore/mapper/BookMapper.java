@@ -5,18 +5,25 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.service.book.PreferredBookFileResolver;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring", uses = {BookMetadataMapper.class, ShelfMapper.class, AdditionalFileMapper.class}, unmappedTargetPolicy = ReportingPolicy.IGNORE)
-public interface BookMapper {
+public abstract class BookMapper {
+
+    @Autowired
+    protected PreferredBookFileResolver preferredBookFileResolver;
 
     @Mapping(source = "library.id", target = "libraryId")
     @Mapping(source = "library.name", target = "libraryName")
@@ -30,7 +37,7 @@ public interface BookMapper {
     @Mapping(source = "bookFiles", target = "fileSizeKb", qualifiedByName = "mapPrimaryFileSizeKb")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
-    Book toBook(BookEntity bookEntity);
+    public abstract Book toBook(BookEntity bookEntity);
 
     @Mapping(source = "library.id", target = "libraryId")
     @Mapping(source = "library.name", target = "libraryName")
@@ -44,30 +51,30 @@ public interface BookMapper {
     @Mapping(source = "bookFiles", target = "fileSizeKb", qualifiedByName = "mapPrimaryFileSizeKb")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
-    Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
+    public abstract Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
 
-    default Set<String> mapAuthors(Set<AuthorEntity> authors) {
+    Set<String> mapAuthors(Set<AuthorEntity> authors) {
         if (authors == null) return null;
         return authors.stream()
                 .map(AuthorEntity::getName)
                 .collect(Collectors.toSet());
     }
 
-    default Set<String> mapCategories(Set<CategoryEntity> categories) {
+    Set<String> mapCategories(Set<CategoryEntity> categories) {
         if (categories == null) return null;
         return categories.stream()
                 .map(CategoryEntity::getName)
                 .collect(Collectors.toSet());
     }
 
-    default Set<String> mapMoods(Set<MoodEntity> moods) {
+    Set<String> mapMoods(Set<MoodEntity> moods) {
         if (moods == null) return null;
         return moods.stream()
                 .map(MoodEntity::getName)
                 .collect(Collectors.toSet());
     }
 
-    default Set<String> mapTags(Set<TagEntity> tags) {
+    Set<String> mapTags(Set<TagEntity> tags) {
         if (tags == null) return null;
         return tags.stream()
                 .map(TagEntity::getName)
@@ -75,7 +82,7 @@ public interface BookMapper {
     }
 
     @Named("mapLibraryPathIdOnly")
-    default LibraryPath mapLibraryPathIdOnly(LibraryPathEntity entity) {
+    LibraryPath mapLibraryPathIdOnly(LibraryPathEntity entity) {
         if (entity == null) return null;
         return LibraryPath.builder()
                 .id(entity.getId())
@@ -83,8 +90,8 @@ public interface BookMapper {
     }
 
     @Named("mapPrimaryBookType")
-    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
+    BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
+        BookFileEntity primary = getPrimaryBookFileFromList(bookFiles);
         return primary == null ? null : primary.getBookType();
     }
 
@@ -113,17 +120,17 @@ public interface BookMapper {
     }
 
     @Named("mapAlternativeFormats")
-    default List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
+    List<BookFile> mapAlternativeFormats(List<BookFileEntity> bookFiles) {
         if (bookFiles == null) return null;
         return bookFiles.stream()
                 .filter(bf -> bf.isBook())
-                .filter(bf -> !bf.equals(getPrimaryBookFile(bookFiles)))
+                .filter(bf -> !bf.equals(getPrimaryBookFileFromList(bookFiles)))
                 .map(this::toBookFile)
                 .toList();
     }
 
     @Named("mapSupplementaryFiles")
-    default List<BookFile> mapSupplementaryFiles(List<BookFileEntity> bookFiles) {
+    List<BookFile> mapSupplementaryFiles(List<BookFileEntity> bookFiles) {
         if (bookFiles == null)
             return null;
         return bookFiles.stream()
@@ -132,11 +139,16 @@ public interface BookMapper {
                 .toList();
     }
 
-    /*
-    * TODO: evolve the logic so that the user can select the primary book file format to be used.
-    * For now, we just return the first book file in the list.
-    */
-    default BookFileEntity getPrimaryBookFile(List<BookFileEntity> bookFiles) {
+    BookFileEntity getPrimaryBookFile(BookEntity bookEntity) {
+        if (bookEntity == null) return null;
+        try {
+            return preferredBookFileResolver.resolvePrimaryBookFile(bookEntity);
+        } catch (IllegalStateException e) {
+            return null;
+        }
+    }
+
+    BookFileEntity getPrimaryBookFileFromList(List<BookFileEntity> bookFiles) {
         if (bookFiles == null || bookFiles.isEmpty()) return null;
         return bookFiles.stream()
                 .filter(bf -> bf.isBook())
@@ -144,7 +156,28 @@ public interface BookMapper {
                 .orElse(null);
     }
 
-    default BookFile toBookFile(BookFileEntity entity) {
+    @AfterMapping
+    void enrichWithPrimaryFileInfo(BookEntity bookEntity, @MappingTarget Book book) {
+        BookFileEntity primaryFile = getPrimaryBookFile(bookEntity);
+        if (primaryFile != null) {
+            book.setBookType(primaryFile.getBookType());
+            book.setFileName(primaryFile.getFileName());
+            book.setFileSubPath(primaryFile.getFileSubPath());
+            book.setFileSizeKb(primaryFile.getFileSizeKb());
+
+            List<BookFileEntity> bookFiles = bookEntity.getBookFiles();
+            if (bookFiles != null) {
+                List<BookFile> alternativeFormats = bookFiles.stream()
+                        .filter(BookFileEntity::isBook)
+                        .filter(bf -> !bf.equals(primaryFile))
+                        .map(this::toBookFile)
+                        .toList();
+                book.setAlternativeFormats(alternativeFormats);
+            }
+        }
+    }
+
+    BookFile toBookFile(BookFileEntity entity) {
         if (entity == null) return null;
         return BookFile.builder()
                 .id(entity.getId())

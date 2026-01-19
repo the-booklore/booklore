@@ -61,7 +61,6 @@ public class BookCreatorService {
                 .fileSizeKb(fileSizeKb)
                 .addedOn(Instant.now())
                 .build();
-        bookEntity.getBookFiles().add(bookFileEntity);
 
         BookMetadataEntity metadata = BookMetadataEntity.builder()
                 .book(bookEntity)

@@ -191,7 +191,7 @@ class FolderAsBookFileProcessorExampleTest {
         // Then
         assertThat(libraryTestBuilder)
                 .hasBooks("Accounting 101")
-                .bookHasAdditionalFormats("Accounting 101", BookFileType.EPUB)
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.PDF)
                 .bookHasNoSupplementaryFiles("Accounting 101");
     }
 
@@ -228,7 +228,7 @@ class FolderAsBookFileProcessorExampleTest {
         // Then
         assertThat(libraryTestBuilder)
                 .hasBooks("Accounting 101")
-                .bookHasAdditionalFormats("Accounting 101", BookFileType.EPUB)
+                .bookHasAdditionalFormats("Accounting 101", BookFileType.PDF)
                 .bookHasSupplementaryFiles("Accounting 101", "sources.zip");
     }
 

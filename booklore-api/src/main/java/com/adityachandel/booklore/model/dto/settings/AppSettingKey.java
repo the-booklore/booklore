@@ -30,6 +30,7 @@ public enum AppSettingKey {
     METADATA_PROVIDER_SPECIFIC_FIELDS   ("metadata_provider_specific_fields",    true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_METADATA_CONFIG)),
 
     // ADMIN + MANAGE_GLOBAL_PREFERENCES
+    PREFERRED_BOOK_FORMAT_ORDER         ("preferred_book_format_order",          true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     COVER_CROPPING_SETTINGS             ("cover_cropping_settings",              true,  false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     AUTO_BOOK_SEARCH                    ("auto_book_search",                     false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),
     SIMILAR_BOOK_RECOMMENDATION         ("similar_book_recommendation",          false, false, List.of(PermissionType.ADMIN, PermissionType.MANAGE_GLOBAL_PREFERENCES)),

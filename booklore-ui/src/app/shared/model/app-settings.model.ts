@@ -1,4 +1,5 @@
 import {MetadataRefreshOptions} from '../../features/metadata/model/request/metadata-refresh-options.model';
+import { BookFileType } from '../../features/book/model/library.model';
 
 export interface MetadataMatchWeights {
   title: number;
@@ -161,6 +162,7 @@ export interface AppSettings {
   metadataDownloadOnBookdrop: boolean;
   telemetryEnabled: boolean;
   metadataProviderSpecificFields: MetadataProviderSpecificFields;
+  preferredBookFormatOrder?: BookFileType[];
 }
 
 export interface MetadataProviderSpecificFields {
@@ -204,4 +206,5 @@ export enum AppSettingKey {
   COVER_CROPPING_SETTINGS = 'COVER_CROPPING_SETTINGS',
   TELEMETRY_ENABLED = 'TELEMETRY_ENABLED',
   METADATA_PROVIDER_SPECIFIC_FIELDS = 'METADATA_PROVIDER_SPECIFIC_FIELDS',
+  PREFERRED_BOOK_FORMAT_ORDER = 'PREFERRED_BOOK_FORMAT_ORDER',
 }

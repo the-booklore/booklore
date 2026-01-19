@@ -81,6 +81,7 @@ public class LibraryService {
             library.setScanMode(request.getScanMode());
         }
         library.setDefaultBookFormat(request.getDefaultBookFormat());
+        library.setPreferredBookFormatOrder(request.getPreferredBookFormatOrder());
 
         Set<String> currentPaths = library.getLibraryPaths().stream()
                 .map(LibraryPathEntity::getPath)
@@ -161,6 +162,7 @@ public class LibraryService {
                 .watch(request.isWatch())
                 .scanMode(request.getScanMode() != null ? request.getScanMode() : LibraryScanMode.FILE_AS_BOOK)
                 .defaultBookFormat(request.getDefaultBookFormat())
+                .preferredBookFormatOrder(request.getPreferredBookFormatOrder())
                 .users(List.of(user.get()))
                 .build();
 
@@ -255,6 +257,32 @@ public class LibraryService {
         LibraryEntity library = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         library.setFileNamingPattern(pattern);
         return libraryMapper.toLibrary(libraryRepository.save(library));
+    }
+
+    public Library setPreferredBookFormatOrder(long libraryId, List<BookFileType> preferredBookFormatOrder) {
+        LibraryEntity library = libraryRepository.findById(libraryId)
+                .orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
+
+        List<BookFileType> validatedOrder = validatePreferredBookFormatOrder(preferredBookFormatOrder);
+        library.setPreferredBookFormatOrder(validatedOrder);
+        return libraryMapper.toLibrary(libraryRepository.save(library));
+    }
+
+    private List<BookFileType> validatePreferredBookFormatOrder(List<BookFileType> preferredOrder) {
+        if (preferredOrder == null || preferredOrder.isEmpty()) {
+            return null;
+        }
+
+        List<BookFileType> filtered = preferredOrder.stream()
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (filtered.isEmpty()) {
+            return null;
+        }
+
+        return filtered;
     }
 
     public int scanLibraryPaths(CreateLibraryRequest request) {

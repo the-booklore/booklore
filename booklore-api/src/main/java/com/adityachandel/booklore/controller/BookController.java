@@ -12,6 +12,7 @@ import com.adityachandel.booklore.model.dto.request.ShelvesAssignmentRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.dto.response.PersonalRatingUpdateResponse;
+import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.ResetProgressType;
 import com.adityachandel.booklore.service.book.BookService;
 import com.adityachandel.booklore.service.book.BookUpdateService;
@@ -98,12 +99,15 @@ public class BookController {
         return ResponseEntity.ok(bookMetadataService.getComicInfoMetadata(bookId));
     }
 
-    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading.")
+    @Operation(summary = "Get book content", description = "Retrieve the binary content of a book for reading. Optionally specify a target format.")
     @ApiResponse(responseCode = "200", description = "Book content returned successfully")
     @GetMapping("/{bookId}/content")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<ByteArrayResource> getBookContent(@Parameter(description = "ID of the book") @PathVariable long bookId) throws IOException {
-        return bookService.getBookContent(bookId);
+    public ResponseEntity<ByteArrayResource> getBookContent(
+            @Parameter(description = "ID of the book") @PathVariable long bookId,
+            @Parameter(description = "Target format to read (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat) throws IOException {
+        return bookService.getBookContent(bookId, targetFormat);
     }
 
     @Operation(summary = "Download book", description = "Download the book file. Requires download permission or admin.")
@@ -114,8 +118,11 @@ public class BookController {
     @GetMapping("/{bookId}/download")
     @PreAuthorize("@securityUtil.canDownload() or @securityUtil.isAdmin()")
     @CheckBookAccess(bookIdParam = "bookId")
-    public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
-        return bookService.downloadBook(bookId);
+    public ResponseEntity<Resource> downloadBook(
+            @Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId,
+            @Parameter(description = "Target format to download (optional, uses preferred format if not specified)")
+            @RequestParam(required = false) BookFileType targetFormat) {
+        return bookService.downloadBook(bookId, targetFormat);
     }
 
     @Operation(summary = "Get viewer settings", description = "Retrieve viewer settings for a specific book.")

@@ -8,6 +8,7 @@ import com.adityachandel.booklore.model.dto.request.ReadProgressRequest;
 import com.adityachandel.booklore.model.dto.response.BookDeletionResponse;
 import com.adityachandel.booklore.model.dto.response.BookStatusUpdateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
@@ -57,6 +58,7 @@ public class BookService {
     private final BookDownloadService bookDownloadService;
     private final MonitoringRegistrationService monitoringRegistrationService;
     private final BookUpdateService bookUpdateService;
+    private final PreferredBookFileResolver preferredBookFileResolver;
     private final EbookViewerPreferenceRepository ebookViewerPreferencesRepository;
 
 
@@ -235,13 +237,14 @@ public class BookService {
         return getBookCover(bookEntity.getId());
     }
 
-    public ResponseEntity<Resource> downloadBook(Long bookId) {
-        return bookDownloadService.downloadBook(bookId);
+    public ResponseEntity<Resource> downloadBook(Long bookId, BookFileType targetFormat) {
+        return bookDownloadService.downloadBook(bookId, targetFormat);
     }
 
-    public ResponseEntity<ByteArrayResource> getBookContent(long bookId) throws IOException {
+    public ResponseEntity<ByteArrayResource> getBookContent(long bookId, BookFileType targetFormat) throws IOException {
         BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        try (FileInputStream inputStream = new FileInputStream(FileUtils.getBookFullPath(bookEntity))) {
+        BookFileEntity bookFile = preferredBookFileResolver.resolvePrimaryBookFile(bookEntity, targetFormat);
+        try (FileInputStream inputStream = new FileInputStream(FileUtils.getBookFileFullPath(bookEntity, bookFile))) {
             return ResponseEntity.ok()
                     .contentType(MediaType.APPLICATION_OCTET_STREAM)
                     .body(new ByteArrayResource(inputStream.readAllBytes()));

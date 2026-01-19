@@ -244,7 +244,7 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming'): void {
+  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming', targetFormat?: string): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -254,10 +254,12 @@ export class BookService {
       return;
     }
 
+    const effectiveFormat = targetFormat || book.bookType;
+
     let baseUrl: string | null = null;
     let queryParams: Record<string, any> | undefined;
 
-    switch (book.bookType) {
+    switch (effectiveFormat) {
       case 'PDF':
         baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
         break;
@@ -281,12 +283,14 @@ export class BookService {
     }
 
     if (!baseUrl) {
-      console.error('Unsupported book type:', book.bookType);
+      console.error('Unsupported book type:', effectiveFormat);
       return;
     }
 
+    if (targetFormat) {
+      queryParams = { ...queryParams, targetFormat };
+    }
     this.router.navigate([`/${baseUrl}/book/${book.id}`], queryParams ? { queryParams } : undefined);
-
     this.updateLastReadTime(book.id);
   }
 
@@ -300,8 +304,9 @@ export class BookService {
 
   /*------------------ File Operations ------------------*/
 
-  getFileContent(bookId: number): Observable<Blob> {
-    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
+  getFileContent(bookId: number, targetFormat?: string): Observable<Blob> {
+    const url = targetFormat ? `${this.url}/${bookId}/content?targetFormat=${targetFormat}` : `${this.url}/${bookId}/content`;
+    return this.http.get<Blob>(url, {responseType: 'blob' as 'json'});
   }
 
   downloadFile(book: Book): void {

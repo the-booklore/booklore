@@ -191,6 +191,38 @@
       </div>
     </div>
 
+    <!-- Preferred Book Format Order Section -->
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-sort-alt"></i>
+          Preferred Book Format Order
+        </h3>
+      </div>
+
+      <div class="settings-card">
+        <div class="setting-item">
+          <div class="setting-info">
+            <p class="setting-description">
+              <i class="pi pi-info-circle"></i>
+              When a book has multiple formats (e.g., EPUB and PDF), this order determines which format is used by default for reading and downloading. Drag and drop to reorder. The first format in the list has the highest priority.
+            </p>
+            <div class="format-order-list" cdkDropList (cdkDropListDropped)="onFormatOrderDrop($event)">
+              @for (format of preferredBookFormatOrder; track format; let i = $index) {
+                <div class="format-order-item" cdkDrag>
+                  <div class="format-drag-handle" cdkDragHandle>
+                    <i class="pi pi-bars"></i>
+                  </div>
+                  <span class="format-position">{{ i + 1 }}</span>
+                  <span class="format-name">{{ format }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Telemetry Setting Section -->
     <div class="preferences-section">
       <div class="section-header">

@@ -39,7 +39,7 @@ public class OpdsController {
     })
     @GetMapping("/{bookId}/download")
     public ResponseEntity<Resource> downloadBook(@Parameter(description = "ID of the book to download") @PathVariable("bookId") Long bookId) {
-        return bookService.downloadBook(bookId);
+        return bookService.downloadBook(bookId, null);
     }
 
     @Operation(summary = "Get book cover image", description = "Retrieve the cover image for a book by its ID.")
