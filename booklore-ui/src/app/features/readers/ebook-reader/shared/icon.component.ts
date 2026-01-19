@@ -9,6 +9,8 @@ export type ReaderIconName =
   | 'chevron-down'
   | 'chevron-first'
   | 'chevron-last'
+  | 'chevron-double-left'
+  | 'chevron-double-right'
   | 'dots-vertical'
   | 'bookmark'
   | 'settings'
@@ -19,7 +21,12 @@ export type ReaderIconName =
   | 'search'
   | 'note'
   | 'plus'
-  | 'minus';
+  | 'minus'
+  | 'fit-page'
+  | 'fit-width'
+  | 'fit-height'
+  | 'actual-size'
+  | 'auto-fit';
 
 interface IconPath {
   d: string;
@@ -51,6 +58,14 @@ const ICONS: Record<ReaderIconName, IconPath[]> = {
     {d: '18,17 13,12 18,7', type: 'polyline'}
   ],
   'chevron-last': [
+    {d: '13,17 18,12 13,7', type: 'polyline'},
+    {d: '6,17 11,12 6,7', type: 'polyline'}
+  ],
+  'chevron-double-left': [
+    {d: '11,17 6,12 11,7', type: 'polyline'},
+    {d: '18,17 13,12 18,7', type: 'polyline'}
+  ],
+  'chevron-double-right': [
     {d: '13,17 18,12 13,7', type: 'polyline'},
     {d: '6,17 11,12 6,7', type: 'polyline'}
   ],
@@ -102,6 +117,36 @@ const ICONS: Record<ReaderIconName, IconPath[]> = {
   ],
   'minus': [
     {d: 'M5,12 L19,12', type: 'line'}
+  ],
+
+  // Fit mode icons
+  'fit-page': [
+    {d: 'M3 3h18v18H3V3z'},
+    {d: 'M7 7h10v10H7V7z'}
+  ],
+  'fit-width': [
+    {d: 'M21,12 L17,8', type: 'line'},
+    {d: 'M21,12 L17,16', type: 'line'},
+    {d: 'M3,12 L7,8', type: 'line'},
+    {d: 'M3,12 L7,16', type: 'line'},
+    {d: 'M3,12 L21,12', type: 'line'}
+  ],
+  'fit-height': [
+    {d: 'M12,3 L8,7', type: 'line'},
+    {d: 'M12,3 L16,7', type: 'line'},
+    {d: 'M12,21 L8,17', type: 'line'},
+    {d: 'M12,21 L16,17', type: 'line'},
+    {d: 'M12,3 L12,21', type: 'line'}
+  ],
+  'actual-size': [
+    {d: 'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'},
+    {d: 'M9,8 L9,16', type: 'line'},
+    {d: 'M12,12 L12,16', type: 'line'},
+    {d: 'M15,8 L15,16', type: 'line'}
+  ],
+  'auto-fit': [
+    {d: 'M12 3v3m0 12v3M3 12h3m12 0h3'},
+    {d: 'M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0-8 0', type: 'path'}
   ]
 };
 

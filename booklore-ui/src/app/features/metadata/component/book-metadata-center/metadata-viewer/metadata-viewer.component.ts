@@ -594,7 +594,11 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   goToFileType(filePath: string | undefined): void {
     const fileType = this.getFileExtension(filePath);
     if (fileType) {
-      this.handleMetadataClick('bookType', fileType.toUpperCase());
+      let filterValue = fileType.toUpperCase();
+      if (['CBR', 'CBZ', 'CB7', 'CBT'].includes(filterValue)) {
+        filterValue = 'CBX';
+      }
+      this.handleMetadataClick('bookType', filterValue);
     }
   }
 

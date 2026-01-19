@@ -85,6 +85,17 @@ describe('SortService', () => {
     expect(sorted.map(b => b.metadata?.authors?.[0])).toEqual(['Alice', 'Alice', 'Bob']);
   });
 
+  it('should sort by author surname', () => {
+    const testBooks = [
+      makeBook({ id: 1, metadata: { bookId: 1, title: 'T1', authors: ['Terry Pratchett'] } }),
+      makeBook({ id: 2, metadata: { bookId: 2, title: 'T2', authors: ['Neil Gaiman'] } }),
+      makeBook({ id: 3, metadata: { bookId: 3, title: 'T3', authors: ['Stephen King'] } }),
+    ];
+
+    const sorted = service.applySort(testBooks, { field: 'authorSurnameVorname', direction: SortDirection.ASCENDING, label: 'Author (Surname)' });
+    expect(sorted.map(b => b.metadata?.authors?.[0])).toEqual(['Neil Gaiman', 'Stephen King', 'Terry Pratchett']);
+  });
+
   it('should sort by publishedDate descending', () => {
     const sorted = service.applySort(books, {field: 'publishedDate', direction: SortDirection.DESCENDING, label: 'Published Date'});
     expect(sorted.map(b => b.metadata?.title)).toEqual(['Book 1', 'Book 10', 'Book 2']);

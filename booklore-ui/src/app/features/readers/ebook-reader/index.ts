@@ -30,6 +30,5 @@ export * from './dialogs/metadata-dialog.component';
 export * from './dialogs/note-dialog.component';
 
 export * from './shared/icon.component';
-export * from './shared/selection-popup.component';
 export * from './shared/visibility.util';
 export * from './shared/header-footer.util';

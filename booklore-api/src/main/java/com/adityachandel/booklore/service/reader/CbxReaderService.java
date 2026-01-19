@@ -14,6 +14,8 @@ import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.pdfbox.io.IOUtils;
 import org.springframework.stereotype.Service;
 
+import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -78,6 +80,35 @@ public class CbxReaderService {
             log.error("Failed to read archive for book {}", bookId, e);
             throw ApiError.FILE_READ_ERROR.createException("Failed to read archive: " + e.getMessage());
         }
+    }
+
+    public List<CbxPageInfo> getPageInfo(Long bookId) {
+        Path cbxPath = getBookPath(bookId);
+        try {
+            List<String> imageEntries = getImageEntriesFromArchiveCached(cbxPath);
+            List<CbxPageInfo> pageInfoList = new ArrayList<>();
+            for (int i = 0; i < imageEntries.size(); i++) {
+                String entryPath = imageEntries.get(i);
+                String displayName = extractDisplayName(entryPath);
+                pageInfoList.add(CbxPageInfo.builder()
+                        .pageNumber(i + 1)
+                        .displayName(displayName)
+                        .build());
+            }
+            return pageInfoList;
+        } catch (IOException e) {
+            log.error("Failed to read archive for book {}", bookId, e);
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read archive: " + e.getMessage());
+        }
+    }
+
+    private String extractDisplayName(String entryPath) {
+        String fileName = baseName(entryPath);
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            return fileName.substring(0, lastDotIndex);
+        }
+        return fileName;
     }
 
     public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {

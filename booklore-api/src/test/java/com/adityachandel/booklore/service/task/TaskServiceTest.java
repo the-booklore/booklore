@@ -101,7 +101,7 @@ class TaskServiceTest {
 
     @Test
     void testExecuteTaskThrowsForUnknownTaskType() {
-        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEAR_PDF_CACHE).triggeredByCron(false).build();
+        TaskCreateRequest req = TaskCreateRequest.builder().taskType(TaskType.CLEANUP_DELETED_BOOKS).triggeredByCron(false).build();
         BookLoreUser user = new BookLoreUser();
         user.setId(1L);
         user.setUsername("user1");

@@ -1,41 +1,59 @@
-import {Component, HostListener, inject, OnInit, OnDestroy} from '@angular/core';
+import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute, Router} from '@angular/router';
-import {CommonModule, Location} from '@angular/common';
+import {CommonModule} from '@angular/common';
+import {forkJoin, Subject} from 'rxjs';
+import {filter, first, takeUntil, timeout} from 'rxjs/operators';
 import {PageTitleService} from "../../../shared/service/page-title.service";
 import {CbxReaderService} from '../../book/service/cbx-reader.service';
 import {BookService} from '../../book/service/book.service';
-import {
-  CbxFitMode,
-  CbxPageSpread,
-  CbxPageViewMode,
-  CbxScrollMode,
-  PdfPageSpread,
-  PdfPageViewMode,
-  UserService,
-  CbxBackgroundColor
-} from '../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode, UserService} from '../../settings/user-management/user.service';
 import {MessageService} from 'primeng/api';
-import {forkJoin} from 'rxjs';
-import {filter, first, timeout} from 'rxjs/operators';
 import {Book, BookSetting, BookType} from '../../book/model/book.model';
 import {BookState} from '../../book/model/state/book-state.model';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {FormsModule} from "@angular/forms";
 import {NewPdfReaderService} from '../../book/service/new-pdf-reader.service';
 import {ReadingSessionService} from '../../../shared/service/reading-session.service';
+import {ReaderHeaderFooterVisibilityManager} from '../ebook-reader';
+
+import {CbxHeaderComponent} from './layout/header/cbx-header.component';
+import {CbxHeaderService} from './layout/header/cbx-header.service';
+import {CbxSidebarComponent} from './layout/sidebar/cbx-sidebar.component';
+import {CbxSidebarService} from './layout/sidebar/cbx-sidebar.service';
+import {CbxFooterComponent} from './layout/footer/cbx-footer.component';
+import {CbxFooterService} from './layout/footer/cbx-footer.service';
+import {CbxQuickSettingsComponent} from './layout/quick-settings/cbx-quick-settings.component';
+import {CbxQuickSettingsService} from './layout/quick-settings/cbx-quick-settings.service';
+import {CbxNoteDialogComponent, CbxNoteDialogData, CbxNoteDialogResult} from './dialogs/cbx-note-dialog.component';
+import {BookNoteV2} from '../../../shared/service/book-note-v2.service';
 
 
 @Component({
   selector: 'app-cbx-reader',
   standalone: true,
-  imports: [ProgressSpinner, FormsModule],
+  imports: [
+    CommonModule,
+    ProgressSpinner,
+    FormsModule,
+    CbxHeaderComponent,
+    CbxSidebarComponent,
+    CbxFooterComponent,
+    CbxQuickSettingsComponent,
+    CbxNoteDialogComponent
+  ],
+  providers: [
+    CbxHeaderService,
+    CbxSidebarService,
+    CbxFooterService,
+    CbxQuickSettingsService
+  ],
   templateUrl: './cbx-reader.component.html',
   styleUrl: './cbx-reader.component.scss'
 })
 export class CbxReaderComponent implements OnInit, OnDestroy {
-  bookType!: BookType;
+  private destroy$ = new Subject<void>();
 
-  goToPageInput: number | null = null;
+  bookType!: BookType;
   bookId!: number;
   pages: number[] = [];
   currentPage = 0;
@@ -43,8 +61,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   pageSpread: CbxPageSpread | PdfPageSpread = CbxPageSpread.ODD;
   pageViewMode: CbxPageViewMode | PdfPageViewMode = CbxPageViewMode.SINGLE_PAGE;
-  backgroundColor: CbxBackgroundColor = CbxBackgroundColor.GRAY;
-  fitMode: CbxFitMode = CbxFitMode.FIT_PAGE;
+  backgroundColor: CbxBackgroundColor | PdfBackgroundColor = CbxBackgroundColor.GRAY;
+  fitMode: CbxFitMode | PdfFitMode = CbxFitMode.FIT_PAGE;
+  scrollMode: CbxScrollMode | PdfScrollMode = CbxScrollMode.PAGINATED;
 
   private touchStartX = 0;
   private touchEndX = 0;
@@ -53,9 +72,26 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   nextBookInSeries: Book | null = null;
   previousBookInSeries: Book | null = null;
 
+  infiniteScrollPages: number[] = [];
+  preloadCount: number = 3;
+  isLoadingMore: boolean = false;
+
+  private preloadedImages = new Map<string, HTMLImageElement>();
+  previousImageUrls: string[] = [];
+  currentImageUrls: string[] = [];
+  isPageTransitioning = false;
+  imagesLoaded = false;
+
+  private visibilityManager!: ReaderHeaderFooterVisibilityManager;
+
+  isCurrentPageBookmarked = false;
+  currentPageHasNotes = false;
+  showNoteDialog = false;
+  noteDialogData: CbxNoteDialogData | null = null;
+  private editingNote: BookNoteV2 | null = null;
+
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private location = inject(Location);
   private cbxReaderService = inject(CbxReaderService);
   private pdfReaderService = inject(NewPdfReaderService);
   private bookService = inject(BookService);
@@ -63,25 +99,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   private messageService = inject(MessageService);
   private pageTitle = inject(PageTitleService);
   private readingSessionService = inject(ReadingSessionService);
-
-
-  showFitModeDropdown: boolean = false;
-  showMobileOptionsDropdown: boolean = false;
-  showFitModeSubmenu: boolean = false;
-
-  fitModeOptions = [
-    {value: CbxFitMode.FIT_PAGE, label: 'Fit Page', icon: '⬜'},
-    {value: CbxFitMode.FIT_WIDTH, label: 'Fit Width', icon: '↔️'},
-    {value: CbxFitMode.FIT_HEIGHT, label: 'Fit Height', icon: '↕️'},
-    {value: CbxFitMode.ACTUAL_SIZE, label: 'Actual Size', icon: '1:1'},
-    {value: CbxFitMode.AUTO, label: 'Automatic', icon: '🔄'}
-  ];
-
-  scrollMode: CbxScrollMode = CbxScrollMode.PAGINATED;
-
-  infiniteScrollPages: number[] = [];
-  preloadCount: number = 3;
-  isLoadingMore: boolean = false;
+  private headerService = inject(CbxHeaderService);
+  private sidebarService = inject(CbxSidebarService);
+  private footerService = inject(CbxFooterService);
+  private quickSettingsService = inject(CbxQuickSettingsService);
 
   protected readonly CbxScrollMode = CbxScrollMode;
   protected readonly CbxFitMode = CbxFitMode;
@@ -94,6 +115,17 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   private static readonly SETTING_GLOBAL = 'Global';
 
   ngOnInit() {
+    this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
+    this.visibilityManager.onStateChange((state) => {
+      this.headerService.setForceVisible(state.headerVisible);
+      this.footerService.setForceVisible(state.footerVisible);
+    });
+
+    this.subscribeToHeaderEvents();
+    this.subscribeToSidebarEvents();
+    this.subscribeToFooterEvents();
+    this.subscribeToQuickSettingsEvents();
+
     this.route.paramMap.subscribe((params) => {
       this.isLoading = true;
       this.bookId = +params.get('bookId')!;
@@ -113,6 +145,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
           this.currentBook = book;
 
           this.pageTitle.setBookPageTitle(book);
+
+          const title = book.metadata?.title || book.fileName;
+          this.headerService.initialize(this.bookId, title, this.destroy$);
+          this.sidebarService.initialize(this.bookId, book, this.destroy$);
 
           if (book.metadata?.seriesName) {
             this.loadSeriesNavigationAsync(book);
@@ -164,10 +200,28 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
                   ? PdfPageSpread[userSettings.newPdfReaderSetting.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread.ODD
                   : PdfPageSpread[bookSettings.newPdfSettings?.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread[userSettings.newPdfReaderSetting.pageSpread as keyof typeof PdfPageSpread] || PdfPageSpread.ODD;
 
+                this.fitMode = global
+                  ? PdfFitMode[userSettings.newPdfReaderSetting.fitMode as keyof typeof PdfFitMode] || PdfFitMode.FIT_PAGE
+                  : PdfFitMode[bookSettings.newPdfSettings?.fitMode as keyof typeof PdfFitMode] || PdfFitMode[userSettings.newPdfReaderSetting.fitMode as keyof typeof PdfFitMode] || PdfFitMode.FIT_PAGE;
+
+                this.scrollMode = global
+                  ? PdfScrollMode[userSettings.newPdfReaderSetting.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode.PAGINATED
+                  : PdfScrollMode[bookSettings.newPdfSettings?.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode[userSettings.newPdfReaderSetting.scrollMode as keyof typeof PdfScrollMode] || PdfScrollMode.PAGINATED;
+
+                this.backgroundColor = global
+                  ? PdfBackgroundColor[userSettings.newPdfReaderSetting.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor.GRAY
+                  : PdfBackgroundColor[bookSettings.newPdfSettings?.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor[userSettings.newPdfReaderSetting.backgroundColor as keyof typeof PdfBackgroundColor] || PdfBackgroundColor.GRAY;
+
                 this.currentPage = (book.pdfProgress?.page || 1) - 1;
               }
               this.alignCurrentPageToParity();
+              this.updateServiceStates();
+              this.updateBookmarkState();
+              this.updateNotesState();
               this.isLoading = false;
+
+              this.updateCurrentImageUrls();
+              this.preloadAdjacentPages();
 
               const percentage = this.pages.length > 0 ? Math.round(((this.currentPage + 1) / this.pages.length) * 1000) / 10 : 0;
               this.readingSessionService.startSession(this.bookId, "CBX", (this.currentPage + 1).toString(), percentage);
@@ -188,68 +242,301 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     });
   }
 
+  private subscribeToHeaderEvents(): void {
+    this.headerService.showQuickSettings$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.quickSettingsService.show();
+      });
+
+    this.headerService.toggleBookmark$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.toggleBookmark();
+      });
+
+    this.headerService.openNoteDialog$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.openNoteDialog();
+      });
+  }
+
+  private subscribeToSidebarEvents(): void {
+    this.sidebarService.navigateToPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(page => {
+        this.goToPage(page);
+      });
+
+    this.sidebarService.bookmarksChanged$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.updateBookmarkState();
+      });
+
+    this.sidebarService.bookmarks$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.updateBookmarkState();
+      });
+
+    this.sidebarService.notes$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.updateNotesState();
+      });
+
+    this.sidebarService.editNote$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(note => {
+        this.openNoteDialogForEdit(note);
+      });
+  }
+
+  private subscribeToFooterEvents(): void {
+    this.footerService.previousPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.previousPage());
+
+    this.footerService.nextPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.nextPage());
+
+    this.footerService.goToPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(page => this.goToPage(page));
+
+    this.footerService.firstPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.firstPage());
+
+    this.footerService.lastPage$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.lastPage());
+
+    this.footerService.previousBook$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.navigateToPreviousBook());
+
+    this.footerService.nextBook$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.navigateToNextBook());
+
+    this.footerService.sliderChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(page => this.goToPage(page));
+  }
+
+  private subscribeToQuickSettingsEvents(): void {
+    this.quickSettingsService.fitModeChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(mode => this.onFitModeChange(mode));
+
+    this.quickSettingsService.scrollModeChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(mode => this.onScrollModeChange(mode));
+
+    this.quickSettingsService.pageViewModeChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(mode => this.onPageViewModeChange(mode));
+
+    this.quickSettingsService.pageSpreadChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(spread => this.onPageSpreadChange(spread));
+
+    this.quickSettingsService.backgroundColorChange$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(color => this.onBackgroundColorChange(color));
+  }
+
+  private updateServiceStates(): void {
+    this.footerService.updateState({
+      currentPage: this.currentPage,
+      totalPages: this.pages.length,
+      isTwoPageView: this.isTwoPageView,
+      previousBookInSeries: this.previousBookInSeries,
+      nextBookInSeries: this.nextBookInSeries,
+      hasSeries: this.hasSeries
+    });
+
+    this.quickSettingsService.updateState({
+      fitMode: this.fitMode,
+      scrollMode: this.scrollMode,
+      pageViewMode: this.pageViewMode,
+      pageSpread: this.pageSpread,
+      backgroundColor: this.backgroundColor
+    });
+
+    this.sidebarService.setCurrentPage(this.currentPage + 1);
+  }
+
+  private updateFooterPage(): void {
+    this.footerService.setCurrentPage(this.currentPage);
+    this.sidebarService.setCurrentPage(this.currentPage + 1);
+    this.updateBookmarkState();
+    this.updateNotesState();
+  }
+
+  private updateCurrentImageUrls(): void {
+    if (!this.pages.length) {
+      this.currentImageUrls = [];
+      return;
+    }
+
+    const urls: string[] = [];
+    urls.push(this.getPageImageUrl(this.currentPage));
+
+    if (this.isTwoPageView && this.currentPage + 1 < this.pages.length) {
+      urls.push(this.getPageImageUrl(this.currentPage + 1));
+    }
+
+    this.currentImageUrls = urls;
+  }
+
+  private preloadAdjacentPages(): void {
+    if (!this.pages.length || this.scrollMode === CbxScrollMode.INFINITE) return;
+
+    const pagesToPreload: number[] = [];
+
+    const step = this.isTwoPageView ? 2 : 1;
+    for (let i = 1; i <= 2; i++) {
+      const nextPage = this.currentPage + (step * i);
+      if (nextPage < this.pages.length) {
+        pagesToPreload.push(nextPage);
+        if (this.isTwoPageView && nextPage + 1 < this.pages.length) {
+          pagesToPreload.push(nextPage + 1);
+        }
+      }
+    }
+
+    for (let i = 1; i <= 2; i++) {
+      const prevPage = this.currentPage - (step * i);
+      if (prevPage >= 0) {
+        pagesToPreload.push(prevPage);
+        if (this.isTwoPageView && prevPage + 1 < this.pages.length) {
+          pagesToPreload.push(prevPage + 1);
+        }
+      }
+    }
+
+    pagesToPreload.forEach(pageIndex => {
+      const url = this.getPageImageUrl(pageIndex);
+      if (!this.preloadedImages.has(url)) {
+        const img = new Image();
+        img.src = url;
+        this.preloadedImages.set(url, img);
+      }
+    });
+
+    this.cleanupPreloadedImages(pagesToPreload);
+  }
+
+  private cleanupPreloadedImages(keepPages: number[]): void {
+    const keepUrls = new Set(keepPages.map(p => this.getPageImageUrl(p)));
+    this.currentImageUrls.forEach(url => keepUrls.add(url));
+
+    for (const url of this.preloadedImages.keys()) {
+      if (!keepUrls.has(url)) {
+        this.preloadedImages.delete(url);
+      }
+    }
+  }
+
+  private transitionToNewPage(): void {
+    if (this.scrollMode === CbxScrollMode.INFINITE) {
+      this.updateCurrentImageUrls();
+      return;
+    }
+
+    const newUrls = this.getNewImageUrls();
+
+    const allPreloaded = newUrls.every(url => {
+      const img = this.preloadedImages.get(url);
+      return img && img.complete && img.naturalWidth > 0;
+    });
+
+    if (allPreloaded) {
+      this.previousImageUrls = [...this.currentImageUrls];
+      this.currentImageUrls = newUrls;
+      this.isPageTransitioning = true;
+      this.imagesLoaded = true;
+
+      setTimeout(() => {
+        this.isPageTransitioning = false;
+        this.previousImageUrls = [];
+      }, 150);
+    } else {
+      this.isPageTransitioning = true;
+      this.imagesLoaded = false;
+      this.previousImageUrls = [...this.currentImageUrls];
+
+      this.preloadImagesAndTransition(newUrls);
+    }
+
+    this.preloadAdjacentPages();
+  }
+
+  private getNewImageUrls(): string[] {
+    if (!this.pages.length) return [];
+
+    const urls: string[] = [];
+    urls.push(this.getPageImageUrl(this.currentPage));
+
+    if (this.isTwoPageView && this.currentPage + 1 < this.pages.length) {
+      urls.push(this.getPageImageUrl(this.currentPage + 1));
+    }
+
+    return urls;
+  }
+
+  private preloadImagesAndTransition(urls: string[]): void {
+    let loadedCount = 0;
+    const totalImages = urls.length;
+
+    urls.forEach(url => {
+      const img = new Image();
+      img.onload = () => {
+        loadedCount++;
+        this.preloadedImages.set(url, img);
+
+        if (loadedCount === totalImages) {
+          this.currentImageUrls = urls;
+          this.imagesLoaded = true;
+
+          setTimeout(() => {
+            this.isPageTransitioning = false;
+            this.previousImageUrls = [];
+          }, 150);
+        }
+      };
+      img.onerror = () => {
+        loadedCount++;
+        if (loadedCount === totalImages) {
+          this.currentImageUrls = urls;
+          this.imagesLoaded = true;
+          this.isPageTransitioning = false;
+          this.previousImageUrls = [];
+        }
+      };
+      img.src = url;
+    });
+  }
+
+  onImageLoad(): void {
+    this.imagesLoaded = true;
+  }
+
   get isTwoPageView(): boolean {
     return this.pageViewMode === this.CbxPageViewMode.TWO_PAGE || this.pageViewMode === PdfPageViewMode.TWO_PAGE;
   }
 
-  get backgroundColorIcon(): string {
-    switch (this.backgroundColor) {
-      case CbxBackgroundColor.BLACK:
-        return '⚫';
-      case CbxBackgroundColor.GRAY:
-        return '🔘';
-      case CbxBackgroundColor.WHITE:
-        return '⚪';
-      default:
-        return '🔘';
-    }
+  get hasSeries(): boolean {
+    return !!this.currentBook?.metadata?.seriesName;
   }
 
-  toggleBackground(): void {
-    switch (this.backgroundColor) {
-      case CbxBackgroundColor.BLACK:
-        this.backgroundColor = CbxBackgroundColor.GRAY;
-        break;
-      case CbxBackgroundColor.GRAY:
-        this.backgroundColor = CbxBackgroundColor.WHITE;
-        break;
-      case CbxBackgroundColor.WHITE:
-        this.backgroundColor = CbxBackgroundColor.BLACK;
-        break;
-    }
-    this.updateViewerSetting();
-  }
-
-  toggleView() {
-    if (!this.isTwoPageView && this.isPhonePortrait()) return;
-    this.pageViewMode = this.isTwoPageView
-      ? (this.bookType === CbxReaderComponent.TYPE_CBX ? this.CbxPageViewMode.SINGLE_PAGE : PdfPageViewMode.SINGLE_PAGE)
-      : (this.bookType === CbxReaderComponent.TYPE_CBX ? this.CbxPageViewMode.TWO_PAGE : PdfPageViewMode.TWO_PAGE);
-    this.alignCurrentPageToParity();
-    this.updateViewerSetting();
-  }
-
-  toggleSpreadDirection() {
-    if (this.pageSpread === this.CbxPageSpread.ODD || this.pageSpread === PdfPageSpread.ODD) {
-      this.pageSpread = this.bookType === CbxReaderComponent.TYPE_CBX ? this.CbxPageSpread.EVEN : PdfPageSpread.EVEN;
-    } else {
-      this.pageSpread = this.bookType === CbxReaderComponent.TYPE_CBX ? this.CbxPageSpread.ODD : PdfPageSpread.ODD;
-    }
-    this.alignCurrentPageToParity();
-    this.updateViewerSetting();
-  }
-
-  toggleScrollMode(): void {
-    this.scrollMode = this.scrollMode === CbxScrollMode.PAGINATED
-      ? CbxScrollMode.INFINITE
-      : CbxScrollMode.PAGINATED;
-
-    this.updateViewerSetting();
-
-    if (this.scrollMode === CbxScrollMode.INFINITE) {
-      this.initializeInfiniteScroll();
-      setTimeout(() => this.scrollToPage(this.currentPage), 100);
-    }
+  get showQuickSettings(): boolean {
+    return this.quickSettingsService.isVisible;
   }
 
   nextPage() {
@@ -261,6 +548,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         this.scrollToPage(this.currentPage);
         this.updateProgress();
         this.updateSessionProgress();
+        this.updateFooterPage();
       }
       return;
     }
@@ -276,18 +564,23 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
 
     if (this.currentPage !== previousPage) {
+      this.transitionToNewPage();
       this.updateProgress();
       this.updateSessionProgress();
+      this.updateFooterPage();
     }
   }
 
   previousPage() {
+    const previousPage = this.currentPage;
+
     if (this.scrollMode === CbxScrollMode.INFINITE) {
       if (this.currentPage > 0) {
         this.currentPage--;
         this.scrollToPage(this.currentPage);
         this.updateProgress();
         this.updateSessionProgress();
+        this.updateFooterPage();
       }
       return;
     }
@@ -297,8 +590,13 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     } else {
       this.currentPage = Math.max(0, this.currentPage - 1);
     }
-    this.updateProgress();
-    this.updateSessionProgress();
+
+    if (this.currentPage !== previousPage) {
+      this.transitionToNewPage();
+      this.updateProgress();
+      this.updateSessionProgress();
+      this.updateFooterPage();
+    }
   }
 
   private alignCurrentPageToParity() {
@@ -321,61 +619,50 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleFitModeDropdown(): void {
-    this.showFitModeDropdown = !this.showFitModeDropdown;
-  }
-
-  selectFitMode(mode: CbxFitMode): void {
+  onFitModeChange(mode: CbxFitMode): void {
     this.fitMode = mode;
-    this.showFitModeDropdown = false;
+    this.quickSettingsService.setFitMode(mode);
     this.updateViewerSetting();
   }
 
-  toggleMobileOptionsDropdown(): void {
-    this.showMobileOptionsDropdown = !this.showMobileOptionsDropdown;
-    this.showFitModeSubmenu = false;
-  }
+  onScrollModeChange(mode: CbxScrollMode): void {
+    this.scrollMode = mode;
+    this.quickSettingsService.setScrollMode(mode);
+    this.updateViewerSetting();
 
-  selectMobileOption(option: string): void {
-    if (option === 'fitMode') {
-      this.showFitModeSubmenu = !this.showFitModeSubmenu;
+    if (this.scrollMode === CbxScrollMode.INFINITE) {
+      this.initializeInfiniteScroll();
+      setTimeout(() => this.scrollToPage(this.currentPage), 100);
+    } else {
+      this.updateCurrentImageUrls();
+      this.preloadAdjacentPages();
     }
   }
 
-  selectFitModeFromMobile(mode: CbxFitMode): void {
-    this.fitMode = mode;
-    this.showFitModeSubmenu = false;
-    this.showMobileOptionsDropdown = false;
+  onPageViewModeChange(mode: CbxPageViewMode): void {
+    if (mode === CbxPageViewMode.TWO_PAGE && this.isPhonePortrait()) return;
+    this.pageViewMode = mode;
+    this.quickSettingsService.setPageViewMode(mode);
+    this.alignCurrentPageToParity();
+    this.updateCurrentImageUrls();
+    this.preloadAdjacentPages();
+    this.footerService.setTwoPageView(this.isTwoPageView);
     this.updateViewerSetting();
   }
 
-  toggleScrollModeFromMobile(): void {
-    this.toggleScrollMode();
-    this.showMobileOptionsDropdown = false;
+  onPageSpreadChange(spread: CbxPageSpread): void {
+    this.pageSpread = spread;
+    this.quickSettingsService.setPageSpread(spread);
+    this.alignCurrentPageToParity();
+    this.updateCurrentImageUrls();
+    this.preloadAdjacentPages();
+    this.updateViewerSetting();
   }
 
-  toggleSpreadDirectionFromMobile(): void {
-    this.toggleSpreadDirection();
-    this.showMobileOptionsDropdown = false;
-  }
-
-  toggleViewFromMobile(): void {
-    this.toggleView();
-    this.showMobileOptionsDropdown = false;
-  }
-
-  toggleBackgroundFromMobile(): void {
-    this.toggleBackground();
-    this.showMobileOptionsDropdown = false;
-  }
-
-  get displayLabel(): string {
-    const option = this.fitModeOptions.find(opt => opt.value === this.fitMode);
-    return option ? option.icon : '↔️';
-  }
-
-  get scrollModeIcon(): string {
-    return this.scrollMode === CbxScrollMode.PAGINATED ? '📄' : '📜';
+  onBackgroundColorChange(color: CbxBackgroundColor): void {
+    this.backgroundColor = color;
+    this.quickSettingsService.setBackgroundColor(color);
+    this.updateViewerSetting();
   }
 
   private initializeInfiniteScroll(): void {
@@ -432,6 +719,7 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
           this.currentPage = newPage;
           this.updateProgress();
           this.updateSessionProgress();
+          this.updateFooterPage();
         }
         break;
       }
@@ -442,20 +730,6 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     return this.bookType === CbxReaderComponent.TYPE_PDF
       ? this.pdfReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex])
       : this.cbxReaderService.getPageImageUrl(this.bookId, this.pages[pageIndex]);
-  }
-
-  get imageUrls(): string[] {
-    if (!this.pages.length) return [];
-
-    const urls: string[] = [];
-
-    urls.push(this.getPageImageUrl(this.currentPage));
-
-    if (this.isTwoPageView && this.currentPage + 1 < this.pages.length) {
-      urls.push(this.getPageImageUrl(this.currentPage + 1));
-    }
-
-    return urls;
   }
 
   get infiniteScrollImageUrls(): string[] {
@@ -477,6 +751,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
         newPdfSettings: {
           pageSpread: this.pageSpread as PdfPageSpread,
           pageViewMode: this.pageViewMode as PdfPageViewMode,
+          fitMode: this.fitMode as PdfFitMode,
+          scrollMode: this.scrollMode as PdfScrollMode,
+          backgroundColor: this.backgroundColor as PdfBackgroundColor,
         }
       };
     this.bookService.updateViewerSetting(bookSetting, this.bookId).subscribe();
@@ -518,11 +795,22 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
       this.scrollToPage(targetIndex);
       this.updateProgress();
       this.updateSessionProgress();
+      this.updateFooterPage();
     } else {
       this.alignCurrentPageToParity();
+      this.transitionToNewPage();
       this.updateProgress();
       this.updateSessionProgress();
+      this.updateFooterPage();
     }
+  }
+
+  firstPage(): void {
+    this.goToPage(1);
+  }
+
+  lastPage(): void {
+    this.goToPage(this.pages.length);
   }
 
   private scrollToPage(pageIndex: number): void {
@@ -554,6 +842,10 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
   }
 
+  onImageClick(): void {
+    this.visibilityManager.togglePinned();
+  }
+
   @HostListener('window:keydown', ['$event'])
   handleKeyDown(event: KeyboardEvent) {
     if (event.key === 'ArrowRight') this.nextPage();
@@ -573,7 +865,18 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   @HostListener('window:resize')
   onResize() {
+    this.visibilityManager.updateWindowHeight(window.innerHeight);
     this.enforcePortraitSinglePageView();
+  }
+
+  @HostListener('document:mousemove', ['$event'])
+  onMouseMove(event: MouseEvent): void {
+    this.visibilityManager.handleMouseMove(event.clientY);
+  }
+
+  @HostListener('document:mouseleave', ['$event'])
+  onMouseLeave(event: MouseEvent): void {
+    this.visibilityManager.handleMouseLeave();
   }
 
   private handleSwipeGesture() {
@@ -584,24 +887,14 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
   private enforcePortraitSinglePageView() {
     if (this.isPhonePortrait() && this.isTwoPageView) {
       this.pageViewMode = this.bookType === CbxReaderComponent.TYPE_CBX ? CbxPageViewMode.SINGLE_PAGE : PdfPageViewMode.SINGLE_PAGE;
+      this.quickSettingsService.setPageViewMode(this.pageViewMode);
+      this.footerService.setTwoPageView(false);
       this.updateViewerSetting();
     }
   }
 
   private isPhonePortrait(): boolean {
     return window.innerWidth < 768 && window.innerHeight > window.innerWidth;
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.fit-mode-dropdown')) {
-      this.showFitModeDropdown = false;
-    }
-    if (!target.closest('.mobile-controls')) {
-      this.showMobileOptionsDropdown = false;
-      this.showFitModeSubmenu = false;
-    }
   }
 
   get isAtLastPage(): boolean {
@@ -653,6 +946,9 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
         this.previousBookInSeries = hasPreviousBook ? sortedBySeriesNumber[currentBookIndex - 1] : null;
         this.nextBookInSeries = hasNextBook ? sortedBySeriesNumber[currentBookIndex + 1] : null;
+
+        this.footerService.setSeriesBooks(this.previousBookInSeries, this.nextBookInSeries);
+        this.footerService.setHasSeries(true);
       },
       error: (err) => {
         console.error('[SeriesNav] Failed to load series information:', err);
@@ -670,37 +966,24 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
 
   getBookDisplayTitle(book: Book | null): string {
     if (!book) return '';
-
     const parts: string[] = [];
-
     if (book.metadata?.seriesNumber) {
       parts.push(`#${book.metadata.seriesNumber}`);
     }
-
     const title = book.metadata?.title || book.fileName;
     if (title) {
       parts.push(title);
     }
-
     if (book.metadata?.subtitle) {
       parts.push(book.metadata.subtitle);
     }
-
     return parts.join(' - ');
-  }
-
-  getPreviousBookTooltip(): string {
-    if (!this.previousBookInSeries) return 'No Previous Book';
-    return `Previous Book: ${this.getBookDisplayTitle(this.previousBookInSeries)}`;
-  }
-
-  getNextBookTooltip(): string {
-    if (!this.nextBookInSeries) return 'No Next Book';
-    return `Next Book: ${this.getBookDisplayTitle(this.nextBookInSeries)}`;
   }
 
   ngOnDestroy(): void {
     this.endReadingSession();
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   private endReadingSession(): void {
@@ -710,8 +993,51 @@ export class CbxReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  closeReader(): void {
-    this.endReadingSession();
-    this.location.back();
+  private updateBookmarkState(): void {
+    this.isCurrentPageBookmarked = this.sidebarService.isPageBookmarked(this.currentPage + 1);
+  }
+
+  toggleBookmark(): void {
+    this.sidebarService.toggleBookmark(this.currentPage + 1);
+  }
+
+  private updateNotesState(): void {
+    this.currentPageHasNotes = this.sidebarService.pageHasNotes(this.currentPage + 1);
+  }
+
+  openNoteDialog(): void {
+    this.editingNote = null;
+    this.noteDialogData = {
+      pageNumber: this.currentPage + 1
+    };
+    this.showNoteDialog = true;
+  }
+
+  private openNoteDialogForEdit(note: BookNoteV2): void {
+    this.editingNote = note;
+    this.noteDialogData = {
+      pageNumber: parseInt(note.cfi, 10) || this.currentPage + 1,
+      noteId: note.id,
+      noteContent: note.noteContent,
+      color: note.color
+    };
+    this.showNoteDialog = true;
+  }
+
+  onNoteSave(result: CbxNoteDialogResult): void {
+    if (this.editingNote) {
+      this.sidebarService.updateNote(this.editingNote.id, result.noteContent, result.color);
+    } else if (this.noteDialogData) {
+      this.sidebarService.createNote(this.noteDialogData.pageNumber, result.noteContent, result.color);
+    }
+    this.showNoteDialog = false;
+    this.noteDialogData = null;
+    this.editingNote = null;
+  }
+
+  onNoteCancel(): void {
+    this.showNoteDialog = false;
+    this.noteDialogData = null;
+    this.editingNote = null;
   }
 }

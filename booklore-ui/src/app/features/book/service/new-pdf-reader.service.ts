@@ -3,6 +3,22 @@ import {API_CONFIG} from '../../../core/config/api-config';
 import {HttpClient} from '@angular/common/http';
 import {AuthService} from '../../../shared/service/auth.service';
 
+export interface PdfInfoPage {
+  pageNumber: number;
+  displayName: string;
+}
+
+export interface PdfOutlineItem {
+  title: string;
+  pageNumber: number;
+  children: PdfOutlineItem[] | null;
+}
+
+export interface PdfInfo {
+  pageCount: number;
+  outline: PdfOutlineItem[] | null;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -24,6 +40,10 @@ export class NewPdfReaderService {
 
   getAvailablePages(bookId: number) {
     return this.http.get<number[]>(this.appendToken(`${this.pagesUrl}/${bookId}/pages`));
+  }
+
+  getPageInfo(bookId: number) {
+    return this.http.get<PdfInfo>(this.appendToken(`${this.pagesUrl}/${bookId}/info`));
   }
 
   getPageImageUrl(bookId: number, page: number): string {

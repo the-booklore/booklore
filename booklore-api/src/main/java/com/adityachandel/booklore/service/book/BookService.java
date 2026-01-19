@@ -164,6 +164,9 @@ public class BookService {
                             .bookId(bookId)
                             .pageViewMode(pdfPref.getPageViewMode())
                             .pageSpread(pdfPref.getPageSpread())
+                            .fitMode(pdfPref.getFitMode())
+                            .scrollMode(pdfPref.getScrollMode())
+                            .backgroundColor(pdfPref.getBackgroundColor())
                             .build()));
         } else if (bookType == BookFileType.CBX) {
             cbxViewerPreferencesRepository.findByBookIdAndUserId(bookId, user.getId())

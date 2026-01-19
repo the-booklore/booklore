@@ -373,4 +373,100 @@ class BookMetadataUpdaterTest {
         assertEquals("New Title", bookEntity.getMetadata().getTitle());
         assertTrue(bookEntity.getMetadata().getTitleLocked());
     }
+
+    @Test
+    void testUpdateAuthors_WithMergeFalse_ShouldReplaceAuthors() {
+        // Setup existing book with "Old Author"
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        Set<com.adityachandel.booklore.model.entity.AuthorEntity> existingAuthors = new HashSet<>();
+        existingAuthors.add(com.adityachandel.booklore.model.entity.AuthorEntity.builder().name("Old Author").build());
+        metadataEntity.setAuthors(existingAuthors);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        // New metadata with "New Author" only
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setAuthors(Set.of("New Author"));
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        // Update with mergeCategories = false
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        when(authorRepository.findByName("New Author")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.AuthorEntity.builder().name("New Author").build()));
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        // Verify authors are replaced
+        Set<com.adityachandel.booklore.model.entity.AuthorEntity> authors = bookEntity.getMetadata().getAuthors();
+        assertEquals(1, authors.size());
+        assertTrue(authors.stream().anyMatch(a -> a.getName().equals("New Author")));
+        assertFalse(authors.stream().anyMatch(a -> a.getName().equals("Old Author")));
+    }
+
+    @Test
+    void testUpdateCategories_WithMergeFalse_ShouldReplaceCategories() {
+        // Setup existing book with "Old Category"
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookMetadataEntity metadataEntity = new BookMetadataEntity();
+        metadataEntity.setBook(bookEntity);
+        bookEntity.setMetadata(metadataEntity);
+
+        Set<com.adityachandel.booklore.model.entity.CategoryEntity> existingCategories = new HashSet<>();
+        existingCategories.add(com.adityachandel.booklore.model.entity.CategoryEntity.builder().name("Old Category").build());
+        metadataEntity.setCategories(existingCategories);
+
+        BookFileEntity primaryFile = new BookFileEntity();
+        primaryFile.setBook(bookEntity);
+        primaryFile.setBookType(BookFileType.EPUB);
+        primaryFile.setBookFormat(true);
+        primaryFile.setFileSubPath("sub");
+        primaryFile.setFileName("file.epub");
+        bookEntity.setBookFiles(List.of(primaryFile));
+
+        // New metadata with "New Category" only
+        BookMetadata newMetadata = new BookMetadata();
+        newMetadata.setCategories(Set.of("New Category"));
+
+        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+                .metadata(newMetadata)
+                .build();
+
+        // Update with mergeCategories = false
+        MetadataUpdateContext context = MetadataUpdateContext.builder()
+                .bookEntity(bookEntity)
+                .metadataUpdateWrapper(wrapper)
+                .mergeCategories(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+                .build();
+
+        when(categoryRepository.findByName("New Category")).thenReturn(Optional.of(com.adityachandel.booklore.model.entity.CategoryEntity.builder().name("New Category").build()));
+
+        bookMetadataUpdater.setBookMetadata(context);
+
+        // Verify categories are replaced
+        Set<com.adityachandel.booklore.model.entity.CategoryEntity> categories = bookEntity.getMetadata().getCategories();
+        assertEquals(1, categories.size());
+        assertTrue(categories.stream().anyMatch(c -> c.getName().equals("New Category")));
+        assertFalse(categories.stream().anyMatch(c -> c.getName().equals("Old Category")));
+    }
 }
