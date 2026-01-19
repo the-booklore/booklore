@@ -58,7 +58,8 @@ describe('CreateUserDialogComponent confirm password', () => {
         {provide: DynamicDialogRef, useValue: dialogRefMock},
       ]
     }).compileComponents();
-
+    console.log('doc === window.document', document === window.document);
+    console.log('body ownerDocument === document',document.body?.ownerDocument === document);
     fixture = TestBed.createComponent(CreateUserDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
