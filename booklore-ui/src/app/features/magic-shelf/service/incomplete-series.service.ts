@@ -4,7 +4,68 @@ import { Book } from "../../book/model/book.model";
 @Injectable({ providedIn: "root" })
 export class IncompleteSeriesService {
   /**
+   * Computes incomplete series status for all books in O(N) time
+   * @param allBooks All books in the library/collection
+   * @returns Map of book IDs to their incomplete series status
+   */
+  computeIncompleteSeriesForAll(allBooks: Book[]): Map<number, boolean> {
+    const result = new Map<number, boolean>();
+
+    if (!allBooks || allBooks.length === 0) {
+      return result;
+    }
+
+    const seriesMap = new Map<string, Book[]>();
+
+    for (const book of allBooks) {
+      const seriesName = book.metadata?.seriesName;
+      if (!seriesName) {
+        result.set(book.id, false); // Books without series are not incomplete
+        continue;
+      }
+
+      const key = seriesName.toLowerCase();
+      if (!seriesMap.has(key)) {
+        seriesMap.set(key, []);
+      }
+      seriesMap.get(key)!.push(book);
+    }
+
+    const incompleteSeriesNames = new Set<string>();
+
+    for (const [seriesKey, seriesBooks] of seriesMap.entries()) {
+      const presentNumbers = seriesBooks
+        .map((b) => b.metadata?.seriesNumber)
+        .filter((n): n is number => n != null);
+
+      if (presentNumbers.length === 0) {
+        continue;
+      }
+
+      const maxNumber = Math.max(...presentNumbers);
+      const missingNumbers = this.findMissingNumbers(presentNumbers, maxNumber);
+
+      if (missingNumbers.length > 0) {
+        incompleteSeriesNames.add(seriesKey);
+      }
+    }
+
+    for (const book of allBooks) {
+      const seriesName = book.metadata?.seriesName;
+      if (seriesName) {
+        const isIncomplete = incompleteSeriesNames.has(
+          seriesName.toLowerCase(),
+        );
+        result.set(book.id, isIncomplete);
+      }
+    }
+
+    return result;
+  }
+
+  /**
    * Checks if a book is part of an incomplete series based on all books provided
+   * @deprecated Use computeIncompleteSeriesForAll for better performance
    * @param book The book to check
    * @param allBooks All books in the library/collection
    * @returns true if the book belongs to an incomplete series

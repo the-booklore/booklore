@@ -613,9 +613,10 @@ export class BookService {
   private computeIncompleteSeriesProperty(books: Book[]): Book[] {
     if (!books || books.length === 0) return books;
 
+    const incompleteSeriesMap = this.incompleteSeriesService.computeIncompleteSeriesForAll(books);
+
     books.forEach((book) => {
-      book.incompleteSeries =
-        this.incompleteSeriesService.isBookInIncompleteSeries(book, books);
+      book.incompleteSeries = incompleteSeriesMap.get(book.id) ?? false;
     });
 
     return books;
