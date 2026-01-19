@@ -1,37 +1,18 @@
-import { inject, Injectable } from "@angular/core";
-import { first, Observable, of, throwError } from "rxjs";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import {
-  catchError,
-  distinctUntilChanged,
-  filter,
-  finalize,
-  map,
-  shareReplay,
-  tap,
-} from "rxjs/operators";
-import {
-  AdditionalFile,
-  AdditionalFileType,
-  Book,
-  BookDeletionResponse,
-  BookMetadata,
-  BookRecommendation,
-  BookSetting,
-  BulkMetadataUpdateRequest,
-  MetadataUpdateWrapper,
-  ReadStatus,
-} from "../model/book.model";
-import { BookState } from "../model/state/book-state.model";
-import { API_CONFIG } from "../../../core/config/api-config";
-import { MessageService } from "primeng/api";
-import { ResetProgressType } from "../../../shared/constants/reset-progress-type";
-import { AuthService } from "../../../shared/service/auth.service";
-import { FileDownloadService } from "../../../shared/service/file-download.service";
-import { Router } from "@angular/router";
-import { BookStateService } from "./book-state.service";
-import { BookSocketService } from "./book-socket.service";
-import { BookPatchService } from "./book-patch.service";
+import {inject, Injectable} from '@angular/core';
+import {first, Observable, of, throwError} from 'rxjs';
+import {HttpClient, HttpParams} from '@angular/common/http';
+import {catchError, distinctUntilChanged, filter, finalize, map, shareReplay, tap} from 'rxjs/operators';
+import {AdditionalFile, AdditionalFileType, Book, BookDeletionResponse, BookMetadata, BookRecommendation, BookSetting, BulkMetadataUpdateRequest, MetadataUpdateWrapper, ReadStatus} from '../model/book.model';
+import {BookState} from '../model/state/book-state.model';
+import {API_CONFIG} from '../../../core/config/api-config';
+import {MessageService} from 'primeng/api';
+import {ResetProgressType} from '../../../shared/constants/reset-progress-type';
+import {AuthService} from '../../../shared/service/auth.service';
+import {FileDownloadService} from '../../../shared/service/file-download.service';
+import {Router} from '@angular/router';
+import {BookStateService} from './book-state.service';
+import {BookSocketService} from './book-socket.service';
+import {BookPatchService} from './book-patch.service';
 
 export interface BookStatusUpdateResponse {
   bookId: number;
@@ -46,9 +27,10 @@ export interface PersonalRatingUpdateResponse {
 }
 
 @Injectable({
-  providedIn: "root",
+  providedIn: 'root',
 })
 export class BookService {
+
   private readonly url = `${API_CONFIG.BASE_URL}/api/v1/books`;
 
   private http = inject(HttpClient);
@@ -63,7 +45,9 @@ export class BookService {
   private loading$: Observable<Book[]> | null = null;
 
   constructor() {
-    this.authService.token$.pipe(distinctUntilChanged()).subscribe((token) => {
+    this.authService.token$.pipe(
+      distinctUntilChanged()
+    ).subscribe(token => {
       if (token === null) {
         this.bookStateService.resetBookState();
         this.loading$ = null;
@@ -84,15 +68,15 @@ export class BookService {
   /*------------------ State Management ------------------*/
 
   bookState$ = this.bookStateService.bookState$.pipe(
-    tap((state) => {
+    tap(state => {
       if (!state.loaded && !state.error && !this.loading$) {
         this.loading$ = this.fetchBooks().pipe(
           shareReplay(1),
-          finalize(() => (this.loading$ = null)),
+          finalize(() => (this.loading$ = null))
         );
         this.loading$.subscribe();
       }
-    }),
+    })
   );
 
   getCurrentBookState(): BookState {
@@ -101,14 +85,14 @@ export class BookService {
 
   private fetchBooks(): Observable<Book[]> {
     return this.http.get<Book[]>(this.url).pipe(
-      tap((books) => {
+      tap(books => {
         this.bookStateService.updateBookState({
           books: books || [],
           loaded: true,
           error: null,
         });
       }),
-      catchError((error) => {
+      catchError(error => {
         const curr = this.bookStateService.getCurrentBookState();
         this.bookStateService.updateBookState({
           books: curr.books,
@@ -116,136 +100,105 @@ export class BookService {
           error: error.message,
         });
         throw error;
-      }),
+      })
     );
   }
 
   refreshBooks(): void {
-    this.http
-      .get<Book[]>(this.url)
-      .pipe(
-        tap((books) => {
-          this.bookStateService.updateBookState({
-            books: books || [],
-            loaded: true,
-            error: null,
-          });
-        }),
-        catchError((error) => {
-          this.bookStateService.updateBookState({
-            books: null,
-            loaded: true,
-            error: error.message,
-          });
-          return of(null);
-        }),
-      )
-      .subscribe();
+    this.http.get<Book[]>(this.url).pipe(
+      tap(books => {
+        this.bookStateService.updateBookState({
+          books: books || [],
+          loaded: true,
+          error: null,
+        });
+      }),
+      catchError(error => {
+        this.bookStateService.updateBookState({
+          books: null,
+          loaded: true,
+          error: error.message,
+        });
+        return of(null);
+      })
+    ).subscribe();
   }
 
   removeBooksByLibraryId(libraryId: number): void {
     const currentState = this.bookStateService.getCurrentBookState();
     const currentBooks = currentState.books || [];
-    const filteredBooks = currentBooks.filter(
-      (book) => book.libraryId !== libraryId,
-    );
-    this.bookStateService.updateBookState({
-      ...currentState,
-      books: filteredBooks,
-    });
+    const filteredBooks = currentBooks.filter(book => book.libraryId !== libraryId);
+    this.bookStateService.updateBookState({...currentState, books: filteredBooks});
   }
 
   removeBooksFromShelf(shelfId: number): void {
     const currentState = this.bookStateService.getCurrentBookState();
     const currentBooks = currentState.books || [];
-    const updatedBooks = currentBooks.map((book) => ({
+    const updatedBooks = currentBooks.map(book => ({
       ...book,
-      shelves: book.shelves?.filter((shelf) => shelf.id !== shelfId),
+      shelves: book.shelves?.filter(shelf => shelf.id !== shelfId),
     }));
-    this.bookStateService.updateBookState({
-      ...currentState,
-      books: updatedBooks,
-    });
+    this.bookStateService.updateBookState({...currentState, books: updatedBooks});
   }
 
   /*------------------ Book Retrieval ------------------*/
 
   getBookByIdFromState(bookId: number): Book | undefined {
     const currentState = this.bookStateService.getCurrentBookState();
-    return currentState.books?.find((book) => +book.id === +bookId);
+    return currentState.books?.find(book => +book.id === +bookId);
   }
 
   getBooksByIdsFromState(bookIds: number[]): Book[] {
     const currentState = this.bookStateService.getCurrentBookState();
     if (!currentState.books || bookIds.length === 0) return [];
 
-    const idSet = new Set(bookIds.map((id) => +id));
-    return currentState.books.filter((book) => idSet.has(+book.id));
+    const idSet = new Set(bookIds.map(id => +id));
+    return currentState.books.filter(book => idSet.has(+book.id));
   }
 
-  getBookByIdFromAPI(
-    bookId: number,
-    withDescription: boolean,
-  ): Observable<Book> {
+  getBookByIdFromAPI(bookId: number, withDescription: boolean): Observable<Book> {
     return this.http.get<Book>(`${this.url}/${bookId}`, {
       params: {
-        withDescription: withDescription.toString(),
-      },
+        withDescription: withDescription.toString()
+      }
     });
   }
 
   getBooksInSeries(bookId: number): Observable<Book[]> {
     return this.bookStateService.bookState$.pipe(
-      filter((state) => state.loaded),
+      filter(state => state.loaded),
       first(),
-      map((state) => {
+      map(state => {
         const allBooks = state.books || [];
-        const currentBook = allBooks.find((b) => b.id === bookId);
+        const currentBook = allBooks.find(b => b.id === bookId);
 
         if (!currentBook || !currentBook.metadata?.seriesName) {
           return [];
         }
 
         const seriesName = currentBook.metadata.seriesName.toLowerCase();
-        return allBooks.filter(
-          (b) => b.metadata?.seriesName?.toLowerCase() === seriesName,
-        );
-      }),
+        return allBooks.filter(b => b.metadata?.seriesName?.toLowerCase() === seriesName);
+      })
     );
   }
 
-  getBookRecommendations(
-    bookId: number,
-    limit: number = 20,
-  ): Observable<BookRecommendation[]> {
-    return this.http.get<BookRecommendation[]>(
-      `${this.url}/${bookId}/recommendations`,
-      {
-        params: { limit: limit.toString() },
-      },
-    );
-  }
-
-  getIncompleteSeriesNames(): Observable<string[]> {
-    return this.http.get<string[]>(`${this.url}/series/incomplete/names`).pipe(
-      catchError((error) => {
-        console.error("Failed to fetch incomplete series:", error);
-        return of([]);
-      }),
-    );
+  getBookRecommendations(bookId: number, limit: number = 20): Observable<BookRecommendation[]> {
+    return this.http.get<BookRecommendation[]>(`${this.url}/${bookId}/recommendations`, {
+      params: {limit: limit.toString()}
+    });
   }
 
   /*------------------ Book Operations ------------------*/
 
   deleteBooks(ids: Set<number>): Observable<BookDeletionResponse> {
     const idList = Array.from(ids);
-    const params = new HttpParams().set("ids", idList.join(","));
+    const params = new HttpParams().set('ids', idList.join(','));
 
-    return this.http.delete<BookDeletionResponse>(this.url, { params }).pipe(
-      tap((response) => {
+    return this.http.delete<BookDeletionResponse>(this.url, {params}).pipe(
+      tap(response => {
         const currentState = this.bookStateService.getCurrentBookState();
         const remainingBooks = (currentState.books || []).filter(
-          (book) => !ids.has(book.id),
+          book => !ids.has(book.id)
         );
 
         this.bookStateService.updateBookState({
@@ -256,79 +209,64 @@ export class BookService {
 
         if (response.failedFileDeletions?.length > 0) {
           this.messageService.add({
-            severity: "warn",
-            summary: "Some files could not be deleted",
-            detail: `Books: ${response.failedFileDeletions.join(", ")}`,
+            severity: 'warn',
+            summary: 'Some files could not be deleted',
+            detail: `Books: ${response.failedFileDeletions.join(', ')}`,
           });
         } else {
           this.messageService.add({
-            severity: "success",
-            summary: "Books Deleted",
+            severity: 'success',
+            summary: 'Books Deleted',
             detail: `${idList.length} book(s) deleted successfully.`,
           });
         }
       }),
-      catchError((error) => {
+      catchError(error => {
         this.messageService.add({
-          severity: "error",
-          summary: "Delete Failed",
-          detail:
-            error?.error?.message ||
-            error?.message ||
-            "An error occurred while deleting books.",
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting books.',
         });
         return throwError(() => error);
-      }),
+      })
     );
   }
 
-  updateBookShelves(
-    bookIds: Set<number | undefined>,
-    shelvesToAssign: Set<number | null | undefined>,
-    shelvesToUnassign: Set<number | null | undefined>,
-  ): Observable<Book[]> {
-    return this.bookPatchService
-      .updateBookShelves(bookIds, shelvesToAssign, shelvesToUnassign)
-      .pipe(
-        catchError((error) => {
-          const currentState = this.bookStateService.getCurrentBookState();
-          this.bookStateService.updateBookState({
-            ...currentState,
-            error: error.message,
-          });
-          throw error;
-        }),
-      );
+  updateBookShelves(bookIds: Set<number | undefined>, shelvesToAssign: Set<number | null | undefined>, shelvesToUnassign: Set<number | null | undefined>): Observable<Book[]> {
+    return this.bookPatchService.updateBookShelves(bookIds, shelvesToAssign, shelvesToUnassign).pipe(
+      catchError(error => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        this.bookStateService.updateBookState({...currentState, error: error.message});
+        throw error;
+      })
+    );
   }
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader: "ngx" | "streaming" = "ngx"): void {
+  readBook(bookId: number, reader: 'ngx' | 'streaming' = 'ngx'): void {
     const book = this.bookStateService
       .getCurrentBookState()
-      .books?.find((b) => b.id === bookId);
+      .books?.find(b => b.id === bookId);
 
     if (!book) {
-      console.error("Book not found");
+      console.error('Book not found');
       return;
     }
 
     const baseUrl =
-      book.bookType === "PDF"
-        ? reader === "ngx"
-          ? "pdf-reader"
-          : "cbx-reader"
-        : book.bookType === "EPUB" ||
-            book.bookType === "FB2" ||
-            book.bookType === "MOBI" ||
-            book.bookType === "AZW3"
-          ? "ebook-reader"
-          : book.bookType === "CBX"
-            ? "cbx-reader"
+      book.bookType === 'PDF'
+        ? reader === 'ngx'
+          ? 'pdf-reader'
+          : 'cbx-reader'
+        : book.bookType === 'EPUB' || book.bookType === 'FB2' || book.bookType === 'MOBI' || book.bookType === 'AZW3'
+          ? 'ebook-reader'
+          : book.bookType === 'CBX'
+            ? 'cbx-reader'
             : null;
 
     if (!baseUrl) {
-      console.error("Unsupported book type:", book.bookType);
+      console.error('Unsupported book type:', book.bookType);
       return;
     }
 
@@ -340,22 +278,14 @@ export class BookService {
     return this.http.get<BookSetting>(`${this.url}/${bookId}/viewer-setting`);
   }
 
-  updateViewerSetting(
-    bookSetting: BookSetting,
-    bookId: number,
-  ): Observable<void> {
-    return this.http.put<void>(
-      `${this.url}/${bookId}/viewer-setting`,
-      bookSetting,
-    );
+  updateViewerSetting(bookSetting: BookSetting, bookId: number): Observable<void> {
+    return this.http.put<void>(`${this.url}/${bookId}/viewer-setting`, bookSetting);
   }
 
   /*------------------ File Operations ------------------*/
 
   getFileContent(bookId: number): Observable<Blob> {
-    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {
-      responseType: "blob" as "json",
-    });
+    return this.http.get<Blob>(`${this.url}/${bookId}/content`, {responseType: 'blob' as 'json'});
   }
 
   downloadFile(book: Book): void {
@@ -368,16 +298,12 @@ export class BookService {
     return this.http.delete<void>(deleteUrl).pipe(
       tap(() => {
         const currentState = this.bookStateService.getCurrentBookState();
-        const updatedBooks = (currentState.books || []).map((book) => {
+        const updatedBooks = (currentState.books || []).map(book => {
           if (book.id === bookId) {
             return {
               ...book,
-              alternativeFormats: book.alternativeFormats?.filter(
-                (file) => file.id !== fileId,
-              ),
-              supplementaryFiles: book.supplementaryFiles?.filter(
-                (file) => file.id !== fileId,
-              ),
+              alternativeFormats: book.alternativeFormats?.filter(file => file.id !== fileId),
+              supplementaryFiles: book.supplementaryFiles?.filter(file => file.id !== fileId)
             };
           }
           return book;
@@ -385,122 +311,97 @@ export class BookService {
 
         this.bookStateService.updateBookState({
           ...currentState,
-          books: updatedBooks,
+          books: updatedBooks
         });
 
         this.messageService.add({
-          severity: "success",
-          summary: "File Deleted",
-          detail: "Additional file deleted successfully.",
+          severity: 'success',
+          summary: 'File Deleted',
+          detail: 'Additional file deleted successfully.'
         });
       }),
-      catchError((error) => {
+      catchError(error => {
         this.messageService.add({
-          severity: "error",
-          summary: "Delete Failed",
-          detail:
-            error?.error?.message ||
-            error?.message ||
-            "An error occurred while deleting the file.",
+          severity: 'error',
+          summary: 'Delete Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while deleting the file.'
         });
         return throwError(() => error);
-      }),
+      })
     );
   }
 
-  uploadAdditionalFile(
-    bookId: number,
-    file: File,
-    fileType: AdditionalFileType,
-    description?: string,
-  ): Observable<AdditionalFile> {
+  uploadAdditionalFile(bookId: number, file: File, fileType: AdditionalFileType, description?: string): Observable<AdditionalFile> {
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append('file', file);
 
     const isBook = fileType === AdditionalFileType.ALTERNATIVE_FORMAT;
-    formData.append("isBook", String(isBook));
+    formData.append('isBook', String(isBook));
 
     if (isBook) {
-      const lower = (file?.name || "").toLowerCase();
-      const ext = lower.includes(".")
-        ? lower.substring(lower.lastIndexOf(".") + 1)
-        : "";
-      const bookType =
-        ext === "pdf"
-          ? "PDF"
-          : ext === "epub"
-            ? "EPUB"
-            : ext === "cbz" || ext === "cbr" || ext === "cb7" || ext === "cbt"
-              ? "CBX"
-              : null;
+      const lower = (file?.name || '').toLowerCase();
+      const ext = lower.includes('.') ? lower.substring(lower.lastIndexOf('.') + 1) : '';
+      const bookType = ext === 'pdf'
+        ? 'PDF'
+        : ext === 'epub'
+          ? 'EPUB'
+          : (ext === 'cbz' || ext === 'cbr' || ext === 'cb7' || ext === 'cbt')
+            ? 'CBX'
+            : null;
 
       if (bookType) {
-        formData.append("bookType", bookType);
+        formData.append('bookType', bookType);
       }
     }
     if (description) {
-      formData.append("description", description);
+      formData.append('description', description);
     }
 
-    return this.http
-      .post<AdditionalFile>(`${this.url}/${bookId}/files`, formData)
-      .pipe(
-        tap((newFile) => {
-          const currentState = this.bookStateService.getCurrentBookState();
-          const updatedBooks = (currentState.books || []).map((book) => {
-            if (book.id === bookId) {
-              const updatedBook = { ...book };
-              if (fileType === AdditionalFileType.ALTERNATIVE_FORMAT) {
-                updatedBook.alternativeFormats = [
-                  ...(book.alternativeFormats || []),
-                  newFile,
-                ];
-              } else {
-                updatedBook.supplementaryFiles = [
-                  ...(book.supplementaryFiles || []),
-                  newFile,
-                ];
-              }
-              return updatedBook;
+    return this.http.post<AdditionalFile>(`${this.url}/${bookId}/files`, formData).pipe(
+      tap((newFile) => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (book.id === bookId) {
+            const updatedBook = {...book};
+            if (fileType === AdditionalFileType.ALTERNATIVE_FORMAT) {
+              updatedBook.alternativeFormats = [...(book.alternativeFormats || []), newFile];
+            } else {
+              updatedBook.supplementaryFiles = [...(book.supplementaryFiles || []), newFile];
             }
-            return book;
-          });
+            return updatedBook;
+          }
+          return book;
+        });
 
-          this.bookStateService.updateBookState({
-            ...currentState,
-            books: updatedBooks,
-          });
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks
+        });
 
-          this.messageService.add({
-            severity: "success",
-            summary: "File Uploaded",
-            detail: "Additional file uploaded successfully.",
-          });
-        }),
-        catchError((error) => {
-          this.messageService.add({
-            severity: "error",
-            summary: "Upload Failed",
-            detail:
-              error?.error?.message ||
-              error?.message ||
-              "An error occurred while uploading the file.",
-          });
-          return throwError(() => error);
-        }),
-      );
+        this.messageService.add({
+          severity: 'success',
+          summary: 'File Uploaded',
+          detail: 'Additional file uploaded successfully.'
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Upload Failed',
+          detail: error?.error?.message || error?.message || 'An error occurred while uploading the file.'
+        });
+        return throwError(() => error);
+      })
+    );
   }
 
   downloadAdditionalFile(book: Book, fileId: number): void {
     const additionalFile = [
       ...(book.alternativeFormats || []),
-      ...(book.supplementaryFiles || []),
+      ...(book.supplementaryFiles || [])
     ].find((f: AdditionalFile) => f.id === fileId);
     const downloadUrl = `${this.url}/${book!.id}/files/${fileId}/download`;
-    this.fileDownloadService.downloadFile(
-      downloadUrl,
-      additionalFile!.fileName!,
-    );
+    this.fileDownloadService.downloadFile(downloadUrl, additionalFile!.fileName!);
   }
 
   /*------------------ Progress & Status Tracking ------------------*/
@@ -509,11 +410,7 @@ export class BookService {
     this.bookPatchService.updateLastReadTime(bookId);
   }
 
-  savePdfProgress(
-    bookId: number,
-    page: number,
-    percentage: number,
-  ): Observable<void> {
+  savePdfProgress(bookId: number, page: number, percentage: number): Observable<void> {
     return this.bookPatchService.savePdfProgress(bookId, page, percentage);
   }
 
@@ -521,208 +418,139 @@ export class BookService {
     return this.bookPatchService.saveEpubProgress(bookId, cfi, href, percentage);
   }*/
 
-  saveCbxProgress(
-    bookId: number,
-    page: number,
-    percentage: number,
-  ): Observable<void> {
+  saveCbxProgress(bookId: number, page: number, percentage: number): Observable<void> {
     return this.bookPatchService.saveCbxProgress(bookId, page, percentage);
   }
 
-  updateDateFinished(
-    bookId: number,
-    dateFinished: string | null,
-  ): Observable<void> {
+  updateDateFinished(bookId: number, dateFinished: string | null): Observable<void> {
     return this.bookPatchService.updateDateFinished(bookId, dateFinished);
   }
 
-  resetProgress(
-    bookIds: number | number[],
-    type: ResetProgressType,
-  ): Observable<BookStatusUpdateResponse[]> {
+  resetProgress(bookIds: number | number[], type: ResetProgressType): Observable<BookStatusUpdateResponse[]> {
     return this.bookPatchService.resetProgress(bookIds, type);
   }
 
-  updateBookReadStatus(
-    bookIds: number | number[],
-    status: ReadStatus,
-  ): Observable<BookStatusUpdateResponse[]> {
+  updateBookReadStatus(bookIds: number | number[], status: ReadStatus): Observable<BookStatusUpdateResponse[]> {
     return this.bookPatchService.updateBookReadStatus(bookIds, status);
   }
 
   /*------------------ Personal Rating ------------------*/
 
-  resetPersonalRating(
-    bookIds: number | number[],
-  ): Observable<PersonalRatingUpdateResponse[]> {
+  resetPersonalRating(bookIds: number | number[]): Observable<PersonalRatingUpdateResponse[]> {
     return this.bookPatchService.resetPersonalRating(bookIds);
   }
 
-  updatePersonalRating(
-    bookIds: number | number[],
-    rating: number,
-  ): Observable<PersonalRatingUpdateResponse[]> {
+  updatePersonalRating(bookIds: number | number[], rating: number): Observable<PersonalRatingUpdateResponse[]> {
     return this.bookPatchService.updatePersonalRating(bookIds, rating);
   }
 
   /*------------------ Metadata Operations ------------------*/
 
-  updateBookMetadata(
-    bookId: number | undefined,
-    wrapper: MetadataUpdateWrapper,
-    mergeCategories: boolean,
-  ): Observable<BookMetadata> {
-    const params = new HttpParams().set(
-      "mergeCategories",
-      mergeCategories.toString(),
+
+  updateBookMetadata(bookId: number | undefined, wrapper: MetadataUpdateWrapper, mergeCategories: boolean): Observable<BookMetadata> {
+    const params = new HttpParams().set('mergeCategories', mergeCategories.toString());
+    return this.http.put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, {params}).pipe(
+      map(updatedMetadata => {
+        this.handleBookMetadataUpdate(bookId!, updatedMetadata);
+        return updatedMetadata;
+      })
     );
-    return this.http
-      .put<BookMetadata>(`${this.url}/${bookId}/metadata`, wrapper, { params })
-      .pipe(
-        map((updatedMetadata) => {
-          this.handleBookMetadataUpdate(bookId!, updatedMetadata);
-          return updatedMetadata;
-        }),
-      );
   }
 
   updateBooksMetadata(request: BulkMetadataUpdateRequest): Observable<void> {
-    return this.http
-      .put(`${this.url}/bulk-edit-metadata`, request)
-      .pipe(map(() => void 0));
+    return this.http.put(`${this.url}/bulk-edit-metadata`, request).pipe(
+      map(() => void 0)
+    );
   }
 
   toggleAllLock(bookIds: Set<number>, lock: string): Observable<void> {
     const requestBody = {
       bookIds: Array.from(bookIds),
-      lock: lock,
+      lock: lock
     };
-    return this.http
-      .put<BookMetadata[]>(`${this.url}/metadata/toggle-all-lock`, requestBody)
-      .pipe(
-        tap((updatedMetadataList) => {
-          const currentState = this.bookStateService.getCurrentBookState();
-          const updatedBooks = (currentState.books || []).map((book) => {
-            const updatedMetadata = updatedMetadataList.find(
-              (meta) => meta.bookId === book.id,
-            );
-            return updatedMetadata
-              ? { ...book, metadata: updatedMetadata }
-              : book;
-          });
-          this.bookStateService.updateBookState({
-            ...currentState,
-            books: updatedBooks,
-          });
-        }),
-        map(() => void 0),
-        catchError((error) => {
-          throw error;
-        }),
-      );
+    return this.http.put<BookMetadata[]>(`${this.url}/metadata/toggle-all-lock`, requestBody).pipe(
+      tap((updatedMetadataList) => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          const updatedMetadata = updatedMetadataList.find(meta => meta.bookId === book.id);
+          return updatedMetadata ? {...book, metadata: updatedMetadata} : book;
+        });
+        this.bookStateService.updateBookState({...currentState, books: updatedBooks});
+      }),
+      map(() => void 0),
+      catchError((error) => {
+        throw error;
+      })
+    );
   }
 
-  toggleFieldLocks(
-    bookIds: number[] | Set<number>,
-    fieldActions: Record<string, "LOCK" | "UNLOCK">,
-  ): Observable<void> {
+  toggleFieldLocks(bookIds: number[] | Set<number>, fieldActions: Record<string, 'LOCK' | 'UNLOCK'>): Observable<void> {
     const bookIdSet = bookIds instanceof Set ? bookIds : new Set(bookIds);
 
     const requestBody = {
       bookIds: Array.from(bookIdSet),
-      fieldActions,
+      fieldActions
     };
 
-    return this.http
-      .put<void>(`${this.url}/metadata/toggle-field-locks`, requestBody)
-      .pipe(
-        tap(() => {
-          const currentState = this.bookStateService.getCurrentBookState();
-          const updatedBooks = (currentState.books || []).map((book) => {
-            if (!bookIdSet.has(book.id)) return book;
-            const updatedMetadata = { ...book.metadata };
-            for (const [field, action] of Object.entries(fieldActions)) {
-              const lockField = field.endsWith("Locked")
-                ? field
-                : `${field}Locked`;
-              if (lockField in updatedMetadata) {
-                (updatedMetadata as Record<string, unknown>)[lockField] =
-                  action === "LOCK";
-              }
+    return this.http.put<void>(`${this.url}/metadata/toggle-field-locks`, requestBody).pipe(
+      tap(() => {
+        const currentState = this.bookStateService.getCurrentBookState();
+        const updatedBooks = (currentState.books || []).map(book => {
+          if (!bookIdSet.has(book.id)) return book;
+          const updatedMetadata = {...book.metadata};
+          for (const [field, action] of Object.entries(fieldActions)) {
+            const lockField = field.endsWith('Locked') ? field : `${field}Locked`;
+            if (lockField in updatedMetadata) {
+              (updatedMetadata as Record<string, unknown>)[lockField] = action === 'LOCK';
             }
-            return {
-              ...book,
-              metadata: updatedMetadata,
-            };
-          });
-          this.bookStateService.updateBookState({
-            ...currentState,
-            books: updatedBooks as Book[],
-          });
-        }),
-        catchError((error) => {
-          this.messageService.add({
-            severity: "error",
-            summary: "Field Lock Update Failed",
-            detail: "Failed to update metadata field locks. Please try again.",
-          });
-          throw error;
-        }),
-      );
+          }
+          return {
+            ...book,
+            metadata: updatedMetadata
+          };
+        });
+        this.bookStateService.updateBookState({
+          ...currentState,
+          books: updatedBooks as Book[]
+        });
+      }),
+      catchError(error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Field Lock Update Failed',
+          detail: 'Failed to update metadata field locks. Please try again.',
+        });
+        throw error;
+      })
+    );
   }
 
-  consolidateMetadata(
-    metadataType:
-      | "authors"
-      | "categories"
-      | "moods"
-      | "tags"
-      | "series"
-      | "publishers"
-      | "languages",
-    targetValues: string[],
-    valuesToMerge: string[],
-  ): Observable<unknown> {
-    const payload = { metadataType, targetValues, valuesToMerge };
-    return this.http
-      .post(`${this.url}/metadata/manage/consolidate`, payload)
-      .pipe(
-        tap(() => {
-          this.refreshBooks();
-        }),
-      );
+  consolidateMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', targetValues: string[], valuesToMerge: string[]): Observable<unknown> {
+    const payload = {metadataType, targetValues, valuesToMerge};
+    return this.http.post(`${this.url}/metadata/manage/consolidate`, payload).pipe(
+      tap(() => {
+        this.refreshBooks();
+      })
+    );
   }
 
-  deleteMetadata(
-    metadataType:
-      | "authors"
-      | "categories"
-      | "moods"
-      | "tags"
-      | "series"
-      | "publishers"
-      | "languages",
-    valuesToDelete: string[],
-  ): Observable<unknown> {
-    const payload = { metadataType, valuesToDelete };
+  deleteMetadata(metadataType: 'authors' | 'categories' | 'moods' | 'tags' | 'series' | 'publishers' | 'languages', valuesToDelete: string[]): Observable<unknown> {
+    const payload = {metadataType, valuesToDelete};
     return this.http.post(`${this.url}/metadata/manage/delete`, payload).pipe(
       tap(() => {
         this.refreshBooks();
-      }),
+      })
     );
   }
 
   /*------------------ Cover Operations ------------------*/
 
   getUploadCoverUrl(bookId: number): string {
-    return this.url + "/" + bookId + "/metadata/cover/upload";
+    return this.url + '/' + bookId + "/metadata/cover/upload"
   }
 
   uploadCoverFromUrl(bookId: number, url: string): Observable<BookMetadata> {
-    return this.http.post<BookMetadata>(
-      `${this.url}/${bookId}/metadata/cover/from-url`,
-      { url },
-    );
+    return this.http.post<BookMetadata>(`${this.url}/${bookId}/metadata/cover/from-url`, {url});
   }
 
   regenerateCovers(): Observable<void> {
@@ -734,22 +562,17 @@ export class BookService {
   }
 
   generateCustomCover(bookId: number): Observable<void> {
-    return this.http.post<void>(
-      `${this.url}/${bookId}/generate-custom-cover`,
-      {},
-    );
+    return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
   }
 
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {
-    return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, {
-      bookIds,
-    });
+    return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, {bookIds});
   }
 
   bulkUploadCover(bookIds: number[], file: File): Observable<void> {
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("bookIds", bookIds.join(","));
+    formData.append('file', file);
+    formData.append('bookIds', bookIds.join(','));
     return this.http.post<void>(`${this.url}/bulk-upload-cover`, formData);
   }
 
@@ -771,16 +594,11 @@ export class BookService {
     this.bookSocketService.handleMultipleBookUpdates(updatedBooks);
   }
 
-  handleBookMetadataUpdate(
-    bookId: number,
-    updatedMetadata: BookMetadata,
-  ): void {
+  handleBookMetadataUpdate(bookId: number, updatedMetadata: BookMetadata): void {
     this.bookSocketService.handleBookMetadataUpdate(bookId, updatedMetadata);
   }
 
-  handleMultipleBookCoverPatches(
-    patches: { id: number; coverUpdatedOn: string }[],
-  ): void {
+  handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
     this.bookSocketService.handleMultipleBookCoverPatches(patches);
   }
 }

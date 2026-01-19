@@ -33,25 +33,4 @@ public interface BookMetadataRepository extends JpaRepository<BookMetadataEntity
     List<BookMetadataEntity> findAllByPublisherIgnoreCase(String publisher);
 
     List<BookMetadataEntity> findAllByLanguageIgnoreCase(String language);
-
-    @Query("""
-            SELECT DISTINCT m.seriesName FROM BookMetadataEntity m
-            JOIN m.book b
-            WHERE m.seriesName IS NOT NULL 
-              AND m.seriesName != ''
-              AND m.seriesNumber IS NOT NULL
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY m.seriesName
-            """)
-    List<String> findAllDistinctSeriesNames();
-
-    @Query("""
-            SELECT m FROM BookMetadataEntity m
-            JOIN m.book b
-            WHERE m.seriesName = :seriesName
-              AND m.seriesNumber IS NOT NULL
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY m.seriesNumber
-            """)
-    List<BookMetadataEntity> findBooksInSeriesByName(@Param("seriesName") String seriesName);
 }
