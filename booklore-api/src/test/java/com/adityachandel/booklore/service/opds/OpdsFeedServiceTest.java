@@ -163,7 +163,7 @@ class OpdsFeedServiceTest {
         assertThat(xml).contains("urn:booklore:book:10");
         assertThat(xml).contains("application/epub+zip");
         assertThat(xml).contains("</feed>");
-        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, null, 0, 50, null);
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, null, 0, 50, OpdsSortOrder.RECENT);
     }
 
     @Test
@@ -405,7 +405,7 @@ class OpdsFeedServiceTest {
         assertThat(xml).contains("Shelf Book");
         assertThat(xml).contains("My Shelf - Shelf");
         assertThat(xml).contains("</feed>");
-        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L), 0, 50, null);
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L), 0, 50, OpdsSortOrder.RECENT);
     }
 
     @Test
@@ -439,7 +439,7 @@ class OpdsFeedServiceTest {
         assertThat(xml).contains("Multi Shelf Book");
         assertThat(xml).contains("Multiple Shelves");
         assertThat(xml).contains("</feed>");
-        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L, 20L), 0, 50, null);
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, null, null, Set.of(10L, 20L), 0, 50, OpdsSortOrder.RECENT);
     }
 
     @Test
@@ -473,6 +473,6 @@ class OpdsFeedServiceTest {
         String xml = opdsFeedService.generateCatalogFeed(request);
         assertThat(xml).contains("Fantasy Book");
         assertThat(xml).contains("</feed>");
-        verify(opdsBookService).getBooksPage(TEST_USER_ID, "fantasy", null, Set.of(10L), 0, 50, null);
+        verify(opdsBookService).getBooksPage(TEST_USER_ID, "fantasy", null, Set.of(10L), 0, 50, OpdsSortOrder.RECENT);
     }
 }
