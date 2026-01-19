@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -60,7 +61,21 @@ public class LibraryProcessingService {
         LibraryEntity libraryEntity = libraryRepository.findById(context.getLibraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started refreshing library: " + libraryEntity.getName()));
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
+        
+        validateLibraryPathsAccessible(libraryEntity);
+        
         List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
+        
+        int existingBookCount = libraryEntity.getBookEntities().size();
+        if (existingBookCount > 0 && libraryFiles.isEmpty()) {
+            String paths = libraryEntity.getLibraryPaths().stream()
+                    .map(p -> p.getPath())
+                    .collect(Collectors.joining(", "));
+            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}", 
+                    libraryEntity.getName(), existingBookCount, paths);
+            throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(paths);
+        }
+        
         List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity, processor);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
@@ -81,6 +96,16 @@ public class LibraryProcessingService {
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         processor.processLibraryFiles(libraryFiles, libraryEntity);
+    }
+
+    private void validateLibraryPathsAccessible(LibraryEntity libraryEntity) {
+        for (var pathEntity : libraryEntity.getLibraryPaths()) {
+            Path path = Path.of(pathEntity.getPath());
+            if (!Files.exists(path) || !Files.isDirectory(path) || !Files.isReadable(path)) {
+                log.error("Library path not accessible: {}", path);
+                throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(path.toString());
+            }
+        }
     }
 
     protected static List<Long> detectDeletedBookIds(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {

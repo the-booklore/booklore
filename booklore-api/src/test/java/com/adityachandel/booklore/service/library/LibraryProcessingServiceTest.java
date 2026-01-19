@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.service.library;
 
+import com.adityachandel.booklore.exception.APIException;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
@@ -14,16 +15,20 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -281,8 +286,10 @@ class LibraryProcessingServiceTest {
     }
 
     @Test
-    void rescanLibrary_shouldNotDeleteNonBookFiles_whenProcessorDoesNotSupportSupplementaryFiles() throws IOException {
+    void rescanLibrary_shouldNotDeleteNonBookFiles_whenProcessorDoesNotSupportSupplementaryFiles(@TempDir Path tempDir) throws IOException {
         long libraryId = 1L;
+        Path accessiblePath = tempDir.resolve("library");
+        Files.createDirectory(accessiblePath);
 
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
@@ -291,7 +298,7 @@ class LibraryProcessingServiceTest {
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
-        pathEntity.setPath("/library");
+        pathEntity.setPath(accessiblePath.toString());
         libraryEntity.setLibraryPaths(List.of(pathEntity));
 
         BookEntity book = new BookEntity();
@@ -347,5 +354,148 @@ class LibraryProcessingServiceTest {
         libraryProcessingService.rescanLibrary(RescanLibraryContext.builder().libraryId(libraryId).build());
 
         verify(bookDeletionService, never()).deleteRemovedAdditionalFiles(any());
+    }
+
+    @Test
+    void rescanLibrary_shouldAbortWhenPathNotAccessible(@TempDir Path tempDir) throws IOException {
+        long libraryId = 1L;
+        Path nonExistentPath = tempDir.resolve("non_existent_path");
+
+        LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setId(libraryId);
+        libraryEntity.setName("Test Library");
+        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
+
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(10L);
+        pathEntity.setPath(nonExistentPath.toString());
+        libraryEntity.setLibraryPaths(List.of(pathEntity));
+        libraryEntity.setBookEntities(Collections.emptyList());
+
+        when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
+        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
+
+        RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
+
+        assertThatThrownBy(() -> libraryProcessingService.rescanLibrary(context))
+                .isInstanceOf(APIException.class)
+                .hasMessageContaining("not accessible");
+
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
+        verify(bookDeletionService, never()).deleteRemovedAdditionalFiles(any());
+    }
+
+    @Test
+    void rescanLibrary_shouldAbortWhenLibraryHasBooksButScanReturnsEmpty(@TempDir Path tempDir) throws IOException {
+        long libraryId = 1L;
+        Path accessiblePath = tempDir.resolve("accessible");
+        Files.createDirectory(accessiblePath);
+
+        LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setId(libraryId);
+        libraryEntity.setName("Test Library");
+        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
+
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(10L);
+        pathEntity.setPath(accessiblePath.toString());
+        libraryEntity.setLibraryPaths(List.of(pathEntity));
+
+        BookEntity existingBook = new BookEntity();
+        existingBook.setId(1L);
+        existingBook.setLibraryPath(pathEntity);
+        BookFileEntity existingBookFile = new BookFileEntity();
+        existingBookFile.setBook(existingBook);
+        existingBook.setBookFiles(List.of(existingBookFile));
+        existingBook.getPrimaryBookFile().setFileSubPath("");
+        existingBook.getPrimaryBookFile().setFileName("book1.epub");
+        libraryEntity.setBookEntities(List.of(existingBook));
+
+        when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
+        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
+        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(Collections.emptyList());
+
+        RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
+
+        assertThatThrownBy(() -> libraryProcessingService.rescanLibrary(context))
+                .isInstanceOf(APIException.class)
+                .hasMessageContaining("not accessible");
+
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
+        verify(bookDeletionService, never()).deleteRemovedAdditionalFiles(any());
+    }
+
+    @Test
+    void rescanLibrary_shouldProceedWhenLibraryHasBooksAndScanFindsThem(@TempDir Path tempDir) throws IOException {
+        long libraryId = 1L;
+        Path accessiblePath = tempDir.resolve("accessible");
+        Files.createDirectory(accessiblePath);
+
+        LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setId(libraryId);
+        libraryEntity.setName("Test Library");
+        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
+
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(10L);
+        pathEntity.setPath(accessiblePath.toString());
+        libraryEntity.setLibraryPaths(List.of(pathEntity));
+
+        BookEntity existingBook = new BookEntity();
+        existingBook.setId(1L);
+        existingBook.setLibraryPath(pathEntity);
+        BookFileEntity existingBookFile = new BookFileEntity();
+        existingBookFile.setBook(existingBook);
+        existingBook.setBookFiles(List.of(existingBookFile));
+        existingBook.getPrimaryBookFile().setFileSubPath("");
+        existingBook.getPrimaryBookFile().setFileName("book1.epub");
+        libraryEntity.setBookEntities(List.of(existingBook));
+
+        LibraryFile fileOnDisk = LibraryFile.builder()
+                .libraryEntity(libraryEntity)
+                .libraryPathEntity(pathEntity)
+                .fileSubPath("")
+                .fileName("book1.epub")
+                .build();
+
+        when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
+        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
+        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(fileOnDisk));
+        when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+
+        RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
+
+        libraryProcessingService.rescanLibrary(context);
+
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
+    }
+
+    @Test
+    void rescanLibrary_shouldProceedForEmptyLibraryWithNoFilesFound(@TempDir Path tempDir) throws IOException {
+        long libraryId = 1L;
+        Path accessiblePath = tempDir.resolve("accessible");
+        Files.createDirectory(accessiblePath);
+
+        LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setId(libraryId);
+        libraryEntity.setName("Test Library");
+        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
+
+        LibraryPathEntity pathEntity = new LibraryPathEntity();
+        pathEntity.setId(10L);
+        pathEntity.setPath(accessiblePath.toString());
+        libraryEntity.setLibraryPaths(List.of(pathEntity));
+        libraryEntity.setBookEntities(Collections.emptyList());
+
+        when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
+        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
+        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(Collections.emptyList());
+        when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
+
+        RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
+
+        libraryProcessingService.rescanLibrary(context);
+
+        verify(bookDeletionService, never()).processDeletedLibraryFiles(any(), any());
     }
 }
