@@ -1,7 +1,6 @@
 @if (isOpen) {
   <div class="sidebar-overlay" (click)="onOverlayClick()" [class.closing]="closing">
     <aside class="sidebar" (click)="$event.stopPropagation()" [class.closing]="closing">
-      <!-- Header with book info -->
       <header class="sidebar-header">
         @if (bookInfo.coverUrl) {
           <img
@@ -18,14 +17,13 @@
         </div>
       </header>
 
-      <!-- Tab navigation -->
       <nav class="tabs">
         <button
           class="tab"
           [class.active]="activeTab === 'pages'"
           (click)="setActiveTab('pages')">
           <app-reader-icon name="book" class="tab-icon"></app-reader-icon>
-          <span>Pages</span>
+          <span>Content</span>
         </button>
         <button
           class="tab"
@@ -49,31 +47,64 @@
         </button>
       </nav>
 
-      <!-- Tab content -->
       <div class="content">
         @switch (activeTab) {
           @case ('pages') {
-            <ul class="page-list">
-              @for (page of pages; track page.pageNumber) {
-                <li>
-                  <button
-                    class="page-row"
-                    [class.active]="isPageActive(page.pageNumber)"
-                    (click)="onPageClick(page.pageNumber)">
-                    <span class="page-number">{{ page.pageNumber }}</span>
-                    <span class="page-label">{{ page.displayName }}</span>
-                  </button>
-                </li>
+            @if (isPdf && hasOutline) {
+              <ul class="outline-list">
+                <ng-container *ngTemplateOutlet="outlineTemplate; context: { items: pdfOutline, depth: 0 }"></ng-container>
+              </ul>
+
+              <ng-template #outlineTemplate let-items="items" let-depth="depth">
+                @for (item of items; track item.title + item.pageNumber) {
+                  <li class="outline-item">
+                    <button
+                      class="outline-row"
+                      [class.active]="isOutlineItemActive(item, items)"
+                      [class.has-children]="item.children && item.children.length > 0"
+                      [style.padding-left.px]="16 + depth * 16"
+                      (click)="onOutlineItemClick(item)">
+                      @if (item.children && item.children.length > 0) {
+                        <span
+                          class="expand-icon"
+                          [class.expanded]="isOutlineItemExpanded(item)"
+                          (click)="toggleOutlineItem(item); $event.stopPropagation()">
+                          <app-reader-icon name="chevron-right" [size]="14"></app-reader-icon>
+                        </span>
+                      }
+                      <span class="outline-title">{{ item.title }}</span>
+                      <span class="outline-page">{{ item.pageNumber }}</span>
+                    </button>
+                    @if (item.children && item.children.length > 0 && isOutlineItemExpanded(item)) {
+                      <ul class="outline-children">
+                        <ng-container *ngTemplateOutlet="outlineTemplate; context: { items: item.children, depth: depth + 1 }"></ng-container>
+                      </ul>
+                    }
+                  </li>
+                }
+              </ng-template>
+            } @else {
+              <ul class="page-list">
+                @for (page of pages; track page.pageNumber) {
+                  <li>
+                    <button
+                      class="page-row"
+                      [class.active]="isPageActive(page.pageNumber)"
+                      (click)="onPageClick(page.pageNumber)">
+                      <span class="page-number">{{ page.pageNumber }}</span>
+                      <span class="page-label">{{ page.displayName }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+              @if (pages.length === 0 && !hasOutline) {
+                <div class="empty-state">
+                  <app-reader-icon name="book" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No pages found</p>
+                </div>
               }
-            </ul>
-            @if (pages.length === 0) {
-              <div class="empty-state">
-                <app-reader-icon name="book" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
-                <p>No pages found</p>
-              </div>
             }
           }
-
           @case ('bookmarks') {
             @if (bookmarks.length > 0) {
               <ul class="item-list">
@@ -97,7 +128,6 @@
               </div>
             }
           }
-
           @case ('notes') {
             <div class="notes-container">
               @if (notes.length > 0) {

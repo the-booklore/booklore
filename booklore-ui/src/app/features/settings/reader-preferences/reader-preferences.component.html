@@ -147,6 +147,24 @@
       </div>
     </div>
 
+    <div class="preferences-section">
+      <div class="section-header">
+        <h3 class="section-title">
+          <i class="pi pi-file-pdf"></i>
+          Streaming PDF Reader: Default Settings
+        </h3>
+        <p class="section-description">
+          Configure default preferences for the streaming PDF reader. When "Default Override" mode is enabled, these settings will take precedence over per-file preferences. Adjust page layout, zoom behavior, scrolling mode, and rendering options for an optimal reading experience.
+        </p>
+      </div>
+
+      <div class="settings-card">
+        <app-new-pdf-reader-preferences-component
+          [userSettings]="userSettings">
+        </app-new-pdf-reader-preferences-component>
+      </div>
+    </div>
+
     @if (hasFontManagementPermission) {
       <div class="preferences-section">
         <div class="section-header">

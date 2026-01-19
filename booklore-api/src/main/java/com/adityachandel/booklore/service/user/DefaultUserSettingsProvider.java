@@ -107,6 +107,9 @@ public class DefaultUserSettingsProvider {
         return BookLoreUser.UserSettings.NewPdfReaderSetting.builder()
                 .pageViewMode(NewPdfPageViewMode.SINGLE_PAGE)
                 .pageSpread(NewPdfPageSpread.ODD)
+                .fitMode(NewPdfPageFitMode.FIT_HEIGHT)
+                .scrollMode(NewPdfPageScrollMode.PAGINATED)
+                .backgroundColor(NewPdfBackgroundColor.WHITE)
                 .build();
     }
 

@@ -229,6 +229,89 @@ $transition-normal: 200ms ease;
   white-space: nowrap;
 }
 
+// PDF Outline list
+.outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.outline-item {
+  list-style: none;
+}
+
+.outline-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.outline-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 16px;
+  padding-right: 12px;
+  background: none;
+  border: none;
+  color: $text-primary;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background $transition-fast;
+  gap: 8px;
+
+  &:hover {
+    background: $hover-bg;
+  }
+
+  &.active {
+    background: $active-bg;
+    color: $active-color;
+    font-weight: 500;
+  }
+
+  &.has-children {
+    font-weight: 500;
+  }
+}
+
+.expand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: $text-muted;
+  transition: transform $transition-fast;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: $text-primary;
+  }
+
+  &.expanded {
+    transform: rotate(90deg);
+  }
+}
+
+.outline-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outline-page {
+  font-size: 11px;
+  color: $text-muted;
+  flex-shrink: 0;
+  min-width: 28px;
+  text-align: right;
+}
+
 // Item list (bookmarks & notes)
 .item-list {
   list-style: none;

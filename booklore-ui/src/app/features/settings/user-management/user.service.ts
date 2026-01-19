@@ -52,17 +52,6 @@ export type PageSpread = 'off' | 'even' | 'odd';
 export type BookFilterMode = 'and' | 'or' | 'single';
 export type FilterSortingMode = 'alphabetical' | 'count';
 
-export enum CbxBackgroundColor {
-  GRAY = 'GRAY',
-  BLACK = 'BLACK',
-  WHITE = 'WHITE'
-}
-
-export interface PdfReaderSetting {
-  pageSpread: PageSpread;
-  pageZoom: string;
-  showSidebar: boolean;
-}
 
 export enum CbxPageViewMode {
   SINGLE_PAGE = 'SINGLE_PAGE',
@@ -74,14 +63,10 @@ export enum CbxPageSpread {
   ODD = 'ODD',
 }
 
-export enum PdfPageViewMode {
-  SINGLE_PAGE = 'SINGLE_PAGE',
-  TWO_PAGE = 'TWO_PAGE',
-}
-
-export enum PdfPageSpread {
-  EVEN = 'EVEN',
-  ODD = 'ODD',
+export enum CbxBackgroundColor {
+  GRAY = 'GRAY',
+  BLACK = 'BLACK',
+  WHITE = 'WHITE'
 }
 
 export enum CbxFitMode {
@@ -95,6 +80,49 @@ export enum CbxFitMode {
 export enum CbxScrollMode {
   PAGINATED = 'PAGINATED',
   INFINITE = 'INFINITE'
+}
+
+export interface PdfReaderSetting {
+  pageSpread: PageSpread;
+  pageZoom: string;
+  showSidebar: boolean;
+}
+
+export enum PdfPageViewMode {
+  SINGLE_PAGE = 'SINGLE_PAGE',
+  TWO_PAGE = 'TWO_PAGE',
+}
+
+export enum PdfPageSpread {
+  EVEN = 'EVEN',
+  ODD = 'ODD',
+}
+
+export enum PdfBackgroundColor {
+  GRAY = 'GRAY',
+  BLACK = 'BLACK',
+  WHITE = 'WHITE'
+}
+
+export enum PdfFitMode {
+  ACTUAL_SIZE = 'ACTUAL_SIZE',
+  FIT_PAGE = 'FIT_PAGE',
+  FIT_WIDTH = 'FIT_WIDTH',
+  FIT_HEIGHT = 'FIT_HEIGHT',
+  AUTO = 'AUTO'
+}
+
+export enum PdfScrollMode {
+  PAGINATED = 'PAGINATED',
+  INFINITE = 'INFINITE'
+}
+
+export interface NewPdfReaderSetting {
+  pageSpread: PdfPageSpread;
+  pageViewMode: PdfPageViewMode;
+  fitMode: PdfFitMode;
+  scrollMode?: PdfScrollMode;
+  backgroundColor?: PdfBackgroundColor;
 }
 
 export interface EbookReaderSetting {
@@ -130,11 +158,6 @@ export interface CbxReaderSetting {
   fitMode: CbxFitMode;
   scrollMode?: CbxScrollMode;
   backgroundColor?: CbxBackgroundColor;
-}
-
-export interface NewPdfReaderSetting {
-  pageSpread: PdfPageSpread;
-  pageViewMode: PdfPageViewMode;
 }
 
 export interface TableColumnPreference {

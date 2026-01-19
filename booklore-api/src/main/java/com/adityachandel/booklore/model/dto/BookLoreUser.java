@@ -195,6 +195,9 @@ public class BookLoreUser {
         public static class NewPdfReaderSetting {
             private NewPdfPageSpread pageSpread;
             private NewPdfPageViewMode pageViewMode;
+            private NewPdfBackgroundColor backgroundColor;
+            private NewPdfPageFitMode fitMode;
+            private NewPdfPageScrollMode scrollMode;
         }
 
         @Data

@@ -13,7 +13,6 @@
     outline: none;
   }
 
-  // Bookmark indicator
   .bookmark-indicator {
     position: absolute;
     top: 0;
@@ -82,6 +81,43 @@
         position: relative;
       }
 
+      .previous-page-layer,
+      .current-page-layer {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      .previous-page-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1;
+      }
+
+      .current-page-layer {
+        position: relative;
+        z-index: 2;
+
+        &.fade-in {
+          animation: fadeIn 0.15s ease-out forwards;
+        }
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0.7;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
       .page-image {
         object-fit: contain;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
@@ -91,10 +127,18 @@
         &:hover {
           transform: scale(1.02);
         }
+
+        &.previous-image {
+          &:hover {
+            transform: none;
+          }
+        }
       }
 
       &.fit-width {
-        .pages-wrapper {
+        .pages-wrapper,
+        .previous-page-layer,
+        .current-page-layer {
           height: auto;
           max-height: 100%;
         }
@@ -109,7 +153,9 @@
         }
 
         &.two-page-view {
-          .pages-wrapper {
+          .pages-wrapper,
+          .previous-page-layer,
+          .current-page-layer {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 1rem;
@@ -123,7 +169,9 @@
       }
 
       &.fit-height {
-        .pages-wrapper {
+        .pages-wrapper,
+        .previous-page-layer,
+        .current-page-layer {
           width: auto;
           max-width: 100%;
         }
@@ -149,7 +197,9 @@
       &.fit-actual-size {
         overflow: auto;
 
-        .pages-wrapper {
+        .pages-wrapper,
+        .previous-page-layer,
+        .current-page-layer {
           width: max-content;
           height: max-content;
           min-width: 0;

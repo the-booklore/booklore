@@ -1,21 +1,13 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
-import {
-  CbxFitMode,
-  CbxScrollMode,
-  CbxPageViewMode,
-  CbxPageSpread,
-  CbxBackgroundColor,
-  PdfPageViewMode,
-  PdfPageSpread
-} from '../../../../settings/user-management/user.service';
+import {CbxBackgroundColor, CbxFitMode, CbxPageSpread, CbxPageViewMode, CbxScrollMode, PdfBackgroundColor, PdfFitMode, PdfPageSpread, PdfPageViewMode, PdfScrollMode} from '../../../../settings/user-management/user.service';
 
 export interface CbxQuickSettingsState {
-  fitMode: CbxFitMode;
-  scrollMode: CbxScrollMode;
+  fitMode: CbxFitMode | PdfFitMode;
+  scrollMode: CbxScrollMode | PdfScrollMode;
   pageViewMode: CbxPageViewMode | PdfPageViewMode;
   pageSpread: CbxPageSpread | PdfPageSpread;
-  backgroundColor: CbxBackgroundColor;
+  backgroundColor: CbxBackgroundColor | PdfBackgroundColor;
 }
 
 @Injectable()

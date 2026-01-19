@@ -1,16 +1,12 @@
 <div class="comic-reader-container" tabindex="0">
-  <!-- Header -->
   <app-cbx-header [isCurrentPageBookmarked]="isCurrentPageBookmarked" [currentPageHasNotes]="currentPageHasNotes"></app-cbx-header>
 
-  <!-- Sidebar -->
   <app-cbx-sidebar></app-cbx-sidebar>
 
-  <!-- Quick Settings -->
   @if (showQuickSettings) {
     <app-cbx-quick-settings></app-cbx-quick-settings>
   }
 
-  <!-- Bookmark Indicator -->
   @if (isCurrentPageBookmarked) {
     <div class="bookmark-indicator">
       <svg width="48" height="64" viewBox="0 0 48 64">
@@ -19,7 +15,6 @@
     </div>
   }
 
-  <!-- Note Dialog -->
   @if (showNoteDialog) {
     <app-cbx-note-dialog
       [data]="noteDialogData"
@@ -28,7 +23,6 @@
     ></app-cbx-note-dialog>
   }
 
-  <!-- Main content area -->
   <div class="image-container"
     [class.two-page-view]="isTwoPageView && scrollMode === CbxScrollMode.PAGINATED"
     [class.infinite-scroll]="scrollMode === CbxScrollMode.INFINITE"
@@ -45,9 +39,18 @@
       @if (pages.length > 0) {
         @if (scrollMode === CbxScrollMode.PAGINATED) {
           <div class="pages-wrapper" (click)="onImageClick()">
-            @for (url of imageUrls; track url) {
-              <img [src]="url" alt="Page Image" class="page-image"/>
+            @if (isPageTransitioning && previousImageUrls.length > 0) {
+              <div class="previous-page-layer">
+                @for (url of previousImageUrls; track url) {
+                  <img [src]="url" alt="Previous Page" class="page-image previous-image"/>
+                }
+              </div>
             }
+            <div class="current-page-layer" [class.fade-in]="isPageTransitioning && imagesLoaded">
+              @for (url of currentImageUrls; track url) {
+                <img [src]="url" alt="Page Image" class="page-image" (load)="onImageLoad()"/>
+              }
+            </div>
           </div>
           @if (isAtLastPage && nextBookInSeries) {
             <div class="end-of-comic-action">
@@ -92,6 +95,5 @@
     }
   </div>
 
-  <!-- Footer -->
   <app-cbx-footer></app-cbx-footer>
 </div>

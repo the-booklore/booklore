@@ -1,9 +1,10 @@
 import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject, Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
-import {CbxReaderService, CbxPageInfo} from '../../../../book/service/cbx-reader.service';
+import {CbxPageInfo, CbxReaderService} from '../../../../book/service/cbx-reader.service';
+import {NewPdfReaderService, PdfOutlineItem} from '../../../../book/service/new-pdf-reader.service';
 import {UrlHelperService} from '../../../../../shared/service/url-helper.service';
-import {Book} from '../../../../book/model/book.model';
+import {Book, BookType} from '../../../../book/model/book.model';
 import {BookMark, BookMarkService, CreateBookMarkRequest} from '../../../../../shared/service/book-mark.service';
 import {BookNoteV2, BookNoteV2Service, CreateBookNoteV2Request, UpdateBookNoteV2Request} from '../../../../../shared/service/book-note-v2.service';
 
@@ -20,11 +21,13 @@ export type CbxSidebarTab = 'pages' | 'bookmarks' | 'notes';
 export class CbxSidebarService {
   private urlHelper = inject(UrlHelperService);
   private cbxReaderService = inject(CbxReaderService);
+  private pdfReaderService = inject(NewPdfReaderService);
   private bookMarkService = inject(BookMarkService);
   private bookNoteV2Service = inject(BookNoteV2Service);
 
   private destroy$ = new Subject<void>();
   private bookId!: number;
+  private bookType!: BookType;
 
   private _isOpen = new BehaviorSubject<boolean>(false);
   private _activeTab = new BehaviorSubject<CbxSidebarTab>('pages');
@@ -35,6 +38,8 @@ export class CbxSidebarService {
     coverUrl: null
   });
   private _pages = new BehaviorSubject<CbxPageInfo[]>([]);
+  private _pdfOutline = new BehaviorSubject<PdfOutlineItem[] | null>(null);
+  private _pdfPageCount = new BehaviorSubject<number>(0);
   private _currentPage = new BehaviorSubject<number>(1);
   private _bookmarks = new BehaviorSubject<BookMark[]>([]);
   private _notes = new BehaviorSubject<BookNoteV2[]>([]);
@@ -48,6 +53,8 @@ export class CbxSidebarService {
   activeTab$ = this._activeTab.asObservable();
   bookInfo$ = this._bookInfo.asObservable();
   pages$ = this._pages.asObservable();
+  pdfOutline$ = this._pdfOutline.asObservable();
+  pdfPageCount$ = this._pdfPageCount.asObservable();
   currentPage$ = this._currentPage.asObservable();
   bookmarks$ = this._bookmarks.asObservable();
   notes$ = this._notes.asObservable();
@@ -55,16 +62,13 @@ export class CbxSidebarService {
   editNote$ = this._editNote.asObservable();
   bookmarksChanged$ = this._bookmarksChanged.asObservable();
 
-  get currentPage(): number {
-    return this._currentPage.value;
-  }
-
-  get activeTab(): CbxSidebarTab {
-    return this._activeTab.value;
+  get isPdf(): boolean {
+    return this.bookType === 'PDF';
   }
 
   initialize(bookId: number, book: Book, destroy$: Subject<void>): void {
     this.bookId = bookId;
+    this.bookType = book.bookType;
     this.destroy$ = destroy$;
 
     this._bookInfo.next({
@@ -80,9 +84,25 @@ export class CbxSidebarService {
   }
 
   private loadPageInfo(): void {
-    this.cbxReaderService.getPageInfo(this.bookId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(pages => this._pages.next(pages));
+    if (this.bookType === 'PDF') {
+      this.pdfReaderService.getPageInfo(this.bookId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(pdfInfo => {
+          this._pdfPageCount.next(pdfInfo.pageCount);
+          this._pdfOutline.next(pdfInfo.outline);
+          if (!pdfInfo.outline || pdfInfo.outline.length === 0) {
+            const pages: CbxPageInfo[] = [];
+            for (let i = 1; i <= pdfInfo.pageCount; i++) {
+              pages.push({pageNumber: i, displayName: `Page ${i}`});
+            }
+            this._pages.next(pages);
+          }
+        });
+    } else {
+      this.cbxReaderService.getPageInfo(this.bookId)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(pages => this._pages.next(pages));
+    }
   }
 
   private loadBookmarks(): void {
@@ -95,10 +115,6 @@ export class CbxSidebarService {
     this.bookNoteV2Service.getNotesForBook(this.bookId)
       .pipe(takeUntil(this.destroy$))
       .subscribe(notes => this._notes.next(notes));
-  }
-
-  refreshNotes(): void {
-    this.loadNotes();
   }
 
   setCurrentPage(page: number): void {
@@ -125,7 +141,6 @@ export class CbxSidebarService {
     this.close();
   }
 
-  // Bookmark methods - using page number as the location identifier (stored in cfi field)
   isPageBookmarked(pageNumber: number): boolean {
     const pageStr = pageNumber.toString();
     return this._bookmarks.value.some(b => b.cfi === pageStr);
@@ -177,15 +192,9 @@ export class CbxSidebarService {
     }
   }
 
-  // Notes methods - using page number as the location identifier (stored in cfi field)
   pageHasNotes(pageNumber: number): boolean {
     const pageStr = pageNumber.toString();
     return this._notes.value.some(n => n.cfi === pageStr);
-  }
-
-  getNotesForPage(pageNumber: number): BookNoteV2[] {
-    const pageStr = pageNumber.toString();
-    return this._notes.value.filter(n => n.cfi === pageStr);
   }
 
   createNote(pageNumber: number, noteContent: string, color?: string): void {
@@ -248,16 +257,5 @@ export class CbxSidebarService {
       note.noteContent.toLowerCase().includes(query) ||
       (note.chapterTitle?.toLowerCase().includes(query))
     );
-  }
-
-  reset(): void {
-    this._isOpen.next(false);
-    this._activeTab.next('pages');
-    this._bookInfo.next({ id: null, title: '', authors: '', coverUrl: null });
-    this._pages.next([]);
-    this._currentPage.next(1);
-    this._bookmarks.next([]);
-    this._notes.next([]);
-    this._notesSearchQuery.next('');
   }
 }
