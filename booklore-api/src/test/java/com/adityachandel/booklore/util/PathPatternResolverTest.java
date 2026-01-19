@@ -889,4 +889,20 @@ class PathPatternResolverTest {
         assertTrue(result.getBytes(StandardCharsets.UTF_8).length <= MAX_FILENAME_BYTES,
                 "Result bytes should be <= " + MAX_FILENAME_BYTES);
     }
+
+    @Test
+    @DisplayName("Should remove leading slash from resolved pattern if first component is empty")
+    void testResolvePattern_removesLeadingSlash_whenFirstComponentIsEmpty() {
+        BookMetadata metadata = BookMetadata.builder()
+                .title("Book Title")
+                .authors(Set.of()) // Empty authors
+                .build();
+
+        // Pattern implies a subdirectory, but authors is missing
+        // This resolves to "/Book Title.pdf" currently
+        String result = PathPatternResolver.resolvePattern(metadata, "{authors}/{title}", "original.pdf");
+
+        // This assertion ensures the path is relative (does not start with /)
+        assertFalse(result.startsWith("/"), "Result should not start with slash: " + result);
+    }
 }
