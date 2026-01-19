@@ -1,0 +1,79 @@
+<div class="quick-settings-overlay" (click)="onOverlayClick()">
+  <div class="quick-settings-panel" (click)="$event.stopPropagation()">
+    <div class="pointer"></div>
+    <div class="panel-body">
+      <!-- Fit Mode -->
+      <div class="control">
+        <label>Fit Mode</label>
+        <div class="control-right">
+          <div class="button-group">
+            @for (option of fitModeOptions; track option.value) {
+              <button
+                class="option-btn"
+                [class.active]="state.fitMode === option.value"
+                (click)="onFitModeSelect(option.value)"
+                [title]="option.label">
+                <app-reader-icon [name]="option.icon" [size]="16" />
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll Mode -->
+      <div class="control">
+        <label>Scroll Mode</label>
+        <div class="control-right">
+          <span class="mode-label">{{ state.scrollMode === CbxScrollMode.PAGINATED ? 'Paginated' : 'Infinite' }}</span>
+          <button class="switch" [class.active]="state.scrollMode === CbxScrollMode.INFINITE" (click)="onScrollModeToggle()">
+            <span class="slider"></span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Page View (only in paginated mode) -->
+      @if (isPaginated) {
+        <div class="control">
+          <label>Page View</label>
+          <div class="control-right">
+            <span class="mode-label">{{ isTwoPageView ? 'Two-Page' : 'Single' }}</span>
+            <button class="switch" [class.active]="isTwoPageView" (click)="onPageViewToggle()">
+              <span class="slider"></span>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Page Spread (only in two-page mode) -->
+      @if (isPaginated && isTwoPageView) {
+        <div class="control">
+          <label>Page Spread</label>
+          <div class="control-right">
+            <span class="mode-label">{{ state.pageSpread === CbxPageSpread.ODD ? 'Odd First' : 'Even First' }}</span>
+            <button class="switch" [class.active]="state.pageSpread === CbxPageSpread.EVEN" (click)="onPageSpreadToggle()">
+              <span class="slider"></span>
+            </button>
+          </div>
+        </div>
+      }
+
+      <!-- Background Color -->
+      <div class="control">
+        <label>Background</label>
+        <div class="control-right">
+          <div class="button-group">
+            @for (option of backgroundOptions; track option.value) {
+              <button
+                class="option-btn color-btn"
+                [class.active]="state.backgroundColor === option.value"
+                (click)="onBackgroundSelect(option.value)"
+                [title]="option.label">
+                <span class="color-swatch" [style.background]="option.color"></span>
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
