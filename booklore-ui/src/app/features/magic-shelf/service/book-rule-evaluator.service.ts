@@ -1,9 +1,19 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Book } from '../../book/model/book.model';
 import { GroupRule, Rule, RuleField } from '../component/magic-shelf-component';
+import { IncompleteSeriesService } from './incomplete-series.service';
 
 @Injectable({ providedIn: 'root' })
 export class BookRuleEvaluatorService {
+  private incompleteSeriesService = inject(IncompleteSeriesService);
+  private allBooks: Book[] = [];
+
+  /**
+   * Set all books for context-dependent rules like incompleteSeries
+   */
+  setAllBooks(books: Book[]): void {
+    this.allBooks = books;
+  }
 
   evaluateGroup(book: Book, group: GroupRule): boolean {
     const results = group.rules.map(rule => {
@@ -18,6 +28,21 @@ export class BookRuleEvaluatorService {
 
   private evaluateRule(book: Book, rule: Rule): boolean {
     const rawValue = this.extractBookValue(book, rule.field);
+
+    // Special handling for boolean fields
+    if (rule.field === 'incompleteSeries') {
+      const boolValue = rawValue === true;
+      const ruleBoolValue = rule.value === 'true' || rule.value === true;
+
+      switch (rule.operator) {
+        case 'equals':
+          return boolValue === ruleBoolValue;
+        case 'not_equals':
+          return boolValue !== ruleBoolValue;
+        default:
+          return false;
+      }
+    }
 
     const normalize = (val: unknown): unknown => {
       if (val === null || val === undefined) return val;
@@ -67,6 +92,8 @@ export class BookRuleEvaluatorService {
           return [String(book.metadata?.isbn13 ?? '').toLowerCase()];
         case 'isbn10':
           return [String(book.metadata?.isbn10 ?? '').toLowerCase()];
+        case 'incompleteSeries':
+          return [String(book.incompleteSeries ?? false)];
         default:
           return [];
       }
@@ -259,6 +286,8 @@ export class BookRuleEvaluatorService {
         return book.metadata?.hardcoverReviewCount;
       case 'ranobedbRating':
         return book.metadata?.ranobedbRating;
+      case 'incompleteSeries':
+        return book.incompleteSeries ?? false;
       default:
         return (book as Record<string, unknown>)[field];
     }

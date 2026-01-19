@@ -72,7 +72,8 @@ export type RuleField =
   | 'lastReadTime'
   | 'metadataScore'
   | 'moods'
-  | 'tags';
+  | 'tags'
+  | 'incompleteSeries';
 
 
 interface FullFieldConfig {
@@ -148,7 +149,8 @@ const FIELD_CONFIGS: Record<RuleField, FullFieldConfig> = {
   goodreadsReviewCount: {label: 'Goodreads Review Count', type: 'number'},
   hardcoverRating: {label: 'Hardcover Rating', type: 'decimal', max: 5},
   hardcoverReviewCount: {label: 'Hardcover Review Count', type: 'number'},
-  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5}
+  ranobedbRating: {label: 'Ranobedb Rating', type: 'decimal', max: 5},
+  incompleteSeries: {label: 'Incomplete Series'}
 };
 
 @Component({
@@ -236,6 +238,11 @@ export class MagicShelfComponent implements OnInit {
   private iconPicker = inject(IconPickerService);
 
   selectedIcon: IconSelection | null = null;
+
+  incompleteSeriesOptions = [
+    { label: 'True', value: 'true' },
+    { label: 'False', value: 'false' }
+  ];
 
   trackByFn(ruleCtrl: AbstractControl, index: number): unknown {
     return ruleCtrl;
@@ -371,14 +378,14 @@ export class MagicShelfComponent implements OnInit {
     if (!field) return [...baseOperators, ...multiValueOperators];
 
     const config = FIELD_CONFIGS[field];
-    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10'].includes(field);
+    const isMultiValueField = ['library', 'shelf', 'authors', 'categories', 'moods', 'tags', 'readStatus', 'fileType', 'language', 'title', 'subtitle', 'publisher', 'seriesName', 'isbn13', 'isbn10', 'incompleteSeries'].includes(field);
     const operators = [...baseOperators];
 
     if (isMultiValueField) {
       operators.push(...multiValueOperators);
     }
 
-    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType'].includes(field);
+    const isTextEligible = !['library', 'shelf', 'readStatus', 'fileType', 'incompleteSeries'].includes(field);
 
     if (config.type === 'number' || config.type === 'decimal' || config.type === 'date') {
       operators.push(...comparisonOperators);

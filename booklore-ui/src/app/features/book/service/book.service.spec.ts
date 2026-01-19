@@ -120,7 +120,7 @@ describe('BookService', () => {
       httpMock.get.mockReturnValue(of([{id: 1}]));
       service.refreshBooks();
       expect(bookStateServiceMock.updateBookState).toHaveBeenCalledWith({
-        books: [{id: 1}],
+        books: [{id: 1, incompleteSeries: false}],
         loaded: true,
         error: null
       });

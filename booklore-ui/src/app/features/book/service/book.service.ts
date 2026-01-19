@@ -13,6 +13,7 @@ import {Router} from '@angular/router';
 import {BookStateService} from './book-state.service';
 import {BookSocketService} from './book-socket.service';
 import {BookPatchService} from './book-patch.service';
+import {IncompleteSeriesService} from '../../magic-shelf/service/incomplete-series.service';
 
 export interface BookStatusUpdateResponse {
   bookId: number;
@@ -41,6 +42,7 @@ export class BookService {
   private bookStateService = inject(BookStateService);
   private bookSocketService = inject(BookSocketService);
   private bookPatchService = inject(BookPatchService);
+  private incompleteSeriesService = inject(IncompleteSeriesService);
 
   private loading$: Observable<Book[]> | null = null;
 
@@ -85,6 +87,7 @@ export class BookService {
 
   private fetchBooks(): Observable<Book[]> {
     return this.http.get<Book[]>(this.url).pipe(
+      map((books) => this.computeIncompleteSeriesProperty(books)),
       tap(books => {
         this.bookStateService.updateBookState({
           books: books || [],
@@ -106,6 +109,7 @@ export class BookService {
 
   refreshBooks(): void {
     this.http.get<Book[]>(this.url).pipe(
+      map((books) => this.computeIncompleteSeriesProperty(books)),
       tap(books => {
         this.bookStateService.updateBookState({
           books: books || [],
@@ -600,5 +604,20 @@ export class BookService {
 
   handleMultipleBookCoverPatches(patches: { id: number; coverUpdatedOn: string }[]): void {
     this.bookSocketService.handleMultipleBookCoverPatches(patches);
+  }
+
+  /**
+   * Computes the incompleteSeries property for all books
+   * This is a cached computed property to avoid expensive real-time calculations
+   */
+  private computeIncompleteSeriesProperty(books: Book[]): Book[] {
+    if (!books || books.length === 0) return books;
+
+    books.forEach((book) => {
+      book.incompleteSeries =
+        this.incompleteSeriesService.isBookInIncompleteSeries(book, books);
+    });
+
+    return books;
   }
 }
