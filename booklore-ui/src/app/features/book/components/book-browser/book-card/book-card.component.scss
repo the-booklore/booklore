@@ -211,32 +211,32 @@
 }
 
 .book-type-epub {
-  background: #16a34a; /* medium green */
+  background: var(--book-type-epub-color);
   color: #fff;
 }
 
 .book-type-pdf {
-  background: #dc2626; /* medium red */
+  background: var(--book-type-pdf-color);
   color: #fff;
 }
 
 .book-type-cbx {
-  background: #d97706; /* amber/orange */
+  background: var(--book-type-cbx-color);
   color: #fff;
 }
 
 .book-type-mobi {
-  background: #2563eb; /* medium blue */
+  background: var(--book-type-mobi-color);
   color: #fff;
 }
 
 .book-type-azw3 {
-  background: #0891b2; /* cyan/teal */
+  background: var(--book-type-azw3-color);
   color: #fff;
 }
 
 .book-type-fb2 {
-  background: #7c3aed; /* vibrant purple */
+  background: var(--book-type-fb2-color);
   color: #fff;
 }
 

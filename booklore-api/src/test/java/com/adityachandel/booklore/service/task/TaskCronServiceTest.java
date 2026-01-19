@@ -65,18 +65,18 @@ class TaskCronServiceTest {
     @Test
     void testGetAllEnabledCronConfigs_returnsList() {
         List<TaskCronConfigurationEntity> configs = List.of(
-                buildEntity(TaskType.CLEAR_PDF_CACHE, "0 0 1 * * *", true)
+                buildEntity(TaskType.CLEANUP_DELETED_BOOKS, "0 0 1 * * *", true)
         );
         when(repository.findByEnabledTrue()).thenReturn(configs);
 
         List<TaskCronConfigurationEntity> result = service.getAllEnabledCronConfigs();
         assertEquals(1, result.size());
-        assertEquals(TaskType.CLEAR_PDF_CACHE, result.getFirst().getTaskType());
+        assertEquals(TaskType.CLEANUP_DELETED_BOOKS, result.getFirst().getTaskType());
     }
 
     @Test
     void testGetCronConfigOrDefault_existingConfig() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         TaskCronConfigurationEntity entity = buildEntity(type, "0 0 1 * * *", true);
         when(repository.findByTaskType(type)).thenReturn(Optional.of(entity));
 
@@ -88,7 +88,7 @@ class TaskCronServiceTest {
 
     @Test
     void testGetCronConfigOrDefault_noConfig_returnsDefault() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         when(repository.findByTaskType(type)).thenReturn(Optional.empty());
 
         CronConfig config = service.getCronConfigOrDefault(type);
@@ -116,7 +116,7 @@ class TaskCronServiceTest {
 
     @Test
     void testPatchCronConfig_updateExisting() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         BookLoreUser user = BookLoreUser.builder().id(10L).isDefaultPassword(false).build();
         TaskCronConfigurationEntity entity = buildEntity(type, "0 0 1 * * *", false);
 
@@ -135,7 +135,7 @@ class TaskCronServiceTest {
 
     @Test
     void testPatchCronConfig_createNew() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         BookLoreUser user = BookLoreUser.builder().id(10L).isDefaultPassword(false).build();
 
         when(authService.getAuthenticatedUser()).thenReturn(user);
@@ -154,7 +154,7 @@ class TaskCronServiceTest {
 
     @Test
     void testPatchCronConfig_invalidCronExpression_throws() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         BookLoreUser user = BookLoreUser.builder().id(10L).isDefaultPassword(false).build();
 
         when(authService.getAuthenticatedUser()).thenReturn(user);
@@ -223,7 +223,7 @@ class TaskCronServiceTest {
 
     @Test
     void testValidateTaskTypeForCron_supported() {
-        TaskType type = TaskType.CLEAR_PDF_CACHE;
+        TaskType type = TaskType.CLEANUP_DELETED_BOOKS;
         assertDoesNotThrow(() -> {
             var method = TaskCronService.class.getDeclaredMethod("validateTaskTypeForCron", TaskType.class);
             method.setAccessible(true);

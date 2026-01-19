@@ -181,6 +181,9 @@ public class BookUpdateService {
             NewPdfViewerPreferences pdfSettings = settings.getNewPdfSettings();
             prefs.setPageSpread(pdfSettings.getPageSpread());
             prefs.setPageViewMode(pdfSettings.getPageViewMode());
+            prefs.setFitMode(pdfSettings.getFitMode());
+            prefs.setScrollMode(pdfSettings.getScrollMode());
+            prefs.setBackgroundColor(pdfSettings.getBackgroundColor());
             newPdfViewerPreferencesRepository.save(prefs);
         }
     }

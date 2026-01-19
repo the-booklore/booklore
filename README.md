@@ -450,7 +450,7 @@ Join community!
 
 **GNU General Public License v3.0**
 
-Copyright © 2024-2025 BookLore
+Copyright © 2024-2026 BookLore
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](http://www.gnu.org/licenses/gpl.html)
 

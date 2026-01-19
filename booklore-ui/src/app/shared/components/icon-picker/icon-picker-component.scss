@@ -1,3 +1,28 @@
+@use '../../styles/panel-shared' as panel;
+
+.icon-picker-container {
+  display: flex;
+  flex-direction: column;
+  max-height: 85dvh;
+}
+
+.panel-header {
+  @include panel.panel-header;
+  flex-shrink: 0;
+}
+
+.dialog-content {
+  padding: 1rem;
+  background: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(25px, 1fr));

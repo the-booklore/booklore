@@ -23,7 +23,7 @@ import {MetadataRefreshType} from "../../../metadata/model/request/metadata-refr
 import {TieredMenu} from "primeng/tieredmenu";
 import {Tooltip} from "primeng/tooltip";
 import {Divider} from "primeng/divider";
-import {animate, state, style, transition, trigger} from "@angular/animations";
+import {animate, style, transition, trigger} from "@angular/animations";
 import {Component, inject, OnDestroy} from '@angular/core';
 
 @Component({
@@ -52,10 +52,14 @@ import {Component, inject, OnDestroy} from '@angular/core';
   ],
   animations: [
     trigger('slideInOut', [
-      state('void', style({transform: 'translateY(100%)'})),
-      state('*', style({transform: 'translateY(0)'})),
-      transition(':enter', [animate('0.1s ease-in')]),
-      transition(':leave', [animate('0.1s ease-out')])
+      transition(':enter', [
+        style({transform: 'translateY(100%)'}),
+        animate('0.1s ease-in', style({transform: 'translateY(0)'}))
+      ]),
+      transition(':leave', [
+        style({transform: 'translateY(0)'}),
+        animate('0.1s ease-out', style({transform: 'translateY(100%)'}))
+      ])
     ])
   ]
 })

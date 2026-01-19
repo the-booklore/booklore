@@ -1,27 +1,34 @@
 import {Component, CUSTOM_ELEMENTS_SCHEMA, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
-import {CommonModule, Location} from '@angular/common';
+import {CommonModule} from '@angular/common';
 import {forkJoin, Observable, of, Subject, throwError} from 'rxjs';
 import {catchError, switchMap, takeUntil, tap} from 'rxjs/operators';
-import {ReaderLoaderService} from './services/reader-loader.service';
-import {ReaderViewManagerService} from './services/reader-view-manager.service';
-import {ReaderStateService} from './services/reader-state.service';
-import {ReaderStyleService} from './services/reader-style.service';
-import {ReaderBookmarkService} from './services/reader-bookmark.service';
+import {MessageService} from 'primeng/api';
+import {ReaderLoaderService} from './core/loader.service';
+import {ReaderViewManagerService} from './core/view-manager.service';
+import {ReaderStateService} from './state/reader-state.service';
+import {ReaderStyleService} from './core/style.service';
+import {ReaderBookmarkService} from './features/bookmarks/bookmark.service';
+import {ReaderAnnotationHttpService} from './features/annotations/annotation.service';
+import {ReaderProgressService} from './state/progress.service';
+import {ReaderSelectionService} from './features/selection/selection.service';
+import {ReaderSidebarService} from './layout/sidebar/sidebar.service';
+import {ReaderLeftSidebarService} from './layout/panel/panel.service';
+import {ReaderHeaderService} from './layout/header/header.service';
+import {ReaderNoteService} from './features/notes/note.service';
 import {BookService} from '../../book/service/book.service';
 import {ActivatedRoute} from '@angular/router';
-import {BookMark, BookMarkService} from '../../../shared/service/book-mark.service';
-import {BookPatchService} from '../../book/service/book-patch.service';
-import {Book, EbookViewerSetting} from '../../book/model/book.model';
-import {ReaderHeaderComponent} from './reader-layout/header/reader-header.component';
-import {ReaderSidebarComponent} from './reader-layout/sidebar/reader-sidebar.component';
-import {ReaderNavbarComponent} from './reader-layout/navbar/reader-navbar.component';
-import {ReaderSettingsDialogComponent} from './reader-layout/header/reader-settings-dialog.component';
-import {ReaderBookMetadataDialogComponent} from './reader-layout/sidebar/reader-book-metadata-dialog.component';
-import {ReadingSessionService} from '../../../shared/service/reading-session.service';
-import {TocItem} from 'epubjs';
-import {PageInfo, ThemeInfo} from './utils/reader-header-footer.util';
-import {ReaderHeaderFooterVisibilityManager} from './utils/reader-header-footer-visibility.util';
-import {EpubCustomFontService} from './services/epub-custom-font.service';
+import {Book} from '../../book/model/book.model';
+import {ReaderHeaderComponent} from './layout/header/header.component';
+import {ReaderSidebarComponent} from './layout/sidebar/sidebar.component';
+import {ReaderLeftSidebarComponent} from './layout/panel/panel.component';
+import {ReaderNavbarComponent} from './layout/footer/footer.component';
+import {ReaderSettingsDialogComponent} from './dialogs/settings-dialog.component';
+import {ReaderQuickSettingsComponent} from './layout/header/quick-settings.component';
+import {ReaderBookMetadataDialogComponent} from './dialogs/metadata-dialog.component';
+import {ReaderHeaderFooterVisibilityManager} from './shared/visibility.util';
+import {EpubCustomFontService} from './features/fonts/custom-font.service';
+import {TextSelectionPopupComponent, TextSelectionAction} from './shared/selection-popup.component';
+import {ReaderNoteDialogComponent, NoteDialogData, NoteDialogResult} from './dialogs/note-dialog.component';
 
 @Component({
   selector: 'app-ebook-reader',
@@ -30,17 +37,29 @@ import {EpubCustomFontService} from './services/epub-custom-font.service';
     CommonModule,
     ReaderHeaderComponent,
     ReaderSettingsDialogComponent,
+    ReaderQuickSettingsComponent,
     ReaderBookMetadataDialogComponent,
     ReaderSidebarComponent,
-    ReaderNavbarComponent
+    ReaderLeftSidebarComponent,
+    ReaderNavbarComponent,
+    TextSelectionPopupComponent,
+    ReaderNoteDialogComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
+    MessageService,
     ReaderLoaderService,
     ReaderViewManagerService,
     ReaderStateService,
     ReaderStyleService,
-    ReaderBookmarkService
+    ReaderBookmarkService,
+    ReaderAnnotationHttpService,
+    ReaderProgressService,
+    ReaderSelectionService,
+    ReaderSidebarService,
+    ReaderLeftSidebarService,
+    ReaderHeaderService,
+    ReaderNoteService
   ],
   templateUrl: './ebook-reader.component.html',
   styleUrls: ['./ebook-reader.component.scss']
@@ -51,65 +70,96 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   private styleService = inject(ReaderStyleService);
   private bookService = inject(BookService);
   private route = inject(ActivatedRoute);
-  private bookMarkService = inject(BookMarkService);
-  private bookPatchService = inject(BookPatchService);
   private epubCustomFontService = inject(EpubCustomFontService);
-  private bookmarkService = inject(ReaderBookmarkService);
-  private readingSessionService = inject(ReadingSessionService);
+  private annotationService = inject(ReaderAnnotationHttpService);
+  private progressService = inject(ReaderProgressService);
+  private selectionService = inject(ReaderSelectionService);
+  private headerService = inject(ReaderHeaderService);
+  private noteService = inject(ReaderNoteService);
 
+  public sidebarService = inject(ReaderSidebarService);
+  public leftSidebarService = inject(ReaderLeftSidebarService);
   public viewManager = inject(ReaderViewManagerService);
   public stateService = inject(ReaderStateService);
-  protected location = inject(Location);
+
   protected bookId!: number;
 
   private hasLoadedOnce = false;
-  private hasStartedSession = false;
   private _fileUrl: string | null = null;
-  private currentCfi: string | null = null;
-
   private visibilityManager!: ReaderHeaderFooterVisibilityManager;
-
-  isLoading = true;
-  showControls = false;
-  showChapters = false;
-  showMetadata = false;
-  isCurrentCfiBookmarked = false;
-  forceHeaderVisible = false;
-  forceNavbarVisible = false;
-
-  chapters: TocItem[] = [];
-  bookmarks: BookMark[] = [];
-  book: Book | null = null;
-  coverUpdatedOn: string | undefined;
-  currentChapterName: string | null = null;
-  currentChapterHref: string | null = null;
-  currentProgressData: any = null;
-  private currentPageInfo: PageInfo | undefined;
   private relocateTimeout: any;
   private sectionFractionsTimeout: any;
 
+  isLoading = true;
+  showQuickSettings = false;
+  showControls = false;
+  showMetadata = false;
+  isCurrentCfiBookmarked = false;
+  forceNavbarVisible = false;
+  book: Book | null = null;
   sectionFractions: number[] = [];
+
+  showSelectionPopup = false;
+  popupPosition = { x: 0, y: 0 };
+  showPopupBelow = false;
+  overlappingAnnotationId: number | null = null;
+  selectedText = '';
+
+  showNoteDialog = false;
+  noteDialogData: NoteDialogData | null = null;
+
+  get currentProgressData(): any {
+    return this.progressService.currentProgressData;
+  }
 
   ngOnInit() {
     this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
     this.visibilityManager.onStateChange((state) => {
-      this.forceHeaderVisible = state.headerVisible;
+      this.headerService.setForceVisible(state.headerVisible);
       this.forceNavbarVisible = state.footerVisible;
     });
+
+    this.selectionService.state$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => {
+        this.showSelectionPopup = state.visible;
+        this.popupPosition = state.position;
+        this.showPopupBelow = state.showBelow;
+        this.overlappingAnnotationId = state.overlappingAnnotationId;
+        this.selectedText = state.selectedText;
+      });
+
+    this.sidebarService.showMetadata$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.showMetadata = true);
+
+    this.noteService.dialogState$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(state => {
+        this.showNoteDialog = state.visible;
+        this.noteDialogData = state.data;
+      });
+
+    this.headerService.showControls$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.showQuickSettings = true);
+
+    this.headerService.showMetadata$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.showMetadata = true);
 
     this.isLoading = true;
     this.initializeFoliate().pipe(
       switchMap(() => this.epubCustomFontService.loadAndCacheFonts()),
       tap(() => this.stateService.refreshCustomFonts()),
       switchMap(() => this.setupView()),
-      switchMap(() => this.loadBookFromAPI()),
       tap(() => {
-        this.loadBookmarks();
-        this.subscribeToStateChanges();
         this.subscribeToViewEvents();
-        this.isLoading = false;
+        this.subscribeToStateChanges();
       }),
-      catchError(err => {
+      switchMap(() => this.loadBookFromAPI()),
+      tap(() => this.isLoading = false),
+      catchError(() => {
         this.isLoading = false;
         return of(null);
       }),
@@ -121,15 +171,15 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.viewManager.destroy();
-    this.bookmarkService.reset();
+    this.annotationService.reset();
+    this.progressService.endSession();
+    this.progressService.reset();
+    this.selectionService.reset();
+    this.sidebarService.reset();
+    this.leftSidebarService.reset();
+    this.headerService.reset();
+    this.noteService.reset();
     this.epubCustomFontService.cleanup();
-
-    if (this.readingSessionService.isSessionActive()) {
-      const progress = typeof this.currentProgressData?.fraction === 'number'
-        ? Math.round(this.currentProgressData.fraction * 100 * 100) / 100
-        : undefined;
-      this.readingSessionService.endSession(this.currentCfi || undefined, progress);
-    }
 
     if (this._fileUrl) {
       URL.revokeObjectURL(this._fileUrl);
@@ -164,14 +214,19 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
       })),
       switchMap(({book, fileBlob}) => {
         this.book = book;
-        this.coverUpdatedOn = book.metadata?.coverUpdatedOn;
         const fileUrl = URL.createObjectURL(fileBlob);
         this._fileUrl = fileUrl;
+
+        this.progressService.initialize(this.bookId, book.bookType!);
+        this.selectionService.initialize(this.bookId, this.destroy$);
+        this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
         return this.viewManager.loadEpub(fileUrl).pipe(
           tap(() => {
             this.applyStyles();
-            this.chapters = this.viewManager.getChapters();
+            this.sidebarService.initialize(this.bookId, book, this.destroy$);
+            this.leftSidebarService.initialize(this.bookId, this.destroy$);
+            this.noteService.initialize(this.bookId, this.destroy$);
           }),
           switchMap(() => this.viewManager.getMetadata()),
           switchMap(() => {
@@ -184,15 +239,6 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         );
       })
     );
-  }
-
-  private loadBookmarks(): void {
-    this.bookMarkService.getBookmarksForBook(this.bookId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(bookmarks => {
-        this.bookmarks = bookmarks;
-        this.updateIsCurrentCfiBookmarked();
-      });
   }
 
   private subscribeToStateChanges(): void {
@@ -208,13 +254,14 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         switch (event.type) {
           case 'load':
             this.applyStyles();
-            this.chapters = this.viewManager.getChapters();
+            this.sidebarService.updateChapters();
             this.updateSectionFractions();
             break;
           case 'relocate':
             if (this.relocateTimeout) clearTimeout(this.relocateTimeout);
             this.relocateTimeout = setTimeout(() => {
-              this.handleRelocateEvent(event.detail);
+              this.progressService.handleRelocateEvent(event.detail);
+              this.updateBookmarkIndicator();
             }, 100);
 
             if (this.sectionFractionsTimeout) clearTimeout(this.sectionFractionsTimeout);
@@ -225,6 +272,9 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
           case 'middle-single-tap':
             this.toggleHeaderNavbarPinned();
             break;
+          case 'text-selected':
+            this.selectionService.handleTextSelected(event.detail, event.popupPosition);
+            break;
         }
       });
   }
@@ -233,80 +283,15 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     this.sectionFractions = this.viewManager.getSectionFractions();
   }
 
-  private handleRelocateEvent(detail: any): void {
-    this.currentProgressData = detail;
-
-    const cfi = detail?.cfi ?? null;
-    const href = detail?.pageItem?.href ?? detail?.tocItem?.href ?? null;
-    const percentage = typeof detail?.fraction === 'number' ? detail.fraction * 100 : null;
-
-    if (!this.hasStartedSession && cfi && percentage !== null) {
-      this.hasStartedSession = true;
-      this.readingSessionService.startSession(this.book!.id, this.book?.bookType!, cfi, percentage);
-    }
-
-    if (cfi && percentage !== null) {
-      this.bookPatchService.saveEpubProgress(this.bookId, cfi, href, percentage);
-      this.readingSessionService.updateProgress(cfi, percentage);
-    }
-
-    const chapterLabel = detail?.tocItem?.label;
-    if (chapterLabel && chapterLabel !== this.currentChapterName) {
-      this.currentChapterName = chapterLabel;
-    }
-
-    if (href && href !== this.currentChapterHref) {
-      this.currentChapterHref = href;
-    }
-
-    if (detail?.section) {
-      const percentCompleted = Math.round((detail.fraction * 100) * 10) / 10;
-      const totalMinutes = detail.time?.section ?? 0;
-
-      const hours = Math.floor(totalMinutes / 60);
-      const minutes = Math.floor(totalMinutes % 60);
-      const seconds = Math.round((totalMinutes - Math.floor(totalMinutes)) * 60);
-
-      const parts: string[] = [];
-      if (hours) parts.push(`${hours}h`);
-      if (minutes) parts.push(`${minutes}m`);
-      if (seconds || parts.length === 0) parts.push(`${seconds}s`);
-
-      const sectionTimeText = parts.join(' ');
-
-      this.currentPageInfo = {
-        percentCompleted,
-        sectionTimeText
-      };
-    }
-
-    if (this.stateService.currentState.flow === 'paginated') {
-      const renderer = this.viewManager.getRenderer();
-      const theme: ThemeInfo = {
-        fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
-        bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
-      };
-
-      if (renderer && renderer.heads && renderer.feet) {
-        this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
-      } else {
-        this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
-      }
-    }
-
-    if (cfi) {
-      this.currentCfi = cfi;
-      this.updateIsCurrentCfiBookmarked();
-      this.bookmarkService.updateCurrentPosition(cfi, chapterLabel);
-    }
-  }
-
-  private updateIsCurrentCfiBookmarked(): void {
-    if (!this.currentCfi || !this.bookmarks?.length) {
-      this.isCurrentCfiBookmarked = false;
-      return;
-    }
-    this.isCurrentCfiBookmarked = this.bookmarks.some(b => b.cfi === this.currentCfi);
+  private updateBookmarkIndicator(): void {
+    const currentCfi = this.progressService.currentCfi;
+    this.sidebarService.bookmarks$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(bookmarks => {
+        this.isCurrentCfiBookmarked = currentCfi
+          ? bookmarks.some(b => b.cfi === currentCfi)
+          : false;
+      });
   }
 
   private applyStyles(): void {
@@ -319,113 +304,10 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     }
   }
 
-  private syncSettingsToBackend(): void {
-    const setting: EbookViewerSetting = {
-      lineHeight: this.stateService.currentState.lineHeight,
-      justify: this.stateService.currentState.justify,
-      hyphenate: this.stateService.currentState.hyphenate,
-      maxColumnCount: this.stateService.currentState.maxColumnCount,
-      gap: this.stateService.currentState.gap,
-      fontSize: this.stateService.currentState.fontSize,
-      theme: typeof this.stateService.currentState.theme === 'object' && 'name' in this.stateService.currentState.theme
-        ? this.stateService.currentState.theme.name
-        : (this.stateService.currentState.theme as any),
-      maxInlineSize: this.stateService.currentState.maxInlineSize,
-      maxBlockSize: this.stateService.currentState.maxBlockSize,
-      fontFamily: this.stateService.currentState.fontFamily,
-      isDark: this.stateService.currentState.isDark,
-      flow: this.stateService.currentState.flow,
-    };
-    this.bookService.updateViewerSetting({ebookSettings: setting}, this.bookId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe();
-  }
-
-  onChapterClick(href: string): void {
-    this.viewManager.goTo(href).pipe(
-      tap(() => this.showChapters = false),
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
-
-  onBookmarkClick(cfi: string): void {
-    this.viewManager.goTo(cfi).pipe(
-      tap(() => {
-        this.showChapters = false;
-        this.currentCfi = cfi;
-        this.updateIsCurrentCfiBookmarked();
-      }),
-      takeUntil(this.destroy$)
-    ).subscribe();
-  }
-
-  onCreateBookmark(): void {
-    this.bookmarkService.createBookmarkAtCurrentPosition(this.bookId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(success => {
-        if (success) {
-          this.loadBookmarks();
-        }
-      });
-  }
-
-  onDeleteBookmark(bookmarkId: number): void {
-    this.bookMarkService.deleteBookmark(bookmarkId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => this.loadBookmarks(),
-        error: () => {
-        }
-      });
-  }
-
   onProgressChange(fraction: number): void {
     this.viewManager.goToFraction(fraction)
       .pipe(takeUntil(this.destroy$))
       .subscribe();
-  }
-
-  onToggleDarkMode(): void {
-    this.stateService.toggleDarkMode();
-    this.syncSettingsToBackend();
-  }
-
-  onIncreaseFontSize(): void {
-    this.stateService.updateFontSize(1);
-    this.syncSettingsToBackend();
-  }
-
-  onDecreaseFontSize(): void {
-    this.stateService.updateFontSize(-1);
-    this.syncSettingsToBackend();
-  }
-
-  onIncreaseLineHeight(): void {
-    this.stateService.updateLineHeight(0.1);
-    this.syncSettingsToBackend();
-  }
-
-  onDecreaseLineHeight(): void {
-    this.stateService.updateLineHeight(-0.1);
-    this.syncSettingsToBackend();
-  }
-
-  onSetFlow(flow: 'paginated' | 'scrolled'): void {
-    this.stateService.setFlow(flow);
-    this.syncSettingsToBackend();
-
-    if (flow === 'paginated' && this.currentChapterName) {
-      setTimeout(() => {
-        const renderer = this.viewManager.getRenderer();
-        if (renderer && renderer.heads && renderer.feet) {
-          const theme: ThemeInfo = {
-            fg: this.stateService.currentState.theme.fg || this.stateService.currentState.theme.light.fg,
-            bg: this.stateService.currentState.theme.bg || this.stateService.currentState.theme.light.bg
-          };
-          this.viewManager.updateHeadersAndFooters(this.currentChapterName || '', this.currentPageInfo, theme);
-        }
-      }, 50);
-    }
   }
 
   private toggleHeaderNavbarPinned(): void {
@@ -445,5 +327,21 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   @HostListener('window:resize', ['$event'])
   onWindowResize(event: Event): void {
     this.visibilityManager.updateWindowHeight(window.innerHeight);
+  }
+
+  handleSelectionAction(action: TextSelectionAction): void {
+    if (action.type === 'note') {
+      this.noteService.openNewNoteDialog();
+    } else {
+      this.selectionService.handleAction(action);
+    }
+  }
+
+  onNoteSave(result: NoteDialogResult): void {
+    this.noteService.saveNote(result);
+  }
+
+  onNoteCancel(): void {
+    this.noteService.closeDialog();
   }
 }

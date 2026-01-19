@@ -54,6 +54,7 @@ public class DefaultUserSettingsProvider {
                 .epub(BookLoreUser.UserSettings.PerBookSetting.GlobalOrIndividual.Individual)
                 .pdf(BookLoreUser.UserSettings.PerBookSetting.GlobalOrIndividual.Individual)
                 .cbx(BookLoreUser.UserSettings.PerBookSetting.GlobalOrIndividual.Individual)
+                .newPdf(BookLoreUser.UserSettings.PerBookSetting.GlobalOrIndividual.Individual)
                 .build();
     }
 
@@ -107,6 +108,9 @@ public class DefaultUserSettingsProvider {
         return BookLoreUser.UserSettings.NewPdfReaderSetting.builder()
                 .pageViewMode(NewPdfPageViewMode.SINGLE_PAGE)
                 .pageSpread(NewPdfPageSpread.ODD)
+                .fitMode(NewPdfPageFitMode.FIT_HEIGHT)
+                .scrollMode(NewPdfPageScrollMode.PAGINATED)
+                .backgroundColor(NewPdfBackgroundColor.WHITE)
                 .build();
     }
 

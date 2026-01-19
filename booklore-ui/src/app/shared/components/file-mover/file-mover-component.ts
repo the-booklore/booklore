@@ -2,7 +2,6 @@ import {Component, inject, OnDestroy} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {Button} from 'primeng/button';
 import {TableModule} from 'primeng/table';
-import {Divider} from 'primeng/divider';
 import {DynamicDialogConfig, DynamicDialogRef} from 'primeng/dynamicdialog';
 import {MessageService} from 'primeng/api';
 import {filter, take, takeUntil} from 'rxjs/operators';
@@ -36,13 +35,13 @@ interface FilePreview {
 @Component({
   selector: 'app-file-mover-component',
   standalone: true,
-  imports: [Button, FormsModule, TableModule, Divider, Select],
+  imports: [Button, FormsModule, TableModule, Select],
   templateUrl: './file-mover-component.html',
   styleUrl: './file-mover-component.scss'
 })
 export class FileMoverComponent implements OnDestroy {
   private config = inject(DynamicDialogConfig);
-  private ref = inject(DynamicDialogRef);
+  ref = inject(DynamicDialogRef);
   private bookService = inject(BookService);
   private libraryService = inject(LibraryService);
   private fileOperationsService = inject(FileOperationsService);
