@@ -25,6 +25,13 @@
     transform: translateY(-100%);
   }
 
+  .header-left,
+  .header-right {
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
+
   .icon-btn {
     background: none;
     border: none;
@@ -47,7 +54,7 @@
       background: rgba(255, 255, 255, 0.12);
     }
 
-    &:last-of-type {
+    &:last-child {
       margin-right: 0;
     }
 
@@ -85,7 +92,10 @@
   }
 
   .book-title {
-    flex: 1;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 240px);
     text-align: center;
     font-size: 14px;
     font-weight: 500;
@@ -96,21 +106,25 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-height: 1.2em;
-    padding: 0 16px;
   }
 }
 
 @media (max-width: 600px) {
   .cbx-header {
-    padding: 0 8px;
+    padding: 0 4px;
 
     .icon-btn {
-      padding: 10px;
+      padding: 5px;
+      margin-right: 6px;
+
+      app-reader-icon {
+        transform: scale(0.9);
+      }
     }
 
     .book-title {
-      font-size: 13px;
-      padding: 0 8px;
+      font-size: 12px;
+      max-width: calc(100% - 160px);
     }
   }
 }

@@ -2,7 +2,7 @@ import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {CbxHeaderService} from './cbx-header.service';
-import {ReaderIconComponent} from '../../../ebook-reader/shared/icon.component';
+import {ReaderIconComponent} from '../../../ebook-reader';
 import {CommonModule} from '@angular/common';
 
 @Component({

@@ -70,7 +70,8 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
   private destroyRef = inject(DestroyRef);
   private dialogRef?: DynamicDialogRef;
 
-  readMenuItems$!: Observable<MenuItem[]>;
+  pdfReadMenuItems$!: Observable<MenuItem[]>;
+  epubReadMenuItems$!: Observable<MenuItem[]>;
   refreshMenuItems$!: Observable<MenuItem[]>;
   otherItems$!: Observable<MenuItem[]>;
   downloadMenuItems$!: Observable<MenuItem[]>;
@@ -116,12 +117,22 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
       ])
     );
 
-    this.readMenuItems$ = this.book$.pipe(
+    this.pdfReadMenuItems$ = this.book$.pipe(
       filter((book): book is Book => book !== null),
       map((book): MenuItem[] => [
         {
           label: 'Streaming Reader',
-          command: () => this.read(book.id, 'streaming')
+          command: () => this.read(book.id, 'pdf-streaming')
+        }
+      ])
+    );
+
+    this.epubReadMenuItems$ = this.book$.pipe(
+      filter((book): book is Book => book !== null),
+      map((book): MenuItem[] => [
+        {
+          label: 'Streaming Reader (Beta)',
+          command: () => this.read(book.id, 'epub-streaming')
         }
       ])
     );
@@ -369,7 +380,7 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
     this.isExpanded = !this.isExpanded;
   }
 
-  read(bookId: number | undefined, reader: "ngx" | "streaming" | undefined): void {
+  read(bookId: number | undefined, reader?: "pdf-streaming" | "epub-streaming"): void {
     if (bookId) this.bookService.readBook(bookId, reader);
   }
 

@@ -555,13 +555,19 @@
               <p-divider layout="vertical" class="action-divider"></p-divider>
             }
             @if (book!.bookType === 'PDF') {
-              @if (readMenuItems$ | async; as readItems) {
-                <p-splitbutton label="Read" icon="pi pi-book" [model]="readItems" (onClick)="read(book.id, 'ngx')" severity="primary"/>
+              @if (pdfReadMenuItems$ | async; as readItems) {
+                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
               }
             }
-            @if (book!.bookType !== 'PDF') {
-              <p-button label="Read" icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
+            @if (book!.bookType === 'EPUB') {
+              @if (epubReadMenuItems$ | async; as readItems) {
+                <p-splitbutton label="Read" outlined icon="pi pi-book" [model]="readItems" (onClick)="read(book.id)" severity="primary"/>
+              }
             }
+            @if (book!.bookType !== 'PDF' && book!.bookType !== 'EPUB') {
+              <p-button label="Read" outlined icon="pi pi-book" (onClick)="read(book?.metadata!.bookId, undefined)" severity="primary"/>
+            }
+            <p-divider layout="vertical"></p-divider>
             <p-button label="Shelf" icon="pi pi-folder" severity="info" outlined (onClick)="assignShelf(book.id)" class="mobile-icon-only"></p-button>
             @if (userState.user!.permissions.canDownload || userState.user!.permissions.admin) {
               @if ((book!.alternativeFormats && book!.alternativeFormats.length > 0) || (book!.supplementaryFiles && book!.supplementaryFiles.length > 0)) {
@@ -575,7 +581,7 @@
             @if (userState.user!.permissions.canEditMetadata || userState.user!.permissions.admin) {
               @if (refreshMenuItems$ | async; as refreshItems) {
                 <p-splitbutton
-                  [label]="isAutoFetching ? 'Fetching...' : 'Auto Fetch'"
+                  [label]="isAutoFetching ? 'Fetching...' : 'Fetch'"
                   [icon]="isAutoFetching ? 'pi pi-spin pi-spinner' : 'pi pi-bolt'"
                   [outlined]="true"
                   [model]="refreshItems"
@@ -584,13 +590,13 @@
                   [disabled]="isAutoFetching"
                   pTooltip="Automatically fetch metadata using default sources"
                   tooltipPosition="top"
-                  styleClass="mobile-icon-only">
+                  class="mobile-icon-only">
                 </p-splitbutton>
               }
             }
             @if (otherItems$ | async; as otherItems) {
               @if (otherItems.length > 0) {
-                <p-button icon="pi pi-ellipsis-v" outlined severity="primary" (click)="entitymenu.toggle($event)"></p-button>
+                <p-button icon="pi pi-ellipsis-v" outlined severity="danger" (click)="entitymenu.toggle($event)"></p-button>
                 <p-tieredMenu #entitymenu [model]="otherItems" [popup]="true" appendTo="body"></p-tieredMenu>
               }
             }
