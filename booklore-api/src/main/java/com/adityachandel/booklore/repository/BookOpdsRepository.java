@@ -20,8 +20,19 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // ALL BOOKS - Two Query Pattern
     // ============================================
 
-    @Query("SELECT b.id FROM BookEntity b WHERE (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
-    Page<Long> findBookIds(Pageable pageable);
+    @Query("SELECT b.id FROM BookEntity b LEFT JOIN b.metadata m WHERE (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a.name) FROM m.authors a) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a.name) FROM m.authors a) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "CASE WHEN :sortBy = 'RATING_ASC' THEN m.rating END ASC, "
+            + "CASE WHEN :sortBy = 'RATING_DESC' THEN m.rating END DESC, "
+            + "CASE WHEN :sortBy = 'RECENT' THEN b.addedOn END DESC")
+    Page<Long> findBookIds(@Param("sortBy") String sortBy, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "bookFiles", "shelves"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :ids AND (b.deleted IS NULL OR b.deleted = false)")
@@ -40,8 +51,17 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // BOOKS BY LIBRARY IDs - Two Query Pattern
     // ============================================
 
-    @Query("SELECT b.id FROM BookEntity b WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
-    Page<Long> findBookIdsByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+    @Query("SELECT b.id FROM BookEntity b LEFT JOIN b.metadata m WHERE b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a.name) FROM m.authors a) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a.name) FROM m.authors a) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds, @Param("sortBy") String sortBy, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "bookFiles", "shelves"})
     @Query("SELECT b FROM BookEntity b WHERE b.id IN :ids AND b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false)")
@@ -130,8 +150,17 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // BOOKS BY SHELF IDs - Two Query Pattern
     // ============================================
 
-    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.shelves s WHERE s.id IN :shelfIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY b.addedOn DESC")
-    Page<Long> findBookIdsByShelfIds(@Param("shelfIds") Collection<Long> shelfIds, Pageable pageable);
+    @Query("SELECT DISTINCT b.id FROM BookEntity b LEFT JOIN b.metadata m JOIN b.shelves s WHERE s.id IN :shelfIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a.name) FROM m.authors a) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a.name) FROM m.authors a) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsByShelfIds(@Param("shelfIds") Collection<Long> shelfIds, @Param("sortBy") String sortBy, Pageable pageable);
 
     @EntityGraph(attributePaths = {"metadata", "additionalFiles", "shelves"})
     @Query("SELECT DISTINCT b FROM BookEntity b JOIN b.shelves s WHERE b.id IN :ids AND s.id IN :shelfIds AND (b.deleted IS NULL OR b.deleted = false)")
@@ -174,26 +203,29 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     // BOOKS BY AUTHOR - Two Query Pattern
     // ============================================
 
-    @Query("""
-            SELECT DISTINCT b.id FROM BookEntity b
-            JOIN b.metadata m
-            JOIN m.authors a
-            WHERE a.name = :authorName
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY b.addedOn DESC
-            """)
-    Page<Long> findBookIdsByAuthorName(@Param("authorName") String authorName, Pageable pageable);
+    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.metadata m JOIN m.authors a WHERE a.name = :authorName AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a2.name) FROM m.authors a2) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a2.name) FROM m.authors a2) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsByAuthorName(@Param("authorName") String authorName, @Param("sortBy") String sortBy, Pageable pageable);
 
-    @Query("""
-            SELECT DISTINCT b.id FROM BookEntity b
-            JOIN b.metadata m
-            JOIN m.authors a
-            WHERE a.name = :authorName
-              AND b.library.id IN :libraryIds
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY b.addedOn DESC
-            """)
-    Page<Long> findBookIdsByAuthorNameAndLibraryIds(@Param("authorName") String authorName, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.metadata m JOIN m.authors a WHERE a.name = :authorName AND b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a2.name) FROM m.authors a2) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a2.name) FROM m.authors a2) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsByAuthorNameAndLibraryIds(@Param("authorName") String authorName, @Param("libraryIds") Collection<Long> libraryIds, @Param("sortBy") String sortBy, Pageable pageable);
 
     // ============================================
     // SERIES - Distinct Series List
@@ -221,25 +253,30 @@ public interface BookOpdsRepository extends JpaRepository<BookEntity, Long>, Jpa
     List<String> findDistinctSeriesByLibraryIds(@Param("libraryIds") Collection<Long> libraryIds);
 
     // ============================================
-    // BOOKS BY SERIES - Two Query Pattern (sorted by series number)
+    // BOOKS BY SERIES - Two Query Pattern
     // ============================================
 
-    @Query("""
-            SELECT DISTINCT b.id FROM BookEntity b
-            JOIN b.metadata m
-            WHERE m.seriesName = :seriesName
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY COALESCE(m.seriesNumber, 999999), b.addedOn DESC
-            """)
-    Page<Long> findBookIdsBySeriesName(@Param("seriesName") String seriesName, Pageable pageable);
+    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.metadata m WHERE m.seriesName = :seriesName AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a.name) FROM m.authors a) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a.name) FROM m.authors a) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsBySeriesName(@Param("seriesName") String seriesName, @Param("sortBy") String sortBy, Pageable pageable);
 
-    @Query("""
-            SELECT DISTINCT b.id FROM BookEntity b
-            JOIN b.metadata m
-            WHERE m.seriesName = :seriesName
-              AND b.library.id IN :libraryIds
-              AND (b.deleted IS NULL OR b.deleted = false)
-            ORDER BY COALESCE(m.seriesNumber, 999999), b.addedOn DESC
-            """)
-    Page<Long> findBookIdsBySeriesNameAndLibraryIds(@Param("seriesName") String seriesName, @Param("libraryIds") Collection<Long> libraryIds, Pageable pageable);
+    @Query("SELECT DISTINCT b.id FROM BookEntity b JOIN b.metadata m WHERE m.seriesName = :seriesName AND b.library.id IN :libraryIds AND (b.deleted IS NULL OR b.deleted = false) ORDER BY "
+            + "CASE WHEN :sortBy = 'TITLE_ASC' THEN m.title END ASC, "
+            + "CASE WHEN :sortBy = 'TITLE_DESC' THEN m.title END DESC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_ASC' THEN (SELECT MIN(a.name) FROM m.authors a) END ASC, "
+            + "CASE WHEN :sortBy = 'AUTHOR_DESC' THEN (SELECT MIN(a.name) FROM m.authors a) END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN m.seriesName END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_ASC' THEN COALESCE(m.seriesNumber, 999999) END ASC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN m.seriesName END DESC, "
+            + "CASE WHEN :sortBy = 'SERIES_DESC' THEN COALESCE(m.seriesNumber, 999999) END DESC, "
+            + "b.addedOn DESC")
+    Page<Long> findBookIdsBySeriesNameAndLibraryIds(@Param("seriesName") String seriesName, @Param("libraryIds") Collection<Long> libraryIds, @Param("sortBy") String sortBy, Pageable pageable);
 }

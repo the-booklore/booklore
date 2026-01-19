@@ -329,16 +329,15 @@ public class OpdsFeedService {
 
         if (magicShelfId != null) {
             booksPage = magicShelfBookService.getBooksByMagicShelfId(userId, magicShelfId, page - 1, size);
+            // Magic shelves still need in-memory sorting
+            booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
         } else if (author != null && !author.isBlank()) {
-            booksPage = opdsBookService.getBooksByAuthorName(userId, author, page - 1, size);
+            booksPage = opdsBookService.getBooksByAuthorName(userId, author, page - 1, size, sortOrder);
         } else if (series != null && !series.isBlank()) {
-            booksPage = opdsBookService.getBooksBySeriesName(userId, series, page - 1, size);
+            booksPage = opdsBookService.getBooksBySeriesName(userId, series, page - 1, size, sortOrder);
         } else {
-            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfIds, page - 1, size);
+            booksPage = opdsBookService.getBooksPage(userId, query, libraryId, shelfIds, page - 1, size, sortOrder);
         }
-
-        // Apply user's preferred sort order
-        booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
         String feedTitle = determineFeedTitle(libraryId, shelfIds, magicShelfId, author, series);
         String feedId = determineFeedId(libraryId, shelfIds, magicShelfId, author, series);
@@ -375,14 +374,11 @@ public class OpdsFeedService {
 
     public String generateRecentFeed(HttpServletRequest request) {
         Long userId = getUserId();
-        OpdsSortOrder sortOrder = getSortOrder();
         int page = Math.max(1, parseLongParam(request, "page", 1L).intValue());
         int size = Math.min(parseLongParam(request, "size", (long) DEFAULT_PAGE_SIZE).intValue(), MAX_PAGE_SIZE);
 
+        // Recent feed always sorts by addedOn DESC, ignores user's sort preference
         Page<Book> booksPage = opdsBookService.getRecentBooksPage(userId, page - 1, size);
-
-        // Apply user's preferred sort order
-        booksPage = opdsBookService.applySortOrder(booksPage, sortOrder);
 
         var feed = new StringBuilder("""
                 <?xml version="1.0" encoding="UTF-8"?>

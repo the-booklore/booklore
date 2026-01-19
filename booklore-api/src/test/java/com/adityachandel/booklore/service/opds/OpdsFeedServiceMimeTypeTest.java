@@ -75,7 +75,7 @@ class OpdsFeedServiceMimeTypeTest {
 
     private void mockBooksPage(Book book) {
         Page<Book> page = new PageImpl<>(List.of(book), PageRequest.of(0, 50), 1);
-        when(opdsBookService.getBooksPage(eq(1L), any(), any(), any(), eq(0), eq(50))).thenReturn(page);
+        when(opdsBookService.getBooksPage(eq(1L), any(), any(), any(), eq(0), eq(50), any())).thenReturn(page);
         when(opdsBookService.applySortOrder(any(), any())).thenReturn(page);
     }
 
