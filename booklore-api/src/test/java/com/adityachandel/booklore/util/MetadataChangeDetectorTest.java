@@ -2,24 +2,21 @@ package com.adityachandel.booklore.util;
 
 import com.adityachandel.booklore.model.MetadataClearFlags;
 import com.adityachandel.booklore.model.dto.BookMetadata;
-import com.adityachandel.booklore.model.entity.AuthorEntity;
-import com.adityachandel.booklore.model.entity.BookMetadataEntity;
-import com.adityachandel.booklore.model.entity.CategoryEntity;
-import com.adityachandel.booklore.model.entity.MoodEntity;
-import com.adityachandel.booklore.model.entity.TagEntity;
+import com.adityachandel.booklore.model.entity.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MetadataChangeDetectorTest {
 
@@ -343,15 +340,15 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testEdgeCase_emptyStringToNull_returnsTrue() {
+    void testEdgeCase_emptyStringToNull_returnsFalse() {
         existingMeta.setTitle("");
         newMeta.setTitle(null);
         boolean result = MetadataChangeDetector.isDifferent(newMeta, existingMeta, clearFlags);
-        assertTrue(result, "Should return true for empty string to null transition");
+        assertFalse(result, "Should return false for empty string to null transition as they are effectively same");
     }
 
     @Test
-    void testEdgeCase_emptyCollectionToNull_returnsTrue() {
+    void testEdgeCase_emptyCollectionToNull_returnsFalse() {
         BookMetadataEntity testExisting = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Test Title")
@@ -380,7 +377,7 @@ public class MetadataChangeDetectorTest {
                 .titleLocked(false)
                 .build();
         boolean result = MetadataChangeDetector.isDifferent(testNew, testExisting, clearFlags);
-        assertTrue(result, "Should return true for empty collection to null transition");
+        assertFalse(result, "Should return false for empty collection to null transition as they are effectively same");
     }
 
     @Test
@@ -594,11 +591,11 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testHasValueChanges_whenEmptyStringToNull_returnsTrue() {
+    void testHasValueChanges_whenEmptyStringToNull_returnsFalse() {
         existingMeta.setTitle("");
         newMeta.setTitle(null);
         boolean result = MetadataChangeDetector.hasValueChanges(newMeta, existingMeta, clearFlags);
-        assertTrue(result, "Should return true for empty string to null transition");
+        assertFalse(result, "Should return false for empty string to null transition");
     }
 
     @Test
@@ -610,7 +607,7 @@ public class MetadataChangeDetectorTest {
     }
 
     @Test
-    void testHasValueChanges_whenEmptySetToNull_returnsTrue() {
+    void testHasValueChanges_whenEmptySetToNull_returnsFalse() {
         BookMetadataEntity testExisting = BookMetadataEntity.builder()
                 .bookId(1L)
                 .title("Test")
@@ -624,7 +621,7 @@ public class MetadataChangeDetectorTest {
                 .authorsLocked(false)
                 .build();
         boolean result = MetadataChangeDetector.hasValueChanges(testNew, testExisting, clearFlags);
-        assertTrue(result, "Should return true for empty set to null transition");
+        assertFalse(result, "Should return false for empty set to null transition");
     }
 
     @Test

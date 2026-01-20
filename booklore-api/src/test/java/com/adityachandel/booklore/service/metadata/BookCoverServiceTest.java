@@ -142,7 +142,7 @@ class BookCoverServiceTest {
             when(bookRepository.findById(5L)).thenReturn(Optional.of(book));
             when(bookRepository.save(any())).thenReturn(book);
             when(appSettingService.getAppSettings()).thenReturn(mockAppSettings(true, false));
-            doNothing().when(fileService).createThumbnailFromBytes(eq(5L), any());
+            when(fileService.createThumbnailFromBytes(eq(5L), any())).thenReturn(true);
             doNothing().when(notificationService).sendMessage(any(), any());
 
             MetadataWriter writer = mock(MetadataWriter.class);
