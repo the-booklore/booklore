@@ -581,6 +581,10 @@ export class BookService {
     return this.http.post<void>(`${this.url}/${bookId}/generate-custom-cover`, {});
   }
 
+  generateCustomCoversForBooks(bookIds: number[]): Observable<void> {
+    return this.http.post<void>(`${this.url}/bulk-generate-custom-covers`, {bookIds});
+  }
+
   regenerateCoversForBooks(bookIds: number[]): Observable<void> {
     return this.http.post<void>(`${this.url}/bulk-regenerate-covers`, {bookIds});
   }

@@ -85,6 +85,14 @@ public class BookCoverController {
         bookCoverService.regenerateCoversForBooks(request.getBookIds());
     }
 
+    @Operation(summary = "Generate custom covers for selected books", description = "Generate custom covers for a list of books. Requires metadata edit permission or admin.")
+    @ApiResponse(responseCode = "204", description = "Custom cover generation started successfully")
+    @PostMapping("/bulk-generate-custom-covers")
+    @PreAuthorize("@securityUtil.canBulkRegenerateCover() or @securityUtil.isAdmin()")
+    public void generateCustomCoversForBooks(@Parameter(description = "List of book IDs") @Validated @RequestBody BulkBookIdsRequest request) {
+        bookCoverService.generateCustomCoversForBooks(request.getBookIds());
+    }
+
     @Operation(summary = "Upload cover image for multiple books", description = "Upload a cover image to apply to multiple books. Requires metadata edit permission or admin.")
     @ApiResponse(responseCode = "204", description = "Cover upload started successfully")
     @PostMapping("/bulk-upload-cover")
