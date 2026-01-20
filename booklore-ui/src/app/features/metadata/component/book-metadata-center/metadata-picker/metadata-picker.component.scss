@@ -9,15 +9,32 @@
 .form-content {
   flex-grow: 1;
   overflow: auto;
-  padding: 0;
+  padding: 0.5rem;
 
   @media (min-width: 768px) {
     padding: 1rem;
   }
 }
 
-.metadata-header {
+// Visibility utilities
+.mobile-only {
   display: flex;
+
+  @media (min-width: 768px) {
+    display: none !important;
+  }
+}
+
+.desktop-only {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+// Desktop header
+.metadata-header {
   justify-content: center;
   align-items: center;
   padding-bottom: 0.75rem;
@@ -28,6 +45,16 @@
 .metadata-header-text {
   margin-left: 0.75rem;
   font-size: 1.125rem;
+}
+
+// Mobile header
+.metadata-header-mobile {
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--p-surface-700);
 }
 
 .button-left {
@@ -42,35 +69,141 @@
 
 .form-row {
   display: flex;
-  align-items: center;
-  margin-bottom: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
   width: 100%;
-  justify-content: flex-start;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--p-surface-700);
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+}
+
+.thumbnail-row {
+  @media (max-width: 767px) {
+    align-items: center;
+    border: none;
+    padding: 0.5rem 0;
+  }
+}
+
+.thumbnail-container {
+  @media (max-width: 767px) {
+    flex-direction: row;
+    justify-content: center;
+  }
+}
+
+.mobile-thumbnail-row {
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  width: 100%;
 }
 
 .label {
-  width: 8rem;
+  width: 100%;
   text-align: left;
+  margin-bottom: 0.375rem;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--p-text-color);
+
+  @media (min-width: 768px) {
+    width: 8rem;
+    margin-bottom: 0;
+    font-weight: normal;
+    font-size: 1rem;
+  }
 }
 
 .input-container {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: 0.25rem;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+}
+
+// Mobile field rows - tight two-row layout
+.mobile-field-row {
   align-items: center;
-  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+
+  .input {
+    flex: 1;
+    margin: 0;
+  }
+
+  .autocomplete-container {
+    flex: 1;
+    padding: 0;
+  }
+}
+
+.mobile-field-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--p-primary-color);
+  min-width: 3rem;
+
+  &.muted {
+    color: var(--p-text-muted-color);
+  }
+}
+
+// Desktop field row
+.desktop-field-row {
+  align-items: center;
   width: 100%;
 }
 
+.thumbnail-row .desktop-field-row {
+  justify-content: center;
+}
+
 .input {
-  width: 50%;
+  width: 100%;
   padding: 0.5rem;
   border-radius: 0.25rem;
-  margin: 0 1rem;
+  margin: 0;
+  flex: 1;
+
+  @media (min-width: 768px) {
+    width: 50%;
+    margin: 0 1rem;
+  }
+}
+
+.fetched-input {
+  opacity: 0.6;
 }
 
 .autocomplete-container {
   width: 100%;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding: 0;
+
+  @media (min-width: 768px) {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
 }
 
 .autocomplete-full-width {
@@ -78,17 +211,21 @@
 }
 
 .thumbnail {
-  width: 15.625rem;
-  height: 21.875rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-left: 2.5rem;
-  margin-right: 2.5rem;
+  width: 5rem;
+  height: 7rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+
+  @media (min-width: 768px) {
+    width: 15.625rem;
+    height: 21.875rem;
+    margin-left: 2.5rem;
+    margin-right: 2.5rem;
+  }
 }
 
 .arrow-button {
-  padding-left: 1rem;
-  padding-right: 1rem;
+  flex-shrink: 0;
 }
 
 .yellow-outlined-button {
@@ -108,18 +245,36 @@
 
 .form-footer {
   margin-top: auto;
+  padding: 0 0.5rem;
+
+  @media (min-width: 768px) {
+    padding: 0;
+  }
 }
 
 .footer-buttons {
-  display: flex;
-  justify-content: space-between;
-  padding: 1rem 0.5rem 0;
+  padding-top: 1rem;
+
+  &.mobile-only {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  &.desktop-only {
+    justify-content: space-between;
+    padding: 1rem 0.5rem 0;
+  }
 }
 
 .footer-buttons-right {
   display: flex;
-  gap: 1rem;
-  justify-content: flex-end;
+  gap: 0.5rem;
+  align-items: center;
+
+  .desktop-only & {
+    gap: 1rem;
+  }
 }
 
 ::ng-deep .p-inputchips {

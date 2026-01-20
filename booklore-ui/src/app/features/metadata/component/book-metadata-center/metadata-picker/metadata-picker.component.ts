@@ -104,7 +104,7 @@ export class MetadataPickerComponent implements OnInit {
     this.appSettingsService.appSettings$
       .pipe(
         filter(settings => !!settings?.metadataProviderSpecificFields),
-        take(1)
+        takeUntilDestroyed(this.destroyRef)
       )
       .subscribe(settings => {
         if (settings?.metadataProviderSpecificFields) {
