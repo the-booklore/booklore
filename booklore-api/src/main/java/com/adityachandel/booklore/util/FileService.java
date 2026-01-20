@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.Set;
@@ -221,7 +222,7 @@ public class FileService {
     // COVER OPERATIONS
     // ========================================
 
-    public void createThumbnailFromFile(long bookId, MultipartFile file) {
+    public boolean createThumbnailFromFile(long bookId, MultipartFile file) {
         try {
             validateCoverFile(file);
             BufferedImage originalImage;
@@ -230,52 +231,52 @@ public class FileService {
             }
             if (originalImage == null) {
                 log.warn("Could not decode image from file, skipping thumbnail creation for book: {}", bookId);
-                return;
+                return false;
             }
-            boolean success = saveCoverImages(originalImage, bookId);
-            if (!success) {
-                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            boolean updated = saveCoverImages(originalImage, bookId);
+            if (updated) {
+                log.info("Cover images created and saved for book ID: {}", bookId);
             }
             originalImage.flush(); // Release resources after processing
-            log.info("Cover images created and saved for book ID: {}", bookId);
+            return updated;
         } catch (Exception e) {
             log.error("An error occurred while creating the thumbnail: {}", e.getMessage(), e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         }
     }
 
-    public void createThumbnailFromBytes(long bookId, byte[] imageBytes) {
+    public boolean createThumbnailFromBytes(long bookId, byte[] imageBytes) {
         try {
             BufferedImage originalImage = readImage(imageBytes);
             if (originalImage == null) {
                 log.warn("Skipping thumbnail creation for book {}: image decode failed", bookId);
-                return;
+                return false;
             }
-            boolean success = saveCoverImages(originalImage, bookId);
-            if (!success) {
-                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            boolean updated = saveCoverImages(originalImage, bookId);
+            if (updated) {
+                log.info("Cover images created and saved from bytes for book ID: {}", bookId);
             }
             originalImage.flush();
-            log.info("Cover images created and saved from bytes for book ID: {}", bookId);
+            return updated;
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from bytes: {}", e.getMessage(), e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
         }
     }
 
-    public void createThumbnailFromUrl(long bookId, String imageUrl) {
+    public boolean createThumbnailFromUrl(long bookId, String imageUrl) {
         try {
             BufferedImage originalImage = downloadImageFromUrl(imageUrl);
             if (originalImage == null) {
                 log.warn("Skipping thumbnail creation for book {}: download/decode failed", bookId);
-                return;
+                return false;
             }
-            boolean success = saveCoverImages(originalImage, bookId);
-            if (!success) {
-                throw ApiError.FILE_READ_ERROR.createException("Failed to save cover images");
+            boolean updated = saveCoverImages(originalImage, bookId);
+            if (updated) {
+                log.info("Cover images created and saved from URL for book ID: {}", bookId);
             }
             originalImage.flush();
-            log.info("Cover images created and saved from URL for book ID: {}", bookId);
+            return updated;
         } catch (Exception e) {
             log.error("An error occurred while creating thumbnail from URL: {}", e.getMessage(), e);
             throw ApiError.FILE_READ_ERROR.createException(e.getMessage());
@@ -321,17 +322,42 @@ public class FileService {
                 rgbImage = resized;
             }
 
+            // Write to temp files first
             File originalFile = new File(folder, COVER_FILENAME);
-            boolean originalSaved = ImageIO.write(rgbImage, IMAGE_FORMAT, originalFile);
+            Path tempOriginalPath = Files.createTempFile("cover_" + bookId, ".tmp");
+            ImageIO.write(rgbImage, IMAGE_FORMAT, tempOriginalPath.toFile());
 
             thumb = resizeImage(rgbImage, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
             File thumbnailFile = new File(folder, THUMBNAIL_FILENAME);
-            boolean thumbnailSaved = ImageIO.write(thumb, IMAGE_FORMAT, thumbnailFile);
+            Path tempThumbnailPath = Files.createTempFile("thumb_" + bookId, ".tmp");
+            ImageIO.write(thumb, IMAGE_FORMAT, tempThumbnailPath.toFile());
 
-            if (originalSaved && thumbnailSaved) {
-                bookMetadataRepository.updateCoverTimestamp(bookId, Instant.now());
+            boolean originalChanged = true;
+            if (originalFile.exists()) {
+                if (Files.mismatch(originalFile.toPath(), tempOriginalPath) == -1) {
+                    originalChanged = false;
+                }
             }
-            return originalSaved && thumbnailSaved;
+
+            boolean thumbnailChanged = true;
+            if (thumbnailFile.exists()) {
+                if (Files.mismatch(thumbnailFile.toPath(), tempThumbnailPath) == -1) {
+                    thumbnailChanged = false;
+                }
+            }
+
+            boolean updated = false;
+            if (originalChanged || thumbnailChanged) {
+                Files.move(tempOriginalPath, originalFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.move(tempThumbnailPath, thumbnailFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                bookMetadataRepository.updateCoverTimestamp(bookId, Instant.now());
+                updated = true;
+            } else {
+                Files.deleteIfExists(tempOriginalPath);
+                Files.deleteIfExists(tempThumbnailPath);
+            }
+
+            return updated;
         } finally {
             // Cleanup resources created within this method
             // Note: cropped/resized may equal rgbImage after reassignment, avoid double-flush

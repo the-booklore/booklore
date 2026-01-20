@@ -97,7 +97,7 @@ public class BookMetadataUpdater {
         updateMoodsIfNeeded(newMetadata, metadata, clearFlags, mergeMoods, replaceMode);
         updateTagsIfNeeded(newMetadata, metadata, clearFlags, mergeTags, replaceMode);
         bookReviewUpdateService.updateBookReviews(newMetadata, metadata, clearFlags, mergeCategories);
-        updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
+        boolean coverUpdated = updateThumbnailIfNeeded(bookId, bookEntity, newMetadata, metadata, updateThumbnail);
         updateLocks(newMetadata, metadata);
 
         bookEntity.setMetadataUpdatedAt(Instant.now());
@@ -109,7 +109,7 @@ public class BookMetadataUpdater {
             log.warn("Failed to calculate metadata match score for book ID {}: {}", bookId, e.getMessage());
         }
 
-        if ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || thumbnailRequiresUpdate) {
+        if ((writeToFile.isAnyFormatEnabled() && hasValueChangesForFileWrite) || coverUpdated) {
             metadataWriterFactory.getWriter(bookType).ifPresent(writer -> {
                 try {
                     String thumbnailUrl = null;
@@ -359,18 +359,22 @@ public class BookMetadataUpdater {
         }
     }
 
-    private void updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
+    private boolean updateThumbnailIfNeeded(long bookId, BookEntity bookEntity, BookMetadata m, BookMetadataEntity e, boolean set) {
         if (Boolean.TRUE.equals(e.getCoverLocked())) {
-            return;
+            return false;
         }
-        if (!set) return;
-        if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return;
+        if (!set) return false;
+        if (!StringUtils.hasText(m.getThumbnailUrl()) || isLocalOrPrivateUrl(m.getThumbnailUrl())) return false;
         try {
-            fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
-            bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
-            bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+            boolean updated = fileService.createThumbnailFromUrl(bookId, m.getThumbnailUrl());
+            if (updated) {
+                bookEntity.setBookCoverHash(BookCoverUtils.generateCoverHash());
+                bookEntity.getMetadata().setCoverUpdatedOn(Instant.now());
+            }
+            return updated;
         } catch (Exception ex) {
             log.warn("Failed to download cover for book {}: {}", bookId, ex.getMessage());
+            return false;
         }
     }
 

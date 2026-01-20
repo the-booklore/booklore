@@ -156,6 +156,9 @@ public class MetadataChangeDetector {
         Object normNew = normalize(newVal);
         Object normOld = normalize(oldVal);
 
+        // Treat null and empty as same
+        if (isEffectivelyEmpty(normOld) && isEffectivelyEmpty(normNew)) return false;
+
         // Ignore transitions from null to empty string or empty set
         if (normOld == null && isEffectivelyEmpty(normNew)) return false;
         if (shouldClear) return normOld != null;
