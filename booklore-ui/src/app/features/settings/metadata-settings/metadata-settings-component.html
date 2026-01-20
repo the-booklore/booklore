@@ -10,20 +10,18 @@
         </h3>
         <p class="section-description">
           <i class="pi pi-exclamation-triangle"></i>
-          When enabled, metadata will be automatically retrieved from your configured sources whenever new files are added to the Bookdrop folder. Please note that processing a large number of files simultaneously may increase the time required for metadata fetching.
+          <span>When enabled, metadata will be automatically retrieved from your configured sources whenever new files are added to the Bookdrop folder. Please note that processing a large number of files simultaneously may increase the time required for metadata fetching.</span>
         </p>
       </div>
 
       <div class="section-body">
         <div class="setting-item">
-          <div class="setting-item setting-item-indented">
-            <div class="setting-label-row">
-              <label class="setting-label">Enable automatic metadata download for Bookdrop imports</label>
-              <p-toggleswitch
-                [(ngModel)]="metadataDownloadOnBookdrop"
-                (onChange)="onMetadataDownloadOnBookdropToggle($event.checked)">
-              </p-toggleswitch>
-            </div>
+          <div class="setting-header">
+            <p-toggleswitch
+              [(ngModel)]="metadataDownloadOnBookdrop"
+              (onChange)="onMetadataDownloadOnBookdropToggle($event.checked)">
+            </p-toggleswitch>
+            <label class="setting-label">Enable automatic metadata download for Bookdrop imports</label>
           </div>
         </div>
       </div>
