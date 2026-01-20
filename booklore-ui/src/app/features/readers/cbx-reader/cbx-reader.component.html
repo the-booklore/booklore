@@ -88,9 +88,11 @@
         </div>
       }
     } @else {
-      <div class="loading-container">
-        <p-progressSpinner class="custom-spinner"></p-progressSpinner>
-        <p class="loading-text">Processing pages... This may take a few seconds on first load. Future loads will be significantly faster.</p>
+      <div class="loader-overlay">
+        <div class="loader-content">
+          <div class="spinner"></div>
+          <p class="loader-text">Loading book...</p>
+        </div>
       </div>
     }
   </div>

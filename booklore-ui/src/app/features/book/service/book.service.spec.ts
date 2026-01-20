@@ -235,14 +235,14 @@ describe('BookService', () => {
 
   describe('Reading & Viewer Settings', () => {
     it('should navigate to correct reader and update last read time', () => {
-      service.readBook(1, 'ngx');
-      expect(routerMock.navigate).toHaveBeenCalledWith(['/pdf-reader/book/1']);
+      service.readBook(1);
+      expect(routerMock.navigate).toHaveBeenCalledWith(['/pdf-reader/book/1'], undefined);
       expect(bookPatchServiceMock.updateLastReadTime).toHaveBeenCalledWith(1);
     });
 
     it('should not navigate if book not found', () => {
       bookStateServiceMock.getCurrentBookState.mockReturnValue({books: [], loaded: true, error: null});
-      service.readBook(999, 'ngx');
+      service.readBook(999);
       expect(routerMock.navigate).not.toHaveBeenCalled();
     });
 

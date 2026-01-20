@@ -2,6 +2,7 @@ import * as CFI from './epubcfi.js'
 import {SectionProgress, TOCProgress} from './progress.js'
 import {Overlayer} from './overlayer.js'
 import {textWalker} from './text-walker.js'
+import {makeStreamingLoader} from './streaming-loader.js'
 
 const SEARCH_PREFIX = 'foliate-search:'
 
@@ -137,6 +138,22 @@ export const makeBook = async file => {
   }
   if (!book) throw new UnsupportedTypeError('File type not supported')
   return book
+}
+
+/**
+ * Create an EPUB book using streaming loader instead of ZIP extraction.
+ * This avoids loading the entire EPUB into memory.
+ *
+ * @param {number} bookId - Book ID for API requests
+ * @param {string} baseUrl - API base URL for EPUB endpoints
+ * @param {Object} bookInfo - Pre-fetched metadata from /api/v1/epub/{bookId}/info
+ * @param {string} [authToken] - Optional authentication token
+ * @returns {Promise<EPUB>} Initialized EPUB book object
+ */
+export const makeStreamingBook = async (bookId, baseUrl, bookInfo, authToken = null) => {
+  const loader = makeStreamingLoader(bookId, baseUrl, bookInfo, authToken)
+  const {EPUB} = await import('./epub.js')
+  return new EPUB(loader).init()
 }
 
 class CursorAutohider {
@@ -653,3 +670,6 @@ export class View extends HTMLElement {
 }
 
 customElements.define('foliate-view', View)
+
+// Export makeStreamingBook to window for use from Angular
+window.makeStreamingBook = makeStreamingBook

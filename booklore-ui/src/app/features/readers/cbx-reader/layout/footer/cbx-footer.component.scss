@@ -313,9 +313,12 @@ $transition-fast: 150ms ease;
     display: none;
   }
 
-  .page-nav-left,
-  .page-nav-right {
+  .page-nav-left {
     gap: 4px;
+  }
+
+  .page-nav-right {
+    display: none;
   }
 
   .page-nav-left {

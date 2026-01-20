@@ -41,6 +41,20 @@ export class ReaderHeaderFooterVisibilityManager {
     }
   }
 
+  handleHeaderZoneEnter(): void {
+    if (!this.isPinned) {
+      this.setHeaderVisible(true);
+      this.notifyStateChange();
+    }
+  }
+
+  handleFooterZoneEnter(): void {
+    if (!this.isPinned) {
+      this.setFooterVisible(true);
+      this.notifyStateChange();
+    }
+  }
+
   togglePinned(): void {
     this.isPinned = !this.isPinned;
     this.updateVisibility();

@@ -96,6 +96,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   showMetadata = false;
   isCurrentCfiBookmarked = false;
   forceNavbarVisible = false;
+  headerVisible = false;
   book: Book | null = null;
   sectionFractions: number[] = [];
 
@@ -115,6 +116,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.visibilityManager = new ReaderHeaderFooterVisibilityManager(window.innerHeight);
     this.visibilityManager.onStateChange((state) => {
+      this.headerVisible = state.headerVisible;
       this.headerService.setForceVisible(state.headerVisible);
       this.forceNavbarVisible = state.footerVisible;
     });
@@ -209,19 +211,22 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
     return this.stateService.initializeState(this.bookId).pipe(
       switchMap(() => forkJoin({
         state: this.stateService.initializeState(this.bookId),
-        book: this.bookService.getBookByIdFromAPI(this.bookId, false),
-        fileBlob: this.bookService.getFileContent(this.bookId)
+        book: this.bookService.getBookByIdFromAPI(this.bookId, false)
       })),
-      switchMap(({book, fileBlob}) => {
+      switchMap(({book}) => {
         this.book = book;
-        const fileUrl = URL.createObjectURL(fileBlob);
-        this._fileUrl = fileUrl;
 
         this.progressService.initialize(this.bookId, book.bookType!);
         this.selectionService.initialize(this.bookId, this.destroy$);
         this.headerService.initialize(this.bookId, book.metadata?.title || '', this.destroy$);
 
-        return this.viewManager.loadEpub(fileUrl).pipe(
+        // Use streaming for EPUB if query param is set, blob loading otherwise (default)
+        const useStreaming = this.route.snapshot.queryParamMap.get('streaming') === 'true';
+        const loadBook$ = book.bookType === 'EPUB' && useStreaming
+          ? this.viewManager.loadEpubStreaming(this.bookId)
+          : this.loadBookBlob();
+
+        return loadBook$.pipe(
           tap(() => {
             this.applyStyles();
             this.sidebarService.initialize(this.bookId, book, this.destroy$);
@@ -237,6 +242,16 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
             return of(undefined);
           })
         );
+      })
+    );
+  }
+
+  private loadBookBlob(): Observable<void> {
+    return this.bookService.getFileContent(this.bookId).pipe(
+      switchMap(fileBlob => {
+        const fileUrl = URL.createObjectURL(fileBlob);
+        this._fileUrl = fileUrl;
+        return this.viewManager.loadEpub(fileUrl);
       })
     );
   }
@@ -291,6 +306,7 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
         this.isCurrentCfiBookmarked = currentCfi
           ? bookmarks.some(b => b.cfi === currentCfi)
           : false;
+        this.headerService.setCurrentCfiBookmarked(this.isCurrentCfiBookmarked);
       });
   }
 
@@ -327,6 +343,14 @@ export class EbookReaderComponent implements OnInit, OnDestroy {
   @HostListener('window:resize', ['$event'])
   onWindowResize(event: Event): void {
     this.visibilityManager.updateWindowHeight(window.innerHeight);
+  }
+
+  onHeaderTriggerZoneEnter(): void {
+    this.visibilityManager.handleHeaderZoneEnter();
+  }
+
+  onFooterTriggerZoneEnter(): void {
+    this.visibilityManager.handleFooterZoneEnter();
   }
 
   handleSelectionAction(action: TextSelectionAction): void {

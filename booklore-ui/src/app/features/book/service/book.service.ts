@@ -244,7 +244,7 @@ export class BookService {
 
   /*------------------ Reading & Viewer Settings ------------------*/
 
-  readBook(bookId: number, reader: 'ngx' | 'streaming' = 'ngx'): void {
+  readBook(bookId: number, reader?: 'pdf-streaming' | 'epub-streaming'): void {
     const book = this.bookStateService
       .getCurrentBookState()
       .books?.find(b => b.id === bookId);
@@ -254,23 +254,39 @@ export class BookService {
       return;
     }
 
-    const baseUrl =
-      book.bookType === 'PDF'
-        ? reader === 'ngx'
-          ? 'pdf-reader'
-          : 'cbx-reader'
-        : book.bookType === 'EPUB' || book.bookType === 'FB2' || book.bookType === 'MOBI' || book.bookType === 'AZW3'
-          ? 'ebook-reader'
-          : book.bookType === 'CBX'
-            ? 'cbx-reader'
-            : null;
+    let baseUrl: string | null = null;
+    let queryParams: Record<string, any> | undefined;
+
+    switch (book.bookType) {
+      case 'PDF':
+        baseUrl = reader === 'pdf-streaming' ? 'cbx-reader' : 'pdf-reader';
+        break;
+
+      case 'EPUB':
+        baseUrl = 'ebook-reader';
+        if (reader === 'epub-streaming') {
+          queryParams = { streaming: true };
+        }
+        break;
+
+      case 'FB2':
+      case 'MOBI':
+      case 'AZW3':
+        baseUrl = 'ebook-reader';
+        break;
+
+      case 'CBX':
+        baseUrl = 'cbx-reader';
+        break;
+    }
 
     if (!baseUrl) {
       console.error('Unsupported book type:', book.bookType);
       return;
     }
 
-    this.router.navigate([`/${baseUrl}/book/${book.id}`]);
+    this.router.navigate([`/${baseUrl}/book/${book.id}`], queryParams ? { queryParams } : undefined);
+
     this.updateLastReadTime(book.id);
   }
 

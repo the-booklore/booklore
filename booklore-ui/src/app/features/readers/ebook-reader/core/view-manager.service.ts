@@ -4,6 +4,7 @@ import {catchError, map, switchMap} from 'rxjs/operators';
 import {ReaderAnnotationService, Annotation} from '../features/annotations/annotation-renderer.service';
 import {ReaderEventService, ViewEvent, TextSelection} from './event.service';
 import {PageInfo, ThemeInfo, PageDecorator} from '../shared/header-footer.util';
+import {EpubStreamingService, EpubBookInfo} from './epub-streaming.service';
 
 export type {ViewEvent, TextSelection} from './event.service';
 export type {PageInfo, ThemeInfo} from '../shared/header-footer.util';
@@ -32,6 +33,7 @@ export interface BookMetadata {
 export class ReaderViewManagerService {
   private annotationService = inject(ReaderAnnotationService);
   private eventService = inject(ReaderEventService);
+  private epubStreamingService = inject(EpubStreamingService);
   private view: any;
 
   public get events$(): Observable<ViewEvent> {
@@ -75,6 +77,29 @@ export class ReaderViewManagerService {
       map(() => undefined),
       catchError(err => throwError(() => err))
     );
+  }
+
+  loadEpubStreaming(bookId: number): Observable<void> {
+    if (!this.view) {
+      return throwError(() => new Error('View not created'));
+    }
+
+    return this.epubStreamingService.getBookInfo(bookId).pipe(
+      switchMap(bookInfo => from(this.openStreamingBook(bookId, bookInfo))),
+      map(() => undefined),
+      catchError(err => throwError(() => err))
+    );
+  }
+
+  private async openStreamingBook(bookId: number, bookInfo: EpubBookInfo): Promise<void> {
+    const makeStreamingBook = (window as any).makeStreamingBook;
+    if (!makeStreamingBook) {
+      throw new Error('makeStreamingBook not available - Foliate script may not be loaded');
+    }
+    const baseUrl = this.epubStreamingService.getBaseUrl();
+    const authToken = this.epubStreamingService.getAuthToken();
+    const book = await makeStreamingBook(bookId, baseUrl, bookInfo, authToken);
+    await this.view.open(book);
   }
 
   destroy(): void {
