@@ -4,6 +4,7 @@ import com.adityachandel.booklore.model.dto.request.MetadataRefreshOptions;
 import com.adityachandel.booklore.model.dto.settings.*;
 import com.adityachandel.booklore.model.entity.AppSettingEntity;
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import com.adityachandel.booklore.repository.AppSettingsRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -195,6 +196,7 @@ public class SettingPersistenceHelper {
                 .refreshCovers(false)
                 .mergeCategories(true)
                 .reviewBeforeApply(false)
+                .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
                 .fieldOptions(fieldOptions)
                 .enabledFields(enabledFields)
                 .build();

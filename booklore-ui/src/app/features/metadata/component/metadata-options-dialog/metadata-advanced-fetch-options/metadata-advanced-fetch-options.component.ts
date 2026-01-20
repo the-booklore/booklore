@@ -5,7 +5,11 @@ import {FormsModule} from '@angular/forms';
 import {Checkbox} from 'primeng/checkbox';
 import {Button} from 'primeng/button';
 import {MessageService} from 'primeng/api';
-import {FieldOptions, MetadataRefreshOptions} from '../../../model/request/metadata-refresh-options.model';
+import {
+  FieldOptions,
+  MetadataRefreshOptions,
+  MetadataReplaceMode
+} from '../../../model/request/metadata-refresh-options.model';
 import {Tooltip} from 'primeng/tooltip';
 
 @Component({
@@ -56,6 +60,12 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
   refreshCovers: boolean = false;
   mergeCategories: boolean = false;
   reviewBeforeApply: boolean = false;
+  replaceMode: MetadataReplaceMode = 'REPLACE_MISSING';
+
+  replaceModeOptions: { label: string; value: MetadataReplaceMode }[] = [
+    { label: 'Replace Missing Only', value: 'REPLACE_MISSING' },
+    { label: 'Replace All Fields', value: 'REPLACE_ALL' }
+  ];
 
   fieldOptions: FieldOptions = this.initializeFieldOptions();
   enabledFields: Record<keyof FieldOptions, boolean> = this.initializeEnabledFields();
@@ -114,6 +124,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       this.refreshCovers = this.currentMetadataOptions.refreshCovers || false;
       this.mergeCategories = this.currentMetadataOptions.mergeCategories || false;
       this.reviewBeforeApply = this.currentMetadataOptions.reviewBeforeApply || false;
+      this.replaceMode = this.currentMetadataOptions.replaceMode || 'REPLACE_MISSING';
 
       const backendFieldOptions = this.deepCloneFieldOptions(this.currentMetadataOptions.fieldOptions as FieldOptions || {});
       for (const field of this.fields) {
@@ -161,6 +172,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
         refreshCovers: this.refreshCovers,
         mergeCategories: this.mergeCategories,
         reviewBeforeApply: this.reviewBeforeApply,
+        replaceMode: this.replaceMode,
         fieldOptions: this.fieldOptions,
         enabledFields: this.enabledFields
       };
@@ -218,6 +230,7 @@ export class MetadataAdvancedFetchOptionsComponent implements OnChanges {
       };
     }
     this.enabledFields = this.initializeEnabledFields();
+    this.replaceMode = 'REPLACE_MISSING';
 
     // Reset bulk selectors
     this.bulkP1 = null;
