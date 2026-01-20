@@ -101,13 +101,15 @@
             <p-popover #seriesCollapseOverlay [dismissable]="true" appendTo="body">
               <div class="display-settings-popover">
                 <div class="display-settings-section">
-                  <label for="collapse-series-checkbox" class="display-settings-label">Collapse series</label>
-                  <p-checkbox
-                    inputId="collapse-series-checkbox"
-                    [binary]="true"
-                    [ngModel]="seriesCollapseFilter.isSeriesCollapsed"
-                    (onChange)="onSeriesCollapseCheckboxChange($event.checked)">
-                  </p-checkbox>
+                  <div class="display-settings-checkbox-row">
+                    <p-checkbox
+                      inputId="collapse-series-checkbox"
+                      [binary]="true"
+                      [ngModel]="seriesCollapseFilter.isSeriesCollapsed"
+                      (onChange)="onSeriesCollapseCheckboxChange($event.checked)">
+                    </p-checkbox>
+                    <label for="collapse-series-checkbox" class="display-settings-label">Collapse series</label>
+                  </div>
                 </div>
                 <div class="display-settings-section">
                   <label class="display-settings-label">Grid item size</label>
@@ -124,13 +126,15 @@
                   </div>
                 </div>
                 <div class="display-settings-section">
-                  <label for="show-book-type-pill-checkbox" class="display-settings-label">Show book type pill</label>
-                  <p-checkbox
-                    inputId="show-book-type-pill-checkbox"
-                    [binary]="true"
-                    [ngModel]="bookCardOverlayPreferenceService.showBookTypePill"
-                    (onChange)="bookCardOverlayPreferenceService.setShowBookTypePill($event.checked)">
-                  </p-checkbox>
+                  <div class="display-settings-checkbox-row">
+                    <p-checkbox
+                      inputId="show-book-type-pill-checkbox"
+                      [binary]="true"
+                      [ngModel]="bookCardOverlayPreferenceService.showBookTypePill"
+                      (onChange)="bookCardOverlayPreferenceService.setShowBookTypePill($event.checked)">
+                    </p-checkbox>
+                    <label for="show-book-type-pill-checkbox" class="display-settings-label">Book type overlay</label>
+                  </div>
                 </div>
               </div>
             </p-popover>
