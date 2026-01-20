@@ -277,21 +277,28 @@ public class BookUpdateService {
 
     private Float updateEbookProgress(UserBookProgressEntity progress, EpubProgress epubProgress) {
         if (epubProgress == null) return null;
+
         progress.setEpubProgress(epubProgress.getCfi());
         progress.setEpubProgressHref(epubProgress.getHref());
-        return epubProgress.getPercentage();
+
+        float percentage = epubProgress.getPercentage();
+        return Math.round(percentage * 10f) / 10f;
     }
 
     private Float updatePdfProgress(UserBookProgressEntity progress, PdfProgress pdfProgress) {
         if (pdfProgress == null) return null;
+
         progress.setPdfProgress(pdfProgress.getPage());
-        return pdfProgress.getPercentage();
+        float percentage = pdfProgress.getPercentage();
+        return Math.round(percentage * 10f) / 10f;
     }
 
     private Float updateCbxProgress(UserBookProgressEntity progress, CbxProgress cbxProgress) {
         if (cbxProgress == null) return null;
+
         progress.setCbxProgress(cbxProgress.getPage());
-        return cbxProgress.getPercentage();
+        float percentage = cbxProgress.getPercentage();
+        return Math.round(percentage * 10f) / 10f;
     }
 
     private void updateExistingProgress(Long userId, Set<Long> bookIds, ReadStatus status, Instant now, Instant dateFinished) {

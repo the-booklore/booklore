@@ -8,10 +8,6 @@ on:
     branches:
       - '**'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   migration-check:
     name: Flyway Migration Check
@@ -210,3 +206,4 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
+

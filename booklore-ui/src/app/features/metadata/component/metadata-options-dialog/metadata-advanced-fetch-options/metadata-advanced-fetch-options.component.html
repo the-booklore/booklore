@@ -123,6 +123,12 @@
 
     <div class="flex flex-row gap-10">
       <div class="flex flex-row items-center gap-4">
+        <p pTooltip="Controls how fetched metadata replaces existing values. 'Replace Missing Only' only fills empty fields, 'Replace All Fields' overwrites existing values." tooltipPosition="top">Replace Mode:</p>
+        <p-select [options]="replaceModeOptions" [(ngModel)]="replaceMode" optionLabel="label" optionValue="value"
+                  appendTo="body" size="small" class="min-w-40">
+        </p-select>
+      </div>
+      <div class="flex flex-row items-center gap-4">
         <p pTooltip="Fetch and update new book cover images" tooltipPosition="top">Update covers:</p>
         <p-checkbox [(ngModel)]="refreshCovers" [binary]="true"></p-checkbox>
       </div>

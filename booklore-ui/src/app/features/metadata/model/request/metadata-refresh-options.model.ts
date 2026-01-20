@@ -1,8 +1,16 @@
+export type MetadataReplaceMode = 'REPLACE_ALL' | 'REPLACE_MISSING';
+
 export interface MetadataRefreshOptions {
   libraryId: number | null;
   refreshCovers: boolean;
   mergeCategories: boolean;
   reviewBeforeApply: boolean;
+  /**
+   * Controls how fetched metadata replaces existing metadata.
+   * REPLACE_ALL: Replace all fields with fetched values (even if existing values are present)
+   * REPLACE_MISSING: Only fill in fields that are currently empty/null
+   */
+  replaceMode?: MetadataReplaceMode;
   fieldOptions?: FieldOptions;
   enabledFields?: Record<keyof FieldOptions, boolean>;
 }

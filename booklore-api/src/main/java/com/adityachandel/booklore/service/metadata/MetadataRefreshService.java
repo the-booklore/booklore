@@ -155,7 +155,11 @@ public class MetadataRefreshService {
                         if (bookReviewMode) {
                             saveProposal(task, book.getId(), fetched);
                         } else {
-                            updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories());
+                            // Use the replaceMode from options - allows user to control whether to replace existing or only fill missing
+                            MetadataReplaceMode replaceMode = refreshOptions.getReplaceMode() != null 
+                                    ? refreshOptions.getReplaceMode() 
+                                    : MetadataReplaceMode.REPLACE_MISSING;
+                            updateBookMetadata(book, fetched, refreshOptions.isRefreshCovers(), refreshOptions.isMergeCategories(), replaceMode);
                         }
 
                         sendBatchProgressNotification(jobId, finalCompletedCount + 1, totalBooks, "Processed: " + book.getMetadata().getTitle(), MetadataFetchTaskStatus.IN_PROGRESS, bookReviewMode);

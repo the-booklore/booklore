@@ -26,11 +26,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -470,66 +466,145 @@ class BookMetadataUpdaterTest {
         assertTrue(categories.stream().anyMatch(c -> c.getName().equals("New Category")));
         assertFalse(categories.stream().anyMatch(c -> c.getName().equals("Old Category")));
     }
+@Test
+void setBookMetadata_shouldUseLocalCoverFile_whenAvailable() throws java.io.IOException {
+    BookEntity bookEntity = new BookEntity();
+    bookEntity.setId(1L);
+    BookMetadataEntity metadataEntity = new BookMetadataEntity();
+    metadataEntity.setBook(bookEntity);
+    bookEntity.setMetadata(metadataEntity);
 
-    @Test
-    void setBookMetadata_shouldUseLocalCoverFile_whenAvailable() throws java.io.IOException {
-        BookEntity bookEntity = new BookEntity();
-        bookEntity.setId(1L);
-        BookMetadataEntity metadataEntity = new BookMetadataEntity();
-        metadataEntity.setBook(bookEntity);
-        bookEntity.setMetadata(metadataEntity);
+    BookFileEntity primaryFile = new BookFileEntity();
+    primaryFile.setBook(bookEntity);
+    primaryFile.setBookType(BookFileType.EPUB);
+    primaryFile.setBookFormat(true);
+    primaryFile.setFileSubPath("sub");
+    primaryFile.setFileName("file.epub");
 
-        BookFileEntity primaryFile = new BookFileEntity();
-        primaryFile.setBook(bookEntity);
-        primaryFile.setBookType(BookFileType.EPUB);
-        primaryFile.setBookFormat(true);
-        primaryFile.setFileSubPath("sub");
-        primaryFile.setFileName("file.epub");
+    java.nio.file.Path tempBookFile = java.nio.file.Files.createTempFile("test_book", ".epub");
+    LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+    libraryPathEntity.setPath(tempBookFile.getParent().toString());
+    bookEntity.setLibraryPath(libraryPathEntity);
 
-        java.nio.file.Path tempBookFile = java.nio.file.Files.createTempFile("test_book", ".epub");
-        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
-        libraryPathEntity.setPath(tempBookFile.getParent().toString());
-        bookEntity.setLibraryPath(libraryPathEntity);
+    primaryFile.setFileSubPath("");
+    primaryFile.setFileName(tempBookFile.getFileName().toString());
+    bookEntity.setBookFiles(List.of(primaryFile));
 
-        primaryFile.setFileSubPath("");
-        primaryFile.setFileName(tempBookFile.getFileName().toString());
-        bookEntity.setBookFiles(List.of(primaryFile));
+    BookMetadata newMetadata = new BookMetadata();
+    newMetadata.setThumbnailUrl("http://8.8.8.8/image.jpg");
 
-        BookMetadata newMetadata = new BookMetadata();
-        newMetadata.setThumbnailUrl("http://8.8.8.8/image.jpg");
+    MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+            .metadata(newMetadata)
+            .build();
 
-        MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
-                .metadata(newMetadata)
-                .build();
+    MetadataUpdateContext context = MetadataUpdateContext.builder()
+            .bookEntity(bookEntity)
+            .metadataUpdateWrapper(wrapper)
+            .updateThumbnail(true)
+            .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+            .build();
 
-        MetadataUpdateContext context = MetadataUpdateContext.builder()
-                .bookEntity(bookEntity)
-                .metadataUpdateWrapper(wrapper)
-                .updateThumbnail(true)
-                .replaceMode(MetadataReplaceMode.REPLACE_ALL)
-                .build();
+    AppSettings appSettings = appSettingService.getAppSettings();
+    MetadataPersistenceSettings persistenceSettings = appSettings.getMetadataPersistenceSettings();
+    MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = persistenceSettings.getSaveToOriginalFile();
+    when(saveToOriginalFile.isAnyFormatEnabled()).thenReturn(true);
 
-        AppSettings appSettings = appSettingService.getAppSettings();
-        MetadataPersistenceSettings persistenceSettings = appSettings.getMetadataPersistenceSettings();
-        MetadataPersistenceSettings.SaveToOriginalFile saveToOriginalFile = persistenceSettings.getSaveToOriginalFile();
-        when(saveToOriginalFile.isAnyFormatEnabled()).thenReturn(true);
+    com.adityachandel.booklore.service.metadata.writer.MetadataWriter writer = Mockito.mock(com.adityachandel.booklore.service.metadata.writer.MetadataWriter.class);
+    when(metadataWriterFactory.getWriter(BookFileType.EPUB)).thenReturn(Optional.of(writer));
 
-        com.adityachandel.booklore.service.metadata.writer.MetadataWriter writer = Mockito.mock(com.adityachandel.booklore.service.metadata.writer.MetadataWriter.class);
-        when(metadataWriterFactory.getWriter(BookFileType.EPUB)).thenReturn(Optional.of(writer));
+    java.nio.file.Path tempCover = java.nio.file.Files.createTempFile("cover", ".jpg");
+    when(fileService.getCoverFile(1L)).thenReturn(tempCover.toString());
 
-        java.nio.file.Path tempCover = java.nio.file.Files.createTempFile("cover", ".jpg");
-        when(fileService.getCoverFile(1L)).thenReturn(tempCover.toString());
+    bookMetadataUpdater.setBookMetadata(context);
 
-        bookMetadataUpdater.setBookMetadata(context);
+    Mockito.verify(writer).saveMetadataToFile(
+            Mockito.any(java.io.File.class),
+            Mockito.eq(metadataEntity),
+            Mockito.eq(tempCover.toString()),
+            Mockito.any()
+    );
 
-        Mockito.verify(writer).saveMetadataToFile(
-                Mockito.any(java.io.File.class),
-                Mockito.eq(metadataEntity),
-                Mockito.eq(tempCover.toString()),
-                Mockito.any()
-        );
+    java.nio.file.Files.deleteIfExists(tempCover);
+    java.nio.file.Files.deleteIfExists(tempBookFile);
+}
 
-        java.nio.file.Files.deleteIfExists(tempCover);
-        java.nio.file.Files.deleteIfExists(tempBookFile);
-    }
+@Test
+void setBookMetadata_withReplaceAllMode_shouldReplaceExistingTitle() {
+    // Bug test: When user triggers metadata refresh, the title should be replaced
+    // even if the book already has a title (like "V for Vendetta 03 (1988) (c2c) (theProletariat-DCP)")
+
+    BookEntity bookEntity = new BookEntity();
+    bookEntity.setId(1L);
+    BookMetadataEntity metadataEntity = new BookMetadataEntity();
+    metadataEntity.setTitle("V for Vendetta 03 (1988) (c2c) (theProletariat-DCP)"); // Existing file-based title
+    metadataEntity.setTitleLocked(false);
+    metadataEntity.setBook(bookEntity);
+    bookEntity.setMetadata(metadataEntity);
+
+    BookFileEntity primaryFile = new BookFileEntity();
+    primaryFile.setBook(bookEntity);
+    primaryFile.setBookType(BookFileType.EPUB);
+    primaryFile.setBookFormat(true);
+    primaryFile.setFileSubPath("sub");
+    primaryFile.setFileName("file.epub");
+    bookEntity.setBookFiles(List.of(primaryFile));
+
+    BookMetadata newMetadata = new BookMetadata();
+    newMetadata.setTitle("V for Vendetta #3"); // Fetched correct title
+
+    MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+            .metadata(newMetadata)
+            .build();
+
+    MetadataUpdateContext context = MetadataUpdateContext.builder()
+            .bookEntity(bookEntity)
+            .metadataUpdateWrapper(wrapper)
+            .replaceMode(MetadataReplaceMode.REPLACE_ALL)
+            .build();
+
+    bookMetadataUpdater.setBookMetadata(context);
+
+    assertEquals("V for Vendetta #3", bookEntity.getMetadata().getTitle(),
+            "Title should be replaced when using REPLACE_ALL mode");
+}
+
+@Test
+void setBookMetadata_withReplaceMissingMode_shouldNotReplaceExistingTitle() {
+    // This test verifies the old behavior that was causing the bug
+    // REPLACE_MISSING mode should NOT replace existing title
+
+    BookEntity bookEntity = new BookEntity();
+    bookEntity.setId(1L);
+    BookMetadataEntity metadataEntity = new BookMetadataEntity();
+    metadataEntity.setTitle("Existing Title"); // Already has a title
+    metadataEntity.setTitleLocked(false);
+    metadataEntity.setBook(bookEntity);
+    bookEntity.setMetadata(metadataEntity);
+
+    BookFileEntity primaryFile = new BookFileEntity();
+    primaryFile.setBook(bookEntity);
+    primaryFile.setBookType(BookFileType.EPUB);
+    primaryFile.setBookFormat(true);
+    primaryFile.setFileSubPath("sub");
+    primaryFile.setFileName("file.epub");
+    bookEntity.setBookFiles(List.of(primaryFile));
+
+    BookMetadata newMetadata = new BookMetadata();
+    newMetadata.setTitle("New Title"); // Fetched title
+
+    MetadataUpdateWrapper wrapper = MetadataUpdateWrapper.builder()
+            .metadata(newMetadata)
+            .build();
+
+    MetadataUpdateContext context = MetadataUpdateContext.builder()
+            .bookEntity(bookEntity)
+            .metadataUpdateWrapper(wrapper)
+            .replaceMode(MetadataReplaceMode.REPLACE_MISSING)
+            .build();
+
+    bookMetadataUpdater.setBookMetadata(context);
+
+    assertEquals("Existing Title", bookEntity.getMetadata().getTitle(),
+            "Title should NOT be replaced when using REPLACE_MISSING mode and title exists");
+}
 }
