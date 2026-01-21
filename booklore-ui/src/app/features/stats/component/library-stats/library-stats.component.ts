@@ -6,13 +6,13 @@ import {catchError, map, startWith, takeUntil} from 'rxjs/operators';
 import {CdkDragDrop, DragDropModule, moveItemInArray} from '@angular/cdk/drag-drop';
 import {Select} from 'primeng/select';
 import {Button} from 'primeng/button';
-import {LibraryFilterService, LibraryOption} from '../../service/library-filter.service';
-import {LibrariesSummaryService} from '../../service/libraries-summary.service';
-import {BookFormatsChartComponent} from '../book-formats-chart/book-formats-chart.component';
-import {LanguageChartComponent} from '../language-chart/language-chart.component';
-import {MetadataScoreChartComponent} from '../metadata-score-chart/metadata-score-chart.component';
-import {PageCountChartComponent} from '../page-count-chart/page-count-chart.component';
-import {TopItemsChartComponent} from '../top-items-chart/top-items-chart.component';
+import {LanguageChartComponent} from './charts/language-chart/language-chart.component';
+import {BookFormatsChartComponent} from './charts/book-formats-chart/book-formats-chart.component';
+import {MetadataScoreChartComponent} from './charts/metadata-score-chart/metadata-score-chart.component';
+import {PageCountChartComponent} from './charts/page-count-chart/page-count-chart.component';
+import {TopItemsChartComponent} from './charts/top-items-chart/top-items-chart.component';
+import {LibrariesSummaryService} from './service/libraries-summary.service';
+import {LibraryFilterService, LibraryOption} from './service/library-filter.service';
 
 interface ChartConfig {
   id: string;
