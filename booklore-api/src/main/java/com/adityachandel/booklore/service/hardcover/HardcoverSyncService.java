@@ -95,22 +95,19 @@ public class HardcoverSyncService {
                 // Find the book on Hardcover - use stored ID if available
                 HardcoverBookInfo hardcoverBook;
                 if (metadata.getHardcoverBookId() != null) {
-                    // Use the stored numeric book ID directly
+                    // Use the stored numeric book ID and fetch edition/page info from Hardcover
                     hardcoverBook = new HardcoverBookInfo();
                     hardcoverBook.bookId = metadata.getHardcoverBookId();
-                    hardcoverBook.pages = metadata.getPageCount();
                     log.debug("Using stored Hardcover book ID: {}", hardcoverBook.bookId);
 
-                    if (hardcoverBook.bookId != null && (hardcoverBook.pages == null || hardcoverBook.pages <= 0 || hardcoverBook.editionId == null)) {
-                        HardcoverBookInfo fetched = findHardcoverBookById(hardcoverBook.bookId);
-                        if (fetched != null) {
-                            if (hardcoverBook.editionId == null) {
-                                hardcoverBook.editionId = fetched.editionId;
-                            }
-                            if ((hardcoverBook.pages == null || hardcoverBook.pages <= 0) && fetched.pages != null) {
-                                hardcoverBook.pages = fetched.pages;
-                            }
-                        }
+                    // Always fetch the default edition and page count from Hardcover
+                    HardcoverBookInfo fetched = findHardcoverBookById(hardcoverBook.bookId);
+                    if (fetched != null) {
+                        hardcoverBook.editionId = fetched.editionId;
+                        hardcoverBook.pages = fetched.pages;
+                        log.debug("Fetched from Hardcover: editionId={}, pages={}", hardcoverBook.editionId, hardcoverBook.pages);
+                    } else {
+                        log.warn("Could not fetch edition info from Hardcover for book ID: {}", hardcoverBook.bookId);
                     }
                 } else {
                     // Search by ISBN
@@ -244,19 +241,19 @@ public class HardcoverSyncService {
                 info.pages = ((Number) pagesObj).intValue();
             }
 
-            // Try to get default_edition_id from the search results
-            Object defaultEditionObj = document.get("default_edition_id");
-            if (defaultEditionObj instanceof Number) {
-                info.editionId = ((Number) defaultEditionObj).intValue();
-            } else if (defaultEditionObj instanceof String) {
+            // Try to get default_physical_edition_id from the search results
+            Object defaultPhysicalEditionObj = document.get("default_physical_edition_id");
+            if (defaultPhysicalEditionObj instanceof Number) {
+                info.editionId = ((Number) defaultPhysicalEditionObj).intValue();
+            } else if (defaultPhysicalEditionObj instanceof String) {
                 try {
-                    info.editionId = Integer.parseInt((String) defaultEditionObj);
+                    info.editionId = Integer.parseInt((String) defaultPhysicalEditionObj);
                 } catch (NumberFormatException e) {
                     // Ignore
                 }
             }
 
-            // If no default edition, try to look up edition by ISBN
+            // If no default physical edition found, try to look up edition by ISBN as fallback
             if (info.bookId != null && info.editionId == null) {
                 EditionInfo edition = findEditionByIsbn(info.bookId, isbn);
                 if (edition != null) {
@@ -264,10 +261,12 @@ public class HardcoverSyncService {
                 }
             }
 
-            if (info.editionId != null && (info.pages == null || info.pages <= 0)) {
+            // Fetch page count from the edition (prioritizing edition page count over book-level page count)
+            if (info.editionId != null) {
                 EditionInfo edition = findEditionById(info.editionId);
                 if (edition != null && edition.pages != null && edition.pages > 0) {
                     info.pages = edition.pages;
+                    log.debug("Using page count from edition {}: {} pages", info.editionId, info.pages);
                 }
             }
 
@@ -388,7 +387,7 @@ public class HardcoverSyncService {
             query FindBookById($bookId: Int!) {
               books(where: {id: {_eq: $bookId}}, limit: 1) {
                 id
-                default_edition_id
+                default_physical_edition_id
                 pages
               }
             }
@@ -412,26 +411,29 @@ public class HardcoverSyncService {
             HardcoverBookInfo info = new HardcoverBookInfo();
             info.bookId = bookId;
 
-            Object defaultEditionObj = book.get("default_edition_id");
-            if (defaultEditionObj instanceof Number) {
-                info.editionId = ((Number) defaultEditionObj).intValue();
-            } else if (defaultEditionObj instanceof String) {
+            Object defaultPhysicalEditionObj = book.get("default_physical_edition_id");
+            if (defaultPhysicalEditionObj instanceof Number) {
+                info.editionId = ((Number) defaultPhysicalEditionObj).intValue();
+            } else if (defaultPhysicalEditionObj instanceof String) {
                 try {
-                    info.editionId = Integer.parseInt((String) defaultEditionObj);
+                    info.editionId = Integer.parseInt((String) defaultPhysicalEditionObj);
                 } catch (NumberFormatException e) {
                     // Ignore
                 }
             }
 
+            // Get pages from the book level first
             Object pagesObj = book.get("pages");
             if (pagesObj instanceof Number) {
                 info.pages = ((Number) pagesObj).intValue();
             }
 
-            if (info.editionId != null && (info.pages == null || info.pages <= 0)) {
+            // If we have an edition ID, fetch the page count from that edition
+            if (info.editionId != null) {
                 EditionInfo edition = findEditionById(info.editionId);
                 if (edition != null && edition.pages != null && edition.pages > 0) {
                     info.pages = edition.pages;
+                    log.debug("Using page count from default physical edition {}: {} pages", info.editionId, info.pages);
                 }
             }
 
