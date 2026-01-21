@@ -53,6 +53,10 @@ public class ComicvineBookParser implements BookParser {
     private static final String ISSUE_LIST_FIELDS = "api_detail_url,cover_date,store_date,description,deck,id,image,issue_number,name,volume,site_detail_url,aliases,person_credits";
     private static final String ISSUE_DETAIL_FIELDS = "api_detail_url,cover_date,store_date,description,deck,id,image,issue_number,name,person_credits,volume,site_detail_url,aliases,character_credits,team_credits,story_arc_credits,location_credits";
     private static final String SEARCH_FIELDS = "api_detail_url,cover_date,store_date,description,deck,id,image,issue_number,name,publisher,volume,site_detail_url,resource_type,start_year,count_of_issues,aliases,person_credits";
+    private static final Pattern ISSUE_NUMBER_PATTERN = Pattern.compile("issue\\s*#?\\d+");
+    private static final Pattern ID_FORMAT_PATTERN = Pattern.compile("\\d+-?\\d*");
+    private static final Pattern TRAILING_SLASHES_PATTERN = Pattern.compile("/+$");
+    private static final Pattern VOLUME_SUFFIX_PATTERN = Pattern.compile("\\s+Vol\\.?\\s*\\d+$");
 
     private final ObjectMapper objectMapper;
     private final AppSettingService appSettingService;
@@ -156,7 +160,7 @@ public class ComicvineBookParser implements BookParser {
         }
         
         // Try removing common suffixes like "(2023)" or "Vol. X"
-        String cleaned = series.replaceAll("\\s+Vol\\.?\\s*\\d+$", "").trim();
+        String cleaned = VOLUME_SUFFIX_PATTERN.matcher(series).replaceAll("").trim();
         if (!cleaned.equals(series)) {
             alternatives.add(cleaned);
         }
@@ -531,12 +535,12 @@ public class ComicvineBookParser implements BookParser {
         String path = uri.getPath();
         if (path == null || path.isEmpty()) return "unknown";
         
-        path = path.replaceAll("/+$", "");
+        path = TRAILING_SLASHES_PATTERN.matcher(path).replaceAll("");
         int lastSlash = path.lastIndexOf('/');
         if (lastSlash >= 0 && lastSlash < path.length() - 1) {
             String segment = path.substring(lastSlash + 1);
             // If segment looks like an ID (4000-12345), include the parent
-            if (segment.matches("\\d+-?\\d*")) {
+            if (ID_FORMAT_PATTERN.matcher(segment).matches()) {
                 int prevSlash = path.lastIndexOf('/', lastSlash - 1);
                 if (prevSlash >= 0) {
                     return path.substring(prevSlash);
@@ -748,7 +752,7 @@ public class ComicvineBookParser implements BookParser {
         // Append issue title if it exists and isn't just "Issue #X" or identical to series
         if (issueName != null && !issueName.isBlank()) {
             String lowerName = issueName.toLowerCase();
-            boolean isGeneric = lowerName.matches("issue\\s*#?\\d+") || lowerName.equals(seriesName.toLowerCase());
+            boolean isGeneric = ISSUE_NUMBER_PATTERN.matcher(lowerName).matches() || lowerName.equals(seriesName.toLowerCase());
             if (!isGeneric) {
                 title += " - " + issueName;
             }

@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +34,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CustomFontService {
 
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
+    private static final Pattern SPECIAL_CHARS_PATTERN = Pattern.compile("[<>\"'`]");
+    private static final Pattern HTML_TAG_PATTERN = Pattern.compile("<[^>]*>");
+    private static final Pattern CONTROL_CHARS_PATTERN = Pattern.compile("[\\p{Cntrl}\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}]");
     private final CustomFontRepository customFontRepository;
     private final UserRepository userRepository;
     private final CustomFontMapper customFontMapper;
@@ -309,12 +314,12 @@ public class CustomFontService {
 
         String sanitized = fontName.trim();
 
-        sanitized = sanitized.replaceAll("[\\p{Cntrl}\\p{Cc}\\p{Cf}\\p{Co}\\p{Cn}]", "");
+        sanitized = CONTROL_CHARS_PATTERN.matcher(sanitized).replaceAll("");
 
-        sanitized = sanitized.replaceAll("<[^>]*>", "");
-        sanitized = sanitized.replaceAll("[<>\"'`]", "");
+        sanitized = HTML_TAG_PATTERN.matcher(sanitized).replaceAll("");
+        sanitized = SPECIAL_CHARS_PATTERN.matcher(sanitized).replaceAll("");
 
-        sanitized = sanitized.replaceAll("\\s+", " ");
+        sanitized = WHITESPACE_PATTERN.matcher(sanitized).replaceAll(" ");
 
         sanitized = sanitized.trim();
 

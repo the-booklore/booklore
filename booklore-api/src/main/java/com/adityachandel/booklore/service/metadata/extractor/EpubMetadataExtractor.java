@@ -41,6 +41,8 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
     // List of all media types that epub4j has so we can lazy load them.
     // Note that we have to add in null to handle files without extentions like mimetype.
     private static final List<MediaType> MEDIA_TYPES = new ArrayList<>();
+    private static final Pattern ISBN_SEPARATOR_PATTERN = Pattern.compile("[- ]");
+
     static {
         MEDIA_TYPES.addAll(Arrays.asList(MediaTypes.mediaTypes));
         MEDIA_TYPES.add(null);
@@ -235,7 +237,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                 if (!scheme.isEmpty()) {
                                     switch (scheme) {
                                         case "ISBN" -> {
-                                            String cleanValue = value.replaceAll("[- ]", "");
+                                            String cleanValue = ISBN_SEPARATOR_PATTERN.matcher(value).replaceAll("");
                                             if (cleanValue.length() == 13) builderMeta.isbn13(value);
                                             else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                         }
@@ -248,7 +250,7 @@ public class EpubMetadataExtractor implements FileMetadataExtractor {
                                     }
                                 } else {
                                     if (text.toLowerCase().startsWith("isbn:")) {
-                                        String cleanValue = value.replaceAll("[- ]", "");
+                                        String cleanValue = ISBN_SEPARATOR_PATTERN.matcher(value).replaceAll("");
                                         if (cleanValue.length() == 13) builderMeta.isbn13(value);
                                         else if (cleanValue.length() == 10) builderMeta.isbn10(value);
                                     }

@@ -1,6 +1,7 @@
 package com.adityachandel.booklore.service.reader;
 
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.util.FileUtils;
@@ -13,8 +14,6 @@ import org.apache.commons.compress.archivers.sevenz.SevenZFile;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.pdfbox.io.IOUtils;
 import org.springframework.stereotype.Service;
-
-import com.adityachandel.booklore.model.dto.response.CbxPageInfo;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -51,6 +50,7 @@ public class CbxReaderService {
     private static final int BUFFER_SIZE = 8192;
     private static final Pattern NUMERIC_PATTERN = Pattern.compile("(\\d+)|(\\D+)");
     private static final Set<String> SYSTEM_FILES = Set.of(".ds_store", "thumbs.db", "desktop.ini");
+    private static final Pattern DIGIT_PATTERN = Pattern.compile("\\d+");
 
     private final BookRepository bookRepository;
     private final Map<String, CachedArchiveMetadata> archiveCache = new ConcurrentHashMap<>();
@@ -411,7 +411,7 @@ public class CbxReaderService {
             while (m1.find() && m2.find()) {
                 String part1 = m1.group();
                 String part2 = m2.group();
-                if (part1.matches("\\d+") && part2.matches("\\d+")) {
+                if (DIGIT_PATTERN.matcher(part1).matches() && DIGIT_PATTERN.matcher(part2).matches()) {
                     int cmp = Integer.compare(
                             Integer.parseInt(part1),
                             Integer.parseInt(part2)
