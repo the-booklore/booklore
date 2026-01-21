@@ -25,6 +25,7 @@ import {LibraryStatsGuard} from './core/security/guards/library-stats.guard';
 import {UserStatsGuard} from './core/security/guards/user-stats.guard';
 import {EditMetadataGuard} from './core/security/guards/edit-metdata.guard';
 import {EbookReaderComponent} from './features/readers/ebook-reader/ebook-reader.component';
+import {LibraryStatsComponent} from './features/stats/component/library-stats/library-stats.component';
 
 export const routes: Routes = [
   {
@@ -54,7 +55,7 @@ export const routes: Routes = [
       {path: 'book/:bookId', component: BookMetadataCenterComponent, canActivate: [AuthGuard]},
       {path: 'bookdrop', component: BookdropFileReviewComponent, canActivate: [BookdropGuard]},
       {path: 'metadata-manager', component: MetadataManagerComponent, canActivate: [EditMetadataGuard]},
-      {path: 'library-stats', component: StatsComponent, canActivate: [LibraryStatsGuard]},
+      {path: 'library-stats', component: LibraryStatsComponent, canActivate: [LibraryStatsGuard]},
       {path: 'reading-stats', component: UserStatsComponent, canActivate: [UserStatsGuard]},
     ]
   },

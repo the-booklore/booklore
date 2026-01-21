@@ -267,25 +267,8 @@
                 </canvas>
               </div>
             }
-            @case ('readingVelocityTimeline') {
-              <h3>Reading Velocity Timeline</h3>
-              <div class="chart-wrapper velocity-timeline-chart">
-                <canvas baseChart
-                        [data]="(readingVelocityTimelineChartService.velocityTimelineChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="readingVelocityTimelineChartService.velocityTimelineChartOptions"
-                        [type]="readingVelocityTimelineChartService.velocityTimelineChartType">
-                </canvas>
-              </div>
-            }
             @case ('topSeries') {
-              <h3>Top 20 Series by Book Count</h3>
-              <div class="chart-wrapper top-series-chart">
-                <canvas baseChart
-                        [data]="(topSeriesChartService.seriesChartData$ | async) ?? {labels: [], datasets: []}"
-                        [options]="topSeriesChartService.seriesChartOptions"
-                        [type]="topSeriesChartService.seriesChartType">
-                </canvas>
-              </div>
+              <app-top-items-chart [initialDataType]="'series'"></app-top-items-chart>
             }
             @case ('publicationYear') {
               <h3>Publication Year Timeline</h3>

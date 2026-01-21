@@ -1,9 +1,10 @@
-.stats-container {
+.library-stats-container {
   max-width: 2500px;
   margin: 0 auto;
   background: transparent;
   height: calc(100dvh - 6.25rem);
   overflow-y: auto;
+  padding: 0.5rem;
 }
 
 .header-card {
@@ -79,32 +80,6 @@
         font-size: 1.35rem;
       }
     }
-  }
-}
-
-.chart-config-btn {
-  background: var(--primary-color, #80bdff);
-  border: 1px solid var(--primary-color, #80bdff);
-  color: #ffffff;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-
-  &:hover {
-    background: var(--primary-color-darker, #6ba3e0);
-    border-color: var(--primary-color-darker, #6ba3e0);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(128, 189, 255, 0.3);
-  }
-
-  .pi {
-    font-size: 0.9rem;
   }
 }
 
@@ -241,17 +216,6 @@
         &:hover {
           background: rgba(251, 191, 36, 0.3);
           border-color: rgba(251, 191, 36, 0.6);
-        }
-      }
-
-      &.reset-positions {
-        background: rgba(168, 85, 247, 0.2);
-        border-color: rgba(168, 85, 247, 0.4);
-        color: #a855f7;
-
-        &:hover {
-          background: rgba(168, 85, 247, 0.3);
-          border-color: rgba(168, 85, 247, 0.6);
         }
       }
 
@@ -452,92 +416,6 @@
   &.full-width {
     grid-column: 1 / -1;
   }
-
-  h3 {
-    color: var(--text-color, #ffffff);
-    margin: 0 0 15px 0;
-    font-weight: 500;
-    font-size: 1.1rem;
-
-    .small & {
-      font-size: 1rem;
-      margin-bottom: 10px;
-    }
-
-    .large & {
-      font-size: 1.2rem;
-      margin-bottom: 20px;
-    }
-  }
-
-  .chart-description {
-    text-align: center;
-    color: var(--text-secondary-color);
-    font-size: 0.9rem;
-    margin-bottom: 15px;
-    line-height: 1.4;
-  }
-
-  .chart-wrapper {
-    position: relative;
-    width: 100%;
-    height: auto;
-
-    canvas {
-      width: 100% !important;
-      height: auto !important;
-    }
-
-    &.status-chart,
-    &.book-type-chart,
-    &.language-chart,
-    &.series-chart {
-      height: 300px;
-    }
-
-    &.progress-chart,
-    &.rating-chart,
-    &.page-count-chart,
-    &.reading-speed-chart,
-    &.quality-chart,
-    &.velocity-chart {
-      height: 320px;
-    }
-
-    &.categories-chart,
-    &.author-chart,
-    &.completion-chart,
-    &.publisher-chart,
-    &.author-rating-chart,
-    &.book-size-chart {
-      height: 400px;
-    }
-
-    &.year-chart,
-    &.books-added-chart,
-    &.monthly-chart,
-    &.series-completion-chart,
-    &.monthly-patterns-chart,
-    &.finished-books-timeline-chart {
-      height: 350px;
-    }
-
-    &.series-length-chart,
-    &.author-series-chart,
-    &.top-series-chart {
-      height: 400px;
-    }
-
-    &.reading-heatmap-chart {
-      height: 300px;
-    }
-
-    &.reading-profile-radar-chart,
-    &.reading-dna-chart,
-    &.reading-habits-chart {
-      height: 450px;
-    }
-  }
 }
 
 .loading-message,
@@ -554,192 +432,11 @@
 
 .no-data-message {
   color: var(--text-color-secondary, #999999);
-}
 
-.dna-insights {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-
-  .insights-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 12px;
-  }
-
-  .insight-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 6px;
-    padding: 12px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.06);
-      border-color: rgba(255, 255, 255, 0.15);
-      transform: translateY(-1px);
-    }
-
-    .insight-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-
-      .trait-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
-      .trait-name {
-        color: #ffffff;
-        font-weight: 500;
-        font-size: 0.95rem;
-        flex: 1;
-      }
-
-      .trait-score {
-        color: #ffffff;
-        font-weight: 800;
-        font-size: 0.9rem;
-      }
-    }
-
-    .insight-bar {
-      background: rgba(255, 255, 255, 0.1);
-      height: 4px;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 8px;
-
-      .insight-fill {
-        height: 100%;
-        border-radius: 2px;
-        transition: width 0.8s ease;
-        opacity: 0.8;
-      }
-    }
-
-    .insight-description {
-      color: var(--text-secondary-color);
-      font-size: 0.85rem;
-      line-height: 1.4;
-      margin: 0;
-      font-style: italic;
-    }
-  }
-}
-
-.intelligence-insights {
-  margin-top: 20px;
-  padding-top: 15px;
-  border-top: 1px solid rgba(0, 212, 170, 0.2);
-
-  .insights-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 12px;
-  }
-
-  .insight-card {
-    background: rgba(0, 212, 170, 0.05);
-    border: 1px solid rgba(0, 212, 170, 0.15);
-    border-radius: 6px;
-    padding: 12px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(0, 212, 170, 0.08);
-      border-color: rgba(0, 212, 170, 0.25);
-      box-shadow: 0 4px 12px rgba(0, 212, 170, 0.1);
-      transform: translateY(-1px);
-    }
-
-    .insight-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-
-      .trait-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-
-      .trait-name {
-        color: #ffffff;
-        font-weight: 500;
-        font-size: 0.95rem;
-        flex: 1;
-      }
-
-      .trait-score {
-        color: #00d4aa;
-        font-weight: 600;
-        font-size: 0.9rem;
-      }
-    }
-
-    .insight-bar {
-      background: rgba(0, 212, 170, 0.15);
-      height: 4px;
-      border-radius: 2px;
-      overflow: hidden;
-      margin-bottom: 8px;
-
-      .insight-fill {
-        height: 100%;
-        border-radius: 2px;
-        transition: width 0.8s ease;
-        opacity: 0.9;
-      }
-    }
-
-    .insight-description {
-      color: var(--text-secondary-color);
-      font-size: 0.85rem;
-      line-height: 1.4;
-      margin: 0;
-      font-style: italic;
-    }
-  }
-}
-
-.year-selector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-
-  .year-nav-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-    padding: 0.5rem 0.75rem;
-    color: #ffffff;
-    cursor: pointer;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.3);
-    }
-
-    i {
-      font-size: 0.875rem;
-    }
-  }
-
-  .current-year {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: #ffffff;
-    min-width: 4rem;
-    text-align: center;
+  small {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.9rem;
   }
 }
 
@@ -781,7 +478,7 @@
 }
 
 @media (max-width: 768px) {
-  .stats-container {
+  .library-stats-container {
     padding: 15px;
     max-width: 100%;
   }
@@ -811,11 +508,6 @@
         justify-content: center;
       }
     }
-  }
-
-  .chart-config-btn {
-    justify-content: center;
-    padding: 12px 16px;
   }
 
   .config-modal {
@@ -881,83 +573,6 @@
   .chart-section {
     padding: 12px;
   }
-
-  .chart-wrapper {
-    &.status-chart,
-    &.book-type-chart,
-    &.language-chart,
-    &.series-chart {
-      height: 250px;
-    }
-
-    &.progress-chart,
-    &.rating-chart,
-    &.page-count-chart,
-    &.reading-speed-chart,
-    &.quality-chart,
-    &.velocity-chart {
-      height: 280px;
-    }
-
-    &.categories-chart,
-    &.author-chart,
-    &.completion-chart,
-    &.publisher-chart,
-    &.author-rating-chart,
-    &.book-size-chart {
-      height: 100px;
-    }
-
-    &.year-chart,
-    &.books-added-chart,
-    &.monthly-chart,
-    &.series-completion-chart,
-    &.monthly-patterns-chart,
-    &.finished-books-timeline-chart {
-      height: 300px;
-    }
-
-    &.series-length-chart,
-    &.author-series-chart,
-    &.top-series-chart {
-      height: 280px;
-    }
-
-    &.reading-heatmap-chart {
-      height: 250px;
-    }
-
-    .reading-profile-radar-chart,
-    &.reading-dna-chart,
-    &.reading-habits-chart {
-      height: 350px;
-    }
-  }
-
-  .dna-insights,
-  .intelligence-insights {
-    .insights-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .insight-card {
-      padding: 10px;
-
-      .insight-header {
-        .trait-name {
-          font-size: 0.9rem;
-        }
-
-        .trait-score {
-          font-size: 0.85rem;
-        }
-      }
-
-      .insight-description {
-        font-size: 0.8rem;
-      }
-    }
-  }
 }
 
 @media (max-width: 480px) {
@@ -967,58 +582,6 @@
 
   .charts-grid {
     gap: 12px;
-  }
-
-  .chart-wrapper {
-    &.status-chart,
-    &.book-type-chart,
-    &.language-chart,
-    &.series-chart {
-      height: 220px;
-    }
-
-    &.progress-chart,
-    &.rating-chart,
-    &.page-count-chart,
-    &.reading-speed-chart,
-    &.quality-chart,
-    &.velocity-chart {
-      height: 250px;
-    }
-
-    &.categories-chart,
-    &.author-chart,
-    &.completion-chart,
-    &.publisher-chart,
-    &.author-rating-chart,
-    &.book-size-chart {
-      height: 300px;
-    }
-
-    &.year-chart,
-    &.books-added-chart,
-    &.monthly-chart,
-    &.series-completion-chart,
-    &.monthly-patterns-chart,
-    &.finished-books-timeline-chart {
-      height: 250px;
-    }
-
-    &.series-length-chart,
-    &.author-series-chart,
-    &.top-series-chart {
-      height: 250px;
-    }
-
-    &.reading-heatmap-chart {
-      height: 300px;
-    }
-
-    .reading-profile-radar-chart,
-    &.reading-dna-chart,
-    &.reading-habits-chart {
-      height: 300px;
-    }
   }
 
   .config-modal-overlay {

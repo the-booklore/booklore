@@ -22,9 +22,8 @@ import {ReadingCompletionChartService} from '../service/reading-completion-chart
 import {LanguageDistributionChartService} from '../service/language-distribution-chart.service';
 import {BookQualityScoreChartService} from '../service/book-quality-score-chart.service';
 import {BookSizeChartService} from '../service/book-size-chart.service';
-import {ReadingVelocityTimelineChartService} from '../service/reading-velocity-timeline-chart.service';
 import {MonthlyReadingPatternsChartService} from '../service/monthly-reading-patterns-chart.service';
-import {TopSeriesChartService} from '../service/top-series-chart.service';
+import {TopItemsChartComponent} from './top-items-chart/top-items-chart.component';
 import {ChartConfig, ChartConfigService} from '../service/chart-config.service';
 
 @Component({
@@ -36,7 +35,8 @@ import {ChartConfig, ChartConfigService} from '../service/chart-config.service';
     BaseChartDirective,
     Select,
     DragDropModule,
-    Button
+    Button,
+    TopItemsChartComponent
   ],
   templateUrl: './stats-component.html',
   styleUrls: ['./stats-component.scss']
@@ -56,9 +56,7 @@ export class StatsComponent implements OnInit, OnDestroy {
   protected readonly languageDistributionChartService = inject(LanguageDistributionChartService);
   protected readonly bookQualityScoreChartService = inject(BookQualityScoreChartService);
   protected readonly bookSizeChartService = inject(BookSizeChartService);
-  protected readonly readingVelocityTimelineChartService = inject(ReadingVelocityTimelineChartService);
   protected readonly monthlyReadingPatternsChartService = inject(MonthlyReadingPatternsChartService);
-  protected readonly topSeriesChartService = inject(TopSeriesChartService);
   protected readonly chartConfigService = inject(ChartConfigService);
   private readonly pageTitle = inject(PageTitleService);
 

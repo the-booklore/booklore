@@ -23,11 +23,10 @@ export class ChartConfigService {
     {id: 'topAuthors', name: 'Top 25 Authors', enabled: true, category: 'large', order: 4},
     {id: 'topCategories', name: 'Top 25 Categories', enabled: true, category: 'large', order: 5},
     {id: 'monthlyReadingPatterns', name: 'Monthly Reading Patterns', enabled: true, category: 'large', order: 6},
-    {id: 'readingVelocityTimeline', name: 'Reading Velocity Timeline', enabled: true, category: 'large', order: 7},
-    {id: 'topBooksBySize', name: 'Top 20 Largest Books', enabled: true, category: 'large', order: 8},
-    {id: 'topSeries', name: 'Top 20 Series', enabled: true, category: 'large', order: 9},
-    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 10},
-    {id: 'externalRating', name: 'External Rating Distribution', enabled: true, category: 'medium', order: 11},
+    {id: 'topBooksBySize', name: 'Top 20 Largest Books', enabled: true, category: 'large', order: 7},
+    {id: 'topSeries', name: 'Top 25 Series', enabled: true, category: 'large', order: 8},
+    {id: 'publicationYear', name: 'Publication Year Timeline', enabled: true, category: 'full-width', order: 9},
+    {id: 'externalRating', name: 'External Rating Distribution', enabled: true, category: 'medium', order: 10},
   ];
 
   private chartsConfigSubject = new BehaviorSubject<ChartConfig[]>(this.loadConfig());
