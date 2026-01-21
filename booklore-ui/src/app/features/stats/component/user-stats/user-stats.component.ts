@@ -19,6 +19,9 @@ import {ReadingHeatmapChartComponent} from '../reading-heatmap-chart/reading-hea
 import {PersonalRatingChartComponent} from '../personal-rating-chart/personal-rating-chart.component';
 import {ReadingProgressChartComponent} from '../reading-progress-chart/reading-progress-chart.component';
 import {ReadStatusChartComponent} from '../read-status-chart/read-status-chart.component';
+import {RatingTasteChartComponent} from '../rating-taste-chart/rating-taste-chart.component';
+import {ReadingBacklogChartComponent} from '../reading-backlog-chart/reading-backlog-chart.component';
+import {SeriesProgressChartComponent} from '../series-progress-chart/series-progress-chart.component';
 
 @Component({
   selector: 'app-user-stats',
@@ -39,7 +42,10 @@ import {ReadStatusChartComponent} from '../read-status-chart/read-status-chart.c
     ReadingHeatmapChartComponent,
     PersonalRatingChartComponent,
     ReadingProgressChartComponent,
-    ReadStatusChartComponent
+    ReadStatusChartComponent,
+    RatingTasteChartComponent,
+    ReadingBacklogChartComponent,
+    SeriesProgressChartComponent
   ],
   templateUrl: './user-stats.component.html',
   styleUrls: ['./user-stats.component.scss']
