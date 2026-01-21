@@ -12,6 +12,9 @@ import {ReadingHeatmapChartComponent} from '../component/reading-heatmap-chart/r
 import {PersonalRatingChartComponent} from '../component/personal-rating-chart/personal-rating-chart.component';
 import {ReadingProgressChartComponent} from '../component/reading-progress-chart/reading-progress-chart.component';
 import {ReadStatusChartComponent} from '../component/read-status-chart/read-status-chart.component';
+import {RatingTasteChartComponent} from '../component/rating-taste-chart/rating-taste-chart.component';
+import {ReadingBacklogChartComponent} from '../component/reading-backlog-chart/reading-backlog-chart.component';
+import {SeriesProgressChartComponent} from '../component/series-progress-chart/series-progress-chart.component';
 
 export interface UserChartConfig {
   id: string;
@@ -41,6 +44,9 @@ export class UserChartConfigService {
     {id: 'completion-timeline', title: 'Completion Timeline', component: CompletionTimelineChartComponent, enabled: true, sizeClass: 'chart-medium', order: 9},
     {id: 'reading-dna', title: 'Reading DNA Profile', component: ReadingDNAChartComponent, enabled: true, sizeClass: 'chart-medium', order: 10},
     {id: 'reading-habits', title: 'Reading Habits Analysis', component: ReadingHabitsChartComponent, enabled: true, sizeClass: 'chart-medium', order: 11},
+    {id: 'rating-taste', title: 'Rating Taste Comparison', component: RatingTasteChartComponent, enabled: true, sizeClass: 'chart-medium', order: 12},
+    {id: 'series-progress', title: 'Series Progress Tracker', component: SeriesProgressChartComponent, enabled: true, sizeClass: 'chart-medium', order: 13},
+    {id: 'reading-backlog', title: 'Reading Backlog Analysis', component: ReadingBacklogChartComponent, enabled: true, sizeClass: 'chart-full', order: 14},
   ];
 
   private chartsSubject = new BehaviorSubject<UserChartConfig[]>(this.loadChartConfig());
