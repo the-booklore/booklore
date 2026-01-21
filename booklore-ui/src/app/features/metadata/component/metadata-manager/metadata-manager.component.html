@@ -190,9 +190,9 @@
             • All books with any of the selected {{ currentMergeType }} will be updated to use this single value<br/>
             <br/>
             <strong>Example:</strong> When merging "En", "English", "en-US"<br/>
-            • Enter "English" → All books will have their {{ currentMergeType.slice(0, -1) }} merged to "English"<br/>
+            • Enter "English" → All books will have their {{ pluralize.singular(currentMergeType) }} merged to "English"<br/>
             <br/>
-            <strong>Note:</strong> Each book can only have one {{ currentMergeType.slice(0, -1) }}, so only enter one target value.
+            <strong>Note:</strong> Each book can only have one {{ pluralize.singular(currentMergeType) }}, so only enter one target value.
           </small>
         } @else {
           <small class="help-text">
@@ -260,14 +260,14 @@
         @if (isSingleValueField(currentMergeType)) {
           <small class="help-text">
             <strong>How it works:</strong><br/>
-            • Enter a new value to rename this {{ currentMergeType.slice(0, -1) }}<br/>
+            • Enter a new value to rename this {{ pluralize.singular(currentMergeType) }}<br/>
             <br/>
-            <strong>Note:</strong> Each book can only have one {{ currentMergeType.slice(0, -1) }}, so splitting into multiple values is not allowed.
+            <strong>Note:</strong> Each book can only have one {{ pluralize.singular(currentMergeType) }}, so splitting into multiple values is not allowed.
           </small>
         } @else {
           <small class="help-text">
             <strong>How it works:</strong><br/>
-            • Enter a single value to rename the {{ currentMergeType.slice(0, -1) }}<br/>
+            • Enter a single value to rename the {{ pluralize.singular(currentMergeType) }}<br/>
             • Enter multiple values separated by commas to split into multiple {{ currentMergeType }}<br/>
             <br/>
             <strong>Example:</strong> When renaming/splitting "Mystery & Detective"<br/>
@@ -334,7 +334,7 @@
       <div class="delete-info">
         <p><strong>What will happen:</strong></p>
         <ul>
-          <li>The {{ currentMergeType.slice(0, -1) }} will be removed from all affected books</li>
+          <li>The {{ pluralize.singular(currentMergeType) }} will be removed from all affected books</li>
           <li>This action cannot be undone</li>
           <li>Total books affected: <strong>{{ currentDeleteItem ? currentDeleteItem.count : getTotalAffectedBooks(getSelectedItems(currentMergeType)) }}</strong></li>
         </ul>
