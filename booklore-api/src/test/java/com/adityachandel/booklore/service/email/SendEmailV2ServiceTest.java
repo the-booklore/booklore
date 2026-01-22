@@ -1,0 +1,337 @@
+package com.adityachandel.booklore.service.email;
+
+import com.adityachandel.booklore.config.security.service.AuthenticationService;
+import com.adityachandel.booklore.exception.APIException;
+import com.adityachandel.booklore.model.dto.BookLoreUser;
+import com.adityachandel.booklore.model.dto.request.SendBookByEmailRequest;
+import com.adityachandel.booklore.model.entity.*;
+import com.adityachandel.booklore.repository.BookRepository;
+import com.adityachandel.booklore.repository.EmailProviderV2Repository;
+import com.adityachandel.booklore.repository.EmailRecipientV2Repository;
+import com.adityachandel.booklore.repository.UserEmailProviderPreferenceRepository;
+import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.SecurityContextVirtualThread;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+class SendEmailV2ServiceTest {
+
+    @Mock
+    private EmailProviderV2Repository emailProviderRepository;
+
+    @Mock
+    private UserEmailProviderPreferenceRepository preferenceRepository;
+
+    @Mock
+    private BookRepository bookRepository;
+
+    @Mock
+    private EmailRecipientV2Repository emailRecipientRepository;
+
+    @Mock
+    private NotificationService notificationService;
+
+    @Mock
+    private AuthenticationService authenticationService;
+
+    @InjectMocks
+    private SendEmailV2Service sendEmailV2Service;
+
+    private BookLoreUser user;
+    private BookEntity book;
+    private EmailProviderV2Entity emailProvider;
+    private EmailRecipientV2Entity emailRecipient;
+    private UserEmailProviderPreferenceEntity preference;
+
+    @BeforeEach
+    void setUp() {
+        user = BookLoreUser.builder().id(1L).username("testuser").build();
+
+        BookMetadataEntity metadata = BookMetadataEntity.builder()
+                .title("Test Book")
+                .build();
+
+        LibraryPathEntity libraryPath = new LibraryPathEntity();
+        libraryPath.setPath("/library");
+
+        BookFileEntity bookFile = new BookFileEntity();
+        bookFile.setFileName("test-book.epub");
+        bookFile.setFileSubPath("books");
+        bookFile.setBookFormat(true);
+
+        book = new BookEntity();
+        book.setId(10L);
+        book.setMetadata(metadata);
+        book.setLibraryPath(libraryPath);
+        book.setBookFiles(List.of(bookFile));
+
+        emailProvider = EmailProviderV2Entity.builder()
+                .id(100L)
+                .userId(1L)
+                .name("Test Provider")
+                .host("smtp.test.com")
+                .port(587)
+                .username("user@test.com")
+                .password("password")
+                .auth(true)
+                .startTls(true)
+                .build();
+
+        emailRecipient = EmailRecipientV2Entity.builder()
+                .id(200L)
+                .userId(1L)
+                .email("recipient@test.com")
+                .name("Test Recipient")
+                .defaultRecipient(true)
+                .build();
+
+        preference = UserEmailProviderPreferenceEntity.builder()
+                .id(1L)
+                .userId(1L)
+                .defaultProviderId(100L)
+                .build();
+    }
+
+    @Test
+    void emailBookQuick_success() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(preferenceRepository.findByUserId(1L)).thenReturn(Optional.of(preference));
+        when(emailProviderRepository.findAccessibleProvider(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(emailRecipientRepository.findDefaultEmailRecipientByUserId(1L)).thenReturn(Optional.of(emailRecipient));
+
+        try (MockedStatic<SecurityContextVirtualThread> securityMock = mockStatic(SecurityContextVirtualThread.class)) {
+            securityMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable task = invocation.getArgument(0);
+                        task.run();
+                        return null;
+                    });
+
+            try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
+                fileUtilsMock.when(() -> FileUtils.getBookFullPath(book)).thenReturn("/library/books/test-book.epub");
+
+                sendEmailV2Service.emailBookQuick(10L);
+
+                securityMock.verify(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)));
+                verify(notificationService, atLeastOnce()).sendMessage(any(), any());
+            }
+        }
+    }
+
+    @Test
+    void emailBookQuick_bookNotFound() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBookQuick(10L));
+    }
+
+    @Test
+    void emailBookQuick_defaultProviderNotFound_noPreference() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(preferenceRepository.findByUserId(1L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBookQuick(10L));
+    }
+
+    @Test
+    void emailBookQuick_defaultProviderNotFound_providerMissing() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(preferenceRepository.findByUserId(1L)).thenReturn(Optional.of(preference));
+        when(emailProviderRepository.findAccessibleProvider(100L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBookQuick(10L));
+    }
+
+    @Test
+    void emailBookQuick_defaultRecipientNotFound() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(preferenceRepository.findByUserId(1L)).thenReturn(Optional.of(preference));
+        when(emailProviderRepository.findAccessibleProvider(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(emailRecipientRepository.findDefaultEmailRecipientByUserId(1L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBookQuick(10L));
+    }
+
+    @Test
+    void emailBook_success_userOwnedProvider() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(emailRecipientRepository.findByIdAndUserId(200L, 1L)).thenReturn(Optional.of(emailRecipient));
+
+        try (MockedStatic<SecurityContextVirtualThread> securityMock = mockStatic(SecurityContextVirtualThread.class)) {
+            securityMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable task = invocation.getArgument(0);
+                        task.run();
+                        return null;
+                    });
+
+            try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
+                fileUtilsMock.when(() -> FileUtils.getBookFullPath(book)).thenReturn("/library/books/test-book.epub");
+
+                sendEmailV2Service.emailBook(request);
+
+                securityMock.verify(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)));
+                verify(notificationService, atLeastOnce()).sendMessage(any(), any());
+            }
+        }
+    }
+
+    @Test
+    void emailBook_success_sharedProvider() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.empty());
+        when(emailProviderRepository.findSharedProviderById(100L)).thenReturn(Optional.of(emailProvider));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(emailRecipientRepository.findByIdAndUserId(200L, 1L)).thenReturn(Optional.of(emailRecipient));
+
+        try (MockedStatic<SecurityContextVirtualThread> securityMock = mockStatic(SecurityContextVirtualThread.class)) {
+            securityMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable task = invocation.getArgument(0);
+                        task.run();
+                        return null;
+                    });
+
+            try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
+                fileUtilsMock.when(() -> FileUtils.getBookFullPath(book)).thenReturn("/library/books/test-book.epub");
+
+                sendEmailV2Service.emailBook(request);
+
+                securityMock.verify(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)));
+                verify(notificationService, atLeastOnce()).sendMessage(any(), any());
+            }
+        }
+    }
+
+    @Test
+    void emailBook_providerNotFound() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.empty());
+        when(emailProviderRepository.findSharedProviderById(100L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBook(request));
+    }
+
+    @Test
+    void emailBook_bookNotFound() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBook(request));
+    }
+
+    @Test
+    void emailBook_recipientNotFound() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(emailRecipientRepository.findByIdAndUserId(200L, 1L)).thenReturn(Optional.empty());
+
+        assertThrows(APIException.class, () -> sendEmailV2Service.emailBook(request));
+    }
+
+    @Test
+    void emailBookQuick_sendEmailFailure_logsError() {
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(preferenceRepository.findByUserId(1L)).thenReturn(Optional.of(preference));
+        when(emailProviderRepository.findAccessibleProvider(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(emailRecipientRepository.findDefaultEmailRecipientByUserId(1L)).thenReturn(Optional.of(emailRecipient));
+
+        try (MockedStatic<SecurityContextVirtualThread> securityMock = mockStatic(SecurityContextVirtualThread.class)) {
+            securityMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> {
+                        Runnable task = invocation.getArgument(0);
+                        task.run();
+                        return null;
+                    });
+
+            try (MockedStatic<FileUtils> fileUtilsMock = mockStatic(FileUtils.class)) {
+                fileUtilsMock.when(() -> FileUtils.getBookFullPath(book))
+                        .thenThrow(new IllegalStateException("Book file not found"));
+
+                sendEmailV2Service.emailBookQuick(10L);
+
+                // Error is caught and logged, not rethrown
+                verify(notificationService, atLeastOnce()).sendMessage(any(), any());
+            }
+        }
+    }
+
+    @Test
+    void emailBook_notificationSentBeforeVirtualThread() {
+        SendBookByEmailRequest request = SendBookByEmailRequest.builder()
+                .bookId(10L)
+                .providerId(100L)
+                .recipientId(200L)
+                .build();
+
+        when(authenticationService.getAuthenticatedUser()).thenReturn(user);
+        when(emailProviderRepository.findByIdAndUserId(100L, 1L)).thenReturn(Optional.of(emailProvider));
+        when(bookRepository.findByIdWithBookFiles(10L)).thenReturn(Optional.of(book));
+        when(emailRecipientRepository.findByIdAndUserId(200L, 1L)).thenReturn(Optional.of(emailRecipient));
+
+        try (MockedStatic<SecurityContextVirtualThread> securityMock = mockStatic(SecurityContextVirtualThread.class)) {
+            // Don't execute the runnable - just capture it
+            securityMock.when(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)))
+                    .thenAnswer(invocation -> null);
+
+            sendEmailV2Service.emailBook(request);
+
+            // Log notification is sent before the virtual thread starts
+            verify(notificationService).sendMessage(any(), any());
+            securityMock.verify(() -> SecurityContextVirtualThread.runWithSecurityContext(any(Runnable.class)));
+        }
+    }
+}
