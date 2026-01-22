@@ -1,0 +1,320 @@
+name: Release Branch – Build, Test, and RC Publish
+
+on:
+  push:
+    branches:
+      - 'release/**'
+  pull_request:
+    branches:
+      - 'release/**'
+
+jobs:
+  migration-check:
+    name: Flyway Migration Check
+    uses: ./.github/workflows/migrations-check.yml
+    with:
+      base_ref: 'master'
+      head_ref: 'HEAD'
+
+  backend-tests:
+    name: Backend Tests
+    needs: [ migration-check ]
+    if: needs.migration-check.result == 'success' || needs.migration-check.result == 'skipped'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set Up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Execute Backend Tests
+        id: backend_tests
+        working-directory: ./booklore-api
+        run: |
+          echo "Running backend tests..."
+          ./gradlew test --no-daemon --parallel --build-cache
+        continue-on-error: true
+
+      - name: Publish Backend Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: booklore-api/build/test-results/**/*.xml
+          check_name: Backend Test Results
+
+      - name: Upload Backend Test Reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: backend-test-reports
+          path: |
+            booklore-api/build/reports/tests/
+            booklore-api/build/test-results/
+          retention-days: 30
+
+      - name: Validate Backend Test Results
+        if: steps.backend_tests.outcome == 'failure'
+        run: |
+          echo "❌ Backend tests failed"
+          exit 1
+
+  frontend-tests:
+    name: Frontend Tests
+    needs: [ migration-check ]
+    if: needs.migration-check.result == 'success' || needs.migration-check.result == 'skipped'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Set Up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: booklore-ui/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: ./booklore-ui
+        run: npm ci --force
+
+      - name: Execute Frontend Tests
+        id: frontend_tests
+        working-directory: ./booklore-ui
+        run: |
+          echo "Running frontend tests..."
+          npx ng test
+        continue-on-error: true
+
+      - name: Publish Frontend Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: booklore-ui/test-results/vitest-results.xml
+          check_name: Frontend Test Results
+
+      - name: Upload Frontend Test Reports
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: frontend-test-reports
+          path: |
+            booklore-ui/test-results/vitest-results.xml
+          retention-days: 30
+
+      - name: Validate Frontend Test Results
+        if: steps.frontend_tests.outcome == 'failure'
+        run: |
+          echo "❌ Frontend tests failed"
+          exit 1
+
+  build-and-push-rc:
+    name: Build and Push RC Container
+    needs: [ backend-tests, frontend-tests ]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # ----------------------------------------
+      # Environment setup
+      # ----------------------------------------
+      - name: Set Up QEMU for Multi-Arch Builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set Up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ----------------------------------------
+      # RC version tagging
+      # ----------------------------------------
+      - name: Generate RC Version Tag
+        id: version
+        run: |
+          # Extract version from branch name (release/1.2 → 1.2)
+          branch_name="${{ github.ref_name }}"
+          branch_version=$(echo "$branch_name" | sed 's|release/||')
+
+          # Validate version format (must be X.Y or X.Y.Z)
+          if ! echo "$branch_version" | grep -qE '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "::error::Invalid release branch format. Expected 'release/X.Y' or 'release/X.Y.Z', got '$branch_name'"
+            exit 1
+          fi
+
+          # Normalize to X.Y.Z format (append .0 if only X.Y)
+          if echo "$branch_version" | grep -qE '^[0-9]+\.[0-9]+$'; then
+            full_version="${branch_version}.0"
+          else
+            full_version="$branch_version"
+          fi
+
+          # ----------------------------------------
+          # Version sanity check against latest tag
+          # ----------------------------------------
+          latest_tag=$(git tag --list "v*" --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          latest_tag=${latest_tag:-"v0.0.0"}
+          echo "Latest stable tag: $latest_tag"
+
+          # Parse latest version
+          latest_semver=$(echo "$latest_tag" | sed 's/^v//')
+          latest_major=$(echo "$latest_semver" | cut -d. -f1)
+          latest_minor=$(echo "$latest_semver" | cut -d. -f2)
+          latest_patch=$(echo "$latest_semver" | cut -d. -f3)
+
+          # Parse target version
+          target_major=$(echo "$full_version" | cut -d. -f1)
+          target_minor=$(echo "$full_version" | cut -d. -f2)
+          target_patch=$(echo "$full_version" | cut -d. -f3)
+
+          echo "Latest: v${latest_major}.${latest_minor}.${latest_patch}"
+          echo "Target: v${target_major}.${target_minor}.${target_patch}"
+
+          # Check for backwards version (target < latest)
+          if [ "$target_major" -lt "$latest_major" ]; then
+            echo "::error::Target version v${full_version} is older than latest tag ${latest_tag}"
+            exit 1
+          elif [ "$target_major" -eq "$latest_major" ] && [ "$target_minor" -lt "$latest_minor" ]; then
+            echo "::error::Target version v${full_version} is older than latest tag ${latest_tag}"
+            exit 1
+          elif [ "$target_major" -eq "$latest_major" ] && [ "$target_minor" -eq "$latest_minor" ] && [ "$target_patch" -lt "$latest_patch" ]; then
+            echo "::error::Target version v${full_version} is older than latest tag ${latest_tag}"
+            exit 1
+          fi
+
+          # Check for suspicious jumps (likely typos)
+          major_jump=$((target_major - latest_major))
+          minor_jump=$((target_minor - latest_minor))
+          patch_jump=$((target_patch - latest_patch))
+
+          # Flag suspicious patterns
+          if [ "$major_jump" -gt 1 ]; then
+            echo "::error::Suspicious major version jump: ${latest_tag} → v${full_version} (jumping ${major_jump} major versions). Typo?"
+            exit 1
+          elif [ "$major_jump" -eq 0 ] && [ "$minor_jump" -gt 5 ]; then
+            echo "::error::Suspicious minor version jump: ${latest_tag} → v${full_version} (jumping ${minor_jump} minor versions). Typo?"
+            exit 1
+          elif [ "$major_jump" -eq 0 ] && [ "$minor_jump" -eq 0 ] && [ "$patch_jump" -gt 10 ]; then
+            echo "::error::Suspicious patch version jump: ${latest_tag} → v${full_version} (jumping ${patch_jump} patch versions). Typo?"
+            exit 1
+          fi
+
+          # Warn (but don't fail) for moderate jumps
+          if [ "$minor_jump" -gt 1 ] && [ "$minor_jump" -le 5 ]; then
+            echo "::warning::Skipping minor versions: ${latest_tag} → v${full_version}. Is this intentional?"
+          fi
+
+          echo "✅ Version sanity check passed: ${latest_tag} → v${full_version}"
+
+          # ----------------------------------------
+          # Calculate RC number
+          # ----------------------------------------
+          # Find the merge-base with develop to count commits accurately
+          # This ensures RC numbers are stable even if develop moves forward
+          if git rev-parse origin/develop >/dev/null 2>&1; then
+            merge_base=$(git merge-base origin/develop HEAD 2>/dev/null || echo "")
+            if [ -n "$merge_base" ]; then
+              rc_number=$(git rev-list --count ${merge_base}..HEAD 2>/dev/null || echo "1")
+            else
+              rc_number=$(git rev-list --count HEAD 2>/dev/null || echo "1")
+            fi
+          else
+            rc_number=$(git rev-list --count HEAD 2>/dev/null || echo "1")
+          fi
+
+          # Ensure RC number is at least 1
+          rc_number=$((rc_number > 0 ? rc_number : 1))
+
+          rc_tag="v${full_version}-rc.${rc_number}"
+          short_sha=$(git rev-parse --short HEAD)
+          # Sanitize branch name for Docker tag (replace / with -)
+          safe_branch_name=$(echo "$branch_name" | tr '/' '-')
+
+          echo "rc_tag=$rc_tag" >> $GITHUB_ENV
+          echo "branch_version=$branch_version" >> $GITHUB_ENV
+          echo "full_version=$full_version" >> $GITHUB_ENV
+          echo "short_sha=$short_sha" >> $GITHUB_ENV
+          echo "safe_branch_name=$safe_branch_name" >> $GITHUB_ENV
+
+          echo "Release branch: $branch_name"
+          echo "Full version: $full_version"
+          echo "RC tag: $rc_tag"
+
+      # ----------------------------------------
+      # Docker login
+      # ----------------------------------------
+      - name: Authenticate to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Authenticate to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      # ----------------------------------------
+      # Docker build & push
+      # ----------------------------------------
+      - name: Build and Push RC Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            booklore/booklore:${{ env.rc_tag }}
+            booklore/booklore:${{ env.safe_branch_name }}-${{ env.short_sha }}
+            ghcr.io/booklore-app/booklore:${{ env.rc_tag }}
+            ghcr.io/booklore-app/booklore:${{ env.safe_branch_name }}-${{ env.short_sha }}
+          build-args: |
+            APP_VERSION=${{ env.rc_tag }}
+            APP_REVISION=${{ github.sha }}
+          cache-from: |
+            type=gha
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
+
+      - name: Summary
+        run: |
+          echo "## RC Build Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${{ env.rc_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Images:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`booklore/booklore:${{ env.rc_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/booklore-app/booklore:${{ env.rc_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test this RC:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull booklore/booklore:${{ env.rc_tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
