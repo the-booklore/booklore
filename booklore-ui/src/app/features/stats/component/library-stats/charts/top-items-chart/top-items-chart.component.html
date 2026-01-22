@@ -3,7 +3,7 @@
     <div class="chart-title">
       <h3>
         <i class="pi" [ngClass]="selectedDataType.icon" [style.color]="selectedDataType.color"></i>
-        Top 25 {{ selectedDataType.label }}
+        Top 15 {{ selectedDataType.label }}
       </h3>
       <p class="chart-description">Most represented {{ selectedDataType.label.toLowerCase() }} in your library</p>
     </div>
@@ -48,6 +48,20 @@
               [type]="chartType">
       </canvas>
     </div>
+
+    @if (insights.length > 0) {
+      <div class="insights-grid">
+        @for (insight of insights; track insight.label) {
+          <div class="insight-card">
+            <i class="pi" [ngClass]="insight.icon" [style.color]="selectedDataType.color"></i>
+            <div class="insight-content">
+              <span class="insight-label">{{ insight.label }}</span>
+              <span class="insight-value">{{ insight.value }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
   }
 
   @if (totalItems === 0) {

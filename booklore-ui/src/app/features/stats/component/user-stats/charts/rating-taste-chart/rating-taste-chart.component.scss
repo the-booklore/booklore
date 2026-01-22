@@ -63,7 +63,7 @@
 
 .chart-wrapper {
   position: relative;
-  height: 400px;
+  height: 500px;
   width: 100%;
   margin-bottom: 1.5rem;
 
@@ -267,7 +267,7 @@
 
 @media (max-width: 768px) {
   .chart-wrapper {
-    height: 350px;
+    height: 420px;
 
     .quadrant-labels {
       .quadrant-label {
@@ -324,7 +324,7 @@
   }
 
   .chart-wrapper {
-    height: 300px;
+    height: 350px;
   }
 
   .taste-insights {

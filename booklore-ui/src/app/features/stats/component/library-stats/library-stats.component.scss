@@ -413,6 +413,11 @@
     padding: 18px;
   }
 
+  &.xlarge {
+    grid-column: 1 / -1;
+    padding: 20px;
+  }
+
   &.full-width {
     grid-column: 1 / -1;
   }
@@ -471,6 +476,7 @@
       grid-column: span 2;
     }
 
+    .chart-section.xlarge,
     .chart-section.full-width {
       grid-column: 1 / -1;
     }
@@ -551,6 +557,7 @@
       &.small,
       &.medium,
       &.large,
+      &.xlarge,
       &.full-width {
         grid-column: 1;
       }

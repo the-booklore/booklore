@@ -118,6 +118,22 @@
                 }
               </div>
             </div>
+
+            <div class="config-category">
+              <h4>Extra Large Charts</h4>
+              <div class="chart-toggles">
+                @for (chart of getChartsByCategory('xlarge'); track chart.id) {
+                  <div class="chart-toggle">
+                    <input
+                      type="checkbox"
+                      [id]="'chart-' + chart.id"
+                      [checked]="chart.enabled"
+                      (change)="toggleChart(chart.id)">
+                    <label [for]="'chart-' + chart.id">{{ chart.name }}</label>
+                  </div>
+                }
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -153,8 +169,20 @@
             @case ('pageCountDistribution') {
               <app-page-count-chart></app-page-count-chart>
             }
+            @case ('publicationTimeline') {
+              <app-publication-timeline-chart></app-publication-timeline-chart>
+            }
+            @case ('publicationTrend') {
+              <app-publication-trend-chart></app-publication-trend-chart>
+            }
+            @case ('readingJourney') {
+              <app-reading-journey-chart></app-reading-journey-chart>
+            }
             @case ('topItems') {
               <app-top-items-chart></app-top-items-chart>
+            }
+            @case ('authorUniverse') {
+              <app-author-universe-chart></app-author-universe-chart>
             }
           }
         </div>

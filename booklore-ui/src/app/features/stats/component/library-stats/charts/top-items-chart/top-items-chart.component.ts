@@ -8,12 +8,13 @@ import {catchError, filter, first, switchMap, takeUntil} from 'rxjs/operators';
 import {Select} from 'primeng/select';
 import {LibraryFilterService} from '../../service/library-filter.service';
 import {BookService} from '../../../../../book/service/book.service';
-import {Book} from '../../../../../book/model/book.model';
+import {Book, ReadStatus} from '../../../../../book/model/book.model';
 import {BookState} from '../../../../../book/model/state/book-state.model';
 
 interface ItemStats {
   name: string;
   count: number;
+  statusBreakdown: Record<ReadStatus, number>;
 }
 
 interface DataTypeOption {
@@ -27,58 +28,37 @@ type DataType = 'authors' | 'categories' | 'publishers' | 'tags' | 'moods' | 'se
 type ItemChartData = ChartData<'bar', number[], string>;
 
 const DATA_TYPE_OPTIONS: DataTypeOption[] = [
-  {label: 'Series', value: 'series', icon: 'pi-bookmark', color: '#059669'},
-  {label: 'Authors', value: 'authors', icon: 'pi-user', color: '#0D9488'},
-  {label: 'Categories', value: 'categories', icon: 'pi-th-large', color: '#2563EB'},
+  {label: 'Authors', value: 'authors', icon: 'pi-th-large', color: '#2563EB'},
+  {label: 'Categories', value: 'categories', icon: 'pi-user', color: '#0D9488'},
+  {label: 'Series', value: 'series', icon: 'pi-tag', color: '#DB2777'},
   {label: 'Publishers', value: 'publishers', icon: 'pi-building', color: '#7C3AED'},
-  {label: 'Tags', value: 'tags', icon: 'pi-tag', color: '#DB2777'},
+  {label: 'Tags', value: 'tags', icon: 'pi-bookmark', color: '#EAB308'},
   {label: 'Moods', value: 'moods', icon: 'pi-heart', color: '#EA580C'}
 ];
 
-const COLOR_PALETTES: Record<DataType, string[]> = {
-  authors: [
-    '#0D9488', '#0891B2', '#0284C7', '#2563EB', '#4F46E5',
-    '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6', '#6366F1',
-    '#5EEAD4', '#67E8F9', '#7DD3FC', '#93C5FD', '#A5B4FC',
-    '#99F6E4', '#A5F3FC', '#BAE6FD', '#BFDBFE', '#C7D2FE',
-    '#2DD4BF', '#22D3EE', '#38BDF8', '#60A5FA', '#818CF8'
-  ],
-  categories: [
-    '#2563EB', '#4F46E5', '#7C3AED', '#9333EA', '#C026D3',
-    '#3B82F6', '#6366F1', '#8B5CF6', '#A855F7', '#D946EF',
-    '#60A5FA', '#818CF8', '#A78BFA', '#C084FC', '#E879F9',
-    '#93C5FD', '#A5B4FC', '#C4B5FD', '#D8B4FE', '#F0ABFC',
-    '#BFDBFE', '#C7D2FE', '#DDD6FE', '#E9D5FF', '#F5D0FE'
-  ],
-  publishers: [
-    '#7C3AED', '#9333EA', '#C026D3', '#DB2777', '#E11D48',
-    '#8B5CF6', '#A855F7', '#D946EF', '#EC4899', '#F43F5E',
-    '#A78BFA', '#C084FC', '#E879F9', '#F472B6', '#FB7185',
-    '#C4B5FD', '#D8B4FE', '#F0ABFC', '#F9A8D4', '#FDA4AF',
-    '#DDD6FE', '#E9D5FF', '#F5D0FE', '#FBCFE8', '#FECDD3'
-  ],
-  tags: [
-    '#DB2777', '#E11D48', '#DC2626', '#EA580C', '#D97706',
-    '#EC4899', '#F43F5E', '#EF4444', '#F97316', '#F59E0B',
-    '#F472B6', '#FB7185', '#F87171', '#FB923C', '#FBBF24',
-    '#F9A8D4', '#FDA4AF', '#FCA5A5', '#FDBA74', '#FCD34D',
-    '#FBCFE8', '#FECDD3', '#FECACA', '#FED7AA', '#FDE68A'
-  ],
-  moods: [
-    '#EA580C', '#D97706', '#CA8A04', '#65A30D', '#16A34A',
-    '#F97316', '#F59E0B', '#EAB308', '#84CC16', '#22C55E',
-    '#FB923C', '#FBBF24', '#FACC15', '#A3E635', '#4ADE80',
-    '#FDBA74', '#FCD34D', '#FDE047', '#BEF264', '#86EFAC',
-    '#FED7AA', '#FDE68A', '#FEF08A', '#D9F99D', '#BBF7D0'
-  ],
-  series: [
-    '#059669', '#0D9488', '#0891B2', '#0284C7', '#2563EB',
-    '#10B981', '#14B8A6', '#06B6D4', '#0EA5E9', '#3B82F6',
-    '#34D399', '#2DD4BF', '#22D3EE', '#38BDF8', '#60A5FA',
-    '#6EE7B7', '#5EEAD4', '#67E8F9', '#7DD3FC', '#93C5FD',
-    '#A7F3D0', '#99F6E4', '#A5F3FC', '#BAE6FD', '#BFDBFE'
-  ]
+const READ_STATUS_CONFIG: Record<ReadStatus, { label: string; color: string }> = {
+  [ReadStatus.READ]: {label: 'Read', color: '#22c55e'},
+  [ReadStatus.READING]: {label: 'Reading', color: '#3b82f6'},
+  [ReadStatus.RE_READING]: {label: 'Re-reading', color: '#8b5cf6'},
+  [ReadStatus.UNREAD]: {label: 'Unread', color: '#6b7280'},
+  [ReadStatus.PARTIALLY_READ]: {label: 'Partially Read', color: '#f59e0b'},
+  [ReadStatus.PAUSED]: {label: 'Paused', color: '#eab308'},
+  [ReadStatus.WONT_READ]: {label: "Won't Read", color: '#ef4444'},
+  [ReadStatus.ABANDONED]: {label: 'Abandoned', color: '#dc2626'},
+  [ReadStatus.UNSET]: {label: 'Not Set', color: '#9ca3af'}
 };
+
+const READ_STATUS_ORDER: ReadStatus[] = [
+  ReadStatus.READ,
+  ReadStatus.READING,
+  ReadStatus.RE_READING,
+  ReadStatus.PARTIALLY_READ,
+  ReadStatus.PAUSED,
+  ReadStatus.UNREAD,
+  ReadStatus.WONT_READ,
+  ReadStatus.ABANDONED,
+  ReadStatus.UNSET
+];
 
 @Component({
   selector: 'app-top-items-chart',
@@ -98,6 +78,7 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
 
   public totalItems = 0;
   public totalBooks = 0;
+  public insights: { icon: string; label: string; value: string }[] = [];
 
   private readonly bookService = inject(BookService);
   private readonly libraryFilterService = inject(LibraryFilterService);
@@ -164,6 +145,7 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
       },
       scales: {
         x: {
+          stacked: true,
           beginAtZero: true,
           ticks: {
             color: 'rgba(255, 255, 255, 0.8)',
@@ -190,6 +172,7 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
           }
         },
         y: {
+          stacked: true,
           ticks: {
             color: 'rgba(255, 255, 255, 0.9)',
             font: {
@@ -206,7 +189,18 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
       },
       plugins: {
         legend: {
-          display: false
+          display: true,
+          position: 'bottom',
+          labels: {
+            color: 'rgba(255, 255, 255, 0.9)',
+            font: {
+              family: "'Inter', sans-serif",
+              size: 11
+            },
+            padding: 15,
+            usePointStyle: true,
+            pointStyle: 'rectRounded'
+          }
         },
         tooltip: {
           enabled: true,
@@ -266,26 +260,91 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
       this.totalBooks = stats.reduce((sum, s) => sum + s.count, 0);
 
       const labels = stats.map(s => this.truncateTitle(s.name, 30));
-      const dataValues = stats.map(s => s.count);
-      const colors = this.getColorsForData(stats.length);
+
+      const datasets = READ_STATUS_ORDER
+        .filter(status => stats.some(s => s.statusBreakdown[status] > 0))
+        .map(status => {
+          const config = READ_STATUS_CONFIG[status];
+          return {
+            label: config.label,
+            data: stats.map(s => s.statusBreakdown[status]),
+            backgroundColor: config.color,
+            borderColor: config.color,
+            borderWidth: 1,
+            borderRadius: 4,
+            barPercentage: 0.85,
+            categoryPercentage: 0.8,
+            hoverBorderWidth: 2,
+            hoverBorderColor: '#ffffff'
+          };
+        });
 
       this.chartDataSubject.next({
         labels,
-        datasets: [{
-          label: 'Books',
-          data: dataValues,
-          backgroundColor: colors,
-          borderColor: colors.map(c => c),
-          borderWidth: 1,
-          borderRadius: 4,
-          barPercentage: 0.85,
-          categoryPercentage: 0.8,
-          hoverBorderWidth: 2,
-          hoverBorderColor: '#ffffff'
-        }]
+        datasets
       });
+
+      this.generateInsights(stats);
     } catch (error) {
       console.error('Error updating items chart data:', error);
+    }
+  }
+
+  private generateInsights(stats: ItemStats[]): void {
+    this.insights = [];
+    if (stats.length === 0) return;
+
+    const typeName = this.selectedDataType.label.toLowerCase().slice(0, -1); // Remove 's' for singular
+    const typeNamePlural = this.selectedDataType.label.toLowerCase();
+
+    // 1. Top item
+    const top = stats[0];
+    this.insights.push({
+      icon: 'pi-trophy',
+      label: `Top ${typeName}`,
+      value: `${top.name} (${top.count} books)`
+    });
+
+    // 2. Most completed - highest read percentage
+    const withReads = stats.filter(s => s.count >= 2);
+    if (withReads.length > 0) {
+      const mostRead = withReads.reduce((best, curr) => {
+        const bestPct = best.statusBreakdown[ReadStatus.READ] / best.count;
+        const currPct = curr.statusBreakdown[ReadStatus.READ] / curr.count;
+        return currPct > bestPct ? curr : best;
+      });
+      const readPct = Math.round((mostRead.statusBreakdown[ReadStatus.READ] / mostRead.count) * 100);
+      if (readPct > 0) {
+        this.insights.push({
+          icon: 'pi-check-circle',
+          label: 'Most completed',
+          value: `${mostRead.name} (${readPct}% read)`
+        });
+      }
+    }
+
+    // 3. Top 5 concentration
+    if (stats.length >= 5) {
+      const top5Books = stats.slice(0, 5).reduce((sum, s) => sum + s.count, 0);
+      const totalAllBooks = this.allBooks.length;
+      if (totalAllBooks > 0) {
+        const concentration = Math.round((top5Books / totalAllBooks) * 100);
+        this.insights.push({
+          icon: 'pi-chart-pie',
+          label: 'Top 5 coverage',
+          value: `${concentration}% of library`
+        });
+      }
+    }
+
+    // 4. Average books per item
+    if (stats.length > 0) {
+      const avgBooks = (this.totalBooks / stats.length).toFixed(1);
+      this.insights.push({
+        icon: 'pi-book',
+        label: `Avg per ${typeName}`,
+        value: `${avgBooks} books`
+      });
     }
   }
 
@@ -294,23 +353,50 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
       return [];
     }
 
-    const itemMap = new Map<string, number>();
+    const itemMap = new Map<string, { count: number; statusBreakdown: Record<ReadStatus, number> }>();
     const dataType = this.selectedDataType.value;
 
     for (const book of books) {
       const items = this.getItemsFromBook(book, dataType);
+      const bookStatus = book.readStatus || ReadStatus.UNSET;
+
       for (const item of items) {
         if (item && item.trim()) {
           const normalizedName = item.trim();
-          itemMap.set(normalizedName, (itemMap.get(normalizedName) || 0) + 1);
+          let entry = itemMap.get(normalizedName);
+
+          if (!entry) {
+            entry = {
+              count: 0,
+              statusBreakdown: this.createEmptyStatusBreakdown()
+            };
+            itemMap.set(normalizedName, entry);
+          }
+
+          entry.count++;
+          entry.statusBreakdown[bookStatus]++;
         }
       }
     }
 
     return Array.from(itemMap.entries())
-      .map(([name, count]) => ({name, count}))
+      .map(([name, data]) => ({name, count: data.count, statusBreakdown: data.statusBreakdown}))
       .sort((a, b) => b.count - a.count)
-      .slice(0, 25);
+      .slice(0, 15);
+  }
+
+  private createEmptyStatusBreakdown(): Record<ReadStatus, number> {
+    return {
+      [ReadStatus.READ]: 0,
+      [ReadStatus.READING]: 0,
+      [ReadStatus.RE_READING]: 0,
+      [ReadStatus.UNREAD]: 0,
+      [ReadStatus.PARTIALLY_READ]: 0,
+      [ReadStatus.PAUSED]: 0,
+      [ReadStatus.WONT_READ]: 0,
+      [ReadStatus.ABANDONED]: 0,
+      [ReadStatus.UNSET]: 0
+    };
   }
 
   private getItemsFromBook(book: Book, dataType: DataType): string[] {
@@ -353,27 +439,16 @@ export class TopItemsChartComponent implements OnInit, OnDestroy {
       : books;
   }
 
-  private getColorsForData(dataLength: number): string[] {
-    const palette = COLOR_PALETTES[this.selectedDataType.value];
-    const colors = [...palette];
-    while (colors.length < dataLength) {
-      colors.push(...palette);
-    }
-    return colors.slice(0, dataLength);
-  }
-
   private formatTooltipLabel(context: TooltipItem<'bar'>): string {
-    const dataIndex = context.dataIndex;
-
-    if (!this.lastCalculatedStats || dataIndex >= this.lastCalculatedStats.length) {
-      return `${context.parsed.x} books`;
+    const value = context.parsed.x;
+    if (value === 0) {
+      return '';
     }
 
-    const item = this.lastCalculatedStats[dataIndex];
-    const count = item.count;
-    const bookText = count === 1 ? 'book' : 'books';
+    const statusLabel = context.dataset.label || 'Books';
+    const bookText = value === 1 ? 'book' : 'books';
 
-    return `${count} ${bookText}`;
+    return `${statusLabel}: ${value} ${bookText}`;
   }
 
   private truncateTitle(title: string, maxLength: number): string {

@@ -11,6 +11,10 @@ import {BookFormatsChartComponent} from './charts/book-formats-chart/book-format
 import {MetadataScoreChartComponent} from './charts/metadata-score-chart/metadata-score-chart.component';
 import {PageCountChartComponent} from './charts/page-count-chart/page-count-chart.component';
 import {TopItemsChartComponent} from './charts/top-items-chart/top-items-chart.component';
+import {AuthorUniverseChartComponent} from './charts/author-universe-chart/author-universe-chart.component';
+import {PublicationTimelineChartComponent} from './charts/publication-timeline-chart/publication-timeline-chart.component';
+import {PublicationTrendChartComponent} from './charts/publication-trend-chart/publication-trend-chart.component';
+import {ReadingJourneyChartComponent} from './charts/reading-journey-chart/reading-journey-chart.component';
 import {LibrariesSummaryService} from './service/libraries-summary.service';
 import {LibraryFilterService, LibraryOption} from './service/library-filter.service';
 
@@ -34,7 +38,11 @@ interface ChartConfig {
     LanguageChartComponent,
     MetadataScoreChartComponent,
     PageCountChartComponent,
-    TopItemsChartComponent
+    TopItemsChartComponent,
+    AuthorUniverseChartComponent,
+    PublicationTimelineChartComponent,
+    PublicationTrendChartComponent,
+    ReadingJourneyChartComponent
   ],
   templateUrl: './library-stats.component.html',
   styleUrls: ['./library-stats.component.scss']
@@ -56,7 +64,11 @@ export class LibraryStatsComponent implements OnInit, OnDestroy {
     {id: 'languageDistribution', name: 'Languages', enabled: true, category: 'small'},
     {id: 'metadataScore', name: 'Metadata Score', enabled: true, category: 'small'},
     {id: 'pageCountDistribution', name: 'Page Count', enabled: true, category: 'small'},
-    {id: 'topItems', name: 'Top Items (Authors/Categories/etc.)', enabled: true, category: 'large'}
+    {id: 'publicationTimeline', name: 'Publication Timeline', enabled: true, category: 'large'},
+    {id: 'readingJourney', name: 'Reading Journey', enabled: true, category: 'large'},
+    {id: 'topItems', name: 'Top Items (Authors/Categories/etc.)', enabled: true, category: 'large'},
+    {id: 'authorUniverse', name: 'Author Universe', enabled: true, category: 'large'},
+    {id: 'publicationTrend', name: 'Publication Trend', enabled: true, category: 'xlarge'}
   ];
 
   booksSummary$ = this.librariesSummaryService.getBooksSummary().pipe(
@@ -177,7 +189,11 @@ export class LibraryStatsComponent implements OnInit, OnDestroy {
       {id: 'languageDistribution', name: 'Languages', enabled: true, category: 'small'},
       {id: 'metadataScore', name: 'Metadata Score', enabled: true, category: 'small'},
       {id: 'pageCountDistribution', name: 'Page Count', enabled: true, category: 'small'},
-      {id: 'topItems', name: 'Top Items (Authors/Categories/etc.)', enabled: true, category: 'large'}
+      {id: 'publicationTimeline', name: 'Publication Timeline', enabled: true, category: 'large'},
+      {id: 'readingJourney', name: 'Reading Journey', enabled: true, category: 'large'},
+      {id: 'topItems', name: 'Top Items (Authors/Categories/etc.)', enabled: true, category: 'large'},
+      {id: 'authorUniverse', name: 'Author Universe', enabled: true, category: 'large'},
+      {id: 'publicationTrend', name: 'Publication Trend', enabled: true, category: 'xlarge'}
     ];
   }
 }
