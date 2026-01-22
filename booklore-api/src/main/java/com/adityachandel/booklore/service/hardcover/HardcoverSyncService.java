@@ -138,7 +138,8 @@ public class HardcoverSyncService {
                 }
 
                 // Step 2: Create or update the reading progress
-                boolean success = upsertReadingProgress(userBookId, hardcoverBook.editionId, progressPages);
+                boolean isFinished = progressPercent >= 99.0f;
+                boolean success = upsertReadingProgress(userBookId, hardcoverBook.editionId, progressPages, isFinished);
                 
                 if (success) {
                     log.info("Synced progress to Hardcover: userId={}, book={}, hardcoverBookId={}, progress={}% ({}pages)", 
@@ -554,21 +555,21 @@ public class HardcoverSyncService {
     /**
      * Create or update reading progress for a user_book.
      */
-    private boolean upsertReadingProgress(Integer userBookId, Integer editionId, int progressPages) {
-        log.info("upsertReadingProgress: userBookId={}, editionId={}, progressPages={}", 
-                userBookId, editionId, progressPages);
-        
+    private boolean upsertReadingProgress(Integer userBookId, Integer editionId, int progressPages, boolean isFinished) {
+        log.info("upsertReadingProgress: userBookId={}, editionId={}, progressPages={}, isFinished={}",
+                userBookId, editionId, progressPages, isFinished);
+
         // First, try to find existing user_book_read
         Integer existingReadId = findExistingUserBookRead(userBookId);
 
         if (existingReadId != null) {
             // Update existing
             log.info("Updating existing user_book_read: id={}", existingReadId);
-            return updateUserBookRead(existingReadId, editionId, progressPages);
+            return updateUserBookRead(existingReadId, editionId, progressPages, isFinished);
         } else {
             // Create new
             log.info("Creating new user_book_read for userBookId={}", userBookId);
-            return insertUserBookRead(userBookId, editionId, progressPages);
+            return insertUserBookRead(userBookId, editionId, progressPages, isFinished);
         }
     }
 
@@ -608,7 +609,7 @@ public class HardcoverSyncService {
         }
     }
 
-    private boolean insertUserBookRead(Integer userBookId, Integer editionId, int progressPages) {
+    private boolean insertUserBookRead(Integer userBookId, Integer editionId, int progressPages, boolean isFinished) {
         String mutation = """
             mutation InsertUserBookRead($userBookId: Int!, $object: DatesReadInput!) {
               insert_user_book_read(user_book_id: $userBookId, user_book_read: $object) {
@@ -623,6 +624,9 @@ public class HardcoverSyncService {
         Map<String, Object> readInput = new java.util.HashMap<>();
         readInput.put("started_at", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
         readInput.put("progress_pages", progressPages);
+        if (isFinished) {
+            readInput.put("finished_at", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
         if (editionId != null) {
             readInput.put("edition_id", editionId);
         }
@@ -652,7 +656,7 @@ public class HardcoverSyncService {
         }
     }
 
-    private boolean updateUserBookRead(Integer readId, Integer editionId, int progressPages) {
+    private boolean updateUserBookRead(Integer readId, Integer editionId, int progressPages, boolean isFinished) {
         String mutation = """
             mutation UpdateUserBookRead($id: Int!, $object: DatesReadInput!) {
               update_user_book_read(id: $id, object: $object) {
@@ -667,6 +671,9 @@ public class HardcoverSyncService {
 
         Map<String, Object> readInput = new java.util.HashMap<>();
         readInput.put("progress_pages", progressPages);
+        if (isFinished) {
+            readInput.put("finished_at", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
+        }
         if (editionId != null) {
             readInput.put("edition_id", editionId);
         }
