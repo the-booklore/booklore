@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeEach, describe, expect, it, vi, afterEach} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient, HttpEventType, HttpHeaders, HttpResponse} from '@angular/common/http';
@@ -38,6 +38,12 @@ describe('FileDownloadService', () => {
 
     const injector = TestBed.inject(EnvironmentInjector);
     service = runInInjectionContext(injector, () => TestBed.inject(FileDownloadService));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   it('should trigger download and handle progress and completion', () => {
@@ -58,15 +64,23 @@ describe('FileDownloadService', () => {
     // Mock DOM for download
     const appendChild = vi.fn();
     const removeChild = vi.fn();
+    const link = {
+      setAttribute: vi.fn(),
+      click: vi.fn(),
+      style: {},
+      href: '',
+      download: '',
+      parentNode: {
+        removeChild: removeChild
+      }
+    };
     (globalThis as any).document = {
-      createElement: vi.fn().mockReturnValue({
-        setAttribute: vi.fn(),
-        click: vi.fn(),
-        style: {},
-        href: '',
-        download: ''
-      }),
-      body: {appendChild, removeChild}
+      createElement: vi.fn().mockReturnValue(link),
+      body: {
+        appendChild: appendChild,
+        removeChild: removeChild,
+        contains: vi.fn().mockReturnValue(true)
+      }
     };
     (globalThis as any).window = {
       URL: {
@@ -134,6 +148,12 @@ describe('FileDownloadService - API Contract Tests', () => {
 
     const injector = TestBed.inject(EnvironmentInjector);
     service = runInInjectionContext(injector, () => TestBed.inject(FileDownloadService));
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.runAllTimers();
+    vi.useRealTimers();
   });
 
   describe('API contract', () => {

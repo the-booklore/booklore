@@ -25,24 +25,23 @@ public interface ReadingSessionRepository extends JpaRepository<ReadingSessionEn
             """)
     List<ReadingSessionCountDto> findSessionCountsByUserAndYear(@Param("userId") Long userId, @Param("year") int year);
 
-    @Query("""
-            SELECT
-                b.id as bookId,
-                COALESCE(b.metadata.title, 
-                    (SELECT bf.fileName FROM BookFileEntity bf WHERE bf.book.id = b.id ORDER BY bf.id ASC LIMIT 1), 
-                    'Unknown Book') as bookTitle,
-                rs.bookType as bookFileType,
-                MIN(rs.startTime) as startDate,
-                MAX(rs.endTime) as endDate,
-                COUNT(rs) as totalSessions,
-                SUM(rs.durationSeconds) as totalDurationSeconds
-            FROM ReadingSessionEntity rs
-            JOIN rs.book b
-            WHERE rs.user.id = :userId
-            AND rs.startTime >= :startOfWeek AND rs.startTime < :endOfWeek
-            GROUP BY b.id, b.metadata.title, rs.bookType, CAST(rs.startTime AS LocalDate)
-            ORDER BY MIN(rs.startTime)
-            """)
+        @Query("""
+                        SELECT
+                                b.id as bookId,
+                                COALESCE(b.metadata.title,
+                                        (SELECT bf.fileName FROM BookFileEntity bf WHERE bf.book.id = b.id ORDER BY bf.id ASC LIMIT 1),
+                                        'Unknown Book') as bookTitle,
+                                rs.bookType as bookFileType,
+                                rs.startTime as startDate,
+                                rs.endTime as endDate,
+                                1L as totalSessions,
+                                rs.durationSeconds as totalDurationSeconds
+                        FROM ReadingSessionEntity rs
+                        JOIN rs.book b
+                        WHERE rs.user.id = :userId
+                        AND rs.startTime >= :startOfWeek AND rs.startTime < :endOfWeek
+                        ORDER BY rs.startTime
+                        """)
     List<ReadingSessionTimelineDto> findSessionTimelineByUserAndWeek(
             @Param("userId") Long userId,
             @Param("startOfWeek") Instant startOfWeek,

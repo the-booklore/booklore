@@ -145,8 +145,8 @@ export class ReadingSessionTimelineComponent implements OnInit {
 
     response.forEach((item) => {
       const startTime = new Date(item.startDate);
-      const duration = item.totalDurationSeconds / 60;
-      const endTime = new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
+      const endTime = item.endDate ? new Date(item.endDate) : new Date(startTime.getTime() + item.totalDurationSeconds * 1000);
+      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
 
       sessions.push({
         startTime,
