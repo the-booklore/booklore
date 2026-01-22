@@ -32,12 +32,13 @@ public class KoreaderAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
 
         String path = request.getRequestURI();
-        log.info("KoreaderAuthFilter: Processing request to: {}", path);
         
         if (!path.startsWith("/api/koreader/") && !path.equals("/api/v1/reading-sessions")) {
             chain.doFilter(request, response);
             return;
         }
+        
+        log.info("KoreaderAuthFilter: Processing request to: {}", path);
 
         String username = request.getHeader("x-auth-user");
         String key = request.getHeader("x-auth-key");
