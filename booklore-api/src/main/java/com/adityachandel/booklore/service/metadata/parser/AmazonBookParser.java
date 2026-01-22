@@ -33,6 +33,11 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class AmazonBookParser implements BookParser {
 
+    private static final Pattern TRAILING_BR_TAGS_PATTERN = Pattern.compile("(\\s*<br\\s*/?>\\s*)+$");
+    private static final Pattern LEADING_BR_TAGS_PATTERN = Pattern.compile("^(\\s*<br\\s*/?>\\s*)+");
+    private static final Pattern MULTIPLE_BR_TAGS_PATTERN = Pattern.compile("(<br\\s*/?>\\s*){3,}");
+    private static final Pattern MULTIPLE_BR_CLOSING_TAGS_PATTERN = Pattern.compile("(<br>\\s*){3,}");
+
     private static class AmazonAntiScrapingException extends RuntimeException {
         public AmazonAntiScrapingException(String message) {
             super(message);
@@ -881,12 +886,12 @@ public class AmazonBookParser implements BookParser {
             String cleanedHtml = document.body().html();
 
             // Replace multiple consecutive <br> patterns that might still exist
-            cleanedHtml = cleanedHtml.replaceAll("(<br>\\s*){3,}", "<br><br>");
-            cleanedHtml = cleanedHtml.replaceAll("(<br\\s*/?>\\s*){3,}", "<br><br>");
+            cleanedHtml = MULTIPLE_BR_CLOSING_TAGS_PATTERN.matcher(cleanedHtml).replaceAll("<br><br>");
+            cleanedHtml = MULTIPLE_BR_TAGS_PATTERN.matcher(cleanedHtml).replaceAll("<br><br>");
 
             // Remove leading/trailing <br> tags
-            cleanedHtml = cleanedHtml.replaceAll("^(\\s*<br\\s*/?>\\s*)+", "");
-            cleanedHtml = cleanedHtml.replaceAll("(\\s*<br\\s*/?>\\s*)+$", "");
+            cleanedHtml = LEADING_BR_TAGS_PATTERN.matcher(cleanedHtml).replaceAll("");
+            cleanedHtml = TRAILING_BR_TAGS_PATTERN.matcher(cleanedHtml).replaceAll("");
 
             return cleanedHtml;
         } catch (Exception e) {

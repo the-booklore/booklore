@@ -17,10 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -29,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -36,6 +33,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class KomgaService {
 
+    private static final Pattern NON_ALPHANUMERIC_PATTERN = Pattern.compile("[^a-z0-9]+");
     private final BookRepository bookRepository;
     private final LibraryRepository libraryRepository;
     private final KomgaMapper komgaMapper;
@@ -172,7 +170,7 @@ public class KomgaService {
         List<BookEntity> seriesBooks = allSeriesBooks.stream()
                 .filter(book -> {
                     String bookSeriesName = komgaMapper.getBookSeriesName(book);
-                    String bookSeriesSlug = bookSeriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+                    String bookSeriesSlug = NON_ALPHANUMERIC_PATTERN.matcher(bookSeriesName.toLowerCase()).replaceAll("-");
                     return bookSeriesSlug.equals(seriesSlug);
                 })
                 .collect(Collectors.toList());
@@ -203,7 +201,7 @@ public class KomgaService {
         List<BookEntity> seriesBooks = allBooks.stream()
                 .filter(book -> {
                     String bookSeriesName = komgaMapper.getBookSeriesName(book);
-                    String bookSeriesSlug = bookSeriesName.toLowerCase().replaceAll("[^a-z0-9]+", "-");
+                    String bookSeriesSlug = NON_ALPHANUMERIC_PATTERN.matcher(bookSeriesName.toLowerCase()).replaceAll("-");
                     return bookSeriesSlug.equals(seriesSlug);
                 })
                 .sorted(Comparator.comparing(book -> {

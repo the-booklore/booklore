@@ -1,32 +1,126 @@
-name: Master - Build, Tag, Push, and Release
+name: Master Tag – Build, Push, and Publish
 
 on:
   push:
-    branches:
-      - 'master'
+    tags:
+      - 'v*'
 
 jobs:
-  get-base-ref:
-    name: Get Base Ref
+  validate-tag:
+    name: Validate Release Tag
     runs-on: ubuntu-latest
     outputs:
-      base_ref: ${{ steps.get_base.outputs.base_ref }}
+      version: ${{ steps.parse.outputs.version }}
+      is_prerelease: ${{ steps.parse.outputs.is_prerelease }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v6
         with:
-          fetch-depth: 2
-      - name: Get Base Ref
-        id: get_base
-        run: echo "base_ref=$(git rev-parse HEAD~1)" >> $GITHUB_OUTPUT
+          fetch-depth: 0
+
+      - name: Parse and Validate Tag
+        id: parse
+        run: |
+          tag="${{ github.ref_name }}"
+          echo "Processing tag: $tag"
+
+          # Validate semver format (v1.2.3 or v1.2.3-rc.1, v1.2.3-beta.2, etc.)
+          if ! echo "$tag" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z]+\.[0-9]+)?$'; then
+            echo "::error::Invalid tag format. Expected 'vX.Y.Z' or 'vX.Y.Z-prerelease.N', got '$tag'"
+            exit 1
+          fi
+
+          # Check if this is a prerelease (contains hyphen after version)
+          if echo "$tag" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+-'; then
+            is_prerelease="true"
+          else
+            is_prerelease="false"
+          fi
+
+          # ----------------------------------------
+          # Version sanity check against latest tag
+          # ----------------------------------------
+          # Get latest stable tag (excluding prereleases and current tag)
+          latest_tag=$(git tag --list "v*" --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${tag}$" | head -n 1)
+          latest_tag=${latest_tag:-"v0.0.0"}
+          echo "Latest stable tag: $latest_tag"
+
+          # Extract base version (strip prerelease suffix if present)
+          base_version=$(echo "$tag" | sed 's/^v//' | sed 's/-.*//')
+
+          # Parse latest version
+          latest_semver=$(echo "$latest_tag" | sed 's/^v//')
+          latest_major=$(echo "$latest_semver" | cut -d. -f1)
+          latest_minor=$(echo "$latest_semver" | cut -d. -f2)
+          latest_patch=$(echo "$latest_semver" | cut -d. -f3)
+
+          # Parse target version
+          target_major=$(echo "$base_version" | cut -d. -f1)
+          target_minor=$(echo "$base_version" | cut -d. -f2)
+          target_patch=$(echo "$base_version" | cut -d. -f3)
+
+          echo "Latest: v${latest_major}.${latest_minor}.${latest_patch}"
+          echo "Target: v${target_major}.${target_minor}.${target_patch}"
+
+          # Check for backwards version (target < latest)
+          if [ "$target_major" -lt "$latest_major" ]; then
+            echo "::error::Target version v${base_version} is older than latest tag ${latest_tag}"
+            exit 1
+          elif [ "$target_major" -eq "$latest_major" ] && [ "$target_minor" -lt "$latest_minor" ]; then
+            echo "::error::Target version v${base_version} is older than latest tag ${latest_tag}"
+            exit 1
+          elif [ "$target_major" -eq "$latest_major" ] && [ "$target_minor" -eq "$latest_minor" ] && [ "$target_patch" -lt "$latest_patch" ]; then
+            echo "::error::Target version v${base_version} is older than latest tag ${latest_tag}"
+            exit 1
+          fi
+
+          # For stable releases, ensure version is strictly newer
+          if [ "$is_prerelease" = "false" ]; then
+            if [ "$target_major" -eq "$latest_major" ] && [ "$target_minor" -eq "$latest_minor" ] && [ "$target_patch" -eq "$latest_patch" ]; then
+              echo "::error::Stable release v${base_version} already exists as ${latest_tag}"
+              exit 1
+            fi
+          fi
+
+          # For prereleases, check if a stable version already exists for this base version
+          if [ "$is_prerelease" = "true" ]; then
+            existing_stable=$(git tag --list "v${base_version}" | head -n 1)
+            if [ -n "$existing_stable" ]; then
+              echo "::error::Cannot create prerelease ${tag} - stable version v${base_version} already exists"
+              exit 1
+            fi
+          fi
+
+          # Check for suspicious jumps (likely typos)
+          major_jump=$((target_major - latest_major))
+          minor_jump=$((target_minor - latest_minor))
+          patch_jump=$((target_patch - latest_patch))
+
+          # Flag suspicious patterns
+          if [ "$major_jump" -gt 1 ]; then
+            echo "::error::Suspicious major version jump: ${latest_tag} → ${tag} (jumping ${major_jump} major versions). Typo?"
+            exit 1
+          elif [ "$major_jump" -eq 0 ] && [ "$minor_jump" -gt 5 ]; then
+            echo "::error::Suspicious minor version jump: ${latest_tag} → ${tag} (jumping ${minor_jump} minor versions). Typo?"
+            exit 1
+          elif [ "$major_jump" -eq 0 ] && [ "$minor_jump" -eq 0 ] && [ "$patch_jump" -gt 10 ]; then
+            echo "::error::Suspicious patch version jump: ${latest_tag} → ${tag} (jumping ${patch_jump} patch versions). Typo?"
+            exit 1
+          fi
+
+          echo "✅ Version sanity check passed: ${latest_tag} → ${tag}"
+
+          echo "version=$tag" >> $GITHUB_OUTPUT
+          echo "is_prerelease=$is_prerelease" >> $GITHUB_OUTPUT
+          echo "Version: $tag, Prerelease: $is_prerelease"
 
   migration-check:
-    name: Flyway Migration Check on Master
-    needs: [ get-base-ref ]
+    name: Flyway Migration Check
+    needs: [ validate-tag ]
     uses: ./.github/workflows/migrations-check.yml
     with:
-      base_ref: ${{ needs.get-base-ref.outputs.base_ref }}
-      head_ref: ${{ github.sha }}
+      base_ref: 'master~1'
+      head_ref: 'master'
 
   backend-tests:
     name: Backend Tests
@@ -138,13 +232,12 @@ jobs:
           exit 1
 
   build-and-release:
-    needs: [ backend-tests, frontend-tests ]
+    needs: [ validate-tag, backend-tests, frontend-tests ]
     if: needs.backend-tests.result == 'success' && needs.frontend-tests.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
-      pull-requests: read
 
     steps:
       - name: Checkout Repository
@@ -171,82 +264,34 @@ jobs:
       - name: Set Up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Retrieve Latest Master Version Tag
-        id: get_version
+      - name: Compute Docker Tags
+        id: docker_tags
         run: |
-          latest_tag=$(git tag --list "v*" --sort=-v:refname | head -n 1)
-          latest_tag=${latest_tag:-"v0.0.0"}
-          echo "latest_tag=$latest_tag" >> $GITHUB_ENV
-          echo "Latest master tag: $latest_tag"
+          version="${{ needs.validate-tag.outputs.version }}"
+          is_prerelease="${{ needs.validate-tag.outputs.is_prerelease }}"
 
-      - name: Determine Version Bump
-        id: determine_bump
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          echo "Determining version bump from PR labels..."
+          # Always include the version tag
+          tags="booklore/booklore:${version}"
+          tags="${tags},ghcr.io/booklore-app/booklore:${version}"
 
-          # Extract PR number from merge commit
-          pr_number=$(git log -1 --pretty=%B | grep -oE 'Merge pull request #[0-9]+' | grep -oE '[0-9]+') || true
-          if [ -z "$pr_number" ]; then
-            pr_number=$(gh pr list --state merged --base master --limit 1 --json number --jq '.[0].number')
-          fi
-          echo "PR number: $pr_number"
-
-          labels=$(gh pr view "$pr_number" --json labels --jq '.labels[].name' || echo "")
-          echo "PR labels: $labels"
-
-          if echo "$labels" | grep -q 'bump:major'; then
-            bump="major"
-          elif echo "$labels" | grep -q 'bump:minor'; then
-            bump="minor"
-          elif echo "$labels" | grep -q 'bump:patch'; then
-            bump="patch"
-          else
-            last_commit_msg=$(git log -1 --pretty=%B)
-            if echo "$last_commit_msg" | grep -iq '#major'; then
-              bump="major"
-            elif echo "$last_commit_msg" | grep -iq '#minor'; then
-              bump="minor"
-            elif echo "$last_commit_msg" | grep -iq '#patch'; then
-              bump="patch"
-            else
-              bump="patch"
-            fi
+          # Only add 'latest' tag for stable releases (not prereleases)
+          if [ "$is_prerelease" = "false" ]; then
+            tags="${tags},booklore/booklore:latest"
+            tags="${tags},ghcr.io/booklore-app/booklore:latest"
           fi
 
-          # Calculate next version
-          semver=$(echo ${{ env.latest_tag }} | sed 's/^v//')
-          major=$(echo $semver | cut -d. -f1)
-          minor=$(echo $semver | cut -d. -f2)
-          patch=$(echo $semver | cut -d. -f3)
+          echo "tags=$tags" >> $GITHUB_OUTPUT
+          echo "Docker tags: $tags"
 
-          case "$bump" in
-            major) major=$((major+1)); minor=0; patch=0 ;;
-            minor) minor=$((minor+1)); patch=0 ;;
-            patch) patch=$((patch+1)) ;;
-          esac
-
-          next_version="v${major}.${minor}.${patch}"
-          echo "Version bump type: $bump"
-          echo "Next version: $next_version"
-
-          echo "bump=$bump" >> $GITHUB_ENV
-          echo "new_tag=$next_version" >> $GITHUB_ENV
-
-      - name: Build and push Docker image
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            booklore/booklore:${{ env.new_tag }}
-            booklore/booklore:latest
-            ghcr.io/booklore-app/booklore:${{ env.new_tag }}
-            ghcr.io/booklore-app/booklore:latest
+          tags: ${{ steps.docker_tags.outputs.tags }}
           build-args: |
-            APP_VERSION=${{ env.new_tag }}
+            APP_VERSION=${{ needs.validate-tag.outputs.version }}
             APP_REVISION=${{ github.sha }}
           cache-from: |
             type=gha
@@ -255,16 +300,39 @@ jobs:
             type=gha,mode=max
             type=registry,ref=ghcr.io/booklore-app/booklore:buildcache,mode=max
 
-      - name: Update GitHub Release Draft
+      - name: Create GitHub Release
         uses: release-drafter/release-drafter@v6
         with:
-          tag: ${{ env.new_tag }}
-          name: "Release ${{ env.new_tag }}"
+          tag: ${{ needs.validate-tag.outputs.version }}
+          name: "Release ${{ needs.validate-tag.outputs.version }}"
+          prerelease: ${{ needs.validate-tag.outputs.is_prerelease }}
+          publish: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Publish GitHub Draft Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+      - name: Release Summary
         run: |
-          gh release edit ${{ env.new_tag }} --draft=true
+          version="${{ needs.validate-tag.outputs.version }}"
+          is_prerelease="${{ needs.validate-tag.outputs.is_prerelease }}"
+
+          echo "## Release Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`${version}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$is_prerelease" = "true" ]; then
+            echo "**Type:** Prerelease" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Type:** Stable Release" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Docker Images:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`booklore/booklore:${version}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`ghcr.io/booklore-app/booklore:${version}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "$is_prerelease" = "false" ]; then
+            echo "- \`booklore/booklore:latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "- \`ghcr.io/booklore-app/booklore:latest\`" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Install:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull booklore/booklore:${version}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

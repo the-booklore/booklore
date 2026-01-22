@@ -1,13 +1,14 @@
 package com.adityachandel.booklore.service.metadata.extractor;
 
-import java.awt.Color;
+import com.adityachandel.booklore.model.dto.BookMetadata;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,16 +19,7 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.imageio.ImageIO;
-
-import org.junit.jupiter.api.AfterEach;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.adityachandel.booklore.model.dto.BookMetadata;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CbxMetadataExtractorTest {
 
@@ -114,7 +106,7 @@ class CbxMetadataExtractorTest {
         assertEquals("My Comic", md.getTitle());
         assertEquals("A short summary", md.getDescription());
         assertEquals("Indie", md.getPublisher());
-        assertEquals("Series X (1)", md.getSeriesName());
+        assertEquals("Series X", md.getSeriesName());
         assertEquals(2.5f, md.getSeriesNumber());
         assertEquals(Integer.valueOf(12), md.getSeriesTotal());
         assertEquals(LocalDate.of(2020,7,14), md.getPublishedDate());
@@ -195,6 +187,98 @@ class CbxMetadataExtractorTest {
 
         byte[] cover = extractor.extractCover(cbzAsCbr);
         assertArrayEquals(img, cover);
+    }
+
+    @Test
+    void extractMetadata_fromCbz_withNamespacedXml_shouldParseCorrectly() throws Exception {
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<ComicInfo xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" " +
+                "xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" " +
+                "xsi:schemaLocation=\"https://anansi-project.github.io/docs/comicinfo/schemas/v2.1\">" +
+                "<Title>Vol. 1</Title>" +
+                "<Series>Helck</Series>" +
+                "<Number>1</Number>" +
+                "<Count>12</Count>" +
+                "<Volume>1</Volume>" +
+                "<Year>2023</Year><Month>1</Month><Day>10</Day>" +
+                "<Writer>Nanaki Nanao</Writer>" +
+                "<Publisher>Viz</Publisher>" +
+                "</ComicInfo>";
+
+        File cbz = createCbz("helck_v1.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+            put("page1.jpg", new byte[]{1, 2, 3});
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbz);
+        assertEquals("Vol. 1", md.getTitle());
+        assertEquals("Helck", md.getSeriesName());
+        assertEquals(1f, md.getSeriesNumber());
+        assertEquals(Integer.valueOf(12), md.getSeriesTotal());
+        assertEquals("Viz", md.getPublisher());
+        assertTrue(md.getAuthors().contains("Nanaki Nanao"));
+    }
+
+    @Test
+    void extractMetadata_multipleVolumes_shouldHaveSameSeriesName() throws Exception {
+        String xmlVol1 = "<ComicInfo>" +
+                "<Title>Vol. 1</Title>" +
+                "<Series>Helck</Series>" +
+                "<Number>1</Number>" +
+                "<Volume>1</Volume>" +
+                "</ComicInfo>";
+
+        String xmlVol2 = "<ComicInfo>" +
+                "<Title>Vol. 2</Title>" +
+                "<Series>Helck</Series>" +
+                "<Number>2</Number>" +
+                "<Volume>2</Volume>" +
+                "</ComicInfo>";
+
+        String xmlVol3 = "<ComicInfo>" +
+                "<Title>Vol. 3</Title>" +
+                "<Series>Helck</Series>" +
+                "<Number>3</Number>" +
+                "<Volume>3</Volume>" +
+                "</ComicInfo>";
+
+        File cbz1 = createCbz("helck_vol1.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xmlVol1.getBytes(StandardCharsets.UTF_8));
+        }});
+        File cbz2 = createCbz("helck_vol2.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xmlVol2.getBytes(StandardCharsets.UTF_8));
+        }});
+        File cbz3 = createCbz("helck_vol3.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xmlVol3.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md1 = extractor.extractMetadata(cbz1);
+        BookMetadata md2 = extractor.extractMetadata(cbz2);
+        BookMetadata md3 = extractor.extractMetadata(cbz3);
+
+        assertEquals("Helck", md1.getSeriesName());
+        assertEquals("Helck", md2.getSeriesName());
+        assertEquals("Helck", md3.getSeriesName());
+        assertEquals(md1.getSeriesName(), md2.getSeriesName());
+        assertEquals(md2.getSeriesName(), md3.getSeriesName());
+    }
+
+    @Test
+    void extractMetadata_withVolumeField_shouldNotAppendVolumeToSeriesName() throws Exception {
+        String xml = "<ComicInfo>" +
+                "<Title>My Comic</Title>" +
+                "<Series>Series Name</Series>" +
+                "<Volume>5</Volume>" +
+                "<Number>10</Number>" +
+                "</ComicInfo>";
+
+        File cbz = createCbz("comic.cbz", new LinkedHashMap<>() {{
+            put("ComicInfo.xml", xml.getBytes(StandardCharsets.UTF_8));
+        }});
+
+        BookMetadata md = extractor.extractMetadata(cbz);
+        assertEquals("Series Name", md.getSeriesName());
+        assertEquals(10f, md.getSeriesNumber());
     }
 
     // ---------- helpers ----------

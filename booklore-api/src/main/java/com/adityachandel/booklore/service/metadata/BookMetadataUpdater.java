@@ -186,10 +186,14 @@ public class BookMetadataUpdater {
             if (newValue != null) setter.accept(newValue);
             return;
         }
-        if (mode == MetadataReplaceMode.REPLACE_ALL) {
-            setter.accept(newValue);
-        } else if (mode == MetadataReplaceMode.REPLACE_MISSING && isValueMissing(getter.get())) {
-            setter.accept(newValue);
+        switch (mode) {
+            case REPLACE_ALL -> setter.accept(newValue);
+            case REPLACE_MISSING -> {
+                if (isValueMissing(getter.get())) setter.accept(newValue);
+            }
+            case REPLACE_WHEN_PROVIDED -> {
+                if (!isValueMissing(newValue)) setter.accept(newValue);
+            }
         }
     }
 
@@ -223,14 +227,11 @@ public class BookMetadataUpdater {
 
         if (newAuthors.isEmpty()) return;
 
-        boolean replaceAll = replaceMode == MetadataReplaceMode.REPLACE_ALL;
-        boolean replaceMissing = replaceMode == MetadataReplaceMode.REPLACE_MISSING;
-
-        if (replaceAll) {
+        if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getAuthors().clear();
             e.getAuthors().addAll(newAuthors);
             e.updateSearchText();
-        } else if (replaceMissing && e.getAuthors().isEmpty()) {
+        } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getAuthors().isEmpty()) {
             e.getAuthors().addAll(newAuthors);
             e.updateSearchText();
         } else if (replaceMode == null) {
@@ -264,13 +265,10 @@ public class BookMetadataUpdater {
 
         if (newCategories.isEmpty()) return;
 
-        boolean replaceAll = replaceMode == MetadataReplaceMode.REPLACE_ALL;
-        boolean replaceMissing = replaceMode == MetadataReplaceMode.REPLACE_MISSING;
-
-        if (replaceAll) {
+        if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getCategories().clear();
             e.getCategories().addAll(newCategories);
-        } else if (replaceMissing && e.getCategories().isEmpty()) {
+        } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getCategories().isEmpty()) {
             e.getCategories().addAll(newCategories);
         } else if (replaceMode == null) {
             if (!merge) e.getCategories().clear();
@@ -302,13 +300,10 @@ public class BookMetadataUpdater {
 
         if (newMoods.isEmpty()) return;
 
-        boolean replaceAll = replaceMode == MetadataReplaceMode.REPLACE_ALL;
-        boolean replaceMissing = replaceMode == MetadataReplaceMode.REPLACE_MISSING;
-
-        if (replaceAll) {
+        if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getMoods().clear();
             e.getMoods().addAll(newMoods);
-        } else if (replaceMissing && e.getMoods().isEmpty()) {
+        } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getMoods().isEmpty()) {
             e.getMoods().addAll(newMoods);
         } else if (replaceMode == null) {
             if (!merge) e.getMoods().clear();
@@ -340,13 +335,10 @@ public class BookMetadataUpdater {
 
         if (newTags.isEmpty()) return;
 
-        boolean replaceAll = replaceMode == MetadataReplaceMode.REPLACE_ALL;
-        boolean replaceMissing = replaceMode == MetadataReplaceMode.REPLACE_MISSING;
-
-        if (replaceAll) {
+        if (replaceMode == MetadataReplaceMode.REPLACE_ALL || replaceMode == MetadataReplaceMode.REPLACE_WHEN_PROVIDED) {
             if (!merge) e.getTags().clear();
             e.getTags().addAll(newTags);
-        } else if (replaceMissing && e.getTags().isEmpty()) {
+        } else if (replaceMode == MetadataReplaceMode.REPLACE_MISSING && e.getTags().isEmpty()) {
             e.getTags().addAll(newTags);
         } else if (replaceMode == null) {
             if (!merge) e.getTags().clear();

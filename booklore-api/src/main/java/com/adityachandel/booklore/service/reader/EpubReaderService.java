@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -50,6 +51,7 @@ public class EpubReaderService {
             StandardCharsets.ISO_8859_1,
             Charset.forName("CP437")
     };
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
 
     private final BookRepository bookRepository;
     private final Map<String, CachedEpubMetadata> metadataCache = new ConcurrentHashMap<>();
@@ -282,7 +284,7 @@ public class EpubReaderService {
 
             List<String> propList = null;
             if (properties != null && !properties.isEmpty()) {
-                propList = Arrays.asList(properties.split("\\s+"));
+                propList = Arrays.asList(WHITESPACE_PATTERN.split(properties));
             }
 
             manifest.add(EpubManifestItem.builder()

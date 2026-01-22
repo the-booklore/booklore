@@ -11,6 +11,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Slf4j
 public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor {
@@ -26,6 +27,11 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
     protected static final int EXTH_COVER_OFFSET = 201;
     protected static final int EXTH_THUMB_OFFSET = 202;
     protected static final int EXTH_ASIN = 113;
+    private static final Pattern DATE_SLASH_FORMAT_PATTERN = Pattern.compile("\\d{4}/\\d{2}/\\d{2}");
+    private static final Pattern YEAR_ONLY_PATTERN = Pattern.compile("\\d{4}");
+    private static final Pattern DATE_DASH_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}");
+    private static final Pattern CATEGORY_SEPARATOR_PATTERN = Pattern.compile("[;,]");
+    private static final Pattern ISBN_INVALID_CHARS_PATTERN = Pattern.compile("[^0-9Xx]");
 
     protected abstract String getFormatName();
 
@@ -105,7 +111,7 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
                     case EXTH_PUBLISHER -> builder.publisher(value.trim());
                     case EXTH_DESCRIPTION -> builder.description(value.trim());
                     case EXTH_ISBN -> {
-                        String isbn = value.replaceAll("[^0-9Xx]", "");
+                        String isbn = ISBN_INVALID_CHARS_PATTERN.matcher(value).replaceAll("");
                         if (isbn.length() == 13) {
                             builder.isbn13(isbn);
                         } else if (isbn.length() == 10) {
@@ -113,7 +119,7 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
                         }
                     }
                     case EXTH_SUBJECT -> {
-                        for (String category : value.split("[;,]")) {
+                        for (String category : CATEGORY_SEPARATOR_PATTERN.split(value)) {
                             String trimmed = category.trim();
                             if (StringUtils.isNotBlank(trimmed)) {
                                 categories.add(trimmed);
@@ -372,15 +378,15 @@ public abstract class MobiBaseMetadataExtractor implements FileMetadataExtractor
         }
 
         try {
-            if (dateString.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            if (DATE_DASH_FORMAT_PATTERN.matcher(dateString).matches()) {
                 return LocalDate.parse(dateString);
             }
 
-            if (dateString.matches("\\d{4}")) {
+            if (YEAR_ONLY_PATTERN.matcher(dateString).matches()) {
                 return LocalDate.of(Integer.parseInt(dateString), 1, 1);
             }
 
-            if (dateString.matches("\\d{4}/\\d{2}/\\d{2}")) {
+            if (DATE_SLASH_FORMAT_PATTERN.matcher(dateString).matches()) {
                 String[] parts = dateString.split("/");
                 return LocalDate.of(Integer.parseInt(parts[0]),
                         Integer.parseInt(parts[1]),

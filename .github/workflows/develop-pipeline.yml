@@ -6,14 +6,17 @@ on:
       - develop
   pull_request:
     branches:
-      - '**'
+      - develop
+      - 'release/**'
+      - master
 
 jobs:
   migration-check:
     name: Flyway Migration Check
     uses: ./.github/workflows/migrations-check.yml
     with:
-      base_ref: 'develop'
+      # For PRs, compare against target branch; for pushes, compare against develop
+      base_ref: ${{ github.event_name == 'pull_request' && github.base_ref || 'develop' }}
       head_ref: 'HEAD'
 
   backend-tests:

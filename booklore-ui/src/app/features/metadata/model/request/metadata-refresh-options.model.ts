@@ -1,4 +1,4 @@
-export type MetadataReplaceMode = 'REPLACE_ALL' | 'REPLACE_MISSING';
+export type MetadataReplaceMode = 'REPLACE_ALL' | 'REPLACE_MISSING' | 'REPLACE_WHEN_PROVIDED';
 
 export interface MetadataRefreshOptions {
   libraryId: number | null;
