@@ -60,7 +60,7 @@ public class MetadataController {
     public ResponseEntity<BookMetadata> updateMetadata(
             @Parameter(description = "Metadata update wrapper") @RequestBody MetadataUpdateWrapper metadataUpdateWrapper,
             @Parameter(description = "ID of the book") @PathVariable long bookId,
-            @Parameter(description = "Merge categories") @RequestParam(defaultValue = "true") boolean mergeCategories) {
+            @Parameter(description = "Merge categories") @RequestParam(defaultValue = "false") boolean mergeCategories) {
         BookEntity bookEntity = bookRepository.findAllWithMetadataByIds(java.util.Collections.singleton(bookId)).stream()
                 .findFirst()
                 .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));

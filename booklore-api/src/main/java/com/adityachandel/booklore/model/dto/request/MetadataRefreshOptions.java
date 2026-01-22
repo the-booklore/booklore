@@ -1,12 +1,9 @@
 package com.adityachandel.booklore.model.dto.request;
 
 import com.adityachandel.booklore.model.enums.MetadataProvider;
+import com.adityachandel.booklore.model.enums.MetadataReplaceMode;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.*;
 
 @Getter
 @Setter
@@ -18,6 +15,14 @@ public class MetadataRefreshOptions {
     private boolean refreshCovers;
     private boolean mergeCategories;
     private Boolean reviewBeforeApply;
+    /**
+     * Controls how fetched metadata replaces existing metadata.
+     * REPLACE_ALL: Replace all fields with fetched values (even if existing values are present)
+     * REPLACE_MISSING: Only fill in fields that are currently empty/null
+     * Default is REPLACE_MISSING to preserve existing metadata unless user explicitly wants to overwrite.
+     */
+    @Builder.Default
+    private MetadataReplaceMode replaceMode = MetadataReplaceMode.REPLACE_MISSING;
     @NotNull(message = "Field options cannot be null")
     @Builder.Default
     private FieldOptions fieldOptions = new FieldOptions();
@@ -79,41 +84,113 @@ public class MetadataRefreshOptions {
 
     @Getter
     @Setter
-    @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class EnabledFields {
-        private boolean title;
-        private boolean subtitle;
-        private boolean description;
-        private boolean authors;
-        private boolean publisher;
-        private boolean publishedDate;
-        private boolean seriesName;
-        private boolean seriesNumber;
-        private boolean seriesTotal;
-        private boolean isbn13;
-        private boolean isbn10;
-        private boolean language;
-        private boolean categories;
-        private boolean cover;
-        private boolean pageCount;
-        private boolean asin;
-        private boolean goodreadsId;
-        private boolean comicvineId;
-        private boolean hardcoverId;
-        private boolean googleId;
-        private boolean lubimyczytacId;
-        private boolean amazonRating;
-        private boolean amazonReviewCount;
-        private boolean goodreadsRating;
-        private boolean goodreadsReviewCount;
-        private boolean hardcoverRating;
-        private boolean hardcoverReviewCount;
-        private boolean lubimyczytacRating;
-        private boolean ranobedbId;
-        private boolean ranobedbRating;
-        private boolean moods;
-        private boolean tags;
+        // All fields default to true so metadata fetcher updates fields by default
+        // unless explicitly disabled by the user
+        @Builder.Default
+        private boolean title = true;
+        @Builder.Default
+        private boolean subtitle = true;
+        @Builder.Default
+        private boolean description = true;
+        @Builder.Default
+        private boolean authors = true;
+        @Builder.Default
+        private boolean publisher = true;
+        @Builder.Default
+        private boolean publishedDate = true;
+        @Builder.Default
+        private boolean seriesName = true;
+        @Builder.Default
+        private boolean seriesNumber = true;
+        @Builder.Default
+        private boolean seriesTotal = true;
+        @Builder.Default
+        private boolean isbn13 = true;
+        @Builder.Default
+        private boolean isbn10 = true;
+        @Builder.Default
+        private boolean language = true;
+        @Builder.Default
+        private boolean categories = true;
+        @Builder.Default
+        private boolean cover = true;
+        @Builder.Default
+        private boolean pageCount = true;
+        @Builder.Default
+        private boolean asin = true;
+        @Builder.Default
+        private boolean goodreadsId = true;
+        @Builder.Default
+        private boolean comicvineId = true;
+        @Builder.Default
+        private boolean hardcoverId = true;
+        @Builder.Default
+        private boolean googleId = true;
+        @Builder.Default
+        private boolean lubimyczytacId = true;
+        @Builder.Default
+        private boolean amazonRating = true;
+        @Builder.Default
+        private boolean amazonReviewCount = true;
+        @Builder.Default
+        private boolean goodreadsRating = true;
+        @Builder.Default
+        private boolean goodreadsReviewCount = true;
+        @Builder.Default
+        private boolean hardcoverRating = true;
+        @Builder.Default
+        private boolean hardcoverReviewCount = true;
+        @Builder.Default
+        private boolean lubimyczytacRating = true;
+        @Builder.Default
+        private boolean ranobedbId = true;
+        @Builder.Default
+        private boolean ranobedbRating = true;
+        @Builder.Default
+        private boolean moods = true;
+        @Builder.Default
+        private boolean tags = true;
+
+        /**
+         * Default constructor that initializes all fields to true.
+         * This ensures that by default, all metadata fields are enabled for fetching/updating.
+         */
+        public EnabledFields() {
+            this.title = true;
+            this.subtitle = true;
+            this.description = true;
+            this.authors = true;
+            this.publisher = true;
+            this.publishedDate = true;
+            this.seriesName = true;
+            this.seriesNumber = true;
+            this.seriesTotal = true;
+            this.isbn13 = true;
+            this.isbn10 = true;
+            this.language = true;
+            this.categories = true;
+            this.cover = true;
+            this.pageCount = true;
+            this.asin = true;
+            this.goodreadsId = true;
+            this.comicvineId = true;
+            this.hardcoverId = true;
+            this.googleId = true;
+            this.lubimyczytacId = true;
+            this.amazonRating = true;
+            this.amazonReviewCount = true;
+            this.goodreadsRating = true;
+            this.goodreadsReviewCount = true;
+            this.hardcoverRating = true;
+            this.hardcoverReviewCount = true;
+            this.lubimyczytacRating = true;
+            this.ranobedbId = true;
+            this.ranobedbRating = true;
+            this.moods = true;
+            this.tags = true;
+        }
     }
 }

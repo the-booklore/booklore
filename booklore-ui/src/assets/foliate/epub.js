@@ -706,14 +706,34 @@ class Loader {
     #cache = new Map()
     #children = new Map()
     #refCount = new Map()
+    #getDirectUrl = null // Function to get direct streaming URLs for lazy loading
     eventTarget = new EventTarget()
-    constructor({ loadText, loadBlob, resources }) {
+    constructor({ loadText, loadBlob, resources, getDirectUrl }) {
         this.loadText = loadText
         this.loadBlob = loadBlob
         this.manifest = resources.manifest
         this.assets = resources.manifest
+        this.#getDirectUrl = getDirectUrl ?? null
         // needed only when replacing in (X)HTML w/o parsing (see below)
         //.filter(({ mediaType }) => ![MIME.XHTML, MIME.HTML].includes(mediaType))
+    }
+
+    // Check if a media type is an image
+    #isImage(mediaType) {
+        return mediaType?.startsWith('image/') ?? false
+    }
+
+    // Check if a media type is a font
+    #isFont(mediaType) {
+        return mediaType?.includes('font') ||
+            mediaType === 'application/vnd.ms-opentype' ||
+            mediaType === 'application/x-font-ttf' ||
+            mediaType === 'application/x-font-otf' ||
+            mediaType === 'application/x-font-woff' ||
+            mediaType === 'font/otf' ||
+            mediaType === 'font/ttf' ||
+            mediaType === 'font/woff' ||
+            mediaType === 'font/woff2'
     }
     async createURL(href, data, type, parent) {
         if (!data) return ''
@@ -838,13 +858,59 @@ class Loader {
             // replace hrefs (excluding anchors)
             const replace = async (el, attr) => el.setAttribute(attr,
                 await this.loadHref(el.getAttribute(attr), href, parents))
+
+            // Helper to check if element is an image that should use direct URL
+            const shouldUseDirectUrl = (el, attr) => {
+                if (!this.#getDirectUrl) return false
+                const srcAttr = el.getAttribute(attr)
+                if (!srcAttr || isExternal(srcAttr)) return false
+                const path = resolveURL(srcAttr, href)
+                const item = this.manifest.find(item => item.href === path)
+                return item && this.#isImage(item.mediaType)
+            }
+
+            // Replace with direct URL (for images) - browser loads on-demand
+            const replaceWithDirectUrl = (el, attr) => {
+                const srcAttr = el.getAttribute(attr)
+                const path = resolveURL(srcAttr, href)
+                const directUrl = this.#getDirectUrl(path)
+                if (directUrl) {
+                    el.setAttribute(attr, directUrl)
+                    el.setAttribute('loading', 'lazy') // Native lazy loading hint
+                    return true
+                }
+                return false
+            }
+
+            // Process link elements (stylesheets, etc.)
             for (const el of doc.querySelectorAll('link[href]')) await replace(el, 'href')
-            for (const el of doc.querySelectorAll('[src]')) await replace(el, 'src')
-            for (const el of doc.querySelectorAll('[poster]')) await replace(el, 'poster')
+
+            // Process elements with src attribute
+            // For images: use direct URLs so browser can load on-demand
+            // For others: load and create blob URL
+            for (const el of doc.querySelectorAll('[src]')) {
+                if (shouldUseDirectUrl(el, 'src')) {
+                    replaceWithDirectUrl(el, 'src')
+                } else {
+                    await replace(el, 'src')
+                }
+            }
+
+            // Process poster attributes (videos)
+            for (const el of doc.querySelectorAll('[poster]')) {
+                if (shouldUseDirectUrl(el, 'poster')) {
+                    replaceWithDirectUrl(el, 'poster')
+                } else {
+                    await replace(el, 'poster')
+                }
+            }
+
             for (const el of doc.querySelectorAll('object[data]')) await replace(el, 'data')
             for (const el of doc.querySelectorAll('[*|href]:not([href])'))
                 el.setAttributeNS(NS.XLINK, 'href', await this.loadHref(
                     el.getAttributeNS(NS.XLINK, 'href'), href, parents))
+
+            // Process srcset attributes
             for (const el of doc.querySelectorAll('[srcset]'))
                 el.setAttribute('srcset', await replaceSeries(el.getAttribute('srcset'),
                     /(\s*)(.+?)\s*((?:\s[\d.]+[wx])+\s*(?:,|$)|,\s+|$)/g,
@@ -868,15 +934,48 @@ class Loader {
         return this.createURL(href, result, mediaType, parent)
     }
     async replaceCSS(str, href, parents = []) {
+        // For url() references, use direct URLs for fonts and images (lazy loading)
+        // This avoids fetching all fonts/images upfront - browser fetches on-demand
         const replacedUrls = await replaceSeries(str,
             /url\(\s*["']?([^'"\n]*?)\s*["']?\s*\)/gi,
-            (_, url) => this.loadHref(url, href, parents)
-                .then(url => `url("${url}")`))
+            async (_, url) => {
+                if (isExternal(url)) return `url("${url}")`
+
+                const path = resolveURL(url, href)
+                const item = this.manifest.find(item => item.href === path)
+
+                // If we have getDirectUrl and this is a font or image, use direct URL
+                // This lets the browser fetch on-demand instead of us prefetching everything
+                if (this.#getDirectUrl && item && (this.#isFont(item.mediaType) || this.#isImage(item.mediaType))) {
+                    const directUrl = this.#getDirectUrl(path)
+                    if (directUrl) return `url("${directUrl}")`
+                }
+
+                // For other resources (like CSS), load them normally
+                const loadedUrl = await this.loadHref(url, href, parents)
+                return `url("${loadedUrl}")`
+            })
+
         // apart from `url()`, strings can be used for `@import` (but why?!)
-        return replaceSeries(replacedUrls,
+        // CSS imports need to be loaded and processed
+        const replacedImports = await replaceSeries(replacedUrls,
             /@import\s*["']([^"'\n]*?)["']/gi,
             (_, url) => this.loadHref(url, href, parents)
                 .then(url => `@import "${url}"`))
+
+        // Add font-display: swap to @font-face rules that don't have it
+        // This ensures text is visible immediately while fonts load
+        return replacedImports.replace(
+            /@font-face\s*\{([^}]*)\}/gi,
+            (match, content) => {
+                // Check if font-display is already set
+                if (/font-display\s*:/i.test(content)) {
+                    return match
+                }
+                // Add font-display: swap before the closing brace
+                return `@font-face {${content}font-display: swap;}`
+            }
+        )
     }
     // find & replace all possible relative paths for all assets without parsing
     replaceString(str, href, parents = []) {
@@ -932,10 +1031,12 @@ export class EPUB {
     parser = new DOMParser()
     #loader
     #encryption
-    constructor({ loadText, loadBlob, getSize, sha1 }) {
+    #getDirectUrl = null
+    constructor({ loadText, loadBlob, getSize, getDirectUrl, sha1 }) {
         this.loadText = loadText
         this.loadBlob = loadBlob
         this.getSize = getSize
+        this.#getDirectUrl = getDirectUrl ?? null
         this.#encryption = new Encryption(deobfuscators(sha1))
     }
     async #loadXML(uri) {
@@ -973,6 +1074,7 @@ ${doc.querySelector('parsererror').innerText}`)
             loadBlob: uri => Promise.resolve(this.loadBlob(uri))
                 .then(this.#encryption.getDecoder(uri)),
             resources: this.resources,
+            getDirectUrl: this.#getDirectUrl,
         })
         this.transformTarget = this.#loader.eventTarget
         this.sections = this.resources.spine.map((spineItem, index) => {

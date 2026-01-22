@@ -94,7 +94,13 @@ export class FileDownloadService {
     link.click();
 
     setTimeout(() => {
-      document.body.removeChild(link);
+      try {
+        if (link && link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+      } catch (e) {
+        // Ignore errors during cleanup, may occur if DOM is not available
+      }
       window.URL.revokeObjectURL(objectUrl);
     }, 100);
   }

@@ -289,6 +289,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
           () => this.bulkEditMetadata(),
           () => this.multiBookEditMetadata(),
           () => this.regenerateCoversForSelected(),
+          () => this.generateCustomCoversForSelected(),
           userState.user
         );
       });
@@ -611,6 +612,38 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
               severity: 'error',
               summary: 'Failed',
               detail: 'Could not start cover regeneration.',
+              life: 3000
+            });
+          }
+        });
+      }
+    });
+  }
+
+  generateCustomCoversForSelected(): void {
+    if (!this.selectedBooks || this.selectedBooks.size === 0) return;
+    const count = this.selectedBooks.size;
+    this.confirmationService.confirm({
+      message: `Are you sure you want to generate custom covers for ${count} book(s)?`,
+      header: 'Confirm Custom Cover Generation',
+      icon: 'pi pi-palette',
+      acceptLabel: 'Yes',
+      rejectLabel: 'No',
+      accept: () => {
+        this.bookService.generateCustomCoversForBooks(Array.from(this.selectedBooks)).subscribe({
+          next: () => {
+            this.messageService.add({
+              severity: 'success',
+              summary: 'Custom Cover Generation Started',
+              detail: `Generating custom covers for ${count} book(s).`,
+              life: 3000
+            });
+          },
+          error: () => {
+            this.messageService.add({
+              severity: 'error',
+              summary: 'Failed',
+              detail: 'Could not start custom cover generation.',
               life: 3000
             });
           }

@@ -9,7 +9,8 @@ export class ReaderHeaderFooterVisibilityManager {
 
   private readonly HEADER_HEIGHT = 20;
   private readonly FOOTER_HEIGHT = 40;
-  private readonly TRIGGER_ZONE = 40;
+  private readonly HEADER_TRIGGER_ZONE = 20;
+  private readonly FOOTER_TRIGGER_ZONE = 30;
 
   private headerVisible = false;
   private footerVisible = false;
@@ -40,6 +41,20 @@ export class ReaderHeaderFooterVisibilityManager {
     }
   }
 
+  handleHeaderZoneEnter(): void {
+    if (!this.isPinned) {
+      this.setHeaderVisible(true);
+      this.notifyStateChange();
+    }
+  }
+
+  handleFooterZoneEnter(): void {
+    if (!this.isPinned) {
+      this.setFooterVisible(true);
+      this.notifyStateChange();
+    }
+  }
+
   togglePinned(): void {
     this.isPinned = !this.isPinned;
     this.updateVisibility();
@@ -54,7 +69,7 @@ export class ReaderHeaderFooterVisibilityManager {
 
   private updateVisibility(): void {
     if (
-      this.mouseY <= this.TRIGGER_ZONE ||
+      this.mouseY <= this.HEADER_TRIGGER_ZONE ||
       (this.mouseY <= this.HEADER_HEIGHT && this.headerVisible) ||
       this.isPinned
     ) {
@@ -65,7 +80,7 @@ export class ReaderHeaderFooterVisibilityManager {
 
     const footerTop = this.windowHeight - this.FOOTER_HEIGHT;
     if (
-      this.mouseY >= this.windowHeight - this.TRIGGER_ZONE ||
+      this.mouseY >= this.windowHeight - this.FOOTER_TRIGGER_ZONE ||
       (this.mouseY >= footerTop && this.footerVisible) ||
       this.isPinned
     ) {

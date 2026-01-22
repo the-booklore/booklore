@@ -1,0 +1,193 @@
+@if (isOpen) {
+  <div class="sidebar-overlay" (click)="onOverlayClick()" [class.closing]="closing">
+    <aside class="sidebar" (click)="$event.stopPropagation()" [class.closing]="closing">
+      <header class="sidebar-header">
+        @if (bookInfo.coverUrl) {
+          <img
+            [src]="bookInfo.coverUrl"
+            alt="Book cover"
+            class="book-cover"
+          />
+        }
+        <div class="book-meta">
+          <h2 class="book-title">{{ bookInfo.title }}</h2>
+          @if (bookInfo.authors) {
+            <p class="book-authors">{{ bookInfo.authors }}</p>
+          }
+        </div>
+      </header>
+
+      <nav class="tabs">
+        <button
+          class="tab"
+          [class.active]="activeTab === 'pages'"
+          (click)="setActiveTab('pages')">
+          <app-reader-icon name="book" class="tab-icon"></app-reader-icon>
+          <span>Content</span>
+        </button>
+        <button
+          class="tab"
+          [class.active]="activeTab === 'bookmarks'"
+          (click)="setActiveTab('bookmarks')">
+          <app-reader-icon name="bookmark" class="tab-icon"></app-reader-icon>
+          <span>Bookmarks</span>
+          @if (bookmarks.length > 0) {
+            <span class="badge">{{ bookmarks.length }}</span>
+          }
+        </button>
+        <button
+          class="tab"
+          [class.active]="activeTab === 'notes'"
+          (click)="setActiveTab('notes')">
+          <app-reader-icon name="note" class="tab-icon"></app-reader-icon>
+          <span>Notes</span>
+          @if (notes.length > 0) {
+            <span class="badge">{{ notes.length }}</span>
+          }
+        </button>
+      </nav>
+
+      <div class="content">
+        @switch (activeTab) {
+          @case ('pages') {
+            @if (isPdf && hasOutline) {
+              <ul class="outline-list">
+                <ng-container *ngTemplateOutlet="outlineTemplate; context: { items: pdfOutline, depth: 0 }"></ng-container>
+              </ul>
+
+              <ng-template #outlineTemplate let-items="items" let-depth="depth">
+                @for (item of items; track item.title + item.pageNumber) {
+                  <li class="outline-item">
+                    <button
+                      class="outline-row"
+                      [class.active]="isOutlineItemActive(item, items)"
+                      [class.has-children]="item.children && item.children.length > 0"
+                      [style.padding-left.px]="16 + depth * 16"
+                      (click)="onOutlineItemClick(item)">
+                      @if (item.children && item.children.length > 0) {
+                        <span
+                          class="expand-icon"
+                          [class.expanded]="isOutlineItemExpanded(item)"
+                          (click)="toggleOutlineItem(item); $event.stopPropagation()">
+                          <app-reader-icon name="chevron-right" [size]="14"></app-reader-icon>
+                        </span>
+                      }
+                      <span class="outline-title">{{ item.title }}</span>
+                      <span class="outline-page">{{ item.pageNumber }}</span>
+                    </button>
+                    @if (item.children && item.children.length > 0 && isOutlineItemExpanded(item)) {
+                      <ul class="outline-children">
+                        <ng-container *ngTemplateOutlet="outlineTemplate; context: { items: item.children, depth: depth + 1 }"></ng-container>
+                      </ul>
+                    }
+                  </li>
+                }
+              </ng-template>
+            } @else {
+              <ul class="page-list">
+                @for (page of pages; track page.pageNumber) {
+                  <li>
+                    <button
+                      class="page-row"
+                      [class.active]="isPageActive(page.pageNumber)"
+                      (click)="onPageClick(page.pageNumber)">
+                      <span class="page-number">{{ page.pageNumber }}</span>
+                      <span class="page-label">{{ page.displayName }}</span>
+                    </button>
+                  </li>
+                }
+              </ul>
+              @if (pages.length === 0 && !hasOutline) {
+                <div class="empty-state">
+                  <app-reader-icon name="book" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No pages found</p>
+                </div>
+              }
+            }
+          }
+          @case ('bookmarks') {
+            @if (bookmarks.length > 0) {
+              <ul class="item-list">
+                @for (bookmark of bookmarks; track bookmark.id) {
+                  <li class="list-item" (click)="onBookmarkClick(bookmark.cfi)">
+                    <div class="item-content">
+                      <span class="item-title">{{ bookmark.title }}</span>
+                      <span class="item-meta">{{ bookmark.createdAt | date: 'MMM d, y' }}</span>
+                    </div>
+                    <button class="delete-btn" (click)="onDeleteBookmark($event, bookmark.id)" aria-label="Delete bookmark">
+                      <app-reader-icon name="trash" [size]="16"></app-reader-icon>
+                    </button>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <div class="empty-state">
+                <app-reader-icon name="bookmark" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                <p>No bookmarks yet</p>
+                <span class="empty-hint">Tap the bookmark icon to save your place</span>
+              </div>
+            }
+          }
+          @case ('notes') {
+            <div class="notes-container">
+              @if (notes.length > 0) {
+                <div class="notes-search-wrapper">
+                  <app-reader-icon name="search" class="search-icon" [size]="16"></app-reader-icon>
+                  <input
+                    type="text"
+                    class="search-input"
+                    placeholder="Search notes..."
+                    [(ngModel)]="notesSearchQuery"
+                    (ngModelChange)="onNotesSearchInput($event)"
+                  />
+                  @if (notesSearchQuery) {
+                    <button class="clear-btn" (click)="clearNotesSearch()" aria-label="Clear search">
+                      <app-reader-icon name="close" [size]="14"></app-reader-icon>
+                    </button>
+                  }
+                </div>
+              }
+
+              @if (filteredNotes.length > 0) {
+                <ul class="item-list">
+                  @for (note of filteredNotes; track note.id) {
+                    <li class="list-item note-item" (click)="onNoteClick(note.cfi)">
+                      <div class="note-bar" [style.background-color]="note.color"></div>
+                      <div class="item-content">
+                        <span class="note-text">{{ note.noteContent }}</span>
+                        @if (note.chapterTitle) {
+                          <span class="item-chapter">{{ note.chapterTitle }}</span>
+                        }
+                        <span class="item-meta">{{ note.createdAt | date: 'MMM d, y' }}</span>
+                      </div>
+                      <div class="action-buttons">
+                        <button class="edit-btn" (click)="onEditNote($event, note)" aria-label="Edit note">
+                          <app-reader-icon name="edit" [size]="16"></app-reader-icon>
+                        </button>
+                        <button class="delete-btn" (click)="onDeleteNote($event, note.id)" aria-label="Delete note">
+                          <app-reader-icon name="trash" [size]="16"></app-reader-icon>
+                        </button>
+                      </div>
+                    </li>
+                  }
+                </ul>
+              } @else if (notes.length > 0 && notesSearchQuery) {
+                <div class="empty-state">
+                  <app-reader-icon name="search" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No matching notes</p>
+                  <span class="empty-hint">Try different search terms</span>
+                </div>
+              } @else {
+                <div class="empty-state">
+                  <app-reader-icon name="note" class="empty-icon" [size]="48" [strokeWidth]="1.5"></app-reader-icon>
+                  <p>No notes yet</p>
+                  <span class="empty-hint">Tap the notes icon to add a note for the current page</span>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+    </aside>
+  </div>
+}

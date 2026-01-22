@@ -1,0 +1,81 @@
+<div class="rating-taste-container">
+  <div class="chart-header">
+    <div class="chart-title">
+      <h3>
+        <i class="pi pi-chart-scatter rating-taste-icon"></i>
+        Rating Taste Comparison
+      </h3>
+      <p class="chart-description">Compare your personal ratings against external ratings (Goodreads, Amazon, etc.)</p>
+    </div>
+    @if (totalRatedBooks > 0) {
+      <div class="stats-badge">
+        <span class="badge-value">{{ totalRatedBooks }}</span>
+        <span class="badge-label">books analyzed</span>
+      </div>
+    }
+  </div>
+
+  <div class="chart-wrapper">
+    <canvas baseChart
+            [data]="(chartData$ | async) ?? {datasets: []}"
+            [options]="chartOptions"
+            [type]="chartType">
+    </canvas>
+    <div class="quadrant-labels">
+      <div class="quadrant-label top-left">Hidden Gems 💎</div>
+      <div class="quadrant-label top-right">Popular Favorites ⭐</div>
+      <div class="quadrant-label bottom-left">Agreed Misses 👎</div>
+      <div class="quadrant-label bottom-right">Overrated 📉</div>
+    </div>
+  </div>
+
+  @if (quadrants.length > 0) {
+    <div class="taste-insights">
+      <div class="insights-header">
+        <h4>Your Taste Profile</h4>
+        @if (averageDeviation > 0) {
+          <div class="deviation-badge" [class.unique]="averageDeviation > 1" [class.mainstream]="averageDeviation <= 0.5">
+            <span class="deviation-label">Avg. deviation:</span>
+            <span class="deviation-value">{{ averageDeviation.toFixed(2) }} ★</span>
+            <span class="deviation-desc">
+              @if (averageDeviation > 1) {
+                (Unique taste)
+              } @else if (averageDeviation <= 0.5) {
+                (Mainstream)
+              } @else {
+                (Balanced)
+              }
+            </span>
+          </div>
+        }
+      </div>
+      <div class="quadrants-grid">
+        @for (quadrant of quadrants; track quadrant.name) {
+          <div class="quadrant-card" [style.border-left-color]="quadrant.color">
+            <div class="quadrant-header">
+              <span class="quadrant-icon">{{ quadrant.icon }}</span>
+              <span class="quadrant-name">{{ quadrant.name }}</span>
+              <span class="quadrant-count" [style.background-color]="quadrant.color">{{ quadrant.count }}</span>
+            </div>
+            <p class="quadrant-description">{{ quadrant.description }}</p>
+            <div class="quadrant-bar">
+              <div class="bar-fill"
+                   [style.width.%]="(quadrant.count / totalRatedBooks) * 100"
+                   [style.background-color]="quadrant.color">
+              </div>
+            </div>
+            <span class="quadrant-percentage">{{ ((quadrant.count / totalRatedBooks) * 100).toFixed(0) }}%</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (totalRatedBooks === 0) {
+    <div class="no-data-message">
+      <i class="pi pi-info-circle"></i>
+      <p>No books with both personal and external ratings found.</p>
+      <small>Rate your books and ensure they have external ratings from Goodreads, Amazon, etc.</small>
+    </div>
+  }
+</div>

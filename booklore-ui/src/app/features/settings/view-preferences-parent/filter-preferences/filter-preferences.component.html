@@ -11,48 +11,34 @@
 
   <div class="section-body">
     <div class="setting-item">
-      <div class="setting-info">
+      <div class="setting-header-standalone">
         <label class="setting-label">Filter Mode</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          <span>Choose the default mode for combining filters selected from the right filter sidebar.</span>
-        </p>
       </div>
-      <div class="setting-item setting-item-indented">
-        <div class="setting-info">
-          <div class="setting-label-row">
-            <p-select
-              size="small"
-              [options]="filterModes"
-              [(ngModel)]="selectedFilterMode"
-              (ngModelChange)="onFilterModeChange()"
-              appendTo="body">
-            </p-select>
-          </div>
-        </div>
+      <p class="setting-description">Choose the default mode for combining filters selected from the right filter sidebar.</p>
+      <div class="setting-options">
+        <p-select
+          size="small"
+          [options]="filterModes"
+          [(ngModel)]="selectedFilterMode"
+          (ngModelChange)="onFilterModeChange()"
+          appendTo="body">
+        </p-select>
       </div>
     </div>
 
     <div class="setting-item">
-      <div class="setting-info">
+      <div class="setting-header-standalone">
         <label class="setting-label">Sorting Mode</label>
-        <p class="setting-description">
-          <i class="pi pi-info-circle"></i>
-          <span>Choose how filter options are sorted in the sidebar.</span>
-        </p>
       </div>
-      <div class="setting-item setting-item-indented">
-        <div class="setting-info">
-          <div class="setting-label-row">
-            <p-select
-              size="small"
-              [options]="filterSortingModes"
-              [(ngModel)]="selectedFilterSortingMode"
-              (ngModelChange)="onFilterSortingModeChange()"
-              appendTo="body">
-            </p-select>
-          </div>
-        </div>
+      <p class="setting-description">Choose how filter options are sorted in the sidebar.</p>
+      <div class="setting-options">
+        <p-select
+          size="small"
+          [options]="filterSortingModes"
+          [(ngModel)]="selectedFilterSortingMode"
+          (ngModelChange)="onFilterSortingModeChange()"
+          appendTo="body">
+        </p-select>
       </div>
     </div>
   </div>

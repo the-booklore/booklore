@@ -36,7 +36,7 @@
         <tr>
           <td>{{ formatDate(session.startTime) }}</td>
           <td>{{ formatDate(session.endTime) }}</td>
-          <td>{{ formatDuration(session.durationSeconds) }}</td>
+          <td>{{ getActualDuration(session) }}</td>
           <td>
             @if (session.startProgress !== null && session.startProgress !== undefined && session.endProgress !== null && session.endProgress !== undefined) {
               <span>{{ session.startProgress }}% → {{ session.endProgress }}%</span>

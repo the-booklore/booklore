@@ -158,6 +158,14 @@ public class BookCoverService {
     }
 
     /**
+     * Generate custom covers for a set of books.
+     */
+    public void generateCustomCoversForBooks(Set<Long> bookIds) {
+        List<BookCoverInfo> unlockedBooks = getUnlockedBookCoverInfos(bookIds);
+        SecurityContextVirtualThread.runWithSecurityContext(() -> processBulkCustomCoverGeneration(unlockedBooks));
+    }
+
+    /**
      * Regenerate covers for all books.
      */
     public void regenerateCovers() {
@@ -291,6 +299,49 @@ public class BookCoverService {
         } catch (Exception e) {
             log.error("Error during cover regeneration: {}", e.getMessage(), e);
             notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during cover regeneration"));
+        }
+    }
+
+    private void processBulkCustomCoverGeneration(List<BookCoverInfo> books) {
+        try {
+            int total = books.size();
+            notificationService.sendMessage(Topic.LOG, LogNotification.info("Started generating custom covers for " + total + " selected book(s)"));
+
+            int current = 1;
+            List<Long> refreshedIds = new ArrayList<>();
+
+            for (BookCoverInfo bookInfo : books) {
+                try {
+                    String progress = "(" + current + "/" + total + ") ";
+                    notificationService.sendMessage(Topic.LOG, LogNotification.info(progress + "Generating custom cover for: " + bookInfo.title()));
+
+                    transactionTemplate.execute(status -> {
+                        bookRepository.findById(bookInfo.id()).ifPresent(book -> {
+                            String title = book.getMetadata().getTitle();
+                            String author = getAuthorNames(book);
+                            byte[] coverBytes = coverImageGenerator.generateCover(title, author);
+
+                            fileService.createThumbnailFromBytes(book.getId(), coverBytes);
+                            writeCoverToBookFile(book, (writer, b) -> writer.replaceCoverImageFromBytes(b, coverBytes));
+                            updateBookCoverMetadata(book);
+                            bookRepository.save(book);
+                            refreshedIds.add(book.getId());
+                        });
+                        return null;
+                    });
+
+                    log.info("{}Successfully generated custom cover for book ID {} ({})", progress, bookInfo.id(), bookInfo.title());
+                } catch (Exception e) {
+                    log.error("Failed to generate custom cover for book ID {}: {}", bookInfo.id(), e.getMessage(), e);
+                }
+                current++;
+            }
+
+            notifyBulkCoverUpdate(refreshedIds);
+            notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished generating custom covers for selected books"));
+        } catch (Exception e) {
+            log.error("Error during custom cover generation: {}", e.getMessage(), e);
+            notificationService.sendMessage(Topic.LOG, LogNotification.error("Error occurred during custom cover generation"));
         }
     }
 

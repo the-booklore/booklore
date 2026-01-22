@@ -1,11 +1,24 @@
-<div class="flex flex-col gap-6 p-4 items-center justify-center w-full max-w-[700px]">
-  <!-- Book Information -->
-  <div class="w-full text-center">
-    <h3 class="text-lg font-semibold mb-2">{{ book.metadata?.title || 'Unknown Title' }}</h3>
-    <p class="text-sm text-gray-600">{{ book.filePath }}</p>
+<div class="additional-file-uploader-container">
+  <div class="panel-header">
+    <div class="header-icon-wrapper">
+      <i class="pi pi-file-plus header-icon"></i>
+    </div>
+    <div class="header-text">
+      <h2 class="panel-title">Upload Additional File</h2>
+      <p class="panel-description">{{ book.metadata?.title || 'Unknown Title' }}</p>
+    </div>
+    <p-button
+      icon="pi pi-times"
+      [rounded]="true"
+      [text]="true"
+      severity="secondary"
+      (click)="closeDialog()"
+      styleClass="close-button">
+    </p-button>
   </div>
 
-  <!-- File Type Selection -->
+  <div class="dialog-content">
+    <!-- File Type Selection -->
   <p-select
     [options]="fileTypeOptions"
     [(ngModel)]="fileType"
@@ -126,4 +139,5 @@
       </div>
     </ng-template>
   </p-fileupload>
+  </div>
 </div>

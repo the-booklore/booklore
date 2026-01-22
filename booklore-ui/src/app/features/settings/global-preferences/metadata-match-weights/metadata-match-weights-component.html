@@ -10,64 +10,56 @@
   </div>
 
   <div class="section-body">
-    <div class="preferences-section">
-      <div class="action-section">
-        <div class="action-content">
-          <div class="action-info">
-            <span class="action-label">Recalculate Metadata Scores</span>
-            <span class="action-description">
-              <i class="pi pi-info-circle"></i>
-              Recomputes match scores for all books based on the latest weights.
-            </span>
-          </div>
+    <div class="setting-item action-item">
+      <div class="action-row">
+        <div class="action-info">
+          <span class="action-label">Recalculate Metadata Scores</span>
+          <span class="action-description">Recomputes match scores for all books based on the latest weights.</span>
+        </div>
+        <p-button
+          type="button"
+          icon="pi pi-refresh"
+          label="Recalculate"
+          [disabled]="isRecalculating"
+          (click)="recalculate()"
+          outlined>
+        </p-button>
+      </div>
+    </div>
+
+    <div class="setting-item weights-item">
+      <div class="weights-header">
+        <span class="weights-icon pi pi-sliders-v"></span>
+        <h4 class="weights-label">Field Weights</h4>
+      </div>
+
+      <form [formGroup]="form" class="weights-form">
+        <div class="weights-grid">
+          @for (key of orderedKeys; track key) {
+            <div class="weight-field">
+              <label class="field-label">{{ labelMap[key] }}</label>
+              <p-inputNumber
+                size="small"
+                [formControlName]="key"
+                [min]="0"
+                [max]="10"
+                fluid
+                [showButtons]="true"/>
+            </div>
+          }
+        </div>
+        <div class="form-actions">
           <p-button
             type="button"
-            icon="pi pi-refresh"
-            label="Recalculate"
-            [disabled]="isRecalculating"
-            (click)="recalculate()"
+            severity="success"
+            label="Save Weights"
+            icon="pi pi-save"
             outlined
-          ></p-button>
+            [disabled]="isSaving"
+            (click)="save()">
+          </p-button>
         </div>
-      </div>
-
-      <div class="weights-section">
-        <div class="weights-header">
-          <span class="weights-icon pi pi-sliders-v"></span>
-          <h4 class="weights-label">Metadata Field Weights</h4>
-        </div>
-
-        <form [formGroup]="form" class="weights-form">
-          <div class="weights-grid">
-            @for (key of orderedKeys; track key) {
-              <div class="weight-field">
-                <label class="field-label">
-                  {{ labelMap[key] }}
-                </label>
-                <p-inputNumber
-                  size="small"
-                  [formControlName]="key"
-                  [min]="0"
-                  [max]="10"
-                  fluid
-                  [showButtons]="true"
-                />
-              </div>
-            }
-          </div>
-          <div class="form-actions">
-            <p-button
-              type="button"
-              severity="success"
-              label="Save Weights"
-              icon="pi pi-save"
-              outlined
-              [disabled]="isSaving"
-              (click)="save()">
-            </p-button>
-          </div>
-        </form>
-      </div>
+      </form>
     </div>
   </div>
 </div>

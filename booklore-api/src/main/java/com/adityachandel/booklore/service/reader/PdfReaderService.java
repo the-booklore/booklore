@@ -1,142 +1,231 @@
 package com.adityachandel.booklore.service.reader;
 
 import com.adityachandel.booklore.exception.ApiError;
+import com.adityachandel.booklore.model.dto.response.PdfBookInfo;
+import com.adityachandel.booklore.model.dto.response.PdfOutlineItem;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.repository.BookRepository;
-import com.adityachandel.booklore.service.appsettings.AppSettingService;
-import com.adityachandel.booklore.util.FileService;
 import com.adityachandel.booklore.util.FileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.RandomAccessReadBufferedFile;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDDocumentOutline;
+import org.apache.pdfbox.pdmodel.interactive.documentnavigation.outline.PDOutlineItem;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
-import java.util.regex.Pattern;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PdfReaderService {
 
-    private static final String CACHE_INFO_FILENAME = ".cache-info";
-    private static final Pattern NON_DIGIT_PATTERN = Pattern.compile("\\D+");
+    private static final int MAX_CACHE_ENTRIES = 50;
+    private static final float DEFAULT_DPI = 200f;
 
     private final BookRepository bookRepository;
-    private final AppSettingService appSettingService;
-    private final FileService fileService;
+    private final Map<String, CachedPdfMetadata> metadataCache = new ConcurrentHashMap<>();
 
-    public List<Integer> getAvailablePages(Long bookId) throws IOException {
-        BookEntity bookEntity = bookRepository.findById(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
-        String bookFullPath = FileUtils.getBookFullPath(bookEntity);
+    private static class CachedPdfMetadata {
+        final int pageCount;
+        final long lastModified;
+        final List<PdfOutlineItem> outline;
+        volatile long lastAccessed;
 
-        Path pdfPath = Path.of(bookFullPath);
-        Path cacheDir = Path.of(fileService.getPdfCachePath(), String.valueOf(bookId));
-        Path cacheInfoPath = cacheDir.resolve(CACHE_INFO_FILENAME);
-        long maxCacheSizeBytes = appSettingService.getAppSettings().getPdfCacheSizeInMb() * 1024L * 1024L;
-        long estimatedSize = Files.size(pdfPath);
-        if (estimatedSize > maxCacheSizeBytes) {
-            log.warn("Cache skipped: Estimated PDF size {} exceeds max cache size {}", estimatedSize, maxCacheSizeBytes);
-            throw ApiError.CACHE_TOO_LARGE.createException();
+        CachedPdfMetadata(int pageCount, long lastModified, List<PdfOutlineItem> outline) {
+            this.pageCount = pageCount;
+            this.lastModified = lastModified;
+            this.outline = outline;
+            this.lastAccessed = System.currentTimeMillis();
         }
+    }
 
+    public List<Integer> getAvailablePages(Long bookId) {
+        Path pdfPath = getBookPath(bookId);
         try {
-            if (needsCacheRefresh(pdfPath, cacheInfoPath)) {
-                log.info("Invalidating cache for PDF book {}", bookId);
-                if (Files.exists(cacheDir)) FileUtils.deleteDirectoryRecursively(cacheDir);
-                Files.createDirectories(cacheDir);
-                extractPdfPages(pdfPath, cacheDir);
-                writeCacheInfo(pdfPath, cacheInfoPath);
-            }
-
-            try (Stream<Path> stream = Files.list(cacheDir)) {
-                return stream
-                        .filter(p -> p.toString().endsWith(".jpg"))
-                        .sorted()
-                        .map(p -> extractPageNumber(p.getFileName().toString()))
-                        .filter(p -> p != -1)
-                        .collect(Collectors.toList());
-            }
+            CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
+            return IntStream.rangeClosed(1, metadata.pageCount)
+                    .boxed()
+                    .collect(Collectors.toList());
         } catch (IOException e) {
-            log.error("Failed to extract pages for book {}", bookId, e);
-            throw new UncheckedIOException("Failed to extract pages from PDF for bookId: " + bookId, e);
+            log.error("Failed to read PDF for book {}", bookId, e);
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read PDF: " + e.getMessage());
+        }
+    }
+
+    public PdfBookInfo getBookInfo(Long bookId) {
+        Path pdfPath = getBookPath(bookId);
+        try {
+            CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
+            return PdfBookInfo.builder()
+                    .pageCount(metadata.pageCount)
+                    .outline(metadata.outline)
+                    .build();
+        } catch (IOException e) {
+            log.error("Failed to read PDF for book {}", bookId, e);
+            throw ApiError.FILE_READ_ERROR.createException("Failed to read PDF: " + e.getMessage());
         }
     }
 
     public void streamPageImage(Long bookId, int page, OutputStream outputStream) throws IOException {
-        Path pagePath = Path.of(fileService.getPdfCachePath(), String.valueOf(bookId), String.format("%04d.jpg", page));
-        if (!Files.exists(pagePath)) throw new FileNotFoundException("Page not found: " + page);
-        try (InputStream in = Files.newInputStream(pagePath)) {
-            try {
-                in.transferTo(outputStream);
-            } catch (IOException e) {
-                log.error("Error streaming page {} of book {}", page, bookId, e);
-                throw new UncheckedIOException("Failed to stream PDF page image for bookId: " + bookId, e);
-            }
+        Path pdfPath = getBookPath(bookId);
+        CachedPdfMetadata metadata = getCachedMetadata(pdfPath);
+        validatePageRequest(bookId, page, metadata.pageCount);
+        renderPageToStream(pdfPath, page, outputStream);
+    }
+
+    private Path getBookPath(Long bookId) {
+        BookEntity bookEntity = bookRepository.findById(bookId)
+                .orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
+        String bookFullPath = FileUtils.getBookFullPath(bookEntity);
+        return Path.of(bookFullPath);
+    }
+
+    private void validatePageRequest(Long bookId, int page, int pageCount) throws FileNotFoundException {
+        if (pageCount == 0) {
+            throw new FileNotFoundException("No pages found for book: " + bookId);
+        }
+        if (page < 1 || page > pageCount) {
+            throw new FileNotFoundException("Page " + page + " out of range [1-" + pageCount + "]");
         }
     }
 
-    private void extractPdfPages(Path pdfPath, Path targetDir) throws IOException {
+    private CachedPdfMetadata getCachedMetadata(Path pdfPath) throws IOException {
+        String cacheKey = pdfPath.toString();
+        long currentModified = Files.getLastModifiedTime(pdfPath).toMillis();
+        CachedPdfMetadata cached = metadataCache.get(cacheKey);
+        if (cached != null && cached.lastModified == currentModified) {
+            cached.lastAccessed = System.currentTimeMillis();
+            log.debug("Cache hit for PDF: {}", pdfPath.getFileName());
+            return cached;
+        }
+        log.debug("Cache miss for PDF: {}, scanning...", pdfPath.getFileName());
+        CachedPdfMetadata newMetadata = scanPdfMetadata(pdfPath);
+        metadataCache.put(cacheKey, newMetadata);
+        evictOldestCacheEntries();
+        return newMetadata;
+    }
+
+    private CachedPdfMetadata scanPdfMetadata(Path pdfPath) throws IOException {
         if (!Files.isReadable(pdfPath)) {
             throw new FileNotFoundException("PDF file is not readable: " + pdfPath);
         }
+        long lastModified = Files.getLastModifiedTime(pdfPath).toMillis();
+        try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(pdfPath.toFile());
+             PDDocument document = Loader.loadPDF(randomAccessRead)) {
+            int pageCount = document.getNumberOfPages();
+            List<PdfOutlineItem> outline = extractOutline(document);
+            return new CachedPdfMetadata(pageCount, lastModified, outline);
+        }
+    }
+
+    private List<PdfOutlineItem> extractOutline(PDDocument document) {
+        List<PdfOutlineItem> outline = new ArrayList<>();
+        try {
+            PDDocumentOutline documentOutline = document.getDocumentCatalog().getDocumentOutline();
+            if (documentOutline != null) {
+                PDOutlineItem item = documentOutline.getFirstChild();
+                while (item != null) {
+                    PdfOutlineItem outlineItem = buildOutlineItem(document, item);
+                    if (outlineItem != null) {
+                        outline.add(outlineItem);
+                    }
+                    item = item.getNextSibling();
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Failed to extract PDF outline: {}", e.getMessage());
+        }
+        return outline;
+    }
+
+    private PdfOutlineItem buildOutlineItem(PDDocument document, PDOutlineItem item) {
+        try {
+            String title = item.getTitle();
+            if (title == null || title.isBlank()) {
+                return null;
+            }
+
+            Integer pageNumber = null;
+            try {
+                PDPage page = item.findDestinationPage(document);
+                if (page != null) {
+                    int pageIndex = document.getPages().indexOf(page);
+                    if (pageIndex >= 0) {
+                        pageNumber = pageIndex + 1;
+                    }
+                }
+            } catch (Exception e) {
+                log.debug("Failed to get page for outline item '{}': {}", title, e.getMessage());
+            }
+
+            List<PdfOutlineItem> children = new ArrayList<>();
+            PDOutlineItem child = item.getFirstChild();
+            while (child != null) {
+                PdfOutlineItem childItem = buildOutlineItem(document, child);
+                if (childItem != null) {
+                    children.add(childItem);
+                }
+                child = child.getNextSibling();
+            }
+
+            return PdfOutlineItem.builder()
+                    .title(title.trim())
+                    .pageNumber(pageNumber)
+                    .children(children.isEmpty() ? null : children)
+                    .build();
+        } catch (Exception e) {
+            log.debug("Failed to process outline item: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    private void evictOldestCacheEntries() {
+        if (metadataCache.size() <= MAX_CACHE_ENTRIES) {
+            return;
+        }
+        List<String> keysToRemove = metadataCache.entrySet().stream()
+                .sorted(Comparator.comparingLong(e -> e.getValue().lastAccessed))
+                .limit(metadataCache.size() - MAX_CACHE_ENTRIES)
+                .map(Map.Entry::getKey)
+                .toList();
+        keysToRemove.forEach(key -> {
+            metadataCache.remove(key);
+            log.debug("Evicted cache entry: {}", key);
+        });
+    }
+
+    private void renderPageToStream(Path pdfPath, int page, OutputStream outputStream) throws IOException {
         try (RandomAccessReadBufferedFile randomAccessRead = new RandomAccessReadBufferedFile(pdfPath.toFile());
              PDDocument document = Loader.loadPDF(randomAccessRead)) {
             PDFRenderer renderer = new PDFRenderer(document);
-            for (int i = 0; i < document.getNumberOfPages(); i++) {
-                BufferedImage image = null;
-                try {
-                    image = renderer.renderImageWithDPI(i, 200, ImageType.RGB);
-                    Path outputFile = targetDir.resolve(String.format("%04d.jpg", i + 1));
-                    ImageIO.write(image, "JPEG", outputFile.toFile());
-                } finally {
-                    if (image != null) {
-                        image.flush(); // Release native resources
-                    }
+            BufferedImage image = null;
+            try {
+                image = renderer.renderImageWithDPI(page - 1, DEFAULT_DPI, ImageType.RGB);
+                ImageIO.write(image, "JPEG", outputStream);
+            } finally {
+                if (image != null) {
+                    image.flush();
                 }
             }
         } catch (IOException e) {
-            log.error("Failed to render PDF pages from {}", pdfPath, e);
-            throw new UncheckedIOException("Error rendering PDF to images", e);
-        }
-    }
-
-    private boolean needsCacheRefresh(Path pdfPath, Path cacheInfoPath) throws IOException {
-        if (!Files.exists(cacheInfoPath)) return true;
-
-        long currentLastModified = Files.getLastModifiedTime(pdfPath).toMillis();
-        String recordedTimestamp = Files.readString(cacheInfoPath).trim();
-
-        try {
-            long recordedLastModified = Long.parseLong(recordedTimestamp);
-            return recordedLastModified != currentLastModified;
-        } catch (NumberFormatException e) {
-            return true;
-        }
-    }
-
-    private void writeCacheInfo(Path pdfPath, Path cacheInfoPath) throws IOException {
-        long lastModified = Files.getLastModifiedTime(pdfPath).toMillis();
-        Files.writeString(cacheInfoPath, String.valueOf(lastModified), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-    }
-
-    private int extractPageNumber(String filename) {
-        try {
-            return Integer.parseInt(NON_DIGIT_PATTERN.matcher(filename).replaceAll(""));
-        } catch (Exception e) {
-            return -1;
+            log.error("Failed to render PDF page {} from {}", page, pdfPath, e);
+            throw e;
         }
     }
 }

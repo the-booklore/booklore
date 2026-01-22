@@ -1,0 +1,25 @@
+<div class="cbx-header" [class.visible]="isVisible">
+  <div class="header-left">
+    <button class="icon-btn" (click)="onOpenSidebar()" title="Contents">
+      <app-reader-icon name="menu" [size]="20" />
+    </button>
+    <button class="icon-btn" (click)="onToggleBookmark()" [title]="isCurrentPageBookmarked ? 'Remove Bookmark' : 'Add Bookmark'" [class.active]="isCurrentPageBookmarked">
+      <app-reader-icon name="bookmark" [size]="20" />
+    </button>
+    <button class="icon-btn" (click)="onOpenNoteDialog()" [title]="currentPageHasNotes ? 'Page has notes - Add another' : 'Add Note'" [class.has-notes]="currentPageHasNotes">
+      <app-reader-icon name="note" [size]="20" />
+      @if (currentPageHasNotes) {
+        <span class="indicator-dot"></span>
+      }
+    </button>
+  </div>
+  <span class="book-title">{{ bookTitle }}</span>
+  <div class="header-right">
+    <button class="icon-btn" (click)="onOpenSettings()" title="Settings">
+      <app-reader-icon name="settings" [size]="20" />
+    </button>
+    <button class="icon-btn close-btn" (click)="onClose(); $event.stopPropagation()" title="Close Reader">
+      <app-reader-icon name="close" [size]="20" />
+    </button>
+  </div>
+</div>
