@@ -122,6 +122,10 @@ export class ReaderEventService {
 
   private attachKeyboardHandler(): void {
     this.keydownHandler = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
       const k = event.key;
       if (k === 'ArrowLeft' || k === 'h' || k === 'PageUp') {
         this.viewCallbacks?.prev();
