@@ -1,5 +1,5 @@
 @if (filteredBooks$ | async; as books) {
-  <div class="relative rounded-xl overflow-hidden border-[1px] border-solid border-[var(--p-content-border-color)]">
+  <div class="series-wrapper">
     <p-tabs [value]="tab" lazy="true" scrollable>
       <p-tablist>
         <p-tab value="view">
@@ -7,26 +7,25 @@
           Series Details
         </p-tab>
       </p-tablist>
-      <p-tabpanels class="tabpanels-responsive overflow-auto">
+      <p-tabpanels class="tabpanels-responsive">
         <p-tabpanel value="view">
 
           @if (books[0]; as firstBook) {
-            <div class="flex flex-col justify-between flex-grow">
-              <div class="space-y-4 ">
+            <div class="series-main">
+              <div class="series-details">
 
-                <!-- <div class="flex items-start justify-between"> -->
-                <div class="flex flex-col text-center gap-4 md:text-left w-full">
+                <div class="series-info-section">
 
-                  <div class="flex flex-col items-center md:items-start gap-1">
-                    <div class="flex items-center gap-2 justify-center md:justify-start flex-wrap text-center md:text-left">
-                      <h2 class="text-2xl md:text-3xl font-extrabold leading-tight">
+                  <div class="series-title-block">
+                    <div class="series-title-row">
+                      <h2 class="series-title">
                         {{ seriesTitle$ | async }}
                       </h2>
                     </div>
 
-                    <p class="text-lg">
+                    <p class="series-authors">
                       @for (author of firstBook.metadata?.authors; track $index; let isLast = $last) {
-                        <a class="hover:underline dark:text-blue-400 cursor-pointer" (click)="goToAuthorBooks(author)">
+                        <a class="author-link" (click)="goToAuthorBooks(author)">
                           {{ author }}
                         </a>
                         @if (!isLast) {
@@ -34,27 +33,25 @@
                         }
                       }
                     </p>
-                  <!-- </div> -->
                 </div>
 
                 @if (firstBook.metadata?.categories?.length) {
-                  <div class="overflow-x-auto scrollbar-hide max-w-7xl pt-2 md:pt-0">
-                    <div class="flex gap-2 w-max max-w-[1150px]">
+                  <div class="categories-scroll">
+                    <div class="categories-list">
                       @for (category of firstBook.metadata?.categories; track category) {
-                        <a (click)="goToCategory(category)" class="shrink-0 no-underline cursor-pointer">
+                        <a (click)="goToCategory(category)" class="category-link">
                           <p-tag [value]="category"></p-tag>
                         </a>
                       }
                     </div>
                   </div>
                 }
-                <div class="px-1 md:px-0">
-                  <div
-                    class="grid md:grid-cols-5 p-3 gap-y-2.5 text-sm pt-2 md:pt-4 pb-2 text-gray-300 md:min-w-[60rem] md:max-w-[100rem]">
+                <div class="metadata-section-padding">
+                  <div class="metadata-grid">
                     <p>
-                      <span class="font-bold">Publisher: </span>
+                      <span class="metadata-label">Publisher: </span>
                       @if (firstBook.metadata?.publisher; as publisher) {
-                        <span class="underline hover:opacity-80 cursor-pointer" (click)="goToPublisher(publisher)">
+                        <span class="publisher-link" (click)="goToPublisher(publisher)">
                           {{publisher}}
                         </span>
                       } @else {
@@ -66,7 +63,7 @@
                     <p><strong>Language:</strong> {{ firstBook.metadata?.language || "-"}}</p>
                     <p><strong>Read Status: </strong>
                     @let s = seriesReadStatus$ | async;
-                    <span class="inline-block px-2 py-0.5 rounded-full text-xs font-bold text-white"
+                    <span class="status-badge"
                       [ngClass]="getStatusSeverityClass(s || 'UNREAD')">
                       {{ getStatusLabel(s) }}
                       @if (s === 'PARTIALLY_READ') {
@@ -78,10 +75,10 @@
               </div>
 
               <!-- DESCRIPTION -->
-              <div class="px-4 pb-2 pt-4 mb-4 md:mb-6 md:mx-2 border border-[var(--border-color)] rounded-xl">
+              <div class="description-box">
                 <div [ngClass]="{ 'line-clamp-5': !isExpanded, 'line-clamp-none': isExpanded }"
-                  class="transition-all duration-300 overflow-hidden description-container">
-                  <div class="readonly-editor px-2"
+                  class="description-container">
+                  <div class="readonly-editor"
                   [innerHTML]="(firstDescription$ | async) || 'No description available.'"></div>
                 </div>
                 @let desc = firstDescription$ | async;
@@ -93,7 +90,7 @@
                 }
               </div>
 
-              <div class="grid series-items-grid overflow-y-auto" #Container
+              <div class="series-items-grid" #Container
                 [ngStyle]="{'grid-template-columns': 'repeat(auto-fill, minmax(' + gridColumnMinWidth + ', 1fr))'}">
                 @for (book of books; track book; let i = $index) {
                   <div class="grid-item"
@@ -125,17 +122,17 @@
 </p-tabs>
 @if (selectedBooks.size > 0) {
   @if (userService.userState$ | async; as userState) {
-    <div class="book-browser-footer bg-[var(--card-background)] bg-opacity-10" [@slideInOut]>
-      <div class="flex items-center">
-        <div class="flex items-center pl-2 w-1/4">
-          <div class="selected-count-badge text-zinc-200">
-            <i class="pi pi-check-circle mr-2"></i>
-            <span class="font-bold text-base" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
-            <span class="ml-1">selected</span>
+    <div class="book-browser-footer" [@slideInOut]>
+      <div class="footer-inner">
+        <div class="footer-left">
+          <div class="selected-count-badge">
+            <i class="pi pi-check-circle badge-icon"></i>
+            <span class="badge-count" style="color: var(--primary-color)">{{ selectedBooks.size }}</span>
+            <span class="badge-label">selected</span>
           </div>
         </div>
-        <div class="flex justify-center w-2/4">
-            <div class="flex gap-2 md:gap-6">
+        <div class="footer-center">
+            <div class="footer-action-group">
               @if (hasMetadataMenuItems) {
                 <p-tieredMenu #menu [model]="metadataMenuItems" [popup]="true" appendTo="body"/>
                 <p-button
@@ -176,7 +173,7 @@
                 </p-button>
               }
               @if (hasBulkReadActionsItems) {
-                <div class="card flex justify-center">
+                <div class="more-actions-wrapper">
                   <p-button
                     (click)="menu.toggle($event)"
                     pTooltip="More actions"
@@ -190,7 +187,7 @@
               }
             </div>
           <p-divider layout="vertical"></p-divider>
-          <div class="flex gap-2 md:gap-6">
+          <div class="footer-action-group">
             <p-button
               outlined="true"
               icon="pi pi-check-square"
@@ -220,7 +217,7 @@
             </p-button>
           }
         </div>
-        <div class="w-1/4"></div>
+        <div class="footer-right"></div>
       </div>
     </div>
   }
@@ -228,7 +225,7 @@
 </div>
 
 } @else {
-  <div class="flex flex-col justify-center items-center h-full gap-4">
+  <div class="loading-state">
     <p-progressSpinner strokeWidth="4" fill="transparent" animationDuration=".8s">
     </p-progressSpinner>
     <p style="color: var(--primary-color);">

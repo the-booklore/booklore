@@ -19,11 +19,11 @@
 
   <div class="dialog-content">
     <div class="book-list-section">
-      <div class="max-h-24 overflow-auto border border-gray-500 rounded p-2 text-sm">
-        <ul class="list-disc pl-5 space-y-1">
+      <div class="book-list-container">
+        <ul class="book-list">
           @for (book of booksToShow; track book.id) {
             <li>
-              <span class="text-gray-400">#{{ book.id }}</span>: {{ book.metadata?.title || 'Untitled' }}
+              <span class="book-id">#{{ book.id }}</span>: {{ book.metadata?.title || 'Untitled' }}
             </li>
           }
         </ul>

@@ -279,6 +279,24 @@
   text-align: center;
 }
 
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-icon {
+  color: #9ca3af;
+}
+
+:host ::ng-deep .password-input {
+  width: 8rem;
+
+  @media (min-width: 768px) {
+    width: 14rem;
+  }
+}
+
 .empty-message {
   text-align: center;
   padding: 2rem 1rem;

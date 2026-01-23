@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {CoverScalePreferenceService} from './cover-scale-preference.service';

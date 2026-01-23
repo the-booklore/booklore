@@ -18,21 +18,21 @@
   </div>
 
   <div class="dialog-content">
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-gray-300">Email Provider</label>
+    <div class="form-fields">
+      <div class="form-field">
+        <label class="field-label">Email Provider</label>
         <p-select
           [options]="emailProviders"
           optionLabel="label"
           placeholder="Select Email Provider"
           [(ngModel)]="selectedProvider"
           appendTo="body"
-          class="w-full">
+          styleClass="full-width">
         </p-select>
       </div>
 
-      <div class="flex flex-col gap-2">
-        <label class="text-sm font-medium text-gray-300">Recipient</label>
+      <div class="form-field">
+        <label class="field-label">Recipient</label>
         <p-select
           [options]="emailRecipients"
           optionLabel="label"
@@ -40,7 +40,7 @@
           [(ngModel)]="selectedRecipient"
           [disabled]="!selectedProvider"
           appendTo="body"
-          class="w-full">
+          styleClass="full-width">
         </p-select>
       </div>
     </div>

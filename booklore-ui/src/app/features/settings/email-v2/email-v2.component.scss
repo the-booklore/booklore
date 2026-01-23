@@ -1,6 +1,23 @@
-.enclosing-container {
-  border-color: var(--p-content-border-color);
+.email-settings-container {
+  width: 100%;
+  height: calc(100dvh - 10.5rem);
+  overflow-y: auto;
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
   background: var(--p-content-background);
+
+  @media (min-width: 768px) {
+    height: calc(100dvh - 11.65rem);
+  }
+}
+
+.provider-section {
+  padding-bottom: 2rem;
+}
+
+.recipient-section {
+  padding-top: 1rem;
 }
 
 .settings-header {

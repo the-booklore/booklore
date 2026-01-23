@@ -1,6 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
-import {EnvironmentInjector, runInInjectionContext} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {of, throwError} from 'rxjs';
 import {AppVersion, ReleaseNote, VersionService} from './version.service';
@@ -31,13 +30,11 @@ describe('VersionService', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        VersionService,
         {provide: HttpClient, useValue: httpClientMock}
       ]
     });
 
-    const injector = TestBed.inject(EnvironmentInjector);
-    service = runInInjectionContext(injector, () => TestBed.inject(VersionService));
+    service = TestBed.inject(VersionService);
   });
 
   it('should get version', () => {
@@ -88,13 +85,11 @@ describe('VersionService - API Contract Tests', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        VersionService,
         {provide: HttpClient, useValue: httpClientMock}
       ]
     });
 
-    const injector = TestBed.inject(EnvironmentInjector);
-    service = runInInjectionContext(injector, () => TestBed.inject(VersionService));
+    service = TestBed.inject(VersionService);
   });
 
   it('should expect AppVersion from getVersion', () => {

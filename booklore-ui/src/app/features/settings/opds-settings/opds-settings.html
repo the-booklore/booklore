@@ -232,7 +232,7 @@
                   </td>
                   <td>
                     @if (editingUserId === user.id) {
-                      <div class="flex items-center gap-2">
+                      <div class="inline-row">
                         <p-select
                           [options]="sortOrderOptions"
                           [(ngModel)]="editingSortOrder"
@@ -258,7 +258,7 @@
                         </p-button>
                       </div>
                     } @else {
-                      <div class="flex items-center gap-2">
+                      <div class="inline-row">
                         <span class="sort-order-badge">{{ getSortOrderLabel(user.sortOrder) }}</span>
                         <p-button
                           icon="pi pi-pencil"
@@ -272,10 +272,10 @@
                     }
                   </td>
                   <td>
-                    <div class="flex items-center gap-2">
+                    <div class="inline-row">
                       <p-password
                         fluid
-                        class="w-32 md:w-56"
+                        styleClass="password-input"
                         [(ngModel)]="dummyPassword"
                         [feedback]="false"
                         size="small"
@@ -283,7 +283,7 @@
                         [toggleMask]="false">
                       </p-password>
                       <i
-                        class="pi pi-info-circle text-gray-400"
+                        class="pi pi-info-circle info-icon"
                         pTooltip="Passwords are hidden for security reasons. To change, delete the user and create a new one with a new password."
                         tooltipPosition="right"
                         style="cursor: pointer;">

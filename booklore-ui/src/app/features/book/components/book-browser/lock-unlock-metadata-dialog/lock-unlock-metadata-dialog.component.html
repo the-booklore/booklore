@@ -18,10 +18,10 @@
   </div>
 
   <div class="dialog-content">
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-24 gap-y-4">
+    <div class="fields-grid">
       @for (field of lockableFields; track field) {
-        <div class="flex items-center justify-between">
-          <label class="capitalize">{{ fieldLabels[field] || field }}</label>
+        <div class="field-row">
+          <label class="field-label">{{ fieldLabels[field] || field }}</label>
           <p-button
             [outlined]="true"
             [label]="getLockLabel(field)"

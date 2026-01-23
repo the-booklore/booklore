@@ -181,7 +181,7 @@
           type="text"
           pInputText
           [(ngModel)]="mergeTarget"
-          class="w-full"
+          class="full-width-input"
           [placeholder]="isSingleValueField(currentMergeType) ? 'e.g., English' : 'e.g., Fiction, Mystery, Thriller'"/>
         @if (isSingleValueField(currentMergeType)) {
           <small class="help-text">
@@ -254,7 +254,7 @@
           type="text"
           pInputText
           [(ngModel)]="renameTarget"
-          class="w-full"
+          class="full-width-input"
           [placeholder]="isSingleValueField(currentMergeType) ? 'e.g., Mystery' : 'e.g., Mystery, Detective'"
           (keyup.enter)="confirmRename()"/>
         @if (isSingleValueField(currentMergeType)) {

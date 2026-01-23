@@ -62,32 +62,14 @@ describe('FileDownloadService', () => {
     ];
     httpClientMock.get.mockReturnValue(of(...events));
     // Mock DOM for download
-    const appendChild = vi.fn();
-    const removeChild = vi.fn();
-    const link = {
-      setAttribute: vi.fn(),
-      click: vi.fn(),
-      style: {},
-      href: '',
-      download: '',
-      parentNode: {
-        removeChild: removeChild
-      }
-    };
-    (globalThis as any).document = {
-      createElement: vi.fn().mockReturnValue(link),
-      body: {
-        appendChild: appendChild,
-        removeChild: removeChild,
-        contains: vi.fn().mockReturnValue(true)
-      }
-    };
-    (globalThis as any).window = {
-      URL: {
-        createObjectURL: vi.fn().mockReturnValue('blob:url'),
-        revokeObjectURL: vi.fn()
-      }
-    };
+    const link = document.createElement('a');
+    vi.spyOn(link, 'click').mockImplementation(() => {});
+    vi.spyOn(document, 'createElement').mockReturnValue(link);
+    vi.spyOn(document.body, 'appendChild').mockImplementation(() => link);
+    vi.spyOn(document.body, 'removeChild').mockImplementation(() => link);
+    vi.spyOn(document.body, 'contains').mockReturnValue(true);
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:url');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
 
     service.downloadFile('/api/file', 'file.txt');
     expect(httpClientMock.get).toHaveBeenCalledWith('/api/file', expect.objectContaining({observe: 'events'}));

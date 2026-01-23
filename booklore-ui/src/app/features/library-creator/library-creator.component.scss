@@ -848,3 +848,7 @@
 .validation-message {
   @include panel.validation-message;
 }
+
+.full-width {
+  width: 100%;
+}

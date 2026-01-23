@@ -81,7 +81,7 @@
   </div>
 
   @if (!bottomBarHidden) {
-    <div class="book-title-container flex items-center">
+    <div class="book-title-container">
       @if (_shouldShowStatusIcon) {
         <div class="read-status-indicator"
              [ngClass]="_readStatusClass"
@@ -90,7 +90,7 @@
           <i [class]="_readStatusIcon" style="font-size: 0.9rem"></i>
         </div>
       }
-      <h4 class="book-title m-0 pl-2"
+      <h4 class="book-title"
           tooltipPosition="bottom"
           [pTooltip]="titleTooltip">
         {{ displayTitle }}
