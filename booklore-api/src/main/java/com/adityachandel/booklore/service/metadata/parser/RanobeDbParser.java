@@ -124,12 +124,10 @@ public class RanobeDbParser implements BookParser {
           URI uri = UriComponentsBuilder.fromUriString(RANOBEDB_URL)
                   .path("/books")
                   .queryParam("q", term)
-                  .queryParam("query", term)
                   .queryParam("limit", 5)
-                  .queryParam("rl", "en")
-                  .queryParam("rll", "or")
                   .queryParam("rf", "digital,print")
                   .queryParam("rfl", "or")
+                  .encode()
                   .build()
                   .toUri();
 
