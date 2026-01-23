@@ -41,7 +41,8 @@ public class HardcoverSyncService {
     private final ThreadLocal<String> currentApiToken = new ThreadLocal<>();
 
     @Autowired
-    public HardcoverSyncService(HardcoverSyncSettingsService hardcoverSyncSettingsService, BookRepository bookRepository) {
+    public HardcoverSyncService(HardcoverSyncSettingsService hardcoverSyncSettingsService,
+            BookRepository bookRepository) {
         this.hardcoverSyncSettingsService = hardcoverSyncSettingsService;
         this.bookRepository = bookRepository;
         this.restClient = RestClient.builder()
@@ -51,12 +52,13 @@ public class HardcoverSyncService {
 
     /**
      * Asynchronously sync Kobo reading progress to Hardcover.
-     * This method is non-blocking and will not fail the calling process if sync fails.
+     * This method is non-blocking and will not fail the calling process if sync
+     * fails.
      * Uses the user's personal Hardcover API key if configured.
      *
-     * @param bookId The book ID to sync progress for
+     * @param bookId          The book ID to sync progress for
      * @param progressPercent The reading progress as a percentage (0-100)
-     * @param userId The user ID whose reading progress is being synced
+     * @param userId          The user ID whose reading progress is being synced
      */
     @Async
     @Transactional(readOnly = true)
@@ -64,7 +66,7 @@ public class HardcoverSyncService {
         try {
             // Get user's Hardcover settings
             HardcoverSyncSettings userSettings = hardcoverSyncSettingsService.getSettingsForUserId(userId);
-            
+
             if (!isHardcoverSyncEnabledForUser(userSettings)) {
                 log.trace("Hardcover sync skipped for user {}: not enabled or no API token configured", userId);
                 return;
@@ -105,7 +107,8 @@ public class HardcoverSyncService {
                     if (fetched != null) {
                         hardcoverBook.editionId = fetched.editionId;
                         hardcoverBook.pages = fetched.pages;
-                        log.debug("Fetched from Hardcover: editionId={}, pages={}", hardcoverBook.editionId, hardcoverBook.pages);
+                        log.debug("Fetched from Hardcover: editionId={}, pages={}", hardcoverBook.editionId,
+                                hardcoverBook.pages);
                     } else {
                         log.warn("Could not fetch edition info from Hardcover for book ID: {}", hardcoverBook.bookId);
                     }
@@ -127,7 +130,7 @@ public class HardcoverSyncService {
                     progressPages = Math.round((progressPercent / 100.0f) * hardcoverBook.pages);
                     progressPages = Math.max(0, Math.min(hardcoverBook.pages, progressPages));
                 }
-                log.info("Progress calculation: userId={}, progressPercent={}%, totalPages={}, progressPages={}", 
+                log.info("Progress calculation: userId={}, progressPercent={}%, totalPages={}, progressPages={}",
                         userId, progressPercent, hardcoverBook.pages, progressPages);
 
                 // Step 1: Add/update the book in user's library
@@ -140,9 +143,10 @@ public class HardcoverSyncService {
                 // Step 2: Create or update the reading progress
                 boolean isFinished = progressPercent >= 99.0f;
                 boolean success = upsertReadingProgress(userBookId, hardcoverBook.editionId, progressPages, isFinished);
-                
+
                 if (success) {
-                    log.info("Synced progress to Hardcover: userId={}, book={}, hardcoverBookId={}, progress={}% ({}pages)", 
+                    log.info(
+                            "Synced progress to Hardcover: userId={}, book={}, hardcoverBookId={}, progress={}% ({}pages)",
                             userId, bookId, hardcoverBook.bookId, Math.round(progressPercent), progressPages);
                 }
 
@@ -152,21 +156,23 @@ public class HardcoverSyncService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to sync progress to Hardcover for book {} (user {}): {}", 
+            log.error("Failed to sync progress to Hardcover for book {} (user {}): {}",
                     bookId, userId, e.getMessage());
         }
     }
 
     /**
      * Check if Hardcover sync is enabled for a specific user.
+     * Returns true if EITHER KoReader sync OR Kobo sync is enabled.
      */
     private boolean isHardcoverSyncEnabledForUser(HardcoverSyncSettings userSettings) {
         if (userSettings == null) {
             return false;
         }
 
-        return userSettings.isHardcoverSyncEnabled() 
-                && userSettings.getHardcoverApiKey() != null 
+        boolean syncEnabled = userSettings.isHardcoverSyncEnabled() || userSettings.isHardcoverKoboSyncEnabled();
+        return syncEnabled
+                && userSettings.getHardcoverApiKey() != null
                 && !userSettings.getHardcoverApiKey().isBlank();
     }
 
@@ -184,7 +190,7 @@ public class HardcoverSyncService {
         if (isbn == null || isbn.isBlank()) {
             isbn = metadata.getIsbn10();
         }
-        
+
         if (isbn == null || isbn.isBlank()) {
             log.debug("No ISBN available for Hardcover lookup");
             return null;
@@ -192,12 +198,12 @@ public class HardcoverSyncService {
 
         try {
             String searchQuery = """
-                query SearchBooks($query: String!) {
-                  search(query: $query, query_type: "Book", per_page: 1, page: 1) {
-                    results
-                  }
-                }
-                """;
+                    query SearchBooks($query: String!) {
+                      search(query: $query, query_type: "Book", per_page: 1, page: 1) {
+                        results
+                      }
+                    }
+                    """;
 
             GraphQLRequest request = new GraphQLRequest();
             request.setQuery(searchQuery);
@@ -211,23 +217,28 @@ public class HardcoverSyncService {
 
             // Navigate the response to get book info
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             Map<String, Object> search = (Map<String, Object>) data.get("search");
-            if (search == null) return null;
+            if (search == null)
+                return null;
 
             Map<String, Object> results = (Map<String, Object>) search.get("results");
-            if (results == null) return null;
+            if (results == null)
+                return null;
 
             List<Map<String, Object>> hits = (List<Map<String, Object>>) results.get("hits");
-            if (hits == null || hits.isEmpty()) return null;
+            if (hits == null || hits.isEmpty())
+                return null;
 
             Map<String, Object> document = (Map<String, Object>) hits.getFirst().get("document");
-            if (document == null) return null;
+            if (document == null)
+                return null;
 
             // Extract book info
             HardcoverBookInfo info = new HardcoverBookInfo();
-            
+
             // The 'id' field contains the numeric book ID
             Object idObj = document.get("id");
             if (idObj instanceof String) {
@@ -235,7 +246,7 @@ public class HardcoverSyncService {
             } else if (idObj instanceof Number) {
                 info.bookId = ((Number) idObj).intValue();
             }
-            
+
             // Get page count
             Object pagesObj = document.get("pages");
             if (pagesObj instanceof Number) {
@@ -254,7 +265,8 @@ public class HardcoverSyncService {
                 }
             }
 
-            // If no default physical edition found, try to look up edition by ISBN as fallback
+            // If no default physical edition found, try to look up edition by ISBN as
+            // fallback
             if (info.bookId != null && info.editionId == null) {
                 EditionInfo edition = findEditionByIsbn(info.bookId, isbn);
                 if (edition != null) {
@@ -262,7 +274,8 @@ public class HardcoverSyncService {
                 }
             }
 
-            // Fetch page count from the edition (prioritizing edition page count over book-level page count)
+            // Fetch page count from the edition (prioritizing edition page count over
+            // book-level page count)
             if (info.editionId != null) {
                 EditionInfo edition = findEditionById(info.editionId);
                 if (edition != null && edition.pages != null && edition.pages > 0) {
@@ -271,7 +284,7 @@ public class HardcoverSyncService {
                 }
             }
 
-            log.info("Found Hardcover book: bookId={}, editionId={}, pages={}", 
+            log.info("Found Hardcover book: bookId={}, editionId={}, pages={}",
                     info.bookId, info.editionId, info.pages);
 
             return info.bookId != null ? info : null;
@@ -288,19 +301,19 @@ public class HardcoverSyncService {
      */
     private EditionInfo findEditionByIsbn(Integer bookId, String isbn) {
         String query = """
-            query FindEditionByIsbn($bookId: Int!, $isbn: String!) {
-              editions(where: {
-                book_id: {_eq: $bookId},
-                _or: [
-                  {isbn_10: {_eq: $isbn}},
-                  {isbn_13: {_eq: $isbn}}
-                ]
-              }, limit: 1) {
-                id
-                pages
-              }
-            }
-            """;
+                query FindEditionByIsbn($bookId: Int!, $isbn: String!) {
+                  editions(where: {
+                    book_id: {_eq: $bookId},
+                    _or: [
+                      {isbn_10: {_eq: $isbn}},
+                      {isbn_13: {_eq: $isbn}}
+                    ]
+                  }, limit: 1) {
+                    id
+                    pages
+                  }
+                }
+                """;
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
@@ -309,22 +322,25 @@ public class HardcoverSyncService {
         try {
             Map<String, Object> response = executeGraphQL(request);
             log.debug("Edition lookup response: {}", response);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             List<Map<String, Object>> editions = (List<Map<String, Object>>) data.get("editions");
-            if (editions == null || editions.isEmpty()) return null;
+            if (editions == null || editions.isEmpty())
+                return null;
 
             Map<String, Object> edition = editions.getFirst();
             EditionInfo info = new EditionInfo();
-            
+
             Object idObj = edition.get("id");
             if (idObj instanceof Number) {
                 info.id = ((Number) idObj).intValue();
             }
-            
+
             Object pagesObj = edition.get("pages");
             if (pagesObj instanceof Number) {
                 info.pages = ((Number) pagesObj).intValue();
@@ -340,13 +356,13 @@ public class HardcoverSyncService {
 
     private EditionInfo findEditionById(Integer editionId) {
         String query = """
-            query FindEditionById($editionId: Int!) {
-              editions(where: {id: {_eq: $editionId}}, limit: 1) {
-                id
-                pages
-              }
-            }
-            """;
+                query FindEditionById($editionId: Int!) {
+                  editions(where: {id: {_eq: $editionId}}, limit: 1) {
+                    id
+                    pages
+                  }
+                }
+                """;
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
@@ -354,13 +370,16 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             List<Map<String, Object>> editions = (List<Map<String, Object>>) data.get("editions");
-            if (editions == null || editions.isEmpty()) return null;
+            if (editions == null || editions.isEmpty())
+                return null;
 
             Map<String, Object> edition = editions.getFirst();
             EditionInfo info = new EditionInfo();
@@ -385,14 +404,14 @@ public class HardcoverSyncService {
 
     private HardcoverBookInfo findHardcoverBookById(Integer bookId) {
         String query = """
-            query FindBookById($bookId: Int!) {
-              books(where: {id: {_eq: $bookId}}, limit: 1) {
-                id
-                default_physical_edition_id
-                pages
-              }
-            }
-            """;
+                query FindBookById($bookId: Int!) {
+                  books(where: {id: {_eq: $bookId}}, limit: 1) {
+                    id
+                    default_physical_edition_id
+                    pages
+                  }
+                }
+                """;
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
@@ -400,13 +419,16 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             List<Map<String, Object>> books = (List<Map<String, Object>>) data.get("books");
-            if (books == null || books.isEmpty()) return null;
+            if (books == null || books.isEmpty())
+                return null;
 
             Map<String, Object> book = books.getFirst();
             HardcoverBookInfo info = new HardcoverBookInfo();
@@ -434,7 +456,8 @@ public class HardcoverSyncService {
                 EditionInfo edition = findEditionById(info.editionId);
                 if (edition != null && edition.pages != null && edition.pages > 0) {
                     info.pages = edition.pages;
-                    log.debug("Using page count from default physical edition {}: {} pages", info.editionId, info.pages);
+                    log.debug("Using page count from default physical edition {}: {} pages", info.editionId,
+                            info.pages);
                 }
             }
 
@@ -451,15 +474,15 @@ public class HardcoverSyncService {
      */
     private Integer insertOrGetUserBook(Integer bookId, Integer editionId, int statusId) {
         String mutation = """
-            mutation InsertUserBook($object: UserBookCreateInput!) {
-              insert_user_book(object: $object) {
-                user_book {
-                  id
+                mutation InsertUserBook($object: UserBookCreateInput!) {
+                  insert_user_book(object: $object) {
+                    user_book {
+                      id
+                    }
+                    error
+                  }
                 }
-                error
-              }
-            }
-            """;
+                """;
 
         Map<String, Object> bookInput = new java.util.HashMap<>();
         bookInput.put("book_id", bookId);
@@ -476,13 +499,16 @@ public class HardcoverSyncService {
         try {
             Map<String, Object> response = executeGraphQL(request);
             log.debug("insert_user_book response: {}", response);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             Map<String, Object> insertResult = (Map<String, Object>) data.get("insert_user_book");
-            if (insertResult == null) return null;
+            if (insertResult == null)
+                return null;
 
             // Check for error (might mean book already exists)
             String error = (String) insertResult.get("error");
@@ -492,7 +518,8 @@ public class HardcoverSyncService {
             }
 
             Map<String, Object> userBook = (Map<String, Object>) insertResult.get("user_book");
-            if (userBook == null) return null;
+            if (userBook == null)
+                return null;
 
             Object idObj = userBook.get("id");
             if (idObj instanceof Number) {
@@ -513,14 +540,14 @@ public class HardcoverSyncService {
      */
     private Integer findExistingUserBook(Integer bookId) {
         String query = """
-            query FindUserBook($bookId: Int!) {
-              me {
-                user_books(where: {book_id: {_eq: $bookId}}, limit: 1) {
-                  id
+                query FindUserBook($bookId: Int!) {
+                  me {
+                    user_books(where: {book_id: {_eq: $bookId}}, limit: 1) {
+                      id
+                    }
+                  }
                 }
-              }
-            }
-            """;
+                """;
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
@@ -528,16 +555,20 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             Map<String, Object> me = (Map<String, Object>) data.get("me");
-            if (me == null) return null;
+            if (me == null)
+                return null;
 
             List<Map<String, Object>> userBooks = (List<Map<String, Object>>) me.get("user_books");
-            if (userBooks == null || userBooks.isEmpty()) return null;
+            if (userBooks == null || userBooks.isEmpty())
+                return null;
 
             Object idObj = userBooks.getFirst().get("id");
             if (idObj instanceof Number) {
@@ -555,7 +586,8 @@ public class HardcoverSyncService {
     /**
      * Create or update reading progress for a user_book.
      */
-    private boolean upsertReadingProgress(Integer userBookId, Integer editionId, int progressPages, boolean isFinished) {
+    private boolean upsertReadingProgress(Integer userBookId, Integer editionId, int progressPages,
+            boolean isFinished) {
         log.info("upsertReadingProgress: userBookId={}, editionId={}, progressPages={}, isFinished={}",
                 userBookId, editionId, progressPages, isFinished);
 
@@ -575,12 +607,12 @@ public class HardcoverSyncService {
 
     private Integer findExistingUserBookRead(Integer userBookId) {
         String query = """
-            query FindUserBookRead($userBookId: Int!) {
-              user_book_reads(where: {user_book_id: {_eq: $userBookId}}, limit: 1) {
-                id
-              }
-            }
-            """;
+                query FindUserBookRead($userBookId: Int!) {
+                  user_book_reads(where: {user_book_id: {_eq: $userBookId}}, limit: 1) {
+                    id
+                  }
+                }
+                """;
 
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(query);
@@ -588,13 +620,16 @@ public class HardcoverSyncService {
 
         try {
             Map<String, Object> response = executeGraphQL(request);
-            if (response == null) return null;
+            if (response == null)
+                return null;
 
             Map<String, Object> data = (Map<String, Object>) response.get("data");
-            if (data == null) return null;
+            if (data == null)
+                return null;
 
             List<Map<String, Object>> reads = (List<Map<String, Object>>) data.get("user_book_reads");
-            if (reads == null || reads.isEmpty()) return null;
+            if (reads == null || reads.isEmpty())
+                return null;
 
             Object idObj = reads.getFirst().get("id");
             if (idObj instanceof Number) {
@@ -611,15 +646,15 @@ public class HardcoverSyncService {
 
     private boolean insertUserBookRead(Integer userBookId, Integer editionId, int progressPages, boolean isFinished) {
         String mutation = """
-            mutation InsertUserBookRead($userBookId: Int!, $object: DatesReadInput!) {
-              insert_user_book_read(user_book_id: $userBookId, user_book_read: $object) {
-                user_book_read {
-                  id
+                mutation InsertUserBookRead($userBookId: Int!, $object: DatesReadInput!) {
+                  insert_user_book_read(user_book_id: $userBookId, user_book_read: $object) {
+                    user_book_read {
+                      id
+                    }
+                    error
+                  }
                 }
-                error
-              }
-            }
-            """;
+                """;
 
         Map<String, Object> readInput = new java.util.HashMap<>();
         readInput.put("started_at", LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE));
@@ -634,14 +669,14 @@ public class HardcoverSyncService {
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(mutation);
         request.setVariables(Map.of(
-            "userBookId", userBookId,
-            "object", readInput
-        ));
+                "userBookId", userBookId,
+                "object", readInput));
 
         try {
             Map<String, Object> response = executeGraphQL(request);
             log.info("insert_user_book_read response: {}", response);
-            if (response == null) return false;
+            if (response == null)
+                return false;
 
             if (response.containsKey("errors")) {
                 log.warn("insert_user_book_read returned errors: {}", response.get("errors"));
@@ -658,16 +693,16 @@ public class HardcoverSyncService {
 
     private boolean updateUserBookRead(Integer readId, Integer editionId, int progressPages, boolean isFinished) {
         String mutation = """
-            mutation UpdateUserBookRead($id: Int!, $object: DatesReadInput!) {
-              update_user_book_read(id: $id, object: $object) {
-                user_book_read {
-                  id
-                  progress
+                mutation UpdateUserBookRead($id: Int!, $object: DatesReadInput!) {
+                  update_user_book_read(id: $id, object: $object) {
+                    user_book_read {
+                      id
+                      progress
+                    }
+                    error
+                  }
                 }
-                error
-              }
-            }
-            """;
+                """;
 
         Map<String, Object> readInput = new java.util.HashMap<>();
         readInput.put("progress_pages", progressPages);
@@ -681,14 +716,14 @@ public class HardcoverSyncService {
         GraphQLRequest request = new GraphQLRequest();
         request.setQuery(mutation);
         request.setVariables(Map.of(
-            "id", readId,
-            "object", readInput
-        ));
+                "id", readId,
+                "object", readInput));
 
         try {
             Map<String, Object> response = executeGraphQL(request);
             log.debug("update_user_book_read response: {}", response);
-            if (response == null) return false;
+            if (response == null)
+                return false;
 
             if (response.containsKey("errors")) {
                 log.warn("update_user_book_read returned errors: {}", response.get("errors"));

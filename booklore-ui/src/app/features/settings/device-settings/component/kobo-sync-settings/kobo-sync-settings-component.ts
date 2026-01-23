@@ -1,22 +1,22 @@
-import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {ConfirmationService, MessageService} from 'primeng/api';
-import {KoboService, KoboSyncSettings} from './kobo.service';
-import {FormsModule} from '@angular/forms';
-import {Button} from 'primeng/button';
-import {InputText} from 'primeng/inputtext';
-import {ConfirmDialog} from 'primeng/confirmdialog';
-import {UserService} from '../../../user-management/user.service';
-import {Subject} from 'rxjs';
-import {debounceTime, filter, take, takeUntil} from 'rxjs/operators';
-import {ToggleSwitch} from 'primeng/toggleswitch';
-import {Slider} from 'primeng/slider';
-import {Divider} from 'primeng/divider';
-import {AppSettingsService} from '../../../../../shared/service/app-settings.service';
-import {SettingsHelperService} from '../../../../../shared/service/settings-helper.service';
-import {AppSettingKey, KoboSettings} from '../../../../../shared/model/app-settings.model';
-import {ShelfService} from '../../../../book/service/shelf.service';
-import {ExternalDocLinkComponent} from '../../../../../shared/components/external-doc-link/external-doc-link.component';
-import {ToastModule} from 'primeng/toast';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { KoboService, KoboSyncSettings } from './kobo.service';
+import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { InputText } from 'primeng/inputtext';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { UserService } from '../../../user-management/user.service';
+import { Subject } from 'rxjs';
+import { debounceTime, filter, take, takeUntil } from 'rxjs/operators';
+import { ToggleSwitch } from 'primeng/toggleswitch';
+import { Slider } from 'primeng/slider';
+import { Divider } from 'primeng/divider';
+import { AppSettingsService } from '../../../../../shared/service/app-settings.service';
+import { SettingsHelperService } from '../../../../../shared/service/settings-helper.service';
+import { AppSettingKey, KoboSettings } from '../../../../../shared/model/app-settings.model';
+import { ShelfService } from '../../../../book/service/shelf.service';
+import { ExternalDocLinkComponent } from '../../../../../shared/components/external-doc-link/external-doc-link.component';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-kobo-sync-setting-component',
@@ -43,6 +43,7 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
   isAdmin = false;
   credentialsSaved = false;
   showToken = false;
+  showHardcoverApiKey = false;
 
   koboSettings: KoboSettings = {
     convertToKepub: false,
@@ -58,7 +59,9 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     syncEnabled: false,
     progressMarkAsReadingThreshold: 1,
     progressMarkAsFinishedThreshold: 99,
-    autoAddToShelf: true
+    autoAddToShelf: true,
+    hardcoverSyncEnabled: false,
+    hardcoverApiKey: ''
   }
 
   ngOnInit() {
@@ -119,10 +122,12 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
         this.koboSyncSettings.progressMarkAsReadingThreshold = settings.progressMarkAsReadingThreshold ?? 1;
         this.koboSyncSettings.progressMarkAsFinishedThreshold = settings.progressMarkAsFinishedThreshold ?? 99;
         this.koboSyncSettings.autoAddToShelf = settings.autoAddToShelf ?? false;
+        this.koboSyncSettings.hardcoverSyncEnabled = settings.hardcoverSyncEnabled ?? false;
+        this.koboSyncSettings.hardcoverApiKey = settings.hardcoverApiKey ?? '';
         this.credentialsSaved = !!settings.token;
       },
       error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to load Kobo settings'});
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load Kobo settings' });
       }
     });
   }
@@ -167,6 +172,21 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
     this.showToken = !this.showToken;
   }
 
+  toggleShowHardcoverApiKey() {
+    this.showHardcoverApiKey = !this.showHardcoverApiKey;
+  }
+
+  onHardcoverSyncToggle() {
+    const message = this.koboSyncSettings.hardcoverSyncEnabled
+      ? 'Hardcover sync enabled for Kobo'
+      : 'Hardcover sync disabled for Kobo';
+    this.updateKoboSettings(message);
+  }
+
+  onHardcoverApiKeyChange() {
+    this.updateKoboSettings('Hardcover API key updated');
+  }
+
 
   confirmRegenerateToken() {
     this.confirmationService.confirm({
@@ -182,10 +202,10 @@ export class KoboSyncSettingsComponent implements OnInit, OnDestroy {
       next: (settings) => {
         this.koboSyncSettings.token = settings.token;
         this.credentialsSaved = true;
-        this.messageService.add({severity: 'success', summary: 'Token regenerated', detail: 'New token generated successfully'});
+        this.messageService.add({ severity: 'success', summary: 'Token regenerated', detail: 'New token generated successfully' });
       },
       error: () => {
-        this.messageService.add({severity: 'error', summary: 'Error', detail: 'Failed to regenerate token'});
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to regenerate token' });
       }
     });
   }

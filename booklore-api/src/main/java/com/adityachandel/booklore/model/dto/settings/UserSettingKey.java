@@ -22,8 +22,8 @@ public enum UserSettingKey {
     ENABLE_SERIES_VIEW("enableSeriesView", false),
     HARDCOVER_API_KEY("hardcoverApiKey", false),
     HARDCOVER_SYNC_ENABLED("hardcoverSyncEnabled", false),
+    HARDCOVER_KOBO_SYNC_ENABLED("hardcoverKoboSyncEnabled", false),
     AUTO_SAVE_METADATA("autoSaveMetadata", false);
-
 
     private final String dbKey;
     private final boolean isJson;

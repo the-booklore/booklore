@@ -9,7 +9,7 @@ export interface KoboSyncSettings {
   progressMarkAsReadingThreshold?: number;
   progressMarkAsFinishedThreshold?: number;
   autoAddToShelf: boolean;
-  hardcoverApiKey?: string;
+  hardcoverApiKey: string;
   hardcoverSyncEnabled?: boolean;
 }
 

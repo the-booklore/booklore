@@ -62,7 +62,8 @@ public class KoboSettingsService {
     @Transactional
     public KoboSyncSettings updateSettings(KoboSyncSettings settings) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
-        KoboUserSettingsEntity entity = repository.findByUserId(user.getId()).orElseGet(() -> initDefaultSettings(user.getId()));
+        KoboUserSettingsEntity entity = repository.findByUserId(user.getId())
+                .orElseGet(() -> initDefaultSettings(user.getId()));
 
         if (settings.isSyncEnabled() != entity.isSyncEnabled()) {
             Shelf userKoboShelf = shelfService.getUserKoboShelf();
@@ -86,7 +87,20 @@ public class KoboSettingsService {
         entity.setAutoAddToShelf(settings.isAutoAddToShelf());
 
         repository.save(entity);
-        return mapToDto(entity, hardcoverSyncSettingsService.getSettingsForUserId(user.getId()));
+
+        // Save Kobo-specific Hardcover settings
+        HardcoverSyncSettings hardcoverSettings = hardcoverSyncSettingsService.getSettingsForUserId(user.getId());
+        if (hardcoverSettings == null) {
+            hardcoverSettings = new HardcoverSyncSettings();
+        }
+        hardcoverSettings.setHardcoverKoboSyncEnabled(settings.isHardcoverSyncEnabled());
+        if (settings.getHardcoverApiKey() != null) {
+            hardcoverSettings.setHardcoverApiKey(settings.getHardcoverApiKey());
+        }
+        HardcoverSyncSettings updatedHardcoverSettings = hardcoverSyncSettingsService
+                .updateSettingsForUserId(user.getId(), hardcoverSettings);
+
+        return mapToDto(entity, updatedHardcoverSettings);
     }
 
     private KoboUserSettingsEntity initDefaultSettings(Long userId) {
@@ -107,8 +121,7 @@ public class KoboSettingsService {
                             .name(ShelfType.KOBO.getName())
                             .icon(ShelfType.KOBO.getIcon())
                             .iconType(IconType.PRIME_NG)
-                            .build()
-            );
+                            .build());
         }
     }
 
@@ -132,7 +145,8 @@ public class KoboSettingsService {
         dto.setAutoAddToShelf(entity.isAutoAddToShelf());
         if (hardcoverSettings != null) {
             dto.setHardcoverApiKey(hardcoverSettings.getHardcoverApiKey());
-            dto.setHardcoverSyncEnabled(hardcoverSettings.isHardcoverSyncEnabled());
+            // Use Kobo-specific Hardcover sync setting instead of KOReader
+            dto.setHardcoverSyncEnabled(hardcoverSettings.isHardcoverKoboSyncEnabled());
         } else {
             dto.setHardcoverSyncEnabled(false);
         }

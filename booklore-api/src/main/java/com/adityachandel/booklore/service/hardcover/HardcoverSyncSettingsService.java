@@ -60,27 +60,35 @@ public class HardcoverSyncSettingsService {
         }
         upsertSetting(user, UserSettingKey.HARDCOVER_API_KEY, apiKey);
         upsertSetting(user, UserSettingKey.HARDCOVER_SYNC_ENABLED, Boolean.toString(settings.isHardcoverSyncEnabled()));
+        upsertSetting(user, UserSettingKey.HARDCOVER_KOBO_SYNC_ENABLED,
+                Boolean.toString(settings.isHardcoverKoboSyncEnabled()));
 
         userRepository.save(user);
 
         HardcoverSyncSettings updated = new HardcoverSyncSettings();
         updated.setHardcoverApiKey(apiKey);
         updated.setHardcoverSyncEnabled(settings.isHardcoverSyncEnabled());
+        updated.setHardcoverKoboSyncEnabled(settings.isHardcoverKoboSyncEnabled());
         return updated;
     }
 
     private HardcoverSyncSettings readSettings(BookLoreUserEntity user, Long userId) {
         UserSettingEntity apiKeySetting = findSetting(user, UserSettingKey.HARDCOVER_API_KEY).orElse(null);
         UserSettingEntity syncEnabledSetting = findSetting(user, UserSettingKey.HARDCOVER_SYNC_ENABLED).orElse(null);
+        UserSettingEntity koboSyncEnabledSetting = findSetting(user, UserSettingKey.HARDCOVER_KOBO_SYNC_ENABLED)
+                .orElse(null);
 
         String apiKey = apiKeySetting != null ? apiKeySetting.getSettingValue() : null;
         boolean syncEnabled = syncEnabledSetting != null && Boolean.parseBoolean(syncEnabledSetting.getSettingValue());
+        boolean koboSyncEnabled = koboSyncEnabledSetting != null
+                && Boolean.parseBoolean(koboSyncEnabledSetting.getSettingValue());
 
         boolean shouldSave = false;
         if (apiKeySetting == null || syncEnabledSetting == null) {
             KoboUserSettingsEntity legacySettings = koboUserSettingsRepository.findByUserId(userId).orElse(null);
             if (legacySettings != null) {
-                if (apiKeySetting == null && legacySettings.getHardcoverApiKey() != null && !legacySettings.getHardcoverApiKey().isBlank()) {
+                if (apiKeySetting == null && legacySettings.getHardcoverApiKey() != null
+                        && !legacySettings.getHardcoverApiKey().isBlank()) {
                     apiKey = legacySettings.getHardcoverApiKey();
                     upsertSetting(user, UserSettingKey.HARDCOVER_API_KEY, apiKey);
                     shouldSave = true;
@@ -99,6 +107,7 @@ public class HardcoverSyncSettingsService {
         HardcoverSyncSettings settings = new HardcoverSyncSettings();
         settings.setHardcoverApiKey(apiKey);
         settings.setHardcoverSyncEnabled(syncEnabled);
+        settings.setHardcoverKoboSyncEnabled(koboSyncEnabled);
         return settings;
     }
 
