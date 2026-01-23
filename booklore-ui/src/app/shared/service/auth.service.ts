@@ -99,7 +99,9 @@ export class AuthService {
     this.tokenSubject.next(null);
     this.postLoginInitialized = false;
     this.getRxStompService().deactivate();
-    window.location.href = '/login';
+    this.router.navigate(['/login']).then(() => {
+      window.location.reload();
+    });
   }
 
   getRxStompService(): RxStompService {

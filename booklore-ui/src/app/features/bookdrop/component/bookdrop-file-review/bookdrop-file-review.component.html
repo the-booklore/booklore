@@ -76,7 +76,7 @@
                   [binary]="true"
                   [(ngModel)]="includeCoversOnCopy">
                 </p-checkbox>
-                <label for="includecovers"><i class="pi pi-image pl-2"></i></label>
+                <label for="includecovers"><i class="pi pi-image icon-padding-left"></i></label>
               </p-inputgroup-addon>
             </p-inputgroup>
 
@@ -170,7 +170,7 @@
                   class="cover-image"
                   (click)="file.showDetails = !file.showDetails"/>
               } @else {
-                <div title="No cover found" class="cover-image text-sm">?</div>
+                <div title="No cover found" class="cover-image cover-placeholder">?</div>
               }
 
               @if (file.file.fetchedMetadata?.thumbnailUrl) {
@@ -181,7 +181,7 @@
                   class="cover-image"
                   (click)="file.showDetails = !file.showDetails"/>
               } @else {
-                <div title="No cover fetched" class="cover-image text-sm">?</div>
+                <div title="No cover fetched" class="cover-image cover-placeholder">?</div>
               }
 
               <div class="file-name" (click)="file.showDetails = !file.showDetails">
@@ -270,7 +270,7 @@
         @if (bookdropFileUis.length > 0) {
           <p-inputgroup class="selectall">
             <p-inputgroup-addon>
-              <label class="text-sm" pTooltip="Number of files selected" tooltipPosition="top">{{ selectedCount }}</label>
+              <label class="selected-count-label" pTooltip="Number of files selected" tooltipPosition="top">{{ selectedCount }}</label>
             </p-inputgroup-addon>
             <p-button
               label="Select&nbsp;All"

@@ -1,3 +1,17 @@
+.metadata-settings-container {
+  width: 100%;
+  height: calc(100dvh - 10.5rem);
+  overflow-y: auto;
+
+  @media (min-width: 768px) {
+    height: calc(100dvh - 11.65rem);
+  }
+}
+
+.section-divider {
+  padding-top: 2.5rem;
+}
+
 .settings-card {
   display: flex;
   flex-direction: column;

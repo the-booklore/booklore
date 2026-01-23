@@ -76,7 +76,7 @@
                   id="providerName"
                   [(ngModel)]="oidcProvider.providerName"
                   placeholder="e.g. Authentik"
-                  class="w-full"/>
+                  class="full-width"/>
               </div>
               <div class="form-field">
                 <label for="clientId">Client ID</label>
@@ -85,19 +85,19 @@
                   id="clientId"
                   [(ngModel)]="oidcProvider.clientId"
                   placeholder="e.g. my-client-id"
-                  class="w-full"/>
+                  class="full-width"/>
               </div>
               <div class="form-field form-field-full">
                 <label for="scope">Scope</label>
                 <input
                   pInputText
                   id="scope"
-                  class="w-full"
+                  class="full-width"
                   [readonly]="true"
                   disabled="disabled"
                   value="openid profile email offline_access"/>
                 <div class="field-info">
-                  <i class="pi pi-info-circle text-blue-500"></i>
+                  <i class="pi pi-info-circle info-icon"></i>
                   <span>
                     Required scopes for OIDC login and token exchange. Must be supported and advertised in the provider's discovery metadata.
                   </span>
@@ -110,7 +110,7 @@
                   id="issuerUri"
                   [(ngModel)]="oidcProvider.issuerUri"
                   placeholder="e.g. https://authentik.domain.com/application/o/booklore/  or  https://pocket-id.domain.com"
-                  class="w-full"/>
+                  class="full-width"/>
               </div>
               <div class="form-field form-field-full">
                 <div class="claims-grid">
@@ -121,7 +121,7 @@
                       id="claimUsername"
                       [(ngModel)]="oidcProvider.claimMapping.username"
                       placeholder="e.g. preferred_username"
-                      class="w-full"/>
+                      class="full-width"/>
                   </div>
                   <div class="form-field">
                     <label for="claimEmail">Email Claim</label>
@@ -130,7 +130,7 @@
                       id="claimEmail"
                       [(ngModel)]="oidcProvider.claimMapping.email"
                       placeholder="e.g. email"
-                      class="w-full"/>
+                      class="full-width"/>
                   </div>
                   <div class="form-field">
                     <label for="claimName">Display Name Claim</label>
@@ -139,11 +139,11 @@
                       id="claimName"
                       [(ngModel)]="oidcProvider.claimMapping.name"
                       placeholder="e.g. name or given_name"
-                      class="w-full"/>
+                      class="full-width"/>
                   </div>
                 </div>
                 <div class="field-info">
-                  <i class="pi pi-info-circle text-blue-500"></i>
+                  <i class="pi pi-info-circle info-icon"></i>
                   <span>
                     These claims are used by Booklore to provision new OIDC users with their name, username, and email. Ensure they match the claims provided by your OIDC provider.
                   </span>
@@ -178,7 +178,7 @@
                   </p-toggleswitch>
                 </div>
                 <div class="auth-info">
-                  <i class="pi pi-info-circle text-blue-500"></i>
+                  <i class="pi pi-info-circle info-icon"></i>
                   <span>
                     Enabling auto-provisioning ensures that new users are automatically created with the selected default permissions. If turned off, users must be manually created in Booklore before they can log in.
                   </span>

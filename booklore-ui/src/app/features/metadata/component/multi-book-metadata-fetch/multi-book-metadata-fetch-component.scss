@@ -38,6 +38,32 @@
   margin-bottom: 1rem;
 }
 
+.book-list-container {
+  max-height: 6rem;
+  overflow: auto;
+  border: 1px solid #6b7280;
+  border-radius: 0.25rem;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.book-list {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+
+  li {
+    margin-bottom: 0.25rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.book-id {
+  color: #9ca3af;
+}
+
 ::ng-deep app-metadata-fetch-options {
   flex: 1;
   display: flex;

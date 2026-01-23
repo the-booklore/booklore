@@ -17,6 +17,7 @@ import {Location} from '@angular/common';
   standalone: true,
   imports: [NgxExtendedPdfViewerModule, ProgressSpinner],
   templateUrl: './pdf-reader.component.html',
+  styleUrl: './pdf-reader.component.scss',
 })
 export class PdfReaderComponent implements OnInit, OnDestroy {
   isLoading = true;

@@ -36,6 +36,13 @@
       width: auto;
     }
 
+    .dropdown-row {
+      display: flex;
+      width: 100%;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
     label {
       color: var(--text-color, #ffffff);
       font-weight: 500;
