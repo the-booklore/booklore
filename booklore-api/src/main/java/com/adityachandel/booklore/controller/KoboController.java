@@ -3,7 +3,9 @@ package com.adityachandel.booklore.controller;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.Shelf;
 import com.adityachandel.booklore.model.dto.kobo.KoboAuthentication;
-import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
+import com.adityachandel.booklore.model.dto.kobo.KoboReadingState;
+import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateList;
+import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateRequest;
 import com.adityachandel.booklore.model.dto.kobo.KoboResources;
 import com.adityachandel.booklore.model.dto.kobo.KoboTestResponse;
 import com.adityachandel.booklore.service.ShelfService;
@@ -149,7 +151,7 @@ public class KoboController {
     @GetMapping("/v1/library/{bookId}/state")
     public ResponseEntity<?> getState(@Parameter(description = "Book ID") @PathVariable String bookId) {
         if (StringUtils.isNumeric(bookId)) {
-            return ResponseEntity.ok(koboReadingStateService.getReadingState(bookId));
+            return ResponseEntity.ok(new KoboReadingStateList(koboReadingStateService.getReadingState(bookId)));
         } else {
             return koboServerProxy.proxyCurrentRequest(null, false);
         }
@@ -160,7 +162,7 @@ public class KoboController {
     @PutMapping("/v1/library/{bookId}/state")
     public ResponseEntity<?> updateState(
             @Parameter(description = "Book ID") @PathVariable String bookId,
-            @Parameter(description = "Reading state update body") @RequestBody KoboReadingStateWrapper body) {
+            @Parameter(description = "Reading state update body") @RequestBody KoboReadingStateRequest body) {
         if (StringUtils.isNumeric(bookId)) {
             return ResponseEntity.ok(koboReadingStateService.saveReadingState(body.getReadingStates()));
         } else {

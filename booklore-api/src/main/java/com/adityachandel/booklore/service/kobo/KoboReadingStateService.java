@@ -5,7 +5,6 @@ import com.adityachandel.booklore.mapper.KoboReadingStateMapper;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.KoboSyncSettings;
 import com.adityachandel.booklore.model.dto.kobo.KoboReadingState;
-import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.dto.response.kobo.KoboReadingStateResponse;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
@@ -23,6 +22,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.temporal.ChronoField;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +39,14 @@ import java.util.stream.Collectors;
 public class KoboReadingStateService {
 
     private static final int STATUS_SYNC_BUFFER_SECONDS = 10;
+    private static final DateTimeFormatter KOBO_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'").withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter LOCAL_TIMESTAMP_FORMAT = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .optionalStart()
+            .appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true)
+            .optionalEnd()
+            .toFormatter();
 
     private final KoboReadingStateRepository repository;
     private final KoboReadingStateMapper mapper;
@@ -46,6 +60,7 @@ public class KoboReadingStateService {
 
     @Transactional
     public KoboReadingStateResponse saveReadingState(List<KoboReadingState> readingStates) {
+        normalizePutTimestamps(readingStates);
         List<KoboReadingState> koboReadingStates = saveAll(readingStates);
 
         List<KoboReadingStateResponse.UpdateResult> updateResults = koboReadingStates.stream()
@@ -68,17 +83,31 @@ public class KoboReadingStateService {
         
         return dtos.stream()
                 .map(dto -> {
-                    KoboReadingStateEntity entity = repository.findByEntitlementId(dto.getEntitlementId())
+                    String entitlementId = mapper.cleanString(dto.getEntitlementId());
+                    Optional<KoboReadingStateEntity> existingOpt = repository.findByEntitlementId(entitlementId);
+                    log.debug("Kobo reading state lookup: entitlementId={}, foundExisting={}",
+                            entitlementId, existingOpt.isPresent());
+                    KoboReadingStateEntity entity = existingOpt
                             .map(existing -> {
                                 existing.setCurrentBookmarkJson(mapper.toJson(dto.getCurrentBookmark()));
                                 existing.setStatisticsJson(mapper.toJson(dto.getStatistics()));
                                 existing.setStatusInfoJson(mapper.toJson(dto.getStatusInfo()));
                                 existing.setLastModifiedString(mapper.cleanString(String.valueOf(dto.getLastModified())));
+                                existing.setPriorityTimestamp(mapper.cleanString(String.valueOf(dto.getLastModified())));
                                 return existing;
                             })
                             .orElseGet(() -> {
                                 KoboReadingStateEntity newEntity = mapper.toEntity(dto);
-                                newEntity.setCreated(mapper.cleanString(String.valueOf(dto.getCreated())));
+                                if (entitlementId != null && !entitlementId.isBlank()) {
+                                    newEntity.setEntitlementId(entitlementId);
+                                }
+                                String created = dto.getCreated();
+                                if (created == null || created.isBlank()) {
+                                    created = OffsetDateTime.now(ZoneOffset.UTC).toString();
+                                }
+                                newEntity.setLastModifiedString(mapper.cleanString(created));
+                                newEntity.setPriorityTimestamp(mapper.cleanString(created));
+                                newEntity.setCreated(mapper.cleanString(created));
                                 return newEntity;
                             });
 
@@ -97,14 +126,17 @@ public class KoboReadingStateService {
         repository.findByEntitlementId(String.valueOf(bookId)).ifPresent(repository::delete);
     }
 
-    public KoboReadingStateWrapper getReadingState(String entitlementId) {
+    public List<KoboReadingState> getReadingState(String entitlementId) {
         Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId)
                 .map(mapper::toDto)
                 .or(() -> constructReadingStateFromProgress(entitlementId));
-        
-        return readingState.map(state -> KoboReadingStateWrapper.builder()
-                .readingStates(List.of(state))
-                .build()).orElse(null);
+
+        return readingState
+                .map(state -> {
+                    normalizeResponseTimestamps(state);
+                    return List.of(state);
+                })
+                .orElse(List.of());
     }
     
     private Optional<KoboReadingState> constructReadingStateFromProgress(String entitlementId) {
@@ -179,6 +211,70 @@ public class KoboReadingStateService {
         } catch (NumberFormatException e) {
             log.warn("Invalid entitlement ID format: {}", readingState.getEntitlementId());
         }
+    }
+
+    private void normalizePutTimestamps(List<KoboReadingState> readingStates) {
+        if (readingStates == null || readingStates.isEmpty()) {
+            return;
+        }
+        String requestTimestamp = KOBO_TIMESTAMP_FORMAT.format(Instant.now());
+        readingStates.forEach(state -> {
+            state.setPriorityTimestamp(requestTimestamp);
+            state.setLastModified(requestTimestamp);
+            if (state.getStatusInfo() != null) {
+                state.getStatusInfo().setLastModified(requestTimestamp);
+            }
+            if (state.getStatistics() != null) {
+                state.getStatistics().setLastModified(requestTimestamp);
+            }
+            if (state.getCurrentBookmark() != null) {
+                state.getCurrentBookmark().setLastModified(requestTimestamp);
+            }
+        });
+    }
+
+    private void normalizeResponseTimestamps(KoboReadingState state) {
+        if (state == null) {
+            return;
+        }
+        state.setCreated(normalizeTimestampValue(state.getCreated()));
+        state.setLastModified(normalizeTimestampValue(state.getLastModified()));
+        state.setPriorityTimestamp(normalizeTimestampValue(state.getPriorityTimestamp()));
+        if (state.getStatusInfo() != null) {
+            state.getStatusInfo().setLastModified(normalizeTimestampValue(state.getStatusInfo().getLastModified()));
+        }
+        if (state.getStatistics() != null) {
+            state.getStatistics().setLastModified(normalizeTimestampValue(state.getStatistics().getLastModified()));
+        }
+        if (state.getCurrentBookmark() != null) {
+            state.getCurrentBookmark().setLastModified(normalizeTimestampValue(state.getCurrentBookmark().getLastModified()));
+        }
+    }
+
+    private String normalizeTimestampValue(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isEmpty() || "null".equalsIgnoreCase(trimmed)) {
+            return value;
+        }
+        try {
+            Instant instant = Instant.parse(trimmed).truncatedTo(ChronoUnit.SECONDS);
+            return KOBO_TIMESTAMP_FORMAT.format(instant);
+        } catch (Exception ignored) {
+        }
+        try {
+            OffsetDateTime offsetDateTime = OffsetDateTime.parse(trimmed);
+            return KOBO_TIMESTAMP_FORMAT.format(offsetDateTime.toInstant().truncatedTo(ChronoUnit.SECONDS));
+        } catch (Exception ignored) {
+        }
+        try {
+            LocalDateTime localDateTime = LocalDateTime.parse(trimmed, LOCAL_TIMESTAMP_FORMAT);
+            return KOBO_TIMESTAMP_FORMAT.format(localDateTime.toInstant(ZoneOffset.UTC).truncatedTo(ChronoUnit.SECONDS));
+        } catch (Exception ignored) {
+        }
+        return value;
     }
     
     private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, Instant now) {

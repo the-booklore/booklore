@@ -5,7 +5,6 @@ import com.adityachandel.booklore.mapper.KoboReadingStateMapper;
 import com.adityachandel.booklore.model.dto.BookLoreUser;
 import com.adityachandel.booklore.model.dto.KoboSyncSettings;
 import com.adityachandel.booklore.model.dto.kobo.KoboReadingState;
-import com.adityachandel.booklore.model.dto.kobo.KoboReadingStateWrapper;
 import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.KoboReadingStateEntity;
@@ -211,13 +210,12 @@ class KoboReadingStateServiceTest {
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
         when(readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress)).thenReturn(expectedState);
 
-        KoboReadingStateWrapper result = service.getReadingState(entitlementId);
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
 
         assertNotNull(result);
-        assertNotNull(result.getReadingStates());
-        assertEquals(1, result.getReadingStates().size());
+        assertEquals(1, result.size());
         
-        KoboReadingState state = result.getReadingStates().getFirst();
+        KoboReadingState state = result.getFirst();
         assertEquals(entitlementId, state.getEntitlementId());
         assertNotNull(state.getCurrentBookmark());
         assertEquals(75, state.getCurrentBookmark().getProgressPercent());
@@ -243,9 +241,10 @@ class KoboReadingStateServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
 
-        KoboReadingStateWrapper result = service.getReadingState(entitlementId);
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
 
-        assertNull(result);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
         verify(repository).findByEntitlementId(entitlementId);
         verify(progressRepository).findByUserIdAndBookId(1L, 100L);
     }
@@ -258,9 +257,10 @@ class KoboReadingStateServiceTest {
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
 
-        KoboReadingStateWrapper result = service.getReadingState(entitlementId);
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
 
-        assertNull(result);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
         verify(progressRepository).findByUserIdAndBookId(1L, 100L);
     }
 
@@ -276,11 +276,11 @@ class KoboReadingStateServiceTest {
         when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.of(entity));
         when(mapper.toDto(entity)).thenReturn(existingState);
 
-        KoboReadingStateWrapper result = service.getReadingState(entitlementId);
+        List<KoboReadingState> result = service.getReadingState(entitlementId);
 
         assertNotNull(result);
-        assertEquals(1, result.getReadingStates().size());
-        assertEquals(entitlementId, result.getReadingStates().getFirst().getEntitlementId());
+        assertEquals(1, result.size());
+        assertEquals(entitlementId, result.getFirst().getEntitlementId());
         verify(progressRepository, never()).findByUserIdAndBookId(anyLong(), anyLong());
     }
 
