@@ -115,3 +115,18 @@
   margin: 0.25rem 0;
   flex-shrink: 0;
 }
+
+// =============================================================================
+// Confirmation Dialog Styles
+// =============================================================================
+
+.p-confirmdialog {
+  max-width: 500px;
+  width: 90vw;
+
+  .p-confirmdialog-message {
+    white-space: pre-line;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+}
