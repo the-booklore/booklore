@@ -195,6 +195,20 @@ class CfiConvertorTest {
             assertThrows(IllegalArgumentException.class,
                     () -> converter.xPointerToCfi("/invalid/path"));
         }
+
+        @Test
+        void xPointerToCfi_withIndexedTextNode() {
+            // KOReader sometimes generates text node references like text()[1].61
+            // Use complexDocument which has <p>This is <em>emphasized</em> and...</p>
+            CfiConvertor converter = new CfiConvertor(complexDocument, 0);
+            String xpointer = "/body/DocFragment[1]/body/section[1]/div[1]/p[1]/em/text()[1].5";
+
+            String cfi = converter.xPointerToCfi(xpointer);
+
+            assertNotNull(cfi);
+            assertTrue(cfi.startsWith("epubcfi("));
+            assertTrue(cfi.contains(":5")); // Text offset should be preserved
+        }
     }
 
     @Nested
@@ -354,6 +368,16 @@ class CfiConvertorTest {
         })
         void normalizeProgressXPointer_variousInputs(String input, String expected) {
             assertEquals(expected, CfiConvertor.normalizeProgressXPointer(input));
+        }
+
+        @Test
+        void normalizeProgressXPointer_withIndexedTextNode() {
+            // KOReader generates indexed text node references like text()[1].61
+            String xpointer = "/body/DocFragment[8]/body/p[8]/em/text()[1].61";
+
+            String result = CfiConvertor.normalizeProgressXPointer(xpointer);
+
+            assertEquals("/body/DocFragment[8]/body/p[8]/em", result);
         }
     }
 
