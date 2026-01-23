@@ -28,7 +28,9 @@ public class CfiConvertor {
     private static final Pattern SUFFIX_NODE_OFFSET_PATTERN = Pattern.compile("\\.\\d+$");
 
     private static final Set<String> INLINE_ELEMENTS = Set.of(
-            "span", "em", "strong", "i", "b", "u", "small", "mark", "sup", "sub"
+            "span", "em", "strong", "i", "b", "u", "small", "mark", "sup", "sub",
+            "a", "abbr", "cite", "code", "dfn", "kbd", "q", "ruby", "s", "samp",
+            "time", "var", "wbr", "del", "ins"
     );
 
     private final Document document;
@@ -114,10 +116,17 @@ public class CfiConvertor {
                             cfiSpineIndex, spineItemIndex));
         }
 
-        String contentPath = spineMatcher.group(2);
+        String contentPath = resolveRangeCfiToStartPoint(spineMatcher.group(2));
         CfiPathResult pathResult = parseCfiPath(contentPath);
 
-        Element element = resolveElementFromCfiSteps(pathResult.steps());
+        // The first step (/4) is the body reference in EPUB CFI spec (2nd child of html root).
+        // Since we already start at document.body(), skip it.
+        List<CfiStep> steps = pathResult.steps();
+        if (!steps.isEmpty() && steps.get(0).index() == 4) {
+            steps = steps.subList(1, steps.size());
+        }
+
+        Element element = resolveElementFromCfiSteps(steps);
         if (element == null) {
             throw new IllegalArgumentException("Element not found for CFI: " + cfi);
         }
@@ -130,6 +139,73 @@ public class CfiConvertor {
         }
 
         return new XPointerResult(xpointer, xpointer, xpointer);
+    }
+
+    public String cfiToKoreaderProgressXPointer(String cfi) {
+        Matcher cfiMatcher = CFI_PATTERN.matcher(cfi);
+        if (!cfiMatcher.matches()) {
+            throw new IllegalArgumentException("Invalid CFI format: " + cfi);
+        }
+
+        String innerCfi = cfiMatcher.group(1);
+        Matcher spineMatcher = CFI_SPINE_PATTERN.matcher(innerCfi);
+        if (!spineMatcher.matches()) {
+            throw new IllegalArgumentException("Cannot parse CFI spine step: " + cfi);
+        }
+
+        int spineStep = Integer.parseInt(spineMatcher.group(1));
+        int cfiSpineIndex = (spineStep - 2) / 2;
+
+        if (cfiSpineIndex != spineItemIndex) {
+            throw new IllegalArgumentException(
+                    String.format("CFI spine index %d does not match converter spine index %d",
+                            cfiSpineIndex, spineItemIndex));
+        }
+
+        String contentPath = resolveRangeCfiToStartPoint(spineMatcher.group(2));
+        CfiPathResult pathResult = parseCfiPath(contentPath);
+
+        List<CfiStep> steps = pathResult.steps();
+        if (!steps.isEmpty() && steps.get(0).index() == 4) {
+            steps = steps.subList(1, steps.size());
+        }
+
+        Element element = resolveElementFromCfiSteps(steps);
+        if (element == null) {
+            throw new IllegalArgumentException("Element not found for CFI: " + cfi);
+        }
+
+        // Walk up to the nearest block-level element
+        while (element != null && INLINE_ELEMENTS.contains(element.tagName().toLowerCase())) {
+            element = element.parent();
+        }
+        if (element == null || element.tagName().equalsIgnoreCase("body")) {
+            throw new IllegalArgumentException("Could not find block-level element for CFI: " + cfi);
+        }
+
+        return buildKoreaderXPointer(element);
+    }
+
+    private String buildKoreaderXPointer(Element targetElement) {
+        Element body = document.body();
+        String tagName = targetElement.tagName().toLowerCase();
+
+        // Count the element's 1-based global position among all same-tag elements in body
+        Elements allOfType = body.getElementsByTag(tagName);
+        int globalIndex = -1;
+        for (int i = 0; i < allOfType.size(); i++) {
+            if (allOfType.get(i) == targetElement) {
+                globalIndex = i + 1;
+                break;
+            }
+        }
+
+        if (globalIndex == -1) {
+            throw new IllegalArgumentException("Element not found in document body");
+        }
+
+        return String.format("/body/DocFragment[%d]/body/%s[%d]",
+                spineItemIndex + 1, tagName, globalIndex);
     }
 
     public boolean validateCfi(String cfi) {
@@ -308,6 +384,19 @@ public class CfiConvertor {
         }
 
         return current;
+    }
+
+    private String resolveRangeCfiToStartPoint(String contentPath) {
+        int firstComma = contentPath.indexOf(',');
+        if (firstComma == -1) {
+            return contentPath;
+        }
+        String prefix = contentPath.substring(0, firstComma);
+        int secondComma = contentPath.indexOf(',', firstComma + 1);
+        String startOffset = secondComma != -1
+                ? contentPath.substring(firstComma + 1, secondComma)
+                : contentPath.substring(firstComma + 1);
+        return prefix + startOffset;
     }
 
     private CfiPathResult parseCfiPath(String contentPath) {
@@ -513,9 +602,12 @@ public class CfiConvertor {
         }
     }
 
-    private record XPointerParseResult(Element element, Integer textOffset) {}
+    private record XPointerParseResult(Element element, Integer textOffset) {
+    }
 
-    private record CfiStep(int index, String assertion) {}
+    private record CfiStep(int index, String assertion) {
+    }
 
-    private record CfiPathResult(List<CfiStep> steps, Integer textOffset) {}
+    private record CfiPathResult(List<CfiStep> steps, Integer textOffset) {
+    }
 }

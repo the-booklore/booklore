@@ -20,6 +20,7 @@ import com.adityachandel.booklore.service.kobo.KoboReadingStateService;
 import com.adityachandel.booklore.service.user.UserProgressService;
 import com.adityachandel.booklore.util.BookProgressUtil;
 import com.adityachandel.booklore.util.FileUtils;
+import com.adityachandel.booklore.util.koreader.EpubCfiService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.EnumUtils;
@@ -52,6 +53,8 @@ public class BookUpdateService {
     private final UserProgressService userProgressService;
     private final KoboReadingStateService koboReadingStateService;
     private final EbookViewerPreferenceRepository ebookViewerPreferenceRepository;
+    private final KoreaderUserRepository koreaderUserRepository;
+    private final EpubCfiService epubCfiService;
 
     public void updateBookViewerSetting(long bookId, BookViewerSettings bookViewerSettings) {
         BookEntity book = bookRepository.findByIdWithBookFiles(bookId).orElseThrow(() -> ApiError.BOOK_NOT_FOUND.createException(bookId));
@@ -89,6 +92,8 @@ public class BookUpdateService {
         if (request.getDateFinished() != null) {
             progress.setDateFinished(request.getDateFinished());
         }
+
+        syncToKoreader(progress, book, user.getId(), request);
 
         userBookProgressRepository.save(progress);
     }
@@ -299,6 +304,36 @@ public class BookUpdateService {
         progress.setCbxProgress(cbxProgress.getPage());
         float percentage = cbxProgress.getPercentage();
         return Math.round(percentage * 10f) / 10f;
+    }
+
+    private void syncToKoreader(UserBookProgressEntity progress, BookEntity book, Long userId, ReadProgressRequest request) {
+        BookFileType bookType = book.getPrimaryBookFile().getBookType();
+        if (bookType != BookFileType.EPUB && bookType != BookFileType.FB2 && bookType != BookFileType.MOBI && bookType != BookFileType.AZW3) {
+            return;
+        }
+        if (request.getEpubProgress() == null || request.getEpubProgress().getCfi() == null) {
+            return;
+        }
+
+        KoreaderUserEntity koreaderUser = koreaderUserRepository.findByBookLoreUserId(userId).orElse(null);
+        if (koreaderUser == null || !koreaderUser.isSyncEnabled() || !koreaderUser.isSyncWithBookloreReader()) {
+            return;
+        }
+
+        try {
+            String xpointer = epubCfiService.convertCfiToKoreaderProgressXPointer(book.getFullFilePath(), request.getEpubProgress().getCfi());
+            float koreaderPercent = request.getEpubProgress().getPercentage() / 100f;
+
+            progress.setKoreaderProgress(xpointer);
+            progress.setKoreaderProgressPercent(koreaderPercent);
+            progress.setKoreaderDevice("BookLore");
+            progress.setKoreaderDeviceId("BookLore");
+            progress.setKoreaderLastSyncTime(Instant.now());
+
+            log.info("Synced BookLore progress to KOReader: cfi={}, xpointer={}, percent={}", request.getEpubProgress().getCfi(), xpointer, koreaderPercent);
+        } catch (Exception e) {
+            log.warn("Failed to sync progress to KOReader: {}", e.getMessage());
+        }
     }
 
     private void updateExistingProgress(Long userId, Set<Long> bookIds, ReadStatus status, Instant now, Instant dateFinished) {

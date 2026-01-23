@@ -66,6 +66,16 @@ public class EpubCfiService {
         return convertCfiToProgressXPointer(epubPath.toFile(), cfi);
     }
 
+    public String convertCfiToKoreaderProgressXPointer(File epubFile, String cfi) {
+        int spineIndex = CfiConvertor.extractSpineIndex(cfi);
+        CfiConvertor converter = createConverter(epubFile, spineIndex);
+        return converter.cfiToKoreaderProgressXPointer(cfi);
+    }
+
+    public String convertCfiToKoreaderProgressXPointer(Path epubPath, String cfi) {
+        return convertCfiToKoreaderProgressXPointer(epubPath.toFile(), cfi);
+    }
+
     public boolean validateCfi(File epubFile, String cfi) {
         try {
             int spineIndex = CfiConvertor.extractSpineIndex(cfi);
