@@ -32,7 +32,7 @@
       </div>
 
       <!-- Page View (only in paginated mode) -->
-      @if (isPaginated) {
+      @if (isPaginated && !isPhonePortrait) {
         <div class="control">
           <label>Page View</label>
           <div class="control-right">
