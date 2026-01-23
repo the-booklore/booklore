@@ -207,6 +207,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  padding-bottom: 0.5rem;
 
   .pi {
     color: var(--p-primary-color);
@@ -440,4 +441,8 @@
     border-radius: 3px;
     font-size: 0.75rem;
   }
+}
+
+.full-width {
+  width: 100%;
 }

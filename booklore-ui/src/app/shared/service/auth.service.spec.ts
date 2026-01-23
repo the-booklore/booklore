@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {TestBed} from '@angular/core/testing';
 import {HttpClient} from '@angular/common/http';
 import {of} from 'rxjs';
@@ -139,16 +139,17 @@ describe('AuthService', () => {
 
   it('should logout and clear all tokens', () => {
     service.getRxStompService = vi.fn().mockReturnValue(rxStompServiceMock);
-    const loc = {href: ''};
-    vi.stubGlobal('window', {location: loc});
+    routerMock.navigate.mockReturnValue(Promise.resolve(true));
+
     service.logout();
+
     expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken_Internal');
     expect(localStorage.removeItem).toHaveBeenCalledWith('refreshToken_Internal');
     expect(oAuthStorageMock.removeItem).toHaveBeenCalledWith('access_token');
     expect(oAuthStorageMock.removeItem).toHaveBeenCalledWith('refresh_token');
     expect(oAuthStorageMock.removeItem).toHaveBeenCalledWith('id_token');
     expect(rxStompServiceMock.deactivate).toHaveBeenCalled();
-    expect(loc.href).toBe('/login');
+    expect(routerMock.navigate).toHaveBeenCalledWith(['/login']);
   });
 
   it('should initialize websocket connection if token exists', () => {

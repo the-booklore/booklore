@@ -34,7 +34,7 @@
 
       <div class="settings-card">
         <div class="form-field">
-          <div class="library-header pb-2">
+          <div class="library-header">
             <i [class]="'pi pi-bolt'"></i>
             <span class="library-name">Default Pattern</span>
           </div>
@@ -45,7 +45,7 @@
               [(ngModel)]="defaultPattern"
               placeholder="e.g., {title} - {authors}"
               (input)="onDefaultPatternChange(defaultPattern)"
-              class="w-full"/>
+              class="full-width"/>
             <p-button
               label="Save"
               icon="pi pi-save"
@@ -94,7 +94,7 @@
                   [(ngModel)]="library.fileNamingPattern"
                   placeholder="Leave empty to use default pattern"
                   (input)="onLibraryPatternChange(library)"
-                  class="w-full"/>
+                  class="full-width"/>
                 <p-button
                   label="Clear"
                   (onClick)="clearLibraryPattern(library)"

@@ -46,6 +46,25 @@
   z-index: 1;
 }
 
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.dashboard-inner {
+  width: 100%;
+}
+
+.welcome-description {
+  color: #d1d5db;
+  margin-bottom: 2rem;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.625;
+}
+
 .dashboard .no-library-header {
   font-size: 1.75rem;
   font-weight: 700;

@@ -187,6 +187,11 @@
   }
 }
 
+.loading-text {
+  margin-top: 0.75rem;
+  color: var(--text-secondary-color);
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -502,6 +507,11 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.selection-note {
+  margin-top: 0.75rem;
+  color: var(--text-secondary-color);
 }
 
 .dialog-footer {

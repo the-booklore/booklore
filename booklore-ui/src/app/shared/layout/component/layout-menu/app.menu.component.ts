@@ -20,6 +20,7 @@ import {DialogLauncherService} from '../../../services/dialog-launcher.service';
   standalone: true,
   imports: [AppMenuitemComponent, MenuModule, AsyncPipe],
   templateUrl: './app.menu.component.html',
+  styleUrl: './app.menu.component.scss',
 })
 export class AppMenuComponent implements OnInit {
   libraryMenu$: Observable<MenuItem[]> | undefined;

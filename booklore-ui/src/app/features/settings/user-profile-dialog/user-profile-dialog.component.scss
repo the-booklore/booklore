@@ -1,9 +1,14 @@
 @use '../../../shared/styles/panel-shared' as panel;
 
 .user-profile-dialog {
+  min-width: 300px;
   max-width: 650px;
   display: flex;
   flex-direction: column;
+
+  @media (min-width: 768px) {
+    min-width: 500px;
+  }
 
   @media (max-width: 768px) {
     width: 100%;

@@ -357,6 +357,10 @@
   }
 }
 
-:host ::ng-deep .p-fileupload-content p-progressbar {
+::host ::ng-deep .p-fileupload-content p-progressbar {
   display: none !important;
+}
+
+.full-width {
+  width: 100%;
 }

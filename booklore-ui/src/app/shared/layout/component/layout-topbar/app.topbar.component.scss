@@ -1,3 +1,138 @@
+.topbar-logo {
+  padding-left: 1.25rem;
+  padding-right: 6rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.logo-icon {
+  width: 1.875rem;
+  height: 1.875rem;
+}
+
+.logo-text-wrapper {
+  display: flex;
+  align-items: center;
+  padding-top: 0.5rem;
+
+  p {
+    margin: 0;
+  }
+}
+
+.logo-text-lore {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.topbar-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.topbar-search {
+  flex-grow: 1;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
+.topbar-desktop-items {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  padding-left: 1rem;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+}
+
+.topbar-action-group {
+  display: flex;
+  gap: 1rem;
+}
+
+.topbar-icon {
+  color: var(--p-surface-100);
+}
+
+.topbar-item-relative {
+  position: relative;
+}
+
+.heart-button {
+  overflow: hidden;
+  border-color: transparent !important;
+}
+
+.heart-spinner {
+  position: absolute;
+  top: -1.25rem;
+  left: -1.25rem;
+  width: 5rem;
+  height: 5rem;
+  animation: spin 2s linear infinite;
+}
+
+.heart-background {
+  position: absolute;
+  z-index: 2;
+  inset: 1px;
+  border-radius: 4px;
+  background: var(--p-surface-900);
+  transition: all 0.2s;
+}
+
+.heart-icon {
+  z-index: 10;
+}
+
+.mobile-trigger {
+  display: none;
+  position: relative;
+  margin-left: auto;
+
+  @media (max-width: 767px) {
+    display: block;
+  }
+}
+
+.mobile-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  width: 12rem;
+}
+
+.mobile-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    background: var(--p-surface-700);
+  }
+}
+
 .highlight {
   color: red !important;
 }

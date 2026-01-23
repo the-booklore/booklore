@@ -135,7 +135,7 @@ describe('ReadingSessionApiService', () => {
 
   it('should send beacon successfully', () => {
     const sendBeaconMock = vi.fn().mockReturnValue(true);
-    (globalThis.navigator as any) = {sendBeacon: sendBeaconMock};
+    vi.stubGlobal('navigator', {sendBeacon: sendBeaconMock});
     const result = service.sendSessionBeacon(mockSessionDto);
     expect(sendBeaconMock).toHaveBeenCalledWith(
       expect.stringContaining(BASE_URL),
@@ -145,11 +145,11 @@ describe('ReadingSessionApiService', () => {
   });
 
   it('should return false if sendBeacon throws', () => {
-    (globalThis.navigator as any) = {
+    vi.stubGlobal('navigator', {
       sendBeacon: vi.fn().mockImplementation(() => {
         throw new Error('fail');
       })
-    };
+    });
     const result = service.sendSessionBeacon(mockSessionDto);
     expect(result).toBe(false);
   });
@@ -204,7 +204,7 @@ describe('ReadingSessionApiService - API Contract Tests', () => {
 
   it('should send beacon to correct endpoint', () => {
     const sendBeaconMock = vi.fn().mockReturnValue(true);
-    (globalThis.navigator as any) = {sendBeacon: sendBeaconMock};
+    vi.stubGlobal('navigator', {sendBeacon: sendBeaconMock});
     const dto: CreateReadingSessionDto = {
       bookId: 1,
       bookType: 'PDF',
