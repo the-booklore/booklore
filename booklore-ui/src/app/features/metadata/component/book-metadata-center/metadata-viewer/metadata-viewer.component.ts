@@ -235,12 +235,15 @@ export class MetadataViewerComponent implements OnInit, OnChanges {
                 icon: 'pi pi-trash',
                 command: () => {
                   this.confirmationService.confirm({
-                    message: `Are you sure you want to delete "${book.metadata?.title}"?`,
+                    message: `Are you sure you want to delete "${book.metadata?.title}"?\n\nThis will permanently remove the book file from your filesystem.\n\nThis action cannot be undone.`,
                     header: 'Confirm Deletion',
                     icon: 'pi pi-exclamation-triangle',
                     acceptIcon: 'pi pi-trash',
                     rejectIcon: 'pi pi-times',
+                    acceptLabel: 'Delete',
+                    rejectLabel: 'Cancel',
                     acceptButtonStyleClass: 'p-button-danger',
+                    rejectButtonStyleClass: 'p-button-outlined',
                     accept: () => {
                       this.bookService.deleteBooks(new Set([book.id])).subscribe({
                         next: () => {

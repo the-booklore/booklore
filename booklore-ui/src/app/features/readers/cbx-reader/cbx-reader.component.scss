@@ -8,6 +8,10 @@
   background: #1a1a1a;
   color: #ffffff;
   position: relative;
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
 
   &:focus {
     outline: none;
@@ -267,6 +271,8 @@
       overflow-y: auto;
       overflow-x: hidden;
       align-items: flex-start;
+      touch-action: pan-y;
+      overscroll-behavior: contain;
 
       .infinite-scroll-wrapper {
         display: flex;
