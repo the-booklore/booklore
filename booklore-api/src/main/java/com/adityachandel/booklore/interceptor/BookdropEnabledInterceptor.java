@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.interceptor;
 
+import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.service.bookdrop.BookdropMonitoringService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,8 +21,7 @@ public class BookdropEnabledInterceptor implements HandlerInterceptor {
         
         if (uri.startsWith("/api/v1/bookdrop") || uri.startsWith("/api/v1/files/upload/bookdrop")) {
             if (!monitoringService.isBookdropEnabled()) {
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE, "Bookdrop API is disabled.");
-                return false;
+                throw ApiError.BOOKDROP_DISABLED.createException();
             }
         }
         return true;
