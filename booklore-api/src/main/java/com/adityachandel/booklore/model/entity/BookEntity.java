@@ -101,13 +101,18 @@ public class BookEntity {
                 .collect(Collectors.toList());
     }
 
-    // TODO: Add support for specifying the preferred format
     public BookFileEntity getPrimaryBookFile() {
         if (bookFiles == null) {
             bookFiles = new ArrayList<>();
         }
         if (bookFiles.isEmpty()) {
             throw new IllegalStateException("Book file not found");
+        }
+        if (library != null && library.getDefaultBookFormat() != null) {
+            return bookFiles.stream()
+                    .filter(bf -> bf.isBookFormat() && bf.getBookType() == library.getDefaultBookFormat())
+                    .findFirst()
+                    .orElse(bookFiles.getFirst());
         }
         return bookFiles.getFirst();
     }

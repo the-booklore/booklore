@@ -4,7 +4,6 @@ import com.adityachandel.booklore.convertor.SortConverter;
 import com.adityachandel.booklore.model.dto.Sort;
 import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.enums.IconType;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -48,11 +47,6 @@ public class LibraryEntity {
 
     @Column(name = "file_naming_pattern")
     private String fileNamingPattern;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "scan_mode", nullable = false)
-    @Builder.Default
-    private LibraryScanMode scanMode = LibraryScanMode.FILE_AS_BOOK;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "default_book_format")

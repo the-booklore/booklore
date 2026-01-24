@@ -25,17 +25,16 @@ import java.util.Optional;
 @Slf4j
 public class LibraryFileHelper {
 
-    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity, LibraryFileProcessor processor) throws IOException {
+    public List<LibraryFile> getLibraryFiles(LibraryEntity libraryEntity) throws IOException {
         List<LibraryFile> allFiles = new ArrayList<>();
         for (LibraryPathEntity pathEntity : libraryEntity.getLibraryPaths()) {
-            allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity, processor));
+            allFiles.addAll(findLibraryFiles(pathEntity, libraryEntity));
         }
         return allFiles;
     }
 
-    private List<LibraryFile> findLibraryFiles(LibraryPathEntity pathEntity, LibraryEntity libraryEntity, LibraryFileProcessor processor) throws IOException {
+    private List<LibraryFile> findLibraryFiles(LibraryPathEntity pathEntity, LibraryEntity libraryEntity) throws IOException {
         Path libraryPath = Path.of(pathEntity.getPath());
-        boolean supportsSupplementaryFiles = processor.supportsSupplementaryFiles();
         List<LibraryFile> libraryFiles = new ArrayList<>();
 
         Files.walkFileTree(libraryPath, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE, new SimpleFileVisitor<>() {
@@ -49,7 +48,7 @@ public class LibraryFileHelper {
                 String fileName = file.getFileName().toString();
                 Optional<BookFileExtension> bookExtension = BookFileExtension.fromFileName(fileName);
 
-                if (bookExtension.isEmpty() && !supportsSupplementaryFiles) {
+                if (bookExtension.isEmpty()) {
                     return FileVisitResult.CONTINUE;
                 }
 

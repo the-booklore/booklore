@@ -2,14 +2,20 @@ package com.adityachandel.booklore.service.watcher;
 
 import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
+import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.library.LibraryProcessingService;
+import com.adityachandel.booklore.util.BookFileGroupingUtils;
 import com.adityachandel.booklore.util.FileUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
@@ -32,6 +39,8 @@ public class BookFileTransactionalHandler {
     private final LibraryProcessingService libraryProcessingService;
     private final NotificationService notificationService;
     private final LibraryRepository libraryRepository;
+    private final BookRepository bookRepository;
+    private final BookAdditionalFileRepository bookAdditionalFileRepository;
 
     @Transactional()
     public void handleNewBookFile(long libraryId, Path path) {
@@ -44,20 +53,66 @@ public class BookFileTransactionalHandler {
         notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Started processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
 
         LibraryPathEntity libraryPathEntity = bookFilePersistenceService.getLibraryPathEntityForFile(libraryEntity, libraryPath);
+        String fileSubPath = FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), path);
 
-        LibraryFile libraryFile = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(libraryPathEntity)
-                .fileSubPath(FileUtils.getRelativeSubPath(libraryPathEntity.getPath(), path))
-                .fileName(fileName)
-                .bookFileType(BookFileExtension.fromFileName(fileName)
-                        .map(BookFileExtension::getType)
-                        .orElseThrow(() -> new IllegalArgumentException("Unsupported book file type: " + fileName)))
-                .build();
+        BookEntity matchingBook = findMatchingBook(libraryPathEntity.getId(), fileSubPath, fileName);
 
-        libraryProcessingService.processLibraryFiles(List.of(libraryFile), libraryEntity);
+        if (matchingBook != null) {
+            autoAttachFile(matchingBook, fileName, fileSubPath, path);
+            log.info("[CREATE] Auto-attached file '{}' to existing book", filePath);
+        } else {
+            LibraryFile libraryFile = LibraryFile.builder()
+                    .libraryEntity(libraryEntity)
+                    .libraryPathEntity(libraryPathEntity)
+                    .fileSubPath(fileSubPath)
+                    .fileName(fileName)
+                    .bookFileType(BookFileExtension.fromFileName(fileName)
+                            .map(BookFileExtension::getType)
+                            .orElseThrow(() -> new IllegalArgumentException("Unsupported book file type: " + fileName)))
+                    .build();
+
+            libraryProcessingService.processLibraryFiles(List.of(libraryFile), libraryEntity);
+            log.info("[CREATE] Completed processing for file '{}'", filePath);
+        }
 
         notificationService.sendMessageToPermissions(Topic.LOG, LogNotification.info("Finished processing file: " + filePath), Set.of(ADMIN, MANAGE_LIBRARY));
-        log.info("[CREATE] Completed processing for file '{}'", filePath);
+    }
+
+    private BookEntity findMatchingBook(Long libraryPathId, String fileSubPath, String fileName) {
+        String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(fileName);
+
+        List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
+
+        for (BookEntity book : booksInDirectory) {
+            if (book.getDeleted() != null && book.getDeleted()) {
+                continue;
+            }
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+            if (fileGroupingKey.equals(existingGroupingKey)) {
+                return book;
+            }
+        }
+        return null;
+    }
+
+    private void autoAttachFile(BookEntity book, String fileName, String fileSubPath, Path fullPath) {
+        String hash = FileFingerprint.generateHash(fullPath);
+        BookFileEntity additionalFile = BookFileEntity.builder()
+                .book(book)
+                .fileName(fileName)
+                .fileSubPath(fileSubPath)
+                .isBookFormat(true)
+                .bookType(BookFileExtension.fromFileName(fileName)
+                        .map(BookFileExtension::getType)
+                        .orElse(null))
+                .fileSizeKb(FileUtils.getFileSizeInKb(fullPath))
+                .initialHash(hash)
+                .currentHash(hash)
+                .addedOn(Instant.now())
+                .build();
+
+        bookAdditionalFileRepository.save(additionalFile);
+        log.info("Auto-attached new format {} to existing book: {}", fileName, book.getPrimaryBookFile().getFileName());
     }
 }

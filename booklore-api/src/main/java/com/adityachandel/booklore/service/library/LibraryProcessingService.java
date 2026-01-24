@@ -8,9 +8,13 @@ import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.websocket.LogNotification;
 import com.adityachandel.booklore.model.websocket.Topic;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
+import com.adityachandel.booklore.util.BookFileGroupingUtils;
+import com.adityachandel.booklore.util.FileUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.AllArgsConstructor;
@@ -22,6 +26,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,7 +39,8 @@ public class LibraryProcessingService {
     private final LibraryRepository libraryRepository;
     private final NotificationService notificationService;
     private final BookAdditionalFileRepository bookAdditionalFileRepository;
-    private final LibraryFileProcessorRegistry fileProcessorRegistry;
+    private final BookRepository bookRepository;
+    private final FileAsBookProcessor fileAsBookProcessor;
     private final BookRestorationService bookRestorationService;
     private final BookDeletionService bookDeletionService;
     private final LibraryFileHelper libraryFileHelper;
@@ -45,10 +51,10 @@ public class LibraryProcessingService {
     public void processLibrary(long libraryId) {
         LibraryEntity libraryEntity = libraryRepository.findById(libraryId).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(libraryId));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started processing library: " + libraryEntity.getName()));
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
         try {
-            List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-            processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
+            List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
+            List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
+            fileAsBookProcessor.processLibraryFiles(newFiles, libraryEntity);
             notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished processing library: " + libraryEntity.getName()));
         } catch (IOException e) {
             log.error("Failed to process library {}: {}", libraryEntity.getName(), e.getMessage(), e);
@@ -61,23 +67,22 @@ public class LibraryProcessingService {
     public void rescanLibrary(RescanLibraryContext context) throws IOException {
         LibraryEntity libraryEntity = libraryRepository.findById(context.getLibraryId()).orElseThrow(() -> ApiError.LIBRARY_NOT_FOUND.createException(context.getLibraryId()));
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Started refreshing library: " + libraryEntity.getName()));
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
-        
+
         validateLibraryPathsAccessible(libraryEntity);
-        
-        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity, processor);
-        
+
+        List<LibraryFile> libraryFiles = libraryFileHelper.getLibraryFiles(libraryEntity);
+
         int existingBookCount = libraryEntity.getBookEntities().size();
         if (existingBookCount > 0 && libraryFiles.isEmpty()) {
             String paths = libraryEntity.getLibraryPaths().stream()
                     .map(p -> p.getPath())
                     .collect(Collectors.joining(", "));
-            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}", 
+            log.error("Library '{}' has {} existing books but scan found 0 files. Paths may be offline: {}",
                     libraryEntity.getName(), existingBookCount, paths);
             throw ApiError.LIBRARY_PATH_NOT_ACCESSIBLE.createException(paths);
         }
-        
-        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity, processor);
+
+        List<Long> additionalFileIds = detectDeletedAdditionalFiles(libraryFiles, libraryEntity);
         if (!additionalFileIds.isEmpty()) {
             log.info("Detected {} removed additional files in library: {}", additionalFileIds.size(), libraryEntity.getName());
             bookDeletionService.deleteRemovedAdditionalFiles(additionalFileIds);
@@ -89,14 +94,29 @@ public class LibraryProcessingService {
         }
         bookRestorationService.restoreDeletedBooks(libraryFiles);
         entityManager.clear();
-        processor.processLibraryFiles(detectNewBookPaths(libraryFiles, libraryEntity), libraryEntity);
+
+        List<LibraryFile> newFiles = detectNewBookPaths(libraryFiles, libraryEntity);
+        List<LibraryFile> toAutoAttach = newFiles.stream()
+                .filter(file -> findMatchingBook(file) != null)
+                .toList();
+        List<LibraryFile> toProcess = newFiles.stream()
+                .filter(file -> findMatchingBook(file) == null)
+                .toList();
+
+        for (LibraryFile file : toAutoAttach) {
+            BookEntity matchingBook = findMatchingBook(file);
+            if (matchingBook != null) {
+                autoAttachFile(matchingBook, file);
+            }
+        }
+
+        fileAsBookProcessor.processLibraryFiles(toProcess, libraryEntity);
 
         notificationService.sendMessage(Topic.LOG, LogNotification.info("Finished refreshing library: " + libraryEntity.getName()));
     }
 
     public void processLibraryFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
-        LibraryFileProcessor processor = fileProcessorRegistry.getProcessor(libraryEntity);
-        processor.processLibraryFiles(libraryFiles, libraryEntity);
+        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
     }
 
     private void validateLibraryPathsAccessible(LibraryEntity libraryEntity) {
@@ -143,12 +163,53 @@ public class LibraryProcessingService {
                 .collect(Collectors.toList());
     }
 
+    private BookEntity findMatchingBook(LibraryFile file) {
+        String fileGroupingKey = BookFileGroupingUtils.extractGroupingKey(file.getFileName());
+        String fileSubPath = file.getFileSubPath();
+        Long libraryPathId = file.getLibraryPathEntity().getId();
+
+        List<BookEntity> booksInDirectory = bookRepository.findAllByLibraryPathIdAndFileSubPath(libraryPathId, fileSubPath);
+
+        for (BookEntity book : booksInDirectory) {
+            if (book.getDeleted() != null && book.getDeleted()) {
+                continue;
+            }
+            BookFileEntity primaryFile = book.getPrimaryBookFile();
+            String existingGroupingKey = BookFileGroupingUtils.extractGroupingKey(primaryFile.getFileName());
+            if (fileGroupingKey.equals(existingGroupingKey)) {
+                return book;
+            }
+        }
+        return null;
+    }
+
+    private void autoAttachFile(BookEntity book, LibraryFile file) {
+        String hash = FileFingerprint.generateHash(file.getFullPath());
+        BookFileEntity additionalFile = BookFileEntity.builder()
+                .book(book)
+                .fileName(file.getFileName())
+                .fileSubPath(file.getFileSubPath())
+                .isBookFormat(true)
+                .bookType(file.getBookFileType())
+                .fileSizeKb(FileUtils.getFileSizeInKb(file.getFullPath()))
+                .initialHash(hash)
+                .currentHash(hash)
+                .addedOn(Instant.now())
+                .build();
+
+        try {
+            bookAdditionalFileRepository.save(additionalFile);
+            log.info("Auto-attached new format {} to existing book: {}", file.getFileName(), book.getPrimaryBookFile().getFileName());
+        } catch (Exception e) {
+            log.error("Error auto-attaching file {}: {}", file.getFileName(), e.getMessage());
+        }
+    }
+
     private String generateUniqueKey(BookEntity book) {
         return generateKey(book.getLibraryPath().getId(), book.getPrimaryBookFile().getFileSubPath(), book.getPrimaryBookFile().getFileName());
     }
 
     private String generateUniqueKey(BookFileEntity file) {
-        // Additional files inherit library path from their parent book
         return generateKey(file.getBook().getLibraryPath().getId(), file.getFileSubPath(), file.getFileName());
     }
 
@@ -161,7 +222,7 @@ public class LibraryProcessingService {
         return libraryPathId + ":" + safeSubPath + ":" + fileName;
     }
 
-    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity, LibraryFileProcessor processor) {
+    protected List<Long> detectDeletedAdditionalFiles(List<LibraryFile> libraryFiles, LibraryEntity libraryEntity) {
         Set<String> currentFileKeys = libraryFiles.stream()
                 .map(this::generateUniqueKey)
                 .collect(Collectors.toSet());
@@ -169,8 +230,7 @@ public class LibraryProcessingService {
         List<BookFileEntity> allAdditionalFiles = bookAdditionalFileRepository.findByLibraryId(libraryEntity.getId());
 
         return allAdditionalFiles.stream()
-                // Only check files that would be scanned: book formats always, non-book files only if processor supports them
-                .filter(additionalFile -> additionalFile.isBookFormat() || processor.supportsSupplementaryFiles())
+                .filter(BookFileEntity::isBookFormat)
                 .filter(additionalFile -> !currentFileKeys.contains(generateUniqueKey(additionalFile)))
                 .map(BookFileEntity::getId)
                 .collect(Collectors.toList());

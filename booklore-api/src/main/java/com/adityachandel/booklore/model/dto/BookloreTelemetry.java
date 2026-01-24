@@ -95,6 +95,5 @@ public class BookloreTelemetry {
         private int totalLibraryPaths;
         private boolean watchEnabled;
         private String iconType;
-        private String scanMode;
     }
 }

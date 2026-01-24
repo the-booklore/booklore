@@ -4,21 +4,29 @@ import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.enums.FileProcessStatus;
 import com.adityachandel.booklore.model.dto.settings.LibraryFile;
+import com.adityachandel.booklore.model.entity.BookEntity;
+import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
 import com.adityachandel.booklore.model.enums.BookFileType;
+import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.service.event.BookEventBroadcaster;
+import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessor;
 import com.adityachandel.booklore.service.fileprocessor.BookFileProcessorRegistry;
+import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
+import com.adityachandel.booklore.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class FileAsBookProcessorTest {
@@ -30,35 +38,52 @@ class FileAsBookProcessorTest {
     private BookFileProcessorRegistry processorRegistry;
 
     @Mock
+    private KoboAutoShelfService koboAutoShelfService;
+
+    @Mock
+    private BookRepository bookRepository;
+
+    @Mock
+    private BookAdditionalFileRepository bookAdditionalFileRepository;
+
+    @Mock
     private BookFileProcessor bookFileProcessor;
 
-    @InjectMocks
     private FileAsBookProcessor fileAsBookProcessor;
 
-    @Captor
-    private ArgumentCaptor<Book> bookCaptor;
-
     private AutoCloseable mocks;
+    private MockedStatic<FileFingerprint> fileFingerprintMock;
+    private MockedStatic<FileUtils> fileUtilsMock;
 
     @BeforeEach
     void setUp() {
         mocks = MockitoAnnotations.openMocks(this);
+        fileAsBookProcessor = new FileAsBookProcessor(
+                bookEventBroadcaster,
+                processorRegistry,
+                koboAutoShelfService,
+                bookRepository,
+                bookAdditionalFileRepository
+        );
+        fileFingerprintMock = mockStatic(FileFingerprint.class);
+        fileFingerprintMock.when(() -> FileFingerprint.generateHash(any(Path.class))).thenReturn("testhash");
+        fileUtilsMock = mockStatic(FileUtils.class);
+        fileUtilsMock.when(() -> FileUtils.getFileSizeInKb(any(Path.class))).thenReturn(100L);
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        if (mocks != null) {
-            mocks.close();
-        }
+        if (fileFingerprintMock != null) fileFingerprintMock.close();
+        if (fileUtilsMock != null) fileUtilsMock.close();
+        if (mocks != null) mocks.close();
     }
 
     @Test
-    void processLibraryFiles_shouldProcessAllValidFiles() {
-        // Given
+    void processLibraryFiles_shouldProcessDifferentNamedFilesSeparately() {
         LibraryEntity libraryEntity = new LibraryEntity();
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");
-        List<LibraryFile> libraryFiles = new ArrayList<>();
 
         LibraryFile file1 = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -76,54 +101,85 @@ class FileAsBookProcessorTest {
                 .bookFileType(BookFileType.PDF)
                 .build();
 
-        libraryFiles.add(file1);
-        libraryFiles.add(file2);
-
-        Book book1 = Book.builder()
-                .fileName("book1.epub")
-                .title("Book 1")
-                .bookType(BookFileType.EPUB)
-                .build();
-
-        Book book2 = Book.builder()
-                .fileName("book2.pdf")
-                .title("Book 2")
-                .bookType(BookFileType.PDF)
-                .build();
+        Book book1 = Book.builder().id(1L).fileName("book1.epub").bookType(BookFileType.EPUB).build();
+        Book book2 = Book.builder().id(2L).fileName("book2.pdf").bookType(BookFileType.PDF).build();
 
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(processorRegistry.getProcessorOrThrow(BookFileType.PDF)).thenReturn(bookFileProcessor);
-        when(bookFileProcessor.processFile(file1))
-                .thenReturn(new FileProcessResult(book1, FileProcessStatus.NEW));
-        when(bookFileProcessor.processFile(file2))
-                .thenReturn(new FileProcessResult(book2, FileProcessStatus.NEW));
+        when(bookFileProcessor.processFile(file1)).thenReturn(new FileProcessResult(book1, FileProcessStatus.NEW));
+        when(bookFileProcessor.processFile(file2)).thenReturn(new FileProcessResult(book2, FileProcessStatus.NEW));
 
-        // When
-        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
+        fileAsBookProcessor.processLibraryFiles(List.of(file1, file2), libraryEntity);
 
-        // Then
-        verify(bookEventBroadcaster, times(2)).broadcastBookAddEvent(bookCaptor.capture());
-
-        List<Book> capturedBooks = bookCaptor.getAllValues();
-        assertThat(capturedBooks).hasSize(2);
-        assertThat(capturedBooks).containsExactly(book1, book2);
+        verify(bookEventBroadcaster, times(2)).broadcastBookAddEvent(any());
+        verify(bookFileProcessor, times(2)).processFile(any());
     }
 
     @Test
-    void processLibraryFiles_shouldSkipFilesWithUnsupportedExtensions() {
-        // Given
+    void processLibraryFiles_shouldGroupSameBaseNameFilesAndAttachAdditional() {
         LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");
-        List<LibraryFile> libraryFiles = new ArrayList<>();
 
-        LibraryFile validFile = LibraryFile.builder()
+        LibraryFile epubFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(libraryPathEntity)
-                .fileName("book.epub")
+                .fileName("The Hobbit.epub")
                 .fileSubPath("books")
                 .bookFileType(BookFileType.EPUB)
                 .build();
+
+        LibraryFile pdfFile = LibraryFile.builder()
+                .libraryEntity(libraryEntity)
+                .libraryPathEntity(libraryPathEntity)
+                .fileName("The Hobbit.pdf")
+                .fileSubPath("books")
+                .bookFileType(BookFileType.PDF)
+                .build();
+
+        Book primaryBook = Book.builder().id(1L).fileName("The Hobbit.epub").bookType(BookFileType.EPUB).build();
+
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookFileEntity primaryBookFile = new BookFileEntity();
+        primaryBookFile.setFileName("The Hobbit.epub");
+        bookEntity.setBookFiles(List.of(primaryBookFile));
+
+        when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
+        when(bookFileProcessor.processFile(epubFile)).thenReturn(new FileProcessResult(primaryBook, FileProcessStatus.NEW));
+        when(bookRepository.getReferenceById(1L)).thenReturn(bookEntity);
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(1L, "books", "The Hobbit.pdf"))
+                .thenReturn(Optional.empty());
+
+        fileAsBookProcessor.processLibraryFiles(List.of(epubFile, pdfFile), libraryEntity);
+
+        // Only the primary should be processed via bookFileProcessor
+        verify(bookFileProcessor, times(1)).processFile(epubFile);
+        verify(bookFileProcessor, never()).processFile(pdfFile);
+        // The additional file should be saved
+        verify(bookAdditionalFileRepository).save(any(BookFileEntity.class));
+        // Only one broadcast event
+        verify(bookEventBroadcaster, times(1)).broadcastBookAddEvent(any());
+    }
+
+    @Test
+    void processLibraryFiles_shouldHandleEmptyList() {
+        LibraryEntity libraryEntity = new LibraryEntity();
+
+        fileAsBookProcessor.processLibraryFiles(new ArrayList<>(), libraryEntity);
+
+        verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
+        verify(processorRegistry, never()).getProcessorOrThrow(any());
+    }
+
+    @Test
+    void processLibraryFiles_shouldSkipFilesWithNullBookFileType() {
+        LibraryEntity libraryEntity = new LibraryEntity();
+        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
+        libraryPathEntity.setPath("/library/path");
 
         LibraryFile invalidFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -133,132 +189,18 @@ class FileAsBookProcessorTest {
                 .bookFileType(null)
                 .build();
 
-        libraryFiles.add(validFile);
-        libraryFiles.add(invalidFile);
+        fileAsBookProcessor.processLibraryFiles(List.of(invalidFile), libraryEntity);
 
-        Book book = Book.builder()
-                .fileName("book.epub")
-                .title("Valid Book")
-                .bookType(BookFileType.EPUB)
-                .build();
-
-        when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
-        when(bookFileProcessor.processFile(validFile))
-                .thenReturn(new FileProcessResult(book, FileProcessStatus.NEW));
-
-        // When
-        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
-
-        // Then
-        verify(bookEventBroadcaster, times(1)).broadcastBookAddEvent(book);
-        verify(processorRegistry, times(1)).getProcessorOrThrow(any());
-    }
-
-    @Test
-    void processLibraryFiles_shouldHandleEmptyList() {
-        // Given
-        LibraryEntity libraryEntity = new LibraryEntity();
-        List<LibraryFile> libraryFiles = new ArrayList<>();
-
-        // When
-        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
-
-        // Then
         verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
         verify(processorRegistry, never()).getProcessorOrThrow(any());
     }
 
     @Test
-    void processLibraryFile_shouldReturnNullForUnsupportedFileType() {
-        // Given
+    void processLibraryFiles_shouldNotBroadcastWhenProcessorReturnsNull() {
         LibraryEntity libraryEntity = new LibraryEntity();
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");
-
-        LibraryFile libraryFile = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(libraryPathEntity)
-                .fileName("document.txt")
-                .fileSubPath("docs")
-                .bookFileType(null)
-                .build();
-
-        // When
-        FileProcessResult result = fileAsBookProcessor.processLibraryFile(libraryFile);
-
-        // Then
-        assertThat(result).isNull();
-        verify(processorRegistry, never()).getProcessorOrThrow(any());
-    }
-
-    @Test
-    void processLibraryFile_shouldProcessSupportedFileTypes() {
-        // Given
-        LibraryEntity libraryEntity = new LibraryEntity();
-        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
-        libraryPathEntity.setPath("/library/path");
-
-        LibraryFile libraryFile = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(libraryPathEntity)
-                .fileName("book.epub")
-                .fileSubPath("books")
-                .bookFileType(BookFileType.EPUB)
-                .build();
-
-        Book expectedBook = Book.builder()
-                .fileName("book.epub")
-                .title("Test Book")
-                .bookType(BookFileType.EPUB)
-                .build();
-
-        when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
-        when(bookFileProcessor.processFile(libraryFile))
-                .thenReturn(new FileProcessResult(expectedBook, FileProcessStatus.NEW));
-
-        // When
-        FileProcessResult result = fileAsBookProcessor.processLibraryFile(libraryFile);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getBook()).isEqualTo(expectedBook);
-
-        verify(processorRegistry).getProcessorOrThrow(BookFileType.EPUB);
-        verify(bookFileProcessor).processFile(libraryFile);
-    }
-
-    @Test
-    void processLibraryFile_shouldHandleNullReturnFromProcessor() {
-        // Given
-        LibraryEntity libraryEntity = new LibraryEntity();
-        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
-        libraryPathEntity.setPath("/library/path");
-
-        LibraryFile libraryFile = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(libraryPathEntity)
-                .fileName("book.pdf")
-                .fileSubPath("books")
-                .bookFileType(BookFileType.PDF)
-                .build();
-
-        when(processorRegistry.getProcessorOrThrow(BookFileType.PDF)).thenReturn(bookFileProcessor);
-        when(bookFileProcessor.processFile(libraryFile)).thenReturn(null);
-
-        // When
-        FileProcessResult result = fileAsBookProcessor.processLibraryFile(libraryFile);
-
-        // Then
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void processLibraryFiles_shouldNotSendNotificationWhenProcessorReturnsNull() {
-        // Given
-        LibraryEntity libraryEntity = new LibraryEntity();
-        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
-        libraryPathEntity.setPath("/library/path");
-        List<LibraryFile> libraryFiles = new ArrayList<>();
 
         LibraryFile file = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -268,30 +210,27 @@ class FileAsBookProcessorTest {
                 .bookFileType(BookFileType.EPUB)
                 .build();
 
-        libraryFiles.add(file);
-
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(bookFileProcessor.processFile(file)).thenReturn(null);
 
-        // When
-        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
+        fileAsBookProcessor.processLibraryFiles(List.of(file), libraryEntity);
 
-        // Then
         verify(bookEventBroadcaster, never()).broadcastBookAddEvent(any());
     }
 
     @Test
-    void processLibraryFiles_shouldProcessAllSupportedFileExtensions() {
-        // Given
+    void processLibraryFiles_shouldGroupFormatIndicatorVariants() {
         LibraryEntity libraryEntity = new LibraryEntity();
+        libraryEntity.setDefaultBookFormat(BookFileType.EPUB);
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
         libraryPathEntity.setPath("/library/path");
-        List<LibraryFile> libraryFiles = new ArrayList<>();
 
+        // "The Hobbit (PDF).pdf" should normalize to "the hobbit" and group with "The Hobbit.epub"
         LibraryFile epubFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(libraryPathEntity)
-                .fileName("book.epub")
+                .fileName("The Hobbit.epub")
                 .fileSubPath("books")
                 .bookFileType(BookFileType.EPUB)
                 .build();
@@ -299,69 +238,66 @@ class FileAsBookProcessorTest {
         LibraryFile pdfFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(libraryPathEntity)
-                .fileName("book.pdf")
+                .fileName("The Hobbit (PDF).pdf")
                 .fileSubPath("books")
                 .bookFileType(BookFileType.PDF)
                 .build();
 
-        LibraryFile cbzFile = LibraryFile.builder()
+        Book primaryBook = Book.builder().id(1L).fileName("The Hobbit.epub").bookType(BookFileType.EPUB).build();
+
+        BookEntity bookEntity = new BookEntity();
+        bookEntity.setId(1L);
+        BookFileEntity primaryBookFile = new BookFileEntity();
+        primaryBookFile.setFileName("The Hobbit.epub");
+        bookEntity.setBookFiles(List.of(primaryBookFile));
+
+        when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
+        when(bookFileProcessor.processFile(epubFile)).thenReturn(new FileProcessResult(primaryBook, FileProcessStatus.NEW));
+        when(bookRepository.getReferenceById(1L)).thenReturn(bookEntity);
+        when(bookAdditionalFileRepository.findByLibraryPath_IdAndFileSubPathAndFileName(1L, "books", "The Hobbit (PDF).pdf"))
+                .thenReturn(Optional.empty());
+
+        fileAsBookProcessor.processLibraryFiles(List.of(epubFile, pdfFile), libraryEntity);
+
+        verify(bookFileProcessor, times(1)).processFile(epubFile);
+        verify(bookAdditionalFileRepository).save(any(BookFileEntity.class));
+    }
+
+    @Test
+    void processLibraryFiles_shouldNotGroupFilesInDifferentDirectories() {
+        LibraryEntity libraryEntity = new LibraryEntity();
+        LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
+        libraryPathEntity.setId(1L);
+        libraryPathEntity.setPath("/library/path");
+
+        LibraryFile file1 = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(libraryPathEntity)
-                .fileName("comic.cbz")
-                .fileSubPath("comics")
-                .bookFileType(BookFileType.CBX)
-                .build();
-
-        LibraryFile cbrFile = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(libraryPathEntity)
-                .fileName("comic.cbr")
-                .fileSubPath("comics")
-                .bookFileType(BookFileType.CBX)
-                .build();
-
-        libraryFiles.add(epubFile);
-        libraryFiles.add(pdfFile);
-        libraryFiles.add(cbzFile);
-        libraryFiles.add(cbrFile);
-
-        Book epubBook = Book.builder()
                 .fileName("book.epub")
-                .bookType(BookFileType.EPUB)
+                .fileSubPath("dir1")
+                .bookFileType(BookFileType.EPUB)
                 .build();
 
-        Book pdfBook = Book.builder()
+        LibraryFile file2 = LibraryFile.builder()
+                .libraryEntity(libraryEntity)
+                .libraryPathEntity(libraryPathEntity)
                 .fileName("book.pdf")
-                .bookType(BookFileType.PDF)
+                .fileSubPath("dir2")
+                .bookFileType(BookFileType.PDF)
                 .build();
 
-        Book cbzBook = Book.builder()
-                .fileName("comic.cbz")
-                .bookType(BookFileType.CBX)
-                .build();
-
-        Book cbrBook = Book.builder()
-                .fileName("comic.cbr")
-                .bookType(BookFileType.CBX)
-                .build();
+        Book book1 = Book.builder().id(1L).fileName("book.epub").bookType(BookFileType.EPUB).build();
+        Book book2 = Book.builder().id(2L).fileName("book.pdf").bookType(BookFileType.PDF).build();
 
         when(processorRegistry.getProcessorOrThrow(BookFileType.EPUB)).thenReturn(bookFileProcessor);
         when(processorRegistry.getProcessorOrThrow(BookFileType.PDF)).thenReturn(bookFileProcessor);
-        when(processorRegistry.getProcessorOrThrow(BookFileType.CBX)).thenReturn(bookFileProcessor);
+        when(bookFileProcessor.processFile(file1)).thenReturn(new FileProcessResult(book1, FileProcessStatus.NEW));
+        when(bookFileProcessor.processFile(file2)).thenReturn(new FileProcessResult(book2, FileProcessStatus.NEW));
 
-        when(bookFileProcessor.processFile(epubFile))
-                .thenReturn(new FileProcessResult(epubBook, FileProcessStatus.NEW));
-        when(bookFileProcessor.processFile(pdfFile))
-                .thenReturn(new FileProcessResult(pdfBook, FileProcessStatus.NEW));
-        when(bookFileProcessor.processFile(cbzFile))
-                .thenReturn(new FileProcessResult(cbzBook, FileProcessStatus.NEW));
-        when(bookFileProcessor.processFile(cbrFile))
-                .thenReturn(new FileProcessResult(cbrBook, FileProcessStatus.NEW));
+        fileAsBookProcessor.processLibraryFiles(List.of(file1, file2), libraryEntity);
 
-        // When
-        fileAsBookProcessor.processLibraryFiles(libraryFiles, libraryEntity);
-
-        // Then
-        verify(bookEventBroadcaster, times(4)).broadcastBookAddEvent(any(Book.class));
+        // Both should be processed as separate books
+        verify(bookFileProcessor, times(2)).processFile(any());
+        verify(bookEventBroadcaster, times(2)).broadcastBookAddEvent(any());
     }
 }

@@ -6,8 +6,8 @@ import com.adityachandel.booklore.model.entity.BookEntity;
 import com.adityachandel.booklore.model.entity.BookFileEntity;
 import com.adityachandel.booklore.model.entity.LibraryEntity;
 import com.adityachandel.booklore.model.entity.LibraryPathEntity;
-import com.adityachandel.booklore.model.enums.LibraryScanMode;
 import com.adityachandel.booklore.repository.BookAdditionalFileRepository;
+import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.NotificationService;
 import com.adityachandel.booklore.task.options.RescanLibraryContext;
@@ -42,7 +42,9 @@ class LibraryProcessingServiceTest {
     @Mock
     private BookAdditionalFileRepository bookAdditionalFileRepository;
     @Mock
-    private LibraryFileProcessorRegistry fileProcessorRegistry;
+    private BookRepository bookRepository;
+    @Mock
+    private FileAsBookProcessor fileAsBookProcessor;
     @Mock
     private BookRestorationService bookRestorationService;
     @Mock
@@ -51,8 +53,6 @@ class LibraryProcessingServiceTest {
     private LibraryFileHelper libraryFileHelper;
     @Mock
     private EntityManager entityManager;
-    @Mock
-    private LibraryFileProcessor libraryFileProcessor;
 
     private LibraryProcessingService libraryProcessingService;
 
@@ -62,7 +62,8 @@ class LibraryProcessingServiceTest {
                 libraryRepository,
                 notificationService,
                 bookAdditionalFileRepository,
-                fileProcessorRegistry,
+                bookRepository,
+                fileAsBookProcessor,
                 bookRestorationService,
                 bookDeletionService,
                 libraryFileHelper,
@@ -76,7 +77,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -92,9 +92,7 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(List.of(existingBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
-        // Library files found on disk (1 existing, 1 new)
         LibraryFile existingFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(pathEntity)
@@ -109,13 +107,13 @@ class LibraryProcessingServiceTest {
                 .fileName("book2.epub")
                 .build();
 
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(existingFile, newFile));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(existingFile, newFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
 
         List<LibraryFile> processedFiles = captor.getValue();
 
@@ -129,7 +127,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -145,7 +142,6 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(List.of(existingBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
         LibraryFile existingFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -154,13 +150,13 @@ class LibraryProcessingServiceTest {
                 .fileName("book1.epub")
                 .build();
 
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(existingFile));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(existingFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).isEmpty();
     }
@@ -171,15 +167,13 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
-        libraryEntity.setBookEntities(Collections.emptyList()); // No existing books
+        libraryEntity.setBookEntities(Collections.emptyList());
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
         pathEntity.setPath("/library");
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
         LibraryFile newFile1 = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -194,13 +188,13 @@ class LibraryProcessingServiceTest {
                 .fileName("book2.epub")
                 .build();
 
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(newFile1, newFile2));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(newFile1, newFile2));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).hasSize(2);
     }
@@ -211,7 +205,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
         libraryEntity.setBookEntities(Collections.emptyList());
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
@@ -219,7 +212,6 @@ class LibraryProcessingServiceTest {
         pathEntity.setPath("/library");
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
         LibraryFile newFileInSub = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
@@ -228,13 +220,13 @@ class LibraryProcessingServiceTest {
                 .fileName("book1.epub")
                 .build();
 
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(newFileInSub));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(newFileInSub));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
 
         List<LibraryFile> processedFiles = captor.getValue();
         assertThat(processedFiles).hasSize(1);
@@ -248,7 +240,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
         libraryEntity.setBookEntities(Collections.emptyList());
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
@@ -256,9 +247,7 @@ class LibraryProcessingServiceTest {
         pathEntity.setPath("/library");
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
-        // A file that exists as an additional file (e.g. cover.jpg, or a misidentified book)
         LibraryFile additionalFileAsLibraryFile = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(pathEntity)
@@ -268,25 +257,25 @@ class LibraryProcessingServiceTest {
 
         BookEntity parentBook = new BookEntity();
         parentBook.setLibraryPath(pathEntity);
-        
+
         BookFileEntity additionalFileEntity = new BookFileEntity();
-        additionalFileEntity.setBook(parentBook); // Links to library path
+        additionalFileEntity.setBook(parentBook);
         additionalFileEntity.setFileSubPath("");
         additionalFileEntity.setFileName("extra.pdf");
 
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(additionalFileAsLibraryFile));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(additionalFileAsLibraryFile));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(List.of(additionalFileEntity));
 
         libraryProcessingService.processLibrary(libraryId);
 
         ArgumentCaptor<List<LibraryFile>> captor = ArgumentCaptor.forClass(List.class);
-        verify(libraryFileProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
+        verify(fileAsBookProcessor).processLibraryFiles(captor.capture(), eq(libraryEntity));
 
         assertThat(captor.getValue()).isEmpty();
     }
 
     @Test
-    void rescanLibrary_shouldNotDeleteNonBookFiles_whenProcessorDoesNotSupportSupplementaryFiles(@TempDir Path tempDir) throws IOException {
+    void rescanLibrary_shouldDeleteRemovedBookFormatAdditionalFiles(@TempDir Path tempDir) throws IOException {
         long libraryId = 1L;
         Path accessiblePath = tempDir.resolve("library");
         Files.createDirectory(accessiblePath);
@@ -294,7 +283,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -331,9 +319,8 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(List.of(book));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
-        when(libraryFileProcessor.supportsSupplementaryFiles()).thenReturn(false);
 
+        // Only epub exists on disk, pdf was removed
         LibraryFile epubOnDisk = LibraryFile.builder()
                 .libraryEntity(libraryEntity)
                 .libraryPathEntity(pathEntity)
@@ -341,30 +328,25 @@ class LibraryProcessingServiceTest {
                 .fileName("book.epub")
                 .build();
 
-        LibraryFile pdfOnDisk = LibraryFile.builder()
-                .libraryEntity(libraryEntity)
-                .libraryPathEntity(pathEntity)
-                .fileSubPath("author/title")
-                .fileName("book.pdf")
-                .build();
-
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(epubOnDisk, pdfOnDisk));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(epubOnDisk));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(List.of(epub, pdf, image));
 
         libraryProcessingService.rescanLibrary(RescanLibraryContext.builder().libraryId(libraryId).build());
 
-        verify(bookDeletionService, never()).deleteRemovedAdditionalFiles(any());
+        // pdf (book format) should be deleted; image (non-book format) should NOT be deleted
+        ArgumentCaptor<List<Long>> captor = ArgumentCaptor.forClass(List.class);
+        verify(bookDeletionService).deleteRemovedAdditionalFiles(captor.capture());
+        assertThat(captor.getValue()).containsExactly(2L);
     }
 
     @Test
-    void rescanLibrary_shouldAbortWhenPathNotAccessible(@TempDir Path tempDir) throws IOException {
+    void rescanLibrary_shouldAbortWhenPathNotAccessible(@TempDir Path tempDir) {
         long libraryId = 1L;
         Path nonExistentPath = tempDir.resolve("non_existent_path");
 
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -373,7 +355,6 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(Collections.emptyList());
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 
@@ -394,7 +375,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -412,8 +392,7 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(List.of(existingBook));
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(Collections.emptyList());
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(Collections.emptyList());
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
 
@@ -434,7 +413,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -459,8 +437,7 @@ class LibraryProcessingServiceTest {
                 .build();
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(List.of(fileOnDisk));
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(List.of(fileOnDisk));
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
@@ -479,7 +456,6 @@ class LibraryProcessingServiceTest {
         LibraryEntity libraryEntity = new LibraryEntity();
         libraryEntity.setId(libraryId);
         libraryEntity.setName("Test Library");
-        libraryEntity.setScanMode(LibraryScanMode.FILE_AS_BOOK);
 
         LibraryPathEntity pathEntity = new LibraryPathEntity();
         pathEntity.setId(10L);
@@ -488,8 +464,7 @@ class LibraryProcessingServiceTest {
         libraryEntity.setBookEntities(Collections.emptyList());
 
         when(libraryRepository.findById(libraryId)).thenReturn(Optional.of(libraryEntity));
-        when(fileProcessorRegistry.getProcessor(libraryEntity)).thenReturn(libraryFileProcessor);
-        when(libraryFileHelper.getLibraryFiles(libraryEntity, libraryFileProcessor)).thenReturn(Collections.emptyList());
+        when(libraryFileHelper.getLibraryFiles(libraryEntity)).thenReturn(Collections.emptyList());
         when(bookAdditionalFileRepository.findByLibraryId(libraryId)).thenReturn(Collections.emptyList());
 
         RescanLibraryContext context = RescanLibraryContext.builder().libraryId(libraryId).build();
