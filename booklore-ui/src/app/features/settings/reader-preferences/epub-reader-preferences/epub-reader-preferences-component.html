@@ -8,29 +8,75 @@
         <div class="setting-label-row">
           <label class="setting-label">Theme</label>
           <div class="theme-selector">
-            @for (theme of themes; track theme) {
-              <button
-                type="button"
-                class="theme-option"
-                [class.selected]="selectedTheme === theme.name"
-                (click)="selectedTheme = theme.name"
-                [attr.aria-label]="theme.label"
-                [pTooltip]="theme.label"
-                tooltipPosition="bottom">
-                <span class="theme-colors">
-                  <span class="theme-color" [style.background-color]="theme.light.bg"></span>
-                  <span class="theme-color" [style.background-color]="theme.dark.bg"></span>
-                </span>
-                @if (selectedTheme === theme.name) {
-                  <i class="pi pi-check"></i>
-                }
-              </button>
+            @for (theme of themes; track theme.name) {
+              <div class="theme-option-wrapper">
+                <button
+                  type="button"
+                  class="theme-option"
+                  [class.selected]="selectedTheme === theme.name"
+                  (click)="selectedTheme = theme.name"
+                  [attr.aria-label]="theme.label"
+                  [pTooltip]="theme.label"
+                  tooltipPosition="bottom">
+                  <span class="theme-colors">
+                    <span class="theme-color" [style.background-color]="theme.light.bg"></span>
+                    <span class="theme-color" [style.background-color]="theme.dark.bg"></span>
+                  </span>
+                  @if (selectedTheme === theme.name) {
+                    <i class="pi pi-check"></i>
+                  }
+                </button>
+              </div>
             }
+
+            @for (theme of customThemesList; track theme.id) {
+              <div class="theme-option-wrapper">
+                <button
+                  type="button"
+                  class="theme-option custom"
+                  [class.selected]="selectedTheme === theme.id"
+                  (click)="selectedTheme = theme.id"
+                  [attr.aria-label]="theme.label"
+                  [pTooltip]="theme.label"
+                  tooltipPosition="bottom">
+                  <span class="theme-colors">
+                    <span class="theme-color" [style.background-color]="theme.light.bg"></span>
+                    <span class="theme-color" [style.background-color]="theme.dark.bg"></span>
+                  </span>
+                  <i class="pi pi-user custom-badge"></i>
+                  @if (selectedTheme === theme.id) {
+                    <i class="pi pi-check"></i>
+                  }
+                </button>
+              </div>
+            }
+
+            <button
+              type="button"
+              class="theme-option add-theme"
+              (click)="openCreateThemeDialog()"
+              pTooltip="Create custom theme"
+              tooltipPosition="bottom">
+              <span class="theme-colors add-theme-icon">
+                <i class="pi pi-plus"></i>
+              </span>
+            </button>
           </div>
         </div>
         <p class="setting-description">
-          Select a color scheme to match your reading environment and comfort.
+          Select a color scheme or create your own custom theme.
         </p>
+        @if (getSelectedCustomTheme(); as theme) {
+          <div class="custom-theme-inline-actions">
+            <button type="button" class="inline-action-btn" (click)="openEditThemeDialog(theme)">
+              <i class="pi pi-pencil"></i> Edit
+            </button>
+            <span class="action-separator">|</span>
+            <button type="button" class="inline-action-btn danger" (click)="deleteCustomTheme(theme)">
+              <i class="pi pi-trash"></i> Delete
+            </button>
+          </div>
+        }
       </div>
     </div>
 
@@ -287,3 +333,127 @@
     </div>
   </div>
 </div>
+
+<p-dialog
+  [(visible)]="showCustomThemeDialog"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+  [style]="{width: '500px'}"
+  [header]="editingTheme ? 'Edit Custom Theme' : 'Create Custom Theme'">
+
+  <div class="custom-theme-form">
+    <div class="form-field">
+      <label for="themeName">Theme Name</label>
+      <input
+        pInputText
+        id="themeName"
+        [(ngModel)]="customThemeForm.label"
+        placeholder="Enter theme name"
+        class="w-full" />
+    </div>
+
+    <div class="color-section">
+      <h4>Light Mode Colors</h4>
+      <div class="color-row">
+        <div class="color-field">
+          <label>Background</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.light.bg" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.light.bg"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.light.bg)"
+              placeholder="#ffffff" />
+          </div>
+        </div>
+        <div class="color-field">
+          <label>Text</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.light.fg" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.light.fg"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.light.fg)"
+              placeholder="#000000" />
+          </div>
+        </div>
+        <div class="color-field">
+          <label>Links</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.light.link" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.light.link"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.light.link)"
+              placeholder="#0066cc" />
+          </div>
+        </div>
+      </div>
+      <div class="color-preview" [style.background-color]="customThemeForm.light.bg">
+        <span [style.color]="customThemeForm.light.fg">Sample text</span>
+        <a [style.color]="customThemeForm.light.link">Sample link</a>
+      </div>
+    </div>
+
+    <div class="color-section">
+      <h4>Dark Mode Colors</h4>
+      <div class="color-row">
+        <div class="color-field">
+          <label>Background</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.dark.bg" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.dark.bg"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.dark.bg)"
+              placeholder="#222222" />
+          </div>
+        </div>
+        <div class="color-field">
+          <label>Text</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.dark.fg" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.dark.fg"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.dark.fg)"
+              placeholder="#e0e0e0" />
+          </div>
+        </div>
+        <div class="color-field">
+          <label>Links</label>
+          <div class="color-picker-wrapper">
+            <p-colorPicker [(ngModel)]="customThemeForm.dark.link" appendTo="body" />
+            <input
+              pInputText
+              [(ngModel)]="customThemeForm.dark.link"
+              class="color-hex-input"
+              [class.invalid]="!isValidHexColor(customThemeForm.dark.link)"
+              placeholder="#77bbee" />
+          </div>
+        </div>
+      </div>
+      <div class="color-preview" [style.background-color]="customThemeForm.dark.bg">
+        <span [style.color]="customThemeForm.dark.fg">Sample text</span>
+        <a [style.color]="customThemeForm.dark.link">Sample link</a>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-footer">
+      <p-button label="Cancel" severity="secondary" (click)="showCustomThemeDialog = false" />
+      <p-button label="Save" (click)="saveCustomTheme()" [disabled]="!isFormValid()" />
+    </div>
+  </ng-template>
+</p-dialog>
+
+<p-confirmDialog />
+

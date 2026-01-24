@@ -3,7 +3,7 @@ import {BehaviorSubject, forkJoin, Observable} from 'rxjs';
 import {map, tap} from 'rxjs/operators';
 import {Theme, themes} from './themes.constant';
 import {BookService} from '../../../book/service/book.service';
-import {UserService} from '../../../settings/user-management/user.service';
+import {CustomThemeData, UserService} from '../../../settings/user-management/user.service';
 import {EpubCustomFontService} from '../features/fonts/custom-font.service';
 
 export interface ReaderState {
@@ -62,7 +62,25 @@ export class ReaderStateService {
     return this.stateSubject.value;
   }
 
-  readonly themes = themes;
+  readonly builtInThemes = themes;
+  private customThemesSubject = new BehaviorSubject<CustomThemeData[]>([]);
+
+  get themes(): Theme[] {
+    const customThemes = this.customThemesSubject.value;
+    return [
+      ...this.builtInThemes,
+      ...customThemes.map(ct => ({
+        name: ct.id,
+        label: ct.label,
+        light: ct.light,
+        dark: ct.dark
+      }))
+    ];
+  }
+
+  setCustomThemes(customThemes: CustomThemeData[]): void {
+    this.customThemesSubject.next(customThemes);
+  }
   private fontsSubject = new BehaviorSubject<Array<{ name: string; value: string | null }>>(this.BASE_FONTS);
 
   get fonts(): Array<{ name: string; value: string | null }> {
@@ -99,6 +117,10 @@ export class ReaderStateService {
       this.bookService.getBookSetting(bookId)
     ]).pipe(
       tap(([myself, bookSetting]) => {
+        if (myself.userSettings.customThemes) {
+          this.setCustomThemes(myself.userSettings.customThemes);
+        }
+
         const settingScope = myself.userSettings.perBookSetting.epub;
         const globalSettings = myself.userSettings.ebookReaderSetting;
         const individualSetting = bookSetting?.ebookSettings;

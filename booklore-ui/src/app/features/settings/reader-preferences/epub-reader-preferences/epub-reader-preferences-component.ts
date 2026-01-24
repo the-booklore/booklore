@@ -2,7 +2,7 @@ import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {Button} from 'primeng/button';
 import {FormsModule} from '@angular/forms';
 import {ReaderPreferencesService} from '../reader-preferences.service';
-import {UserSettings} from '../../user-management/user.service';
+import {CustomThemeData, UserSettings} from '../../user-management/user.service';
 import {Tooltip} from 'primeng/tooltip';
 import {CustomFontService} from '../../../../shared/service/custom-font.service';
 import {CustomFont} from '../../../../shared/model/custom-font.model';
@@ -10,15 +10,28 @@ import {skip, Subject, takeUntil} from 'rxjs';
 import {addCustomFontsToDropdown} from '../../../../shared/util/custom-font.util';
 import {Skeleton} from 'primeng/skeleton';
 import {themes} from '../../../readers/ebook-reader/state/themes.constant';
+import {Dialog} from 'primeng/dialog';
+import {ColorPicker} from 'primeng/colorpicker';
+import {InputText} from 'primeng/inputtext';
+import {ButtonModule} from 'primeng/button';
+import {ConfirmationService, PrimeTemplate} from 'primeng/api';
+import {ConfirmDialog} from 'primeng/confirmdialog';
 
 @Component({
   selector: 'app-epub-reader-preferences-component',
   imports: [
     Button,
+    ButtonModule,
     FormsModule,
     Tooltip,
-    Skeleton
+    Skeleton,
+    Dialog,
+    ColorPicker,
+    InputText,
+    PrimeTemplate,
+    ConfirmDialog
   ],
+  providers: [ConfirmationService],
   templateUrl: './epub-reader-preferences-component.html',
   styleUrl: './epub-reader-preferences-component.scss'
 })
@@ -28,6 +41,7 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
 
   private readonly readerPreferencesService = inject(ReaderPreferencesService);
   private readonly customFontService = inject(CustomFontService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly destroy$ = new Subject<void>();
 
   customFonts: CustomFont[] = [];
@@ -44,6 +58,117 @@ export class EpubReaderPreferencesComponent implements OnInit, OnDestroy {
   readonly themes = themes;
 
   customFontsReady = false;
+
+  showCustomThemeDialog = false;
+  editingTheme: CustomThemeData | null = null;
+  customThemeForm: CustomThemeData = this.getEmptyCustomTheme();
+
+  get customThemesList(): CustomThemeData[] {
+    return this.userSettings.customThemes || [];
+  }
+
+  private getEmptyCustomTheme(): CustomThemeData {
+    return {
+      id: '',
+      name: '',
+      label: '',
+      light: {fg: '#000000', bg: '#ffffff', link: '#0066cc'},
+      dark: {fg: '#e0e0e0', bg: '#222222', link: '#77bbee'}
+    };
+  }
+
+  openCreateThemeDialog(): void {
+    this.editingTheme = null;
+    this.customThemeForm = this.getEmptyCustomTheme();
+    this.showCustomThemeDialog = true;
+  }
+
+  openEditThemeDialog(theme: CustomThemeData): void {
+    this.editingTheme = theme;
+    this.customThemeForm = {
+      id: theme.id,
+      name: theme.name,
+      label: theme.label,
+      light: {...theme.light},
+      dark: {...theme.dark}
+    };
+    this.showCustomThemeDialog = true;
+  }
+
+  saveCustomTheme(): void {
+    if (!this.customThemeForm.label.trim()) {
+      return;
+    }
+
+    const currentCustomThemes = [...(this.userSettings.customThemes || [])];
+
+    if (this.editingTheme) {
+      const index = currentCustomThemes.findIndex(t => t.id === this.editingTheme!.id);
+      if (index !== -1) {
+        currentCustomThemes[index] = {
+          ...this.customThemeForm,
+          name: this.customThemeForm.label.toLowerCase().replace(/\s+/g, '-')
+        };
+      }
+    } else {
+      const newTheme: CustomThemeData = {
+        ...this.customThemeForm,
+        id: `custom-${crypto.randomUUID()}`,
+        name: this.customThemeForm.label.toLowerCase().replace(/\s+/g, '-')
+      };
+      currentCustomThemes.push(newTheme);
+    }
+
+    this.userSettings.customThemes = currentCustomThemes;
+    this.readerPreferencesService.updatePreference(['customThemes'], currentCustomThemes);
+    this.showCustomThemeDialog = false;
+  }
+
+  deleteCustomTheme(theme: CustomThemeData): void {
+    this.confirmationService.confirm({
+      message: `Are you sure you want to delete the theme "${theme.label}"?`,
+      header: 'Delete Theme',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        const currentCustomThemes = (this.userSettings.customThemes || []).filter(t => t.id !== theme.id);
+        this.userSettings.customThemes = currentCustomThemes;
+
+        if (this.selectedTheme === theme.id) {
+          this.selectedTheme = 'default';
+        }
+
+        this.readerPreferencesService.updatePreference(['customThemes'], currentCustomThemes);
+      }
+    });
+  }
+
+  getSelectedCustomTheme(): CustomThemeData | null {
+    if (!this.selectedTheme?.startsWith('custom-')) {
+      return null;
+    }
+    return this.customThemesList.find(t => t.id === this.selectedTheme) || null;
+  }
+
+  isValidHexColor(color: string): boolean {
+    if (!color) return false;
+    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+  }
+
+  isFormValid(): boolean {
+    if (!this.customThemeForm.label.trim()) return false;
+
+    const colors = [
+      this.customThemeForm.light.bg,
+      this.customThemeForm.light.fg,
+      this.customThemeForm.light.link,
+      this.customThemeForm.dark.bg,
+      this.customThemeForm.dark.fg,
+      this.customThemeForm.dark.link
+    ];
+
+    return colors.every(color => this.isValidHexColor(color));
+  }
 
   ngOnInit(): void {
     this.subscribeToFontUpdates();

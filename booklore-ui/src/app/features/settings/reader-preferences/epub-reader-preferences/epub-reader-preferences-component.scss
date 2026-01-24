@@ -112,6 +112,11 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  align-items: center;
+
+  .theme-option-wrapper {
+    position: relative;
+  }
 
   .theme-option {
     display: flex;
@@ -124,6 +129,8 @@
     transition: all 0.2s ease;
     position: relative;
     min-width: 48px;
+    border: none;
+    padding: 0;
 
     .theme-colors {
       display: flex;
@@ -148,7 +155,7 @@
       padding: 0;
     }
 
-    i {
+    > i.pi-check {
       position: absolute;
       top: 4px;
       right: 4px;
@@ -156,6 +163,20 @@
       color: var(--primary-color);
       margin-left: 0;
       padding-left: 0;
+    }
+
+    .custom-badge {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      font-size: 0.5rem;
+      color: white;
+      background: var(--primary-color);
+      border-radius: 50%;
+      padding: 3px;
+      line-height: 1;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      z-index: 5;
     }
 
     &:hover {
@@ -179,6 +200,169 @@
         transform: translateY(-2px);
       }
     }
+
+    &.add-theme {
+      .theme-colors {
+        width: 72px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-style: dashed;
+        background: transparent;
+
+        i {
+          position: static;
+          font-size: 1rem;
+          color: var(--text-color);
+        }
+      }
+
+      &:hover {
+        .theme-colors {
+          border-color: var(--primary-color);
+          background: color-mix(in srgb, var(--primary-color) 5%, transparent);
+
+          i {
+            color: var(--primary-color);
+          }
+        }
+      }
+    }
+  }
+}
+
+.custom-theme-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    label {
+      font-weight: 600;
+      color: var(--p-text-color);
+    }
+  }
+
+  .color-section {
+    h4 {
+      margin: 0 0 1rem 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--p-text-color);
+    }
+
+    .color-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+
+    .color-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 120px;
+
+      label {
+        font-size: 0.8rem;
+        color: var(--p-text-muted-color);
+      }
+
+      .color-picker-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        .color-hex-input {
+          flex: 1;
+          font-family: monospace;
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          max-width: 90px;
+
+          &.invalid {
+            border-color: var(--p-red-500);
+            background-color: color-mix(in srgb, var(--p-red-500) 10%, transparent);
+
+            &:focus {
+              border-color: var(--p-red-500);
+              box-shadow: 0 0 0 2px color-mix(in srgb, var(--p-red-500) 20%, transparent);
+            }
+          }
+        }
+      }
+    }
+
+    .color-preview {
+      padding: 1rem;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+      border: 1px solid color-mix(in srgb, var(--text-color) 15%, transparent);
+
+      a {
+        text-decoration: underline;
+        cursor: default;
+      }
+    }
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 1rem;
+}
+
+.custom-theme-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+
+  .inline-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: none;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--primary-color);
+    transition: all 0.2s ease;
+
+    i {
+      font-size: 0.75rem;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    }
+
+    &.danger {
+      color: var(--p-red-500);
+
+      &:hover {
+        background: color-mix(in srgb, var(--p-red-500) 10%, transparent);
+      }
+    }
+  }
+
+  .action-separator {
+    color: var(--p-text-muted-color);
+    font-size: 0.75rem;
   }
 }
 

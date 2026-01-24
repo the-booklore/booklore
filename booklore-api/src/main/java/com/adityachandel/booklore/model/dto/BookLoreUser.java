@@ -77,6 +77,7 @@ public class BookLoreUser {
         public boolean enableSeriesView;
         public boolean autoSaveMetadata;
         public DashboardConfig dashboardConfig;
+        public List<CustomTheme> customThemes;
 
         @Data
         @Builder
@@ -237,6 +238,28 @@ public class BookLoreUser {
             private Long magicShelfId;
             private String sortField;
             private String sortDirection;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class CustomTheme {
+            private String id;
+            private String name;
+            private String label;
+            private ThemeMode light;
+            private ThemeMode dark;
+        }
+
+        @Data
+        @Builder
+        @AllArgsConstructor
+        @NoArgsConstructor
+        public static class ThemeMode {
+            private String fg;
+            private String bg;
+            private String link;
         }
     }
 }

@@ -167,6 +167,14 @@ export interface TableColumnPreference {
   order: number;
 }
 
+export interface CustomThemeData {
+  id: string;
+  name: string;
+  label: string;
+  light: { fg: string; bg: string; link: string };
+  dark: { fg: string; bg: string; link: string };
+}
+
 export interface UserSettings {
   perBookSetting: PerBookSetting;
   pdfReaderSetting: PdfReaderSetting;
@@ -186,6 +194,7 @@ export interface UserSettings {
   dashboardConfig?: DashboardConfig;
   koReaderEnabled: boolean;
   autoSaveMetadata: boolean;
+  customThemes?: CustomThemeData[];
 }
 
 export interface User {
