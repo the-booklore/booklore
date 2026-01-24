@@ -1,9 +1,9 @@
-import {AfterViewInit, Component, HostListener, inject, OnInit, ViewChild} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {AfterViewInit, Component, HostListener, inject, OnDestroy, OnInit, ViewChild} from '@angular/core';
+import {ActivatedRoute, NavigationStart, Router} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
 import {BookService} from '../../service/book.service';
-import {debounceTime, filter, map, switchMap} from 'rxjs/operators';
+import {debounceTime, filter, map, switchMap, takeUntil} from 'rxjs/operators';
 import {BehaviorSubject, combineLatest, finalize, Observable, of, Subject} from 'rxjs';
 import {DynamicDialogRef} from 'primeng/dynamicdialog';
 import {Library} from '../../model/library.model';
@@ -16,7 +16,7 @@ import {BookTableComponent} from './book-table/book-table.component';
 import {animate, style, transition, trigger} from '@angular/animations';
 import {Button} from 'primeng/button';
 import {AsyncPipe, NgClass, NgStyle} from '@angular/common';
-import {VirtualScrollerModule} from '@iharbeck/ngx-virtual-scroller';
+import {VirtualScrollerComponent, VirtualScrollerModule} from '@iharbeck/ngx-virtual-scroller';
 import {BookCardComponent} from './book-card/book-card.component';
 import {ProgressSpinner} from 'primeng/progressspinner';
 import {Menu} from 'primeng/menu';
@@ -52,6 +52,7 @@ import {BookSelectionService, CheckboxClickEvent} from './book-selection.service
 import {BookBrowserQueryParamsService, VIEW_MODES} from './book-browser-query-params.service';
 import {BookBrowserEntityService} from './book-browser-entity.service';
 import {BookFilterOrchestrationService} from './book-filter-orchestration.service';
+import {BookBrowserScrollService} from './book-browser-scroll.service';
 
 export enum EntityType {
   LIBRARY = 'Library',
@@ -85,7 +86,7 @@ export enum EntityType {
     ])
   ]
 })
-export class BookBrowserComponent implements OnInit, AfterViewInit {
+export class BookBrowserComponent implements OnInit, AfterViewInit, OnDestroy {
 
   protected userService = inject(UserService);
   protected coverScalePreferenceService = inject(CoverScalePreferenceService);
@@ -98,6 +99,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   protected bookSelectionService = inject(BookSelectionService);
 
   private activatedRoute = inject(ActivatedRoute);
+  private router = inject(Router);
   private messageService = inject(MessageService);
   private bookService = inject(BookService);
   private dialogHelperService = inject(BookDialogHelperService);
@@ -110,6 +112,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private entityService = inject(BookBrowserEntityService);
   private filterOrchestrationService = inject(BookFilterOrchestrationService);
   private localStorageService = inject(LocalStorageService);
+  private scrollService = inject(BookBrowserScrollService);
 
   bookState$: Observable<BookState> | undefined;
   entity$: Observable<Library | Shelf | MagicShelf | null> | undefined;
@@ -146,6 +149,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private readonly MOBILE_COLUMNS_STORAGE_KEY = 'mobileColumnsPreference';
 
   private settingFiltersFromUrl = false;
+  private destroy$ = new Subject<void>();
   protected metadataMenuItems: MenuItem[] | undefined;
   protected bulkReadActionsMenuItems: MenuItem[] | undefined;
 
@@ -159,6 +163,8 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   bookTableComponent!: BookTableComponent;
   @ViewChild(BookFilterComponent, {static: false})
   bookFilterComponent!: BookFilterComponent;
+  @ViewChild('scroll')
+  virtualScroller: VirtualScrollerComponent | undefined;
 
   @HostListener('window:resize')
   onResize(): void {
@@ -257,6 +263,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
     this.setupUserStateSubscription();
     this.setupQueryParamSubscription();
     this.setupSearchTermSubscription();
+    this.setupScrollPositionTracking();
   }
 
   ngAfterViewInit(): void {
@@ -264,6 +271,33 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       this.bookFilterComponent.setFilters?.(this.parsedFilters);
       this.bookFilterComponent.onFiltersChanged?.();
       this.bookFilterComponent.selectedFilterMode = this.selectedFilterMode.getValue();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private getScrollPositionKey(): string {
+    const path = this.activatedRoute.snapshot.routeConfig?.path ?? '';
+    return this.scrollService.createKey(path, this.activatedRoute.snapshot.params);
+  }
+
+  private setupScrollPositionTracking(): void {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationStart),
+      takeUntil(this.destroy$)
+    ).subscribe(() => {
+      this.saveScrollPosition();
+    });
+  }
+
+  private saveScrollPosition(): void {
+    if (this.virtualScroller?.viewPortInfo) {
+      const key = this.getScrollPositionKey();
+      const position = this.virtualScroller.viewPortInfo.scrollStartPosition ?? 0;
+      this.scrollService.savePosition(key, position);
     }
   }
 
