@@ -1,8 +1,6 @@
 package com.adityachandel.booklore.model.dto;
 
 import com.adityachandel.booklore.model.dto.progress.*;
-import com.adityachandel.booklore.model.enums.BookFileType;
-import com.adityachandel.booklore.util.ArchiveUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
@@ -15,14 +13,9 @@ import java.util.Set;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Book {
     private Long id;
-    private BookFileType bookType;
-    private ArchiveUtils.ArchiveType archiveType;
     private Long libraryId;
     private String libraryName;
-    private String fileName;
-    private String filePath;
-    private String fileSubPath;
-    private Long fileSizeKb;
+    private BookFile primaryFile;
     private String title;
     private Instant lastReadTime;
     private Instant addedOn;

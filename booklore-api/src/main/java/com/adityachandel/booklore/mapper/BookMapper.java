@@ -3,7 +3,6 @@ package com.adityachandel.booklore.mapper;
 import com.adityachandel.booklore.model.dto.BookFile;
 import com.adityachandel.booklore.model.dto.Book;
 import com.adityachandel.booklore.model.dto.LibraryPath;
-import com.adityachandel.booklore.model.enums.BookFileType;
 import com.adityachandel.booklore.model.entity.*;
 import org.mapstruct.Context;
 import org.mapstruct.Mapper;
@@ -23,11 +22,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
-    @Mapping(source = "bookFiles", target = "fileName", qualifiedByName = "mapPrimaryFileName")
-    @Mapping(source = "bookFiles", target = "filePath", qualifiedByName = "mapPrimaryFilePath")
-    @Mapping(source = "bookFiles", target = "fileSubPath", qualifiedByName = "mapPrimaryFileSubPath")
-    @Mapping(source = "bookFiles", target = "fileSizeKb", qualifiedByName = "mapPrimaryFileSizeKb")
+    @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBook(BookEntity bookEntity);
@@ -37,11 +32,7 @@ public interface BookMapper {
     @Mapping(source = "libraryPath", target = "libraryPath", qualifiedByName = "mapLibraryPathIdOnly")
     @Mapping(source = "metadata", target = "metadata")
     @Mapping(source = "shelves", target = "shelves")
-    @Mapping(source = "bookFiles", target = "bookType", qualifiedByName = "mapPrimaryBookType")
-    @Mapping(source = "bookFiles", target = "fileName", qualifiedByName = "mapPrimaryFileName")
-    @Mapping(source = "bookFiles", target = "filePath", qualifiedByName = "mapPrimaryFilePath")
-    @Mapping(source = "bookFiles", target = "fileSubPath", qualifiedByName = "mapPrimaryFileSubPath")
-    @Mapping(source = "bookFiles", target = "fileSizeKb", qualifiedByName = "mapPrimaryFileSizeKb")
+    @Mapping(source = "bookFiles", target = "primaryFile", qualifiedByName = "mapPrimaryFile")
     @Mapping(source = "bookFiles", target = "alternativeFormats", qualifiedByName = "mapAlternativeFormats")
     @Mapping(source = "bookFiles", target = "supplementaryFiles", qualifiedByName = "mapSupplementaryFiles")
     Book toBookWithDescription(BookEntity bookEntity, @Context boolean includeDescription);
@@ -82,34 +73,10 @@ public interface BookMapper {
                 .build();
     }
 
-    @Named("mapPrimaryBookType")
-    default BookFileType mapPrimaryBookType(List<BookFileEntity> bookFiles) {
+    @Named("mapPrimaryFile")
+    default BookFile mapPrimaryFile(List<BookFileEntity> bookFiles) {
         BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getBookType();
-    }
-
-    @Named("mapPrimaryFileName")
-    default String mapPrimaryFileName(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileName();
-    }
-
-    @Named("mapPrimaryFilePath")
-    default String mapPrimaryFilePath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFullFilePath().toString();
-    }
-
-    @Named("mapPrimaryFileSubPath")
-    default String mapPrimaryFileSubPath(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileSubPath();
-    }
-
-    @Named("mapPrimaryFileSizeKb")
-    default Long mapPrimaryFileSizeKb(List<BookFileEntity> bookFiles) {
-        BookFileEntity primary = getPrimaryBookFile(bookFiles);
-        return primary == null ? null : primary.getFileSizeKb();
+        return toBookFile(primary);
     }
 
     @Named("mapAlternativeFormats")
@@ -154,6 +121,7 @@ public interface BookMapper {
                 .fileSubPath(entity.getFileSubPath())
                 .isBook(entity.isBook())
                 .bookType(entity.getBookType())
+                .archiveType(entity.getArchiveType())
                 .fileSizeKb(entity.getFileSizeKb())
                 .description(entity.getDescription())
                 .addedOn(entity.getAddedOn())

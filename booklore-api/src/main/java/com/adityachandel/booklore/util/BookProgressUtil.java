@@ -15,7 +15,7 @@ public class BookProgressUtil {
                     .build());
         }
 
-        BookFileType type = book.getBookType();
+        BookFileType type = book.getPrimaryFile() != null ? book.getPrimaryFile().getBookType() : null;
         if (type == null) return;
 
         switch (type) {

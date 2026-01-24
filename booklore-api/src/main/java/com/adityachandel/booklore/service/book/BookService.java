@@ -98,7 +98,6 @@ public class BookService {
 
         return bookEntities.stream().map(bookEntity -> {
             Book book = bookMapper.toBook(bookEntity);
-            book.setFilePath(FileUtils.getBookFullPath(bookEntity));
             if (!withDescription) book.getMetadata().setDescription(null);
             BookProgressUtil.enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
             return book;
@@ -115,7 +114,6 @@ public class BookService {
         book.setShelves(filterShelvesByUserId(book.getShelves(), user.getId()));
         book.setLastReadTime(userProgress.getLastReadTime());
         BookProgressUtil.enrichBookWithProgress(book, userProgress);
-        book.setFilePath(FileUtils.getBookFullPath(bookEntity));
 
         if (!withDescription) {
             book.getMetadata().setDescription(null);

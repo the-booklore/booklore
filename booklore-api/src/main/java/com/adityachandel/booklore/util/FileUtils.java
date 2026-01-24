@@ -32,10 +32,7 @@ public class FileUtils {
     }
 
     public String getBookFullPath(Book book) {
-        return Path.of(book.getLibraryPath().getPath(), book.getFileSubPath(), book.getFileName())
-                .normalize()
-                .toString()
-                .replace("\\", "/");
+        return book.getPrimaryFile().getFilePath();
     }
 
     public String getRelativeSubPath(String basePath, Path fullFilePath) {

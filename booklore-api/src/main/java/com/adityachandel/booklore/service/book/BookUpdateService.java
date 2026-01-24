@@ -408,7 +408,6 @@ public class BookUpdateService {
     private Book buildBook(BookEntity bookEntity, Long userId, Map<Long, UserBookProgressEntity> progressMap) {
         Book book = bookMapper.toBook(bookEntity);
         book.setShelves(filterShelvesByUserId(book.getShelves(), userId));
-        book.setFilePath(FileUtils.getBookFullPath(bookEntity));
         BookProgressUtil.enrichBookWithProgress(book, progressMap.get(bookEntity.getId()));
         return book;
     }
