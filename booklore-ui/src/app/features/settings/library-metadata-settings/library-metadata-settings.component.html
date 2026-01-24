@@ -50,7 +50,7 @@
 
       <div class="settings-card">
         @if (libraries$ | async; as libraries) {
-          <p-accordion>
+          <p-accordion [value]="activePanel" (valueChange)="onPanelChange($event)">
             @for (library of libraries; track trackByLibrary($index, library); let i = $index) {
               <p-accordion-panel [value]="i">
                 <p-accordion-header>
@@ -75,11 +75,13 @@
                 </p-accordion-header>
                 <p-accordion-content>
                   <div class="accordion-content-wrapper">
-                    <app-metadata-advanced-fetch-options
-                      [currentMetadataOptions]="getLibraryOptions(library.id!)"
-                      [submitButtonLabel]="'Save ' + library.name + ' Settings'"
-                      (metadataOptionsSubmitted)="onLibraryMetadataOptionsSubmitted(library.id!, $event)">
-                    </app-metadata-advanced-fetch-options>
+                    @if (activePanel === i) {
+                      <app-metadata-advanced-fetch-options
+                        [currentMetadataOptions]="getLibraryOptions(library.id!)"
+                        [submitButtonLabel]="'Save ' + library.name + ' Settings'"
+                        (metadataOptionsSubmitted)="onLibraryMetadataOptionsSubmitted(library.id!, $event)">
+                      </app-metadata-advanced-fetch-options>
+                    }
                   </div>
                 </p-accordion-content>
               </p-accordion-panel>
