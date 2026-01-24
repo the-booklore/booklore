@@ -98,7 +98,10 @@ class KoboReadingStateServiceTest {
 
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(koboSettingsService.getCurrentUserSettings()).thenReturn(testSettings);
-        lenient().when(repository.findByEntitlementIdAndUserIdIsNull(anyString())).thenReturn(Optional.empty());
+        lenient().when(repository
+                .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                        anyString()))
+                .thenReturn(Optional.empty());
         lenient().when(mapper.toJson(any())).thenCallRealMethod();
         lenient().when(mapper.cleanString(any())).thenCallRealMethod();
     }

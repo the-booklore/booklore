@@ -134,7 +134,10 @@ public class KoboReadingStateService {
         Long userId = authenticationService.getAuthenticatedUser().getId();
         Optional<KoboReadingState> readingState = repository.findByEntitlementIdAndUserId(entitlementId, userId)
                 .map(mapper::toDto)
-                .or(() -> repository.findByEntitlementIdAndUserIdIsNull(entitlementId).map(mapper::toDto))
+                .or(() -> repository
+                        .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                                entitlementId)
+                        .map(mapper::toDto))
                 .or(() -> constructReadingStateFromProgress(entitlementId));
 
         return readingState

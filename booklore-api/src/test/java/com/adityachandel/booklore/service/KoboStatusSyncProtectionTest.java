@@ -86,7 +86,10 @@ class KoboStatusSyncProtectionTest {
         when(koboSettingsService.getCurrentUserSettings()).thenReturn(testSettings);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
-        lenient().when(repository.findByEntitlementIdAndUserIdIsNull(anyString())).thenReturn(Optional.empty());
+        lenient().when(repository
+                .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                        anyString()))
+                .thenReturn(Optional.empty());
         lenient().when(mapper.toJson(any())).thenCallRealMethod();
         lenient().when(mapper.cleanString(any())).thenCallRealMethod();
     }

@@ -135,7 +135,9 @@ public class KoboEntitlementService {
         Long userId = authenticationService.getAuthenticatedUser().getId();
 
         KoboReadingState existingState = readingStateRepository.findByEntitlementIdAndUserId(entitlementId, userId)
-                .or(() -> readingStateRepository.findByEntitlementIdAndUserIdIsNull(entitlementId))
+                .or(() -> readingStateRepository
+                        .findFirstByEntitlementIdAndUserIdIsNullOrderByPriorityTimestampDescLastModifiedStringDescIdDesc(
+                                entitlementId))
                 .map(readingStateMapper::toDto)
                 .orElse(null);
 
