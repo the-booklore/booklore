@@ -12,9 +12,37 @@ local EventListener = require("ui/widget/eventlistener")
 local InfoMessage = require("ui/widget/infomessage")
 local InputDialog = require("ui/widget/inputdialog")
 local LuaSettings = require("luasettings")
+local SQ3 = require("lua-ljsqlite3/init")
 local UIManager = require("ui/uimanager")
 local WidgetContainer = require("ui/widget/container/widgetcontainer")
-local logger = require("logger")
+
+local base_logger = require("logger")
+local log_to_file_flag = false
+local log_file_path = DataStorage:getDataDir() .. "/plugins/booklore.koplugin/booklore_sync.log"
+
+local function append_log(level, ...)
+    if not log_to_file_flag then
+        return
+    end
+    local f = io.open(log_file_path, "a")
+    if not f then
+        return
+    end
+    local parts = {}
+    for i = 1, select('#', ...) do
+        parts[i] = tostring(select(i, ...))
+    end
+    f:write(os.date("%Y-%m-%d %H:%M:%S"), " [", level:upper(), "] ", table.concat(parts, " "), "\n")
+    f:close()
+end
+
+local logger = {}
+for _, level in ipairs({ "dbg", "info", "warn", "err", "fatal" }) do
+    logger[level] = function(...)
+        base_logger[level](...)
+        append_log(level, ...)
+    end
+end
 local _ = require("gettext")
 local T = require("ffi/util").template
 
@@ -31,6 +59,8 @@ function BookloreSync:init()
     self.password = self.settings:readSetting("password") or ""
     self.is_enabled = self.settings:readSetting("is_enabled") or false
     self.min_duration = self.settings:readSetting("min_duration") or 5
+    self.log_to_file = self.settings:readSetting("log_to_file") or false
+    log_to_file_flag = self.log_to_file
     
     -- Persistent local database for offline support
     self.local_db = LuaSettings:open(DataStorage:getSettingsDir() .. "/booklore_db.lua")
@@ -133,111 +163,135 @@ function BookloreSync:addToMainMenu(menu_items)
                 end,
             },
             {
-                text = _("Server URL"),
-                keep_menu_open = true,
-                callback = function()
-                    self:configureServerUrl()
-                end,
-            },
-            {
-                text = _("Username"),
-                keep_menu_open = true,
-                callback = function()
-                    self:configureUsername()
-                end,
-            },
-            {
-                text = _("Password"),
-                keep_menu_open = true,
-                callback = function()
-                    self:configurePassword()
-                end,
-            },
-            {
-                text = _("Test Connection"),
-                enabled_func = function()
-                    return self.server_url ~= "" and self.username ~= ""
+                text = _("Log to file"),
+                checked_func = function()
+                    return self.log_to_file
                 end,
                 callback = function()
-                    self:testConnection()
-                end,
-            },
-            {
-                text = _("Minimum Session Duration"),
-                keep_menu_open = true,
-                callback = function()
-                    self:configureMinDuration()
-                end,
-            },
-            {
-                text = _("Sync Pending Sessions"),
-                enabled_func = function()
-                    return #self.pending_sessions > 0
-                end,
-                callback = function()
-                    self:syncPendingSessions()
-                end,
-            },
-            {
-                text = _("Clear Pending Sessions"),
-                enabled_func = function()
-                    return #self.pending_sessions > 0
-                end,
-                callback = function()
-                    self.pending_sessions = {}
-                    self.local_db:saveSetting("pending_sessions", self.pending_sessions)
-                    self.local_db:flush()
+                    self.log_to_file = not self.log_to_file
+                    self.settings:saveSetting("log_to_file", self.log_to_file)
+                    self.settings:flush()
+                    log_to_file_flag = self.log_to_file
                     UIManager:show(InfoMessage:new{
-                        text = _("Pending sessions cleared"),
+                        text = self.log_to_file and _("File logging enabled") or _("File logging disabled"),
                         timeout = 2,
                     })
                 end,
             },
             {
-                text = _("View Pending Count"),
-                callback = function()
-                    UIManager:show(InfoMessage:new{
-                        text = T(_("%1 sessions pending sync"), #self.pending_sessions),
-                        timeout = 2,
-                    })
-                end,
-            },
-            {                text = _("View Cache Status"),
-                callback = function()
-                    local cache_count = 0
-                    for _ in pairs(self.book_cache) do
-                        cache_count = cache_count + 1
-                    end
-                    UIManager:show(InfoMessage:new{
-                        text = T(_("Cached books: %1\nPending sessions: %2"), cache_count, #self.pending_sessions),
-                        timeout = 3,
-                    })
-                end,
-            },
-            {
-                text = _("Clear Local Cache"),
-                enabled_func = function()
-                    local count = 0
-                    for _ in pairs(self.book_cache) do
-                        count = count + 1
-                    end
-                    return count > 0
-                end,
-                callback = function()
-                    self.book_cache = {}
-                    self.local_db:saveSetting("book_cache", self.book_cache)
-                    self.local_db:flush()
-                    UIManager:show(InfoMessage:new{
-                        text = _("Local book cache cleared"),
-                        timeout = 2,
-                    })
-                end,
-            },
-            {                text = _("───────────────"),
-                separator = true,
+                text = _("Login"),
+                sub_item_table = {
+                    {
+                        text = _("Server URL"),
+                        keep_menu_open = true,
+                        callback = function()
+                            self:configureServerUrl()
+                        end,
+                    },
+                    {
+                        text = _("Username"),
+                        keep_menu_open = true,
+                        callback = function()
+                            self:configureUsername()
+                        end,
+                    },
+                    {
+                        text = _("Password"),
+                        keep_menu_open = true,
+                        callback = function()
+                            self:configurePassword()
+                        end,
+                    },
+                    {
+                        text = _("Test Connection"),
+                        enabled_func = function()
+                            return self.server_url ~= "" and self.username ~= ""
+                        end,
+                        callback = function()
+                            self:testConnection()
+                        end,
+                    },
+                },
             },
             {
-                text = _("🧪 Sync Historical Data"),
+                text = _("Session Management"),
+                sub_item_table = {
+                    {
+                        text = _("Minimum Session Duration"),
+                        keep_menu_open = true,
+                        callback = function()
+                            self:configureMinDuration()
+                        end,
+                    },
+                    {
+                        text = _("Sync Pending Sessions"),
+                        enabled_func = function()
+                            return #self.pending_sessions > 0
+                        end,
+                        callback = function()
+                            self:syncPendingSessions()
+                        end,
+                    },
+                    {
+                        text = _("Clear Pending Sessions"),
+                        enabled_func = function()
+                            return #self.pending_sessions > 0
+                        end,
+                        callback = function()
+                            self.pending_sessions = {}
+                            self.local_db:saveSetting("pending_sessions", self.pending_sessions)
+                            self.local_db:flush()
+                            UIManager:show(InfoMessage:new{
+                                text = _("Pending sessions cleared"),
+                                timeout = 2,
+                            })
+                        end,
+                    },
+                    {
+                        text = _("View Pending Count"),
+                        callback = function()
+                            UIManager:show(InfoMessage:new{
+                                text = T(_("%1 sessions pending sync"), #self.pending_sessions),
+                                timeout = 2,
+                            })
+                        end,
+                    },
+                    {
+                        text = _("View Cache Status"),
+                        callback = function()
+                            local cache_count = 0
+                            for _ in pairs(self.book_cache) do
+                                cache_count = cache_count + 1
+                            end
+                            UIManager:show(InfoMessage:new{
+                                text = T(_("Cached books: %1\nPending sessions: %2"), cache_count, #self.pending_sessions),
+                                timeout = 3,
+                            })
+                        end,
+                    },
+                    {
+                        text = _("Clear Local Cache"),
+                        enabled_func = function()
+                            local count = 0
+                            for _ in pairs(self.book_cache) do
+                                count = count + 1
+                            end
+                            return count > 0
+                        end,
+                        callback = function()
+                            self.book_cache = {}
+                            self.local_db:saveSetting("book_cache", self.book_cache)
+                            self.local_db:flush()
+                            UIManager:show(InfoMessage:new{
+                                text = _("Local book cache cleared"),
+                                timeout = 2,
+                            })
+                        end,
+                    },
+                },
+            },
+            {
+                text = _("Sync Historical Data"),
                 enabled_func = function()
                     return self.server_url ~= "" and self.username ~= "" and self.is_enabled
                 end,
@@ -543,13 +597,13 @@ function BookloreSync:startSession()
             -- PDF or image-based format
             local current_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            start_progress = current_page / total_pages
+            start_progress = (current_page / total_pages) * 100
             start_location = tostring(current_page)
         elseif self.ui.rolling then
             -- EPUB or reflowable format
             local cur_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            start_progress = cur_page / total_pages
+            start_progress = (cur_page / total_pages) * 100
             start_location = tostring(cur_page)
         end
     end
@@ -709,13 +763,13 @@ function BookloreSync:endSession()
             -- PDF or image-based format
             local current_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            end_progress = current_page / total_pages
+            end_progress = (current_page / total_pages) * 100
             end_location = tostring(current_page)
         elseif self.ui.rolling then
             -- EPUB or reflowable format
             local cur_page = self.ui.document:getCurrentPage()
             local total_pages = self.ui.document:getPageCount()
-            end_progress = cur_page / total_pages
+            end_progress = (cur_page / total_pages) * 100
             end_location = tostring(cur_page)
         end
     end
@@ -891,113 +945,77 @@ function BookloreSync:syncHistoricalData()
     end
     file:close()
     
+    -- Open database using lua-ljsqlite3
+    local conn = SQ3.open(statistics_db_path)
+    if not conn then
+        UIManager:show(InfoMessage:new{
+            text = _("Failed to open statistics database"),
+            timeout = 3,
+        })
+        logger.warn("BookloreSync: Failed to open database")
+        return
+    end
+    
     -- Query page_stat to get all reading history, ordered by book and time
-    local query = [[
-SELECT 
-    book.md5,
-    book.id,
-    page_stat.start_time,
-    page_stat.duration,
-    page_stat.page
-FROM page_stat
-JOIN book ON page_stat.id_book = book.id
-WHERE page_stat.duration > 0
-ORDER BY book.id, page_stat.start_time ASC
-]]
+    local sql_stmt = [[
+        SELECT 
+            book.md5,
+            book.id,
+            page_stat.start_time,
+            page_stat.duration,
+            page_stat.page,
+            book.pages
+        FROM page_stat
+        JOIN book ON page_stat.id_book = book.id
+        WHERE page_stat.duration > 0
+        ORDER BY book.id, page_stat.start_time ASC
+    ]]
     
-    -- Create a temporary SQL file
-    local tmp_sql = "/tmp/booklore_query.sql"
-    local sql_file = io.open(tmp_sql, "w")
-    if not sql_file then
+    logger.info("BookloreSync: Executing database query")
+    
+    -- Execute query and get results
+    local stmt = conn:prepare(sql_stmt)
+    if not stmt then
         UIManager:show(InfoMessage:new{
-            text = _("Failed to create query file"),
+            text = _("Failed to prepare database query"),
             timeout = 3,
         })
-        return
-    end
-    sql_file:write(query)
-    sql_file:close()
-    
-    -- Execute sqlite3 command and capture output
-    local cmd = string.format('sqlite3 -separator "|" "%s" < "%s" 2>&1', statistics_db_path, tmp_sql)
-    logger.info("BookloreSync: Executing command:", cmd)
-    
-    local handle = io.popen(cmd)
-    if not handle then
-        UIManager:show(InfoMessage:new{
-            text = _("Failed to execute database query"),
-            timeout = 3,
-        })
-        os.remove(tmp_sql)
+        conn:close()
         return
     end
     
-    local output = handle:read("*a")
-    handle:close()
-    os.remove(tmp_sql)
-    
-    if not output or output == "" then
-        UIManager:show(InfoMessage:new{
-            text = _("No historical data found"),
-            timeout = 3,
-        })
-        logger.warn("BookloreSync: No output from database query")
-        return
-    end
-    
-    logger.info("BookloreSync: Query output length:", #output)
-    logger.info("BookloreSync: First 500 chars of output:", output:sub(1, 500))
-    
-    -- Parse all page records first
+    -- Parse all page records from database
     local page_records = {}
     local parse_errors = 0
-    local lines_processed = 0
     
-    for line in output:gmatch("[^\r\n]+") do
-        lines_processed = lines_processed + 1
+    for row in stmt:rows() do
+        local book_hash = row[1]
+        local book_id = tonumber(row[2])
+        local start_time = tonumber(row[3])
+        local duration = tonumber(row[4])
+        local page = tonumber(row[5]) or 0
+        local total_pages = tonumber(row[6]) or 0
         
-        -- Skip empty lines and error lines
-        if line ~= "" and not line:match("^Error:") then
-            -- Check if line contains pipe separator
-            if line:match("|") then
-                logger.info("BookloreSync: Parsing line", lines_processed, ":", line)
-                
-                -- Parse the pipe-separated values - split properly
-                local parts = {}
-                for part in (line .. "|"):gmatch("([^|]*)%|") do
-                    table.insert(parts, part)
-                end
-                
-                logger.info("BookloreSync: Parsed", #parts, "parts from line")
-                
-                -- Need at least 5 parts: md5, book_id, start_time, duration, page
-                if #parts >= 5 and parts[1] ~= "" then
-                    local page_record = {
-                        book_hash = parts[1],
-                        book_id = tonumber(parts[2]),
-                        start_time = tonumber(parts[3]),
-                        duration = tonumber(parts[4]),
-                        page = tonumber(parts[5]) or 0
-                    }
-                    
-                    logger.info("BookloreSync: Record - hash:", page_record.book_hash, "book_id:", page_record.book_id, "start:", page_record.start_time, "dur:", page_record.duration, "page:", page_record.page)
-                    
-                    if page_record.start_time and page_record.duration and page_record.book_id then
-                        table.insert(page_records, page_record)
-                        logger.info("BookloreSync: ✓ Valid record added (#", #page_records, ")")
-                    else
-                        parse_errors = parse_errors + 1
-                        logger.warn("BookloreSync: ✗ Invalid record - missing required fields")
-                    end
-                else
-                    parse_errors = parse_errors + 1
-                    logger.warn("BookloreSync: ✗ Insufficient parts or empty hash - parts:", #parts)
-                end
-            end
+        if book_hash and start_time and duration and book_id then
+            local page_record = {
+                book_hash = book_hash,
+                book_id = book_id,
+                start_time = start_time,
+                duration = duration,
+                page = page,
+                total_pages = total_pages
+            }
+            table.insert(page_records, page_record)
+        else
+            parse_errors = parse_errors + 1
+            logger.warn("BookloreSync: Invalid record - missing required fields")
         end
     end
     
-    logger.info("BookloreSync: Processed", lines_processed, "lines, parsed", #page_records, "page records,", parse_errors, "parse errors")
+    stmt:close()
+    conn:close()
+    
+    logger.info("BookloreSync: Parsed", #page_records, "page records,", parse_errors, "parse errors")
     
     if #page_records == 0 then
         UIManager:show(InfoMessage:new{
@@ -1038,7 +1056,8 @@ ORDER BY book.id, page_stat.start_time ASC
         if should_start_new_session then
             current_session = {
                 book_hash = record.book_hash,
-                pages = {record}
+                pages = {record},
+                total_pages = record.total_pages
             }
         else
             -- Add to current session
@@ -1080,21 +1099,32 @@ ORDER BY book.id, page_stat.start_time ASC
         
         logger.info("BookloreSync: Session", session_num, "/", #sessions, "- Hash:", book_hash, "Pages:", #pages, "Duration:", duration_seconds, "s")
         
-        -- Check if book exists in Booklore
-        local book_id = self:getBookIdByHash(book_hash)
+        -- Check cache first, then server if needed
+        local book_id = self.book_cache[book_hash]
+        if not book_id then
+            book_id = self:getBookIdByHash(book_hash)
+            if book_id then
+                self.book_cache[book_hash] = book_id
+                self.local_db:saveSetting("book_cache", self.book_cache)
+                self.local_db:flush()
+            end
+        end
         
         if book_id then
             logger.info("BookloreSync: Book found in Booklore, ID:", book_id)
             
-            -- Calculate progress (approximate since we don't have total pages)
-            -- Assume progress based on page movement
-            local start_progress = 0.1
-            local end_progress = 0.1
-            
-            if end_page > start_page then
-                -- Some progress was made
-                end_progress = start_progress + ((end_page - start_page) * 0.01)
-                end_progress = math.min(end_progress, 1.0)
+            -- Calculate progress using page count from statistics DB when available
+            local total_pages = session.total_pages or 0
+            local start_progress = 0.0
+            local end_progress = 0.0
+            if total_pages > 0 then
+                start_progress = math.min((start_page / total_pages) * 100, 100.0)
+                end_progress = math.min((end_page / total_pages) * 100, 100.0)
+            else
+                -- Fallback heuristic: use relative page movement
+                if end_page > start_page then
+                    end_progress = math.min(end_page - start_page, 100.0)
+                end
             end
             
             -- Create session data
