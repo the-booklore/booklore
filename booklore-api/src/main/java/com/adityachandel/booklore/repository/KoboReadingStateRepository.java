@@ -8,5 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface KoboReadingStateRepository extends JpaRepository<KoboReadingStateEntity, Long> {
-    Optional<KoboReadingStateEntity> findByEntitlementId(String entitlementId);
+    Optional<KoboReadingStateEntity> findByEntitlementIdAndUserId(String entitlementId, Long userId);
+    Optional<KoboReadingStateEntity> findByEntitlementIdAndUserIdIsNull(String entitlementId);
 }

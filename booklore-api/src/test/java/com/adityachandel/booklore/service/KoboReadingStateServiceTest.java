@@ -10,6 +10,7 @@ import com.adityachandel.booklore.model.entity.BookLoreUserEntity;
 import com.adityachandel.booklore.model.entity.KoboReadingStateEntity;
 import com.adityachandel.booklore.model.entity.UserBookProgressEntity;
 import com.adityachandel.booklore.model.enums.ReadStatus;
+import com.adityachandel.booklore.model.enums.KoboReadStatus;
 import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.KoboReadingStateRepository;
 import com.adityachandel.booklore.repository.UserBookProgressRepository;
@@ -28,6 +29,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.List;
@@ -95,6 +98,9 @@ class KoboReadingStateServiceTest {
 
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(koboSettingsService.getCurrentUserSettings()).thenReturn(testSettings);
+        lenient().when(repository.findByEntitlementIdAndUserIdIsNull(anyString())).thenReturn(Optional.empty());
+        lenient().when(mapper.toJson(any())).thenCallRealMethod();
+        lenient().when(mapper.cleanString(any())).thenCallRealMethod();
     }
 
     @Test
@@ -123,7 +129,7 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
@@ -153,7 +159,7 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
 
         assertDoesNotThrow(() -> service.saveReadingState(List.of(readingState)));
@@ -174,7 +180,7 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
         when(bookRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -205,7 +211,7 @@ class KoboReadingStateServiceTest {
                         .build())
                 .build();
 
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
         when(readingStateBuilder.buildReadingStateFromProgress(entitlementId, progress)).thenReturn(expectedState);
@@ -224,7 +230,7 @@ class KoboReadingStateServiceTest {
         assertEquals("EpubCfi", state.getCurrentBookmark().getLocation().getType());
         assertEquals("Kobo", state.getCurrentBookmark().getLocation().getSource());
         
-        verify(repository).findByEntitlementId(entitlementId);
+        verify(repository).findByEntitlementIdAndUserId(entitlementId, 1L);
         verify(progressRepository).findByUserIdAndBookId(1L, 100L);
         verify(readingStateBuilder).buildReadingStateFromProgress(entitlementId, progress);
     }
@@ -237,7 +243,7 @@ class KoboReadingStateServiceTest {
         progress.setKoboProgressPercent(null);
         progress.setKoboLocation(null);
 
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.of(progress));
 
@@ -245,7 +251,7 @@ class KoboReadingStateServiceTest {
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
-        verify(repository).findByEntitlementId(entitlementId);
+        verify(repository).findByEntitlementIdAndUserId(entitlementId, 1L);
         verify(progressRepository).findByUserIdAndBookId(1L, 100L);
     }
 
@@ -253,7 +259,7 @@ class KoboReadingStateServiceTest {
     @DisplayName("Should return null when no Kobo state and no UserBookProgress exists")
     void testGetReadingState_NoDataExists() {
         String entitlementId = "100";
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(authenticationService.getAuthenticatedUser()).thenReturn(testUser);
         when(progressRepository.findByUserIdAndBookId(1L, 100L)).thenReturn(Optional.empty());
 
@@ -273,7 +279,7 @@ class KoboReadingStateServiceTest {
                 .build();
         
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.of(entity));
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(entity));
         when(mapper.toDto(entity)).thenReturn(existingState);
 
         List<KoboReadingState> result = service.getReadingState(entitlementId);
@@ -296,7 +302,7 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
@@ -328,7 +334,7 @@ class KoboReadingStateServiceTest {
         KoboReadingStateEntity entity = new KoboReadingStateEntity();
         when(mapper.toEntity(any())).thenReturn(entity);
         when(mapper.toDto(any(KoboReadingStateEntity.class))).thenReturn(readingState);
-        when(repository.findByEntitlementId(entitlementId)).thenReturn(Optional.empty());
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.empty());
         when(repository.save(any())).thenReturn(entity);
         when(bookRepository.findById(100L)).thenReturn(Optional.of(testBook));
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUserEntity));
@@ -341,5 +347,133 @@ class KoboReadingStateServiceTest {
 
         UserBookProgressEntity savedProgress = progressCaptor.getValue();
         assertNull(savedProgress.getKoboProgressPercent());
+    }
+
+    @Test
+    @DisplayName("Should merge per-field updates based on lastModified")
+    void testSaveReadingState_PerFieldMerge() throws Exception {
+        String entitlementId = "100";
+        String existingTimestamp = "2025-01-01T00:00:00.0000000Z";
+        String newerTimestamp = "2025-01-04T00:00:00.0000000Z";
+        String midTimestamp = "2025-01-03T00:00:00.0000000Z";
+        String olderTimestamp = "2025-01-02T00:00:00.0000000Z";
+
+        KoboReadingState.StatusInfo existingStatus = KoboReadingState.StatusInfo.builder()
+                .lastModified(existingTimestamp)
+                .status(KoboReadStatus.READING)
+                .timesStartedReading(1)
+                .build();
+        KoboReadingState.Statistics existingStats = KoboReadingState.Statistics.builder()
+                .lastModified(existingTimestamp)
+                .spentReadingMinutes(5)
+                .remainingTimeMinutes(20)
+                .build();
+        KoboReadingState.CurrentBookmark existingBookmark = KoboReadingState.CurrentBookmark.builder()
+                .lastModified(midTimestamp)
+                .progressPercent(25)
+                .build();
+
+        KoboReadingState existingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .created(existingTimestamp)
+                .lastModified(midTimestamp)
+                .statusInfo(existingStatus)
+                .statistics(existingStats)
+                .currentBookmark(existingBookmark)
+                .priorityTimestamp(midTimestamp)
+                .build();
+
+        KoboReadingState.StatusInfo incomingStatus = KoboReadingState.StatusInfo.builder()
+                .lastModified(newerTimestamp)
+                .status(KoboReadStatus.FINISHED)
+                .timesStartedReading(2)
+                .build();
+        KoboReadingState.CurrentBookmark incomingBookmark = KoboReadingState.CurrentBookmark.builder()
+                .lastModified(olderTimestamp)
+                .progressPercent(10)
+                .build();
+
+        KoboReadingState incomingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .lastModified(newerTimestamp)
+                .statusInfo(incomingStatus)
+                .currentBookmark(incomingBookmark)
+                .build();
+
+        KoboReadingStateEntity existingEntity = new KoboReadingStateEntity();
+        existingEntity.setEntitlementId(entitlementId);
+        existingEntity.setUserId(1L);
+
+        when(mapper.toDto(existingEntity)).thenReturn(existingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(existingEntity));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ArgumentCaptor<KoboReadingStateEntity> entityCaptor = ArgumentCaptor.forClass(KoboReadingStateEntity.class);
+        service.saveReadingState(List.of(incomingState));
+        verify(repository).save(entityCaptor.capture());
+
+        KoboReadingStateEntity saved = entityCaptor.getValue();
+        ObjectMapper objectMapper = new ObjectMapper();
+        KoboReadingState.StatusInfo savedStatus = objectMapper.readValue(saved.getStatusInfoJson(), KoboReadingState.StatusInfo.class);
+        KoboReadingState.CurrentBookmark savedBookmark = objectMapper.readValue(saved.getCurrentBookmarkJson(), KoboReadingState.CurrentBookmark.class);
+        KoboReadingState.Statistics savedStatistics = objectMapper.readValue(saved.getStatisticsJson(), KoboReadingState.Statistics.class);
+
+        assertEquals(incomingStatus.getStatus(), savedStatus.getStatus());
+        assertEquals(existingBookmark.getProgressPercent(), savedBookmark.getProgressPercent());
+        assertEquals(existingStats.getSpentReadingMinutes(), savedStatistics.getSpentReadingMinutes());
+        assertEquals(newerTimestamp, saved.getLastModifiedString());
+        assertEquals(newerTimestamp, saved.getPriorityTimestamp());
+    }
+
+    @Test
+    @DisplayName("Should not update fields when timestamps are equal")
+    void testSaveReadingState_EqualTimestampNoUpdate() throws Exception {
+        String entitlementId = "100";
+        String timestamp = "2025-01-01T00:00:00.0000000Z";
+
+        KoboReadingState.StatusInfo existingStatus = KoboReadingState.StatusInfo.builder()
+                .lastModified(timestamp)
+                .status(KoboReadStatus.READING)
+                .timesStartedReading(1)
+                .build();
+
+        KoboReadingState existingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .created(timestamp)
+                .lastModified(timestamp)
+                .statusInfo(existingStatus)
+                .priorityTimestamp(timestamp)
+                .build();
+
+        KoboReadingState.StatusInfo incomingStatus = KoboReadingState.StatusInfo.builder()
+                .lastModified(timestamp)
+                .status(KoboReadStatus.FINISHED)
+                .timesStartedReading(2)
+                .build();
+
+        KoboReadingState incomingState = KoboReadingState.builder()
+                .entitlementId(entitlementId)
+                .lastModified(timestamp)
+                .statusInfo(incomingStatus)
+                .build();
+
+        KoboReadingStateEntity existingEntity = new KoboReadingStateEntity();
+        existingEntity.setEntitlementId(entitlementId);
+        existingEntity.setUserId(1L);
+
+        when(mapper.toDto(existingEntity)).thenReturn(existingState);
+        when(repository.findByEntitlementIdAndUserId(entitlementId, 1L)).thenReturn(Optional.of(existingEntity));
+        when(repository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ArgumentCaptor<KoboReadingStateEntity> entityCaptor = ArgumentCaptor.forClass(KoboReadingStateEntity.class);
+        service.saveReadingState(List.of(incomingState));
+        verify(repository).save(entityCaptor.capture());
+
+        KoboReadingStateEntity saved = entityCaptor.getValue();
+        ObjectMapper objectMapper = new ObjectMapper();
+        KoboReadingState.StatusInfo savedStatus = objectMapper.readValue(saved.getStatusInfoJson(), KoboReadingState.StatusInfo.class);
+
+        assertEquals(existingStatus.getStatus(), savedStatus.getStatus());
+        assertEquals(timestamp, saved.getLastModifiedString());
     }
 }

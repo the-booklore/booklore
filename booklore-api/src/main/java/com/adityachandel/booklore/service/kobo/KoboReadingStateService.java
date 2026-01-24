@@ -80,40 +80,43 @@ public class KoboReadingStateService {
 
     private List<KoboReadingState> saveAll(List<KoboReadingState> dtos) {
         BookLoreUser user = authenticationService.getAuthenticatedUser();
+        Long userId = user.getId();
         
         return dtos.stream()
                 .map(dto -> {
                     String entitlementId = mapper.cleanString(dto.getEntitlementId());
-                    Optional<KoboReadingStateEntity> existingOpt = repository.findByEntitlementId(entitlementId);
+                    Optional<KoboReadingStateEntity> existingOpt =
+                            repository.findByEntitlementIdAndUserId(entitlementId, userId);
                     log.debug("Kobo reading state lookup: entitlementId={}, foundExisting={}",
                             entitlementId, existingOpt.isPresent());
                     KoboReadingStateEntity entity = existingOpt
-                            .map(existing -> {
-                                existing.setCurrentBookmarkJson(mapper.toJson(dto.getCurrentBookmark()));
-                                existing.setStatisticsJson(mapper.toJson(dto.getStatistics()));
-                                existing.setStatusInfoJson(mapper.toJson(dto.getStatusInfo()));
-                                existing.setLastModifiedString(mapper.cleanString(String.valueOf(dto.getLastModified())));
-                                existing.setPriorityTimestamp(mapper.cleanString(String.valueOf(dto.getLastModified())));
-                                return existing;
-                            })
+                            .map(existing -> mergeReadingState(existing, dto))
                             .orElseGet(() -> {
                                 KoboReadingStateEntity newEntity = mapper.toEntity(dto);
+                                newEntity.setUserId(userId);
                                 if (entitlementId != null && !entitlementId.isBlank()) {
                                     newEntity.setEntitlementId(entitlementId);
                                 }
-                                String created = dto.getCreated();
-                                if (created == null || created.isBlank()) {
-                                    created = OffsetDateTime.now(ZoneOffset.UTC).toString();
+                                String created = normalizeTimestampValue(dto.getCreated());
+                                if (isBlank(created)) {
+                                    created = KOBO_TIMESTAMP_FORMAT.format(Instant.now());
                                 }
-                                newEntity.setLastModifiedString(mapper.cleanString(created));
-                                newEntity.setPriorityTimestamp(mapper.cleanString(created));
+                                String lastModified = normalizeTimestampValue(dto.getLastModified());
+                                if (isBlank(lastModified)) {
+                                    lastModified = created;
+                                }
+                                dto.setLastModified(lastModified);
+                                dto.setCreated(created);
+                                newEntity.setLastModifiedString(mapper.cleanString(lastModified));
+                                newEntity.setPriorityTimestamp(mapper.cleanString(computePriorityTimestamp(dto)));
                                 newEntity.setCreated(mapper.cleanString(created));
                                 return newEntity;
                             });
 
                     KoboReadingStateEntity savedEntity = repository.save(entity);
+                    KoboReadingState savedState = mapper.toDto(savedEntity);
                     
-                    syncKoboProgressToUserBookProgress(dto, user.getId());
+                    syncKoboProgressToUserBookProgress(savedState, userId);
                     
                     return savedEntity;
                 })
@@ -123,12 +126,15 @@ public class KoboReadingStateService {
 
     @Transactional
     public void deleteReadingState(Long bookId) {
-        repository.findByEntitlementId(String.valueOf(bookId)).ifPresent(repository::delete);
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        repository.findByEntitlementIdAndUserId(String.valueOf(bookId), userId).ifPresent(repository::delete);
     }
 
     public List<KoboReadingState> getReadingState(String entitlementId) {
-        Optional<KoboReadingState> readingState = repository.findByEntitlementId(entitlementId)
+        Long userId = authenticationService.getAuthenticatedUser().getId();
+        Optional<KoboReadingState> readingState = repository.findByEntitlementIdAndUserId(entitlementId, userId)
                 .map(mapper::toDto)
+                .or(() -> repository.findByEntitlementIdAndUserIdIsNull(entitlementId).map(mapper::toDto))
                 .or(() -> constructReadingStateFromProgress(entitlementId));
 
         return readingState
@@ -219,16 +225,26 @@ public class KoboReadingStateService {
         }
         String requestTimestamp = KOBO_TIMESTAMP_FORMAT.format(Instant.now());
         readingStates.forEach(state -> {
-            state.setPriorityTimestamp(requestTimestamp);
-            state.setLastModified(requestTimestamp);
+            if (isBlank(state.getPriorityTimestamp())) {
+                state.setPriorityTimestamp(requestTimestamp);
+            }
+            if (isBlank(state.getLastModified())) {
+                state.setLastModified(requestTimestamp);
+            }
             if (state.getStatusInfo() != null) {
-                state.getStatusInfo().setLastModified(requestTimestamp);
+                if (isBlank(state.getStatusInfo().getLastModified())) {
+                    state.getStatusInfo().setLastModified(requestTimestamp);
+                }
             }
             if (state.getStatistics() != null) {
-                state.getStatistics().setLastModified(requestTimestamp);
+                if (isBlank(state.getStatistics().getLastModified())) {
+                    state.getStatistics().setLastModified(requestTimestamp);
+                }
             }
             if (state.getCurrentBookmark() != null) {
-                state.getCurrentBookmark().setLastModified(requestTimestamp);
+                if (isBlank(state.getCurrentBookmark().getLastModified())) {
+                    state.getCurrentBookmark().setLastModified(requestTimestamp);
+                }
             }
         });
     }
@@ -275,6 +291,128 @@ public class KoboReadingStateService {
         } catch (Exception ignored) {
         }
         return value;
+    }
+
+    private KoboReadingStateEntity mergeReadingState(KoboReadingStateEntity existing, KoboReadingState incoming) {
+        KoboReadingState existingState = mapper.toDto(existing);
+        if (existingState == null) {
+            existingState = KoboReadingState.builder().entitlementId(existing.getEntitlementId()).build();
+        }
+
+        KoboReadingState merged = mergeReadingState(existingState, incoming);
+
+        existing.setCurrentBookmarkJson(mapper.toJson(merged.getCurrentBookmark()));
+        existing.setStatisticsJson(mapper.toJson(merged.getStatistics()));
+        existing.setStatusInfoJson(mapper.toJson(merged.getStatusInfo()));
+        existing.setLastModifiedString(mapper.cleanString(merged.getLastModified()));
+        existing.setPriorityTimestamp(mapper.cleanString(merged.getPriorityTimestamp()));
+        return existing;
+    }
+
+    private KoboReadingState mergeReadingState(KoboReadingState existing, KoboReadingState incoming) {
+        KoboReadingState.StatusInfo statusInfo = existing.getStatusInfo();
+        KoboReadingState.Statistics statistics = existing.getStatistics();
+        KoboReadingState.CurrentBookmark currentBookmark = existing.getCurrentBookmark();
+        String lastModified = existing.getLastModified();
+
+        if (incoming.getStatusInfo() != null && isIncomingNewer(incoming.getStatusInfo().getLastModified(),
+                statusInfo != null ? statusInfo.getLastModified() : null)) {
+            statusInfo = incoming.getStatusInfo();
+        }
+        if (incoming.getStatistics() != null && isIncomingNewer(incoming.getStatistics().getLastModified(),
+                statistics != null ? statistics.getLastModified() : null)) {
+            statistics = incoming.getStatistics();
+        }
+        if (incoming.getCurrentBookmark() != null && isIncomingNewer(incoming.getCurrentBookmark().getLastModified(),
+                currentBookmark != null ? currentBookmark.getLastModified() : null)) {
+            currentBookmark = incoming.getCurrentBookmark();
+        }
+        if (isIncomingNewer(incoming.getLastModified(), lastModified)) {
+            lastModified = incoming.getLastModified();
+        }
+
+        KoboReadingState merged = KoboReadingState.builder()
+                .entitlementId(existing.getEntitlementId())
+                .created(firstNonBlank(existing.getCreated(), incoming.getCreated()))
+                .lastModified(lastModified)
+                .statusInfo(statusInfo)
+                .statistics(statistics)
+                .currentBookmark(currentBookmark)
+                .build();
+        merged.setPriorityTimestamp(computePriorityTimestamp(merged));
+        return merged;
+    }
+
+    private boolean isIncomingNewer(String incoming, String existing) {
+        if (isBlank(incoming)) {
+            return false;
+        }
+        if (isBlank(existing)) {
+            return true;
+        }
+        Instant incomingInstant = parseTimestamp(incoming);
+        Instant existingInstant = parseTimestamp(existing);
+        if (incomingInstant == null || existingInstant == null) {
+            return false;
+        }
+        return incomingInstant.isAfter(existingInstant);
+    }
+
+    private String computePriorityTimestamp(KoboReadingState state) {
+        Instant maxInstant = maxInstant(
+                state.getLastModified(),
+                state.getStatusInfo() != null ? state.getStatusInfo().getLastModified() : null,
+                state.getStatistics() != null ? state.getStatistics().getLastModified() : null,
+                state.getCurrentBookmark() != null ? state.getCurrentBookmark().getLastModified() : null
+        );
+        if (maxInstant == null) {
+            String fallback = firstNonBlank(state.getPriorityTimestamp(), state.getLastModified());
+            return normalizeTimestampValue(fallback);
+        }
+        return KOBO_TIMESTAMP_FORMAT.format(maxInstant);
+    }
+
+    private Instant maxInstant(String... candidates) {
+        Instant max = null;
+        for (String candidate : candidates) {
+            Instant parsed = parseTimestamp(candidate);
+            if (parsed == null) {
+                continue;
+            }
+            if (max == null || parsed.isAfter(max)) {
+                max = parsed;
+            }
+        }
+        return max;
+    }
+
+    private Instant parseTimestamp(String value) {
+        if (isBlank(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        try {
+            return Instant.parse(trimmed);
+        } catch (Exception ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(trimmed).toInstant();
+        } catch (Exception ignored) {
+        }
+        try {
+            LocalDateTime localDateTime = LocalDateTime.parse(trimmed, LOCAL_TIMESTAMP_FORMAT);
+            return localDateTime.toInstant(ZoneOffset.UTC);
+        } catch (Exception ignored) {
+        }
+        return null;
+    }
+
+    private String firstNonBlank(String primary, String fallback) {
+        return isBlank(primary) ? fallback : primary;
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty() || "null".equalsIgnoreCase(value.trim());
     }
     
     private void updateReadStatusFromKoboProgress(UserBookProgressEntity userProgress, Instant now) {
