@@ -1,5 +1,6 @@
 package com.adityachandel.booklore.config;
 
+import com.adityachandel.booklore.interceptor.BookdropEnabledInterceptor;
 import com.adityachandel.booklore.interceptor.KomgaCleanInterceptor;
 import com.adityachandel.booklore.interceptor.KomgaEnabledInterceptor;
 import com.adityachandel.booklore.interceptor.OpdsEnabledInterceptor;
@@ -12,12 +13,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
 
+    private final BookdropEnabledInterceptor bookdropEnabledInterceptor;
     private final OpdsEnabledInterceptor opdsEnabledInterceptor;
     private final KomgaEnabledInterceptor komgaEnabledInterceptor;
     private final KomgaCleanInterceptor komgaCleanInterceptor;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(bookdropEnabledInterceptor)
+                .addPathPatterns("/api/v1/bookdrop/**", "/api/v1/files/upload/bookdrop");
         registry.addInterceptor(opdsEnabledInterceptor)
                 .addPathPatterns("/api/v1/opds/**", "/api/v2/opds/**");
         registry.addInterceptor(komgaEnabledInterceptor)

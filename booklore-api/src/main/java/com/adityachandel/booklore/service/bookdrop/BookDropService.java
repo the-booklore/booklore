@@ -106,6 +106,9 @@ public class BookDropService {
     }
 
     public BookdropFinalizeResult finalizeImport(BookdropFinalizeRequest request) {
+        if (!bookdropMonitoringService.isBookdropEnabled()) {
+            throw ApiError.BOOKDROP_DISABLED.createException();
+        }
         try {
             bookdropMonitoringService.pauseMonitoring();
             return processFinalizationRequest(request);
@@ -116,6 +119,9 @@ public class BookDropService {
     }
 
     public void discardSelectedFiles(boolean selectAll, List<Long> excludedIds, List<Long> selectedIds) {
+        if (!bookdropMonitoringService.isBookdropEnabled()) {
+            throw ApiError.BOOKDROP_DISABLED.createException();
+        }
         bookdropMonitoringService.pauseMonitoring();
         Path bookdropPath = Path.of(appProperties.getBookdropFolder());
 

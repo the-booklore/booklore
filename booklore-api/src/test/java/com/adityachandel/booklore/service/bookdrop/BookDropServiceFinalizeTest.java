@@ -9,6 +9,8 @@ import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.kobo.KoboAutoShelfService;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +49,11 @@ class BookDropServiceFinalizeTest {
 
     @InjectMocks
     private BookDropService bookDropService;
+
+    @BeforeEach
+    void setUp() {
+        when(bookdropMonitoringService.isBookdropEnabled()).thenReturn(true);
+    }
 
     @Test
     void finalizeImport_selectAll_emptyExcludedIds_shouldCallFindAllIds() {

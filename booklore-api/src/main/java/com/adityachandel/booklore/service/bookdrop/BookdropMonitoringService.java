@@ -25,6 +25,7 @@ public class BookdropMonitoringService {
     private volatile boolean running;
     private WatchKey watchKey;
     private volatile boolean paused;
+    private volatile boolean bookdropEnabled = true;
 
     public BookdropMonitoringService(AppProperties appProperties, BookdropEventHandlerService eventHandler) {
         this.appProperties = appProperties;
@@ -32,29 +33,37 @@ public class BookdropMonitoringService {
     }
 
     @PostConstruct
-    public void start() throws IOException {
-        bookdrop = Path.of(appProperties.getBookdropFolder());
-        if (Files.notExists(bookdrop)) {
-            try {
-                Files.createDirectories(bookdrop);
-                log.info("Created missing bookdrop folder: {}", bookdrop);
-            } catch (IOException e) {
-                log.error("Failed to create bookdrop folder: {}", bookdrop, e);
-                throw e;
+    public void start() {
+        try {
+            bookdrop = Path.of(appProperties.getBookdropFolder());
+            if (Files.notExists(bookdrop)) {
+                try {
+                    Files.createDirectories(bookdrop);
+                    log.info("Created missing bookdrop folder: {}", bookdrop);
+                } catch (IOException e) {
+                    log.error("Failed to create bookdrop folder: {}. Bookdrop functionality will be disabled.",
+                            bookdrop, e);
+                    bookdropEnabled = false;
+                    return;
+                }
             }
-        }
 
-        log.info("Starting bookdrop folder monitor: {}", bookdrop);
-        this.watchService = FileSystems.getDefault().newWatchService();
-        this.watchKey = bookdrop.register(watchService,
-                StandardWatchEventKinds.ENTRY_CREATE,
-                StandardWatchEventKinds.ENTRY_DELETE);
-        this.running = true;
-        this.paused = false;
-        this.watchThread = new Thread(this::processEvents, "BookdropFolderWatcher");
-        this.watchThread.setDaemon(true);
-        this.watchThread.start();
-        scanExistingBookdropFiles();
+            log.info("Starting bookdrop folder monitor: {}", bookdrop);
+            this.watchService = FileSystems.getDefault().newWatchService();
+            this.watchKey = bookdrop.register(watchService,
+                    StandardWatchEventKinds.ENTRY_CREATE,
+                    StandardWatchEventKinds.ENTRY_DELETE);
+            this.running = true;
+            this.paused = false;
+            this.watchThread = new Thread(this::processEvents, "BookdropFolderWatcher");
+            this.watchThread.setDaemon(true);
+            this.watchThread.start();
+            scanExistingBookdropFiles();
+        } catch (IOException e) {
+            log.error("Failed to initialize bookdrop monitoring: {}. Bookdrop functionality will be disabled.",
+                    appProperties.getBookdropFolder(), e);
+            bookdropEnabled = false;
+        }
     }
 
     @PreDestroy
@@ -73,7 +82,15 @@ public class BookdropMonitoringService {
         log.info("Stopped bookdrop folder monitor");
     }
 
+    public boolean isBookdropEnabled() {
+        return bookdropEnabled;
+    }
+
     public synchronized void pauseMonitoring() {
+        if (!bookdropEnabled) {
+            log.warn("Bookdrop is disabled, cannot pause monitoring.");
+            return;
+        }
         if (!paused) {
             if (watchKey != null) {
                 watchKey.cancel();
@@ -87,6 +104,10 @@ public class BookdropMonitoringService {
     }
 
     public synchronized void resumeMonitoring() {
+        if (!bookdropEnabled) {
+            log.warn("Bookdrop is disabled, cannot resume monitoring.");
+            return;
+        }
         if (paused) {
             try {
                 watchKey = bookdrop.register(watchService,
@@ -180,6 +201,10 @@ public class BookdropMonitoringService {
     }
 
     public void rescanBookdropFolder() {
+        if (!bookdropEnabled) {
+            log.warn("Bookdrop is disabled, cannot rescan folder.");
+            return;
+        }
         log.info("Manual rescan of Bookdrop folder triggered.");
         scanExistingBookdropFiles();
     }

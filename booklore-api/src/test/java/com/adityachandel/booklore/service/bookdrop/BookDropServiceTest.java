@@ -1,6 +1,8 @@
 package com.adityachandel.booklore.service.bookdrop;
 
 import com.adityachandel.booklore.config.AppProperties;
+import com.adityachandel.booklore.exception.APIException;
+import com.adityachandel.booklore.exception.ApiError;
 import com.adityachandel.booklore.mapper.BookdropFileMapper;
 import com.adityachandel.booklore.model.FileProcessResult;
 import com.adityachandel.booklore.model.dto.Book;
@@ -100,6 +102,8 @@ class BookDropServiceTest {
 
     @BeforeEach
     void setUp() throws IOException {
+        when(bookdropMonitoringService.isBookdropEnabled()).thenReturn(true);
+
         LibraryPathEntity libraryPathEntity = new LibraryPathEntity();
         libraryPathEntity.setId(1L);
         libraryPathEntity.setPath(tempDir.toString());
@@ -613,5 +617,22 @@ class BookDropServiceTest {
 
         assertTrue(Files.exists(sourceFile), "Source file should be preserved on failure");
         assertFalse(Files.exists(targetDir.resolve("moved-book.pdf")), "Target file should be cleaned up on failure");
+    }
+
+    @Test
+    void finalizeImport_throws_when_bookdrop_disabled() {
+        when(bookdropMonitoringService.isBookdropEnabled()).thenReturn(false);
+
+        BookdropFinalizeRequest request = new BookdropFinalizeRequest();
+        request.setSelectAll(false);
+        request.setFiles(List.of());
+
+        APIException ex = assertThrows(APIException.class, () -> bookDropService.finalizeImport(request));
+
+        assertEquals(ApiError.BOOKDROP_DISABLED.getStatus(), ex.getStatus());
+        assertEquals(ApiError.BOOKDROP_DISABLED.getMessage(), ex.getMessage());
+
+        verify(bookdropMonitoringService, never()).pauseMonitoring();
+        verify(bookdropMonitoringService, never()).resumeMonitoring();
     }
 }

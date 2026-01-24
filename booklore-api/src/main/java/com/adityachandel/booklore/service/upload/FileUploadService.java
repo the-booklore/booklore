@@ -17,6 +17,7 @@ import com.adityachandel.booklore.repository.BookRepository;
 import com.adityachandel.booklore.repository.LibraryRepository;
 import com.adityachandel.booklore.service.file.FileFingerprint;
 import com.adityachandel.booklore.service.appsettings.AppSettingService;
+import com.adityachandel.booklore.service.bookdrop.BookdropMonitoringService;
 import com.adityachandel.booklore.service.file.FileMovingHelper;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
@@ -48,6 +49,7 @@ public class FileUploadService {
     private final LibraryRepository libraryRepository;
     private final BookRepository bookRepository;
     private final BookAdditionalFileRepository additionalFileRepository;
+    private final BookdropMonitoringService bookdropMonitoringService;
     private final AppSettingService appSettingService;
     private final AppProperties appProperties;
     private final MetadataExtractorFactory metadataExtractorFactory;
@@ -154,6 +156,10 @@ public class FileUploadService {
     }
 
     public Book uploadFileBookDrop(MultipartFile file) throws IOException {
+        if (!bookdropMonitoringService.isBookdropEnabled()) {
+            throw ApiError.BOOKDROP_DISABLED.createException();
+        }
+
         validateFile(file);
 
         final Path dropFolder = Paths.get(appProperties.getBookdropFolder());

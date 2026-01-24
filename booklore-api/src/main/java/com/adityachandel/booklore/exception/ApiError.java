@@ -12,6 +12,7 @@ public enum ApiError {
     GENERIC_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "%s"),
 
     BOOK_NOT_FOUND(HttpStatus.NOT_FOUND, "Book not found with ID: %d"),
+    BOOKDROP_DISABLED(HttpStatus.SERVICE_UNAVAILABLE, "Bookdrop functionality is disabled"),
     EMAIL_PROVIDER_NOT_FOUND(HttpStatus.NOT_FOUND, "Email provider with ID %s not found"),
     DEFAULT_EMAIL_PROVIDER_NOT_FOUND(HttpStatus.NOT_FOUND, "Default email provider not found"),
     EMAIL_RECIPIENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Email recipient with ID %s not found"),

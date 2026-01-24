@@ -21,6 +21,7 @@ import com.adityachandel.booklore.model.dto.BookMetadata;
 import com.adityachandel.booklore.model.enums.BookFileExtension;
 import com.adityachandel.booklore.service.metadata.extractor.MetadataExtractorFactory;
 import com.adityachandel.booklore.service.monitoring.MonitoringRegistrationService;
+import com.adityachandel.booklore.service.bookdrop.BookdropMonitoringService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class FileUploadServiceTest {
@@ -77,6 +79,9 @@ class FileUploadServiceTest {
     @Mock
     MonitoringRegistrationService monitoringRegistrationService;
 
+    @Mock
+    BookdropMonitoringService bookdropMonitoringService;
+
     AppProperties appProperties;
     FileUploadService service;
 
@@ -90,9 +95,10 @@ class FileUploadServiceTest {
         settings.setMaxFileUploadSizeInMb(10);
         settings.setUploadPattern("{currentFilename}");
         when(appSettingService.getAppSettings()).thenReturn(settings);
+        when(bookdropMonitoringService.isBookdropEnabled()).thenReturn(true);
 
         service = new FileUploadService(
-                libraryRepository, bookRepository, bookAdditionalFileRepository,
+                libraryRepository, bookRepository, bookAdditionalFileRepository, bookdropMonitoringService,
                 appSettingService, appProperties, metadataExtractorFactory, additionalFileMapper, fileMovingHelper, monitoringRegistrationService
         );
     }
@@ -377,5 +383,20 @@ class FileUploadServiceTest {
              assertThat(savedName.length()).isLessThan(longName.length());
              assertThat(savedName).endsWith(".pdf");
         }
+    }
+
+    @Test
+    void uploadFileBookDrop_throws_when_bookdrop_disabled() {
+        when(bookdropMonitoringService.isBookdropEnabled()).thenReturn(false);
+
+        byte[] content = "hello".getBytes();
+        MockMultipartFile file = new MockMultipartFile("file", "test.pdf", "application/pdf", content);
+
+        assertThatExceptionOfType(APIException.class)
+                .isThrownBy(() -> service.uploadFileBookDrop(file))
+                .satisfies(ex -> {
+                    assertThat(ex.getStatus()).isEqualTo(ApiError.BOOKDROP_DISABLED.getStatus());
+                    assertThat(ex.getMessage()).isEqualTo(ApiError.BOOKDROP_DISABLED.getMessage());
+                });
     }
 }
