@@ -1,4 +1,4 @@
-import {AfterViewInit, Component, inject, OnInit, ViewChild} from '@angular/core';
+import {AfterViewInit, Component, HostListener, inject, OnInit, ViewChild} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {ConfirmationService, MenuItem, MessageService, PrimeTemplate} from 'primeng/api';
 import {PageTitleService} from '../../../../shared/service/page-title.service';
@@ -45,6 +45,7 @@ import {MetadataRefreshType} from '../../../metadata/model/request/metadata-refr
 import {TaskHelperService} from '../../../settings/task-management/task-helper.service';
 import {FilterLabelHelper} from './filter-label.helper';
 import {LoadingService} from '../../../../core/services/loading.service';
+import {LocalStorageService} from '../../../../shared/service/local-storage.service';
 import {BookNavigationService} from '../../service/book-navigation.service';
 import {BookCardOverlayPreferenceService} from './book-card-overlay-preference.service';
 import {BookSelectionService, CheckboxClickEvent} from './book-selection.service';
@@ -109,6 +110,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   private queryParamsService = inject(BookBrowserQueryParamsService);
   private entityService = inject(BookBrowserEntityService);
   private filterOrchestrationService = inject(BookFilterOrchestrationService);
+  private localStorageService = inject(LocalStorageService);
 
   // Observables
   bookState$: Observable<BookState> | undefined;
@@ -136,6 +138,14 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   currentViewMode: string | undefined;
   lastAppliedSort: SortOption | null = null;
   showFilter = false;
+  screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  mobileColumnCount = 3;
+
+  private readonly MOBILE_BREAKPOINT = 768;
+  private readonly CARD_ASPECT_RATIO = 7 / 5; // height / width (from aspect-ratio: 5/7)
+  private readonly MOBILE_GAP = 16; // 1rem in px
+  private readonly MOBILE_PADDING = 16; // 0.5rem * 2 sides
+  private readonly MOBILE_COLUMNS_STORAGE_KEY = 'mobileColumnsPreference';
 
   private settingFiltersFromUrl = false;
   protected metadataMenuItems: MenuItem[] | undefined;
@@ -152,15 +162,40 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   @ViewChild(BookFilterComponent, {static: false})
   bookFilterComponent!: BookFilterComponent;
 
+  @HostListener('window:resize')
+  onResize(): void {
+    this.screenWidth = window.innerWidth;
+  }
+
+  get isMobile(): boolean {
+    return this.screenWidth < this.MOBILE_BREAKPOINT;
+  }
+
+  get mobileCardSize(): { width: number; height: number } {
+    const columns = this.mobileColumnCount;
+    const totalGaps = (columns - 1) * this.MOBILE_GAP;
+    const totalPadding = this.MOBILE_PADDING * 2;
+    const availableWidth = this.screenWidth - totalGaps - totalPadding;
+    const cardWidth = Math.floor(availableWidth / columns);
+    const cardHeight = Math.floor(cardWidth * this.CARD_ASPECT_RATIO);
+    return { width: cardWidth, height: cardHeight };
+  }
+
   get selectedBooks(): Set<number> {
     return this.bookSelectionService.selectedBooks;
   }
 
   get currentCardSize() {
+    if (this.isMobile) {
+      return this.mobileCardSize;
+    }
     return this.coverScalePreferenceService.currentCardSize;
   }
 
   get gridColumnMinWidth(): string {
+    if (this.isMobile) {
+      return `${this.mobileCardSize.width}px`;
+    }
     return this.coverScalePreferenceService.gridColumnMinWidth;
   }
 
@@ -217,6 +252,7 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.pageTitle.setPageTitle('');
     this.coverScalePreferenceService.scaleChange$.pipe(debounceTime(1000)).subscribe();
+    this.loadMobileColumnsPreference();
 
     this.initializeEntityRouting();
     this.setupRouteChangeHandlers();
@@ -703,5 +739,17 @@ export class BookBrowserComponent implements OnInit, AfterViewInit {
       forceExpandSeries,
       this.bookSorter.selectedSort!
     );
+  }
+
+  setMobileColumns(columns: number): void {
+    this.mobileColumnCount = columns;
+    this.localStorageService.set(this.MOBILE_COLUMNS_STORAGE_KEY, columns);
+  }
+
+  private loadMobileColumnsPreference(): void {
+    const saved = this.localStorageService.get<number>(this.MOBILE_COLUMNS_STORAGE_KEY);
+    if (saved !== null && [2, 3, 4].includes(saved)) {
+      this.mobileColumnCount = saved;
+    }
   }
 }

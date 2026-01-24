@@ -67,6 +67,11 @@
   text-align: center;
   margin: 0;
   padding-left: 0.5rem;
+
+  @media (max-width: 767px) {
+    font-size: 0.75rem;
+    padding-left: 0.25rem;
+  }
 }
 
 .info-btn,
@@ -79,6 +84,31 @@
   transition: opacity 0.15s ease, visibility 0.15s ease;
   z-index: 2;
   will-change: opacity, visibility;
+
+  ::ng-deep .p-button {
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+    &:hover {
+      transform: scale(1.08);
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    @media (max-width: 767px) {
+      width: clamp(1.5rem, 8vw, 2.5rem);
+      height: clamp(1.5rem, 8vw, 2.5rem);
+      padding: 0;
+
+      .pi {
+        font-size: clamp(0.65rem, 3.5vw, 1rem);
+      }
+    }
+  }
 }
 
 .info-btn {
@@ -109,6 +139,11 @@
   transition: opacity 0.15s ease, visibility 0.15s ease;
   z-index: 2;
   will-change: opacity, visibility;
+
+  @media (max-width: 767px) {
+    top: 4px;
+    right: 4px;
+  }
 }
 
 .select-checkbox .p-checkbox {
@@ -203,6 +238,12 @@
   align-items: flex-start;
   gap: 4px;
   z-index: 4;
+
+  @media (max-width: 767px) {
+    top: 4px;
+    left: 4px;
+    gap: 2px;
+  }
 }
 
 .book-type-pill-overlay,
@@ -210,6 +251,11 @@
 .series-items-count-overlay {
   position: static;
   margin: 0;
+
+  @media (max-width: 767px) {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+  }
 }
 
 .book-type-epub {

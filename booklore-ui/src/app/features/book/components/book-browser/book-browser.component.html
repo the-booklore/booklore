@@ -111,20 +111,43 @@
                     <label for="collapse-series-checkbox" class="display-settings-label">Collapse series</label>
                   </div>
                 </div>
-                <div class="display-settings-section">
-                  <label class="display-settings-label">Grid item size</label>
-                  <p-slider
-                    [(ngModel)]="coverScalePreferenceService.scaleFactor"
-                    [min]="0.5"
-                    [max]="1.5"
-                    [step]="0.01"
-                    [style]="{ width: '100%' }"
-                    (onChange)="updateScale()">
-                  </p-slider>
-                  <div class="scale-value-display">
-                    {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
+                @if (isMobile) {
+                  <div class="display-settings-section">
+                    <label class="display-settings-label">Grid columns</label>
+                    <div class="column-options">
+                      <button
+                        type="button"
+                        class="column-option-btn"
+                        [class.active]="mobileColumnCount === 2"
+                        (click)="setMobileColumns(2)">2</button>
+                      <button
+                        type="button"
+                        class="column-option-btn"
+                        [class.active]="mobileColumnCount === 3"
+                        (click)="setMobileColumns(3)">3</button>
+                      <button
+                        type="button"
+                        class="column-option-btn"
+                        [class.active]="mobileColumnCount === 4"
+                        (click)="setMobileColumns(4)">4</button>
+                    </div>
                   </div>
-                </div>
+                } @else {
+                  <div class="display-settings-section">
+                    <label class="display-settings-label">Grid item size</label>
+                    <p-slider
+                      [(ngModel)]="coverScalePreferenceService.scaleFactor"
+                      [min]="0.5"
+                      [max]="1.5"
+                      [step]="0.01"
+                      [style]="{ width: '100%' }"
+                      (onChange)="updateScale()">
+                    </p-slider>
+                    <div class="scale-value-display">
+                      {{ coverScalePreferenceService.scaleFactor.toFixed(2) }}x
+                    </div>
+                  </div>
+                }
                 <div class="display-settings-section">
                   <div class="display-settings-checkbox-row">
                     <p-checkbox
